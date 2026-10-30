@@ -13,16 +13,46 @@ const mocks = vi.hoisted(() => {
     provinces: {} as Record<number, unknown>,
     burgs: {} as Record<number, unknown>,
     recentNews: [] as unknown[],
-    guild: { tier: 1, gold: 0, renown: 0, popups: [] as unknown[] }
+    guild: {
+      tier: 1,
+      gold: 0,
+      renown: 0,
+      ageCount: 0,
+      sandboxGodMode: true,
+      doctrine: "auto_bounties",
+      favoredStateId: 1 as number | undefined,
+      chapterBurgIds: [] as number[],
+      roster: [] as number[],
+      candidates: [] as number[],
+      missions: [] as unknown[],
+      cooldowns: {} as Record<number, number>,
+      excavatedMarkers: [] as number[],
+      popups: [] as unknown[]
+    }
   };
 
   const living = {
     getState: vi.fn(() => state),
     getGuild: vi.fn(() => state.guild),
+    getMissions: vi.fn(() => state.guild.missions),
     claimPopup: vi.fn((_id: number): unknown => null),
     formatSeasonDate: vi.fn(() => "Spring, 1000 AD"),
     tick: vi.fn(),
     syncWorld: vi.fn(),
+    setDoctrine: vi.fn((doctrine: string) => {
+      state.guild.doctrine = doctrine;
+    }),
+    setSandboxGodMode: vi.fn((enabled: boolean) => {
+      state.guild.sandboxGodMode = enabled;
+    }),
+    setFavoredState: vi.fn((stateId: number) => {
+      state.guild.favoredStateId = stateId;
+    }),
+    recruitCost: vi.fn(() => 80),
+    recruitCandidate: vi.fn(() => true),
+    dispatchHero: vi.fn(() => true),
+    dispatchBestHero: vi.fn(() => true),
+    retireHero: vi.fn(() => 5),
     sparkRebellion: vi.fn(() => true),
     smiteRuler: vi.fn(() => true),
     forceWar: vi.fn(() => true),
@@ -42,7 +72,18 @@ const mocks = vi.hoisted(() => {
   return { state, living };
 });
 
-vi.mock("@/model/physical/living-generator", () => ({ Living: mocks.living }));
+vi.mock("@/model/physical/living-generator", () => ({
+  Living: mocks.living,
+  figureLevel: (xp = 0) => 1 + Math.floor(xp / 60),
+  GUILD_TIER_TITLES: [
+    "Wayfarers' Lodge",
+    "Chartered Company",
+    "Grand Adventurers' Guild",
+    "Sovereign Order",
+    "Immortal Conclave"
+  ],
+  maxHeroesForTier: (tier: number) => [3, 4, 6, 8, 10][Math.min(4, Math.max(0, tier - 1))] ?? 3
+}));
 vi.mock("@/renderers/layers", () => ({ Layers: { draw: vi.fn() } }));
 vi.mock("@/ui/map/zoom", () => ({ zoomTo: vi.fn() }));
 vi.mock("@/model/story/journeys/journey-places", () => ({ getCellPoint: vi.fn(() => [10, 10]) }));
@@ -117,6 +158,32 @@ function makePack() {
           alignment: "good",
           virtues: ["bold"],
           vices: []
+        },
+        {
+          i: 1,
+          name: "Bran Quickfoot",
+          culture: 1,
+          birth: 945,
+          roles: [{ type: "adventurer", target: { kind: "culture", id: 1 }, from: 1000 }],
+          alignment: "good",
+          virtues: ["bold", "just"],
+          vices: [],
+          xp: 90,
+          skills: { m: 3, w: 1, s: 0, c: 2 },
+          cell: 1
+        },
+        {
+          i: 2,
+          name: "Sable Vane",
+          culture: 1,
+          birth: 980,
+          roles: [{ type: "adventurer", target: { kind: "culture", id: 1 }, from: 1000 }],
+          alignment: "neutral",
+          virtues: [],
+          vices: ["cruel"],
+          xp: 0,
+          skills: { m: 0, w: 0, s: 2, c: 1 },
+          cell: 1
         }
       ]
     }
@@ -179,7 +246,22 @@ beforeEach(() => {
   mocks.state.burgs = simulation.burgs;
   mocks.state.provinces = {};
   mocks.state.recentNews = [];
-  mocks.state.guild = { tier: 2, gold: 40, renown: 75, popups: [] };
+  Object.assign(mocks.state.guild, {
+    tier: 2,
+    gold: 40,
+    renown: 75,
+    ageCount: 0,
+    sandboxGodMode: true,
+    doctrine: "auto_bounties",
+    favoredStateId: 1,
+    chapterBurgIds: [1],
+    roster: [],
+    candidates: [],
+    missions: [],
+    cooldowns: {},
+    excavatedMarkers: [],
+    popups: []
+  });
   mocks.living.claimPopup.mockReturnValue(null);
   mocks.living.getState.mockReturnValue(mocks.state);
 });
@@ -561,6 +643,153 @@ describe("LivingHud", () => {
     LivingHud.open();
 
     expect(document.getElementById("livingHudWallet")?.textContent).toBe("⚜ 40g · 75r");
+  });
+
+  it("renders the guild bar with tier, wallet, doctrine and hero chips", () => {
+    Object.assign(mocks.state.guild, {
+      tier: 3,
+      gold: 120,
+      renown: 160,
+      doctrine: "auto_lairs",
+      roster: [1],
+      candidates: [2]
+    });
+    LivingHud.open();
+
+    const bar = document.getElementById("livingHudGuild");
+    expect(bar?.textContent).toContain("⚜ T3");
+    expect(bar?.textContent).toContain("Grand Adventurers' Guild");
+    expect(bar?.textContent).toContain("120g");
+    expect(bar?.textContent).toContain("160r");
+    expect(bar?.textContent).toContain("1/6 heroes");
+    expect(bar?.textContent).toContain("Bran Quickfoot");
+    expect(bar?.textContent).toContain("Sable Vane");
+    expect((document.getElementById("livingHudDoctrine") as HTMLSelectElement | null)?.value).toBe("auto_lairs");
+  });
+
+  it("changes the idle doctrine from the guild bar", () => {
+    LivingHud.open();
+
+    const select = document.getElementById("livingHudDoctrine") as HTMLSelectElement;
+    select.value = "manual";
+    select.dispatchEvent(new Event("change"));
+
+    expect(Living.setDoctrine).toHaveBeenCalledWith("manual");
+    expect(document.getElementById("livingHudStatus")?.textContent).toContain("Manual Dispatch");
+  });
+
+  it("toggles between Guild Mode and Sandbox God Mode", () => {
+    LivingHud.open();
+
+    document.querySelector<HTMLElement>('#livingHudGuild [data-mode="guild"]')?.click();
+    expect(Living.setSandboxGodMode).toHaveBeenCalledWith(false);
+    expect(
+      document.querySelector<HTMLElement>('#livingHudGuild [data-mode="guild"]')?.classList.contains("pressed")
+    ).toBe(true);
+
+    document.querySelector<HTMLElement>('#livingHudGuild [data-mode="sandbox"]')?.click();
+    expect(Living.setSandboxGodMode).toHaveBeenCalledWith(true);
+  });
+
+  it("replaces god buttons with guild operations in Guild Mode", () => {
+    Object.assign(mocks.state.guild, { sandboxGodMode: false });
+    mocks.state.provinces = {
+      1: {
+        provinceId: 1,
+        order: 35,
+        stability: 1,
+        development: 0,
+        trouble: {
+          id: "demagogue",
+          name: "Zealous Demagogue",
+          level: 7,
+          theme: "burg",
+          pool: "s",
+          save: "uprising",
+          requiredRole: "prophet",
+          seasonsUnchecked: 3,
+          cell: 1
+        }
+      }
+    };
+    mocks.state.recentNews = [
+      { tick: 1, year: 1000, season: 1, kind: "trouble", text: "Demagogue in Aelor.", cell: 1, stateId: 1 }
+    ];
+    LivingHud.open();
+    document.querySelector<HTMLElement>("button.livingNewsItem")?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("Guild Operations");
+    expect(inspector?.querySelector<HTMLElement>("[data-god]")).toBeNull();
+
+    inspector?.querySelector<HTMLElement>('[data-guild="dispatch-state"]')?.click();
+    expect(Living.dispatchBestHero).toHaveBeenCalledWith(1);
+    expect(document.getElementById("livingHudStatus")?.textContent).toContain("Northmarch");
+  });
+
+  it("dispatches a hero from a burg card in Guild Mode", () => {
+    Object.assign(mocks.state.guild, { sandboxGodMode: false });
+    mocks.state.provinces = {
+      1: {
+        provinceId: 1,
+        order: 60,
+        stability: 1,
+        development: 0,
+        lair: {
+          id: "bandit_camp",
+          name: "Forest Hideout",
+          level: 6,
+          theme: "ruin",
+          originCell: 1,
+          raidThreshold: 5,
+          defenders: [{ type: "infantry", count: 25 }],
+          fortified: false,
+          raidPending: false,
+          seasonsActive: 2
+        }
+      }
+    };
+    mocks.state.recentNews = [
+      { tick: 1, year: 1000, season: 3, kind: "lair", text: "Forest Hideout active.", cell: 2, burgId: 2 }
+    ];
+    LivingHud.open();
+    document.querySelector<HTMLElement>("button.livingNewsItem")?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.querySelector<HTMLElement>("[data-god]")).toBeNull();
+    inspector?.querySelector<HTMLElement>('[data-guild="dispatch"]')?.click();
+    expect(Living.dispatchBestHero).toHaveBeenCalledWith(1);
+    expect(document.getElementById("livingHudStatus")?.textContent).toContain("guild hero");
+  });
+
+  it("inspects a hero and retires a veteran from the figure card", () => {
+    Object.assign(mocks.state.guild, { roster: [1] });
+    LivingHud.open();
+
+    document.querySelector<HTMLElement>('#livingHudGuild [data-guild="inspect"][data-figure="1"]')?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("Bran Quickfoot");
+    expect(inspector?.textContent).toContain("Level 2");
+    expect(inspector?.textContent).toContain("Guild Hero");
+
+    inspector?.querySelector<HTMLElement>('[data-guild="retire"]')?.click();
+    expect(Living.retireHero).toHaveBeenCalledWith(1);
+  });
+
+  it("recruits a tavern candidate from the figure card", () => {
+    Object.assign(mocks.state.guild, { candidates: [2], gold: 120 });
+    LivingHud.open();
+
+    document.querySelector<HTMLElement>('#livingHudGuild [data-guild="inspect"][data-figure="2"]')?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("Sable Vane");
+    expect(inspector?.textContent).toContain("Recruit — 80g");
+    expect(inspector?.querySelector<HTMLElement>("[data-guild='recruit']")?.hasAttribute("disabled")).toBe(false);
+
+    inspector?.querySelector<HTMLElement>('[data-guild="recruit"]')?.click();
+    expect(Living.recruitCandidate).toHaveBeenCalledWith(2);
   });
 
   it("draws on-map bounty popups and claims one when clicked", () => {

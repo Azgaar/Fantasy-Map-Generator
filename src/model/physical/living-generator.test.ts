@@ -1,15 +1,39 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import { valueModifier } from "@/conquest/engine/game/saves";
 import { getTroubleDef, troubleUnitMatchMultiplier } from "@/data/living-troubles";
 import { parseHistory, serializeHistory } from "@/services/io/epochs-format";
+import type { HistoricalFigure } from "@/types/history";
+import { createRng } from "@/utils/rng";
 import {
   figureBias,
+  figureCheckRoll,
+  figureLevel,
+  guildTierForRenown,
   Living,
+  maxHeroesForTier,
   regionTierFromPop,
   settlementTierFromPop,
   syncBurgBuildingsFromFlags,
   syncBurgFlagsFromBuildings
 } from "./living-generator";
+
+function makeGuildFigure(i: number, overrides: Partial<HistoricalFigure> = {}): HistoricalFigure {
+  return {
+    i,
+    name: `Hero ${i}`,
+    culture: 1,
+    birth: 980,
+    roles: [{ type: "adventurer", target: { kind: "culture", id: 1 }, from: 1000 }],
+    alignment: "neutral",
+    virtues: [],
+    vices: [],
+    skills: { m: 0, w: 0, s: 0, c: 0 },
+    xp: 0,
+    cell: 1,
+    ...overrides
+  };
+}
 
 describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War & Unravel)", () => {
   beforeEach(() => {
@@ -1014,6 +1038,158 @@ describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War
 
     expect(Living.getPopups().some(popup => popup.kind === "bounty_trouble" && popup.provinceId === 1)).toBe(true);
     expect(Living.getGuild().tier).toBe(1);
+  });
+
+  describe("Guild spine (slice 2)", () => {
+    it("initializes guild defaults, headquarters and passive chapter dues", () => {
+      Living.init();
+      const guild = Living.getGuild();
+
+      expect(guild.tier).toBe(1);
+      expect(guild.gold).toBe(0);
+      expect(guild.renown).toBe(0);
+      expect(guild.sandboxGodMode).toBe(false);
+      expect(guild.doctrine).toBe("auto_bounties");
+      expect(guild.hqBurgId).toBe(1);
+      expect(guild.chapterBurgIds).toEqual([1]);
+      expect(guild.favoredStateId).toBe(1);
+      expect(guild.roster).toEqual([]);
+      expect(guild.missions).toEqual([]);
+
+      const before = guild.gold;
+      Living.tick(1);
+      expect(guild.gold).toBe(before + 2);
+    });
+
+    it("recruits candidates for gold and enforces the tier roster cap", () => {
+      Living.init();
+      const guild = Living.getGuild();
+      pack.history.figures ??= [];
+      const figures = pack.history.figures;
+      const ids = [0, 1, 2, 3].map(() => {
+        const index = figures.length;
+        figures.push(makeGuildFigure(index));
+        return index;
+      });
+      guild.candidates = [...ids];
+      guild.gold = 1000;
+
+      expect(Living.recruitCost()).toBe(60);
+      expect(Living.recruitCandidate(ids[0]!)).toBe(true);
+      expect(Living.recruitCandidate(ids[1]!)).toBe(true);
+      expect(Living.recruitCandidate(ids[2]!)).toBe(true);
+      expect(Living.recruitCandidate(ids[3]!)).toBe(false);
+      expect(guild.roster).toEqual(ids.slice(0, 3));
+      expect(guild.gold).toBe(1000 - 3 * 60);
+      expect(guild.candidates).toEqual([ids[3]!]);
+    });
+
+    it("maps renown and experience onto the tier and level ladders", () => {
+      expect(guildTierForRenown(0)).toBe(1);
+      expect(guildTierForRenown(49)).toBe(1);
+      expect(guildTierForRenown(50)).toBe(2);
+      expect(guildTierForRenown(150)).toBe(3);
+      expect(guildTierForRenown(350)).toBe(4);
+      expect(guildTierForRenown(700)).toBe(5);
+      expect(maxHeroesForTier(1)).toBe(3);
+      expect(maxHeroesForTier(5)).toBe(10);
+      expect(figureLevel(0)).toBe(1);
+      expect(figureLevel(59)).toBe(1);
+      expect(figureLevel(60)).toBe(2);
+    });
+
+    it("rolls unified figure checks deterministically", () => {
+      const figure = makeGuildFigure(42, {
+        skills: { m: 2, w: 0, s: 0, c: 0 },
+        virtues: ["bold"],
+        vices: []
+      });
+
+      const first = figureCheckRoll(createRng("guild-check"), figure, "m", 4, 12, 1);
+      const second = figureCheckRoll(createRng("guild-check"), figure, "m", 4, 12, 1);
+
+      expect(first).toEqual(second);
+      expect(first.total).toBe(first.roll + 2 + valueModifier(4) + 1 + 1);
+      expect(first.dc).toBe(12);
+      expect(first.success).toBe(first.total >= 12);
+    });
+
+    it("auto-dispatches an idle hero under its doctrine", () => {
+      Living.init();
+      const guild = Living.getGuild();
+      guild.doctrine = "auto_bounties";
+      pack.history.figures ??= [];
+      const figures = pack.history.figures;
+      const heroId = figures.length;
+      figures.push(makeGuildFigure(heroId, { skills: { m: 5, w: 0, s: 0, c: 0 } }));
+      guild.roster = [heroId];
+
+      Living.spawnTrouble(1, "monsters", "burg", 1);
+      Living.tick(1);
+
+      const mission = Living.getMissions().find(entry => entry.figureId === heroId);
+      expect(mission?.kind).toBe("trouble");
+      expect(mission?.required).toBe(2);
+    });
+
+    it("resolves a dispatched mission and pays its gold, renown and xp", () => {
+      const living = Living.init();
+      const guild = Living.getGuild();
+      guild.tier = 3;
+      guild.doctrine = "manual";
+      pack.history.figures ??= [];
+      const figures = pack.history.figures;
+      const heroId = figures.length;
+      figures.push(makeGuildFigure(heroId, { skills: { m: 30, w: 0, s: 0, c: 0 } }));
+      guild.roster = [heroId];
+
+      Living.spawnTrouble(1, "monsters", "burg", 1);
+      expect(Living.dispatchHero(heroId, 1)).toBe(true);
+      const mission = Living.getMissions().find(entry => entry.figureId === heroId)!;
+      expect(mission.required).toBe(1);
+
+      const goldBefore = guild.gold;
+      Living.tick(1);
+
+      expect(Living.getMissions().some(entry => entry.figureId === heroId)).toBe(false);
+      expect(living.provinces[1].trouble).toBeNull();
+      expect(guild.gold).toBe(goldBefore + mission.rewardGold + 2);
+      expect(guild.renown).toBe(mission.rewardRenown);
+      expect(figures[heroId]!.xp).toBe(25);
+    });
+
+    it("retires a veteran and mints a protege carrying their best skill", () => {
+      Living.init();
+      const guild = Living.getGuild();
+      pack.history.figures ??= [];
+      const figures = pack.history.figures;
+      const heroId = figures.length;
+      figures.push(makeGuildFigure(heroId, { birth: 940, skills: { m: 3, w: 1, s: 0, c: 2 }, xp: 120, cell: 2 }));
+      guild.roster = [heroId];
+
+      const before = figures.length;
+      const protegeId = Living.retireHero(heroId);
+
+      expect(protegeId).not.toBeNull();
+      expect(figures.length).toBe(before + 1);
+      expect(guild.roster).toContain(protegeId);
+      expect(guild.roster).not.toContain(heroId);
+
+      const protege = figures.find(figure => figure.i === protegeId)!;
+      expect(protege.skills?.m).toBe(4);
+      expect(protege.skills?.c).toBe(2);
+      expect(protege.roles.some(role => role.type === "adventurer")).toBe(true);
+    });
+
+    it("promotes the guild tier when renown crosses a threshold", () => {
+      Living.init();
+      const guild = Living.getGuild();
+      guild.renown = 150;
+
+      Living.tick(1);
+
+      expect(guild.tier).toBe(3);
+    });
   });
 });
 

@@ -185,13 +185,29 @@ export interface ActiveGuildMission {
   rewardRenown: number;
 }
 
-/** Player guild wallet and the transient on-map popups. Expanded by later slices. */
+export type IdleDoctrine = "auto_bounties" | "auto_lairs" | "auto_excavate" | "auto_patron" | "manual";
+
+/** Player guild: wallet, hero stable, idle doctrine and the transient on-map popups. */
 export interface GuildState {
   tier: number;
   gold: number;
   renown: number;
+  ageCount: number;
+  /** false = resource-driven Guild Operations, true = classic free God Mode */
+  sandboxGodMode: boolean;
+  doctrine: IdleDoctrine;
+  favoredStateId?: number;
   hqBurgId?: number;
-  missions?: ActiveGuildMission[];
+  chapterBurgIds: number[];
+  /** active guild hero figure ids */
+  roster: number[];
+  /** tavern recruitment pool figure ids */
+  candidates: number[];
+  missions: ActiveGuildMission[];
+  /** figureId -> tick the hero is free again after a failed mission */
+  cooldowns: Record<number, number>;
+  /** chronicle marker.i values already excavated */
+  excavatedMarkers: number[];
   popups: LivingPopup[];
 }
 

@@ -7,12 +7,19 @@ import { ALIGNMENT_COLORS } from "@/data/culture-traits";
 import { getLairDef, isLairStateCapable } from "@/data/living-lairs";
 import { getTroubleDef, isTroubleStatePromotable, SAVE_KIND_LABELS, UNIT_ROLE_LABELS } from "@/data/living-troubles";
 import { Pack } from "@/model/graph/pack-generator";
-import { Living } from "@/model/physical/living-generator";
+import { figureLevel, GUILD_TIER_TITLES, Living, maxHeroesForTier } from "@/model/physical/living-generator";
 import { getCellPoint } from "@/model/story/journeys/journey-places";
 import { drawLivingOverlay, removeLivingOverlay } from "@/renderers/draw-living-overlay";
 import { Layers } from "@/renderers/layers";
 import type { HistoricalFigure } from "@/types/history";
-import { type LivingNewsItem, type ProvinceSimState, SEASON_NAMES, type StatePolitySim } from "@/types/living";
+import {
+  type GuildState,
+  type IdleDoctrine,
+  type LivingNewsItem,
+  type ProvinceSimState,
+  SEASON_NAMES,
+  type StatePolitySim
+} from "@/types/living";
 import { zoomTo } from "@/ui/map/zoom";
 import { escapeHtml, findEl, getPointer } from "@/utils";
 
@@ -72,6 +79,29 @@ const TEMPLATE = /* html */ `
     #${HUD_ID} .livingNewsDate { font-weight: bold; color: #5e4fa2; }
     #${HUD_ID} .livingNewsEmpty,
     #${HUD_ID} .livingHudStatus { color: #666; font-style: italic; padding: 0 0.45em 0.25em; }
+    #${HUD_ID} .livingHudGuild {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15em;
+      padding: 0.2em 0.45em;
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    #${HUD_ID} .livingGuildRow { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3em; }
+    #${HUD_ID} .livingGuildBadge { background: #5e4fa2; color: #fff; border-radius: 2px; padding: 0 0.3em; font-weight: bold; }
+    #${HUD_ID} .livingGuildTitle { font-weight: bold; }
+    #${HUD_ID} .livingGuildStat { color: #6a4c93; font-weight: bold; }
+    #${HUD_ID} .livingGuildMuted { color: #666; font-style: italic; }
+    #${HUD_ID} .livingGuildDoctrine { margin-left: auto; display: flex; align-items: center; gap: 0.25em; }
+    #${HUD_ID} .livingGuildDoctrine select { font-family: var(--monospace); font-size: 1em; }
+    #${HUD_ID} .livingGuildChip {
+      border: 1px solid rgba(94, 79, 162, 0.5);
+      border-radius: 3px;
+      background: transparent;
+      padding: 0.05em 0.4em;
+    }
+    #${HUD_ID} .livingGuildChip.mission { border-color: #b8860b; }
+    #${HUD_ID} .livingGuildChip.cooldown { border-color: #a33d3d; opacity: 0.7; }
+    #${HUD_ID} .livingGuildChipStatus { color: #777; }
     #${INSPECTOR_ID} {
       position: fixed;
       right: 10px;
@@ -122,11 +152,20 @@ const TEMPLATE = /* html */ `
       <button id="livingHudClose" type="button" title="Close Living World">Ã—</button>
     </div>
     <div id="livingHudStatus" class="livingHudStatus"></div>
+    <div id="livingHudGuild" class="livingHudGuild"></div>
     <div id="livingHudNews" class="livingHudNews"></div>
   </div>
 `;
 
-type Selection = { kind: "state"; id: number } | { kind: "burg"; id: number };
+type Selection = { kind: "state"; id: number } | { kind: "burg"; id: number } | { kind: "figure"; id: number };
+
+const DOCTRINE_LABELS: Record<IdleDoctrine, string> = {
+  auto_bounties: "Hunt Troubles",
+  auto_lairs: "Hunt Lairs",
+  auto_excavate: "Excavate Ruins",
+  auto_patron: "Guard Favored State",
+  manual: "Manual Dispatch"
+};
 
 let playing = 0;
 let timer: number | null = null;
@@ -179,6 +218,7 @@ function refresh(): void {
 
   renderControls();
   renderWallet();
+  renderGuildBar();
   renderNews(living.recentNews ?? []);
   validateSelection();
   renderInspector();
@@ -278,6 +318,98 @@ function renderWallet(): void {
   const guild = Living.getGuild?.();
   wallet.textContent = guild ? `⚜ ${guild.gold}g · ${guild.renown}r` : "";
   wallet.title = guild ? `Guild Tier ${guild.tier} — Gold ${guild.gold}, Renown ${guild.renown}` : "";
+}
+
+function heroStatus(guild: GuildState, figureId: number): { label: string; className: string } {
+  const mission = (guild.missions ?? []).find(entry => entry.figureId === figureId);
+  if (mission) return { label: `${mission.kind} ${mission.progress}/${mission.required}`, className: "mission" };
+  const until = guild.cooldowns?.[figureId];
+  if (until !== undefined && until > Living.getState().tick) return { label: "recovering", className: "cooldown" };
+  if ((guild.candidates ?? []).includes(figureId)) return { label: "seeker", className: "" };
+  if ((guild.roster ?? []).includes(figureId)) return { label: "idle", className: "" };
+  return { label: "free", className: "" };
+}
+
+function renderHeroChip(guild: GuildState, figureId: number): string {
+  const figure = pack.history?.figures?.find(entry => entry.i === figureId);
+  if (!figure) return "";
+  const status = heroStatus(guild, figureId);
+  const selectedClass = selected?.kind === "figure" && selected.id === figureId ? " pressed" : "";
+  return `<button type="button" class="livingGuildChip ${status.className}${selectedClass}" data-guild="inspect" data-figure="${figureId}" title="${escapeHtml(figure.name)} — level ${figureLevel(figure.xp ?? 0)}, ${status.label}">
+    ${escapeHtml(figure.name)} <span class="livingGuildChipStatus">Lv${figureLevel(figure.xp ?? 0)} · ${status.label}</span>
+  </button>`;
+}
+
+function renderGuildBar(): void {
+  const bar = findEl("livingHudGuild");
+  if (!bar) return;
+
+  const guild = Living.getGuild?.();
+  if (!guild) {
+    bar.innerHTML = "";
+    return;
+  }
+
+  const tier = guild.tier ?? 1;
+  const roster = guild.roster ?? [];
+  const candidates = guild.candidates ?? [];
+  const doctrine = guild.doctrine ?? "auto_bounties";
+  const sandbox = Boolean(guild.sandboxGodMode);
+  const favored = guild.favoredStateId !== undefined ? pack.states[guild.favoredStateId]?.name : undefined;
+  const doctrineOptions = (Object.keys(DOCTRINE_LABELS) as IdleDoctrine[])
+    .map(key => `<option value="${key}"${key === doctrine ? " selected" : ""}>${DOCTRINE_LABELS[key]}</option>`)
+    .join("");
+
+  bar.innerHTML = /* html */ `
+    <div class="livingGuildRow">
+      <span class="livingGuildBadge" title="Guild tier">⚜ T${tier}</span>
+      <span class="livingGuildTitle">${escapeHtml(GUILD_TIER_TITLES[tier - 1] ?? GUILD_TIER_TITLES[0]!)}</span>
+      <span class="livingGuildStat" title="Guild gold">${guild.gold ?? 0}g</span>
+      <span class="livingGuildStat" title="Guild renown">${guild.renown ?? 0}r</span>
+      <span class="livingGuildMuted">${roster.length}/${maxHeroesForTier(tier)} heroes</span>
+      <label class="livingGuildDoctrine">Doctrine
+        <select id="livingHudDoctrine">${doctrineOptions}</select>
+      </label>
+      <span class="livingGuildModes">
+        <button type="button" data-mode="guild" class="${sandbox ? "" : "pressed"}">Guild Mode</button>
+        <button type="button" data-mode="sandbox" class="${sandbox ? "pressed" : ""}">Sandbox God Mode</button>
+      </span>
+    </div>
+    <div class="livingGuildRow">
+      <span class="livingGuildMuted">Heroes:</span>
+      ${roster.length > 0 ? roster.map(id => renderHeroChip(guild, id)).join("") : `<span class="livingGuildMuted">none — recruit from the tavern</span>`}
+    </div>
+    <div class="livingGuildRow">
+      <span class="livingGuildMuted">Tavern${favored ? ` · patron: ${escapeHtml(favored)}` : ""}:</span>
+      ${candidates.length > 0 ? candidates.map(id => renderHeroChip(guild, id)).join("") : `<span class="livingGuildMuted">no seekers this year</span>`}
+    </div>`;
+
+  bar.querySelector<HTMLSelectElement>("#livingHudDoctrine")?.addEventListener("change", event => {
+    const value = (event.target as HTMLSelectElement).value as IdleDoctrine;
+    Living.setDoctrine(value);
+    refresh();
+    setStatus(`The Guild now follows ${DOCTRINE_LABELS[value]}.`);
+  });
+
+  for (const button of bar.querySelectorAll<HTMLElement>("[data-mode]")) {
+    button.addEventListener("click", () => {
+      const sandboxMode = button.dataset.mode === "sandbox";
+      Living.setSandboxGodMode(sandboxMode);
+      refresh();
+      setStatus(
+        sandboxMode
+          ? "Sandbox God Mode: interventions are free and instant."
+          : "Guild Mode: operations cost gold and heroes."
+      );
+    });
+  }
+
+  for (const button of bar.querySelectorAll<HTMLElement>("[data-guild='inspect']")) {
+    button.addEventListener("click", () => {
+      selected = { kind: "figure", id: Number(button.dataset.figure ?? 0) };
+      renderInspector();
+    });
+  }
 }
 
 function renderNews(news: LivingNewsItem[]): void {
@@ -381,7 +513,9 @@ function validateSelection(): void {
   const alive =
     current.kind === "state"
       ? Boolean(pack.states[current.id] && !pack.states[current.id].removed)
-      : Boolean(pack.burgs[current.id] && !pack.burgs[current.id].removed);
+      : current.kind === "burg"
+        ? Boolean(pack.burgs[current.id] && !pack.burgs[current.id].removed)
+        : Boolean(pack.history?.figures?.some(figure => figure.i === current.id));
   if (!alive) selected = null;
 }
 
@@ -390,12 +524,83 @@ function renderInspector(): void {
   if (!panel) return;
 
   if (!selected) {
-    panel.innerHTML = `<div class="livingPlaceholder">Click a state or burg on the map to inspect it.</div>`;
+    panel.innerHTML = `<div class="livingPlaceholder">Click a state, burg or hero on the map to inspect it.</div>`;
     return;
   }
 
-  panel.innerHTML = selected.kind === "state" ? renderStateCard(selected.id) : renderBurgCard(selected.id);
+  panel.innerHTML =
+    selected.kind === "state"
+      ? renderStateCard(selected.id)
+      : selected.kind === "burg"
+        ? renderBurgCard(selected.id)
+        : renderFigureCard(selected.id);
   bindInspectorButtons(panel);
+}
+
+function renderFigureCard(figureId: number): string {
+  const living = Living.getState();
+  const guild = Living.getGuild?.();
+  const figure = pack.history?.figures?.find(entry => entry.i === figureId);
+  if (!figure) return `<div class="livingPlaceholder">This figure has passed from the chronicle.</div>`;
+
+  const year = options.map?.lore?.calendar?.year ?? 1000;
+  const age = Math.max(0, year - figure.birth);
+  const level = figureLevel(figure.xp ?? 0);
+  const roster = guild?.roster ?? [];
+  const candidates = guild?.candidates ?? [];
+  const mission = (guild?.missions ?? []).find(entry => entry.figureId === figureId);
+  const cooldownUntil = guild?.cooldowns?.[figureId];
+  const onCooldown = cooldownUntil !== undefined && cooldownUntil > living.tick;
+  const isCandidate = candidates.includes(figureId);
+  const isHero = roster.includes(figureId);
+  const culture = pack.cultures?.[figure.culture]?.name;
+  const alignment = figure.alignment
+    ? `<span class="livingBadge" style="background:${ALIGNMENT_COLORS[figure.alignment]}">${figure.alignment}</span>`
+    : "";
+  const virtues = (figure.virtues ?? []).map(escapeHtml).join(", ");
+  const vices = (figure.vices ?? []).map(escapeHtml).join(", ");
+  const traits = [virtues, vices].filter(Boolean).join(" · ");
+  const skills = figure.skills
+    ? `<div class="livingMuted">Skills: M ${figure.skills.m} · W ${figure.skills.w} · S ${figure.skills.s} · C ${figure.skills.c}</div>`
+    : `<div class="livingMuted">No skills recorded</div>`;
+
+  let status = `<div class="livingMuted">Free agent</div>`;
+  if (figure.death !== undefined) status = `<div class="livingMuted">Died ${figure.death}</div>`;
+  else if (mission)
+    status = `<div class="livingMuted">On a ${mission.kind} mission — ${mission.progress}/${mission.required} seasons</div>`;
+  else if (onCooldown) status = `<div class="livingMuted">Recovering until tick ${cooldownUntil}</div>`;
+  else if (isHero) status = `<div class="livingMuted">At the Guild Hall</div>`;
+  else if (isCandidate) status = `<div class="livingMuted">Seeking a contract</div>`;
+
+  const recruitCost = Living.recruitCost?.() ?? 40 + (guild?.tier ?? 1) * 20;
+  let actions = "";
+  if (isCandidate && figure.death === undefined) {
+    const affordable = (guild?.gold ?? 0) >= recruitCost;
+    actions = `<button type="button" data-guild="recruit" data-figure="${figureId}"${affordable ? "" : " disabled"}>Recruit — ${recruitCost}g</button>`;
+  } else if (isHero && figure.death === undefined) {
+    if (age >= 55)
+      actions = `<button type="button" data-guild="retire" data-figure="${figureId}">Retire & Mentor</button>`;
+    if (!mission && !onCooldown)
+      actions += `<div class="livingMuted">Select a province or state and dispatch a hero.</div>`;
+  }
+
+  return /* html */ `
+    <div class="livingInspectorTitle">${escapeHtml(figure.name)}</div>
+    <div class="livingRuler">
+      <span class="livingAge">age ${age}</span>
+      ${alignment}
+      ${isHero ? `<span class="livingBadge" style="background:#5e4fa2">Guild Hero</span>` : ""}
+      ${isCandidate ? `<span class="livingBadge" style="background:#3d6b35">Seeker</span>` : ""}
+    </div>
+    ${culture ? `<div class="livingMuted">${escapeHtml(culture)}</div>` : ""}
+    ${traits ? `<div class="livingTraits">${traits}</div>` : ""}
+    <div class="livingSection">
+      <div class="livingSectionTitle">Progression</div>
+      <div>Level ${level} <span class="livingMuted">· ${figure.xp ?? 0} xp</span></div>
+      ${skills}
+      ${status}
+    </div>
+    ${actions ? `<div class="livingButtons">${actions}</div>` : ""}`;
 }
 
 function renderStateCard(stateId: number): string {
@@ -424,6 +629,9 @@ function renderStateCard(stateId: number): string {
   const canSpawnStateLair = (pack.provinces ?? []).some(
     p => p?.i && !p.removed && p.state === stateId && !living.provinces?.[p.i]?.lair
   );
+  const guild = Living.getGuild?.();
+  const sandbox = Boolean(guild?.sandboxGodMode);
+  const isPatron = guild?.favoredStateId === stateId;
 
   return /* html */ `
     <div class="livingInspectorTitle">${escapeHtml(state.fullName ?? state.name ?? "State")}</div>
@@ -447,19 +655,27 @@ function renderStateCard(stateId: number): string {
       <button type="button" data-open="state" data-id="${stateId}">States Editor</button>
       <button type="button" data-open="regiments" data-id="${stateId}">Regiments</button>
     </div>
-    <div class="livingGodTitle">God Mode</div>
-    <div class="livingButtons">
-      <button type="button" data-god="spark" data-state="${stateId}">Spark Rebellion</button>
-      <button type="button" data-god="smite" data-state="${stateId}">Smite Ruler</button>
-      <button type="button" data-god="war" data-state="${stateId}">Force War</button>
-      ${hasTroubled ? `<button type="button" data-god="resolve-state-trouble" data-state="${stateId}">Resolve Trouble</button>` : ""}
-      ${hasPromotableTrouble ? `<button type="button" data-god="promote-state-trouble" data-state="${stateId}">Promote to State</button>` : ""}
-      ${hasLairs ? `<button type="button" data-god="assault-state-lair" data-state="${stateId}">Assault Lair</button>` : ""}
-      ${hasLairs ? `<button type="button" data-god="delve-state-lair" data-state="${stateId}">Send Adventurers</button>` : ""}
-      ${hasAscendableLair ? `<button type="button" data-god="ascend-state-lair" data-state="${stateId}">Ascend Lair</button>` : ""}
-      ${hasLairs ? `<button type="button" data-god="smite-state-lair" data-state="${stateId}">Smite Lair</button>` : ""}
-      ${canSpawnStateLair ? `<button type="button" data-god="spawn-state-lair" data-state="${stateId}">Spawn Lair</button>` : ""}
-    </div>`;
+    ${
+      sandbox
+        ? `<div class="livingGodTitle">Sandbox God Mode</div>
+           <div class="livingButtons">
+             <button type="button" data-god="spark" data-state="${stateId}">Spark Rebellion</button>
+             <button type="button" data-god="smite" data-state="${stateId}">Smite Ruler</button>
+             <button type="button" data-god="war" data-state="${stateId}">Force War</button>
+             ${hasTroubled ? `<button type="button" data-god="resolve-state-trouble" data-state="${stateId}">Resolve Trouble</button>` : ""}
+             ${hasPromotableTrouble ? `<button type="button" data-god="promote-state-trouble" data-state="${stateId}">Promote to State</button>` : ""}
+             ${hasLairs ? `<button type="button" data-god="assault-state-lair" data-state="${stateId}">Assault Lair</button>` : ""}
+             ${hasLairs ? `<button type="button" data-god="delve-state-lair" data-state="${stateId}">Send Adventurers</button>` : ""}
+             ${hasAscendableLair ? `<button type="button" data-god="ascend-state-lair" data-state="${stateId}">Ascend Lair</button>` : ""}
+             ${hasLairs ? `<button type="button" data-god="smite-state-lair" data-state="${stateId}">Smite Lair</button>` : ""}
+             ${canSpawnStateLair ? `<button type="button" data-god="spawn-state-lair" data-state="${stateId}">Spawn Lair</button>` : ""}
+           </div>`
+        : `<div class="livingGodTitle">Guild Operations</div>
+           <div class="livingButtons">
+             ${hasTroubled || hasLairs ? `<button type="button" data-guild="dispatch-state" data-state="${stateId}">Dispatch Hero</button>` : ""}
+             <button type="button" data-guild="patron" data-state="${stateId}" title="Restrict auto_patron contracts to this state">${isPatron ? "Current Patron State" : "Make Patron State"}</button>
+           </div>`
+    }`;
 }
 
 function renderRuler(ruler: HistoricalFigure | undefined, age: number | undefined): string {
@@ -646,6 +862,9 @@ function renderBurgCard(burgId: number): string {
   const lair = pSim?.lair;
   const lairDef = lair ? getLairDef(lair.id) : undefined;
   const lairCapable = Boolean(lair && isLairStateCapable(lair.id));
+  const guild = Living.getGuild?.();
+  const sandbox = Boolean(guild?.sandboxGodMode);
+  const canDispatch = Boolean(provId && (trouble || lair));
 
   return /* html */ `
     <div class="livingInspectorTitle">${escapeHtml(burg.name ?? "Burg")}</div>
@@ -684,31 +903,40 @@ function renderBurgCard(burgId: number): string {
       <button type="button" data-open="burg" data-id="${burgId}">Burg Editor</button>
       ${stateId ? `<button type="button" data-open="regiments" data-id="${stateId}">Regiments</button>` : ""}
     </div>
-    <div class="livingGodTitle">God Mode</div>
-    <div class="livingButtons">
-      ${stateId ? `<button type="button" data-god="spark" data-state="${stateId}" data-burg="${burgId}">Spark Rebellion</button>` : ""}
-      <button type="button" data-god="pacify" data-burg="${burgId}">Pacify Unrest</button>
-      <button type="button" data-god="complete" data-burg="${burgId}">Complete Asset</button>
-      ${
-        provId && trouble
-          ? `<button type="button" data-god="quell-trouble" data-province="${provId}">Quell Trouble</button>
-             ${stateId ? `<button type="button" data-god="resolve-trouble" data-state="${stateId}" data-province="${provId}">Resolve Trouble</button>` : ""}
-             ${troublePromotable ? `<button type="button" data-god="promote-trouble" data-province="${provId}" data-burg="${burgId}">Promote to State</button>` : ""}`
-          : provId && !lair
-            ? `<button type="button" data-god="spawn-trouble" data-province="${provId}">Spawn Trouble</button>`
-            : ""
-      }
-      ${
-        provId && lair
-          ? `${stateId ? `<button type="button" data-god="assault-lair" data-state="${stateId}" data-province="${provId}">Assault Lair</button>` : ""}
-             ${stateId ? `<button type="button" data-god="delve-lair" data-state="${stateId}" data-province="${provId}">Send Adventurers</button>` : ""}
-             ${lairCapable ? `<button type="button" data-god="ascend-lair" data-province="${provId}" data-burg="${burgId}">Ascend Lair</button>` : ""}
-             <button type="button" data-god="smite-lair" data-province="${provId}">Smite Lair</button>`
-          : provId
-            ? `<button type="button" data-god="spawn-lair" data-province="${provId}">Spawn Lair</button>`
-            : ""
-      }
-    </div>`;
+    ${
+      sandbox
+        ? `<div class="livingGodTitle">Sandbox God Mode</div>
+           <div class="livingButtons">
+             ${stateId ? `<button type="button" data-god="spark" data-state="${stateId}" data-burg="${burgId}">Spark Rebellion</button>` : ""}
+             <button type="button" data-god="pacify" data-burg="${burgId}">Pacify Unrest</button>
+             <button type="button" data-god="complete" data-burg="${burgId}">Complete Asset</button>
+             ${
+               provId && trouble
+                 ? `<button type="button" data-god="quell-trouble" data-province="${provId}">Quell Trouble</button>
+                    ${stateId ? `<button type="button" data-god="resolve-trouble" data-state="${stateId}" data-province="${provId}">Resolve Trouble</button>` : ""}
+                    ${troublePromotable ? `<button type="button" data-god="promote-trouble" data-province="${provId}" data-burg="${burgId}">Promote to State</button>` : ""}`
+                 : provId && !lair
+                   ? `<button type="button" data-god="spawn-trouble" data-province="${provId}">Spawn Trouble</button>`
+                   : ""
+             }
+             ${
+               provId && lair
+                 ? `${stateId ? `<button type="button" data-god="assault-lair" data-state="${stateId}" data-province="${provId}">Assault Lair</button>` : ""}
+                    ${stateId ? `<button type="button" data-god="delve-lair" data-state="${stateId}" data-province="${provId}">Send Adventurers</button>` : ""}
+                    ${lairCapable ? `<button type="button" data-god="ascend-lair" data-province="${provId}" data-burg="${burgId}">Ascend Lair</button>` : ""}
+                    <button type="button" data-god="smite-lair" data-province="${provId}">Smite Lair</button>`
+                 : provId
+                   ? `<button type="button" data-god="spawn-lair" data-province="${provId}">Spawn Lair</button>`
+                   : ""
+             }
+           </div>`
+        : `<div class="livingGodTitle">Guild Operations</div>
+           <div class="livingButtons">
+             ${canDispatch ? `<button type="button" data-guild="dispatch" data-province="${provId}">Dispatch Hero</button>` : ""}
+             ${stateId ? `<button type="button" data-guild="dispatch-state" data-state="${stateId}">Dispatch to State</button>` : ""}
+             ${stateId ? `<button type="button" data-guild="patron" data-state="${stateId}">Make Patron State</button>` : ""}
+           </div>`
+    }`;
 }
 
 function currentBuildingName(buildingId: string): string {
@@ -736,6 +964,61 @@ function bindInspectorButtons(panel: HTMLElement): void {
   for (const button of panel.querySelectorAll<HTMLElement>("[data-god]")) {
     button.addEventListener("click", () => runIntervention(button));
   }
+
+  for (const button of panel.querySelectorAll<HTMLElement>("[data-guild]")) {
+    button.addEventListener("click", () => runGuildOperation(button));
+  }
+}
+
+function runGuildOperation(button: HTMLElement): void {
+  const stateId = Number(button.dataset.state ?? 0);
+  const provId = Number(button.dataset.province ?? 0);
+  const figureId = Number(button.dataset.figure ?? 0);
+  let ok = false;
+  let message = "";
+
+  switch (button.dataset.guild) {
+    case "dispatch":
+      ok = Living.dispatchBestHero(provId);
+      message = ok ? "A guild hero set out on a mission." : "No idle hero or target is available.";
+      break;
+    case "dispatch-state": {
+      const living = Living.getState();
+      const prov = (pack.provinces ?? []).find(p => {
+        if (!p?.i || p.removed || p.state !== stateId) return false;
+        const sim = living.provinces?.[p.i];
+        return Boolean(sim?.trouble || sim?.lair);
+      });
+      if (prov) {
+        ok = Living.dispatchBestHero(prov.i);
+        message = ok ? `A guild hero set out for ${prov.name}.` : "No idle hero is available.";
+      } else {
+        message = "No trouble or lair to dispatch against.";
+      }
+      break;
+    }
+    case "patron":
+      Living.setFavoredState(stateId);
+      ok = true;
+      message = `${pack.states[stateId]?.name ?? "The state"} is now the Guild's patron.`;
+      break;
+    case "recruit":
+      ok = Living.recruitCandidate(figureId);
+      message = ok ? "A new hero joins the Guild." : "Recruitment failed: not enough gold or the roster is full.";
+      break;
+    case "retire": {
+      const protegeId = Living.retireHero(figureId);
+      ok = protegeId !== null;
+      message = ok ? "The veteran retired and passed the torch to a protege." : "This hero cannot retire yet.";
+      if (ok && protegeId !== null) selected = { kind: "figure", id: protegeId };
+      break;
+    }
+    default:
+      return;
+  }
+
+  afterTick();
+  setStatus(message);
 }
 
 function runIntervention(button: HTMLElement): void {

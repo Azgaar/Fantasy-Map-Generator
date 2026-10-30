@@ -52,10 +52,13 @@ import { type State, States } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names-generator";
 import type { HistoricalFigure, HistoryEventType, HistRef } from "@/types/history";
 import {
+  type ActiveGuildMission,
   type BurgSimState,
   type CapacityLedger,
   type GrudgeReason,
+  type GuildMissionKind,
   type GuildState,
+  type IdleDoctrine,
   type LivingNewsItem,
   type LivingNewsKind,
   type LivingPopup,
@@ -78,6 +81,96 @@ import { Chronicle } from "./history-generator";
 const MAX_RECENT_NEWS = 50;
 const MAX_LIVING_POPUPS = 6;
 const POPUP_LIFETIME_SEASONS = 3;
+
+/** Renown required for each Guild tier, index 0 = tier 1 */
+export const GUILD_RENOWN_THRESHOLDS = [0, 50, 150, 350, 700] as const;
+export const GUILD_TIER_TITLES = [
+  "Wayfarers' Lodge",
+  "Chartered Company",
+  "Grand Adventurers' Guild",
+  "Sovereign Order",
+  "Immortal Conclave"
+] as const;
+export const GUILD_MAX_HEROES = [3, 4, 6, 8, 10] as const;
+
+const GUILD_DUES_PER_CHAPTER = 2;
+const GUILD_CANDIDATES_PER_YEAR = 3;
+const HERO_RETIREMENT_AGE = 55;
+
+export function guildTierForRenown(renown: number): number {
+  let tier = 1;
+  for (let i = 1; i < GUILD_RENOWN_THRESHOLDS.length; i++) {
+    if (renown >= GUILD_RENOWN_THRESHOLDS[i]!) tier = i + 1;
+  }
+  return tier;
+}
+
+export const maxHeroesForTier = (tier: number): number => GUILD_MAX_HEROES[Math.min(4, Math.max(0, tier - 1))]!;
+
+/** Guild hall passive: +1 to checks at tier 2, +2 from tier 4 */
+export const guildCheckBonus = (tier: number): number => (tier >= 4 ? 2 : tier >= 2 ? 1 : 0);
+
+/** Hero level from lifetime xp: 40 + 20 × level per level */
+export function figureLevel(xp = 0): number {
+  let level = 1;
+  let remaining = xp;
+  let needed = 40 + 20 * level;
+  while (remaining >= needed && level < 20) {
+    remaining -= needed;
+    level += 1;
+    needed = 40 + 20 * level;
+  }
+  return level;
+}
+
+export interface FigureCheck {
+  roll: number;
+  total: number;
+  dc: number;
+  success: boolean;
+}
+
+interface GuildTarget {
+  kind: GuildMissionKind;
+  cell: number;
+  provinceId?: number;
+  burgId?: number;
+  markerId?: number;
+  pool: "m" | "w" | "s" | "c";
+  dc: number;
+  rewardGold: number;
+  rewardRenown: number;
+  priority: number;
+  level: number;
+}
+
+/** Unified figure roll: 1d20 + pool skill + domain modifier + traits + guild bonus */
+export function figureCheckRoll(
+  rng: Rng,
+  figure: HistoricalFigure,
+  pool: "m" | "w" | "s" | "c",
+  poolGen: number,
+  dc: number,
+  guildTierBonus = 0
+): FigureCheck {
+  const roll = rng.d(20);
+  const skill = figure.skills?.[pool] ?? 0;
+  const traits = (figure.virtues?.length ?? 0) - (figure.vices?.length ?? 0);
+  const total = roll + skill + valueModifier(poolGen) + traits + guildTierBonus;
+  return { roll, total, dc, success: total >= dc };
+}
+
+/** Boolean form of the unified figure check */
+export function figureCheck(
+  rng: Rng,
+  figure: HistoricalFigure,
+  pool: "m" | "w" | "s" | "c",
+  poolGen: number,
+  dc: number,
+  guildTierBonus = 0
+): boolean {
+  return figureCheckRoll(rng, figure, pool, poolGen, dc, guildTierBonus).success;
+}
 
 export function settlementTierFromPop(populationThousands: number): number {
   let tier = 0;
@@ -250,14 +343,145 @@ class LivingModel {
   /** Return the guild wallet, initializing it lazily for maps saved before the Guild existed */
   getGuild(): GuildState {
     const living = this.getState();
-    living.guild ??= { tier: 1, gold: 0, renown: 0, popups: [] };
-    living.guild.popups ??= [];
-    return living.guild;
+    if (!living.guild) living.guild = this.emptyGuild();
+
+    const guild = living.guild;
+    guild.tier ??= 1;
+    guild.gold ??= 0;
+    guild.renown ??= 0;
+    guild.ageCount ??= 0;
+    guild.sandboxGodMode ??= false;
+    guild.doctrine ??= "auto_bounties";
+    guild.chapterBurgIds ??= [];
+    guild.roster ??= [];
+    guild.candidates ??= [];
+    guild.missions ??= [];
+    guild.cooldowns ??= {};
+    guild.excavatedMarkers ??= [];
+    guild.popups ??= [];
+
+    if (guild.hqBurgId === undefined) guild.hqBurgId = this.pickGuildHq();
+    if (guild.chapterBurgIds.length === 0 && guild.hqBurgId) guild.chapterBurgIds = [guild.hqBurgId];
+    if (guild.favoredStateId === undefined) {
+      guild.favoredStateId = pack.states?.find(state => state?.i && !state.removed)?.i;
+    }
+    return guild;
   }
 
   /** On-map popups currently waiting to be claimed */
   getPopups(): LivingPopup[] {
     return this.getGuild().popups;
+  }
+
+  /** Active guild hero missions */
+  getMissions(): ActiveGuildMission[] {
+    return this.getGuild().missions;
+  }
+
+  setDoctrine(doctrine: IdleDoctrine): void {
+    this.getGuild().doctrine = doctrine;
+  }
+
+  setSandboxGodMode(enabled: boolean): void {
+    this.getGuild().sandboxGodMode = enabled;
+  }
+
+  setFavoredState(stateId: number): void {
+    const state = pack.states?.[stateId];
+    if (!state?.i || state.removed) return;
+    this.getGuild().favoredStateId = stateId;
+  }
+
+  /** Gold cost to recruit the next hero */
+  recruitCost(): number {
+    const guild = this.getGuild();
+    return 40 + guild.tier * 20;
+  }
+
+  /** Recruit a tavern candidate into the hero roster. */
+  recruitCandidate(figureId: number): boolean {
+    const living = this.getState();
+    const guild = this.getGuild();
+    if (!guild.candidates.includes(figureId)) return false;
+    if (guild.roster.length >= maxHeroesForTier(guild.tier)) return false;
+
+    const cost = this.recruitCost();
+    if (guild.gold < cost) return false;
+
+    const figure = this.findFigure(figureId);
+    if (!figure || figure.death !== undefined) return false;
+
+    guild.gold -= cost;
+    guild.candidates = guild.candidates.filter(id => id !== figureId);
+    guild.roster.push(figureId);
+    figure.cell ??= guild.hqBurgId ? pack.burgs[guild.hqBurgId]?.cell : undefined;
+
+    this.pushNews(living, {
+      kind: "muster",
+      text: `${figure.name} joined the Guild for ${cost} gold.`,
+      cell: figure.cell,
+      burgId: guild.hqBurgId
+    });
+    return true;
+  }
+
+  /** Click-dispatch: send one hero to the trouble or lair in a province. */
+  dispatchHero(figureId: number, provinceId: number): boolean {
+    const living = this.getState();
+    const guild = this.getGuild();
+    if (!guild.roster.includes(figureId) || !this.isHeroIdle(guild, figureId)) return false;
+
+    const figure = this.findFigure(figureId);
+    const target = this.provinceTarget(living, guild, provinceId);
+    if (!figure || figure.death !== undefined || !target) return false;
+
+    this.createMission(living, guild, figure, target);
+    return true;
+  }
+
+  /** Send the best idle hero to a province (used by the HUD guild operations). */
+  dispatchBestHero(provinceId: number): boolean {
+    const living = this.getState();
+    const guild = this.getGuild();
+    const target = this.provinceTarget(living, guild, provinceId);
+    if (!target) return false;
+
+    const hero = guild.roster
+      .filter(id => this.isHeroIdle(guild, id))
+      .map(id => this.findFigure(id))
+      .filter((figure): figure is HistoricalFigure => Boolean(figure) && figure!.death === undefined)
+      .sort((a, b) => this.heroScore(b, target.pool) - this.heroScore(a, target.pool) || a.i - b.i)[0];
+    if (!hero) return false;
+
+    this.createMission(living, guild, hero, target);
+    return true;
+  }
+
+  /** Retire a veteran hero and mint a protege carrying one skill point forward. */
+  retireHero(figureId: number): number | null {
+    const living = this.getState();
+    const guild = this.getGuild();
+    const figure = this.findFigure(figureId);
+    if (!figure || figure.death !== undefined || !guild.roster.includes(figureId)) return null;
+
+    const year = options.map?.lore?.calendar?.year ?? 1000;
+    if (year - figure.birth < HERO_RETIREMENT_AGE) return null;
+
+    guild.roster = guild.roster.filter(id => id !== figureId);
+    guild.missions = guild.missions.filter(mission => mission.figureId !== figureId);
+    for (const role of figure.roles) {
+      if (role.to === undefined) role.to = year;
+    }
+
+    const protege = this.spawnProtege(living, figure);
+    if (protege && guild.roster.length < maxHeroesForTier(guild.tier)) guild.roster.push(protege.i);
+
+    this.pushNews(living, {
+      kind: "succession",
+      text: `${figure.name} retired from the Guild and passed the torch to ${protege?.name ?? "a new protege"}.`,
+      cell: figure.cell
+    });
+    return protege?.i ?? null;
   }
 
   /** Deterministic PRNG for a given tick and domain tag */
@@ -292,6 +516,7 @@ class LivingModel {
       this.stepStates(living);
       this.stepRebellions(living);
       this.recomputeAllCapacities(living);
+      this.stepGuild(living);
       this.refreshPopups(living);
     }
 
@@ -520,6 +745,7 @@ class LivingModel {
 
     guild.gold += popup.rewardGold;
     guild.renown += popup.rewardRenown;
+    this.syncGuildTier(living, guild);
     this.pushNews(living, {
       kind: popup.kind === "bounty_trouble" ? "trouble" : popup.kind === "bounty_lair" ? "lair" : "succession",
       text: `Guild bounty claimed: ${popup.title} (+${popup.rewardGold}g, +${popup.rewardRenown} renown).`,
@@ -643,6 +869,503 @@ class LivingModel {
 
   private nextPopupId(guild: GuildState): number {
     return guild.popups.reduce((max, popup) => Math.max(max, popup.id), 0) + 1;
+  }
+
+  private emptyGuild(): GuildState {
+    return {
+      tier: 1,
+      gold: 0,
+      renown: 0,
+      ageCount: 0,
+      sandboxGodMode: false,
+      doctrine: "auto_bounties",
+      chapterBurgIds: [],
+      roster: [],
+      candidates: [],
+      missions: [],
+      cooldowns: {},
+      excavatedMarkers: [],
+      popups: []
+    };
+  }
+
+  /** Guild headquarters: the largest capital, else the largest burg */
+  private pickGuildHq(): number | undefined {
+    const living = (pack.burgs ?? []).filter(burg => burg?.i && !burg.removed);
+    const capitals = living.filter(burg => burg.capital);
+    const pool = capitals.length > 0 ? capitals : living;
+    return pool.sort((a, b) => (b.population ?? 0) - (a.population ?? 0) || a.i - b.i)[0]?.i;
+  }
+
+  private findFigure(figureId: number): HistoricalFigure | undefined {
+    return Chronicle.sync().figures?.find(figure => figure.i === figureId);
+  }
+
+  private heroScore(figure: HistoricalFigure, pool: "m" | "w" | "s" | "c"): number {
+    return (figure.skills?.[pool] ?? 0) + (figure.virtues?.length ?? 0) - (figure.vices?.length ?? 0);
+  }
+
+  private isHeroIdle(guild: GuildState, figureId: number): boolean {
+    if (guild.missions.some(mission => mission.figureId === figureId)) return false;
+    return (guild.cooldowns[figureId] ?? 0) <= this.getState().tick;
+  }
+
+  private hasTargetMission(guild: GuildState, kind: GuildMissionKind, provinceId?: number, markerId?: number): boolean {
+    return guild.missions.some(mission => {
+      if (mission.kind !== kind) return false;
+      return markerId !== undefined ? mission.markerId === markerId : mission.provinceId === provinceId;
+    });
+  }
+
+  /** The best mission available in one province (trouble before lair). */
+  private provinceTarget(living: LivingWorldState, guild: GuildState, provinceId: number): GuildTarget | null {
+    const province = pack.provinces?.[provinceId];
+    const pSim = living.provinces?.[provinceId];
+    if (!province?.i || province.removed || !pSim) return null;
+
+    const trouble = pSim.trouble;
+    if (trouble && !this.hasTargetMission(guild, "trouble", provinceId)) {
+      const def = getTroubleDef(trouble.id);
+      return {
+        kind: "trouble",
+        cell: trouble.cell ?? province.center ?? 0,
+        provinceId,
+        burgId: trouble.burgId,
+        pool: def.pool,
+        dc: 14 + trouble.level,
+        rewardGold: 15 + trouble.level * 5,
+        rewardRenown: 5,
+        priority: 2,
+        level: trouble.level
+      };
+    }
+
+    const lair = pSim.lair;
+    if (lair && !this.hasTargetMission(guild, "lair", provinceId)) {
+      return {
+        kind: "lair",
+        cell: lair.cell,
+        provinceId,
+        burgId: lair.burgId,
+        pool: "m",
+        dc: 14 + lair.level,
+        rewardGold: 30 + lair.level * 10,
+        rewardRenown: 15,
+        priority: 1,
+        level: lair.level
+      };
+    }
+    return null;
+  }
+
+  /** Pick the next mission for the guild's current doctrine */
+  private pickMissionTarget(living: LivingWorldState, guild: GuildState): GuildTarget | null {
+    if (guild.doctrine === "manual") return null;
+
+    const targets: GuildTarget[] = [];
+    if (guild.doctrine !== "auto_excavate") {
+      for (const province of pack.provinces ?? []) {
+        if (!province?.i || province.removed) continue;
+        if (guild.doctrine === "auto_patron" && province.state !== guild.favoredStateId) continue;
+        const target = this.provinceTarget(living, guild, province.i);
+        if (target) targets.push(target);
+      }
+    } else {
+      for (const marker of pack.markers ?? []) {
+        if (!marker?.chronicle || marker.hidden || guild.excavatedMarkers.includes(marker.i)) continue;
+        if (this.hasTargetMission(guild, "excavate", undefined, marker.i)) continue;
+        targets.push({
+          kind: "excavate",
+          cell: marker.cell,
+          markerId: marker.i,
+          pool: "c",
+          dc: 12,
+          rewardGold: 20 + this.rng("guild:excavate", marker.i).int(0, 40),
+          rewardRenown: 20,
+          priority: 1,
+          level: 0
+        });
+      }
+    }
+
+    for (const target of targets) {
+      if (guild.doctrine === "auto_lairs") target.priority = target.kind === "lair" ? 3 : 2;
+      else if (guild.doctrine === "auto_bounties") target.priority = target.kind === "trouble" ? 3 : 2;
+      else target.priority = target.kind === "trouble" ? 2 : 1;
+    }
+
+    targets.sort(
+      (a, b) =>
+        b.priority - a.priority ||
+        b.level - a.level ||
+        (a.provinceId ?? a.markerId ?? 0) - (b.provinceId ?? b.markerId ?? 0)
+    );
+    return targets[0] ?? null;
+  }
+
+  private createMission(
+    living: LivingWorldState,
+    guild: GuildState,
+    figure: HistoricalFigure,
+    target: GuildTarget
+  ): ActiveGuildMission {
+    const id = guild.missions.reduce((max, mission) => Math.max(max, mission.id), 0) + 1;
+    const mission: ActiveGuildMission = {
+      id,
+      kind: target.kind,
+      figureId: figure.i,
+      targetCell: target.cell,
+      provinceId: target.provinceId,
+      burgId: target.burgId,
+      markerId: target.markerId,
+      pool: target.pool,
+      dc: target.dc,
+      progress: 0,
+      required: guild.tier >= 3 ? 1 : 2,
+      rewardGold: target.rewardGold,
+      rewardRenown: target.rewardRenown
+    };
+    guild.missions.push(mission);
+    figure.cell = target.cell;
+
+    this.pushNews(living, {
+      kind: target.kind === "lair" ? "lair" : target.kind === "trouble" ? "trouble" : "develop",
+      text: `${figure.name} set out on a Guild ${target.kind} mission.`,
+      cell: target.cell,
+      stateId: target.provinceId !== undefined ? pack.provinces?.[target.provinceId]?.state : undefined
+    });
+    return mission;
+  }
+
+  private missionStillValid(living: LivingWorldState, mission: ActiveGuildMission): boolean {
+    const pSim = mission.provinceId !== undefined ? living.provinces?.[mission.provinceId] : undefined;
+    switch (mission.kind) {
+      case "trouble":
+        return Boolean(pSim?.trouble);
+      case "lair":
+        return Boolean(pSim?.lair);
+      case "excavate":
+        return (pack.markers ?? []).some(marker => marker.i === mission.markerId && !marker.hidden);
+      case "pacify": {
+        const burg = mission.burgId ? pack.burgs?.[mission.burgId] : undefined;
+        return Boolean(burg?.i && !burg.removed);
+      }
+    }
+  }
+
+  /** One season of guild bookkeeping: dues, tier, cooldowns, mission travel and idle dispatch. */
+  private stepGuild(living: LivingWorldState): void {
+    const guild = this.getGuild();
+
+    const hq = guild.hqBurgId !== undefined ? pack.burgs?.[guild.hqBurgId] : undefined;
+    if (!hq || hq.removed) {
+      guild.hqBurgId = this.pickGuildHq();
+      if (guild.hqBurgId !== undefined && !guild.chapterBurgIds.includes(guild.hqBurgId)) {
+        guild.chapterBurgIds.push(guild.hqBurgId);
+      }
+    }
+
+    guild.gold += GUILD_DUES_PER_CHAPTER * guild.chapterBurgIds.length;
+    this.syncGuildTier(living, guild);
+
+    for (const key of Object.keys(guild.cooldowns)) {
+      const figureId = Number(key);
+      if ((guild.cooldowns[figureId] ?? 0) <= living.tick) delete guild.cooldowns[figureId];
+    }
+
+    guild.roster = guild.roster.filter(id => {
+      const figure = this.findFigure(id);
+      return Boolean(figure) && figure!.death === undefined;
+    });
+
+    for (const mission of [...guild.missions]) {
+      mission.progress += 1;
+      if (mission.progress >= mission.required) this.resolveMission(living, mission);
+    }
+
+    if (living.season === 0) this.refreshCandidates(living);
+    this.autoDispatch(living);
+  }
+
+  /** Spring: refresh the tavern with up to three free adventurers. */
+  private refreshCandidates(living: LivingWorldState): void {
+    const guild = this.getGuild();
+    const history = Chronicle.sync();
+    history.figures ??= [];
+    const figures = history.figures;
+
+    const free = figures.filter(
+      figure =>
+        figure.death === undefined &&
+        !guild.roster.includes(figure.i) &&
+        !guild.candidates.includes(figure.i) &&
+        figure.roles.some(role => role.type === "adventurer" && role.target.kind === "culture" && role.to === undefined)
+    );
+
+    guild.candidates = free.slice(0, GUILD_CANDIDATES_PER_YEAR).map(figure => figure.i);
+    while (guild.candidates.length < GUILD_CANDIDATES_PER_YEAR) {
+      guild.candidates.push(this.mintCandidate(living).i);
+    }
+  }
+
+  /** A fresh, unaffiliated adventurer for the tavern. */
+  private mintCandidate(living: LivingWorldState): HistoricalFigure {
+    const history = Chronicle.sync();
+    history.figures ??= [];
+    const figures = history.figures;
+    const index = figures.length;
+    const rng = createRng(`${living.seed}:guild:candidate:${index}`);
+    const cultures = (pack.cultures ?? []).filter(culture => culture?.i && !culture.removed);
+    const culture = cultures.length > 0 ? cultures[rng.int(0, cultures.length - 1)]!.i : 0;
+    const alignment = rollAlignment(rng, pack.cultures?.[culture]?.alignment);
+    const { virtues, vices } = rollFigureTraits(rng, alignment);
+    const year = options.map?.lore?.calendar?.year ?? 1000;
+    const skills = { m: 0, w: 0, s: 0, c: 0 };
+    const pools = ["m", "w", "s", "c"] as const;
+    skills[pools[rng.int(0, pools.length - 1)]!] = rng.int(1, 3);
+    const guild = this.getGuild();
+
+    const figure: HistoricalFigure = {
+      i: index,
+      name: Names.getCulture(culture),
+      culture,
+      birth: year - rng.int(20, 38),
+      roles: [{ type: "adventurer", target: { kind: "culture", id: culture }, from: year }],
+      alignment,
+      virtues,
+      vices,
+      cell: guild.hqBurgId !== undefined ? pack.burgs[guild.hqBurgId]?.cell : undefined,
+      xp: 0,
+      skills
+    };
+    figures.push(figure);
+    return figure;
+  }
+
+  /** A retired veteran's protege: one point in the veteran's best pool carried forward. */
+  private spawnProtege(living: LivingWorldState, veteran: HistoricalFigure): HistoricalFigure | undefined {
+    const history = Chronicle.sync();
+    history.figures ??= [];
+    const figures = history.figures;
+    const index = figures.length;
+    const rng = createRng(`${living.seed}:guild:protege:${index + veteran.i * 1000}`);
+    const culture = veteran.culture;
+    const alignment = rollAlignment(rng, pack.cultures?.[culture]?.alignment);
+    const { virtues, vices } = rollFigureTraits(rng, alignment);
+    const year = options.map?.lore?.calendar?.year ?? 1000;
+
+    const skills = {
+      m: veteran.skills?.m ?? 0,
+      w: veteran.skills?.w ?? 0,
+      s: veteran.skills?.s ?? 0,
+      c: veteran.skills?.c ?? 0
+    };
+    const pools = ["m", "w", "s", "c"] as const;
+    const best = pools.reduce((chosen, pool) => (skills[pool] > skills[chosen] ? pool : chosen), pools[0]!);
+    skills[best] = Math.min(5, skills[best] + 1);
+
+    const protege: HistoricalFigure = {
+      i: index,
+      name: Names.getCulture(culture),
+      culture,
+      birth: year - rng.int(18, 24),
+      roles: [{ type: "adventurer", target: { kind: "culture", id: culture }, from: year }],
+      alignment,
+      virtues,
+      vices,
+      cell: veteran.cell,
+      xp: 0,
+      skills
+    };
+    figures.push(protege);
+    return protege;
+  }
+
+  private syncGuildTier(living: LivingWorldState, guild: GuildState): void {
+    const tier = guildTierForRenown(guild.renown);
+    if (tier <= guild.tier) return;
+
+    guild.tier = tier;
+    this.pushNews(living, {
+      kind: "muster",
+      text: `The Guild Hall was raised to tier ${tier}: ${GUILD_TIER_TITLES[tier - 1]}.`
+    });
+  }
+
+  private autoDispatch(living: LivingWorldState): void {
+    const guild = this.getGuild();
+    if (guild.doctrine === "manual") return;
+
+    const idle = guild.roster
+      .filter(id => this.isHeroIdle(guild, id))
+      .map(id => this.findFigure(id))
+      .filter((figure): figure is HistoricalFigure => Boolean(figure) && figure!.death === undefined)
+      .sort((a, b) => a.i - b.i);
+
+    for (const figure of idle) {
+      const target = this.pickMissionTarget(living, guild);
+      if (!target) return;
+      this.createMission(living, guild, figure, target);
+    }
+  }
+
+  private resolveMission(living: LivingWorldState, mission: ActiveGuildMission): void {
+    const guild = this.getGuild();
+    const index = guild.missions.findIndex(entry => entry.id === mission.id);
+    if (index === -1) return;
+    guild.missions.splice(index, 1);
+
+    const figure = this.findFigure(mission.figureId);
+    const province = mission.provinceId !== undefined ? pack.provinces?.[mission.provinceId] : undefined;
+    if (!figure || figure.death !== undefined || !this.missionStillValid(living, mission)) {
+      if (figure && figure.death === undefined) {
+        this.pushNews(living, {
+          kind: mission.kind === "lair" ? "lair" : mission.kind === "trouble" ? "trouble" : "develop",
+          text: `${figure.name}'s Guild contract ended with nothing left to resolve.`,
+          cell: mission.targetCell,
+          stateId: province?.state
+        });
+      }
+      return;
+    }
+
+    const pSim = mission.provinceId !== undefined ? living.provinces?.[mission.provinceId] : undefined;
+    const sSim = province?.state ? living.states[province.state] : undefined;
+    const poolGen = sSim?.capacity[mission.pool]?.gen ?? 0;
+    const rng = this.rng("guild:mission", mission.id * 1000 + mission.figureId);
+    const check = figureCheckRoll(rng, figure, mission.pool, poolGen, mission.dc, guildCheckBonus(guild.tier));
+
+    if (check.success) {
+      this.completeMission(living, guild, mission, figure, rng, province, pSim, sSim);
+    } else {
+      this.failMission(living, guild, mission, figure, rng, check, province, sSim);
+    }
+  }
+
+  private completeMission(
+    living: LivingWorldState,
+    guild: GuildState,
+    mission: ActiveGuildMission,
+    figure: HistoricalFigure,
+    _rng: Rng,
+    province: Province | undefined,
+    pSim: ProvinceSimState | undefined,
+    sSim: StatePolitySim | undefined
+  ): void {
+    let text = "";
+    switch (mission.kind) {
+      case "trouble": {
+        const trouble = pSim?.trouble;
+        if (!pSim || !trouble) return;
+        const def = getTroubleDef(trouble.id);
+        trouble.level -= 2;
+        if (trouble.level <= 0) {
+          pSim.trouble = null;
+          pSim.order = Math.min(100, pSim.order + 10);
+          pSim.stability += 1;
+          text = `${figure.name} quelled ${def.name} in ${province?.name ?? "the province"}.`;
+        } else {
+          text = `${figure.name} broke ${def.name} in ${province?.name ?? "the province"} (reduced to level ${trouble.level}).`;
+        }
+        break;
+      }
+      case "lair": {
+        const lair = pSim?.lair;
+        if (!pSim || !lair) return;
+        this.removeLairMarker(lair.markerId);
+        pSim.lair = null;
+        pSim.order = Math.min(100, pSim.order + 12);
+        pSim.stability += 1;
+        text = `${figure.name} purged ${lair.name} in ${province?.name ?? "the province"}.`;
+        break;
+      }
+      case "excavate": {
+        if (mission.markerId !== undefined && !guild.excavatedMarkers.includes(mission.markerId)) {
+          guild.excavatedMarkers.push(mission.markerId);
+        }
+        text = `${figure.name} excavated a chronicle site and recovered ${mission.rewardGold} gold in relics.`;
+        break;
+      }
+      case "pacify": {
+        const burg = mission.burgId !== undefined ? pack.burgs[mission.burgId] : undefined;
+        const bSim = mission.burgId !== undefined ? living.burgs[mission.burgId] : undefined;
+        if (bSim) bSim.unrest = 0;
+        text = `${figure.name} pacified ${burg?.name ?? "the burg"}.`;
+        break;
+      }
+    }
+
+    guild.gold += mission.rewardGold;
+    guild.renown += mission.rewardRenown;
+    figure.xp = (figure.xp ?? 0) + (mission.kind === "lair" ? 50 : mission.kind === "excavate" ? 30 : 25);
+    figure.cell = mission.targetCell;
+    if (sSim && province?.state) sSim.capacity = this.recomputeStateCapacity(province.state);
+    this.syncGuildTier(living, guild);
+
+    this.pushNews(living, {
+      kind: mission.kind === "lair" ? "lair" : mission.kind === "trouble" ? "trouble" : "develop",
+      text: `${text} (+${mission.rewardGold}g, +${mission.rewardRenown} renown)`,
+      cell: mission.targetCell,
+      stateId: province?.state
+    });
+    this.pushHistory(
+      "deed",
+      [
+        { kind: "figure", id: figure.i },
+        ...(province?.state ? [{ kind: "state", id: province.state } as HistRef] : [])
+      ],
+      mission.targetCell,
+      text
+    );
+  }
+
+  private failMission(
+    living: LivingWorldState,
+    guild: GuildState,
+    mission: ActiveGuildMission,
+    figure: HistoricalFigure,
+    rng: Rng,
+    check: FigureCheck,
+    province: Province | undefined,
+    sSim: StatePolitySim | undefined
+  ): void {
+    guild.cooldowns[figure.i] = living.tick + rng.int(1, 2);
+    const year = options.map?.lore?.calendar?.year ?? 1000;
+    let aftermath = "";
+
+    if (check.roll === 1 || check.total <= check.dc - 8) {
+      if (rng.d(2) === 1) {
+        figure.death = year;
+        for (const role of figure.roles) {
+          if (role.to === undefined) role.to = year;
+        }
+        guild.roster = guild.roster.filter(id => id !== figure.i);
+        aftermath = ` ${figure.name} did not survive the mission.`;
+
+        if (guild.tier >= 2) {
+          const protege = this.spawnProtege(living, figure);
+          if (protege && guild.roster.length < maxHeroesForTier(guild.tier)) {
+            guild.roster.push(protege.i);
+            aftermath += ` ${protege.name} took up the Guild's colours.`;
+          }
+        }
+      } else {
+        const vice = drawVice(rng, figure);
+        if (vice) {
+          figure.vices ??= [];
+          figure.vices.push(vice);
+          aftermath = ` The ordeal left ${figure.name} ${vice}.`;
+        }
+      }
+    }
+
+    if (sSim && province?.state) sSim.capacity = this.recomputeStateCapacity(province.state);
+    this.pushNews(living, {
+      kind: mission.kind === "lair" ? "lair" : mission.kind === "trouble" ? "trouble" : "develop",
+      text: `${figure.name}'s Guild mission failed (rolled ${check.total} vs DC ${check.dc}).${aftermath}`,
+      cell: mission.targetCell,
+      stateId: province?.state
+    });
   }
 
   private syncBurgs(living: LivingWorldState): void {
