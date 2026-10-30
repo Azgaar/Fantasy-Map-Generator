@@ -27,6 +27,7 @@ export interface Regiment {
   u: Record<string, number>; // units composition (unitId -> count)
   units?: ArmyUnit[]; // concrete roster unit blocks
   rosterId?: string; // state's assigned roster identifier
+  crew?: number[]; // attached figure ids (pack.history.figures): commanders of specialist units (unified-figures)
   n: number; // 0 = land regiment, 1 = naval fleet
   type?: string; // unit type
   icon: string;

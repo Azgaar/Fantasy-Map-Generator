@@ -338,7 +338,7 @@ const ANTONYMS = new Map<string, string>(
 const WORD_DRAWS = 5;
 
 /** one reproducible stream per entity, so traits never depend on the roll order around them */
-export function traitsRng(seed: string, kind: "culture" | "figure" | "adventurer", id: number): Rng {
+export function traitsRng(seed: string, kind: "culture" | "figure" | "adventurer" | "campaign", id: number): Rng {
   return createRng(`${seed}:traits:${kind}:${id}`);
 }
 
@@ -414,4 +414,27 @@ export function rollFigureTraits(rng: Rng, alignment: Alignment): { virtues: str
     virtues: drawWords(rng, VIRTUES, counts.virtues, taken, isFree),
     vices: drawWords(rng, VICES, counts.vices, taken, isFree)
   };
+}
+
+/** one vice a broken figure gains: never one it holds, never the antonym of a virtue it keeps */
+export function drawVice(rng: Rng, figure: { virtues?: string[]; vices?: string[] }): string | undefined {
+  const taken = new Set([...(figure.virtues ?? []), ...(figure.vices ?? [])]);
+  const isFree = (word: string) => !taken.has(ANTONYMS.get(word) ?? "");
+  return drawWords(rng, VICES, 1, taken, isFree)[0];
+}
+
+const AGGRESSIVE_VICES = ["wrathful", "cruel", "vengeful"];
+
+/** a founding warlord's traits: brave, plus one martial vice that no kept virtue contradicts */
+export function aggressiveTraits(traits: { virtues: string[]; vices: string[] }): {
+  virtues: string[];
+  vices: string[];
+} {
+  const virtues = traits.virtues.includes("brave") ? [...traits.virtues] : [...traits.virtues, "brave"];
+  const vices = traits.vices.filter(vice => vice !== ANTONYMS.get("brave"));
+  if (!vices.some(vice => AGGRESSIVE_VICES.includes(vice))) {
+    const free = AGGRESSIVE_VICES.find(vice => !virtues.includes(ANTONYMS.get(vice) ?? ""));
+    if (free) vices.push(free);
+  }
+  return { virtues, vices };
 }

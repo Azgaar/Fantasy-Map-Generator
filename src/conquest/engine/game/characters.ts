@@ -7,6 +7,7 @@
 import { capacityRefusal, freeCapacity } from "./capacity";
 import type { EngineCtx } from "./context";
 import { characterName, getRelation, setRelation } from "./diplomacy";
+import { mintCharacterFigure, syncCharacterFigure, trainFigureSkill } from "./figures";
 import { graphIndex, regionDistance } from "./graph";
 import type { Character, SkillBranch } from "./state";
 import { rng, rngInt } from "./state";
@@ -96,6 +97,7 @@ export function recruitCharacter(
   }
 
   campaign.log.push({ type: "CharacterRecruited", characterId: id, factionId, kind, name: character.name, cost });
+  mintCharacterFigure(ctx, character);
   void content;
   return { ok: true, characterId: id };
 }
@@ -105,6 +107,7 @@ export function grantXp(ctx: EngineCtx, characterId: string, amount: number): vo
   const c = ctx.campaign.characters[characterId];
   if (!c?.alive) return;
   c.xp += amount;
+  syncCharacterFigure(ctx, c);
   while (c.xp >= c.level * ctx.config.characters.xpPerLevel) {
     c.xp -= c.level * ctx.config.characters.xpPerLevel;
     c.level++;
@@ -135,6 +138,7 @@ export function spendSkillPoint(
   if (c.skillPoints <= 0) return "no skill points available";
   c.skillPoints--;
   c.skills[branch]++;
+  trainFigureSkill(ctx, c, branch);
   ctx.campaign.log.push({ type: "SkillLearned", characterId, branch, level: c.skills[branch] });
   return null;
 }
@@ -143,6 +147,7 @@ function killCharacter(ctx: EngineCtx, characterId: string, cause: string): void
   const c = ctx.campaign.characters[characterId];
   if (!c?.alive) return;
   c.alive = false;
+  syncCharacterFigure(ctx, c);
   if (c.armyId) {
     const army = ctx.campaign.armies[c.armyId];
     if (army) {
@@ -170,6 +175,7 @@ export function moveCharacter(ctx: EngineCtx, characterId: string, path: number[
   const to = path[1]!;
   if (!edgeKeys.has(`${path[0]}:${to}`)) return `cells ${path[0]} and ${to} are not adjacent`;
   c.cell = to;
+  syncCharacterFigure(ctx, c);
   campaign.log.push({ type: "CharacterMoved", characterId, from: path[0]!, to });
   return null;
 }
