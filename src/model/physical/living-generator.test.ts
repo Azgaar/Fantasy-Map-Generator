@@ -2,8 +2,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { valueModifier } from "@/conquest/engine/game/saves";
 import { getTroubleDef, troubleUnitMatchMultiplier } from "@/data/living-troubles";
+import type { Marker } from "@/model/story/markers-generator";
 import { parseHistory, serializeHistory } from "@/services/io/epochs-format";
 import type { HistoricalFigure } from "@/types/history";
+import type { HistoricalRelic } from "@/types/living";
 import { createRng } from "@/utils/rng";
 import {
   figureBias,
@@ -1189,6 +1191,215 @@ describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War
       Living.tick(1);
 
       expect(guild.tier).toBe(3);
+    });
+  });
+
+  describe("Relics & ruin excavation (slice 3)", () => {
+    function addMarker(fixtures: Partial<Marker> & Pick<Marker, "i" | "type" | "cell" | "name">): void {
+      pack.markers ??= [];
+      const [x, y] = pack.cells.p[fixtures.cell] ?? [0, 0];
+      pack.markers.push({ icon: "🏛️", x, y, ...fixtures });
+    }
+
+    function addGuildHero(skills: { m: number; w: number; s: number; c: number }): number {
+      pack.history.figures ??= [];
+      const figures = pack.history.figures;
+      const heroId = figures.length;
+      figures.push(makeGuildFigure(heroId, { skills }));
+      return heroId;
+    }
+
+    function makeRelic(id: number, overrides: Partial<HistoricalRelic> = {}): HistoricalRelic {
+      return {
+        id,
+        name: `Relic ${id}`,
+        category: "regalia",
+        lore: "An old thing of power.",
+        originYear: 900,
+        bonuses: { s: 2 },
+        holder: { kind: "vault" },
+        ...overrides
+      };
+    }
+
+    it("targets any unexcavated ruin marker under auto_excavate with a tier-scaled DC", () => {
+      Living.init();
+      const guild = Living.getGuild();
+      guild.doctrine = "auto_excavate";
+      pack.markers = [];
+      // a wild, non-chronicle ruin is still a valid dig site
+      addMarker({ i: 0, type: "ruins", cell: 1, name: "Old Stones" });
+      guild.roster = [addGuildHero({ m: 0, w: 0, s: 0, c: 5 })];
+
+      Living.tick(1);
+
+      const mission = Living.getMissions().find(entry => entry.kind === "excavate");
+      expect(mission?.markerId).toBe(0);
+      expect(mission?.dc).toBe(14); // 13 + tier 1
+    });
+
+    it("mints a realm-named relic when excavating a chronicle site", () => {
+      Living.init();
+      const guild = Living.getGuild();
+      guild.tier = 5;
+      guild.doctrine = "manual";
+      pack.history.realms = [
+        {
+          i: 0,
+          name: "Vhaelen Empire",
+          coa: {} as (typeof pack.history.realms)[number]["coa"],
+          center: 1,
+          founded: 300,
+          fallen: 890,
+          cause: "collapse",
+          successors: []
+        }
+      ];
+      pack.markers = [];
+      addMarker({ i: 0, type: "ruins", cell: 1, name: "Old Vhaelen", chronicle: true });
+      const heroId = addGuildHero({ m: 0, w: 0, s: 0, c: 30 });
+      guild.roster = [heroId];
+
+      expect(Living.dispatchHeroToMarker(heroId, 0)).toBe(true);
+      const mission = Living.getMissions()[0]!;
+      expect(mission.rewardRelic).toBe(true);
+
+      const goldBefore = guild.gold;
+      Living.tick(1);
+
+      expect(guild.excavatedMarkers).toContain(0);
+      expect(guild.relics).toHaveLength(1);
+      const relic = guild.relics[0]!;
+      expect(relic.holder).toEqual({ kind: "vault" });
+      expect(relic.originRealmId).toBe(0);
+      expect(["Vhaelen", "Old Vhaelen"].some(part => relic.name.includes(part))).toBe(true);
+      expect(relic.lore.length).toBeGreaterThan(0);
+      expect(guild.gold).toBe(goldBefore + 2 + mission.rewardGold);
+      expect(pack.history.figures?.find(figure => figure.i === heroId)?.xp).toBe(30);
+    });
+
+    it("yields either a relic or a 40-80 gold cache from a wild ruin", () => {
+      Living.init();
+      const guild = Living.getGuild();
+      guild.tier = 5;
+      guild.doctrine = "manual";
+      pack.markers = [];
+      addMarker({ i: 0, type: "ruins", cell: 1, name: "Old Stones" });
+      const heroId = addGuildHero({ m: 0, w: 0, s: 0, c: 30 });
+      guild.roster = [heroId];
+
+      expect(Living.dispatchBestHeroToMarker(0)).toBe(true);
+      const mission = Living.getMissions()[0]!;
+
+      Living.tick(1);
+
+      expect(guild.excavatedMarkers).toContain(0);
+      if (mission.rewardRelic) {
+        expect(guild.relics).toHaveLength(1);
+      } else {
+        expect(guild.relics).toHaveLength(0);
+        expect(mission.rewardGold).toBeGreaterThanOrEqual(40);
+        expect(mission.rewardGold).toBeLessThanOrEqual(80);
+        expect(guild.gold).toBe(2 + mission.rewardGold);
+      }
+    });
+
+    it("excavates instantly in sandbox mode and mint per marker-type categories", () => {
+      Living.init();
+      const guild = Living.getGuild();
+      pack.markers = [];
+      addMarker({ i: 0, type: "libraries", cell: 1, name: "Great Library", chronicle: true });
+
+      expect(Living.excavateMarker(0)).toBe(true);
+      expect(guild.excavatedMarkers).toContain(0);
+      expect(guild.relics).toHaveLength(1);
+      expect(guild.relics[0]!.category).toBe("tome");
+      expect(Living.excavateMarker(0)).toBe(false);
+      expect(Living.excavateMarker(99)).toBe(false);
+    });
+
+    it("equips one relic per hero and caps enshrinement at the guild tier", () => {
+      Living.init();
+      const guild = Living.getGuild();
+      const heroId = addGuildHero({ m: 1, w: 0, s: 0, c: 0 });
+      guild.roster = [heroId];
+      guild.relics = [makeRelic(1), makeRelic(2)];
+      guild.tier = 2;
+
+      expect(Living.equipRelic(1, heroId)).toBe(true);
+      expect(guild.relics[0]!.holder).toEqual({ kind: "figure", id: heroId });
+
+      // one relic per hero: the previous carry returns to the vault
+      expect(Living.equipRelic(2, heroId)).toBe(true);
+      expect(guild.relics[0]!.holder).toEqual({ kind: "vault" });
+      expect(guild.relics[1]!.holder).toEqual({ kind: "figure", id: heroId });
+
+      guild.tier = 1; // vault cap 1, already holding relic 1
+      expect(Living.enshrineRelic(2)).toBe(false);
+      expect(Living.recallRelic(2)).toBe(true);
+      expect(guild.relics[1]!.holder).toEqual({ kind: "vault" });
+    });
+
+    it("leases a relic to a state, adding generation, tribute and unravel relief", () => {
+      const living = Living.init();
+      const guild = Living.getGuild();
+      const sSim = living.states[1];
+      const baseS = sSim.capacity.s.gen;
+      guild.relics = [makeRelic(1, { category: "regalia", bonuses: { s: 2 } })];
+
+      expect(Living.leaseRelic(1, 1)).toBe(true);
+      expect(guild.relics[0]!.holder).toEqual({ kind: "state", id: 1 });
+      expect(sSim.capacity.s.gen).toBe(baseS + 2);
+
+      sSim.unravel = 10;
+      const goldBefore = guild.gold;
+      Living.tick(1);
+
+      expect(guild.gold).toBe(goldBefore + 2 + 10); // chapter dues + lease tribute
+      expect(sSim.unravel).toBe(7); // -2 seasonal peace, -1 relic lease
+      expect(Living.leaseRelic(1, 1)).toBe(false); // already leased, not in vault
+    });
+
+    it("drops leased relics into a chronicle ruin when the capital falls and recovers them by excavation", () => {
+      const living = Living.init();
+      const guild = Living.getGuild();
+      guild.tier = 5;
+      guild.doctrine = "manual";
+      pack.markers = [];
+      const baseS = living.states[1].capacity.s.gen;
+      guild.relics = [makeRelic(1, { category: "regalia", bonuses: { s: 2 } })];
+      expect(Living.leaseRelic(1, 1)).toBe(true);
+      expect(living.states[1].capacity.s.gen).toBe(baseS + 2);
+
+      const dropped = Living.dropStateRelicsToRuin(1, pack.burgs[1]);
+
+      expect(dropped).toHaveLength(1);
+      const relic = guild.relics[0]!;
+      const holder = relic.holder;
+      expect(holder.kind).toBe("ruin");
+      const ruinMarkerId = holder.kind === "ruin" ? holder.markerId : -1;
+      const ruinMarker = (pack.markers ?? []).find(marker => marker.i === ruinMarkerId);
+      expect(ruinMarker?.type).toBe("ruins");
+      expect(ruinMarker?.chronicle).toBe(true);
+      expect(ruinMarker?.cell).toBe(1);
+      expect(living.states[1].capacity.s.gen).toBe(baseS); // lease bonus gone
+
+      const heroId = addGuildHero({ m: 0, w: 0, s: 0, c: 30 });
+      guild.roster = [heroId];
+      expect(Living.dispatchBestHeroToMarker(ruinMarkerId)).toBe(true);
+
+      Living.tick(1);
+
+      expect(relic.holder).toEqual({ kind: "vault" });
+      // the chronicle ruin also yields its own fresh relic
+      expect(guild.relics).toHaveLength(2);
+    });
+
+    it("adds carried relic bonuses to figure checks", () => {
+      const figure = makeGuildFigure(9, { skills: { m: 2, w: 0, s: 0, c: 0 } });
+      const withRelic = figureCheckRoll(createRng("relic-check"), figure, "m", 0, 12, 0, 2);
+      const withoutRelic = figureCheckRoll(createRng("relic-check"), figure, "m", 0, 12, 0, 0);
+      expect(withRelic.total).toBe(withoutRelic.total + 2);
     });
   });
 });

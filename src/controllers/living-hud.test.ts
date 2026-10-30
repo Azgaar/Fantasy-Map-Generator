@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => {
       roster: [] as number[],
       candidates: [] as number[],
       missions: [] as unknown[],
+      relics: [] as unknown[],
       cooldowns: {} as Record<number, number>,
       excavatedMarkers: [] as number[],
       popups: [] as unknown[]
@@ -52,6 +53,14 @@ const mocks = vi.hoisted(() => {
     recruitCandidate: vi.fn(() => true),
     dispatchHero: vi.fn(() => true),
     dispatchBestHero: vi.fn(() => true),
+    dispatchHeroToMarker: vi.fn(() => true),
+    dispatchBestHeroToMarker: vi.fn(() => true),
+    equipRelic: vi.fn(() => true),
+    enshrineRelic: vi.fn(() => true),
+    leaseRelic: vi.fn(() => true),
+    recallRelic: vi.fn(() => true),
+    excavateMarker: vi.fn(() => true),
+    getRelics: vi.fn(() => state.guild.relics),
     retireHero: vi.fn(() => 5),
     sparkRebellion: vi.fn(() => true),
     smiteRuler: vi.fn(() => true),
@@ -144,6 +153,7 @@ function makePack() {
       { i: 2, name: "Oakford", cell: 2, state: 1, population: 4, capital: 0 }
     ],
     provinces: [{ i: 0 }, { i: 1, name: "Northmarch", state: 1, burg: 1, center: 1 }],
+    markers: [],
     history: {
       living: mocks.state,
       events: [],
@@ -258,6 +268,7 @@ beforeEach(() => {
     roster: [],
     candidates: [],
     missions: [],
+    relics: [],
     cooldowns: {},
     excavatedMarkers: [],
     popups: []
@@ -790,6 +801,180 @@ describe("LivingHud", () => {
 
     inspector?.querySelector<HTMLElement>('[data-guild="recruit"]')?.click();
     expect(Living.recruitCandidate).toHaveBeenCalledWith(2);
+  });
+
+  it("renders vault relics and excavation site chips in the guild bar", () => {
+    Object.assign(mocks.state.guild, {
+      relics: [
+        {
+          id: 1,
+          name: "Crown of the Vhaelen Emperors",
+          category: "regalia",
+          lore: "Worn by the rulers of Vhaelen.",
+          originYear: 812,
+          originRealmId: 3,
+          bonuses: { s: 2 },
+          holder: { kind: "vault" }
+        }
+      ]
+    });
+    pack.markers = [
+      { i: 0, type: "ruins", icon: "🏛️", x: 10, y: 10, cell: 1, name: "Old Vhaelen", chronicle: true },
+      { i: 1, type: "volcano", icon: "🌋", x: 20, y: 20, cell: 2, name: "Mount Keld" }
+    ] as unknown as typeof pack.markers;
+    LivingHud.open();
+
+    const bar = document.getElementById("livingHudGuild");
+    expect(bar?.textContent).toContain("1 relics");
+    expect(bar?.textContent).toContain("Crown of the Vhaelen Emperors");
+    expect(bar?.textContent).toContain("vault");
+    expect(bar?.textContent).toContain("Old Vhaelen");
+    expect(bar?.textContent).not.toContain("Mount Keld");
+  });
+
+  it("inspects an excavation site from the guild bar and dispatches a hero", () => {
+    pack.markers = [
+      { i: 4, type: "dungeons", icon: "☠️", x: 10, y: 10, cell: 1, name: "The Ashen Deep" }
+    ] as unknown as typeof pack.markers;
+    LivingHud.open();
+
+    document.querySelector<HTMLElement>('#livingHudGuild [data-guild="inspect-marker"]')?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("The Ashen Deep");
+    expect(inspector?.textContent).toContain("DC 15");
+    expect(inspector?.textContent).toContain("Dispatch Hero");
+
+    inspector?.querySelector<HTMLElement>('[data-guild="dispatch-marker"]')?.click();
+    expect(Living.dispatchBestHeroToMarker).toHaveBeenCalledWith(4);
+    expect(document.getElementById("livingHudStatus")?.textContent).toContain("excavate the site");
+  });
+
+  it("shows the relic card with powers, lore and a recall action", () => {
+    Object.assign(mocks.state.guild, {
+      relics: [
+        {
+          id: 2,
+          name: "Greataxe of General Kael",
+          category: "weapon",
+          lore: "Forged for General Kael.",
+          originYear: 901,
+          originFigureId: 1,
+          bonuses: { m: 2 },
+          holder: { kind: "figure", id: 1 }
+        }
+      ]
+    });
+    LivingHud.open();
+
+    document.querySelector<HTMLElement>('#livingHudGuild [data-guild="inspect-relic"]')?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("Greataxe of General Kael");
+    expect(inspector?.textContent).toContain("Weapon");
+    expect(inspector?.textContent).toContain("+2 M");
+    expect(inspector?.textContent).toContain("Carried by Bran Quickfoot");
+
+    inspector?.querySelector<HTMLElement>('[data-guild="recall"]')?.click();
+    expect(Living.recallRelic).toHaveBeenCalledWith(2);
+    expect(document.getElementById("livingHudStatus")?.textContent).toContain("Guild Vault");
+  });
+
+  it("offers a Send Expedition action for relics buried in a fallen capital's ruin", () => {
+    Object.assign(mocks.state.guild, {
+      relics: [
+        {
+          id: 3,
+          name: "Golden Charter of Old Aelor",
+          category: "charter",
+          lore: "The trade writ that made Aelor rich.",
+          originYear: 744,
+          bonuses: { w: 2 },
+          holder: { kind: "ruin", markerId: 9, cell: 1 }
+        }
+      ],
+      excavatedMarkers: []
+    });
+    pack.markers = [
+      { i: 9, type: "ruins", icon: "🏛️", x: 10, y: 10, cell: 1, name: "Ruins of Aelor", chronicle: true }
+    ] as unknown as typeof pack.markers;
+    LivingHud.open();
+
+    document.querySelector<HTMLElement>('#livingHudGuild [data-guild="inspect-relic"]')?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("Buried in Ruins of Aelor");
+
+    inspector?.querySelector<HTMLElement>('[data-guild="dispatch-marker"]')?.click();
+    expect(Living.dispatchBestHeroToMarker).toHaveBeenCalledWith(9);
+  });
+
+  it("equips a vault relic from the hero card", () => {
+    Object.assign(mocks.state.guild, {
+      roster: [1],
+      relics: [
+        {
+          id: 5,
+          name: "Codex of the Ashen Schism",
+          category: "tome",
+          lore: "Saved from the fires.",
+          originYear: 890,
+          bonuses: { c: 2 },
+          holder: { kind: "vault" }
+        }
+      ]
+    });
+    LivingHud.open();
+
+    document.querySelector<HTMLElement>('#livingHudGuild [data-guild="inspect"][data-figure="1"]')?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("Equip Codex of the Ashen Schism");
+
+    inspector?.querySelector<HTMLElement>('[data-guild="equip"]')?.click();
+    expect(Living.equipRelic).toHaveBeenCalledWith(5, 1);
+  });
+
+  it("leases a vault relic to a state from the state card", () => {
+    Object.assign(mocks.state.guild, {
+      relics: [
+        {
+          id: 6,
+          name: "Crown of the Vhaelen Emperors",
+          category: "regalia",
+          lore: "A symbol of legitimacy.",
+          originYear: 812,
+          bonuses: { s: 2 },
+          holder: { kind: "vault" }
+        }
+      ]
+    });
+    mocks.state.recentNews = [
+      { tick: 1, year: 1000, season: 0, kind: "develop", text: "Aeloria prospers.", cell: 1, stateId: 1 }
+    ];
+    LivingHud.open();
+    document.querySelector<HTMLElement>("button.livingNewsItem")?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("Lease Crown of the Vhaelen Emperors");
+
+    inspector?.querySelector<HTMLElement>('[data-guild="lease"]')?.click();
+    expect(Living.leaseRelic).toHaveBeenCalledWith(6, 1);
+  });
+
+  it("excavates a site instantly in Sandbox God Mode", () => {
+    Object.assign(mocks.state.guild, { sandboxGodMode: true });
+    pack.markers = [
+      { i: 2, type: "necropolises", icon: "⚱️", x: 10, y: 10, cell: 1, name: "Barrow of Kings" }
+    ] as unknown as typeof pack.markers;
+    LivingHud.open();
+
+    document.querySelector<HTMLElement>('#livingHudGuild [data-guild="inspect-marker"]')?.click();
+    const inspector = document.getElementById("livingInspector");
+
+    inspector?.querySelector<HTMLElement>('[data-god="excavate-marker"]')?.click();
+    expect(Living.excavateMarker).toHaveBeenCalledWith(2);
+    expect(document.getElementById("livingHudStatus")?.textContent).toContain("excavated instantly");
   });
 
   it("draws on-map bounty popups and claims one when clicked", () => {

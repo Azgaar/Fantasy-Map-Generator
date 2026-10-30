@@ -5,6 +5,7 @@ import { currentContent } from "@/conquest/content/store";
 import { Controllers } from "@/controllers";
 import { ALIGNMENT_COLORS } from "@/data/culture-traits";
 import { getLairDef, isLairStateCapable } from "@/data/living-lairs";
+import { describeRelicBonuses, isExcavationMarker, RELIC_CATALOG, vaultRelics } from "@/data/living-relics";
 import { getTroubleDef, isTroubleStatePromotable, SAVE_KIND_LABELS, UNIT_ROLE_LABELS } from "@/data/living-troubles";
 import { Pack } from "@/model/graph/pack-generator";
 import { figureLevel, GUILD_TIER_TITLES, Living, maxHeroesForTier } from "@/model/physical/living-generator";
@@ -14,6 +15,7 @@ import { Layers } from "@/renderers/layers";
 import type { HistoricalFigure } from "@/types/history";
 import {
   type GuildState,
+  type HistoricalRelic,
   type IdleDoctrine,
   type LivingNewsItem,
   type ProvinceSimState,
@@ -101,6 +103,8 @@ const TEMPLATE = /* html */ `
     }
     #${HUD_ID} .livingGuildChip.mission { border-color: #b8860b; }
     #${HUD_ID} .livingGuildChip.cooldown { border-color: #a33d3d; opacity: 0.7; }
+    #${HUD_ID} .livingGuildChip.relic { border-color: #b8860b; }
+    #${HUD_ID} .livingGuildChip.site { border-color: #3d6b35; }
     #${HUD_ID} .livingGuildChipStatus { color: #777; }
     #${INSPECTOR_ID} {
       position: fixed;
@@ -157,7 +161,12 @@ const TEMPLATE = /* html */ `
   </div>
 `;
 
-type Selection = { kind: "state"; id: number } | { kind: "burg"; id: number } | { kind: "figure"; id: number };
+type Selection =
+  | { kind: "state"; id: number }
+  | { kind: "burg"; id: number }
+  | { kind: "figure"; id: number }
+  | { kind: "marker"; id: number }
+  | { kind: "relic"; id: number };
 
 const DOCTRINE_LABELS: Record<IdleDoctrine, string> = {
   auto_bounties: "Hunt Troubles",
@@ -340,6 +349,30 @@ function renderHeroChip(guild: GuildState, figureId: number): string {
   </button>`;
 }
 
+function relicHolderLabel(relic: HistoricalRelic): string {
+  const holder = relic.holder;
+  switch (holder.kind) {
+    case "vault":
+      return "vault";
+    case "figure":
+      return pack.history?.figures?.find(figure => figure.i === holder.id)?.name ?? "hero";
+    case "state":
+      return pack.states[holder.id]?.name ?? "leased";
+    case "ruin":
+      return "lost";
+  }
+}
+
+function renderRelicChip(relic: HistoricalRelic): string {
+  const def = RELIC_CATALOG[relic.category];
+  const selectedClass = selected?.kind === "relic" && selected.id === relic.id ? " pressed" : "";
+  return `<button type="button" class="livingGuildChip relic${selectedClass}" data-guild="inspect-relic" data-relic="${relic.id}" title="${escapeHtml(relic.name)} — ${describeRelicBonuses(relic)}">
+    ${def.icon} ${escapeHtml(relic.name)} <span class="livingGuildChipStatus">· ${escapeHtml(relicHolderLabel(relic))}</span>
+  </button>`;
+}
+
+const MAX_GUILD_CHIPS = 6;
+
 function renderGuildBar(): void {
   const bar = findEl("livingHudGuild");
   if (!bar) return;
@@ -353,11 +386,23 @@ function renderGuildBar(): void {
   const tier = guild.tier ?? 1;
   const roster = guild.roster ?? [];
   const candidates = guild.candidates ?? [];
+  const relics = guild.relics ?? [];
   const doctrine = guild.doctrine ?? "auto_bounties";
   const sandbox = Boolean(guild.sandboxGodMode);
   const favored = guild.favoredStateId !== undefined ? pack.states[guild.favoredStateId]?.name : undefined;
   const doctrineOptions = (Object.keys(DOCTRINE_LABELS) as IdleDoctrine[])
     .map(key => `<option value="${key}"${key === doctrine ? " selected" : ""}>${DOCTRINE_LABELS[key]}</option>`)
+    .join("");
+
+  const siteChips = (pack.markers ?? [])
+    .filter(marker => isExcavationMarker(marker) && !(guild.excavatedMarkers ?? []).includes(marker.i))
+    .slice(0, MAX_GUILD_CHIPS)
+    .map(marker => {
+      const selectedClass = selected?.kind === "marker" && selected.id === marker.i ? " pressed" : "";
+      return `<button type="button" class="livingGuildChip site${selectedClass}" data-guild="inspect-marker" data-marker="${marker.i}" title="${escapeHtml(marker.name ?? "Landmark")} — DC ${13 + tier} dig">
+        ⛏ ${escapeHtml(marker.name ?? `Landmark ${marker.i}`)}
+      </button>`;
+    })
     .join("");
 
   bar.innerHTML = /* html */ `
@@ -366,7 +411,7 @@ function renderGuildBar(): void {
       <span class="livingGuildTitle">${escapeHtml(GUILD_TIER_TITLES[tier - 1] ?? GUILD_TIER_TITLES[0]!)}</span>
       <span class="livingGuildStat" title="Guild gold">${guild.gold ?? 0}g</span>
       <span class="livingGuildStat" title="Guild renown">${guild.renown ?? 0}r</span>
-      <span class="livingGuildMuted">${roster.length}/${maxHeroesForTier(tier)} heroes</span>
+      <span class="livingGuildMuted">${roster.length}/${maxHeroesForTier(tier)} heroes · ${relics.length} relics</span>
       <label class="livingGuildDoctrine">Doctrine
         <select id="livingHudDoctrine">${doctrineOptions}</select>
       </label>
@@ -382,7 +427,27 @@ function renderGuildBar(): void {
     <div class="livingGuildRow">
       <span class="livingGuildMuted">Tavern${favored ? ` · patron: ${escapeHtml(favored)}` : ""}:</span>
       ${candidates.length > 0 ? candidates.map(id => renderHeroChip(guild, id)).join("") : `<span class="livingGuildMuted">no seekers this year</span>`}
-    </div>`;
+    </div>
+    ${
+      relics.length > 0
+        ? `<div class="livingGuildRow">
+            <span class="livingGuildMuted">Vault (${vaultRelics(relics).length}/${tier}):</span>
+            ${relics
+              .slice(0, MAX_GUILD_CHIPS)
+              .map(relic => renderRelicChip(relic))
+              .join("")}
+            ${relics.length > MAX_GUILD_CHIPS ? `<span class="livingGuildMuted">+${relics.length - MAX_GUILD_CHIPS} more</span>` : ""}
+          </div>`
+        : ""
+    }
+    ${
+      siteChips
+        ? `<div class="livingGuildRow">
+            <span class="livingGuildMuted">Excavation sites:</span>
+            ${siteChips}
+          </div>`
+        : ""
+    }`;
 
   bar.querySelector<HTMLSelectElement>("#livingHudDoctrine")?.addEventListener("change", event => {
     const value = (event.target as HTMLSelectElement).value as IdleDoctrine;
@@ -407,6 +472,20 @@ function renderGuildBar(): void {
   for (const button of bar.querySelectorAll<HTMLElement>("[data-guild='inspect']")) {
     button.addEventListener("click", () => {
       selected = { kind: "figure", id: Number(button.dataset.figure ?? 0) };
+      renderInspector();
+    });
+  }
+
+  for (const button of bar.querySelectorAll<HTMLElement>("[data-guild='inspect-relic']")) {
+    button.addEventListener("click", () => {
+      selected = { kind: "relic", id: Number(button.dataset.relic ?? 0) };
+      renderInspector();
+    });
+  }
+
+  for (const button of bar.querySelectorAll<HTMLElement>("[data-guild='inspect-marker']")) {
+    button.addEventListener("click", () => {
+      selected = { kind: "marker", id: Number(button.dataset.marker ?? 0) };
       renderInspector();
     });
   }
@@ -469,7 +548,16 @@ function onMapClick(this: SVGElement, event: MouseEvent): void {
   }
 
   const stateId = pack.cells.state?.[cell] ?? 0;
-  if (stateId && pack.states[stateId] && !pack.states[stateId].removed) selectState(stateId);
+  if (stateId && pack.states[stateId] && !pack.states[stateId].removed) {
+    selectState(stateId);
+    return;
+  }
+
+  const marker = (pack.markers ?? []).find(entry => entry?.cell === cell);
+  if (marker) {
+    selected = { kind: "marker", id: marker.i };
+    renderInspector();
+  }
 }
 
 function bindOverlayClicks(): void {
@@ -510,12 +598,17 @@ function selectBurg(burgId: number): void {
 function validateSelection(): void {
   if (!selected) return;
   const current = selected;
+  const guild = Living.getGuild?.();
   const alive =
     current.kind === "state"
       ? Boolean(pack.states[current.id] && !pack.states[current.id].removed)
       : current.kind === "burg"
         ? Boolean(pack.burgs[current.id] && !pack.burgs[current.id].removed)
-        : Boolean(pack.history?.figures?.some(figure => figure.i === current.id));
+        : current.kind === "marker"
+          ? (pack.markers ?? []).some(marker => marker?.i === current.id)
+          : current.kind === "relic"
+            ? (guild?.relics ?? []).some(relic => relic.id === current.id)
+            : Boolean(pack.history?.figures?.some(figure => figure.i === current.id));
   if (!alive) selected = null;
 }
 
@@ -524,7 +617,7 @@ function renderInspector(): void {
   if (!panel) return;
 
   if (!selected) {
-    panel.innerHTML = `<div class="livingPlaceholder">Click a state, burg or hero on the map to inspect it.</div>`;
+    panel.innerHTML = `<div class="livingPlaceholder">Click a state, burg, hero, landmark or relic to inspect it.</div>`;
     return;
   }
 
@@ -533,8 +626,117 @@ function renderInspector(): void {
       ? renderStateCard(selected.id)
       : selected.kind === "burg"
         ? renderBurgCard(selected.id)
-        : renderFigureCard(selected.id);
+        : selected.kind === "marker"
+          ? renderMarkerCard(selected.id)
+          : selected.kind === "relic"
+            ? renderRelicCard(selected.id)
+            : renderFigureCard(selected.id);
   bindInspectorButtons(panel);
+}
+
+function relicHolderText(relic: HistoricalRelic): string {
+  const holder = relic.holder;
+  switch (holder.kind) {
+    case "vault":
+      return "Held in the Guild Vault";
+    case "figure":
+      return `Carried by ${pack.history?.figures?.find(figure => figure.i === holder.id)?.name ?? "a hero"}`;
+    case "state":
+      return `Leased to ${pack.states[holder.id]?.name ?? "a state"} (+gen, -1 unravel, +10g tribute per season)`;
+    case "ruin":
+      return `Buried in ${(pack.markers ?? []).find(marker => marker?.i === holder.markerId)?.name ?? "a ruin"} — excavate to recover`;
+  }
+}
+
+function renderRelicCard(relicId: number): string {
+  const guild = Living.getGuild?.();
+  const relic = (guild?.relics ?? []).find(entry => entry.id === relicId);
+  if (!relic) return `<div class="livingPlaceholder">This relic has crumbled to dust.</div>`;
+
+  const def = RELIC_CATALOG[relic.category];
+  const realm =
+    relic.originRealmId !== undefined
+      ? pack.history?.realms?.find(entry => entry.i === relic.originRealmId)?.name
+      : undefined;
+  const figure =
+    relic.originFigureId !== undefined
+      ? pack.history?.figures?.find(entry => entry.i === relic.originFigureId)?.name
+      : undefined;
+  const origin = [realm, figure]
+    .filter((entry): entry is string => Boolean(entry))
+    .map(escapeHtml)
+    .join(" · ");
+
+  let actions = "";
+  if (relic.holder.kind === "ruin") {
+    actions = `<button type="button" data-guild="dispatch-marker" data-marker="${relic.holder.markerId}">Send Expedition</button>`;
+  } else if (relic.holder.kind !== "vault") {
+    actions = `<button type="button" data-guild="recall" data-relic="${relic.id}">Return to Vault</button>`;
+  } else {
+    const stored = vaultRelics(guild?.relics ?? []).length;
+    actions = `<div class="livingMuted">Enshrined in the Guild Vault (${stored}/${guild?.tier ?? 1})</div>`;
+  }
+
+  return /* html */ `
+    <div class="livingInspectorTitle">${def.icon} ${escapeHtml(relic.name)}</div>
+    <div class="livingMuted">${def.label} · origin year ${relic.originYear}${origin ? ` · ${origin}` : ""}${
+      relic.cursed ? " · 🩸 Cursed" : ""
+    }</div>
+    <div class="livingSection">
+      <div class="livingSectionTitle">Powers</div>
+      <div>${describeRelicBonuses(relic)}</div>
+      <div class="livingMuted">${escapeHtml(relic.lore)}</div>
+      <div class="livingMuted">${relicHolderText(relic)}</div>
+    </div>
+    ${actions ? `<div class="livingButtons">${actions}</div>` : ""}`;
+}
+
+function renderMarkerCard(markerId: number): string {
+  const guild = Living.getGuild?.();
+  const marker = (pack.markers ?? []).find(entry => entry?.i === markerId);
+  if (!marker) return `<div class="livingPlaceholder">This landmark is gone.</div>`;
+
+  const excavated = (guild?.excavatedMarkers ?? []).includes(markerId);
+  const targeted = (guild?.missions ?? []).some(
+    mission => mission.kind === "excavate" && mission.markerId === markerId
+  );
+  const buried = (guild?.relics ?? []).filter(
+    relic => relic.holder.kind === "ruin" && relic.holder.markerId === markerId
+  );
+  const buriedChips = buried
+    .map(
+      relic =>
+        `<button type="button" class="livingGuildChip" data-guild="inspect-relic" data-relic="${relic.id}">${RELIC_CATALOG[relic.category].icon} ${escapeHtml(relic.name)}</button>`
+    )
+    .join("");
+
+  let actions: string;
+  if (excavated) {
+    actions = `<div class="livingMuted">Already excavated by the Guild.</div>`;
+  } else {
+    actions = `<button type="button" data-guild="dispatch-marker" data-marker="${markerId}"${targeted ? " disabled" : ""}>${
+      targeted ? "Excavation Underway" : "Dispatch Hero"
+    }</button>`;
+    if (guild?.sandboxGodMode) {
+      actions += `<button type="button" data-god="excavate-marker" data-marker="${markerId}">Excavate Now</button>`;
+    }
+  }
+
+  return /* html */ `
+    <div class="livingInspectorTitle">${escapeHtml(marker.name ?? "Landmark")}</div>
+    <div class="livingMuted">${escapeHtml(marker.type.replaceAll("-", " "))} · cell ${marker.cell}${
+      marker.chronicle ? " · chronicle site" : ""
+    }</div>
+    <div class="livingSection">
+      <div class="livingSectionTitle">Excavation</div>
+      ${
+        excavated
+          ? `<div class="livingMuted">Site dug</div>`
+          : `<div class="livingMuted">DC ${13 + (guild?.tier ?? 1)} · chronicle sites always yield a named relic</div>`
+      }
+      ${buriedChips ? `<div class="livingMuted">Buried relics:</div><div>${buriedChips}</div>` : ""}
+    </div>
+    <div class="livingButtons">${actions}</div>`;
 }
 
 function renderFigureCard(figureId: number): string {
@@ -573,6 +775,7 @@ function renderFigureCard(figureId: number): string {
   else if (isCandidate) status = `<div class="livingMuted">Seeking a contract</div>`;
 
   const recruitCost = Living.recruitCost?.() ?? 40 + (guild?.tier ?? 1) * 20;
+  const carried = (guild?.relics ?? []).find(relic => relic.holder.kind === "figure" && relic.holder.id === figureId);
   let actions = "";
   if (isCandidate && figure.death === undefined) {
     const affordable = (guild?.gold ?? 0) >= recruitCost;
@@ -581,7 +784,13 @@ function renderFigureCard(figureId: number): string {
     if (age >= 55)
       actions = `<button type="button" data-guild="retire" data-figure="${figureId}">Retire & Mentor</button>`;
     if (!mission && !onCooldown)
-      actions += `<div class="livingMuted">Select a province or state and dispatch a hero.</div>`;
+      actions += `<div class="livingMuted">Select a province, state or excavation site and dispatch a hero.</div>`;
+    if (carried)
+      actions += `<button type="button" data-guild="recall" data-relic="${carried.id}">Return ${escapeHtml(carried.name)} to Vault</button>`;
+    else
+      for (const relic of vaultRelics(guild?.relics ?? []).slice(0, 3)) {
+        actions += `<button type="button" data-guild="equip" data-relic="${relic.id}" data-figure="${figureId}">Equip ${escapeHtml(relic.name)}</button>`;
+      }
   }
 
   return /* html */ `
@@ -598,6 +807,7 @@ function renderFigureCard(figureId: number): string {
       <div class="livingSectionTitle">Progression</div>
       <div>Level ${level} <span class="livingMuted">· ${figure.xp ?? 0} xp</span></div>
       ${skills}
+      ${carried ? `<div class="livingMuted">Carries ${RELIC_CATALOG[carried.category].icon} ${escapeHtml(carried.name)}</div>` : ""}
       ${status}
     </div>
     ${actions ? `<div class="livingButtons">${actions}</div>` : ""}`;
@@ -655,6 +865,7 @@ function renderStateCard(stateId: number): string {
       <button type="button" data-open="state" data-id="${stateId}">States Editor</button>
       <button type="button" data-open="regiments" data-id="${stateId}">Regiments</button>
     </div>
+    ${renderStateRelics(stateId, guild)}
     ${
       sandbox
         ? `<div class="livingGodTitle">Sandbox God Mode</div>
@@ -676,6 +887,37 @@ function renderStateCard(stateId: number): string {
              <button type="button" data-guild="patron" data-state="${stateId}" title="Restrict auto_patron contracts to this state">${isPatron ? "Current Patron State" : "Make Patron State"}</button>
            </div>`
     }`;
+}
+
+/** Vault lease offer and currently leased relics for one state */
+function renderStateRelics(stateId: number, guild: GuildState | undefined): string {
+  const relics = guild?.relics ?? [];
+  const leased = relics.filter(relic => relic.holder.kind === "state" && relic.holder.id === stateId);
+  const offer = vaultRelics(relics)[0];
+
+  const rows = leased
+    .map(relic => {
+      const def = RELIC_CATALOG[relic.category];
+      return `<li><button type="button" class="livingGuildChip" data-guild="inspect-relic" data-relic="${relic.id}">${def.icon} ${escapeHtml(relic.name)}</button></li>`;
+    })
+    .join("");
+
+  const buttons = [
+    offer
+      ? `<button type="button" data-guild="lease" data-relic="${offer.id}" data-state="${stateId}" title="Lease ${escapeHtml(offer.name)}: +gen, -1 unravel, ${10}g tribute per season">Lease ${escapeHtml(offer.name)}</button>`
+      : "",
+    leased.length > 0
+      ? `<button type="button" data-guild="recall" data-relic="${leased[0]!.id}">Recall ${escapeHtml(leased[0]!.name)}</button>`
+      : ""
+  ]
+    .filter(Boolean)
+    .join("");
+
+  return `<div class="livingSection">
+    <div class="livingSectionTitle">Relics</div>
+    ${leased.length > 0 ? `<ul>${rows}</ul>` : `<div class="livingMuted">No relics leased</div>`}
+  </div>
+  ${buttons ? `<div class="livingButtons">${buttons}</div>` : ""}`;
 }
 
 function renderRuler(ruler: HistoricalFigure | undefined, age: number | undefined): string {
@@ -1013,6 +1255,28 @@ function runGuildOperation(button: HTMLElement): void {
       if (ok && protegeId !== null) selected = { kind: "figure", id: protegeId };
       break;
     }
+    case "dispatch-marker":
+      ok = Living.dispatchBestHeroToMarker(Number(button.dataset.marker ?? 0));
+      message = ok ? "A guild hero set out to excavate the site." : "No idle hero is available for the dig.";
+      break;
+    case "equip": {
+      const relicId = Number(button.dataset.relic ?? 0);
+      ok = Living.equipRelic(relicId, figureId);
+      const name = (Living.getRelics?.() ?? []).find(relic => relic.id === relicId)?.name;
+      message = ok ? `${name ?? "The relic"} is now carried by the hero.` : "The relic could not be equipped.";
+      break;
+    }
+    case "recall": {
+      ok = Living.recallRelic(Number(button.dataset.relic ?? 0));
+      message = ok ? "The relic was returned to the Guild Vault." : "The relic could not be recalled.";
+      break;
+    }
+    case "lease":
+      ok = Living.leaseRelic(Number(button.dataset.relic ?? 0), stateId);
+      message = ok
+        ? `${pack.states[stateId]?.name ?? "The state"} now leases the relic from the Guild.`
+        : "The lease failed: no vault relic or valid state.";
+      break;
     default:
       return;
   }
@@ -1049,6 +1313,13 @@ function runIntervention(button: HTMLElement): void {
       ok = Living.completeAsset(burgId);
       message = ok ? "The asset has been completed." : "No asset can be completed here.";
       break;
+    case "excavate-marker": {
+      const markerId = Number(button.dataset.marker ?? 0);
+      ok = Living.excavateMarker(markerId);
+      message = ok ? "The site was excavated instantly." : "Nothing left to excavate here.";
+      if (ok) selected = { kind: "marker", id: markerId };
+      break;
+    }
     case "spawn-trouble": {
       const res = Living.spawnTrouble(provId);
       ok = Boolean(res);

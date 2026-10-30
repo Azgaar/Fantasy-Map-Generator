@@ -32,6 +32,19 @@ import {
   pickLairForTrouble
 } from "@/data/living-lairs";
 import {
+  equippedRelic,
+  formatRelicLore,
+  formatRelicName,
+  isExcavationMarker,
+  RELIC_CATALOG,
+  RELIC_LEASE_TRIBUTE,
+  relicCategoriesForMarker,
+  relicGoldMultiplier,
+  relicSurvivalBonus,
+  relicXpMultiplier,
+  vaultBonuses
+} from "@/data/living-relics";
+import {
   BURG_TROUBLE_IDS,
   getTroubleDef,
   isTroubleStatePromotable,
@@ -50,7 +63,8 @@ import {
 import type { Province } from "@/model/political/provinces-generator";
 import { type State, States } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names-generator";
-import type { HistoricalFigure, HistoryEventType, HistRef } from "@/types/history";
+import type { Marker } from "@/model/story/markers-generator";
+import type { HistoricalFigure, HistoryEventType, HistRef, Realm } from "@/types/history";
 import {
   type ActiveGuildMission,
   type BurgSimState,
@@ -58,6 +72,7 @@ import {
   type GrudgeReason,
   type GuildMissionKind,
   type GuildState,
+  type HistoricalRelic,
   type IdleDoctrine,
   type LivingNewsItem,
   type LivingNewsKind,
@@ -142,21 +157,24 @@ interface GuildTarget {
   rewardRenown: number;
   priority: number;
   level: number;
+  /** excavate missions: success mints a named HistoricalRelic */
+  wantsRelic?: boolean;
 }
 
-/** Unified figure roll: 1d20 + pool skill + domain modifier + traits + guild bonus */
+/** Unified figure roll: 1d20 + pool skill + domain modifier + traits + guild bonus + relic bonus */
 export function figureCheckRoll(
   rng: Rng,
   figure: HistoricalFigure,
   pool: "m" | "w" | "s" | "c",
   poolGen: number,
   dc: number,
-  guildTierBonus = 0
+  guildTierBonus = 0,
+  relicBonus = 0
 ): FigureCheck {
   const roll = rng.d(20);
   const skill = figure.skills?.[pool] ?? 0;
   const traits = (figure.virtues?.length ?? 0) - (figure.vices?.length ?? 0);
-  const total = roll + skill + valueModifier(poolGen) + traits + guildTierBonus;
+  const total = roll + skill + valueModifier(poolGen) + traits + guildTierBonus + relicBonus;
   return { roll, total, dc, success: total >= dc };
 }
 
@@ -167,9 +185,10 @@ export function figureCheck(
   pool: "m" | "w" | "s" | "c",
   poolGen: number,
   dc: number,
-  guildTierBonus = 0
+  guildTierBonus = 0,
+  relicBonus = 0
 ): boolean {
-  return figureCheckRoll(rng, figure, pool, poolGen, dc, guildTierBonus).success;
+  return figureCheckRoll(rng, figure, pool, poolGen, dc, guildTierBonus, relicBonus).success;
 }
 
 export function settlementTierFromPop(populationThousands: number): number {
@@ -356,6 +375,7 @@ class LivingModel {
     guild.roster ??= [];
     guild.candidates ??= [];
     guild.missions ??= [];
+    guild.relics ??= [];
     guild.cooldowns ??= {};
     guild.excavatedMarkers ??= [];
     guild.popups ??= [];
@@ -376,6 +396,11 @@ class LivingModel {
   /** Active guild hero missions */
   getMissions(): ActiveGuildMission[] {
     return this.getGuild().missions;
+  }
+
+  /** Every discovered relic, whatever its current holder */
+  getRelics(): HistoricalRelic[] {
+    return this.getGuild().relics ?? [];
   }
 
   setDoctrine(doctrine: IdleDoctrine): void {
@@ -457,6 +482,123 @@ class LivingModel {
     return true;
   }
 
+  /** Click-dispatch: send one idle hero to excavate a landmark. */
+  dispatchHeroToMarker(figureId: number, markerId: number): boolean {
+    const living = this.getState();
+    const guild = this.getGuild();
+    if (!guild.roster.includes(figureId) || !this.isHeroIdle(guild, figureId)) return false;
+
+    const figure = this.findFigure(figureId);
+    if (!figure || figure.death !== undefined) return false;
+
+    const marker = (pack.markers ?? []).find(entry => entry?.i === markerId);
+    const target = marker ? this.excavationTarget(guild, marker) : null;
+    if (!target) return false;
+
+    this.createMission(living, guild, figure, target);
+    return true;
+  }
+
+  /** Send the best idle Culture hero to excavate a landmark. */
+  dispatchBestHeroToMarker(markerId: number): boolean {
+    const living = this.getState();
+    const guild = this.getGuild();
+    const marker = (pack.markers ?? []).find(entry => entry?.i === markerId);
+    const target = marker ? this.excavationTarget(guild, marker) : null;
+    if (!target) return false;
+
+    const hero = guild.roster
+      .filter(id => this.isHeroIdle(guild, id))
+      .map(id => this.findFigure(id))
+      .filter((figure): figure is HistoricalFigure => Boolean(figure) && figure!.death === undefined)
+      .sort((a, b) => this.heroScore(b, target.pool) - this.heroScore(a, target.pool) || a.i - b.i)[0];
+    if (!hero) return false;
+
+    this.createMission(living, guild, hero, target);
+    return true;
+  }
+
+  /** Place a vault relic in a hero's hands (one relic per hero). */
+  equipRelic(relicId: number, figureId: number): boolean {
+    const guild = this.getGuild();
+    if (!guild.roster.includes(figureId)) return false;
+    if (this.findFigure(figureId)?.death !== undefined) return false;
+
+    const relic = guild.relics?.find(entry => entry.id === relicId);
+    if (!relic) return false;
+
+    for (const held of guild.relics ?? []) {
+      if (held.holder.kind === "figure" && held.holder.id === figureId) held.holder = { kind: "vault" };
+    }
+    relic.holder = { kind: "figure", id: figureId };
+    return true;
+  }
+
+  /** Enshrine a relic in the Guild Vault, up to one relic per guild tier. */
+  enshrineRelic(relicId: number): boolean {
+    const guild = this.getGuild();
+    const relic = guild.relics?.find(entry => entry.id === relicId);
+    if (!relic) return false;
+    if (relic.holder.kind === "vault") return true;
+
+    const vaulted = guild.relics.filter(entry => entry.holder.kind === "vault").length;
+    if (vaulted >= guild.tier) return false;
+
+    relic.holder = { kind: "vault" };
+    return true;
+  }
+
+  /** Lease a vault relic to a sovereign state: +gen, -1 unravel/season, tribute gold. */
+  leaseRelic(relicId: number, stateId: number): boolean {
+    const state = pack.states?.[stateId];
+    if (!state?.i || state.removed) return false;
+
+    const guild = this.getGuild();
+    const relic = guild.relics?.find(entry => entry.id === relicId);
+    if (relic?.holder.kind !== "vault") return false;
+
+    relic.holder = { kind: "state", id: stateId };
+    const sSim = this.getState().states[stateId];
+    if (sSim) sSim.capacity = this.recomputeStateCapacity(stateId);
+    return true;
+  }
+
+  /** Return a relic from any holder to the Guild Vault. */
+  recallRelic(relicId: number): boolean {
+    const guild = this.getGuild();
+    const relic = guild.relics?.find(entry => entry.id === relicId);
+    if (!relic || relic.holder.kind === "vault" || relic.holder.kind === "ruin") return false;
+
+    const previous = relic.holder;
+    relic.holder = { kind: "vault" };
+    if (previous.kind === "state") {
+      const sSim = this.getState().states[previous.id];
+      if (sSim) sSim.capacity = this.recomputeStateCapacity(previous.id);
+    }
+    return true;
+  }
+
+  /** Sandbox god action: excavate a site immediately, minting its seeded relic. */
+  excavateMarker(markerId: number): boolean {
+    const living = this.getState();
+    const guild = this.getGuild();
+    const marker = (pack.markers ?? []).find(entry => entry?.i === markerId);
+    if (!marker || !isExcavationMarker(marker) || guild.excavatedMarkers.includes(markerId)) return false;
+
+    guild.excavatedMarkers.push(markerId);
+    this.recoverRelicsFromMarker(guild, marker.i);
+
+    if (marker.chronicle || this.rng("guild:excavate", marker.i).chance(0.5)) {
+      const relic = this.mintRelicFromMarker(marker, marker.i * 7919 + living.tick);
+      this.pushNews(living, {
+        kind: "develop",
+        text: `The Guild excavated ${marker.name} and recovered ${relic.name}.`,
+        cell: marker.cell
+      });
+    }
+    return true;
+  }
+
   /** Retire a veteran hero and mint a protege carrying one skill point forward. */
   retireHero(figureId: number): number | null {
     const living = this.getState();
@@ -517,6 +659,7 @@ class LivingModel {
       this.stepRebellions(living);
       this.recomputeAllCapacities(living);
       this.stepGuild(living);
+      this.stepRelics(living);
       this.refreshPopups(living);
     }
 
@@ -696,6 +839,15 @@ class LivingModel {
         ledger.s.load += (cost.s ?? 0) * blocks;
         ledger.c.load += (cost.c ?? 0) * blocks;
       }
+    }
+
+    // 4. Relics leased to this state add straight to generation
+    for (const relic of living?.guild?.relics ?? []) {
+      if (relic.holder.kind !== "state" || relic.holder.id !== stateId) continue;
+      ledger.m.gen += relic.bonuses.m ?? 0;
+      ledger.w.gen += relic.bonuses.w ?? 0;
+      ledger.s.gen += relic.bonuses.s ?? 0;
+      ledger.c.gen += relic.bonuses.c ?? 0;
     }
 
     // Round to 2 decimal places for clean display and deterministic comparisons
@@ -883,6 +1035,7 @@ class LivingModel {
       roster: [],
       candidates: [],
       missions: [],
+      relics: [],
       cooldowns: {},
       excavatedMarkers: [],
       popups: []
@@ -958,6 +1111,29 @@ class LivingModel {
     return null;
   }
 
+  /** An excavate mission against an unexcavated ruin, battlefield, dungeon, necropolis, statue or library */
+  private excavationTarget(guild: GuildState, marker: Marker): GuildTarget | null {
+    if (!marker || !isExcavationMarker(marker)) return null;
+    if (guild.excavatedMarkers.includes(marker.i)) return null;
+    if (this.hasTargetMission(guild, "excavate", undefined, marker.i)) return null;
+
+    const rng = this.rng("guild:excavate", marker.i);
+    // chronicle sites always hide a named relic; wild ruins yield a relic half the time, else a cache
+    const wantsRelic = Boolean(marker.chronicle) || rng.chance(0.5);
+    return {
+      kind: "excavate",
+      cell: marker.cell,
+      markerId: marker.i,
+      pool: "c",
+      dc: 13 + guild.tier,
+      rewardGold: wantsRelic ? 20 + rng.int(0, 20) : 40 + rng.int(0, 40),
+      rewardRenown: 20,
+      priority: 1,
+      level: 0,
+      wantsRelic
+    };
+  }
+
   /** Pick the next mission for the guild's current doctrine */
   private pickMissionTarget(living: LivingWorldState, guild: GuildState): GuildTarget | null {
     if (guild.doctrine === "manual") return null;
@@ -972,19 +1148,8 @@ class LivingModel {
       }
     } else {
       for (const marker of pack.markers ?? []) {
-        if (!marker?.chronicle || marker.hidden || guild.excavatedMarkers.includes(marker.i)) continue;
-        if (this.hasTargetMission(guild, "excavate", undefined, marker.i)) continue;
-        targets.push({
-          kind: "excavate",
-          cell: marker.cell,
-          markerId: marker.i,
-          pool: "c",
-          dc: 12,
-          rewardGold: 20 + this.rng("guild:excavate", marker.i).int(0, 40),
-          rewardRenown: 20,
-          priority: 1,
-          level: 0
-        });
+        const target = this.excavationTarget(guild, marker);
+        if (target) targets.push(target);
       }
     }
 
@@ -1023,7 +1188,8 @@ class LivingModel {
       progress: 0,
       required: guild.tier >= 3 ? 1 : 2,
       rewardGold: target.rewardGold,
-      rewardRenown: target.rewardRenown
+      rewardRenown: target.rewardRenown,
+      ...(target.wantsRelic ? { rewardRelic: true } : {})
     };
     guild.missions.push(mission);
     figure.cell = target.cell;
@@ -1209,6 +1375,19 @@ class LivingModel {
     }
   }
 
+  /** Seasonal bookkeeping for leased relics: tribute gold and unravel relief. */
+  private stepRelics(living: LivingWorldState): void {
+    const guild = living.guild;
+    if (!guild?.relics?.length) return;
+
+    for (const relic of guild.relics) {
+      if (relic.holder.kind !== "state") continue;
+      guild.gold += RELIC_LEASE_TRIBUTE;
+      const sSim = living.states[relic.holder.id];
+      if (sSim) sSim.unravel = Math.max(0, sSim.unravel - 1);
+    }
+  }
+
   private resolveMission(living: LivingWorldState, mission: ActiveGuildMission): void {
     const guild = this.getGuild();
     const index = guild.missions.findIndex(entry => entry.id === mission.id);
@@ -1233,7 +1412,16 @@ class LivingModel {
     const sSim = province?.state ? living.states[province.state] : undefined;
     const poolGen = sSim?.capacity[mission.pool]?.gen ?? 0;
     const rng = this.rng("guild:mission", mission.id * 1000 + mission.figureId);
-    const check = figureCheckRoll(rng, figure, mission.pool, poolGen, mission.dc, guildCheckBonus(guild.tier));
+    const carried = equippedRelic(guild.relics ?? [], figure.i);
+    const check = figureCheckRoll(
+      rng,
+      figure,
+      mission.pool,
+      poolGen,
+      mission.dc,
+      guildCheckBonus(guild.tier),
+      carried?.bonuses[mission.pool] ?? 0
+    );
 
     if (check.success) {
       this.completeMission(living, guild, mission, figure, rng, province, pSim, sSim);
@@ -1252,6 +1440,9 @@ class LivingModel {
     pSim: ProvinceSimState | undefined,
     sSim: StatePolitySim | undefined
   ): void {
+    // reward multipliers are frozen before resolution so a freshly minted relic does not boost itself
+    const carried = equippedRelic(guild.relics ?? [], figure.i);
+    const vault = vaultBonuses(guild.relics ?? []);
     let text = "";
     switch (mission.kind) {
       case "trouble": {
@@ -1280,10 +1471,21 @@ class LivingModel {
         break;
       }
       case "excavate": {
+        const marker =
+          mission.markerId !== undefined
+            ? (pack.markers ?? []).find(entry => entry?.i === mission.markerId)
+            : undefined;
         if (mission.markerId !== undefined && !guild.excavatedMarkers.includes(mission.markerId)) {
           guild.excavatedMarkers.push(mission.markerId);
         }
-        text = `${figure.name} excavated a chronicle site and recovered ${mission.rewardGold} gold in relics.`;
+        // relics buried here by a fallen capital are recovered alongside any new find
+        this.recoverRelicsFromMarker(guild, mission.markerId);
+        if (mission.rewardRelic && marker) {
+          const relic = this.mintRelicFromMarker(marker, mission.id);
+          text = `${figure.name} excavated ${marker.name} and recovered ${relic.name}.`;
+        } else {
+          text = `${figure.name} excavated ${marker?.name ?? "a ruin site"} and recovered ${mission.rewardGold} gold in relics.`;
+        }
         break;
       }
       case "pacify": {
@@ -1295,16 +1497,25 @@ class LivingModel {
       }
     }
 
-    guild.gold += mission.rewardGold;
-    guild.renown += mission.rewardRenown;
-    figure.xp = (figure.xp ?? 0) + (mission.kind === "lair" ? 50 : mission.kind === "excavate" ? 30 : 25);
+    // vault relics grant +10% gold per W point, +10% renown per S point; tomes boost hero xp
+    const paidGold = Math.round(mission.rewardGold * (1 + 0.1 * (vault.w ?? 0)) * relicGoldMultiplier(carried));
+    const paidRenown = Math.round(mission.rewardRenown * (1 + 0.1 * (vault.s ?? 0)));
+    const xp = Math.round(
+      (mission.kind === "lair" ? 50 : mission.kind === "excavate" ? 30 : 25) *
+        (1 + 0.1 * (vault.c ?? 0)) *
+        relicXpMultiplier(carried)
+    );
+
+    guild.gold += paidGold;
+    guild.renown += paidRenown;
+    figure.xp = (figure.xp ?? 0) + xp;
     figure.cell = mission.targetCell;
     if (sSim && province?.state) sSim.capacity = this.recomputeStateCapacity(province.state);
     this.syncGuildTier(living, guild);
 
     this.pushNews(living, {
       kind: mission.kind === "lair" ? "lair" : mission.kind === "trouble" ? "trouble" : "develop",
-      text: `${text} (+${mission.rewardGold}g, +${mission.rewardRenown} renown)`,
+      text: `${text} (+${paidGold}g, +${paidRenown} renown)`,
       cell: mission.targetCell,
       stateId: province?.state
     });
@@ -1330,33 +1541,10 @@ class LivingModel {
     sSim: StatePolitySim | undefined
   ): void {
     guild.cooldowns[figure.i] = living.tick + rng.int(1, 2);
-    const year = options.map?.lore?.calendar?.year ?? 1000;
     let aftermath = "";
 
     if (check.roll === 1 || check.total <= check.dc - 8) {
-      if (rng.d(2) === 1) {
-        figure.death = year;
-        for (const role of figure.roles) {
-          if (role.to === undefined) role.to = year;
-        }
-        guild.roster = guild.roster.filter(id => id !== figure.i);
-        aftermath = ` ${figure.name} did not survive the mission.`;
-
-        if (guild.tier >= 2) {
-          const protege = this.spawnProtege(living, figure);
-          if (protege && guild.roster.length < maxHeroesForTier(guild.tier)) {
-            guild.roster.push(protege.i);
-            aftermath += ` ${protege.name} took up the Guild's colours.`;
-          }
-        }
-      } else {
-        const vice = drawVice(rng, figure);
-        if (vice) {
-          figure.vices ??= [];
-          figure.vices.push(vice);
-          aftermath = ` The ordeal left ${figure.name} ${vice}.`;
-        }
-      }
+      aftermath = this.fumbleAftermath(living, guild, figure, rng, equippedRelic(guild.relics ?? [], figure.i));
     }
 
     if (sSim && province?.state) sSim.capacity = this.recomputeStateCapacity(province.state);
@@ -1366,6 +1554,53 @@ class LivingModel {
       cell: mission.targetCell,
       stateId: province?.state
     });
+  }
+
+  /** Fumble aftermath: a DC 12 survival save (aided by weapons) decides between death and a lasting scar. */
+  private fumbleAftermath(
+    living: LivingWorldState,
+    guild: GuildState,
+    figure: HistoricalFigure,
+    rng: Rng,
+    relic: HistoricalRelic | undefined
+  ): string {
+    const year = options.map?.lore?.calendar?.year ?? 1000;
+    if (rng.d(20) + relicSurvivalBonus(relic) < 12) {
+      figure.death = year;
+      for (const role of figure.roles) {
+        if (role.to === undefined) role.to = year;
+      }
+      guild.roster = guild.roster.filter(id => id !== figure.i);
+      for (const held of guild.relics ?? []) {
+        if (held.holder.kind === "figure" && held.holder.id === figure.i) held.holder = { kind: "vault" };
+      }
+      let aftermath = ` ${figure.name} did not survive the mission.`;
+
+      if (guild.tier >= 2) {
+        const protege = this.spawnProtege(living, figure);
+        if (protege && guild.roster.length < maxHeroesForTier(guild.tier)) {
+          guild.roster.push(protege.i);
+          aftermath += ` ${protege.name} took up the Guild's colours.`;
+        }
+      }
+      return aftermath;
+    }
+
+    const vice = drawVice(rng, figure);
+    if (vice) {
+      figure.vices ??= [];
+      figure.vices.push(vice);
+      return ` The ordeal left ${figure.name} ${vice}.`;
+    }
+    if (relic?.cursed) {
+      const curseVice = drawVice(rng, figure);
+      if (curseVice) {
+        figure.vices ??= [];
+        figure.vices.push(curseVice);
+        return ` The cursed ${relic.name} whispered to ${figure.name}, leaving them ${curseVice}.`;
+      }
+    }
+    return ` ${figure.name} barely survived the ordeal.`;
   }
 
   private syncBurgs(living: LivingWorldState): void {
@@ -3068,6 +3303,106 @@ class LivingModel {
     if (marker) marker.hidden = true;
   }
 
+  private addRuinMarker(cell: number, name: string): number {
+    pack.markers ??= [];
+    const markers = pack.markers;
+    const [x, y] = pack.cells.p[cell] ?? [0, 0];
+    const markerIndex = markers.length;
+    markers.push({
+      i: markerIndex,
+      type: "ruins",
+      icon: "🏛️",
+      x,
+      y,
+      cell,
+      name,
+      chronicle: true
+    });
+    return markerIndex;
+  }
+
+  /** Mint a lore-linked relic named after the nearest fallen realm, a dead hero, or the site itself */
+  private mintRelicFromMarker(marker: Marker, seedId: number): HistoricalRelic {
+    const guild = this.getGuild();
+    const rng = this.rng("guild:relic", seedId);
+    const history = Chronicle.sync();
+
+    // the nearest fallen realm lends its name; else a dead figure of the chronicle
+    const realms = history.realms ?? [];
+    const point = pack.cells.p?.[marker.cell];
+    let realm: Realm | undefined;
+    let bestDist = Infinity;
+    for (const candidate of realms) {
+      const center = pack.cells.p?.[candidate.center];
+      if (!center || !point) continue;
+      const dist = Math.hypot(center[0] - point[0], center[1] - point[1]);
+      if (dist < bestDist) {
+        bestDist = dist;
+        realm = candidate;
+      }
+    }
+
+    const dead = (history.figures ?? []).filter(figure => figure.death !== undefined);
+    const deadFigure = dead.length > 0 ? dead[rng.int(0, dead.length - 1)] : undefined;
+    const province = pack.cells.province?.[marker.cell];
+    const place = marker.name ?? (province ? pack.provinces?.[province]?.name : undefined) ?? "the wilds";
+
+    const category = rng.choice(relicCategoriesForMarker(marker.type));
+    const context = {
+      realm: realm?.name,
+      figure: deadFigure?.name,
+      place,
+      year: realm?.fallen ?? deadFigure?.death ?? options.map?.lore?.calendar?.year ?? 1000
+    };
+
+    const relic: HistoricalRelic = {
+      id: guild.relics.reduce((max, entry) => Math.max(max, entry.id), 0) + 1,
+      name: formatRelicName(category, context, rng),
+      category,
+      lore: formatRelicLore(category, context, rng),
+      originYear: context.year,
+      ...(realm ? { originRealmId: realm.i } : {}),
+      ...(deadFigure ? { originFigureId: deadFigure.i } : {}),
+      bonuses: { ...RELIC_CATALOG[category].bonuses },
+      cursed: RELIC_CATALOG[category].cursed,
+      holder: { kind: "vault" }
+    };
+    guild.relics.push(relic);
+    return relic;
+  }
+
+  /** Recover any relics a fallen capital buried at this marker */
+  private recoverRelicsFromMarker(guild: GuildState, markerId: number | undefined): void {
+    if (markerId === undefined) return;
+    for (const relic of guild.relics ?? []) {
+      if (relic.holder.kind === "ruin" && relic.holder.markerId === markerId) relic.holder = { kind: "vault" };
+    }
+  }
+
+  /** A fallen capital forces the state's leased relics into a fresh chronicle ruin at the capital cell. */
+  dropStateRelicsToRuin(stateId: number, burg: Burg): HistoricalRelic[] {
+    const living = this.getState();
+    const guild = this.getGuild();
+    const dropped = guild.relics.filter(relic => relic.holder.kind === "state" && relic.holder.id === stateId);
+    if (dropped.length === 0) return [];
+
+    const markerId = this.addRuinMarker(burg.cell, `Ruins of ${burg.name ?? "the fallen capital"}`);
+    for (const relic of dropped) relic.holder = { kind: "ruin", markerId, cell: burg.cell };
+
+    const sSim = living.states[stateId];
+    if (sSim) sSim.capacity = this.recomputeStateCapacity(stateId);
+
+    this.pushNews(living, {
+      kind: "develop",
+      text: `${burg.name ?? "The capital"} fell; ${dropped.length} leased Guild relic${
+        dropped.length === 1 ? "" : "s"
+      } lay buried in the ruins.`,
+      cell: burg.cell,
+      stateId
+    });
+    return dropped;
+  }
+
   private pickWarRival(state: State): State | undefined {
     for (const burg of pack.burgs) {
       if (!burg?.i || burg.removed || !burg.state || burg.state === state.i) continue;
@@ -3224,10 +3559,15 @@ class LivingModel {
     const bSim = this.getState().burgs[burg.i];
     if (bSim) bSim.originalOwner ??= burg.state ?? 0;
 
+    const previousState = burg.state ?? 0;
+    const wasCapital = burg.capital === 1;
     const cells = this.burgHinterland(burg);
     this.transferCells(stateId, cells);
     burg.state = stateId;
     this.assignProvince(stateId, cells);
+
+    // a conquered capital forces its state's leased relics into a ruin at the capital cell
+    if (wasCapital && previousState > 0 && previousState !== stateId) this.dropStateRelicsToRuin(previousState, burg);
 
     if (!bSim) return;
     bSim.originalCulture ??= burg.culture;

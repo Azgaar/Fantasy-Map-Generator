@@ -183,6 +183,30 @@ export interface ActiveGuildMission {
   required: number;
   rewardGold: number;
   rewardRenown: number;
+  /** excavate missions: a named HistoricalRelic is minted on success */
+  rewardRelic?: boolean;
+}
+
+export type RelicCategory = "regalia" | "weapon" | "tome" | "charter" | "idol";
+
+export type RelicHolder =
+  | { kind: "vault" }
+  | { kind: "figure"; id: number }
+  | { kind: "state"; id: number }
+  | { kind: "ruin"; markerId: number; cell: number };
+
+/** A lore-linked artifact unearthed from an excavation site */
+export interface HistoricalRelic {
+  id: number;
+  name: string;
+  category: RelicCategory;
+  lore: string;
+  originYear: number;
+  originRealmId?: number;
+  originFigureId?: number;
+  bonuses: { m?: number; w?: number; s?: number; c?: number };
+  cursed?: boolean;
+  holder: RelicHolder;
 }
 
 export type IdleDoctrine = "auto_bounties" | "auto_lairs" | "auto_excavate" | "auto_patron" | "manual";
@@ -204,9 +228,11 @@ export interface GuildState {
   /** tavern recruitment pool figure ids */
   candidates: number[];
   missions: ActiveGuildMission[];
+  /** all discovered relics, whatever their current holder */
+  relics: HistoricalRelic[];
   /** figureId -> tick the hero is free again after a failed mission */
   cooldowns: Record<number, number>;
-  /** chronicle marker.i values already excavated */
+  /** excavation site marker.i values already dug */
   excavatedMarkers: number[];
   popups: LivingPopup[];
 }
