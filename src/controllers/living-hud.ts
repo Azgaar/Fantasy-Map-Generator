@@ -1,17 +1,18 @@
-﻿// The Living World HUD: a seasonal clock, a live news ticker and a god-mode inspector.
+// The Living World HUD: a seasonal clock, a live news ticker and a god-mode inspector.
 // See docs/plans/living-world.md (slice 5)
 import { select } from "d3";
-import { Layers } from "@/renderers/layers";
-import { zoomTo } from "@/ui/map/zoom";
 import { currentContent } from "@/conquest/content/store";
 import { Controllers } from "@/controllers";
 import { ALIGNMENT_COLORS } from "@/data/culture-traits";
-import { getTroubleDef, SAVE_KIND_LABELS, UNIT_ROLE_LABELS } from "@/data/living-troubles";
+import { getLairDef, isLairStateCapable } from "@/data/living-lairs";
+import { getTroubleDef, isTroubleStatePromotable, SAVE_KIND_LABELS, UNIT_ROLE_LABELS } from "@/data/living-troubles";
 import { Pack } from "@/model/graph/pack-generator";
-import { getCellPoint } from "@/model/story/journeys/journey-places";
 import { Living } from "@/model/physical/living-generator";
+import { getCellPoint } from "@/model/story/journeys/journey-places";
+import { Layers } from "@/renderers/layers";
 import type { HistoricalFigure } from "@/types/history";
 import { type LivingNewsItem, type ProvinceSimState, SEASON_NAMES, type StatePolitySim } from "@/types/living";
+import { zoomTo } from "@/ui/map/zoom";
 import { escapeHtml, findEl, getPointer } from "@/utils";
 
 const HUD_ID = "livingWorldHud";
@@ -365,9 +366,17 @@ function renderStateCard(stateId: number): string {
   const hasTroubled = (pack.provinces ?? []).some(
     p => p?.i && !p.removed && p.state === stateId && living.provinces?.[p.i]?.trouble
   );
+  const hasPromotableTrouble = (pack.provinces ?? []).some(p => {
+    const t = p?.i && !p.removed && p.state === stateId ? living.provinces?.[p.i]?.trouble : undefined;
+    return Boolean(t && isTroubleStatePromotable(t.id));
+  });
   const hasLairs = (pack.provinces ?? []).some(
     p => p?.i && !p.removed && p.state === stateId && living.provinces?.[p.i]?.lair
   );
+  const hasAscendableLair = (pack.provinces ?? []).some(p => {
+    const l = p?.i && !p.removed && p.state === stateId ? living.provinces?.[p.i]?.lair : undefined;
+    return Boolean(l && isLairStateCapable(l.id));
+  });
   const canSpawnStateLair = (pack.provinces ?? []).some(
     p => p?.i && !p.removed && p.state === stateId && !living.provinces?.[p.i]?.lair
   );
@@ -400,8 +409,10 @@ function renderStateCard(stateId: number): string {
       <button type="button" data-god="smite" data-state="${stateId}">Smite Ruler</button>
       <button type="button" data-god="war" data-state="${stateId}">Force War</button>
       ${hasTroubled ? `<button type="button" data-god="resolve-state-trouble" data-state="${stateId}">Resolve Trouble</button>` : ""}
+      ${hasPromotableTrouble ? `<button type="button" data-god="promote-state-trouble" data-state="${stateId}">Promote to State</button>` : ""}
       ${hasLairs ? `<button type="button" data-god="assault-state-lair" data-state="${stateId}">Assault Lair</button>` : ""}
       ${hasLairs ? `<button type="button" data-god="delve-state-lair" data-state="${stateId}">Send Adventurers</button>` : ""}
+      ${hasAscendableLair ? `<button type="button" data-god="ascend-state-lair" data-state="${stateId}">Ascend Lair</button>` : ""}
       ${hasLairs ? `<button type="button" data-god="smite-state-lair" data-state="${stateId}">Smite Lair</button>` : ""}
       ${canSpawnStateLair ? `<button type="button" data-god="spawn-state-lair" data-state="${stateId}">Spawn Lair</button>` : ""}
     </div>`;
@@ -531,7 +542,10 @@ function renderProvincesTroubles(stateId: number): string {
     .map(({ province, pSim }) => {
       const t = pSim.trouble!;
       const def = getTroubleDef(t.id);
-      return `<li>${escapeHtml(province.name ?? "Province")} â€” <strong>${escapeHtml(def.name)}</strong> (Lv ${t.level}, ${t.theme}, Save: ${SAVE_KIND_LABELS[def.save]}, Unit: ${UNIT_ROLE_LABELS[def.requiredRole]})</li>`;
+      const badge = isTroubleStatePromotable(t.id)
+        ? ` Â· <span class="livingBadge" style="background:#8b2635" title="Can promote to sovereign state">${escapeHtml(def.stateForm ?? "State-Capable")}</span>`
+        : "";
+      return `<li>${escapeHtml(province.name ?? "Province")} â€” <strong>${escapeHtml(def.name)}</strong> (Lv ${t.level}, ${t.theme}, Save: ${SAVE_KIND_LABELS[def.save]}, Unit: ${UNIT_ROLE_LABELS[def.requiredRole]}${badge})</li>`;
     })
     .join("");
   return `<div class="livingMuted">Troubles</div><ul>${rows}</ul>`;
@@ -551,8 +565,15 @@ function renderProvincesLairs(stateId: number): string {
   const rows = laired
     .map(({ province, pSim }) => {
       const lair = pSim.lair!;
+      const def = getLairDef(lair.id);
       const defenderCount = lair.defenders.reduce((sum, u) => sum + (u.count ?? 0), 0);
-      const statusFlags = [lair.fortified ? "ðŸ° Fortified" : "", lair.raidPending ? "âš ï¸ Raid Imminent" : ""]
+      const statusFlags = [
+        lair.fortified ? "ðŸ° Fortified" : "",
+        lair.raidPending ? "âš ï¸ Raid Imminent" : "",
+        isLairStateCapable(lair.id)
+          ? `<span class="livingBadge" style="background:#5e3c6e" title="Can ascend to sovereign state">${escapeHtml(def.stateForm ?? "State-Capable")}</span>`
+          : ""
+      ]
         .filter(Boolean)
         .join(" ");
       return `<li>${escapeHtml(province.name ?? "Province")} â€” <strong>${escapeHtml(lair.name)}</strong> (Lv ${lair.level}, Raid: ${lair.raidThreshold}+, Defenders: ${defenderCount}${statusFlags ? ` Â· ${statusFlags}` : ""})</li>`;
@@ -577,7 +598,10 @@ function renderBurgCard(burgId: number): string {
   const pSim = provId ? living.provinces?.[provId] : undefined;
   const trouble = pSim?.trouble;
   const tDef = trouble ? getTroubleDef(trouble.id) : undefined;
+  const troublePromotable = Boolean(trouble && isTroubleStatePromotable(trouble.id));
   const lair = pSim?.lair;
+  const lairDef = lair ? getLairDef(lair.id) : undefined;
+  const lairCapable = Boolean(lair && isLairStateCapable(lair.id));
 
   return /* html */ `
     <div class="livingInspectorTitle">${escapeHtml(burg.name ?? "Burg")}</div>
@@ -599,14 +623,14 @@ function renderBurgCard(burgId: number): string {
             <div class="livingMuted">Order ${Math.round(pSim.order)}% Â· Stability ${pSim.stability} Â· Dev ${pSim.development}</div>
             ${
               trouble && tDef
-                ? `<div style="margin-top:0.3em;color:#a33d3d;"><strong>Trouble:</strong> ${escapeHtml(tDef.name)} (Lv ${trouble.level}, ${trouble.theme})</div>
+                ? `<div style="margin-top:0.3em;color:#a33d3d;"><strong>Trouble:</strong> ${escapeHtml(tDef.name)} (Lv ${trouble.level}, ${trouble.theme}) ${troublePromotable ? `<span class="livingBadge" style="background:#8b2635">${escapeHtml(tDef.stateForm ?? "State-Capable")}</span>` : ""}</div>
                    <div class="livingMuted">Save: ${SAVE_KIND_LABELS[tDef.save]} Â· Specialist: ${UNIT_ROLE_LABELS[tDef.requiredRole]}</div>`
                 : `<div class="livingMuted" style="margin-top:0.2em;">No active trouble</div>`
             }
             ${
               lair
-                ? `<div style="margin-top:0.3em;color:#8b0000;"><strong>Lair:</strong> ${escapeHtml(lair.name)} (Lv ${lair.level}, ${lair.theme})</div>
-                   <div class="livingMuted">Raid: ${lair.raidThreshold}+ Â· Defenders: ${lair.defenders.reduce((sum, u) => sum + (u.count ?? 0), 0)} men${lair.fortified ? " Â· ðŸ° Fortified" : ""}${lair.raidPending ? " Â· âš ï¸ Raid Imminent" : ""}</div>`
+                ? `<div style="margin-top:0.3em;color:#8b0000;"><strong>Lair:</strong> ${escapeHtml(lair.name)} (Lv ${lair.level}, ${lair.theme}) ${lairCapable ? `<span class="livingBadge" style="background:#5e3c6e">${escapeHtml(lairDef?.stateForm ?? "State-Capable")}</span>` : ""}</div>
+                   <div class="livingMuted">Raid: ${lair.raidThreshold}+ Â· Defenders: ${lair.defenders.reduce((sum, u) => sum + (u.count ?? 0), 0)} men${lair.fortified ? "ðŸ° Fortified" : ""}${lair.raidPending ? "âš ï¸ Raid Imminent" : ""}</div>`
                 : `<div class="livingMuted" style="margin-top:0.2em;">No active lair</div>`
             }
           </div>`
@@ -624,7 +648,8 @@ function renderBurgCard(burgId: number): string {
       ${
         provId && trouble
           ? `<button type="button" data-god="quell-trouble" data-province="${provId}">Quell Trouble</button>
-             ${stateId ? `<button type="button" data-god="resolve-trouble" data-state="${stateId}" data-province="${provId}">Resolve Trouble</button>` : ""}`
+             ${stateId ? `<button type="button" data-god="resolve-trouble" data-state="${stateId}" data-province="${provId}">Resolve Trouble</button>` : ""}
+             ${troublePromotable ? `<button type="button" data-god="promote-trouble" data-province="${provId}" data-burg="${burgId}">Promote to State</button>` : ""}`
           : provId && !lair
             ? `<button type="button" data-god="spawn-trouble" data-province="${provId}">Spawn Trouble</button>`
             : ""
@@ -633,6 +658,7 @@ function renderBurgCard(burgId: number): string {
         provId && lair
           ? `${stateId ? `<button type="button" data-god="assault-lair" data-state="${stateId}" data-province="${provId}">Assault Lair</button>` : ""}
              ${stateId ? `<button type="button" data-god="delve-lair" data-state="${stateId}" data-province="${provId}">Send Adventurers</button>` : ""}
+             ${lairCapable ? `<button type="button" data-god="ascend-lair" data-province="${provId}" data-burg="${burgId}">Ascend Lair</button>` : ""}
              <button type="button" data-god="smite-lair" data-province="${provId}">Smite Lair</button>`
           : provId
             ? `<button type="button" data-god="spawn-lair" data-province="${provId}">Spawn Lair</button>`
@@ -726,6 +752,34 @@ function runIntervention(button: HTMLElement): void {
       }
       break;
     }
+    case "promote-trouble": {
+      const newStateId = Living.promoteTroubleToState(provId, burgId || undefined);
+      ok = newStateId !== null;
+      const newState = newStateId ? pack.states[newStateId] : undefined;
+      message = ok
+        ? `Trouble promoted to sovereign state: ${newState?.fullName ?? newState?.name ?? "New Realm"}!`
+        : "This trouble cannot promote to a state.";
+      break;
+    }
+    case "promote-state-trouble": {
+      const living = Living.getState();
+      const prov = (pack.provinces ?? []).find(p => {
+        const t = p?.i && !p.removed && p.state === stateId ? living.provinces?.[p.i]?.trouble : undefined;
+        return Boolean(t && isTroubleStatePromotable(t.id));
+      });
+      if (prov) {
+        const newStateId = Living.promoteTroubleToState(prov.i);
+        ok = newStateId !== null;
+        const newState = newStateId ? pack.states[newStateId] : undefined;
+        message = ok
+          ? `Trouble in ${prov.name} proclaimed ${newState?.fullName ?? newState?.name ?? "a new state"}!`
+          : `Trouble in ${prov.name} could not form a state.`;
+      } else {
+        ok = false;
+        message = "No promotable trouble in the state.";
+      }
+      break;
+    }
     case "spawn-lair": {
       const res = Living.spawnLair(provId);
       ok = Boolean(res);
@@ -744,6 +798,34 @@ function runIntervention(button: HTMLElement): void {
       ok = Living.sendAdventurersToLair(stateId, provId);
       message = ok ? "The adventuring party vanquished the lair!" : "The adventuring party failed to destroy the lair.";
       break;
+    case "ascend-lair": {
+      const newStateId = Living.ascendLairToState(provId, burgId || undefined);
+      ok = newStateId !== null;
+      const newState = newStateId ? pack.states[newStateId] : undefined;
+      message = ok
+        ? `The lair ascended into ${newState?.fullName ?? newState?.name ?? "a sovereign state"}!`
+        : "This lair cannot form a state.";
+      break;
+    }
+    case "ascend-state-lair": {
+      const living = Living.getState();
+      const prov = (pack.provinces ?? []).find(p => {
+        const l = p?.i && !p.removed && p.state === stateId ? living.provinces?.[p.i]?.lair : undefined;
+        return Boolean(l && isLairStateCapable(l.id));
+      });
+      if (prov) {
+        const newStateId = Living.ascendLairToState(prov.i);
+        ok = newStateId !== null;
+        const newState = newStateId ? pack.states[newStateId] : undefined;
+        message = ok
+          ? `The lair in ${prov.name} ascended into ${newState?.fullName ?? newState?.name ?? "a sovereign state"}!`
+          : `The lair in ${prov.name} could not form a state.`;
+      } else {
+        ok = false;
+        message = "No state-capable lair in the state.";
+      }
+      break;
+    }
     case "spawn-state-lair": {
       const living = Living.getState();
       const prov = (pack.provinces ?? []).find(

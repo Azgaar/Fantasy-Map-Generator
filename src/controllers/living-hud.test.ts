@@ -1,4 +1,4 @@
-﻿// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => {
@@ -28,10 +28,12 @@ const mocks = vi.hoisted(() => {
     spawnTrouble: vi.fn(() => ({ id: "monsters", level: 5 })),
     quellTrouble: vi.fn(() => true),
     resolveTrouble: vi.fn(() => true),
+    promoteTroubleToState: vi.fn(() => 2),
     spawnLair: vi.fn(() => ({ id: "bandit_camp", name: "Bandit Camp", level: 6 })),
     smiteLair: vi.fn(() => true),
     assaultLair: vi.fn(() => true),
-    sendAdventurersToLair: vi.fn(() => true)
+    sendAdventurersToLair: vi.fn(() => true),
+    ascendLairToState: vi.fn(() => 2)
   };
 
   return { state, living };
@@ -53,10 +55,10 @@ vi.mock("@/controllers", () => ({
   }
 }));
 
-import { Layers } from "@/renderers/layers";
-import { zoomTo } from "@/ui/map/zoom";
 import { Controllers } from "@/controllers";
 import { Living } from "@/model/physical/living-generator";
+import { Layers } from "@/renderers/layers";
+import { zoomTo } from "@/ui/map/zoom";
 import { LivingHud } from "./living-hud";
 
 function makePack() {
@@ -429,5 +431,123 @@ describe("LivingHud", () => {
 
     LivingHud.toggle();
     expect(document.getElementById("livingWorldHud")).toBeTruthy();
+  });
+
+  it("shows Promote to State button and badge only for state-promotable troubles", () => {
+    mocks.state.provinces = {
+      1: {
+        provinceId: 1,
+        order: 35,
+        stability: 1,
+        development: 0,
+        trouble: {
+          id: "demagogue",
+          name: "Zealous Demagogue",
+          level: 7,
+          theme: "burg",
+          pool: "s",
+          save: "uprising",
+          requiredRole: "prophet",
+          seasonsUnchecked: 3,
+          cell: 1
+        }
+      }
+    };
+    mocks.state.recentNews = [
+      { tick: 1, year: 1000, season: 0, kind: "trouble", text: "Demagogue in Aelor.", cell: 1, burgId: 1 }
+    ];
+    LivingHud.open();
+    document.querySelector<HTMLElement>("button.livingNewsItem")?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("Revolutionary Tribune");
+
+    const promoteBtn = inspector?.querySelector<HTMLElement>('[data-god="promote-trouble"]');
+    expect(promoteBtn).toBeTruthy();
+    promoteBtn?.click();
+    expect(Living.promoteTroubleToState).toHaveBeenCalledWith(1, 1);
+
+    // Non-promotable trouble omits the Promote to State button
+    mocks.state.provinces = {
+      1: {
+        provinceId: 1,
+        order: 35,
+        stability: 1,
+        development: 0,
+        trouble: {
+          id: "flooding",
+          name: "Seasonal Flooding",
+          level: 6,
+          theme: "resource",
+          pool: "w",
+          save: "poverty",
+          requiredRole: "merchant",
+          seasonsUnchecked: 2,
+          cell: 1
+        }
+      }
+    };
+    LivingHud.refresh();
+    expect(inspector?.querySelector<HTMLElement>('[data-god="promote-trouble"]')).toBeNull();
+  });
+
+  it("shows Ascend Lair button and badge only for state-capable lairs on state and burg cards", () => {
+    mocks.state.provinces = {
+      1: {
+        provinceId: 1,
+        order: 40,
+        stability: 1,
+        development: 0,
+        lair: {
+          id: "demonic_master",
+          name: "Infernal Fane",
+          level: 8,
+          theme: "ruin",
+          cell: 1,
+          raidThreshold: 5,
+          defenders: [{ type: "infantry", count: 40 }],
+          fortified: true,
+          raidPending: false,
+          seasonsActive: 6
+        }
+      }
+    };
+    mocks.state.recentNews = [
+      { tick: 1, year: 1000, season: 0, kind: "lair", text: "Infernal Fane.", cell: 1, stateId: 1 }
+    ];
+    LivingHud.open();
+    document.querySelector<HTMLElement>("button.livingNewsItem")?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("Infernal Dominion");
+
+    const stateAscendBtn = inspector?.querySelector<HTMLElement>('[data-god="ascend-state-lair"]');
+    expect(stateAscendBtn).toBeTruthy();
+    stateAscendBtn?.click();
+    expect(Living.ascendLairToState).toHaveBeenCalledWith(1);
+
+    // Non-capable lair (monster_nest) omits Ascend Lair button
+    mocks.state.provinces = {
+      1: {
+        provinceId: 1,
+        order: 40,
+        stability: 1,
+        development: 0,
+        lair: {
+          id: "monster_nest",
+          name: "Monster Nest",
+          level: 8,
+          theme: "ruin",
+          cell: 1,
+          raidThreshold: 5,
+          defenders: [{ type: "infantry", count: 40 }],
+          fortified: false,
+          raidPending: false,
+          seasonsActive: 6
+        }
+      }
+    };
+    LivingHud.refresh();
+    expect(inspector?.querySelector<HTMLElement>('[data-god="ascend-state-lair"]')).toBeNull();
   });
 });
