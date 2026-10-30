@@ -1494,4 +1494,78 @@ describe("Living (Lair Ascension Slice 3: Shared Emergent State Engine)", () => 
       expect(cap.s.load, `trouble ${troubleId} s load <= gen`).toBeLessThanOrEqual(cap.s.gen);
     }
   });
+
+  it("organically promotes a festering trouble to a state in stepProvinces when order has collapsed", () => {
+    const living = Living.init();
+    const trouble = Living.spawnTrouble(2, "demagogue", "burg", 10)!;
+    trouble.seasonsUnchecked = 5;
+    living.provinces[2].order = 20;
+
+    Living.tick(1);
+
+    expect(pack.states.length).toBe(4);
+    expect(pack.provinces[2].state).toBe(3);
+    expect(living.provinces[2].trouble).toBeNull();
+    expect(living.provinces[2].lair).toBeNull();
+    expect(pack.burgs[2].state).toBe(3);
+    expect(pack.burgs[2].capital).toBe(1);
+  });
+
+  it("metastasizes a festering trouble into a lair instead of promoting when order is intact", () => {
+    const living = Living.init();
+    const trouble = Living.spawnTrouble(2, "demagogue", "burg", 10)!;
+    trouble.seasonsUnchecked = 5;
+    living.provinces[2].order = 80;
+    living.states[1].unravel = 0;
+    living.states[1].warExhaustion = 0;
+
+    Living.tick(1);
+
+    expect(pack.states.length).toBe(3);
+    expect(living.provinces[2].trouble).toBeNull();
+    expect(living.provinces[2].lair).not.toBeNull();
+  });
+
+  it("promotes a trouble immediately when resolveTrouble critically backfires in a low-order province", () => {
+    const living = Living.init();
+    Living.spawnTrouble(2, "exiled_lord", "burg", 9); // high DC (16 + 3*9 = 43) guarantees total <= dc - 10
+    living.provinces[2].order = 25;
+
+    const success = Living.resolveTrouble(1, 2);
+    expect(success).toBe(false);
+    expect(pack.states.length).toBe(4);
+    expect(pack.provinces[2].state).toBe(3);
+    expect(living.provinces[2].trouble).toBeNull();
+  });
+
+  it("ascends a state-capable lair via Path A (raid coup) when overwhelming a vulnerable non-capital settlement", () => {
+    const living = Living.init();
+    const lair = Living.spawnLair(2, "aspiring_warlord", 7, 3)!;
+    lair.raidPending = true;
+    lair.raidUnits = Array.from({ length: 8 }, () => ({ type: "cavalry", count: 1000, exp: 5 }));
+    living.provinces[2].order = 18;
+    pack.burgs[2].walls = 0;
+
+    Living.tick(1);
+
+    expect(pack.states.length).toBe(4);
+    expect(pack.provinces[2].state).toBe(3);
+    expect(pack.burgs[2].state).toBe(3);
+    expect(pack.burgs[2].capital).toBe(1);
+    expect(living.provinces[2].lair).toBeNull();
+  });
+
+  it("ascends an entrenched wilderness lair via Path B when active >= 8 seasons at level >= 8", () => {
+    const living = Living.init();
+    const lair = Living.spawnLair(3, "dwarven_outcasts", 8, 4)!;
+    lair.seasonsActive = 7; // stepProvinces increments to 8
+    lair.raidThreshold = 7; // prevent raid so Path B is exercised directly
+
+    Living.tick(1);
+
+    expect(pack.states.length).toBe(4);
+    expect(pack.provinces[3].state).toBe(3);
+    expect(living.provinces[3].lair).toBeNull();
+    expect(pack.states[3].rosterId).toBe("infernalDwarfBase");
+  });
 });

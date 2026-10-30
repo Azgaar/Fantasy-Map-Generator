@@ -1288,6 +1288,16 @@ class LivingModel {
         cell,
         stateId
       });
+
+      if (
+        pSim.trouble &&
+        isTroubleStatePromotable(pSim.trouble.id) &&
+        pSim.trouble.level >= 6 &&
+        pSim.order <= 30 &&
+        (roll === 1 || total <= dc - 10)
+      ) {
+        this.promoteTroubleToState(provinceId);
+      }
     }
 
     sSim.capacity = this.recomputeStateCapacity(stateId);
@@ -1736,7 +1746,6 @@ class LivingModel {
       pSim,
       living,
       originKind: "trouble",
-      originId: trouble.id,
       originName: trouble.name,
       originCell,
       requestedBurgId: burgId ?? trouble.burgId,
@@ -1769,7 +1778,6 @@ class LivingModel {
       pSim,
       living,
       originKind: "lair",
-      originId: lair.id,
       originName: lair.name,
       originCell,
       requestedBurgId: burgId ?? lair.burgId,
@@ -1786,7 +1794,6 @@ class LivingModel {
     pSim: ProvinceSimState;
     living: LivingWorldState;
     originKind: "trouble" | "lair";
-    originId: string;
     originName: string;
     originCell: number;
     requestedBurgId?: number;
@@ -1796,7 +1803,7 @@ class LivingModel {
     alignment?: Alignment;
     units: ArmyUnit[];
   }): number | null {
-    const { province, pSim, living, originKind, originId, originName, originCell, requestedBurgId, markerId } = opts;
+    const { province, pSim, living, originKind, originName, originCell, requestedBurgId, markerId } = opts;
     const oldOwnerId = province.state ?? 0;
     const oldOwner = oldOwnerId ? pack.states[oldOwnerId] : undefined;
     const rng = this.rng(`emergent:${originKind}`, province.i, living.tick);
@@ -3477,6 +3484,13 @@ class LivingModel {
           const metaChance = lvl >= 10 ? 1 : Math.max(0, (unchecked - 2) * 0.06 + Math.max(0, lvl - 4) * 0.04);
           const rngMeta = this.rng("trouble:metastasize", province.i, living.tick);
           if (rngMeta.chance(metaChance)) {
+            const canCoup =
+              isTroubleStatePromotable(pSim.trouble.id) &&
+              (lvl >= 7 || unchecked >= 5) &&
+              (pSim.order <= 25 || (sSim ? sSim.unravel >= 60 || sSim.warExhaustion >= 60 : false));
+            if (canCoup && this.promoteTroubleToState(province.i) !== null) {
+              continue;
+            }
             this.metastasizeTroubleToLair(province.i);
           }
         }
@@ -3533,6 +3547,20 @@ class LivingModel {
       if (!lair) continue;
 
       this.tickLairRaid(province, pSim, lair, living);
+      if (!pSim.lair) continue;
+
+      // Path B: Entrenched wilderness sovereignty
+      if (isLairStateCapable(lair.id) && lair.seasonsActive >= 8 && lair.level >= 8) {
+        const sSim = province.state ? living.states[province.state] : undefined;
+        const localBurgs = pack.burgs.filter(b => b?.i && !b.removed && pack.cells.province?.[b.cell] === province.i);
+        const noBurgs = localBurgs.length === 0;
+        const collapsedOrder = pSim.order <= 15;
+        const stateInTurmoil = Boolean(sSim && (sSim.unravel >= 50 || sSim.warExhaustion >= 50));
+        if (noBurgs || collapsedOrder || stateInTurmoil) {
+          const nonCapBurg = collapsedOrder ? localBurgs.find(b => !b.capital) : undefined;
+          this.ascendLairToState(province.i, nonCapBurg?.i);
+        }
+      }
     }
   }
 
@@ -3628,8 +3656,21 @@ class LivingModel {
       return;
     }
 
-    // Raiders win: destroy 1 asset or pillage development & unrest
+    // Path A: Opportunistic raid coup when a state-capable lair overwhelms a vulnerable non-capital settlement
     const bSim = living.burgs[target.i];
+    if (
+      isLairStateCapable(lair.id) &&
+      (lair.level >= 7 || lair.seasonsActive >= 6) &&
+      !target.capital &&
+      (pSim.order <= 20 || Number(target.walls ?? 0) === 0 || (bSim?.buildings.length ?? 0) === 0)
+    ) {
+      lair.raidUnits = outcome.attacker.units.filter(u => u.count > 0).map(u => ({ ...u }));
+      if (this.ascendLairToState(province.i, target.i) !== null) {
+        return;
+      }
+    }
+
+    // Raiders win: destroy 1 asset or pillage development & unrest
     if (bSim?.buildings && bSim.buildings.length > 0) {
       let destroyIndex = bSim.buildings.findIndex(bid => !bid.startsWith("walls"));
       if (destroyIndex === -1) destroyIndex = bSim.buildings.length - 1;
