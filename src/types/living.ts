@@ -148,7 +148,12 @@ export interface StatePolitySim {
 }
 
 /** On-map popups queued by the simulation and claimed by the player (idle bonus). */
-export type LivingPopupKind = "bounty_trouble" | "bounty_lair" | "ascension_warning" | "relic_exposed";
+export type LivingPopupKind =
+  | "bounty_trouble"
+  | "bounty_lair"
+  | "ascension_warning"
+  | "relic_exposed"
+  | "guild_petition";
 
 export interface LivingPopup {
   id: number;
@@ -163,6 +168,8 @@ export interface LivingPopup {
   provinceId?: number;
   burgId?: number;
   markerId?: number;
+  /** guild_petition popups: the id of the awaiting PetitionDef */
+  petitionId?: string;
   rewardGold: number;
   rewardRenown: number;
 }

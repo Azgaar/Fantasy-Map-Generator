@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import { valueModifier } from "@/conquest/engine/game/saves";
+import { getPetitionDef } from "@/data/living-petitions";
 import { getTroubleDef, troubleUnitMatchMultiplier } from "@/data/living-troubles";
 import type { Marker } from "@/model/story/markers-generator";
 import { parseHistory, serializeHistory } from "@/services/io/epochs-format";
@@ -1400,6 +1401,178 @@ describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War
       const withRelic = figureCheckRoll(createRng("relic-check"), figure, "m", 0, 12, 0, 2);
       const withoutRelic = figureCheckRoll(createRng("relic-check"), figure, "m", 0, 12, 0, 0);
       expect(withRelic.total).toBe(withoutRelic.total + 2);
+    });
+  });
+
+  describe("Guild petitions (slice 4)", () => {
+    function pushPetition(
+      guild: ReturnType<typeof Living.getGuild>,
+      petitionId: string,
+      anchors: { provinceId?: number; burgId?: number; stateId?: number } = {}
+    ): number {
+      const id = guild.popups.reduce((max, popup) => Math.max(max, popup.id), 0) + 1;
+      guild.popups.push({
+        id,
+        kind: "guild_petition",
+        cell: 1,
+        title: "A petition",
+        subtitle: "The dilemma text",
+        createdTick: 0,
+        expiresAtTick: 20,
+        petitionId,
+        rewardGold: 0,
+        rewardRenown: 0,
+        ...anchors
+      });
+      return id;
+    }
+
+    it("queues a petition anchored to an active crisis every ~5 seasons", () => {
+      Living.init();
+      Living.spawnTrouble(1, "demagogue", "burg", 7);
+
+      // the deterministic phase decides which season within the 5-season cycle asks
+      const phase = createRng("test-living-seed:guild:petition:phase").int(0, 4);
+      Living.tick(phase === 0 ? 5 : 5 - phase);
+
+      const petitions = Living.getPopups().filter(popup => popup.kind === "guild_petition");
+      expect(petitions).toHaveLength(1);
+      expect(petitions[0]!.petitionId).toBeTruthy();
+      expect(petitions[0]!.title.length).toBeGreaterThan(0);
+      expect(petitions[0]!.subtitle).not.toContain("{");
+      expect(getPetitionDef(petitions[0]!.petitionId)).toBeDefined();
+    });
+
+    it("resolves a petition choice, trading guild gold for quelling the trouble", () => {
+      const living = Living.init();
+      const guild = Living.getGuild();
+      Living.spawnTrouble(1, "demagogue", "burg", 5);
+      const popupId = pushPetition(guild, "harsh_levy", { provinceId: 1, burgId: 1, stateId: 1 });
+      guild.gold = 100;
+
+      const outcome = Living.resolvePetition(popupId, 0)!;
+
+      expect(outcome.summary).toContain("the trouble was quelled");
+      expect(living.provinces[1].trouble).toBeNull();
+      expect(guild.gold).toBe(70);
+      expect(guild.renown).toBe(8);
+      expect(Living.getPopups().some(popup => popup.id === popupId)).toBe(false);
+      expect(Living.resolvePetition(popupId, 1)).toBeNull();
+    });
+
+    it("lets the selfish choice bank gold while the crisis festers", () => {
+      const living = Living.init();
+      const guild = Living.getGuild();
+      Living.spawnTrouble(1, "demagogue", "burg", 5);
+      const popupId = pushPetition(guild, "harsh_levy", { provinceId: 1, burgId: 1, stateId: 1 });
+
+      const outcome = Living.resolvePetition(popupId, 1)!;
+
+      expect(outcome.gold).toBe(10);
+      expect(guild.gold).toBe(10);
+      expect(guild.renown).toBe(Math.max(0, -4));
+      expect(living.provinces[1].trouble).not.toBeNull();
+    });
+
+    it("backs a coup and births a new sovereign state", () => {
+      const living = Living.init();
+      const guild = Living.getGuild();
+      Living.spawnTrouble(1, "demagogue", "burg", 8);
+      const popupId = pushPetition(guild, "pretenders_bribe", { provinceId: 1, burgId: 1, stateId: 1 });
+      guild.gold = 100;
+      const statesBefore = pack.states.filter(state => state?.i && !state.removed).length;
+
+      const outcome = Living.resolvePetition(popupId, 0)!;
+
+      expect(outcome.summary).toContain("rose from the coup");
+      expect(pack.states.filter(state => state?.i && !state.removed).length).toBe(statesBefore + 1);
+      expect(living.provinces[1].trouble).toBeNull();
+    });
+
+    it("banishes or profits from a cursed relic", () => {
+      Living.init();
+      const guild = Living.getGuild();
+      guild.relics = [
+        {
+          id: 1,
+          name: "Blood-Idol of the Dread Cloister",
+          category: "idol",
+          lore: "It whispers.",
+          originYear: 700,
+          bonuses: { m: 1, c: 1 },
+          cursed: true,
+          holder: { kind: "vault" }
+        }
+      ];
+      const popupId = pushPetition(guild, "cursed_idol");
+
+      const outcome = Living.resolvePetition(popupId, 0)!;
+
+      expect(outcome.summary).toContain("was destroyed");
+      expect(guild.relics).toHaveLength(0);
+      expect(guild.renown).toBe(12);
+
+      // with no cursed relic left, the dark sale yields nothing but gold
+      const secondId = pushPetition(guild, "cursed_idol");
+      const outcome2 = Living.resolvePetition(secondId, 1)!;
+      expect(outcome2.gold).toBe(80);
+      expect(outcome2.summary).toContain("takes its cut");
+    });
+
+    it("purges a lair when the Guild refuses the dark tithe", () => {
+      const living = Living.init();
+      const guild = Living.getGuild();
+      Living.quellTrouble(1);
+      const lair = Living.spawnLair(1, "bandit_camp", 5)!;
+      const popupId = pushPetition(guild, "dark_tithe", { provinceId: 1, burgId: 1, stateId: 1 });
+      guild.gold = 50;
+
+      const outcome = Living.resolvePetition(popupId, 0)!;
+
+      expect(outcome.summary).toContain("was broken up");
+      expect(living.provinces[1].lair).toBeNull();
+      expect(lair.markerId).toBeDefined();
+      expect(pack.markers![lair.markerId!]!.hidden).toBe(true);
+    });
+
+    it("resolves a succession dispute by selling out the ruler", () => {
+      const living = Living.init();
+      const guild = Living.getGuild();
+      const rulerId = living.states[1].rulerId;
+      const popupId = pushPetition(guild, "palace_coup", { stateId: 1 });
+
+      const outcome = Living.resolvePetition(popupId, 1)!;
+
+      expect(outcome.summary).toContain("the ruler fell");
+      expect(pack.history.figures?.find(figure => figure.i === rulerId)?.death).toBeDefined();
+    });
+
+    it("refuses expired petitions and ignored ones leave the world unchanged", () => {
+      const living = Living.init();
+      const guild = Living.getGuild();
+      Living.spawnTrouble(1, "demagogue", "burg", 5);
+      const popup = {
+        id: 77,
+        kind: "guild_petition" as const,
+        cell: 1,
+        title: "A late petition",
+        subtitle: "Too late",
+        createdTick: 0,
+        expiresAtTick: 0,
+        provinceId: 1,
+        petitionId: "harsh_levy",
+        rewardGold: 0,
+        rewardRenown: 0
+      };
+      guild.popups.push(popup);
+
+      expect(Living.resolvePetition(77, 0)).toBeNull();
+      expect(living.provinces[1].trouble).not.toBeNull();
+
+      Living.tick(1);
+
+      expect(Living.getPopups().some(entry => entry.id === 77)).toBe(false);
+      expect(living.provinces[1].trouble).not.toBeNull();
     });
   });
 });

@@ -61,6 +61,7 @@ const mocks = vi.hoisted(() => {
     recallRelic: vi.fn(() => true),
     excavateMarker: vi.fn(() => true),
     getRelics: vi.fn(() => state.guild.relics),
+    resolvePetition: vi.fn(() => ({ summary: "Fund the Militia: the trouble was quelled.", gold: -30, renown: 8 })),
     retireHero: vi.fn(() => 5),
     sparkRebellion: vi.fn(() => true),
     smiteRuler: vi.fn(() => true),
@@ -975,6 +976,71 @@ describe("LivingHud", () => {
     inspector?.querySelector<HTMLElement>('[data-god="excavate-marker"]')?.click();
     expect(Living.excavateMarker).toHaveBeenCalledWith(2);
     expect(document.getElementById("livingHudStatus")?.textContent).toContain("excavated instantly");
+  });
+
+  it("opens the dilemma card from a petition popup and decides it", () => {
+    mocks.state.guild.popups = [
+      {
+        id: 3,
+        kind: "guild_petition",
+        cell: 1,
+        title: "The Harsh Levy",
+        subtitle: "Aeloria begs the Guild to put down the demagogue.",
+        createdTick: 0,
+        expiresAtTick: 5,
+        provinceId: 1,
+        stateId: 1,
+        petitionId: "harsh_levy",
+        rewardGold: 0,
+        rewardRenown: 0
+      }
+    ];
+    LivingHud.open();
+
+    // clicking the popup opens the dilemma card instead of claiming a bounty
+    document
+      .querySelector<SVGElement>('.livingPopup[data-kind="guild_petition"]')
+      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(Living.claimPopup).not.toHaveBeenCalled();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("The Harsh Levy");
+    expect(inspector?.textContent).toContain("Fund the Militia");
+    expect(inspector?.textContent).toContain("Let Them Squabble");
+
+    inspector?.querySelector<HTMLElement>('[data-guild="petition"][data-choice="0"]')?.click();
+    expect(Living.resolvePetition).toHaveBeenCalledWith(3, 0);
+    expect(document.getElementById("livingHudStatus")?.textContent).toContain("the trouble was quelled");
+  });
+
+  it("lists awaiting petitions in the guild bar and opens one from its chip", () => {
+    mocks.state.guild.popups = [
+      {
+        id: 4,
+        kind: "guild_petition",
+        cell: 1,
+        title: "The Pretender's Bribe",
+        subtitle: "An exiled lord seeks Guild recognition.",
+        createdTick: 0,
+        expiresAtTick: 4,
+        provinceId: 1,
+        stateId: 1,
+        petitionId: "pretenders_bribe",
+        rewardGold: 0,
+        rewardRenown: 0
+      }
+    ];
+    LivingHud.open();
+
+    const bar = document.getElementById("livingHudGuild");
+    expect(bar?.textContent).toContain("Petitions:");
+    expect(bar?.textContent).toContain("The Pretender's Bribe");
+
+    bar?.querySelector<HTMLElement>('[data-guild="inspect-petition"]')?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("Back the Coup");
+    expect(inspector?.textContent).toContain("Betray to the Crown");
   });
 
   it("draws on-map bounty popups and claims one when clicked", () => {

@@ -5,6 +5,7 @@ import { currentContent } from "@/conquest/content/store";
 import { Controllers } from "@/controllers";
 import { ALIGNMENT_COLORS } from "@/data/culture-traits";
 import { getLairDef, isLairStateCapable } from "@/data/living-lairs";
+import { getPetitionDef } from "@/data/living-petitions";
 import { describeRelicBonuses, isExcavationMarker, RELIC_CATALOG, vaultRelics } from "@/data/living-relics";
 import { getTroubleDef, isTroubleStatePromotable, SAVE_KIND_LABELS, UNIT_ROLE_LABELS } from "@/data/living-troubles";
 import { Pack } from "@/model/graph/pack-generator";
@@ -105,6 +106,7 @@ const TEMPLATE = /* html */ `
     #${HUD_ID} .livingGuildChip.cooldown { border-color: #a33d3d; opacity: 0.7; }
     #${HUD_ID} .livingGuildChip.relic { border-color: #b8860b; }
     #${HUD_ID} .livingGuildChip.site { border-color: #3d6b35; }
+    #${HUD_ID} .livingGuildChip.petition { border-color: #444a8a; }
     #${HUD_ID} .livingGuildChipStatus { color: #777; }
     #${INSPECTOR_ID} {
       position: fixed;
@@ -141,6 +143,7 @@ const TEMPLATE = /* html */ `
     #${INSPECTOR_ID} .livingButtons { display: flex; flex-wrap: wrap; gap: 0.25em; margin-top: 0.3em; }
     #${INSPECTOR_ID} .livingButtons button { font-size: 1em; padding: 0.12em 0.4em; cursor: pointer; }
     #${INSPECTOR_ID} .livingGodTitle { color: #a33d3d; font-weight: bold; margin: 0.3em 0 0.1em; }
+    #${INSPECTOR_ID} .livingPetitionChoice { display: block; width: 100%; text-align: left; }
     #${INSPECTOR_ID} .livingPlaceholder { color: #666; font-style: italic; padding: 0.5em 0; }
   </style>
   <div id="${HUD_ID}">
@@ -166,7 +169,8 @@ type Selection =
   | { kind: "burg"; id: number }
   | { kind: "figure"; id: number }
   | { kind: "marker"; id: number }
-  | { kind: "relic"; id: number };
+  | { kind: "relic"; id: number }
+  | { kind: "petition"; id: number };
 
 const DOCTRINE_LABELS: Record<IdleDoctrine, string> = {
   auto_bounties: "Hunt Troubles",
@@ -405,6 +409,16 @@ function renderGuildBar(): void {
     })
     .join("");
 
+  const petitionChips = (guild.popups ?? [])
+    .filter(popup => popup.kind === "guild_petition")
+    .map(popup => {
+      const selectedClass = selected?.kind === "petition" && selected.id === popup.id ? " pressed" : "";
+      return `<button type="button" class="livingGuildChip petition${selectedClass}" data-guild="inspect-petition" data-popup="${popup.id}" title="${escapeHtml(popup.subtitle)}">
+        ⚖️ ${escapeHtml(popup.title)}
+      </button>`;
+    })
+    .join("");
+
   bar.innerHTML = /* html */ `
     <div class="livingGuildRow">
       <span class="livingGuildBadge" title="Guild tier">⚜ T${tier}</span>
@@ -447,6 +461,14 @@ function renderGuildBar(): void {
             ${siteChips}
           </div>`
         : ""
+    }
+    ${
+      petitionChips
+        ? `<div class="livingGuildRow">
+            <span class="livingGuildMuted">Petitions:</span>
+            ${petitionChips}
+          </div>`
+        : ""
     }`;
 
   bar.querySelector<HTMLSelectElement>("#livingHudDoctrine")?.addEventListener("change", event => {
@@ -486,6 +508,13 @@ function renderGuildBar(): void {
   for (const button of bar.querySelectorAll<HTMLElement>("[data-guild='inspect-marker']")) {
     button.addEventListener("click", () => {
       selected = { kind: "marker", id: Number(button.dataset.marker ?? 0) };
+      renderInspector();
+    });
+  }
+
+  for (const button of bar.querySelectorAll<HTMLElement>("[data-guild='inspect-petition']")) {
+    button.addEventListener("click", () => {
+      selected = { kind: "petition", id: Number(button.dataset.popup ?? 0) };
       renderInspector();
     });
   }
@@ -577,6 +606,14 @@ function onOverlayClick(event: Event): void {
   const id = Number(popupElement.getAttribute("data-popup-id") ?? 0);
   if (!id) return;
 
+  // petitions open a 2-choice dilemma card instead of banking a claim bonus
+  if (popupElement.getAttribute("data-kind") === "guild_petition") {
+    selected = { kind: "petition", id };
+    renderInspector();
+    drawLivingOverlay();
+    return;
+  }
+
   const claimed = Living.claimPopup(id);
   drawLivingOverlay();
   refresh();
@@ -608,7 +645,9 @@ function validateSelection(): void {
           ? (pack.markers ?? []).some(marker => marker?.i === current.id)
           : current.kind === "relic"
             ? (guild?.relics ?? []).some(relic => relic.id === current.id)
-            : Boolean(pack.history?.figures?.some(figure => figure.i === current.id));
+            : current.kind === "petition"
+              ? (guild?.popups ?? []).some(popup => popup.id === current.id && popup.kind === "guild_petition")
+              : Boolean(pack.history?.figures?.some(figure => figure.i === current.id));
   if (!alive) selected = null;
 }
 
@@ -630,8 +669,39 @@ function renderInspector(): void {
           ? renderMarkerCard(selected.id)
           : selected.kind === "relic"
             ? renderRelicCard(selected.id)
-            : renderFigureCard(selected.id);
+            : selected.kind === "petition"
+              ? renderPetitionCard(selected.id)
+              : renderFigureCard(selected.id);
   bindInspectorButtons(panel);
+}
+
+/** The 2-choice dilemma card for an awaiting guild petition */
+function renderPetitionCard(popupId: number): string {
+  const guild = Living.getGuild?.();
+  const popup = (guild?.popups ?? []).find(entry => entry.id === popupId && entry.kind === "guild_petition");
+  if (!popup) return `<div class="livingPlaceholder">The petitioners have moved on.</div>`;
+
+  const def = getPetitionDef(popup.petitionId);
+  if (!def) return `<div class="livingPlaceholder">This petition no longer has meaning.</div>`;
+
+  const remaining = Math.max(0, popup.expiresAtTick - Living.getState().tick);
+  const choices = def.choices
+    .map(
+      (choice, index) =>
+        `<button type="button" class="livingPetitionChoice" data-guild="petition" data-popup="${popupId}" data-choice="${index}" title="${escapeHtml(choice.tooltip)}">
+          ${escapeHtml(choice.label)} <span class="livingGuildChipStatus">${choice.gold >= 0 ? "+" : ""}${choice.gold}g · ${choice.renown >= 0 ? "+" : ""}${choice.renown}r</span>
+        </button>`
+    )
+    .join("");
+
+  return /* html */ `
+    <div class="livingInspectorTitle">⚖️ ${escapeHtml(popup.title)}</div>
+    <div class="livingMuted">${escapeHtml(popup.subtitle)}</div>
+    <div class="livingSection">
+      <div class="livingSectionTitle">The Dilemma</div>
+      <div class="livingMuted">Decide within ${remaining} season${remaining === 1 ? "" : "s"} or the matter resolves itself.</div>
+    </div>
+    <div class="livingButtons">${choices}</div>`;
 }
 
 function relicHolderText(relic: HistoricalRelic): string {
@@ -1277,6 +1347,15 @@ function runGuildOperation(button: HTMLElement): void {
         ? `${pack.states[stateId]?.name ?? "The state"} now leases the relic from the Guild.`
         : "The lease failed: no vault relic or valid state.";
       break;
+    case "petition": {
+      const popupId = Number(button.dataset.popup ?? 0);
+      const choice = Number(button.dataset.choice ?? 0);
+      const outcome = Living.resolvePetition(popupId, choice);
+      ok = outcome !== null;
+      message = outcome?.summary ?? "The petition could not be resolved.";
+      if (ok) selected = null;
+      break;
+    }
     default:
       return;
   }

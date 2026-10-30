@@ -13,7 +13,8 @@ const POPUP_META: Record<LivingPopupKind, { icon: string; color: string }> = {
   bounty_trouble: { icon: "📜", color: "#b8860b" },
   bounty_lair: { icon: "🏰", color: "#8b0000" },
   ascension_warning: { icon: "👑", color: "#6a4c93" },
-  relic_exposed: { icon: "💎", color: "#2a7f7a" }
+  relic_exposed: { icon: "💎", color: "#2a7f7a" },
+  guild_petition: { icon: "⚖️", color: "#444a8a" }
 };
 
 const NEWS_ICONS: Partial<Record<LivingNewsItem["kind"], string>> = {
@@ -224,9 +225,12 @@ function popupMarkup(popup: LivingPopup, point: [number, number], living: Living
   const meta = POPUP_META[popup.kind];
   const remaining = Math.max(0, popup.expiresAtTick - living.tick);
   const [x, y] = point;
+  const reward =
+    popup.rewardGold || popup.rewardRenown ? ` (+${popup.rewardGold}g / +${popup.rewardRenown} renown)` : "";
+  const hint = popup.kind === "guild_petition" ? " — click to decide" : "";
 
   return `<g class="livingPopup livingPopup-${popup.kind}" data-popup-id="${popup.id}" data-kind="${popup.kind}" transform="translate(${x.toFixed(1)}, ${y.toFixed(1)})" pointer-events="all" style="cursor:pointer">
-    <title>${escapeHtml(popup.title)} — ${escapeHtml(popup.subtitle)} (+${popup.rewardGold}g / +${popup.rewardRenown} renown)</title>
+    <title>${escapeHtml(popup.title)} — ${escapeHtml(popup.subtitle)}${reward}${hint}</title>
     <circle class="livingPopupPulse" r="9" fill="${meta.color}"/>
     <circle class="livingPopupDisc" r="6.5" fill="${meta.color}" stroke="#fff" stroke-width="1"/>
     <text class="livingPopupIcon" y="2.4" text-anchor="middle" font-size="6.5">${meta.icon}</text>

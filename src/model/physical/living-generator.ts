@@ -32,6 +32,14 @@ import {
   pickLairForTrouble
 } from "@/data/living-lairs";
 import {
+  formatPetitionText,
+  getPetitionDef,
+  type PetitionContext,
+  type PetitionDef,
+  type PetitionEffect,
+  petitionsForAnchor
+} from "@/data/living-petitions";
+import {
   equippedRelic,
   formatRelicLore,
   formatRelicName,
@@ -159,6 +167,16 @@ interface GuildTarget {
   level: number;
   /** excavate missions: success mints a named HistoricalRelic */
   wantsRelic?: boolean;
+}
+
+/** A petitionable crisis matched to one of its anchor's petition definitions */
+interface PetitionTarget {
+  def: PetitionDef;
+  cell: number;
+  provinceId?: number;
+  burgId?: number;
+  stateId?: number;
+  context: PetitionContext;
 }
 
 /** Unified figure roll: 1d20 + pool skill + domain modifier + traits + guild bonus + relic bonus */
@@ -894,6 +912,11 @@ class LivingModel {
 
     const [popup] = guild.popups.splice(index, 1);
     if (!popup || popup.expiresAtTick <= living.tick) return null;
+    // petitions are decided, never claimed; put it back for resolvePetition
+    if (popup.kind === "guild_petition") {
+      guild.popups.push(popup);
+      return null;
+    }
 
     guild.gold += popup.rewardGold;
     guild.renown += popup.rewardRenown;
@@ -992,6 +1015,8 @@ class LivingModel {
         expiresAtTick: living.tick + POPUP_LIFETIME_SEASONS
       });
     }
+
+    this.spawnPetitionPopup(living);
   }
 
   /** Queue a one-off popup (e.g. a battle unearthing a relic) without waiting for the next scan. */
@@ -1017,6 +1042,233 @@ class LivingModel {
       if (provinceId !== undefined) return popup.provinceId === provinceId;
       return cell !== undefined && popup.cell === cell;
     });
+  }
+
+  /** Queue a guild petition from a ruler or burg every ~5 seasons, anchored to an active crisis. */
+  private spawnPetitionPopup(living: LivingWorldState): void {
+    const guild = this.getGuild();
+    if (guild.popups.some(popup => popup.kind === "guild_petition")) return;
+    if (guild.popups.length >= MAX_LIVING_POPUPS) return;
+
+    const phase = createRng(`${living.seed}:guild:petition:phase`).int(0, 4);
+    if ((living.tick + phase) % 5 !== 0) return;
+
+    const rng = this.rng("guild:petition", living.tick);
+    const target = this.findPetitionAnchor(living, rng);
+    if (!target) return;
+
+    this.queuePopup({
+      kind: "guild_petition",
+      cell: target.cell,
+      title: formatPetitionText(target.def.title, target.context),
+      subtitle: formatPetitionText(target.def.text, target.context),
+      provinceId: target.provinceId,
+      burgId: target.burgId,
+      stateId: target.stateId,
+      petitionId: target.def.id,
+      rewardGold: 0,
+      rewardRenown: 0
+    });
+  }
+
+  /** A petitionable crisis matching an awaiting petition definition. */
+  private findPetitionAnchor(living: LivingWorldState, rng: Rng): PetitionTarget | null {
+    const targets: PetitionTarget[] = [];
+
+    for (const province of pack.provinces ?? []) {
+      if (!province?.i || province.removed) continue;
+      const pSim = living.provinces?.[province.i];
+      if (!pSim) continue;
+      const stateId = province.state;
+      const state = stateId ? pack.states[stateId] : undefined;
+      const context = {
+        province: province.name,
+        state: state?.i && !state.removed ? state.name : undefined,
+        burg: pSim.trouble?.burgId !== undefined ? pack.burgs[pSim.trouble.burgId]?.name : undefined,
+        trouble: pSim.trouble?.name,
+        lair: pSim.lair?.name
+      };
+
+      if (pSim.trouble) {
+        for (const def of petitionsForAnchor("trouble")) {
+          if (def.promotableOnly && !isTroubleStatePromotable(pSim.trouble.id)) continue;
+          targets.push({
+            def,
+            cell: pSim.trouble.cell ?? province.center ?? 0,
+            provinceId: province.i,
+            burgId: pSim.trouble.burgId,
+            stateId,
+            context
+          });
+        }
+      }
+      if (pSim.lair) {
+        for (const def of petitionsForAnchor("lair")) {
+          targets.push({
+            def,
+            cell: pSim.lair.cell,
+            provinceId: province.i,
+            burgId: pSim.lair.burgId,
+            stateId,
+            context: {
+              ...context,
+              burg: pSim.lair.burgId !== undefined ? pack.burgs[pSim.lair.burgId]?.name : undefined
+            }
+          });
+        }
+      }
+    }
+
+    for (const burg of pack.burgs ?? []) {
+      if (!burg?.i || burg.removed || !burg.state) continue;
+      const bSim = living.burgs?.[burg.i];
+      const state = pack.states[burg.state];
+      if (!bSim || bSim.unrest < 5 || !state?.i || state.removed) continue;
+      for (const def of petitionsForAnchor("unrest")) {
+        targets.push({
+          def,
+          cell: burg.cell,
+          burgId: burg.i,
+          stateId: burg.state,
+          context: { burg: burg.name, state: state.name }
+        });
+      }
+    }
+
+    for (const state of pack.states ?? []) {
+      if (!state?.i || state.removed) continue;
+      const sSim = living.states?.[state.i];
+      const ruler = sSim && sSim.rulerId !== undefined ? this.findFigure(sSim.rulerId) : undefined;
+      if (!ruler || ruler.death !== undefined) continue;
+      const capital = state.capital ? pack.burgs[state.capital] : undefined;
+      for (const def of petitionsForAnchor("state")) {
+        targets.push({
+          def,
+          cell: capital?.cell ?? state.center ?? 0,
+          stateId: state.i,
+          burgId: capital?.i,
+          context: { state: state.name, ruler: ruler.name, burg: capital?.name }
+        });
+      }
+    }
+
+    const guild = this.getGuild();
+    for (const relic of guild.relics ?? []) {
+      if (!relic.cursed) continue;
+      for (const def of petitionsForAnchor("cursedRelic")) {
+        targets.push({
+          def,
+          cell: guild.hqBurgId ? (pack.burgs[guild.hqBurgId]?.cell ?? 0) : 0,
+          context: { relic: relic.name }
+        });
+      }
+    }
+
+    return targets.length > 0 ? rng.choice(targets) : null;
+  }
+
+  /** Apply the player's petition choice: guild gold/renown plus world outcomes. */
+  resolvePetition(popupId: number, choiceIndex: number): { summary: string; gold: number; renown: number } | null {
+    const living = this.getState();
+    const guild = this.getGuild();
+    const index = guild.popups.findIndex(popup => popup.id === popupId && popup.kind === "guild_petition");
+    if (index === -1) return null;
+
+    const popup = guild.popups[index]!;
+    const def = getPetitionDef(popup.petitionId);
+    const choice = def?.choices[choiceIndex];
+    if (!def || !choice || popup.expiresAtTick <= living.tick) return null;
+
+    guild.popups.splice(index, 1);
+    guild.gold = Math.max(0, guild.gold + choice.gold);
+    guild.renown = Math.max(0, guild.renown + choice.renown);
+    this.syncGuildTier(living, guild);
+
+    const outcomes = this.applyPetitionEffects(living, popup, choice.effects ?? []);
+    const summary =
+      outcomes.length > 0 ? `${choice.label}: ${outcomes.join(", ")}.` : `${choice.label}: the Guild takes its cut.`;
+
+    const signed = (value: number): string => `${value >= 0 ? "+" : ""}${value}`;
+    this.pushNews(living, {
+      kind: "develop",
+      text: `Petition resolved — ${popup.title}: ${choice.label} (${signed(choice.gold)}g, ${signed(choice.renown)} renown).`,
+      cell: popup.cell,
+      stateId: popup.stateId,
+      burgId: popup.burgId
+    });
+    return { summary, gold: choice.gold, renown: choice.renown };
+  }
+
+  private applyPetitionEffects(living: LivingWorldState, popup: LivingPopup, effects: PetitionEffect[]): string[] {
+    const outcomes: string[] = [];
+    for (const effect of effects) {
+      switch (effect.kind) {
+        case "quellTrouble": {
+          if (popup.provinceId !== undefined && this.quellTrouble(popup.provinceId)) {
+            outcomes.push("the trouble was quelled");
+          }
+          break;
+        }
+        case "promoteTrouble": {
+          const newStateId =
+            popup.provinceId !== undefined ? this.promoteTroubleToState(popup.provinceId, popup.burgId) : null;
+          if (newStateId !== null)
+            outcomes.push(`${pack.states[newStateId]?.name ?? "a new realm"} rose from the coup`);
+          break;
+        }
+        case "purgeLair": {
+          const pSim = popup.provinceId !== undefined ? living.provinces[popup.provinceId] : undefined;
+          const lair = pSim?.lair;
+          if (pSim && lair) {
+            this.removeLairMarker(lair.markerId);
+            pSim.lair = null;
+            pSim.order = Math.min(100, pSim.order + 12);
+            outcomes.push(`${lair.name} was broken up`);
+          }
+          break;
+        }
+        case "pacifyBurg": {
+          if (popup.burgId !== undefined && this.pacifyBurg(popup.burgId)) outcomes.push("the burg was pacified");
+          break;
+        }
+        case "unrest": {
+          const bSim = popup.burgId !== undefined ? living.burgs[popup.burgId] : undefined;
+          if (bSim) {
+            bSim.unrest = minmax(bSim.unrest + effect.amount, 0, 100);
+            outcomes.push(effect.amount >= 0 ? "unrest grew" : "unrest eased");
+          }
+          break;
+        }
+        case "unravel": {
+          const sSim = popup.stateId !== undefined ? living.states[popup.stateId] : undefined;
+          if (sSim) {
+            sSim.unravel = minmax(sSim.unravel + effect.amount, 0, 100);
+            outcomes.push(effect.amount >= 0 ? "the realm frayed" : "the realm stabilized");
+          }
+          break;
+        }
+        case "smiteRuler": {
+          if (popup.stateId !== undefined && this.smiteRuler(popup.stateId)) outcomes.push("the ruler fell");
+          break;
+        }
+        case "destroyRelic": {
+          const relicIndex = (this.getGuild().relics ?? []).findIndex(relic => relic.cursed);
+          if (relicIndex !== -1) {
+            const [relic] = this.getGuild().relics.splice(relicIndex, 1);
+            outcomes.push(`${relic.name} was destroyed`);
+          }
+          break;
+        }
+        case "setPatron": {
+          if (popup.stateId !== undefined) {
+            this.setFavoredState(popup.stateId);
+            outcomes.push("the state is now the Guild's patron");
+          }
+          break;
+        }
+      }
+    }
+    return outcomes;
   }
 
   private nextPopupId(guild: GuildState): number {
