@@ -963,6 +963,58 @@ describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War
     const cap = Living.recomputeStateCapacity(1);
     expect(cap.w.load).toBeGreaterThan(0);
   });
+
+  it("claims a guild bounty popup and banks its gold and renown", () => {
+    Living.init();
+    const guild = Living.getGuild();
+    guild.popups.push({
+      id: 1,
+      kind: "bounty_trouble",
+      cell: 1,
+      title: "Monsters in Aelor",
+      subtitle: "Level 5 trouble",
+      createdTick: 0,
+      expiresAtTick: 3,
+      rewardGold: 20,
+      rewardRenown: 5
+    });
+
+    const claimed = Living.claimPopup(1);
+
+    expect(claimed?.title).toBe("Monsters in Aelor");
+    expect(Living.getGuild().gold).toBe(20);
+    expect(Living.getGuild().renown).toBe(5);
+    expect(Living.getPopups()).toHaveLength(0);
+  });
+
+  it("expires an unclaimed popup after three seasons", () => {
+    Living.init();
+    Living.getGuild().popups.push({
+      id: 9,
+      kind: "bounty_lair",
+      cell: 1,
+      title: "A lair stirs",
+      subtitle: "Level 6 lair",
+      createdTick: 0,
+      expiresAtTick: 3,
+      rewardGold: 10,
+      rewardRenown: 2
+    });
+
+    Living.tick(3);
+
+    expect(Living.getPopups().some(popup => popup.id === 9)).toBe(false);
+  });
+
+  it("queues a bounty popup when a high-level trouble festers", () => {
+    Living.init();
+    Living.spawnTrouble(1, "monsters", "burg", 5);
+
+    Living.tick(1);
+
+    expect(Living.getPopups().some(popup => popup.kind === "bounty_trouble" && popup.provinceId === 1)).toBe(true);
+    expect(Living.getGuild().tier).toBe(1);
+  });
 });
 
 describe("Unified Figures slice 1: specialist commanders", () => {
@@ -1417,7 +1469,7 @@ describe("Living (Lair Ascension Slice 3: Shared Emergent State Engine)", () => 
     const ruler = pack.history.figures!.find(f => f.i === sSim.rulerId)!;
     expect(ruler).toBeDefined();
     expect(ruler.virtues).toContain("brave");
-    expect(ruler.vices.some(v => ["wrathful", "cruel", "vengeful"].includes(v))).toBe(true);
+    expect(ruler.vices?.some(v => ["wrathful", "cruel", "vengeful"].includes(v))).toBe(true);
     expect(newState.military?.length).toBe(1);
     expect(newState.military![0].a).toBeGreaterThan(0);
 

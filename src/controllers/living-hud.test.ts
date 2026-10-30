@@ -12,11 +12,14 @@ const mocks = vi.hoisted(() => {
     states: {} as Record<number, unknown>,
     provinces: {} as Record<number, unknown>,
     burgs: {} as Record<number, unknown>,
-    recentNews: [] as unknown[]
+    recentNews: [] as unknown[],
+    guild: { tier: 1, gold: 0, renown: 0, popups: [] as unknown[] }
   };
 
   const living = {
     getState: vi.fn(() => state),
+    getGuild: vi.fn(() => state.guild),
+    claimPopup: vi.fn((_id: number): unknown => null),
     formatSeasonDate: vi.fn(() => "Spring, 1000 AD"),
     tick: vi.fn(),
     syncWorld: vi.fn(),
@@ -163,7 +166,7 @@ function makeSimulation() {
 }
 
 beforeEach(() => {
-  document.body.innerHTML = "";
+  document.body.innerHTML = `<svg id="map"><g id="viewbox"></g></svg>`;
   vi.clearAllMocks();
 
   globalThis.options = {
@@ -174,7 +177,10 @@ beforeEach(() => {
   const simulation = makeSimulation();
   mocks.state.states = simulation.states;
   mocks.state.burgs = simulation.burgs;
+  mocks.state.provinces = {};
   mocks.state.recentNews = [];
+  mocks.state.guild = { tier: 2, gold: 40, renown: 75, popups: [] };
+  mocks.living.claimPopup.mockReturnValue(null);
   mocks.living.getState.mockReturnValue(mocks.state);
 });
 
@@ -549,5 +555,43 @@ describe("LivingHud", () => {
     };
     LivingHud.refresh();
     expect(inspector?.querySelector<HTMLElement>('[data-god="ascend-state-lair"]')).toBeNull();
+  });
+
+  it("shows the guild wallet in the HUD", () => {
+    LivingHud.open();
+
+    expect(document.getElementById("livingHudWallet")?.textContent).toBe("⚜ 40g · 75r");
+  });
+
+  it("draws on-map bounty popups and claims one when clicked", () => {
+    const popup = {
+      id: 7,
+      kind: "bounty_trouble",
+      cell: 1,
+      title: "Monsters in Northmarch",
+      subtitle: "Level 5 trouble",
+      createdTick: 0,
+      expiresAtTick: 3,
+      rewardGold: 32,
+      rewardRenown: 3,
+      provinceId: 1,
+      stateId: 1
+    };
+    mocks.state.guild.popups = [popup];
+    mocks.living.claimPopup.mockReturnValue(popup);
+
+    LivingHud.open();
+
+    const overlay = document.getElementById("livingOverlay");
+    expect(overlay).toBeTruthy();
+
+    const pin = overlay?.querySelector<SVGElement>('.livingPopup[data-popup-id="7"]');
+    expect(pin).toBeTruthy();
+
+    pin?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(Living.claimPopup).toHaveBeenCalledWith(7);
+    expect(document.getElementById("livingHudStatus")?.textContent).toContain("Bounty claimed");
+    expect(document.getElementById("livingHudStatus")?.textContent).toContain("+32g");
   });
 });

@@ -9,6 +9,7 @@ import { getTroubleDef, isTroubleStatePromotable, SAVE_KIND_LABELS, UNIT_ROLE_LA
 import { Pack } from "@/model/graph/pack-generator";
 import { Living } from "@/model/physical/living-generator";
 import { getCellPoint } from "@/model/story/journeys/journey-places";
+import { drawLivingOverlay, removeLivingOverlay } from "@/renderers/draw-living-overlay";
 import { Layers } from "@/renderers/layers";
 import type { HistoricalFigure } from "@/types/history";
 import { type LivingNewsItem, type ProvinceSimState, SEASON_NAMES, type StatePolitySim } from "@/types/living";
@@ -46,6 +47,7 @@ const TEMPLATE = /* html */ `
     }
     #${HUD_ID} button.pressed { background: var(--header, #5e4fa2); color: #fff; }
     #${HUD_ID} #livingHudDate { margin-left: auto; font-weight: bold; }
+    #${HUD_ID} .livingHudWallet { color: #6a4c93; font-weight: bold; }
     #${HUD_ID} #livingHudClose { padding: 0 0.45em; }
     #${HUD_ID} .livingHudNews {
       display: flex;
@@ -116,6 +118,7 @@ const TEMPLATE = /* html */ `
       <button id="livingHudPlay" type="button">Play 1Ã—</button>
       <button id="livingHudPlay4" type="button">Play 4Ã—</button>
       <button id="livingHudDate" type="button"></button>
+      <span id="livingHudWallet" class="livingHudWallet" title="Guild gold and renown"></span>
       <button id="livingHudClose" type="button" title="Close Living World">Ã—</button>
     </div>
     <div id="livingHudStatus" class="livingHudStatus"></div>
@@ -133,6 +136,8 @@ let dragOrigin: { x: number; y: number; left: number; top: number } | null = nul
 function open(): void {
   if (findEl(HUD_ID)) {
     refresh();
+    drawLivingOverlay();
+    bindOverlayClicks();
     return;
   }
 
@@ -145,6 +150,8 @@ function open(): void {
   bindControls();
   attachMapSelection();
   refresh();
+  drawLivingOverlay();
+  bindOverlayClicks();
 }
 
 function close(): void {
@@ -152,6 +159,7 @@ function close(): void {
   selected = null;
   findEl(HUD_ID)?.remove();
   findEl(INSPECTOR_ID)?.remove();
+  removeLivingOverlay();
   window.removeEventListener("pointermove", moveDrag);
   window.removeEventListener("pointerup", endDrag);
   select<SVGElement, unknown>("#viewbox").on("click.livingHud", null).style("cursor", null);
@@ -170,6 +178,7 @@ function refresh(): void {
   if (date) date.textContent = Living.formatSeasonDate(living);
 
   renderControls();
+  renderWallet();
   renderNews(living.recentNews ?? []);
   validateSelection();
   renderInspector();
@@ -249,6 +258,7 @@ function afterTick(): void {
   Living.syncWorld();
   redrawMap();
   refresh();
+  drawLivingOverlay();
 }
 
 function redrawMap(): void {
@@ -259,6 +269,15 @@ function renderControls(): void {
   findEl("livingHudPause")?.classList.toggle("pressed", playing === 0);
   findEl("livingHudPlay")?.classList.toggle("pressed", playing === 1);
   findEl("livingHudPlay4")?.classList.toggle("pressed", playing === 4);
+}
+
+function renderWallet(): void {
+  const wallet = findEl("livingHudWallet");
+  if (!wallet) return;
+
+  const guild = Living.getGuild?.();
+  wallet.textContent = guild ? `⚜ ${guild.gold}g · ${guild.renown}r` : "";
+  wallet.title = guild ? `Guild Tier ${guild.tier} — Gold ${guild.gold}, Renown ${guild.renown}` : "";
 }
 
 function renderNews(news: LivingNewsItem[]): void {
@@ -319,6 +338,31 @@ function onMapClick(this: SVGElement, event: MouseEvent): void {
 
   const stateId = pack.cells.state?.[cell] ?? 0;
   if (stateId && pack.states[stateId] && !pack.states[stateId].removed) selectState(stateId);
+}
+
+function bindOverlayClicks(): void {
+  const overlay = document.getElementById("livingOverlay");
+  if (!overlay || overlay.getAttribute("data-bound") === "1") return;
+  overlay.setAttribute("data-bound", "1");
+  overlay.addEventListener("click", onOverlayClick);
+}
+
+function onOverlayClick(event: Event): void {
+  const target = event.target as Element | null;
+  const popupElement = target?.closest?.(".livingPopup") as HTMLElement | null;
+  if (!popupElement) return;
+
+  event.stopPropagation();
+  event.preventDefault();
+  const id = Number(popupElement.getAttribute("data-popup-id") ?? 0);
+  if (!id) return;
+
+  const claimed = Living.claimPopup(id);
+  drawLivingOverlay();
+  refresh();
+  if (claimed) {
+    setStatus(`Bounty claimed: ${claimed.title} (+${claimed.rewardGold}g, +${claimed.rewardRenown} renown).`);
+  }
 }
 
 function selectState(stateId: number): void {

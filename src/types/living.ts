@@ -147,6 +147,54 @@ export interface StatePolitySim {
   grudges: GrudgeRecord[];
 }
 
+/** On-map popups queued by the simulation and claimed by the player (idle bonus). */
+export type LivingPopupKind = "bounty_trouble" | "bounty_lair" | "ascension_warning" | "relic_exposed";
+
+export interface LivingPopup {
+  id: number;
+  kind: LivingPopupKind;
+  cell: number;
+  title: string;
+  subtitle: string;
+  createdTick: number;
+  /** the popup auto-resolves (no reward) once the world reaches this tick */
+  expiresAtTick: number;
+  stateId?: number;
+  provinceId?: number;
+  burgId?: number;
+  markerId?: number;
+  rewardGold: number;
+  rewardRenown: number;
+}
+
+export type GuildMissionKind = "trouble" | "lair" | "excavate" | "pacify";
+
+export interface ActiveGuildMission {
+  id: number;
+  kind: GuildMissionKind;
+  figureId: number;
+  targetCell: number;
+  provinceId?: number;
+  burgId?: number;
+  markerId?: number;
+  pool: "m" | "w" | "s" | "c";
+  dc: number;
+  progress: number;
+  required: number;
+  rewardGold: number;
+  rewardRenown: number;
+}
+
+/** Player guild wallet and the transient on-map popups. Expanded by later slices. */
+export interface GuildState {
+  tier: number;
+  gold: number;
+  renown: number;
+  hqBurgId?: number;
+  missions?: ActiveGuildMission[];
+  popups: LivingPopup[];
+}
+
 export type LivingNewsKind =
   | "war"
   | "battle"
@@ -186,4 +234,6 @@ export interface LivingWorldState {
   provinces: Record<number, ProvinceSimState>;
   burgs: Record<number, BurgSimState>;
   recentNews: LivingNewsItem[];
+  /** lazily initialized guild wallet, mission list and on-map popups */
+  guild?: GuildState;
 }

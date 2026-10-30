@@ -55,8 +55,11 @@ import {
   type BurgSimState,
   type CapacityLedger,
   type GrudgeReason,
+  type GuildState,
   type LivingNewsItem,
   type LivingNewsKind,
+  type LivingPopup,
+  type LivingPopupKind,
   type LivingWorldState,
   type ProvinceLair,
   type ProvinceSimState,
@@ -73,6 +76,8 @@ import { createRng, type Rng } from "@/utils/rng";
 import { Chronicle } from "./history-generator";
 
 const MAX_RECENT_NEWS = 50;
+const MAX_LIVING_POPUPS = 6;
+const POPUP_LIFETIME_SEASONS = 3;
 
 export function settlementTierFromPop(populationThousands: number): number {
   let tier = 0;
@@ -242,6 +247,19 @@ class LivingModel {
     return pack.history?.living ?? this.init();
   }
 
+  /** Return the guild wallet, initializing it lazily for maps saved before the Guild existed */
+  getGuild(): GuildState {
+    const living = this.getState();
+    living.guild ??= { tier: 1, gold: 0, renown: 0, popups: [] };
+    living.guild.popups ??= [];
+    return living.guild;
+  }
+
+  /** On-map popups currently waiting to be claimed */
+  getPopups(): LivingPopup[] {
+    return this.getGuild().popups;
+  }
+
   /** Deterministic PRNG for a given tick and domain tag */
   rng(tag: string, id = 0, _salt = 0): Rng {
     const living = this.getState();
@@ -256,6 +274,7 @@ class LivingModel {
     for (let step = 0; step < steps; step++) {
       living.tick += 1;
       living.season = ((living.season + 1) % 4) as SeasonId;
+      this.expirePopups(living);
 
       if (living.season === 0) {
         options.map.lore.calendar.year += 1;
@@ -273,6 +292,7 @@ class LivingModel {
       this.stepStates(living);
       this.stepRebellions(living);
       this.recomputeAllCapacities(living);
+      this.refreshPopups(living);
     }
 
     return living;
@@ -486,6 +506,143 @@ class LivingModel {
     const year = options.map?.lore?.calendar?.year ?? 1000;
     const eraShort = options.map?.lore?.calendar?.eraShort ?? "";
     return eraShort ? `${seasonName}, ${year} ${eraShort}` : `${seasonName}, ${year}`;
+  }
+
+  /** Claim an on-map popup before it expires, banking its bonus Gold and Renown. */
+  claimPopup(id: number): LivingPopup | null {
+    const living = this.getState();
+    const guild = this.getGuild();
+    const index = guild.popups.findIndex(popup => popup.id === id);
+    if (index === -1) return null;
+
+    const [popup] = guild.popups.splice(index, 1);
+    if (!popup || popup.expiresAtTick <= living.tick) return null;
+
+    guild.gold += popup.rewardGold;
+    guild.renown += popup.rewardRenown;
+    this.pushNews(living, {
+      kind: popup.kind === "bounty_trouble" ? "trouble" : popup.kind === "bounty_lair" ? "lair" : "succession",
+      text: `Guild bounty claimed: ${popup.title} (+${popup.rewardGold}g, +${popup.rewardRenown} renown).`,
+      cell: popup.cell,
+      stateId: popup.stateId
+    });
+    return popup;
+  }
+
+  /** Drop popups whose countdown ran out. They auto-resolve without a reward. */
+  private expirePopups(living: LivingWorldState): void {
+    const guild = living.guild;
+    if (!guild?.popups?.length) return;
+    guild.popups = guild.popups.filter(popup => popup.expiresAtTick > living.tick);
+  }
+
+  /** Inspect the live world after a tick and queue urgent-bounty popups (deduplicated, capped). */
+  private refreshPopups(living: LivingWorldState): void {
+    const guild = this.getGuild();
+    const candidates: Array<Omit<LivingPopup, "id" | "createdTick" | "expiresAtTick"> & { priority: number }> = [];
+
+    for (const province of pack.provinces ?? []) {
+      if (!province?.i || province.removed) continue;
+      const pSim = living.provinces?.[province.i];
+      if (!pSim) continue;
+
+      const trouble = pSim.trouble;
+      const lair = pSim.lair;
+      const cell = trouble?.cell ?? lair?.cell ?? province.center ?? 0;
+      const stateId = province.state;
+
+      if (trouble && trouble.level >= 4) {
+        candidates.push({
+          kind: "bounty_trouble",
+          cell,
+          title: `${trouble.name} in ${province.name ?? "the province"}`,
+          subtitle: `Level ${trouble.level} ${trouble.theme} trouble`,
+          provinceId: province.i,
+          stateId,
+          rewardGold: 12 + trouble.level * 4,
+          rewardRenown: 3,
+          priority: trouble.level
+        });
+      }
+
+      if (lair?.raidPending) {
+        candidates.push({
+          kind: "bounty_lair",
+          cell,
+          title: `${lair.name} prepares a raid`,
+          subtitle: `Level ${lair.level} lair in ${province.name ?? "the province"}`,
+          provinceId: province.i,
+          stateId,
+          rewardGold: 20 + lair.level * 5,
+          rewardRenown: 8,
+          priority: lair.level + 10
+        });
+      }
+
+      const troubleImminent =
+        Boolean(trouble) &&
+        isTroubleStatePromotable(trouble!.id) &&
+        trouble!.level >= 7 &&
+        trouble!.seasonsUnchecked >= 3 &&
+        pSim.order <= 30;
+      const lairImminent =
+        Boolean(lair) && isLairStateCapable(lair!.id) && lair!.level >= 8 && lair!.seasonsActive >= 7;
+      if (troubleImminent || lairImminent) {
+        candidates.push({
+          kind: "ascension_warning",
+          cell,
+          title: `${lair ? lair.name : trouble!.name} is about to rise`,
+          subtitle: "A new sovereign state may be born next season",
+          provinceId: province.i,
+          stateId,
+          rewardGold: 25,
+          rewardRenown: 12,
+          priority: 100
+        });
+      }
+    }
+
+    candidates.sort((a, b) => b.priority - a.priority);
+    for (const candidate of candidates) {
+      if (guild.popups.length >= MAX_LIVING_POPUPS) break;
+      if (this.hasPopup(guild, candidate.kind, candidate.provinceId)) continue;
+      const { priority: _priority, ...popup } = candidate;
+      guild.popups.push({
+        ...popup,
+        id: this.nextPopupId(guild),
+        createdTick: living.tick,
+        expiresAtTick: living.tick + POPUP_LIFETIME_SEASONS
+      });
+    }
+  }
+
+  /** Queue a one-off popup (e.g. a battle unearthing a relic) without waiting for the next scan. */
+  private queuePopup(partial: Omit<LivingPopup, "id" | "createdTick" | "expiresAtTick">): LivingPopup | null {
+    const living = this.getState();
+    const guild = this.getGuild();
+    if (guild.popups.length >= MAX_LIVING_POPUPS) return null;
+    if (this.hasPopup(guild, partial.kind, partial.provinceId, partial.cell)) return null;
+
+    const entry: LivingPopup = {
+      ...partial,
+      id: this.nextPopupId(guild),
+      createdTick: living.tick,
+      expiresAtTick: living.tick + POPUP_LIFETIME_SEASONS
+    };
+    guild.popups.push(entry);
+    return entry;
+  }
+
+  private hasPopup(guild: GuildState, kind: LivingPopupKind, provinceId?: number, cell?: number): boolean {
+    return guild.popups.some(popup => {
+      if (popup.kind !== kind) return false;
+      if (provinceId !== undefined) return popup.provinceId === provinceId;
+      return cell !== undefined && popup.cell === cell;
+    });
+  }
+
+  private nextPopupId(guild: GuildState): number {
+    return guild.popups.reduce((max, popup) => Math.max(max, popup.id), 0) + 1;
   }
 
   private syncBurgs(living: LivingWorldState): void {
@@ -2734,6 +2891,18 @@ class LivingModel {
         name: `Battle of ${label ?? burgOrCell.name ?? "the wilds"}`
       });
     }
+
+    // A clash can break open an ancient site: expose a relic cache on the map.
+    const cell = typeof burgOrCell === "number" ? burgOrCell : burgOrCell.cell;
+    const place = typeof burgOrCell === "number" ? (label ?? "the wilds") : (label ?? burgOrCell.name ?? "the wilds");
+    this.queuePopup({
+      kind: "relic_exposed",
+      cell,
+      title: `Relics exposed near ${place}`,
+      subtitle: "A clash has broken open an ancient site",
+      rewardGold: this.rng("relic:exposed", cell).int(15, 40),
+      rewardRenown: 4
+    });
   }
 
   private pushHistory(type: HistoryEventType, actors: HistRef[], cell: number | undefined, text: string): void {
