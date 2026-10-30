@@ -636,12 +636,23 @@ describe("locks, treasuries and links", () => {
     expect("lock" in entity()).toBe(false);
   });
 
-  it("sets treasuries, taxes and preview links within their bounds", () => {
-    Burgs.setTreasury(1, 12.345);
-    expect(pack.burgs[1].treasury).toBe(12.35);
+  it("sets adjustments, taxes and preview links within their bounds", () => {
+    Burgs.setAdjustments(1, [{ name: " Debts ", value: -12.346 }]);
+    expect(pack.burgs[1].adjustments).toEqual([{ name: "Debts", value: -12.35 }]);
+    expect(() => Burgs.setAdjustments(1, [{ name: "Rents", value: Number.NaN }])).toThrow("must be a number");
     States.setTaxes(1, 0.2, 1.5);
-    States.setOtherRevenue(1, -12.346);
-    expect(pack.states[1].economy).toMatchObject({ salesTax: 0.2, pollTax: 1.5, otherRevenue: -12.35 });
+    States.setAdjustments(1, [
+      { name: "Tribute", value: 40 },
+      { name: "Loans", value: -12.346 }
+    ]);
+    expect(pack.states[1].economy).toMatchObject({
+      salesTax: 0.2,
+      pollTax: 1.5,
+      adjustments: [
+        { name: "Tribute", value: 40 },
+        { name: "Loans", value: -12.35 }
+      ]
+    });
     expect(() => States.setTaxes(1, 2, 0)).toThrow("from 0 to 1");
     States.setMarketFee(1, 12.345);
     expect(pack.states[1].economy.marketFee).toBe(12);
@@ -649,7 +660,7 @@ describe("locks, treasuries and links", () => {
     States.setCorruption(1, 33.4);
     expect(pack.states[1].economy.budget.corruption).toBe(33);
     expect(() => States.setCorruption(1, 101)).toThrow("from 0 to 100");
-    expect(() => States.setOtherRevenue(0, 1)).toThrow("Neutral lands");
+    expect(() => States.setAdjustments(0, [])).toThrow("Neutral lands");
     Burgs.setLink(1, "https://example.com/map.png");
     expect(pack.burgs[1].link).toBe("https://example.com/map.png");
     expect(() => Burgs.setLink(1, "javascript:alert(1)")).toThrow("http(s) URL");

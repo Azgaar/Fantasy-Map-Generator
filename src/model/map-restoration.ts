@@ -975,8 +975,6 @@ class MapRestorationModule {
       return;
     }
 
-    // the rerun starts every treasury from 0: the burgs keep the balance they had
-    const treasuries = new Map(pack.burgs.map(burg => [burg, burg?.treasury]));
     if (pack.markets.length || !parent.markets?.length) {
       Goods.sync();
       this.expandMarkets();
@@ -987,7 +985,6 @@ class MapRestorationModule {
       Markets.regenerate();
       Production.regenerate();
     }
-    for (const [burg, treasury] of treasuries) if (burg?.i) burg.treasury = treasury;
   }
 
   /** a burg no kept market reaches, as on land cut off by deep water, centers a market of its own */

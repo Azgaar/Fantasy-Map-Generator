@@ -90,7 +90,7 @@ export class ProductionModule {
       const market = Markets.ofBurg(burg);
       // the poll tax is the day's first claim: the burg starts owing it and pays it from its first sales
       burg.pollTaxPaid = market ? rn(States.getPollTaxDue(burg.state || 0, burg.population || 0), 2) : 0;
-      burg.treasury = -burg.pollTaxPaid - (marketFees[burg.i!] || 0);
+      burg.treasury = sum(burg.adjustments ?? [], line => line.value) - burg.pollTaxPaid - (marketFees[burg.i!] || 0); // adjustments come at dawn too
       if (market) states.push(this.createBurgProductionState(burg, market, recording));
       else {
         burg.product = 0; // out of every market: nothing made
@@ -112,7 +112,7 @@ export class ProductionModule {
         const hasWork = this.runWorkerLoop(index, state, WORKERS_PER_TURN);
         // inputs made for the chain still under way wait for its next step
         const inputs = hasWork ? this.getChainInputs(index, state.activeGoalGoodId) : null;
-        this.sellInventoryToMarket(state, goodId => !inputs?.has(goodId));
+        this.sellInventoryToMarket(index, state, goodId => !inputs?.has(goodId));
         this.fillDemand(index, state, hasWork && state.population ? state.workersUsed / state.population : 1);
         this.spendOnWants(index, state);
         return hasWork;
@@ -218,7 +218,7 @@ export class ProductionModule {
       state.workersUsed += spent;
       // a finished good is sold at once, so the next worker sees the price it moved; a chain's inputs wait for their step
       if (decision.action.good.i === decision.goalGoodId)
-        this.sellInventoryToMarket(state, goodId => goodId === decision.goalGoodId);
+        this.sellInventoryToMarket(index, state, goodId => goodId === decision.goalGoodId);
     }
 
     return true;
@@ -326,8 +326,8 @@ export class ProductionModule {
   }
 
   /** The best price at the burg's door for a unit of the good, in any market it reaches */
-  private getOutletPrice(state: BurgProductionState, good: Good): number {
-    state.outlets[good.i] ??= Trade.getOutlet(state.burg, good)?.price ?? 0;
+  private getOutletPrice(index: ProductionIndex, state: BurgProductionState, good: Good): number {
+    state.outlets[good.i] ??= Trade.getOutlet(state.burg, good, index.tradeTerms)?.price ?? 0;
     return state.outlets[good.i]!;
   }
 
@@ -358,7 +358,11 @@ export class ProductionModule {
   }
 
   /** Sells the goods of the burg's inventory it chooses, all by default, where each fetches the most */
-  private sellInventoryToMarket(state: BurgProductionState, sells: (goodId: number) => boolean = () => true): void {
+  private sellInventoryToMarket(
+    index: ProductionIndex,
+    state: BurgProductionState,
+    sells: (goodId: number) => boolean = () => true
+  ): void {
     let phaseRevenue = 0;
     const { taxRate } = state;
 
@@ -369,11 +373,11 @@ export class ProductionModule {
       state.inventory[goodId] = 0;
 
       const good = Goods.get(goodId)!;
-      const market = Trade.getOutlet(state.burg, good)?.market ?? state.market; // where it fetches the most
-      const trade = Trade.sell({ burg: state.burg, good, units, taxRate, market });
+      const market = Trade.getOutlet(state.burg, good, index.tradeTerms)?.market ?? state.market; // where it fetches the most
+      const trade = Trade.sell({ burg: state.burg, good, units, taxRate, market, terms: index.tradeTerms });
       if (!trade) continue;
 
-      const revenue = trade.units * trade.price - trade.tax;
+      const revenue = trade.units * trade.price - trade.tax - (trade.tariff || 0);
       phaseRevenue += revenue;
       state.log?.push({ goodId, market: market.i, kind: DEAL_KINDS.sale, ...trade });
     }
@@ -625,8 +629,14 @@ export class ProductionModule {
   }
 
   /** What a unit made brings the burg: the sell price less its own sales tax, as its inputs' prices hold theirs */
-  private getSaleValue(state: BurgProductionState, good: Good, quote: MarketQuote, modifier: number): number {
-    return Math.max(quote.sellPrice, this.getOutletPrice(state, good)) * modifier * (1 - state.taxRate);
+  private getSaleValue(
+    index: ProductionIndex,
+    state: BurgProductionState,
+    good: Good,
+    quote: MarketQuote,
+    modifier: number
+  ): number {
+    return Math.max(quote.sellPrice, this.getOutletPrice(index, state, good)) * modifier * (1 - state.taxRate);
   }
 
   private buildImmediateManufactureCandidate(
@@ -665,7 +675,7 @@ export class ProductionModule {
 
     const modifier = this.getWorkerOutput(index, state, recipe.good);
     quotes[recipe.good.i] ??= this.quote(index, state, recipe.good.i);
-    const sellValue = this.getSaleValue(state, recipe.good, quotes[recipe.good.i], modifier);
+    const sellValue = this.getSaleValue(index, state, recipe.good, quotes[recipe.good.i], modifier);
     const ingredientCost = marketCostTotal / actualUnits;
     const score = sellValue - ingredientCost;
 
@@ -739,7 +749,7 @@ export class ProductionModule {
 
     const modifier = this.getWorkerOutput(index, state, good);
     quotes[good.i] ??= this.quote(index, state, good.i);
-    const sellValuePerUnit = this.getSaleValue(state, good, quotes[good.i], modifier);
+    const sellValuePerUnit = this.getSaleValue(index, state, good, quotes[good.i], modifier);
     const totalProjectedGain = sellValuePerUnit * targetUnits;
 
     const recipeList = index.recipesByOutput[good.i];
@@ -876,23 +886,6 @@ export class ProductionModule {
       if (state.log) candidates.push(goalPlan.candidate); // only the debug log reads them
       if (good.i === activeGoalGoodId) activeGoal = goalPlan;
       if (!chosenGoal || goalPlan.normalizedGain > chosenGoal.normalizedGain + 0.001) chosenGoal = goalPlan;
-    }
-
-    if (activeGoalGoodId !== null && chosenGoal && !activeGoal) {
-      const activeGood = Goods.get(activeGoalGoodId);
-      if (activeGood) {
-        activeGoal = this.planGoodAction(
-          index,
-          state,
-          activeGood,
-          fraction,
-          fraction,
-          workersLeft,
-          [],
-          undefined,
-          quotes
-        );
-      }
     }
 
     if (activeGoal && chosenGoal && activeGoal.normalizedGain >= chosenGoal.normalizedGain) chosenGoal = activeGoal;

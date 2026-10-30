@@ -2189,6 +2189,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       state.economy ??= { ...noFinance(), salesTax, pollTax, tariffs }; // the v1.124.0 step sets it for older maps
       state.economy.marketFee = States.defineMarketFee(state);
       state.economy.budget = States.defineBudget(state, States.defineCorruption(state));
+      state.economy.adjustments ??= [];
     }
 
     // v1.157.0 charges carriage per good and places a count of richer deposits per good instead of a chance per cell

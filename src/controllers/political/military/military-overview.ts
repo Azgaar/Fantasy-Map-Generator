@@ -21,6 +21,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { EconomyTerms } from "@/ui/economy-view";
 import { tip } from "@/ui/tooltips";
 import { wiki } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
@@ -37,6 +38,7 @@ type MilitaryRow = {
   population: number;
   rate: number;
   alert: number;
+  upkeep: number;
 };
 let columns: EditorColumn<MilitaryRow>[] = [];
 
@@ -198,6 +200,13 @@ function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
         t("Click to sort")
       )
     },
+    {
+      key: "upkeep",
+      label: t("Upkeep"),
+      width: "5em",
+      sortBy: row => row.upkeep,
+      tip: sentences(EconomyTerms.upkeep(), t("Click to sort"))
+    },
     { key: "regiments", width: "1.4em", permanent: true }
   ];
 }
@@ -239,7 +248,8 @@ function getMilitaryData(): MilitaryRow[] {
         total,
         population,
         rate: population ? (total / population) * 100 : 0,
-        alert: state.alert ?? 0
+        alert: state.alert ?? 0,
+        upkeep: Military.getUpkeep(state.i)
       };
     });
   return sortDataByColumns(dialogId, rows, columns);
@@ -279,6 +289,7 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
         <div data-col="population" data-tip="${t("State population")}">${percentage ? percent(row.population, totals.population) : si(row.population)}</div>
         <div data-col="rate" data-tip="${sentences(t("Military personnel rate (% of state population)"), t("Depends on war alert"))}">${rn(row.rate, 2)}%</div>
         <input data-col="alert" data-tip="${sentences(t("War Alert"), t("Modifier to military forces number, depends on political situation"))}" type="number" min="0" step=".01" value="${rn(row.alert, 2)}" />
+        <div data-col="upkeep" data-tip="${EconomyTerms.upkeep()}">${rn(row.upkeep * 100)}%</div>
         <span data-col="regiments" data-tip="${t("Show regiments list")}" class="icon-list-bullet pointer"></span>
       </div>`;
     })

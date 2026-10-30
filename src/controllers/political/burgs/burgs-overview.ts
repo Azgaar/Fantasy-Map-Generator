@@ -22,7 +22,13 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
-import { EconomyTerms, prosperityTip, renderProsperityPercent } from "@/ui/economy-view";
+import {
+  adjustmentsFromText,
+  adjustmentsToText,
+  EconomyTerms,
+  prosperityTip,
+  renderProsperityPercent
+} from "@/ui/economy-view";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { getLatitude, getLongitude } from "@/utils/common-utils";
@@ -50,7 +56,8 @@ const CSV_COLUMNS = [
   "Product",
   "Wealth",
   "Prosperity",
-  "Treasury",
+  "Balance",
+  "Adjustments",
   "X",
   "Y",
   "Latitude",
@@ -150,7 +157,7 @@ const columns: EditorColumn<Burg>[] = [
   },
   {
     key: "treasury",
-    label: t("Treasury"),
+    label: t("Balance"),
     width: "6.5em",
     hidden: true,
     mobileHidden: true,
@@ -237,7 +244,7 @@ function renderDialog(): void {
           ${t("Avg wealth")}:&nbsp;<span id="burgsFooterProductPerCapita">0</span> 🟡
         </div>
         <div data-tip="${EconomyTerms.treasury()}" style="margin-left: 12px" data-col="treasury">
-          ${t("Avg treasury")}:&nbsp;<span id="burgsFooterTreasury">0</span> 🟡
+          ${t("Avg balance")}:&nbsp;<span id="burgsFooterTreasury">0</span> 🟡
         </div>
       </div>
       <div id="burgsBottom" class="editorToolbar">
@@ -493,7 +500,7 @@ function renderBurgsPage(view: TableView<Burg>): void {
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openBurgEditor));
   body.querySelectorAll<HTMLElement>(".burgEconomy").forEach(el => {
     el.addEventListener("click", () =>
-      Controllers.ProductionOverview.open(+(el.closest(".states") as HTMLElement).dataset.id!)
+      Controllers.burgEconomyOverview.open(+(el.closest(".states") as HTMLElement).dataset.id!)
     );
   });
   body.querySelectorAll<HTMLElement>("span.icon-store[data-market]").forEach(el => {
@@ -832,6 +839,7 @@ function downloadBurgsData(): void {
         rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2),
         Prosperity.getBurg(b.i!) ? rn(Prosperity.getBurg(b.i!)!.prosperity * 100) : "",
         rn(b.treasury || 0, 2),
+        adjustmentsToText(b.adjustments),
         b.x,
         b.y,
         getLatitude(b.y, coordinates, options.map.graph.height, 2),
@@ -924,7 +932,11 @@ async function uploadBurgsCsv(text: string): Promise<void> {
         people => Burgs.setPopulation(id, +people),
         rn(burg.population! * scale * urbanization.rate)
       );
-      row.apply("Treasury", amount => Burgs.setTreasury(id, +amount), rn(burg.treasury || 0, 2));
+      row.assign(
+        "Adjustments",
+        text => Burgs.setAdjustments(id, adjustmentsFromText(text)),
+        adjustmentsToText(burg.adjustments)
+      );
       row.apply("Capital", () => Burgs.setCapital(id), capitals.has(id) ? "capital" : "");
       row.assign("Port", port => Burgs.setPort(id, Boolean(port)), burg.port ? "port" : "");
       for (const [column, building] of BUILDING_COLUMNS)

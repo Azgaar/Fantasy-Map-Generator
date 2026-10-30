@@ -1,3 +1,4 @@
+import { type District, Districts } from "@/model/political/districts";
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods, getNeedsCost } from "./goods-generator";
 import { Production } from "./production-generator";
 import { DEAL_KINDS } from "./trade";
@@ -7,6 +8,7 @@ const COMFORT_SHARE = 0.4;
 const VARIETY_SHARE = 0.4;
 const COMFORT_TOP = 15; // consuming this many times bare needs at the cheapest is full comfort
 const VARIETY_TOP = 14; // consuming this many goods in even measure is full variety
+const INFRASTRUCTURE_SHARE = 0.15; // of prosperity, the state's public works serving its people
 
 export const PROSPERITY_LEVELS = [
   "Desolate",
@@ -22,9 +24,9 @@ export const PROSPERITY_LEVELS = [
 ] as const;
 export type ProsperityLevel = (typeof PROSPERITY_LEVELS)[number];
 
-/** A people's living: needs met (0–1), consumption at base prices in days of bare needs, the effective number of goods, and prosperity (0–1) */
-export type Living = { needs: number; comfort: number; variety: number; prosperity: number };
-type Consumption = { people: number; goods: number[]; needsCost: number; needsMet?: number }; // goods: units by good id
+/** A people's living: needs met (0–1), consumption at base prices in days of bare needs, the effective number of goods, their district's infrastructure (0–1), and prosperity (0–1) */
+export type Living = { needs: number; comfort: number; variety: number; infrastructure: number; prosperity: number };
+type Consumption = { people: number; goods: number[]; needsCost: number; infrastructure: number; needsMet?: number }; // goods: units by good id
 /** A cell's rural people: their living and their share of their market's rural earnings */
 export type RuralCell = { people: number; earned: number; living: Living };
 
@@ -72,6 +74,7 @@ class ProsperityModule {
     this.consumed.clear();
     if (!pack.deals?.length) return; // no economy run: nothing to measure
     const needsCost = getNeedsCost(pack.goods);
+    const infrastructure = this.getInfrastructure();
     for (const [burgId, , goodId, kind, units] of pack.deals) {
       if (kind !== DEAL_KINDS.demand && kind !== DEAL_KINDS.kept) continue;
       const goods = this.consumed.get(burgId) ?? [];
@@ -81,7 +84,15 @@ class ProsperityModule {
     for (const burg of pack.burgs) {
       if (!burg.i || burg.removed || !burg.population || !pack.cells.market[burg.cell]) continue;
       const goods = this.consumed.get(burg.i) ?? [];
-      this.burgs.set(burg.i, this.measure({ people: burg.population, goods, needsCost }));
+      this.burgs.set(
+        burg.i,
+        this.measure({
+          people: burg.population,
+          goods,
+          needsCost,
+          infrastructure: infrastructure(burg.cell)
+        })
+      );
     }
   }
 
@@ -92,6 +103,7 @@ class ProsperityModule {
     this.rural.clear();
     if (!pack.deals?.length) return;
     const needsCost = getNeedsCost(pack.goods);
+    const infrastructure = this.getInfrastructure();
     output ??= Production.getRuralOutput();
     const byMarket = new Map<number, { cellId: number; people: number; produce: number }[]>();
     for (const cellId of pack.cells.i) {
@@ -114,13 +126,33 @@ class ProsperityModule {
         const share = totalProduce ? produce / totalProduce : people / totalPeople;
         const goods: number[] = [];
         for (const [goodId, units] of market.rural.bought) goods[goodId] = units * share;
-        const living = this.measure({ people, goods, needsCost, needsMet: 1 });
+        const living = this.measure({
+          people,
+          goods,
+          needsCost,
+          infrastructure: infrastructure(cellId),
+          needsMet: 1
+        });
         this.rural.set(cellId, { people, earned: market.rural.earned * share, living });
       }
     }
   }
 
-  private measure({ people, goods, needsCost, needsMet }: Consumption): Living {
+  /** Infrastructure provision of the district a cell is in */
+  private getInfrastructure(): (cellId: number) => number {
+    const served = new Map<District, number>();
+    for (const state of pack.states) {
+      if (!state.i || state.removed) continue;
+      const provision = Districts.getInfrastructure(state);
+      for (const [k, district] of Districts.get(state.i).entries()) served.set(district, provision[k] ?? 0);
+    }
+    return cellId => {
+      const district = Districts.at(cellId);
+      return district ? (served.get(district) ?? 0) : 0;
+    };
+  }
+
+  private measure({ people, goods, needsCost, infrastructure, needsMet }: Consumption): Living {
     const bare = people * needsCost;
     const totalFactor = DEMAND_PRIORITY.reduce((sum, category) => sum + DEMAND_TARGET_FACTORS[category], 0);
     const covered = DEMAND_PRIORITY.map(() => 0);
@@ -151,8 +183,9 @@ class ProsperityModule {
 
     const comfortScore = comfort > 1 ? Math.min(1, Math.log(comfort) / Math.log(COMFORT_TOP)) : 0;
     const varietyScore = variety > 1 ? Math.min(1, (variety - 1) / (VARIETY_TOP - 1)) : 0;
-    const prosperity = needs * (NEEDS_SHARE + COMFORT_SHARE * comfortScore + VARIETY_SHARE * varietyScore);
-    return { needs, comfort, variety, prosperity };
+    const living = needs * (NEEDS_SHARE + COMFORT_SHARE * comfortScore + VARIETY_SHARE * varietyScore);
+    const prosperity = (1 - INFRASTRUCTURE_SHARE) * living + INFRASTRUCTURE_SHARE * infrastructure;
+    return { needs, comfort, variety, infrastructure, prosperity };
   }
 }
 

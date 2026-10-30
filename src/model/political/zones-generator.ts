@@ -1,5 +1,7 @@
 import { max, mean } from "d3";
 import { Routes } from "@/model/economy/routes-generator";
+import { Districts } from "@/model/political/districts";
+import { Stability } from "@/model/political/stability";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { requireColor } from "@/utils/color-utils";
@@ -7,6 +9,20 @@ import { FlatQueue } from "@/utils/flat-queue";
 import { getAdjective } from "@/utils/language-utils";
 import { gauss, P, ra, rand, rw } from "@/utils/probability-utils";
 import { requireName } from "@/utils/validation-utils";
+
+/** One of the items, each as likely as its weight; with equal weights the same pick as `ra` */
+function pickWeighted<T>(items: T[], weights: number[]): T | undefined {
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  if (!total) return ra(items);
+  const roll = Math.random() * total;
+  let passed = 0;
+  return (
+    items.find((_, k) => {
+      passed += weights[k];
+      return roll < passed;
+    }) ?? items.at(-1)
+  );
+}
 
 export interface Zone {
   i: number;
@@ -28,6 +44,7 @@ interface ZoneConfig {
 
 class ZonesModule {
   private config: Record<string, ZoneConfig>;
+  private byStability = false; // only on the user's regeneration: seeded generation stays independent of the economy
 
   constructor() {
     this.config = {
@@ -119,7 +136,12 @@ class ZonesModule {
   }
 
   regenerate(globalModifier = 1): void {
-    this.generate(globalModifier);
+    this.byStability = true;
+    try {
+      this.generate(globalModifier);
+    } finally {
+      this.byStability = false;
+    }
   }
 
   generate(globalModifier = 1) {
@@ -203,18 +225,38 @@ class ZonesModule {
   private addRebels(usedCells: Uint8Array) {
     const { cells, states } = pack;
 
-    const state = ra(states.filter(s => s.i && !s.removed && s.neighbors?.some(Boolean)));
+    // on regeneration unstable states rise more often, in their least stable district; all alike before the economy has run
+    const instability = (stability = 0.5) => (1 - stability) ** 2;
+    const candidates = states.filter(s => s.i && !s.removed && s.neighbors?.some(Boolean));
+    const state = this.byStability
+      ? pickWeighted(
+          candidates,
+          candidates.map(s => instability(Stability.get(s.i)?.stability))
+        )
+      : ra(candidates);
     if (!state) return;
 
     const neibStateId = ra(state.neighbors!.filter((n: number) => n && !states[n].removed));
     if (!neibStateId) return;
 
+    const districts = this.byStability ? Stability.getDistricts(state.i).filter(d => d.district.people) : [];
+    const district = districts.length
+      ? pickWeighted(
+          districts,
+          districts.map(d => instability(d.stability))
+        )?.district
+      : undefined;
+    const inside = (cellId: number) =>
+      cells.state[cellId] === state.i && (!district || Districts.at(cellId) === district);
+    const atBorder = (cellId: number) => cells.c[cellId].some(c => cells.state[c] === neibStateId);
+
     const cellsArray: number[] = [];
     const queue: number[] = [];
-    const borderCellId = cells.i.find(
-      i => cells.state[i] === state.i && cells.c[i].some(c => cells.state[c] === neibStateId)
-    );
-    if (borderCellId) queue.push(borderCellId);
+    const borderCellId = cells.i.find(i => inside(i) && atBorder(i));
+    // a district away from the neighbor rises around its seat, or anywhere in it when the seat lies outside, as the capital may for the crown lands
+    const seat = district?.seat?.cell;
+    const start = borderCellId ?? (district && (seat !== undefined && inside(seat) ? seat : cells.i.find(inside)));
+    if (start !== undefined) queue.push(start);
     const maxCells = rand(10, 30);
 
     while (queue.length) {
@@ -224,9 +266,9 @@ class ZonesModule {
 
       cells.c[cellId].forEach(neibCellId => {
         if (usedCells[neibCellId]) return;
-        if (cells.state[neibCellId] !== state.i) return;
+        if (!inside(neibCellId)) return;
         usedCells[neibCellId] = 1;
-        if (neibCellId % 4 !== 0 && !cells.c[neibCellId].some(c => cells.state[c] === neibStateId)) return;
+        if (borderCellId !== undefined && neibCellId % 4 !== 0 && !atBorder(neibCellId)) return;
         queue.push(neibCellId);
       });
     }
@@ -246,7 +288,8 @@ class ZonesModule {
       Conspiracy: 1
     });
 
-    const name = `${getAdjective(states[neibStateId].name)} ${rebels}`;
+    const province = district?.province ? pack.provinces[district.province] : undefined;
+    const name = `${getAdjective(borderCellId !== undefined || !province ? states[neibStateId].name : province.name)} ${rebels}`;
     pack.zones.push({
       i: pack.zones.length,
       name,

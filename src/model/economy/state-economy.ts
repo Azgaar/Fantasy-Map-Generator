@@ -22,7 +22,7 @@ export type StateAccounts = {
   manufacturing: number; // its burgs' product
   trade: number; // market margins its market centers took
   product: number;
-  taxes: number; // taxes and fees it collected, other revenue aside
+  taxes: number; // taxes and fees it collected, adjustments aside
   wealth: number; // product per person
   prosperity: number | null; // all people's, by their numbers
   towns: GroupLiving | null;
@@ -130,7 +130,7 @@ class StateEconomyModule {
     pollTaxOwed: number;
     marketFees: number;
     markets: number;
-    otherRevenue: number;
+    adjustments: number;
     corruption: number;
   } {
     const { salesTax, tariffs } = Trade.getTaxesByState();
@@ -142,7 +142,7 @@ class StateEconomyModule {
       pollTaxOwed: owed[stateId] || 0,
       marketFees: States.getMarketFees()[stateId] || 0,
       markets: pack.markets.filter(market => market.feePaid && Markets.getState(market) === stateId).length,
-      otherRevenue: pack.states[stateId]?.economy.otherRevenue || 0,
+      adjustments: sum(pack.states[stateId]?.economy.adjustments ?? [], line => line.value),
       corruption: pack.states[stateId]?.economy.pocketed || 0
     };
   }
@@ -203,12 +203,13 @@ class StateEconomyModule {
       for (const accounts of andWorld(stateId)) {
         const groups = sums.get(accounts) ?? {};
         sums.set(accounts, groups);
-        const row = groups[group] ?? { people: 0, needs: 0, comfort: 0, variety: 0, prosperity: 0 };
+        const row = groups[group] ?? { people: 0, needs: 0, comfort: 0, variety: 0, infrastructure: 0, prosperity: 0 };
         groups[group] = row;
         row.people += people;
         row.needs += people * living.needs;
         row.comfort += people * living.comfort;
         row.variety += people * living.variety;
+        row.infrastructure += people * living.infrastructure;
         row.prosperity += people * living.prosperity;
         accounts.levels[group][PROSPERITY_LEVELS.indexOf(Prosperity.getLevel(living.prosperity))] += people;
       }
@@ -257,6 +258,7 @@ class StateEconomyModule {
             needs: row.needs / row.people,
             comfort: row.comfort / row.people,
             variety: row.variety / row.people,
+            infrastructure: row.infrastructure / row.people,
             prosperity: row.prosperity / row.people
           }
         : null;

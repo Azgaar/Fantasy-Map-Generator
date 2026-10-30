@@ -1093,8 +1093,8 @@ fieldset {
 }
 
 #battleBody > table .regiment {
-  width: 13em;
-  max-width: 13em;
+  width: 16em;
+  max-width: 16em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1261,7 +1261,7 @@ i.resetButton:active {
 }
 
 .table {
-  max-height: 75vh;
+  max-height: 65vh;
   max-width: 75vw;
   overflow-x: hidden;
   overflow-y: auto;

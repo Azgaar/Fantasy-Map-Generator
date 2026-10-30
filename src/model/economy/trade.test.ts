@@ -515,6 +515,34 @@ describe("TradeModule", () => {
       expect(tradeModule.isImport(remoteBuy)).toBe(false);
     });
 
+    it("sell() to another state's market pays that state's tariff off the revenue: an import there", () => {
+      const { exporter, burg, good } = setupImport([
+        { i: 0 },
+        { i: 1, economy: { tariffs: [{ states: "all", goods: "all", rate: 0.1 }] } },
+        { i: 2 }
+      ]);
+      const sold = tradeModule.sell({ burg, good, units: 10, taxRate: 0, market: exporter })!;
+      expect(sold.tariff).toBeCloseTo(0.1 * 5 * 10, 2);
+      const [deal] = globalThis.pack.deals;
+      expect(deal[7]).toBeCloseTo(sold.tariff!, 2);
+      expect(tradeModule.isImport(deal)).toBe(true);
+      expect(tradeModule.getTaxStates(deal).tariffState).toBe(1);
+      expect(tradeModule.getDealTariffRate(deal)).toBe(0.1);
+    });
+
+    it("an embargo by either state blocks the sale too", () => {
+      for (const states of [
+        [{ i: 0 }, { i: 1, economy: { tariffs: [{ states: [2], goods: "all", rate: "embargo" }] } }, { i: 2 }],
+        [{ i: 0 }, { i: 1 }, { i: 2, economy: { tariffs: [{ states: [1], goods: "all", rate: "embargo" }] } }]
+      ]) {
+        const { exporter, importer, burg, good } = setupImport(states);
+        exporter.goods[0].price = 100; // would pay far better
+        expect(tradeModule.getOutlet(burg, good)?.market).toBe(importer);
+        expect(tradeModule.sell({ burg, good, units: 1, taxRate: 0, market: exporter })).toBeNull();
+      }
+      expect(globalThis.pack.deals).toHaveLength(0);
+    });
+
     it("buy() from a source applies no tariff or embargo between markets of one state", () => {
       const { burg, importGood } = setupImport([
         { i: 0 },

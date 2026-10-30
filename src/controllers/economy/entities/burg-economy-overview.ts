@@ -28,6 +28,7 @@ import {
   economyWikiButton,
   getTradeContext,
   money,
+  mountAdjustments,
   prosperityTip,
   renderProsperity,
   renderProsperityParts,
@@ -63,7 +64,7 @@ type HistoryRow = {
 };
 
 let activeBurgId = 0;
-const dialogId = "productionOverview" as const;
+const dialogId = "burgEconomyOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 const goodName = (row: HistoryRow) => Goods.get(row.goodId)?.name ?? "";
 const marketName = (row: HistoryRow) => {
@@ -94,7 +95,7 @@ function open(burgId: number): void {
   render();
 
   Dialog.open(dialogId, {
-    title: t("Economy Overview: {{- burg}}", { burg: burg.name }),
+    title: t("Burg Economy: {{- burg}}", { burg: burg.name }),
     width: "56em",
     resizable: true,
     onClose: () => Dialog.destroy(dialogId),
@@ -110,7 +111,6 @@ function renderDialog(): void {
         #${dialogId}Stats { margin-bottom: 0.85em; line-height: 1.6em }
         #${dialogId}Stats > div > span { margin-right: 0.6em }
         #${dialogId}Stats .oneLine { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
-        #${dialogId}Stats .parts { color: #666 }
         #${dialogId}Treasury { width: 7em; margin-left: 0.2em }
         #${dialogId} .productionGood { display: inline-flex; align-items: center; gap: 0.2em; vertical-align: middle }
         #${dialogId} table { width: 100%; table-layout: fixed; border-collapse: collapse; line-height: 1 }
@@ -615,18 +615,22 @@ function renderStats(burg: Burg): void {
     <div data-tip="${t("Production: goods the burg made today, units a day")}"><b>${t("Production")}:</b> ${renderGoods(burg.production ?? []) || t("None")}</div>
     <div data-tip="${t("Consumption: goods the people bought or kept")}"><b>${t("Consumption")}:</b> ${renderGoods(consumption.flatMap((units, goodId) => (units ? [[goodId, units] as [number, number]] : []))) || t("None")}</div>
     <div data-tip="${t("Demand: needs covered, plus wants")}"><b>${t("Demand")}:</b> ${renderDemand(covered, targets)}</div>
-    ${living ? `<div class="oneLine" data-tip="${prosperityTip(living.prosperity)}"><b>${t("Prosperity")}:</b> ${renderProsperity(living.prosperity)} <span class="parts">(${renderProsperityParts(living)})</span></div>` : ""}
+    ${living ? `<div class="oneLine" data-tip="${prosperityTip(living.prosperity)}"><b>${t("Prosperity")}:</b> ${renderProsperity(living.prosperity)}, ${renderProsperityParts(living)}</div>` : ""}
     <div>
       <span data-tip="${EconomyTerms.product()}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
       <span data-tip="${EconomyTerms.wealth()}"><b>${t("Wealth")}:</b> <span class="positive">${formatPrice(wealth)}</span></span>
       ${isCenter && market.feePaid ? `<span data-tip="${t("The license its state charges a market's center a day")}"><b>${t("Market License")}:</b> <span class="negative">${formatPrice(market.feePaid)}</span></span>` : ""}
       ${isCenter ? `<span data-tip="${t("Market margin: {{rate}}% of every trade at its market", { rate: rn(Trade.getMarginRate(market) * 100, 1) })}"><b>${t("Market margin")}:</b> <span class="positive">${formatPrice(margin)}</span></span>` : ""}
       ${burg.pollTaxPaid ? `<span data-tip="${t("Poll tax: {{rate}} a head", { rate: pack.states[burg.state || 0]?.economy.pollTax || 0 })}"><b>${t("Poll Tax")}:</b> ${formatPrice(burg.pollTaxPaid)}</span>` : ""}
-      <span data-tip="${sentences(treasuryTip, t("Type to change. It lasts until the economy is regenerated"))}"><b><label for="${dialogId}Treasury">${t("Treasury")}</label>:</b> 🟡<input id="${dialogId}Treasury" type="number" step="0.01" value="${rn(treasury, 2)}" /></span>
-    </div>`;
-  ensureEl<HTMLInputElement>(`${dialogId}Treasury`).addEventListener("change", function () {
-    if (Number.isFinite(this.valueAsNumber)) Burgs.setTreasury(burg.i!, this.valueAsNumber);
-  });
+      <span data-tip="${treasuryTip}"><b>${t("Balance")}:</b> <span class="${treasury >= 0 ? "positive" : "negative"}">${formatPrice(treasury)}</span></span>
+    </div>
+    <div id="${dialogId}Adjustments" style="max-width: 26em"></div>`;
+  mountAdjustments(
+    ensureEl(`${dialogId}Adjustments`),
+    burg.adjustments ?? [],
+    sentences(EconomyTerms.burgAdjustments(), t("They take effect when production is regenerated")),
+    adjustments => Burgs.setAdjustments(burg.i!, adjustments)
+  );
 }
 
 function renderDemand(covered: number[], targets: number[]): string {
@@ -685,4 +689,4 @@ function downloadHistoryCsv(): void {
   Csv.download(`Production_${name}`, headers, rows);
 }
 
-export const ProductionOverview = { open };
+export const burgEconomyOverview = { open };

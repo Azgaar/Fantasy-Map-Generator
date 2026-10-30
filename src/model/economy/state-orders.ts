@@ -3,7 +3,8 @@
 
 import { sum } from "d3";
 import type { Burg } from "@/model/political/burgs-generator";
-import { EXPENSES, type Expense, noExpenses, States } from "@/model/political/states-generator";
+import { type District, Districts } from "@/model/political/districts";
+import { EXPENSES, type Expense, noExpenses, type State, States } from "@/model/political/states-generator";
 import { rn } from "@/utils/number-utils";
 import { type DemandCategory, type Good, getVarietyShares } from "./goods-generator";
 import { type Market, Markets } from "./markets-generator";
@@ -21,10 +22,11 @@ const EXPENSE_NEEDS: Record<Expense, [DemandCategory, number][]> = {
 };
 const MIN_ORDER = 1; // money a seat gathers before it orders during the day, so it buys in lots rather than crumbs; the day's last orders take the rest
 
-type Seat = { burg: Burg; share: number; spent: number };
+type Seat = { burg: Burg; share: number; corruption: number; spent: number }; // corruption: its district's, before administration
 type StateRun = {
   stateId: number;
-  dawn: number; // money known at dawn: the poll tax its burgs owe, its market fees and its other revenue
+  dawn: number; // money known at dawn: the poll tax its burgs owe, its market fees and its adjustments
+  collected: number; // so far
   seats: Record<Expense, Seat[]>;
   terms: TradeTerms;
 };
@@ -41,7 +43,6 @@ class StateOrdersModule {
     for (const burg of pack.burgs)
       if (burg.i && !burg.removed && burg.pollTaxPaid)
         dawn[burg.state || 0] = (dawn[burg.state || 0] || 0) + burg.pollTaxPaid;
-    const provinceSeats = this.getProvinceSeats();
     this.goodsFor.clear();
     for (const [need] of Object.values(EXPENSE_NEEDS).flat())
       this.goodsFor.set(
@@ -53,13 +54,28 @@ class StateOrdersModule {
     for (const state of pack.states) {
       if (!state.i || state.removed) continue;
       const capital = pack.burgs[state.capital];
-      const atCapital = () =>
-        capital?.i && !capital.removed && Markets.ofBurg(capital) ? [{ burg: capital, share: 1, spent: 0 }] : [];
-      const atSeats = () =>
-        provinceSeats[state.i]?.length ? provinceSeats[state.i].map(seat => ({ ...seat, spent: 0 })) : atCapital();
+      const district = Districts.getCapital(state);
+      const atCapital = (): Seat[] =>
+        capital?.i && !capital.removed && Markets.ofBurg(capital)
+          ? [{ burg: capital, share: 1, corruption: this.tendency(state, district), spent: 0 }]
+          : [];
+      const atSeats = (): Seat[] => {
+        const seats = Districts.get(state.i).filter(d => d.seat && Markets.ofBurg(d.seat));
+        const total = seats.reduce((sum, d) => sum + d.share, 0);
+        if (!total) return atCapital();
+        return seats.map(d => ({
+          burg: d.seat!,
+          share: d.share / total,
+          corruption: this.tendency(state, d),
+          spent: 0
+        }));
+      };
+      const opening =
+        (dawn[state.i] || 0) + (fees[state.i] || 0) + sum(state.economy.adjustments ?? [], line => line.value);
       this.runs.push({
         stateId: state.i,
-        dawn: (dawn[state.i] || 0) + (fees[state.i] || 0) + state.economy.otherRevenue,
+        dawn: opening,
+        collected: opening,
         seats: { court: atCapital(), administration: atSeats(), infrastructure: atSeats(), military: atCapital() },
         terms: this.exempt(terms, state.i)
       });
@@ -68,15 +84,17 @@ class StateOrdersModule {
 
   /** A turn: each seat spends its expenses' share of what the state collected so far; the day's last spends the rest */
   place(last = false): void {
-    const ruralPollTax = last ? Trade.getRuralPollTax() : [];
+    const ruralPollTax = last ? Trade.settleRuralPollTax() : [];
     const least = last ? 0.01 : MIN_ORDER;
     for (const run of this.runs) {
-      const { budget } = pack.states[run.stateId].economy;
+      const state = pack.states[run.stateId];
+      const { budget } = state.economy;
       const collected = run.dawn + Trade.getTaxesSoFar(run.stateId) + (ruralPollTax[run.stateId] || 0);
+      run.collected = collected;
       for (const expense of EXPENSES) {
-        const allowance = (collected * budget[expense] * (100 - budget.corruption)) / 10000; // officials pocket the rest
         for (const seat of run.seats[expense]) {
-          const money = allowance * seat.share - seat.spent;
+          const corruption = States.getCorruption(state, collected, seat.corruption); // officials pocket it of the seat's allowance
+          const money = (collected * budget[expense] * seat.share * (100 - corruption)) / 10000 - seat.spent;
           if (money < least) continue;
           for (const [need, part] of EXPENSE_NEEDS[expense])
             seat.spent += this.order(seat.burg, need, money * part, run.terms, !last);
@@ -85,12 +103,13 @@ class StateOrdersModule {
     }
   }
 
-  /** Ends the run: each state keeps what its expenses spent */
+  /** Ends the run: each state keeps what its expenses spent, and what it collected, so what reads it before collection sees this run's */
   end(): void {
     for (const run of this.runs) {
       const spent = noExpenses();
       for (const expense of EXPENSES) spent[expense] = rn(sum(run.seats[expense].map(seat => seat.spent)), 2);
       pack.states[run.stateId].economy.spent = spent;
+      pack.states[run.stateId].economy.collected = rn(run.collected, 2);
     }
     this.runs = [];
     this.goodsFor.clear();
@@ -134,6 +153,11 @@ class StateOrdersModule {
     return spent;
   }
 
+  /** The district's corruption before administration, or the state's without districts */
+  private tendency(state: State, district: District | undefined): number {
+    return district ? Districts.getTendency(state, district) : state.economy.budget.corruption;
+  }
+
   /** A state pays no sales tax or tariff to itself */
   private exempt(terms: TradeTerms, stateId: number): TradeTerms {
     return (source, market, good, price) => {
@@ -144,32 +168,6 @@ class StateOrdersModule {
         tariffPerUnit: Markets.getState(market) === stateId ? 0 : costs.tariffPerUnit
       };
     };
-  }
-
-  /** Each state's provinces' seats, shared by their people; people of no province or one without a seat count for the capital */
-  private getProvinceSeats(): Omit<Seat, "spent">[][] {
-    const { cells, burgs, provinces, states } = pack;
-    const people: Map<number, number>[] = []; // by state: seat burg id -> people
-    for (const cellId of cells.i) {
-      const stateId = cells.state[cellId];
-      if (!stateId || states[stateId]?.removed) continue;
-      const count = (cells.pop[cellId] || 0) + (cells.burg[cellId] ? burgs[cells.burg[cellId]]?.population || 0 : 0);
-      if (!count) continue;
-      const province = provinces?.[cells.province?.[cellId] || 0];
-      const seat = province && !province.removed ? burgs[province.burg] : undefined;
-      const seatId =
-        seat?.i && !seat.removed && Markets.ofBurg(seat) && seat.state === stateId ? seat.i : states[stateId].capital;
-      people[stateId] ??= new Map();
-      people[stateId].set(seatId, (people[stateId].get(seatId) || 0) + count);
-    }
-
-    return people.map(seats => {
-      const valid = [...seats].filter(
-        ([burgId]) => burgs[burgId]?.i && !burgs[burgId].removed && Markets.ofBurg(burgs[burgId])
-      );
-      const total = valid.reduce((sum, [, count]) => sum + count, 0);
-      return valid.map(([burgId, count]) => ({ burg: burgs[burgId], share: count / total }));
-    });
   }
 }
 

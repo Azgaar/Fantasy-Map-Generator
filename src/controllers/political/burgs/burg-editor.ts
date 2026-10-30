@@ -233,7 +233,7 @@ function renderDialog(): void {
         <button id="burgSetPreviewLink" data-tip="${t("Set custom burg map URL")}" class="icon-map-o"></button>
         <button id="burgLocate" data-tip="${t("Zoom map and center view in the burg")}" class="icon-target"></button>
         <button
-          id="burgProductionOverview"
+          id="burgburgEconomyOverview"
           data-tip="${EconomyTerms.open()}"
           class="icon-chart-bar"
         ></button>
@@ -263,7 +263,7 @@ function renderDialog(): void {
   ensureEl("burgCulture").addEventListener("change", changeCulture);
   ensureEl("burgNameReCulture").addEventListener("click", generateNameCulture);
   ensureEl("burgPopulation").addEventListener("change", changePopulation);
-  ensureEl("burgEconomyOverview").addEventListener("click", showProductionOverview);
+  ensureEl("burgEconomyOverview").addEventListener("click", showburgEconomyOverview);
   ensureEl("burgTags").addEventListener("change", changeTags);
   ensureEl("burgBody")
     .querySelectorAll<HTMLElement>(".burgFeature")
@@ -289,7 +289,7 @@ function renderDialog(): void {
   ensureEl("burgLock").addEventListener("click", toggleBurgLockButton);
   ensureEl("burgRemove").addEventListener("click", removeSelectedBurg);
   ensureEl("burgTemperatureGraph").addEventListener("click", showTemperatureGraph);
-  ensureEl("burgProductionOverview").addEventListener("click", showProductionOverview);
+  ensureEl("burgburgEconomyOverview").addEventListener("click", showburgEconomyOverview);
 }
 
 function getSelectedId(): number {
@@ -742,9 +742,9 @@ function showTemperatureGraph(): void {
   void Controllers.TemperatureGraph.open(id);
 }
 
-function showProductionOverview(): void {
+function showburgEconomyOverview(): void {
   const id = getSelectedId();
-  Controllers.ProductionOverview.open(id);
+  Controllers.burgEconomyOverview.open(id);
 }
 
 function removeSelectedBurg(): void {

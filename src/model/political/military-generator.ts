@@ -7,7 +7,7 @@ import { rn, si } from "@/utils/number-utils";
 import { gauss, ra, rand } from "@/utils/probability-utils";
 import { findAllInQuadtree } from "@/utils/quadtree";
 import { requireName, requireOneOf } from "@/utils/validation-utils";
-import { type State, States } from "./states-generator";
+import { levies, type State, States } from "./states-generator";
 
 export interface Regiment {
   i: number;
@@ -48,6 +48,8 @@ interface Platoon {
   type: string; // unit type
   children?: Platoon[]; // merged platoons
 }
+
+const UPKEEP_COST = 25; // military spending a day that keeps troops of power 1, a population point's worth (a thousand by default), fit to fight
 
 class MilitaryModule {
   regenerate(): void {
@@ -499,6 +501,17 @@ class MilitaryModule {
     const number = nth(regiments.filter(reg => reg.n === r.n && reg.i < r.i).length + 1);
     const form = r.n ? "Fleet" : "Regiment";
     return `${number}${proper ? ` (${proper}) ` : ` `}${form}`;
+  }
+
+  /** How well a state's military spending keeps its forces, from 0 (powerless) to 1 (fully kept); 1 until the economy has run, and for a state that levies nothing, whose fighters keep themselves */
+  getUpkeep(stateId: number): number {
+    const state = pack.states[stateId];
+    if (!state || !levies(state) || !pack.deals?.length) return 1;
+    let power = 0;
+    for (const regiment of state.military ?? [])
+      for (const unit of options.map.military.units) power += (regiment.u[unit.name] || 0) * (+unit.power || 0);
+    const need = (power / options.map.units.population.scale) * UPKEEP_COST;
+    return need ? Math.min(1, state.economy.spent.military / need) : 1;
   }
 
   // utilize si function to make regiment total text fit regiment box

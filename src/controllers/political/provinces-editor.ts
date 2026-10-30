@@ -9,9 +9,12 @@ import {
   treemap
 } from "d3";
 import { Controllers } from "@/controllers";
+import { ProvinceEconomy } from "@/model/economy/province-economy";
 import type { Burg } from "@/model/political/burgs-generator";
+import { Districts } from "@/model/political/districts";
 import type { Province } from "@/model/political/provinces-generator";
 import { Provinces } from "@/model/political/provinces-generator";
+import { Stability } from "@/model/political/stability";
 import type { State } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
@@ -35,6 +38,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { EconomyTerms, prosperityTip, renderProsperityPercent } from "@/ui/economy-view";
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { createAnnexMode } from "@/ui/map/annex-mode";
 import { highlightElement, highlightOutline } from "@/ui/map/highlight";
@@ -51,6 +55,9 @@ import { rand } from "@/utils/probability-utils";
 import { errorText } from "@/utils/string-utils";
 
 const dialogId = "provincesEditor" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
+let filterState: { stateId: number; search?: string };
+
 const CSV_COLUMNS = [
   "Id",
   "Province",
@@ -66,15 +73,39 @@ const CSV_COLUMNS = [
   "Burgs",
   "Tags"
 ];
-const position = { my: "right top", at: "right-10 top+10", of: "svg" };
-let filterState: { stateId: number; search?: string };
 
 const getProvinceArea = (province: Province) => getArea(province.area!);
+/** What officials pocket of the state's spending in the province's district */
+function getProvinceCorruption(
+  province: Province,
+  district = Stability.getProvince(province.i)?.district
+): number | null {
+  const state = pack.states[province.state];
+  return district && state ? Districts.getCorruption(state, district, state.economy.collected) : null;
+}
+
+/** The province's prosperity, corruption and stability, its own district's or the crown lands' */
+function renderGovernance(province: Province): string {
+  const prosperity = ProvinceEconomy.get(province.i)?.prosperity;
+  const prosperityCell =
+    prosperity == null
+      ? `<div data-tip="${EconomyTerms.noData()}" class="placeholder" data-col="prosperity"></div>`
+      : `<div data-tip="${sentences(prosperityTip(prosperity), t("Click to open the province's economy"))}" class="provinceEconomy pointer" data-col="prosperity">${renderProsperityPercent(prosperity)}</div>`;
+  const stability = Stability.getProvince(province.i);
+  const corruption = stability ? getProvinceCorruption(province, stability.district) : null;
+  if (!stability || corruption === null)
+    return `${prosperityCell}<div data-tip="${EconomyTerms.noData()}" class="placeholder" data-col="corruption"></div><div class="placeholder" data-col="stability"></div>`;
+  return /* html */ `${prosperityCell}
+      <div data-tip="${sentences(EconomyTerms.corruption(), t("Click to open the province's economy"))}" class="provinceEconomy pointer" data-col="corruption">${rn(corruption)}%</div>
+      <div data-tip="${sentences(EconomyTerms.stability(), t("Click to open the stability overview"))}" class="provinceStability pointer" data-col="stability">${rn(stability.stability * 100)}%</div>`;
+}
+
 const getProvincePopulation = (province: Province) =>
   rn(
     province.rural! * options.map.units.population.scale +
       province.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate
   );
+
 const columns: EditorColumn<Province>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
@@ -125,6 +156,30 @@ const columns: EditorColumn<Province>[] = [
     sortBy: getProvinceArea
   },
   { key: "population", label: t("Population"), width: "6em", sortBy: getProvincePopulation },
+  {
+    key: "prosperity",
+    label: t("Prosperity"),
+    width: "6em",
+    mobileHidden: true,
+    tip: sentences(EconomyTerms.prosperity(), t("Click a value to open the province's economy")),
+    sortBy: province => ProvinceEconomy.get(province.i)?.prosperity ?? -1
+  },
+  {
+    key: "corruption",
+    label: t("Corruption"),
+    width: "6em",
+    hidden: true,
+    tip: EconomyTerms.corruption(),
+    sortBy: province => getProvinceCorruption(province) ?? -1
+  },
+  {
+    key: "stability",
+    label: t("Stability"),
+    width: "6em",
+    mobileHidden: true,
+    tip: sentences(EconomyTerms.stability(), t("Click a value to open the stability overview")),
+    sortBy: province => Stability.getProvince(province.i)?.stability ?? -1
+  },
   {
     key: "tags",
     label: t("Tags"),
@@ -285,6 +340,8 @@ function renderDialog(): void {
     else if (cl.contains("icon-flag-empty")) triggerIndependencePromps(p);
     else if (cl.contains("icon-dot-circled")) void Controllers.BurgsOverview.open({ stateId });
     else if (cl.contains("culturePopulation")) changePopulation(p);
+    else if (cl.contains("provinceStability")) void Controllers.StabilityOverview.open(stateId);
+    else if (cl.contains("provinceEconomy")) void Controllers.ProvinceEconomyOverview.open(p);
     else if (cl.contains("icon-target"))
       highlightElement(select<SVGGElement, unknown>("#provs").select(`#province${p}`).node() as Element, 8);
     else if (cl.contains("icon-pin")) toggleFog(p, cl);
@@ -414,6 +471,7 @@ function renderProvincesPage(view: TableView<Province>): void {
         <span data-tip="${populationTip}" class="icon-male"></span>
         <span data-tip="${populationTip}" class="culturePopulation">${percentage ? `${rn(totals.population ? (population / totals.population) * 100 : 0)}%` : si(population)}</span>
       </div>
+      ${renderGovernance(p)}
       <div data-col="tags">
         <input
           data-tip="${t("Tags (comma-separated)")}"

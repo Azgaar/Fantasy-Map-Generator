@@ -59,9 +59,9 @@ export const Controllers = createRegistry(
     NotesEditor: () => import("@/controllers/story/notes-editor").then(m => m.NotesEditor),
     Omnibar: () => import("@/controllers/omnibar").then(m => m.Omnibar),
     PaintEditor: () => import("@/controllers/paint-editor").then(m => m.PaintEditor),
-    ProductionChains: () => import("@/controllers/economy/production/production-chains").then(m => m.ProductionChains),
-    ProductionOverview: () =>
-      import("@/controllers/economy/production/production-overview").then(m => m.ProductionOverview),
+    ProductionChains: () => import("@/controllers/economy/goods/production-chains").then(m => m.ProductionChains),
+    burgEconomyOverview: () =>
+      import("@/controllers/economy/entities/burg-economy-overview").then(m => m.burgEconomyOverview),
     ProvincesEditor: () => import("@/controllers/political/provinces-editor").then(m => m.ProvincesEditor),
     ProvincesRegeneration: () =>
       import("@/controllers/political/provinces-regeneration").then(m => m.ProvincesRegeneration),
@@ -72,6 +72,8 @@ export const Controllers = createRegistry(
     ReliefRulesEditor: () => import("@/controllers/physical/relief/relief-rules-editor").then(m => m.ReliefRulesEditor),
     ReligionsEditor: () => import("@/controllers/society/religions-editor").then(m => m.ReligionsEditor),
     RiverCreator: () => import("@/controllers/physical/rivers/river-creator").then(m => m.RiverCreator),
+    ProvinceEconomyOverview: () =>
+      import("@/controllers/economy/entities/province-economy-overview").then(m => m.ProvinceEconomyOverview),
     RiverAutoCreator: () => import("@/controllers/physical/rivers/river-auto-creator").then(m => m.RiverAutoCreator),
     RiverEditor: () => import("@/controllers/physical/rivers/river-editor").then(m => m.RiverEditor),
     RiverGroupsEditor: () => import("@/controllers/physical/rivers/river-groups-editor").then(m => m.RiverGroupsEditor),
@@ -80,8 +82,11 @@ export const Controllers = createRegistry(
     RouteEditor: () => import("@/controllers/economy/routes/route-editor").then(m => m.RouteEditor),
     RouteGroupsEditor: () => import("@/controllers/economy/routes/route-groups-editor").then(m => m.RouteGroupsEditor),
     RoutesOverview: () => import("@/controllers/economy/routes/routes-overview").then(m => m.RoutesOverview),
+    StabilityOverview: () => import("@/controllers/political/stability-overview").then(m => m.StabilityOverview),
+    StateBudgetEditor: () =>
+      import("@/controllers/economy/entities/state-budget-editor").then(m => m.StateBudgetEditor),
     StateEconomyOverview: () =>
-      import("@/controllers/economy/state-economy/state-economy-overview").then(m => m.StateEconomyOverview),
+      import("@/controllers/economy/entities/state-economy-overview").then(m => m.StateEconomyOverview),
     StatesEditor: () => import("@/controllers/political/states-editor").then(m => m.StatesEditor),
     StyleEditor: () => import("@/controllers/style").then(m => m.StyleEditor),
     StylePresetsEditor: () => import("@/controllers/style/style-preset").then(m => m.StylePreset),

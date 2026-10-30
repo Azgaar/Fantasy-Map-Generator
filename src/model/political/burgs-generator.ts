@@ -19,7 +19,7 @@ import { log } from "@/utils/logger";
 import { minmax, normalize, rn } from "@/utils/number-utils";
 import { each, gauss, P } from "@/utils/probability-utils";
 import { safeParseJSON } from "@/utils/string-utils";
-import { requireName, requireOneOf } from "@/utils/validation-utils";
+import { requireAdjustments, requireName, requireOneOf } from "@/utils/validation-utils";
 
 const BUILDINGS = ["citadel", "plaza", "shanty", "temple", "walls"] as const;
 
@@ -55,6 +55,7 @@ export interface Burg {
   production?: BurgProduction; // units of each good made in the last production run
   product?: number; // gross product from the last production run
   treasury?: number; // cash balance from the last economy run
+  adjustments?: { name: string; value: number }[]; // a day's income besides trade, such as rents or a patron's gifts; negative for debts or upkeep. The user's, kept on regeneration
   pollTaxPaid?: number; // poll tax paid to its state in the last economy run
   label?: Label;
   note?: string;
@@ -1055,10 +1056,9 @@ class BurgModule {
     if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined }); // a custom path no longer fits
   }
 
-  /** Set a burg's treasury, in the map's currency */
-  setTreasury(burgId: number, amount: number): void {
-    if (typeof amount !== "number" || !Number.isFinite(amount)) throw new Error("The treasury must be a number");
-    this.living(burgId).treasury = rn(amount, 2);
+  /** Set a burg's adjustments: named amounts a day besides trade in the map's currency, e.g. [{ name: "Rents", value: 12 }], negative for debts or upkeep. They replace its lines and take effect when production is regenerated */
+  setAdjustments(burgId: number, adjustments: { name: string; value: number }[]): void {
+    this.living(burgId).adjustments = requireAdjustments(adjustments);
   }
 
   /** Lock a burg so regeneration keeps it, or unlock it */

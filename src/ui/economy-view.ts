@@ -1,5 +1,6 @@
 // What the economy dialogs and the economy columns of the political editors share
 
+import { sum } from "d3";
 import { PROSPERITY_LEVEL_LABELS } from "@/data/id-labels";
 import type { Good } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
@@ -11,6 +12,7 @@ import { wiki } from "@/utils/common-utils";
 import { Catalog, sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 // Colors and tones
 
@@ -48,15 +50,11 @@ export const EconomyTerms = {
   product: () => t("Product: sales less taxes and ingredients"),
   stateProduct: () => t("Product: what the state's people make in a day"),
   wealth: () => t("Wealth: product per person"),
-  treasury: () => t("Treasury: money at the end of the day"),
-  stateTreasury: () =>
-    t("Treasury balance: the day's taxes less the state's expenses, below zero when it spends more than it collects"),
-  otherRevenue: () =>
-    t(
-      "Other revenue: the state's income a day besides taxes, such as tribute or crown estates; negative for debts or tribute it pays"
-    ),
-  budget: () =>
-    t("Expenses: the shares of its taxes the state spends; together they may pass 100% and put the treasury in debt"),
+  treasury: () => t("Balance: the burg's money at the end of the day"),
+  burgAdjustments: () => t("Adjustments: the burg's income or costs a day besides trade, set by you"),
+  stateTreasury: () => t("Treasury balance: the day's taxes less the state's expenses"),
+  adjustments: () => t("Adjustments: the state's income or costs a day besides taxes, set by you"),
+  budget: () => t("Expenses: the shares of its taxes the state spends"),
   expenseTip: (expense: Expense) =>
     ({
       court: t("Court and clergy: luxuries the state buys at its capital"),
@@ -69,10 +67,9 @@ export const EconomyTerms = {
   openValue: () => t("Click a value to open the economy overview"),
   noData: () => t("No economy data yet. Regenerate the economy first"),
   table: () => t("Show all as a table"),
-  corruption: () =>
-    t(
-      "Corruption: the share of each expense officials pocket. It comes from the state's form, its size and the peoples of other cultures and faiths it rules"
-    ),
+  corruption: () => t("Corruption: the share of state spending officials pocket"),
+  upkeep: () => t("Upkeep: how well the state's military spending keeps its forces"),
+  stability: () => t("Stability: how firmly the state holds together"),
   collected: (paid: number, owed: number) =>
     t("{{share}}% of {{owed}} collected", { share: rn((paid / owed) * 100), owed: formatPrice(owed) })
 };
@@ -111,17 +108,16 @@ export const renderProsperityPercent = (prosperity: number) => `${rn(prosperity 
 
 /** Its three parts, for one line next to the level */
 export function renderProsperityParts(living: Living): string {
-  return t("needs met {{needs}}%, comfort ×{{comfort}}, {{variety}} goods", {
+  return t("needs met {{needs}}%, comfort ×{{comfort}}, {{variety}} goods, infrastructure {{infrastructure}}%", {
     needs: rn(living.needs * 100),
     comfort: rn(living.comfort, 1),
-    variety: rn(living.variety, 1)
+    variety: rn(living.variety, 1),
+    infrastructure: rn(living.infrastructure * 100)
   });
 }
 
 export function prosperityTip(prosperity: number): string {
-  return t("Prosperity: {{level}}. Defined by consumption fulfillment, quality and variety", {
-    level: prosperityLevel(prosperity)
-  });
+  return t("Prosperity: {{level}}", { level: prosperityLevel(prosperity) });
 }
 
 // A deal's price broken down for the trade tables
@@ -144,7 +140,7 @@ export function splitDealPrice({ units, price, tax, tariff = 0, carriage = 0 }: 
 
   // a purchase pays them on top of the goods' price; a sale gets the goods' price less them
   const goodsPrice = isSale ? price + unitCarriage : price - added;
-  const value = isSale ? units * price - tax : units * price;
+  const value = isSale ? units * price - tax - tariff : units * price;
 
   const sign = isSale ? "−" : "+";
   const shown = terms
@@ -179,7 +175,7 @@ export const tradeColumnTips = () => ({
   net: sentences(t("Net unit price"), t("Market price before carriage and taxes")),
   carriage: sentences(t("Carriage per unit"), t("Transportation price between the market and the burg")),
   tax: sentences(t("Sales tax per unit"), t("Paid by the seller to its state")),
-  tariff: sentences(t("Import tariff per unit"), t("Paid by the importer burg to the state of its market")),
+  tariff: sentences(t("Import tariff per unit"), t("Paid by the burg to the importing market's state")),
   income: sentences(t("Burg total income"), t("Positive on a sale, negative on a purchase"))
 });
 
@@ -193,6 +189,7 @@ export function getTradeContext(burgId: number, marketId: number, goodId: number
     decimas: market && burg ? Trade.getDecimas(market, burg) : 0, // carried between the market and the burg
     carriageFactor: market && burg ? Trade.getCarriageFactor(market, burg) : 1, // dearer from another state's market
     isImport: Trade.isImport(deal),
+    tariffRate: Trade.getDealTariffRate(deal),
     taxStateId: taxState,
     tariffStateId: tariffState
   };
@@ -222,12 +219,12 @@ export function tradeCellTips(cell: TradeCell) {
     isImport,
     taxStateId,
     tariffStateId,
+    tariffRate,
     formula
   } = cell;
   const price = (amount: number) => formatPrice(rn(amount, 2));
   const state = (stateId: number) => pack.states[stateId]?.name || "";
   const rate = (value: number) => `${t("Rate")}: ${rn(value * 100, 1)}%`;
-  const tariffRate = tariff ? Trade.getTariffRate(tariffStateId, taxStateId, good.i) : 0;
 
   return {
     units: `${t("Units traded")}: ${countUnits(units, good.unit)}`,
@@ -254,7 +251,7 @@ export function tradeCellTips(cell: TradeCell) {
     tariff: isImport
       ? sentences(
           `${t("Import tariff per unit")}: ${price(tariff)}`,
-          t("Paid by importer burg to state: {{- state}}", { state: state(tariffStateId) }),
+          t("Paid by the burg to the importing state: {{- state}}", { state: state(tariffStateId) }),
           rate(tariffRate)
         )
       : t("No tariff: not an import from another state"),
@@ -271,4 +268,95 @@ export function unitFor(count: number, unit: string): string {
 function countUnits(units: number, unit: string): string {
   const count = rn(units, 2);
   return unit ? `${count} ${unitFor(count, unit)}` : String(count);
+}
+
+// Adjustments, a state's or burg's own income or costs a day: one collapsible row with their total, the lines beneath
+
+type Adjustment = { name: string; value: number };
+
+const ADJUSTMENTS_STYLE = /* css */ `<style>
+  .adjustments .head { display: grid; grid-template-columns: 1fr auto; cursor: pointer }
+  .adjustments .lines { margin: 0.15em 0 0.2em 1em }
+  .adjustments .line { display: grid; grid-template-columns: 1fr 6.5em 1.2em; column-gap: 0.3em; align-items: center; margin-bottom: 0.15em }
+  .adjustments button.add { font-size: 0.8em; padding: 0 0.4em }
+</style>`;
+
+let expanded = false; // the last choice, kept for the next row shown
+
+/** Fills the container with the collapsible row; onChange gets the lines after every edit, a value being typed counting as 0 */
+export function mountAdjustments(
+  container: HTMLElement,
+  initial: Adjustment[],
+  tip: string,
+  onChange: (adjustments: Adjustment[]) => void
+): void {
+  const lines = initial.map(line => ({ ...line }));
+  const renderHead = () => {
+    const total = sum(lines, line => line.value);
+    const count = lines.length ? ` (${lines.length})` : "";
+    return `<span>${expanded ? "▾" : "▸"} ${t("Adjustments")}${count}</span><span class="${total > 0 ? "positive" : total < 0 ? "negative" : ""}">${formatPrice(total)}</span>`;
+  };
+  const render = () => {
+    const rows = lines.map(
+      ({ name, value }, k) => /* html */ `<div class="line" data-index="${k}">
+        <input class="name" type="text" style="width: 100%; margin: 0" value="${escapeHtml(name)}" placeholder="${t("Name")}"/>
+        <input class="value" type="number" step="0.01" style="width: 100%; margin: 0; text-align: right" value="${value}" data-tip="${t("Amount a day; negative for a cost")}"/>
+        <span class="icon-trash-empty pointer remove" data-tip="${t("Remove")}"></span>
+      </div>`
+    );
+    container.innerHTML = /* html */ `${ADJUSTMENTS_STYLE}<div class="adjustments">
+      <div class="head" data-tip="${tip}">${renderHead()}</div>
+      <div class="lines" ${expanded ? "" : "hidden"}>${rows.join("")}
+        <button type="button" class="add icon-plus" data-tip="${t("Add an income or a cost")}">${t("Add")}</button>
+      </div>
+    </div>`;
+  };
+  const changed = () => {
+    container.querySelector(".head")!.innerHTML = renderHead();
+    onChange(lines.map(line => ({ ...line })));
+  };
+
+  container.addEventListener("input", event => {
+    const input = event.target as HTMLInputElement;
+    const line = lines[+(input.closest<HTMLElement>(".line")?.dataset.index ?? -1)];
+    if (!line) return;
+    if (input.classList.contains("name")) line.name = input.value;
+    else line.value = Number.isFinite(input.valueAsNumber) ? input.valueAsNumber : 0;
+    changed();
+  });
+  container.addEventListener("click", event => {
+    const target = event.target as HTMLElement;
+    if (target.closest(".head")) {
+      expanded = !expanded;
+      render();
+    } else if (target.classList.contains("add")) {
+      lines.push({ name: "", value: 0 });
+      render();
+      container.querySelector<HTMLInputElement>(".line:last-of-type input.name")?.focus();
+      changed();
+    } else if (target.classList.contains("remove")) {
+      lines.splice(+(target.closest<HTMLElement>(".line")?.dataset.index ?? -1), 1);
+      render();
+      changed();
+    }
+  });
+  render();
+}
+
+/** Adjustments as one CSV cell: "Rents: 12; Tribute: -5" */
+export const adjustmentsToText = (adjustments: Adjustment[] = []) =>
+  adjustments.map(({ name, value }) => `${name}: ${value}`).join("; ");
+
+/** Adjustments read back from a CSV cell; a bare number is one unnamed line */
+export function adjustmentsFromText(text: string): Adjustment[] {
+  return text
+    .split(";")
+    .map(part => part.trim())
+    .filter(Boolean)
+    .map(part => {
+      const colon = part.lastIndexOf(":");
+      const value = Number(part.slice(colon + 1));
+      if (!Number.isFinite(value)) throw new Error(`Not an adjustment: ${part}`);
+      return { name: colon < 0 ? "" : part.slice(0, colon).trim(), value };
+    });
 }

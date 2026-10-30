@@ -209,12 +209,12 @@ describe("StatesModule.collectTaxes", () => {
       { i: 2, form: "Monarchy", capital: 1, burgs: 4, urban: 20, rural: 80, alert: 100, economy: noFinance() }
     ] as any;
 
-    // court 30 × (0.5 + half the townspeople in the capital), administration 15 + 15, infrastructure 10 + 25 × 0.2, military 32 × 0.5
+    // court 20 × (0.5 + half the townspeople in the capital), administration 10 + 15, infrastructure 8 + 20 × 0.2, military 25 + 20 × 0.5
     expect(StatesModule.defineBudget(globalThis.pack.states[1], 10)).toEqual({
-      court: 30,
-      administration: 30,
-      infrastructure: 15,
-      military: 16,
+      court: 20,
+      administration: 25,
+      infrastructure: 12,
+      military: 35,
       corruption: 10
     });
     // at war alert 100 the military takes all the taxes, and the state runs into debt
@@ -614,6 +614,48 @@ describe("StatesModule.tariffs", () => {
   });
 });
 
+describe("StatesModule.getCorruption", () => {
+  const state = (administration: number) =>
+    ({
+      i: 1,
+      rural: 100, // administration needs 10 a day
+      urban: 0,
+      economy: { ...noFinance(), budget: { ...noFinance().budget, administration, corruption: 40 } }
+    }) as any;
+
+  it("is the state's corruption when administration gets nothing", () => {
+    expect(States.getCorruption(state(0), 100)).toBe(40);
+    expect(States.getCorruption(state(20), 0)).toBe(40);
+  });
+
+  it("is halved once administration is paid what the people need", () => {
+    // 20 allotted, 16 paid at the curbed 20%: more than the 10 needed
+    expect(States.getCorruption(state(20), 100)).toBe(20);
+  });
+
+  it("is curbed in proportion to what administration is paid of the need, the pay net of that corruption", () => {
+    const corruption = States.getCorruption(state(20), 30);
+    const pay = 6 * (1 - corruption / 100);
+    expect(corruption).toBeCloseTo(40 * (1 - (0.5 * pay) / 10), 6);
+    expect(corruption).toBeCloseTo(31.82, 2);
+  });
+});
+
+describe("StatesModule.getProvision", () => {
+  it("is the spending against the people's need, up to 1", () => {
+    const state = (infrastructure: number) =>
+      ({
+        i: 1,
+        rural: 80,
+        urban: 20,
+        economy: { ...noFinance(), spent: { ...noFinance().spent, infrastructure } }
+      }) as any;
+    expect(States.getProvision(state(2.5), "infrastructure")).toBe(0.5);
+    expect(States.getProvision(state(50), "infrastructure")).toBe(1);
+    expect(States.getProvision(undefined, "court")).toBe(0);
+  });
+});
+
 describe("StatesModule.defineCorruption", () => {
   it("adds size and diversity to the form's share, doubled for despots", () => {
     globalThis.pack = {
@@ -636,11 +678,11 @@ describe("StatesModule.defineCorruption", () => {
       }
     } as any;
 
-    // 20 for a despotic monarchy, 15 as the largest state, 10 × 15 strangers of 50 people
-    expect(States.defineCorruption(pack.states[1])).toBe(38);
-    expect(States.defineCorruption(pack.states[2])).toBe(5); // a city-state: its form's share only
+    // 30 for a despotic monarchy, 15 as the largest state, 10 × 15 strangers of 50 people
+    expect(States.defineCorruption(pack.states[1])).toBe(48);
+    expect(States.defineCorruption(pack.states[2])).toBe(8); // a city-state: its form's share only
     expect(States.defineCorruption(pack.states[3])).toBe(0); // anarchies collect nothing to steal
-    expect(States.defineCorruption(pack.states[4])).toBe(10); // 2.5 + 15 × √(25 ÷ 100)
+    expect(States.defineCorruption(pack.states[4])).toBe(12); // 4 + 15 × √(25 ÷ 100)
     expect(States.defineCorruption(pack.states[0])).toBe(0);
   });
 });

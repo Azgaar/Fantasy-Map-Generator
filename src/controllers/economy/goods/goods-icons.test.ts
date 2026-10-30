@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 
 import { beforeEach, expect, test, vi } from "vitest";
+import { burgEconomyOverview } from "@/controllers/economy/entities/burg-economy-overview";
+import { ProductionChains } from "@/controllers/economy/goods/production-chains";
 import { MarketDealsOverview } from "@/controllers/economy/markets/market-deals-overview";
 import { MarketOverview } from "@/controllers/economy/markets/market-overview";
-import { ProductionChains } from "@/controllers/economy/production/production-chains";
-import { ProductionOverview } from "@/controllers/economy/production/production-overview";
 import { TradeDetails } from "@/controllers/economy/trade/trade-details";
 import { Markets } from "@/model/economy/markets-generator";
 import { Icons } from "@/model/icons";
@@ -33,7 +33,7 @@ test.each([
   ["market overview", () => MarketOverview.open(-1)],
   ["market deals overview", () => MarketDealsOverview.open(-1)],
   ["trade details", () => TradeDetails.open([0, 0, 0, 0, 0, 0, 0, 0, 0])],
-  ["economy overview", () => ProductionOverview.open(-1)],
+  ["economy overview", () => burgEconomyOverview.open(-1)],
   ["production chains", () => ProductionChains.open()],
   ["goods editor", () => GoodsEditor.open()]
 ])("%s requests the goods icons on entry", (_, open) => {

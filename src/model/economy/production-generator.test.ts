@@ -567,9 +567,9 @@ describe("a chain's inputs", () => {
   });
 
   it("wait in the inventory between turns while the chain is under way", () => {
-    const { state } = prepare([0, 3, 0, 0, 2]);
+    const { index, state } = prepare([0, 3, 0, 0, 2]);
     // biome-ignore lint/complexity/useLiteralKeys: private test access
-    production["sellInventoryToMarket"](state, (goodId: number) => goodId !== 4);
+    production["sellInventoryToMarket"](index, state, (goodId: number) => goodId !== 4);
     expect([state.inventory[1], state.inventory[4]]).toEqual([0, 2]);
   });
 });

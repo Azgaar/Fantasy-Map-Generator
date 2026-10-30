@@ -38,8 +38,8 @@ type TableSpec<T> = {
 };
 
 /** A sortable table in its own dialog, with refresh, CSV download and the wiki */
-function openTable<T>({ id, title, columns, rows, row, csv }: TableSpec<T>): void {
-  Dialog.destroy(id);
+function open<T>(spec: TableSpec<T>): void {
+  const { id, title, columns, rows, row } = spec;
   const table = initEditorTable<T>({
     getData: () => sortDataByColumns(id, rows(), columns),
     onUpdate: (view: TableView<T>) => {
@@ -47,6 +47,16 @@ function openTable<T>({ id, title, columns, rows, row, csv }: TableSpec<T>): voi
       renderEditorPagination(ensureEl(`${id}Footer`), view, table.goto);
     }
   });
+
+  renderDialog(spec);
+  addListeners(spec, table);
+  table.reset();
+
+  Dialog.open(id, { title, width: "fit-content", onClose: () => cleanup(id) });
+}
+
+function renderDialog<T>({ id, columns }: TableSpec<T>): void {
+  Dialog.destroy(id);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="${id}" class="dialog editorDialog">
@@ -60,6 +70,12 @@ function openTable<T>({ id, title, columns, rows, row, csv }: TableSpec<T>): voi
       </div>
     </div>`
   );
+}
+
+function addListeners<T>(
+  { id, title, columns, rows, csv }: TableSpec<T>,
+  table: ReturnType<typeof initEditorTable>
+): void {
   bindColumnSorting(id, table.reset);
   initColumnVisibility({ dialogId: id, columns, onUpdate: () => Dialog.update(id, { width: "fit-content" }) });
   ensureEl(`${id}Refresh`).addEventListener("click", table.refresh);
@@ -67,8 +83,10 @@ function openTable<T>({ id, title, columns, rows, row, csv }: TableSpec<T>): voi
     Csv.download(title.replace(/[:\s]+/g, "_"), csv.headers, rows().map(csv.row))
   );
   bindEconomyWiki(`${id}Wiki`);
-  table.reset();
-  Dialog.open(id, { title, width: "fit-content", onClose: () => Dialog.destroy(id) });
+}
+
+function cleanup(id: string): void {
+  Dialog.destroy(id);
 }
 
 const stateName = (stateId: number) => (stateId ? pack.states[stateId].name : t("Neutrals"));
@@ -78,7 +96,7 @@ export type GoodsKind = "exports" | "imports" | "made";
 type GoodRow = { goodId: number; units: number; value: number; share: number };
 
 /** Every good the state exports, imports or makes, with its units, value and share */
-export function openGoodsTable(stateId: number, kind: GoodsKind): void {
+function openGoods(stateId: number, kind: GoodsKind): void {
   const rows = (): GoodRow[] => {
     const trade = StateEconomy.getTrade(stateId);
     const values = { exports: trade.exported, imports: trade.imported, made: StateEconomy.getOutput(stateId) }[kind];
@@ -100,7 +118,7 @@ export function openGoodsTable(stateId: number, kind: GoodsKind): void {
     { key: "actions", width: "1.4em", permanent: true }
   ];
   const title = { exports: t("Exports"), imports: t("Imports"), made: t("Goods made") }[kind];
-  openTable({
+  open({
     id: `stateEconomy${kind}Table`,
     title: `${title}: ${stateName(stateId)}`,
     columns,
@@ -123,7 +141,7 @@ export function openGoodsTable(stateId: number, kind: GoodsKind): void {
 type PartnerRow = { stateId: number; exports: number; imports: number; balance: number; share: number };
 
 /** Every state the state trades with, what it sells them and buys from them */
-export function openPartnersTable(stateId: number): void {
+function openPartners(stateId: number): void {
   const rows = (): PartnerRow[] => {
     const { partners } = StateEconomy.getTrade(stateId);
     const volume = [...partners.values()].reduce((sum, row) => sum + row.exports + row.imports, 0) || 1;
@@ -145,7 +163,7 @@ export function openPartnersTable(stateId: number): void {
     { key: "share", label: t("Share"), width: "4em", sortBy: row => row.share, defaultSort: "desc" },
     { key: "actions", width: "1.4em", permanent: true }
   ];
-  openTable({
+  open({
     id: "stateEconomyPartnersTable",
     title: `${t("Foreign trade")}: ${stateName(stateId)}`,
     columns,
@@ -166,7 +184,7 @@ export function openPartnersTable(stateId: number): void {
 type LivingRow = { name: string; people: number; prosperity: number; needs: number; comfort: number; variety: number };
 
 /** How each burg of the state lives, and its rural people together */
-export function openProsperityTable(stateId: number): void {
+function openProsperity(stateId: number): void {
   const { scale, urbanization } = options.map.units.population;
   const rows = (): LivingRow[] => {
     const burgs = pack.burgs.flatMap(burg => {
@@ -179,7 +197,7 @@ export function openProsperityTable(stateId: number): void {
     const rural = country ? [{ name: t("Rural population"), ...country, people: country.people * scale }] : [];
     return [...rural, ...burgs];
   };
-  openTable({
+  open({
     id: "stateEconomyProsperityTable",
     title: `${t("Prosperity")}: ${stateName(stateId)}`,
     columns: [
@@ -214,3 +232,5 @@ export function openProsperityTable(stateId: number): void {
     }
   });
 }
+
+export const StateEconomyTables = { openGoods, openPartners, openProsperity };

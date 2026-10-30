@@ -62,7 +62,7 @@ export const METHODS = {
     "move",
     "add",
     "remove",
-    "setTreasury",
+    "setAdjustments",
     "setLocked",
     "setLink"
   ],
@@ -83,7 +83,7 @@ export const METHODS = {
     "setMarketFee",
     "setCorruption",
     "setBudget",
-    "setOtherRevenue",
+    "setAdjustments",
     "setLocked",
     "setChronicleEntry",
     "setCells",

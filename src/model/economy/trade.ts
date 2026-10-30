@@ -48,6 +48,7 @@ type MarketDay = {
   covered: number[];
   bought: number[];
   pollTaxDue: number[]; // by the state of the rural people's cells
+  pollTaxShare?: number; // the share of it they pay, settled before the day's last orders
 };
 
 export const DEAL_KINDS = { sale: 0, input: 1, demand: 2, kept: 3, order: 4 } as const; // an order is a state's purchase, the burg its seat
@@ -263,13 +264,14 @@ export class TradeModule {
     return due > 0 ? Math.min(1, Math.max(0, day.cash) / due) : 0;
   }
 
-  /** By state: the poll tax rural people could pay now, as the run's end will collect it */
-  getRuralPollTax(): number[] {
+  /** Rural people pay their poll tax from what they kept before the day's last orders, so the states spend what they get; returns it by state */
+  settleRuralPollTax(): number[] {
     const paid: number[] = [];
     for (const market of pack.markets) {
       const day = this.days[market.i];
       if (!day) continue;
       const share = this.getPollTaxShare(day);
+      day.pollTaxShare = share;
       day.pollTaxDue.forEach((owed, stateId) => {
         if (owed) paid[stateId] = (paid[stateId] || 0) + owed * share;
       });
@@ -277,18 +279,28 @@ export class TradeModule {
     return paid;
   }
 
-  /** The market where a unit of the good sells for the most at the burg's door, after carriage */
-  getOutlet(burg: Burg, good: Good): { market: Market; price: number } | null {
+  /** The market where a unit of the good sells for the most at the burg's door, after carriage and the importer's tariff; none under an embargo */
+  getOutlet(burg: Burg, good: Good, terms = this.getTradeTerms()): { market: Market; price: number } | null {
     const carriage = this.getCarriage(burg);
+    const own = Markets.ofBurg(burg);
     let best: Market | null = null;
     let bestPrice = -Infinity;
     for (const market of pack.markets) {
       const transport = this.carry(carriage, market, good);
       if (transport === Infinity) continue;
-      const price = this.customerSellPrice(market, this.getMarketGood(market, good).price) - transport;
+      const midPrice = this.getMarketGood(market, good).price;
+      const tariff = this.getSaleTariff(own, market, good, midPrice, terms);
+      if (tariff === null) continue;
+      const price = this.customerSellPrice(market, midPrice) - transport - tariff;
       if (!best || price > bestPrice) [best, bestPrice] = [market, price];
     }
     return best && { market: best, price: bestPrice };
+  }
+
+  /** Per-unit tariff another state's market levies on a burg's sale, as on goods from the burg's own market; null under an embargo */
+  private getSaleTariff(own: Market | undefined, market: Market, good: Good, price: number, terms: TradeTerms) {
+    if (!own || own === market) return 0;
+    return terms(own, market, good, price)?.tariffPerUnit ?? null;
   }
 
   /** Prices at the burg's door: buying adds the market's sales tax and the carriage, selling pays the carriage */
@@ -332,14 +344,14 @@ export class TradeModule {
     return this.routeCosts;
   }
 
-  /** Ends the run: prices are rounded, rural people pay their poll tax as far as it goes, each market keeps its rural day for the views */
+  /** Ends the run: prices are rounded, each market keeps its rural day, with the poll tax its people paid, for the views */
   endRun(): void {
     for (const market of pack.markets) {
       for (const marketGood of Object.values(market.goods)) marketGood.price = rn(marketGood.price, 2);
       const day = this.days[market.i];
       if (!day) continue;
       const bought = day.bought.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)] as [number, number]] : []));
-      const share = this.getPollTaxShare(day);
+      const share = day.pollTaxShare ?? this.getPollTaxShare(day);
       const pollTax = day.pollTaxDue.flatMap((owed, stateId) =>
         owed ? [[stateId, rn(owed, 2), rn(owed * share, 2)] as [number, number, number]] : []
       );
@@ -500,28 +512,32 @@ export class TradeModule {
     return { units: kept, price: rn(quote.price, 2), tax: 0 };
   }
 
-  /** The burg sells to a market, its own unless another is given */
+  /** The burg sells to a market, its own unless another is given; another state's market levies its tariff, off the revenue as the sales tax. Null under an embargo */
   sell({
     burg,
     good,
     units,
     taxRate,
-    market = Markets.ofBurg(burg)
+    market = Markets.ofBurg(burg),
+    terms = this.getTradeTerms()
   }: {
     burg: Burg;
     good: Good;
     units: number;
     taxRate: number;
     market?: Market;
+    terms?: TradeTerms;
   }): Transaction | null {
     if (!market || units <= 0) return null;
 
     const marketGood = this.getMarketGood(market, good);
+    const tariff = this.getSaleTariff(Markets.ofBurg(burg), market, good, marketGood.price, terms);
+    if (tariff === null) return null;
     const grossPrice = this.customerSellPrice(market, marketGood.price);
     const transport = Math.min(this.getTransport(market, burg, good), grossPrice);
     const price = rn(grossPrice - transport, 2);
     const tax = rn(units * price * taxRate, 2);
-    const trade = { units: rn(units, 2), price, tax, carriage: rn(transport, 2) };
+    const trade = { units: rn(units, 2), price, tax, tariff: rn(units * tariff, 2), carriage: rn(transport, 2) };
     this.recordDeal(burg.i!, market.i, good.i, DEAL_KINDS.sale, trade);
     this.payMargin(market, DEAL_KINDS.sale, trade);
 
@@ -625,21 +641,33 @@ export class TradeModule {
     center.treasury = rn((center.treasury || 0) + amount, 2);
   }
 
-  /** An import is a purchase from a market of another state than the burg's own market: only an import may pay a tariff */
+  /** An import is trade between the burg's own market and a market of another state, either way: only an import may pay a tariff */
   isImport(deal: Deal): boolean {
-    if (deal[3] === DEAL_KINDS.sale) return false;
-    const { taxState, tariffState } = this.getTaxStates(deal);
-    return isForeign(taxState, tariffState);
+    const { own, market } = this.getMarketStates(deal);
+    return isForeign(own, market);
   }
 
-  /** States the deal's sales tax and tariff go to: the seller's and the importing market's */
-  getTaxStates(deal: Deal): { taxState: number; tariffState: number } {
-    const [burgId, marketId, , kind] = deal;
+  /** The states of the burg's own market and of the deal's market */
+  private getMarketStates([burgId, marketId]: Deal): { own: number; market: number } {
     const burg = pack.burgs[burgId];
-    return {
-      taxState: kind === DEAL_KINDS.sale ? burg?.state || 0 : Markets.getState(Markets.get(marketId)),
-      tariffState: Markets.getState(burg && Markets.ofBurg(burg))
-    };
+    return { own: Markets.getState(burg && Markets.ofBurg(burg)), market: Markets.getState(Markets.get(marketId)) };
+  }
+
+  /** States the deal's sales tax and tariff go to: the seller's, and the importer's: the deal's market on a sale, the burg's own market on a purchase */
+  getTaxStates(deal: Deal): { taxState: number; tariffState: number } {
+    const kind = deal[3];
+    const { own, market } = this.getMarketStates(deal);
+    return kind === DEAL_KINDS.sale
+      ? { taxState: pack.burgs[deal[0]]?.state || 0, tariffState: market }
+      : { taxState: market, tariffState: own };
+  }
+
+  /** The rate of the deal's tariff: the importer's on goods from the other market's state */
+  getDealTariffRate(deal: Deal): number {
+    const { own, market } = this.getMarketStates(deal);
+    return deal[3] === DEAL_KINDS.sale
+      ? this.getTariffRate(market, own, deal[2])
+      : this.getTariffRate(own, market, deal[2]);
   }
 
   /** Sales tax and tariffs of the run's deals, by the state collecting them */

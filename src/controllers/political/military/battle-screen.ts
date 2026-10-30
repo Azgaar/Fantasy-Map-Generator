@@ -3,6 +3,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
+import { Stability } from "@/model/political/stability";
 import { Names } from "@/model/society/names-generator";
 import type { Marker } from "@/model/story/markers-generator";
 import { moveRegiment } from "@/renderers/draw-military";
@@ -10,6 +11,7 @@ import { Layers } from "@/renderers/layers";
 import { Dialog } from "@/ui/dialog/dialog";
 
 import { applySorting, applySortingByHeader } from "@/ui/dialog/sorting";
+import { EconomyTerms } from "@/ui/economy-view";
 import { tip } from "@/ui/tooltips";
 import { last } from "@/utils/array-utils";
 import { wiki } from "@/utils/common-utils";
@@ -46,6 +48,10 @@ interface BattleState {
 }
 
 let battle: BattleState | null = null;
+const MIN_UPKEEP = 0.05; // unpaid troops still fight, if barely
+
+/** How far the state's spending keeps its troops: their power in battle is multiplied by it */
+const getUpkeep = (stateId: number) => Math.max(MIN_UPKEEP, Military.getUpkeep(stateId));
 
 function open(attacker: Regiment, defender: Regiment): void {
   if (options.app.mode) return;
@@ -565,7 +571,9 @@ function addRegimentToSide(side: Side, regiment: Regiment): void {
   const body = `<tbody id="battle${state.i}-${regiment.i}">`;
 
   let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment">${regiment.name}</td>`;
-  let casualtiesRow = `<tr class="battleCasualties"><td></td><td class="regiment">${state.fullName}</td>`;
+  const upkeep = rn(getUpkeep(state.i) * 100);
+  const upkeepTip = sentences(EconomyTerms.upkeep(), t("Troops fight with this share of their power"));
+  let casualtiesRow = `<tr class="battleCasualties"><td></td><td class="regiment">${state.fullName} <span data-tip="${upkeepTip}" class="${upkeep < 100 ? "negative" : ""}">(${t("upkeep {{upkeep}}%", { upkeep })})</span></td>`;
   let survivorsRow = `<tr class="battleSurvivors"><td></td><td data-tip="${t("Supply line length, affects morale")}">${t("Distance to base")}: ${distance} ${options.map.units.distance.unit}</td>`;
 
   for (const u of options.map.military.units) {
@@ -711,11 +719,15 @@ function generateBattleName(type: "culture" | "random"): void {
   Dialog.open("battleScreen", { title: b.name });
 }
 
-function getJoinedForces(regiments: Regiment[]): Record<string, number> {
+function getJoinedForces(
+  regiments: Regiment[],
+  weight: (regiment: Regiment) => number = () => 1
+): Record<string, number> {
   return regiments.reduce<Record<string, number>>((acc, regiment) => {
+    const factor = weight(regiment);
     for (const k in regiment.survivors) {
       if (!Object.hasOwn(regiment.survivors, k)) continue;
-      acc[k] = (acc[k] || 0) + regiment.survivors![k];
+      acc[k] = (acc[k] || 0) + regiment.survivors![k] * factor;
     }
     return acc;
   }, {});
@@ -886,7 +898,11 @@ function calculateStrength(side: Side): void {
     dogfight: { melee: 0, ranged: 0.1, mounted: 0, machinery: 0.1, naval: 0, armored: 0, aviation: 2, magical: 0.1 } // aviation
   };
 
-  const forces = getJoinedForces(b[side].regiments);
+  const upkeep = new Map<number, number>();
+  const forces = getJoinedForces(b[side].regiments, ({ state }) => {
+    if (!upkeep.has(state)) upkeep.set(state, getUpkeep(state));
+    return upkeep.get(state)!;
+  }); // ill-kept troops fight weaker
   const phase = b[side].phase!;
   const adjuster = Math.max(options.map.units.population.scale / 10, 10); // population adjuster, by default 100
   b[side].power =
@@ -899,9 +915,23 @@ function getInitialMorale(): void {
   const b = battle!;
   const powerFee = (diff: number): number => minmax(100 - diff ** 1.5 * 10 + 10, 50, 100);
   const distanceFee = (dist: number[]): number => Math.min((mean(dist) ?? 0) / 50, 15);
+  // troops of a stable state fight with heart: from ×0.75 when it falls apart to ×1.25 when unshakable
+  const stabilityFactor = (regiments: Regiment[]): number => {
+    const troops = sum(regiments, regiment => regiment.a);
+    const stability = troops
+      ? sum(regiments, regiment => (Stability.get(regiment.state)?.stability ?? 0.5) * regiment.a) / troops
+      : 0.5;
+    return 0.75 + stability / 2;
+  };
   const powerDiff = b.defenders.power / b.attackers.power;
-  b.attackers.morale = powerFee(powerDiff) - distanceFee(b.attackers.distances);
-  b.defenders.morale = powerFee(1 / powerDiff) - distanceFee(b.defenders.distances);
+  b.attackers.morale = Math.min(
+    100,
+    powerFee(powerDiff) * stabilityFactor(b.attackers.regiments) - distanceFee(b.attackers.distances)
+  );
+  b.defenders.morale = Math.min(
+    100,
+    powerFee(1 / powerDiff) * stabilityFactor(b.defenders.regiments) - distanceFee(b.defenders.distances)
+  );
   updateMorale("attackers");
   updateMorale("defenders");
 }
