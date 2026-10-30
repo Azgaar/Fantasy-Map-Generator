@@ -281,14 +281,14 @@ describe("StatesModule.generateDiplomacy", () => {
   });
 
   it("skips removed states when vassals copy their suzerain's relations", () => {
-    // state 2 is a large state bordering the small state 3, which becomes its vassal; state 4 is far away
+    // state 2 is a populous state bordering the small state 3, which becomes its vassal; state 4 is far away
     const cellState = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 4];
     globalThis.pack = {
       cells: {
         i: cellState.map((_, i) => i),
         h: cellState.map(() => 30),
         state: cellState,
-        area: cellState.map(() => 10),
+        pop: cellState.map(() => 10),
         f: cellState.map(() => 1)
       },
       states: withFinance([

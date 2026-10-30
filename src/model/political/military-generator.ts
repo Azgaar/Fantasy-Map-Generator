@@ -55,6 +55,7 @@ interface Platoon {
 const UPKEEP_COST = 40; // military spending a day that keeps troops of power 1, a population point's worth
 const MIN_UPKEEP = 0.05; // unpaid troops still fight, if barely
 const EQUIPMENT_DAYS = 365; // days of a state's consumption of a unit's goods that equip its troops
+const FRONT_DEPTH = 2; // lines of cells behind the border a state at war deploys its regiments to
 
 class MilitaryModule {
   regenerate(): void {
@@ -458,6 +459,79 @@ class MilitaryModule {
     valid.forEach(s => {
       s.military = createRegiments(drafts.get(s.i)!.platoons, s);
     });
+    this.deployToFronts(valid);
+  }
+
+  /** Move regiments of states at war from their bases to the front: fleets to water by its border, then land regiments to own land cells bordering an enemy; each, largest first, to the nearest free cell of the foremost line on its landmass or water body */
+  private deployToFronts(states: State[]) {
+    const { cells } = pack;
+    const { p } = cells;
+    const borders = new Map<number, { land: number[]; sea: Set<number> }>(); // by state; sea is water next to either side
+    for (const i of cells.i) {
+      const s = cells.state[i];
+      if (!s || cells.h[i] < 20) continue;
+      const relations = pack.states[s].diplomacy;
+      if (!relations?.includes("Enemy")) continue;
+      const enemies = cells.c[i].filter(n => cells.h[n] >= 20 && relations[cells.state[n]] === "Enemy");
+      if (!enemies.length) continue;
+      if (!borders.has(s)) borders.set(s, { land: [], sea: new Set() });
+      const border = borders.get(s)!;
+      border.land.push(i);
+      for (const n of [i, ...enemies]) for (const w of cells.c[n]) if (cells.h[w] < 20) border.sea.add(w);
+    }
+
+    // the border line, then lines of cells behind it
+    const deepen = (border: number[], fits: (cell: number) => boolean) => {
+      const lines = [border];
+      const seen = new Set(border);
+      for (let depth = 1; depth <= FRONT_DEPTH; depth++) {
+        const line = lines[depth - 1].flatMap(i => cells.c[i]).filter(n => fits(n) && !seen.has(n) && seen.add(n));
+        lines.push(line);
+      }
+      return lines;
+    };
+    const fronts = new Map<number, { land: number[][]; sea: number[][] }>();
+    for (const [s, { land, sea }] of borders) {
+      fronts.set(s, {
+        land: deepen(land, n => cells.state[n] === s && cells.h[n] >= 20),
+        sea: deepen([...sea], n => cells.h[n] < 20)
+      });
+    }
+
+    const size = styles.military.options.boxSize;
+    const width = size * 9; // regiment box with its icon, and a margin
+    const placed = quadtree<{ x: number; y: number }>()
+      .x(d => d.x)
+      .y(d => d.y);
+    const blocked = (x: number, y: number) =>
+      findAllInQuadtree(x, y, width, placed).some(o => Math.abs(o.x - x) < width && Math.abs(o.y - y) < size * 3);
+    const deploy = (regiment: Regiment, lines: number[][], feature: number) => {
+      const { x, y } = regiment;
+      const distance = (i: number) => (p[i][0] - x) ** 2 + (p[i][1] - y) ** 2;
+      for (const line of lines) {
+        const target = line
+          .filter(i => cells.f[i] === feature)
+          .sort((a, b) => distance(a) - distance(b))
+          .find(i => !blocked(p[i][0], p[i][1]));
+        if (target === undefined) continue;
+        [regiment.x, regiment.y] = p[target];
+        placed.add({ x: regiment.x, y: regiment.y });
+        return;
+      }
+    };
+
+    // fleets first: few water cells reach the border, and land regiments on the coast would block them
+    for (const naval of [true, false]) {
+      for (const state of states) {
+        const front = fronts.get(state.i);
+        if (!front) continue;
+        for (const regiment of state.military ?? []) {
+          if (Boolean(regiment.n) !== naval) continue;
+          if (naval) deploy(regiment, front.sea, cells.f[cells.haven[regiment.cell]]);
+          else deploy(regiment, front.land, cells.f[regiment.cell]);
+        }
+      }
+    }
   }
 
   getDefaultOptions() {

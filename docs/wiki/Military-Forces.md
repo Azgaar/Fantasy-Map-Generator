@@ -139,7 +139,9 @@ Conscripts a state cannot equip are not lost: they serve as **levies** in the ce
 
 Units that need no goods, such as the default levies, are always fully equipped, and so is every unit before the economy has run or in a map made before this rule.
 
-Troops for each cell and burg form a _platoon_. As the number of platoons is far too high, they are sorted starting from the smallest and merged into _regiments_ based on the distance between platoons and an expected regiment size of `3 × Population rate`. Platoons of a _separate_ unit can only merge with platoons of the same unit. Once a regiment reaches the expected size it stops absorbing others. The system then generates names, emblems and legends for the regiments and places them on the map.
+Troops for each cell and burg form a _platoon_. As the number of platoons is far too high, they are sorted starting from the smallest and merged into _regiments_ based on the distance between platoons and an expected regiment size of `3 × Population rate`. Platoons of a _separate_ unit can only merge with platoons of the same unit. Once a regiment reaches the expected size it stops absorbing others. The system then generates names, emblems and legends for the regiments and places them on the map at their bases.
+
+A state at war marches its land regiments from their bases to the front: its own land cells bordering an enemy, then up to two lines of cells behind them. Its fleets sail to the water cells next to that border, on either side, or up to two cells offshore. Fleets deploy first, as land regiments on the coast would crowd them out. The largest regiments go first, each to the free cell nearest its base on its landmass or water body, foremost line first, so regiment boxes never overlap, an enemy's included. Regiments that find no free cell stay at their bases. The base stays where the regiment was raised.
 
 ## Regiment Editor
 
