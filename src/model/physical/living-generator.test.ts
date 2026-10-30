@@ -1568,4 +1568,63 @@ describe("Living (Lair Ascension Slice 3: Shared Emergent State Engine)", () => 
     expect(living.provinces[3].lair).toBeNull();
     expect(pack.states[3].rosterId).toBe("infernalDwarfBase");
   });
+
+  it("records independence chronicle events and round-trips emergent states through serializeHistory / parseHistory", () => {
+    const living = Living.init();
+    Living.spawnTrouble(2, "demagogue", "burg", 7);
+    const troubleStateId = Living.promoteTroubleToState(2)!;
+
+    Living.spawnLair(3, "demonic_master", 8, 4);
+    const lairStateId = Living.ascendLairToState(3)!;
+
+    const independenceEvents = pack.history.events!.filter(e => e.type === "independence");
+    expect(independenceEvents).toHaveLength(2);
+    expect(independenceEvents[0]!.actors).toContainEqual({ kind: "state", id: troubleStateId });
+    expect(independenceEvents[1]!.actors).toContainEqual({ kind: "state", id: lairStateId });
+
+    const { json, snapshotRecords } = serializeHistory(pack.history, pack.cells.i.length);
+    const restored = parseHistory(json, snapshotRecords, pack.cells.i.length);
+
+    expect(restored.living?.states[troubleStateId]?.rulerId).toBe(living.states[troubleStateId].rulerId);
+    expect(restored.living?.states[lairStateId]?.capacity).toEqual(living.states[lairStateId].capacity);
+    expect(restored.living?.provinces?.[2]?.trouble).toBeNull();
+    expect(restored.living?.provinces?.[3]?.lair).toBeNull();
+    expect(restored.events.filter(e => e.type === "independence")).toHaveLength(2);
+  });
+
+  it("produces deterministic emergent states, rulers, armies, and chronicle entries across identical seeds", () => {
+    const runScenario = () => {
+      buildStubPack();
+      let s = 42;
+      const origRandom = Math.random;
+      Math.random = () => {
+        s = (s * 1664525 + 1013904223) >>> 0;
+        return s / 0x100000000;
+      };
+      try {
+        const living = Living.init({ seed: "deterministic-ascension-seed" });
+        Living.spawnTrouble(2, "secret_society", "burg", 8);
+        const s1 = Living.promoteTroubleToState(2)!;
+        Living.spawnLair(3, "ancient_evil", 9, 4);
+        const s2 = Living.ascendLairToState(3)!;
+        Living.tick(2);
+        return {
+          s1Name: pack.states[s1].fullName,
+          s2Name: pack.states[s2].fullName,
+          s1Ruler: pack.history.figures!.find(f => f.i === living.states[s1].rulerId),
+          s2Ruler: pack.history.figures!.find(f => f.i === living.states[s2].rulerId),
+          s1Units: pack.states[s1].military?.[0]?.units,
+          s2Units: pack.states[s2].military?.[0]?.units,
+          news: living.recentNews.map(n => n.text),
+          events: pack.history.events?.map(e => e.text)
+        };
+      } finally {
+        Math.random = origRandom;
+      }
+    };
+
+    const first = runScenario();
+    const second = runScenario();
+    expect(second).toEqual(first);
+  });
 });

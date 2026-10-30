@@ -1,8 +1,8 @@
 # Plan — Emergent Sovereign Realms: Trouble Promotion & Lair Ascension
 
-Updated: 2026-10-29. Status: **planned**.
+Updated: 2026-10-30. Status: **completed**.
 
-Companions: [living-world.md](living-world.md), [unified-figures.md](unified-figures.md), [openconquest-old-world-rosters.md](openconquest-old-world-rosters.md), [culture-traits.md](culture-traits.md).
+Companions: [living-world.md](living-world.md), [unified-figures.md](unified-figures.md), [openconquest-old-world-rosters.md](openconquest-old-world-rosters.md), [culture-traits.md](culture-traits.md), [living-idle-guild.md](living-idle-guild.md).
 
 ---
 
