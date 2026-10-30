@@ -61,6 +61,8 @@ const mocks = vi.hoisted(() => {
     recallRelic: vi.fn(() => true),
     excavateMarker: vi.fn(() => true),
     getRelics: vi.fn(() => state.guild.relics),
+    getEschaton: vi.fn(() => 0),
+    turnAge: vi.fn(() => ({ era: "The Second Age of Ash", year: 1150, realms: 1, successorStates: 2 })),
     resolvePetition: vi.fn(() => ({ summary: "Fund the Militia: the trouble was quelled.", gold: -30, renown: 8 })),
     retireHero: vi.fn(() => 5),
     sparkRebellion: vi.fn(() => true),
@@ -1041,6 +1043,24 @@ describe("LivingHud", () => {
     const inspector = document.getElementById("livingInspector");
     expect(inspector?.textContent).toContain("Back the Coup");
     expect(inspector?.textContent).toContain("Betray to the Crown");
+  });
+
+  it("illuminates the Wheel of Ages only when the age is ready to turn", () => {
+    mocks.living.getEschaton.mockReturnValue(30);
+    Object.assign(mocks.state.guild, { tier: 1 });
+    LivingHud.open();
+
+    expect(document.querySelector<HTMLButtonElement>("#livingHudGuild [data-wheel]")?.disabled).toBe(true);
+
+    mocks.living.getEschaton.mockReturnValue(100);
+    LivingHud.refresh();
+
+    const wheel = document.querySelector<HTMLButtonElement>("#livingHudGuild [data-wheel]");
+    expect(wheel?.disabled).toBe(false);
+    wheel?.click();
+
+    expect(Living.turnAge).toHaveBeenCalled();
+    expect(document.getElementById("livingHudStatus")?.textContent).toContain("The Second Age of Ash");
   });
 
   it("draws on-map bounty popups and claims one when clicked", () => {

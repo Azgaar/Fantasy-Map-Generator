@@ -234,6 +234,8 @@ export interface GuildState {
   roster: number[];
   /** tavern recruitment pool figure ids */
   candidates: number[];
+  /** permanent +1 base skill per prestige age, inherited by hero scions */
+  legacyTier?: number;
   missions: ActiveGuildMission[];
   /** all discovered relics, whatever their current holder */
   relics: HistoricalRelic[];
@@ -283,6 +285,8 @@ export interface LivingWorldState {
   provinces: Record<number, ProvinceSimState>;
   burgs: Record<number, BurgSimState>;
   recentNews: LivingNewsItem[];
+  /** 0..100 Age Finale meter; absent on old saves (treated as 0) */
+  eschaton?: number;
   /** lazily initialized guild wallet, mission list and on-map popups */
   guild?: GuildState;
 }

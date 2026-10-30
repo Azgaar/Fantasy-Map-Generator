@@ -96,6 +96,8 @@ const TEMPLATE = /* html */ `
     #${HUD_ID} .livingGuildMuted { color: #666; font-style: italic; }
     #${HUD_ID} .livingGuildDoctrine { margin-left: auto; display: flex; align-items: center; gap: 0.25em; }
     #${HUD_ID} .livingGuildDoctrine select { font-family: var(--monospace); font-size: 1em; }
+    #${HUD_ID} .livingGuildEschaton { display: flex; align-items: center; gap: 0.25em; }
+    #${HUD_ID} .livingGuildEschaton button:not([disabled]) { background: var(--header, #5e4fa2); color: #fff; }
     #${HUD_ID} .livingGuildChip {
       border: 1px solid rgba(94, 79, 162, 0.5);
       border-radius: 3px;
@@ -394,6 +396,8 @@ function renderGuildBar(): void {
   const doctrine = guild.doctrine ?? "auto_bounties";
   const sandbox = Boolean(guild.sandboxGodMode);
   const favored = guild.favoredStateId !== undefined ? pack.states[guild.favoredStateId]?.name : undefined;
+  const eschaton = Living.getEschaton?.() ?? 0;
+  const wheelReady = eschaton >= 100 || tier >= 5;
   const doctrineOptions = (Object.keys(DOCTRINE_LABELS) as IdleDoctrine[])
     .map(key => `<option value="${key}"${key === doctrine ? " selected" : ""}>${DOCTRINE_LABELS[key]}</option>`)
     .join("");
@@ -432,6 +436,12 @@ function renderGuildBar(): void {
       <span class="livingGuildModes">
         <button type="button" data-mode="guild" class="${sandbox ? "" : "pressed"}">Guild Mode</button>
         <button type="button" data-mode="sandbox" class="${sandbox ? "pressed" : ""}">Sandbox God Mode</button>
+      </span>
+      <span class="livingGuildEschaton" title="The eschaton clock: how close this age is to its finale (${eschaton}/100).${
+        wheelReady ? " The Wheel of Ages may be turned!" : " Reach eschaton 100 or Guild tier 5 to turn it."
+      }">
+        ⏳ ${eschaton}
+        <button type="button" data-wheel="turn"${wheelReady ? "" : " disabled"}>Turn the Wheel of Ages</button>
       </span>
     </div>
     <div class="livingGuildRow">
@@ -516,6 +526,20 @@ function renderGuildBar(): void {
     button.addEventListener("click", () => {
       selected = { kind: "petition", id: Number(button.dataset.popup ?? 0) };
       renderInspector();
+    });
+  }
+
+  for (const button of bar.querySelectorAll<HTMLElement>("[data-wheel]")) {
+    button.addEventListener("click", () => {
+      const result = Living.turnAge();
+      afterTick();
+      setStatus(
+        result
+          ? `${result.era} dawns — ${result.realms} ${result.realms === 1 ? "realm" : "realms"} fell, ${
+              result.successorStates
+            } provinces broke away, and the Guild enters a new age.`
+          : "The Wheel refuses to turn."
+      );
     });
   }
 }

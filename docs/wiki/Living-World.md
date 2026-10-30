@@ -75,5 +75,23 @@ The inspector's _God Mode_ section lets you intervene without waiting for the si
 
 Every intervention is written to the same chronicle and news ticker as a normal seasonal step.
 
+### The Grand Guild
+_Open the Living World HUD in **Guild Mode** (the default) to play as an independent Adventurers' Guild. **Sandbox God Mode** keeps every free intervention above for worldbuilders._
+
+* **Wallet and renown** — heroes earn gold, renown and experience from missions; chapterhouses pay passive dues; renown promotes the Guild through five tiers (larger roster, more vault slots, better checks).
+* **Heroes** — recruit seekers from the tavern each spring, then let the idle doctrine dispatch them (`Hunt Troubles`, `Hunt Lairs`, `Excavate Ruins`, `Guard Favored State`, or `Manual`). Missions roll `1d20 + skill + domain modifier + traits + guild bonus + relic bonus` against the target's DC; fumbles force a DC 12 survival save that ends in a vice or a heroic death. Veterans of age 55+ can **Retire & Mentor** a protege.
+* **Relics & archaeology** — heroes excavate ruins, battlefields, dungeons, necropolises, statues and libraries. Chronicle sites always yield a named `HistoricalRelic` minted from the nearest fallen realm, dead hero or site (e.g. _Crown of the Vhaelen Emperors_). Relics can be **equipped** on a hero (one each), **enshrined** in the vault (up to one per tier, granting +10% contract gold/renown/xp per point) or **leased** to a state (+generation, -1 unravel and +10 gold tribute per season). If a leased state's capital falls, its relics are buried in a fresh ruin and must be excavated again.
+* **Petitions** — every ~5 seasons a ruler, burg or frightened priesthood asks the Guild to pick a side in an active crisis. Click the ⚖️ popup (or its chip in the guild bar) to open a two-choice dilemma card trading gold and renown against real outcomes: coups birth states, crackdowns quell troubles, tithes purge — or enrich — lairs.
+
+### The Wheel of Ages
+The **eschaton clock** (⏳ in the guild bar) measures how close the age is to its finale. It rises each season for every level 8+ lair, when an evil sovereign conquers a burg, and when a major state collapses; purging lairs winds it back by 5.
+
+Once the clock reaches **100** — or the Guild reaches **tier 5** — the **Turn the Wheel of Ages** button illuminates. Turning it plays out the epoch bake:
+
+1. **Bake the epoch** — the current borders are cloned into `pack.history.snapshots` and recorded as a `HistoryEpoch`, so the Legends browser' year slider can scrub back through every age you played.
+2. **Fallen empires** — every state whose unravel clock passed 50 is retired into `pack.history.realms`, its lands go wild, and a `chronicle` ruins marker seeded with a realm-named relic appears at its capital.
+3. **A new era** — the calendar leaps forward 150 years into a freshly named era; giant empires (more than 3 provinces) shatter into successor states and free burgs; all unravel and war exhaustion resets; every state crowns a fresh young ruler.
+4. **Prestige carryover** — the Guild keeps its tier, vault, leased relics and chapterhouses, and `ageCount` rises. Living heroes pass into legend, and each hero of level 3+ is succeeded by a **scion** carrying the ancestor's best skill plus one permanent point per prestige age and their signature virtue.
+
 ### Where to read more
-The design, data model and invariants are described in [`docs/plans/living-world.md`](https://github.com/0xPaladin/Fantasy-Map-Generator/blob/master/docs/plans/living-world.md) and [`docs/plans/lair-ascension.md`](https://github.com/0xPaladin/Fantasy-Map-Generator/blob/master/docs/plans/lair-ascension.md). The simulation code lives in `src/model/physical/living-generator.ts`; the HUD and inspector live in `src/controllers/living-hud.ts`.
+The design, data model and invariants are described in [`docs/plans/living-world.md`](https://github.com/0xPaladin/Fantasy-Map-Generator/blob/master/docs/plans/living-world.md), [`docs/plans/lair-ascension.md`](https://github.com/0xPaladin/Fantasy-Map-Generator/blob/master/docs/plans/lair-ascension.md) and [`docs/plans/living-idle-guild.md`](https://github.com/0xPaladin/Fantasy-Map-Generator/blob/master/docs/plans/living-idle-guild.md). The simulation code lives in `src/model/physical/living-generator.ts`; the HUD and inspector live in `src/controllers/living-hud.ts`.

@@ -119,6 +119,29 @@ export const GUILD_MAX_HEROES = [3, 4, 6, 8, 10] as const;
 const GUILD_DUES_PER_CHAPTER = 2;
 const GUILD_CANDIDATES_PER_YEAR = 3;
 const HERO_RETIREMENT_AGE = 55;
+const WHEEL_YEAR_LEAP = 150;
+const GIANT_PROVINCE_LIMIT = 3;
+
+const ERA_EPITHETS = [
+  "Ash",
+  "the Guild Compact",
+  "Drowned Kings",
+  "Iron and Salt",
+  "Quiet Stars",
+  "Broken Crowns"
+] as const;
+const ERA_ORDINALS = [
+  "First",
+  "Second",
+  "Third",
+  "Fourth",
+  "Fifth",
+  "Sixth",
+  "Seventh",
+  "Eighth",
+  "Ninth",
+  "Tenth"
+] as const;
 
 export function guildTierForRenown(renown: number): number {
   let tier = 1;
@@ -617,6 +640,289 @@ class LivingModel {
     return true;
   }
 
+  /** The Wheel of Ages: bake the epoch, retire fallen empires, and open the next era. */
+  turnAge(): { era: string; year: number; realms: number; successorStates: number } {
+    const living = this.init();
+    const history = Chronicle.sync();
+    const guild = this.getGuild();
+    const yearBefore = options.map?.lore?.calendar?.year ?? 1000;
+
+    // 1. bake the completed age so Legends can scrub back through it
+    this.bakeEpoch(living, yearBefore);
+
+    // 2. overextended empires fall, their capitals seeding chronicle relic ruins
+    const realms = this.retireFallenEmpires(living, yearBefore);
+
+    // 3. the calendar leaps forward and the political map is reshaped
+    const year = yearBefore + WHEEL_YEAR_LEAP;
+    options.map.lore.calendar.year = year;
+    const eraName = this.nextEraName(guild.ageCount);
+    history.eras ??= [];
+    const currentEra = history.eras.at(-1);
+    if (currentEra) currentEra.to = year;
+    history.eras.push({ name: eraName, from: year, to: year });
+
+    this.syncWorld();
+    const shattered = this.fractureGiantEmpires(living);
+
+    for (const state of pack.states) {
+      if (!state?.i || state.removed) continue;
+      const sSim = living.states[state.i];
+      if (!sSim) continue;
+      sSim.unravel = 0;
+      sSim.warExhaustion = 0;
+      this.crownFreshRuler(state, sSim, living, year);
+    }
+    this.syncWorld();
+
+    // 4. prestige carryover: heroes pass into legend, veteran bloodlines spawn scions
+    guild.ageCount += 1;
+    guild.legacyTier = (guild.legacyTier ?? 0) + 1;
+    const nextRoster: number[] = [];
+    for (const id of guild.roster) {
+      const hero = this.findFigure(id);
+      if (!hero || hero.death !== undefined) continue;
+      hero.death = year;
+      for (const role of hero.roles) {
+        if (role.to === undefined) role.to = year;
+      }
+      for (const held of guild.relics ?? []) {
+        if (held.holder.kind === "figure" && held.holder.id === id) held.holder = { kind: "vault" };
+      }
+      if (figureLevel(hero.xp ?? 0) < 3 || nextRoster.length >= maxHeroesForTier(guild.tier)) continue;
+      nextRoster.push(this.spawnScion(living, hero, guild.legacyTier).i);
+    }
+    guild.roster = nextRoster;
+    guild.candidates = [];
+
+    living.eschaton = 0;
+
+    const text = `${eraName} dawns in ${year}: ${realms.length} ${
+      realms.length === 1 ? "realm" : "realms"
+    } fell and ${shattered} provinces broke away as the Wheel turned.`;
+    this.pushNews(living, {
+      kind: "muster",
+      text,
+      cell: guild.hqBurgId !== undefined ? pack.burgs[guild.hqBurgId]?.cell : undefined
+    });
+    this.pushHistory("goldenAge", [], undefined, text);
+
+    return { era: eraName, year, realms: realms.length, successorStates: shattered };
+  }
+
+  /** Force-bake the current borders as one epoch spanning the played age. */
+  private bakeEpoch(living: LivingWorldState, year: number): void {
+    const history = Chronicle.sync();
+    history.snapshots ??= [];
+    history.epochs ??= [];
+
+    const owned = new Map<number, number>();
+    for (const owner of pack.cells.state) owned.set(owner, (owned.get(owner) ?? 0) + 1);
+
+    const eraFrom = pack.history?.eras?.at(-1)?.from ?? year - 100;
+    const polities = pack.states
+      .filter(state => state?.i && !state.removed)
+      .map(state => ({
+        id: state.i,
+        name: state.name,
+        form: state.formName ?? state.form ?? "State",
+        capital: state.capital ?? 0,
+        cells: owned.get(state.i) ?? 0,
+        color: state.color ?? "#8a8a8a",
+        founded: eraFrom
+      }));
+
+    history.snapshots.push(new Uint16Array(pack.cells.state));
+    history.epochs.push({
+      i: history.epochs.length,
+      from: eraFrom,
+      to: year,
+      era: options.map?.lore?.calendar?.era ?? "Present Age",
+      polities,
+      snapshot: history.snapshots.length - 1
+    });
+    living.lastSnapshotTick = living.tick;
+  }
+
+  /** Overextended empires (unravel >= 50) are retired into `history.realms`. */
+  private retireFallenEmpires(living: LivingWorldState, year: number): Realm[] {
+    const realms: Realm[] = [];
+    for (const state of [...pack.states]) {
+      if (!state?.i || state.removed) continue;
+      const sSim = living.states[state.i];
+      if (!sSim || sSim.unravel < 50) continue;
+      realms.push(this.retireStateToRealm(state, sSim, living, year));
+    }
+    return realms;
+  }
+
+  private retireStateToRealm(state: State, sSim: StatePolitySim, living: LivingWorldState, year: number): Realm {
+    const history = Chronicle.sync();
+    history.realms ??= [];
+
+    const ruler = sSim.rulerId !== undefined ? this.findFigure(sSim.rulerId) : undefined;
+    const realm: Realm = {
+      i: history.realms.reduce((max, realm) => Math.max(max, realm.i), -1) + 1,
+      name: state.name,
+      coa: state.coa,
+      center: state.center,
+      capital: state.capital || undefined,
+      founded: year - 100 - ((state.i * 37) % 80),
+      fallen: year,
+      cause: "collapse",
+      successors: [],
+      remnantCulture: state.culture
+    };
+    history.realms.push(realm);
+
+    // its lands go wild and its simulation is dismissed
+    const cells: number[] = [];
+    for (let cell = 0; cell < pack.cells.state.length; cell++) {
+      if (pack.cells.state[cell] === state.i) cells.push(cell);
+    }
+    this.transferCells(0, cells);
+    for (const burg of pack.burgs) {
+      if (burg?.i && !burg.removed && burg.state === state.i) burg.state = 0;
+    }
+    state.removed = true;
+    delete living.states[state.i];
+
+    if (ruler && ruler.death === undefined) {
+      ruler.death = year;
+      for (const role of ruler.roles) {
+        if (role.to === undefined) role.to = year;
+      }
+    }
+
+    // a chronicle ruin at the fallen capital, hiding a realm-named relic (a +2-tier find)
+    const capital = state.capital ? pack.burgs[state.capital] : undefined;
+    const cell = capital?.cell ?? state.center ?? 0;
+    const markerId = this.addRuinMarker(cell, `Ruins of ${state.name}`);
+    const marker = (pack.markers ?? [])[markerId]!;
+    const relic = this.mintRelicFromMarker(marker, year * 1000 + state.i);
+    relic.holder = { kind: "ruin", markerId, cell };
+
+    // relics the fallen state leased from the Guild are buried in the same ruin
+    for (const held of this.getGuild().relics ?? []) {
+      if (held.holder.kind === "state" && held.holder.id === state.i) {
+        held.holder = { kind: "ruin", markerId, cell };
+      }
+    }
+
+    this.pushHistory(
+      "collapse",
+      [{ kind: "state", id: state.i }],
+      state.center,
+      `${state.name} crumbled at the turning of the age.`
+    );
+    return realm;
+  }
+
+  /** Giant empires shatter along provincial lines into successor states and free burgs. */
+  private fractureGiantEmpires(living: LivingWorldState): number {
+    let released = 0;
+    for (const state of [...pack.states]) {
+      if (!state?.i || state.removed) continue;
+      const provinces = this.ownedProvinces(state.i).sort((a, b) => a.i - b.i);
+      if (provinces.length <= GIANT_PROVINCE_LIMIT) continue;
+
+      const keep = new Set(provinces.slice(0, GIANT_PROVINCE_LIMIT).map(province => province.i));
+      for (const province of provinces) {
+        if (keep.has(province.i)) continue;
+        if (this.releaseProvince(state, province, living)) released += 1;
+      }
+    }
+    return released;
+  }
+
+  /** One province leaves a fracturing state: secession where a settlement stands, wilds otherwise. */
+  private releaseProvince(state: State, province: Province, living: LivingWorldState): boolean {
+    const settlementId =
+      province.burg !== undefined && pack.burgs[province.burg]?.state === state.i
+        ? province.burg
+        : this.pickProvinceSettlement(province.i, state.i);
+    const burg = settlementId !== undefined ? pack.burgs[settlementId] : undefined;
+    if (burg?.i && !burg.removed && burg.state === state.i) {
+      this.breakAway(state, burg, living);
+      return true;
+    }
+
+    const provinceCells = pack.cells.province;
+    if (!provinceCells) return false;
+    const cells: number[] = [];
+    for (let cell = 0; cell < provinceCells.length; cell++) {
+      if (provinceCells[cell] === province.i) cells.push(cell);
+    }
+    this.transferCells(0, cells);
+    for (const cell of cells) provinceCells[cell] = 0;
+    return true;
+  }
+
+  /** The calendar leap ages every ruler away; each surviving state crowns a fresh young ruler. */
+  private crownFreshRuler(state: State, sSim: StatePolitySim, living: LivingWorldState, year: number): void {
+    const ruler = sSim.rulerId !== undefined ? this.findFigure(sSim.rulerId) : undefined;
+    if (ruler && ruler.death === undefined) {
+      ruler.death = year;
+      for (const role of ruler.roles) {
+        if (role.to === undefined) role.to = year;
+      }
+    }
+    sSim.rulerId = this.spawnRuler(state, living, year);
+  }
+
+  /** A founder's scion: carries the bloodline and its legacy skill into the new era. */
+  private spawnScion(living: LivingWorldState, ancestor: HistoricalFigure, legacyTier: number): HistoricalFigure {
+    const history = Chronicle.sync();
+    history.figures ??= [];
+    const figures = history.figures;
+    const index = figures.length;
+    const year = options.map?.lore?.calendar?.year ?? 1000;
+    const rng = createRng(`${living.seed}:guild:scion:${index + ancestor.i * 1000}`);
+    const culture = ancestor.culture;
+    const alignment = rollAlignment(rng, pack.cultures?.[culture]?.alignment);
+    const traits = rollFigureTraits(rng, alignment);
+    const signatureVirtue = ancestor.virtues?.[0];
+    const virtues =
+      signatureVirtue && !traits.virtues.includes(signatureVirtue)
+        ? [signatureVirtue, ...traits.virtues]
+        : traits.virtues;
+
+    const skills = {
+      m: ancestor.skills?.m ?? 0,
+      w: ancestor.skills?.w ?? 0,
+      s: ancestor.skills?.s ?? 0,
+      c: ancestor.skills?.c ?? 0
+    };
+    const pools = ["m", "w", "s", "c"] as const;
+    const best = pools.reduce((chosen, pool) => (skills[pool] > skills[chosen] ? pool : chosen), pools[0]!);
+    skills[best] = Math.min(5, skills[best] + 1 + legacyTier);
+    const guild = this.getGuild();
+
+    const scion: HistoricalFigure = {
+      i: index,
+      name: Names.getCulture(culture),
+      culture,
+      birth: year - rng.int(18, 24),
+      roles: [{ type: "adventurer", target: { kind: "culture", id: culture }, from: year }],
+      alignment,
+      virtues,
+      vices: traits.vices,
+      cell: guild.hqBurgId !== undefined ? pack.burgs[guild.hqBurgId]?.cell : undefined,
+      xp: 0,
+      skills
+    };
+    figures.push(scion);
+    return scion;
+  }
+
+  /** Poetic name for the era that dawns after the given number of wheel turns. */
+  private nextEraName(ageCount: number): string {
+    const rng = createRng(`${this.getState().seed}:turnAge:${ageCount}`);
+    const epithet = ERA_EPITHETS[rng.int(0, ERA_EPITHETS.length - 1)]!;
+    const ordinal = ERA_ORDINALS[Math.min(ageCount, ERA_ORDINALS.length - 1)] ?? `${ageCount + 1}th`;
+    return rng.chance(0.5) ? `The ${ordinal} Age of ${epithet}` : `The Era of ${epithet}`;
+  }
+
   /** Retire a veteran hero and mint a protege carrying one skill point forward. */
   retireHero(figureId: number): number | null {
     const living = this.getState();
@@ -678,6 +984,7 @@ class LivingModel {
       this.recomputeAllCapacities(living);
       this.stepGuild(living);
       this.stepRelics(living);
+      this.stepEschaton(living);
       this.refreshPopups(living);
     }
 
@@ -1223,6 +1530,7 @@ class LivingModel {
             this.removeLairMarker(lair.markerId);
             pSim.lair = null;
             pSim.order = Math.min(100, pSim.order + 12);
+            this.relieveEschaton(living);
             outcomes.push(`${lair.name} was broken up`);
           }
           break;
@@ -1640,6 +1948,29 @@ class LivingModel {
     }
   }
 
+  /** The current eschaton reading, lazily initialized for old saves */
+  getEschaton(): number {
+    return this.getState().eschaton ?? 0;
+  }
+
+  /** Each season, every level 8+ lair pushes the world one step closer to the finale. */
+  private stepEschaton(living: LivingWorldState): void {
+    let doom = 0;
+    for (const pSim of Object.values(living.provinces)) {
+      if (pSim.lair && pSim.lair.level >= 8) doom += 1;
+    }
+    if (doom > 0) this.exaltEschaton(living, doom);
+  }
+
+  private exaltEschaton(living: LivingWorldState, amount: number): void {
+    living.eschaton = minmax((living.eschaton ?? 0) + amount, 0, 100);
+  }
+
+  /** Purging lairs buys the world time. */
+  private relieveEschaton(living: LivingWorldState, amount = 5): void {
+    living.eschaton = Math.max(0, (living.eschaton ?? 0) - amount);
+  }
+
   private resolveMission(living: LivingWorldState, mission: ActiveGuildMission): void {
     const guild = this.getGuild();
     const index = guild.missions.findIndex(entry => entry.id === mission.id);
@@ -1719,6 +2050,7 @@ class LivingModel {
         pSim.lair = null;
         pSim.order = Math.min(100, pSim.order + 12);
         pSim.stability += 1;
+        this.relieveEschaton(living);
         text = `${figure.name} purged ${lair.name} in ${province?.name ?? "the province"}.`;
         break;
       }
@@ -2815,6 +3147,7 @@ class LivingModel {
       pSim.stability += 2;
       sSim.warExhaustion = Math.max(0, sSim.warExhaustion - 2);
       sSim.capacity = this.recomputeStateCapacity(stateId);
+      this.relieveEschaton(living);
 
       this.pushNews(living, {
         kind: "lair",
@@ -2924,6 +3257,7 @@ class LivingModel {
       pSim.order = Math.min(100, pSim.order + 12);
       pSim.stability += 1;
       sSim.capacity = this.recomputeStateCapacity(stateId);
+      this.relieveEschaton(living);
 
       this.pushNews(living, {
         kind: "lair",
@@ -3808,11 +4142,13 @@ class LivingModel {
 
   /** Flip the burg and its hinterland to the state and seed occupation unrest. */
   private annexBurg(stateId: number, burg: Burg, restless: boolean): void {
-    const bSim = this.getState().burgs[burg.i];
+    const living = this.getState();
+    const bSim = living.burgs[burg.i];
     if (bSim) bSim.originalOwner ??= burg.state ?? 0;
 
     const previousState = burg.state ?? 0;
     const wasCapital = burg.capital === 1;
+    const loserProvinces = previousState > 0 ? this.ownedProvinces(previousState).length : 0;
     const cells = this.burgHinterland(burg);
     this.transferCells(stateId, cells);
     burg.state = stateId;
@@ -3820,6 +4156,18 @@ class LivingModel {
 
     // a conquered capital forces its state's leased relics into a ruin at the capital cell
     if (wasCapital && previousState > 0 && previousState !== stateId) this.dropStateRelicsToRuin(previousState, burg);
+
+    // a major state losing its last holding collapses — and hastens the eschaton
+    if (previousState > 0 && previousState !== stateId) {
+      const stillHolds = pack.burgs.some(entry => entry?.i && !entry.removed && entry.state === previousState);
+      if (!stillHolds && loserProvinces >= 4) this.exaltEschaton(living, 5);
+    }
+
+    // conquests by evil sovereigns push the world toward its finale
+    const conquerorSim = living.states[stateId];
+    const conquerorRuler =
+      conquerorSim && conquerorSim.rulerId !== undefined ? this.findFigure(conquerorSim.rulerId) : undefined;
+    if (conquerorRuler?.alignment === "evil") this.exaltEschaton(living, 2);
 
     if (!bSim) return;
     bSim.originalCulture ??= burg.culture;

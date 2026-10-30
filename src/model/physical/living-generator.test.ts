@@ -38,6 +38,14 @@ function makeGuildFigure(i: number, overrides: Partial<HistoricalFigure> = {}): 
   };
 }
 
+function addGuildHero(skills: { m: number; w: number; s: number; c: number }): number {
+  pack.history.figures ??= [];
+  const figures = pack.history.figures;
+  const heroId = figures.length;
+  figures.push(makeGuildFigure(heroId, { skills }));
+  return heroId;
+}
+
 describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War & Unravel)", () => {
   beforeEach(() => {
     globalThis.options = {
@@ -1202,14 +1210,6 @@ describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War
       pack.markers.push({ icon: "🏛️", x, y, ...fixtures });
     }
 
-    function addGuildHero(skills: { m: number; w: number; s: number; c: number }): number {
-      pack.history.figures ??= [];
-      const figures = pack.history.figures;
-      const heroId = figures.length;
-      figures.push(makeGuildFigure(heroId, { skills }));
-      return heroId;
-    }
-
     function makeRelic(id: number, overrides: Partial<HistoricalRelic> = {}): HistoricalRelic {
       return {
         id,
@@ -1573,6 +1573,157 @@ describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War
 
       expect(Living.getPopups().some(entry => entry.id === 77)).toBe(false);
       expect(living.provinces[1].trouble).not.toBeNull();
+    });
+  });
+
+  describe("Wheel of Ages (slice 5)", () => {
+    it("tracks the eschaton clock from mighty lairs and evil conquests", () => {
+      const living = Living.init();
+      expect(Living.getEschaton()).toBe(0);
+
+      Living.spawnLair(1, "bandit_camp", 9);
+      Living.tick(1);
+      expect(Living.getEschaton()).toBe(1);
+
+      // an evil sovereign's conquest hastens the finale
+      const rulerId = living.states[1].rulerId;
+      const ruler = pack.history.figures?.find(figure => figure.i === rulerId);
+      if (ruler) ruler.alignment = "evil";
+      pack.burgs.push({
+        i: 5,
+        name: "Borderkeep",
+        cell: 2,
+        x: 20,
+        y: 20,
+        state: 2,
+        culture: 2,
+        population: 2,
+        capital: 0
+      });
+      const army = pack.states[1].military![0];
+      army.units = [{ type: "cavalry", count: 2000, exp: 5 }];
+      expect(Living.conquerBurg(1, 5)).toBe(true);
+      expect(Living.getEschaton()).toBe(3);
+    });
+
+    it("winds the eschaton back when a lair is purged", () => {
+      const living = Living.init();
+      const guild = Living.getGuild();
+      guild.tier = 3;
+      guild.doctrine = "manual";
+      Living.spawnLair(1, "bandit_camp", 9);
+      Living.tick(1);
+      expect(Living.getEschaton()).toBe(1);
+
+      guild.roster = [addGuildHero({ m: 30, w: 0, s: 0, c: 0 })];
+      expect(Living.dispatchBestHero(1)).toBe(true);
+
+      Living.tick(1);
+
+      expect(living.provinces[1].lair).toBeNull();
+      expect(Living.getEschaton()).toBe(0);
+    });
+
+    it("turns the wheel: bakes the epoch, retires unraveling realms and seeds relic ruins", () => {
+      const living = Living.init();
+      const guild = Living.getGuild();
+      living.states[2].unravel = 60;
+      const yearBefore = options.map.lore.calendar.year;
+
+      const result = Living.turnAge();
+
+      expect(result.year).toBe(yearBefore + 150);
+      expect(options.map.lore.calendar.year).toBe(result.year);
+      expect(pack.history.epochs).toHaveLength(1);
+      expect(pack.history.snapshots).toHaveLength(1);
+
+      const realm = pack.history.realms?.find(entry => entry.name === "Khazadia");
+      expect(realm).toBeDefined();
+      expect(realm!.fallen).toBe(yearBefore);
+      expect(pack.states[2].removed).toBe(true);
+
+      const ruin = (pack.markers ?? []).find(
+        marker => marker.type === "ruins" && marker.chronicle && marker.name === "Ruins of Khazadia"
+      );
+      expect(ruin).toBeDefined();
+      const buried = guild.relics.find(entry => entry.holder.kind === "ruin" && entry.holder.markerId === ruin!.i);
+      expect(buried).toBeDefined();
+      expect(buried!.originRealmId).toBe(realm!.i);
+      expect(["regalia", "charter"]).toContain(buried!.category);
+
+      expect(pack.history.eras?.at(-1)?.name).toBe(result.era);
+      expect(guild.ageCount).toBe(1);
+      expect(Living.getEschaton()).toBe(0);
+
+      // the surviving state resets and crowns a fresh young ruler
+      expect(living.states[1].unravel).toBe(0);
+      const freshRuler = pack.history.figures?.find(figure => figure.i === living.states[1].rulerId);
+      expect(freshRuler?.death).toBeUndefined();
+      expect(result.year - freshRuler!.birth).toBeLessThan(55);
+    });
+
+    it("fractures giant empires into successor states and free burgs", () => {
+      Living.init();
+      const extraProvinces = [
+        { i: 3, state: 1, center: 2 },
+        { i: 4, state: 1, center: 5 },
+        { i: 5, state: 1, burg: 3, center: 4 }
+      ] as unknown as (typeof pack.provinces)[number][];
+      pack.provinces.push(...extraProvinces);
+      pack.cells.state[4] = 1;
+      pack.burgs[3].state = 1;
+      Living.getState().burgs[3].originalOwner = 1; // secession instead of restoration
+
+      const statesBefore = pack.states.length;
+      const result = Living.turnAge();
+
+      expect(result.successorStates).toBeGreaterThanOrEqual(1);
+      expect(pack.states.length).toBeGreaterThan(statesBefore);
+      expect(pack.burgs[3].state).toBeGreaterThan(2);
+    });
+
+    it("carries the vault forward and mints scions for veteran heroes", () => {
+      Living.init();
+      const guild = Living.getGuild();
+      guild.tier = 4;
+      pack.history.figures ??= [];
+      const figures = pack.history.figures;
+      const heroId = figures.length;
+      figures.push(
+        makeGuildFigure(heroId, { skills: { m: 3, w: 1, s: 0, c: 2 }, xp: 300, virtues: ["bold"], cell: 1 })
+      );
+      const rookieId = heroId + 1;
+      figures.push(makeGuildFigure(rookieId, { xp: 0 }));
+      guild.roster = [heroId, rookieId];
+      guild.relics = [
+        {
+          id: 1,
+          name: "Old Crown",
+          category: "regalia",
+          lore: "A battered diadem.",
+          originYear: 500,
+          bonuses: { s: 2 },
+          holder: { kind: "vault" }
+        }
+      ];
+
+      const result = Living.turnAge();
+
+      expect(guild.ageCount).toBe(1);
+      expect(guild.legacyTier).toBe(1);
+      expect(guild.tier).toBe(4);
+      expect(guild.relics).toHaveLength(1);
+      expect(guild.relics[0]!.holder).toEqual({ kind: "vault" });
+      expect(guild.chapterBurgIds).toEqual([1]);
+
+      expect(figures[heroId]!.death).toBe(result.year);
+      expect(guild.roster).not.toContain(heroId);
+      expect(guild.roster).not.toContain(rookieId); // level 1 heroes leave no bloodline
+
+      const scion = figures.find(figure => figure.i === guild.roster[0])!;
+      expect(scion.skills?.m).toBe(5); // ancestor 3 + 1 + 1 legacyTier, capped at 5
+      expect(scion.virtues).toContain("bold");
+      expect(scion.roles[0]!.type).toBe("adventurer");
     });
   });
 });
