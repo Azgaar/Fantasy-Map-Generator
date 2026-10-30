@@ -138,14 +138,6 @@ describe("GoodsModule", () => {
     expect(placed([0, 0])).toEqual(new Set([0]));
   });
 
-  it("places deposits until they yield the units asked, leaving other goods in place", () => {
-    globalThis.pack.cells.good = Uint16Array.from([0, 0, 0, 2]);
-    const placed = goodsModule.placeOutput(1, 5, () => 2);
-
-    expect(placed).toBe(3);
-    expect(Array.from(globalThis.pack.cells.good)).toEqual([1, 1, 1, 2]);
-  });
-
   it("spreads spending over options by price per coverage, cheaper ones getting more", async () => {
     const { getVarietyShares, VARIETY } = await import("./goods-generator");
     const [cheap, dear, none] = getVarietyShares([1, 2, 0]);

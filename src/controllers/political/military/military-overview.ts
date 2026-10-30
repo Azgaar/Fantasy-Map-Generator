@@ -1,9 +1,11 @@
 import { interpolateString, select, sum } from "d3";
 import { Controllers } from "@/controllers";
+import { type Good, Goods } from "@/model/economy/goods-generator";
 import { Icons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
 import { Military } from "@/model/political/military-generator";
 import type { State } from "@/model/political/states-generator";
+import { goodBadge } from "@/renderers/draw-goods";
 import { drawRegiment } from "@/renderers/draw-military";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
@@ -35,11 +37,13 @@ type MilitaryRow = {
   state: State;
   forces: Record<string, number>;
   total: number;
+  power: number;
   population: number;
   rate: number;
   alert: number;
   upkeep: number;
 };
+
 let columns: EditorColumn<MilitaryRow>[] = [];
 
 const militaryTable = initEditorTable<MilitaryRow>({
@@ -182,6 +186,7 @@ function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
       key: "rate",
       label: t("Rate"),
       width: "5em",
+      hidden: true,
       sortBy: row => row.rate,
       tip: sentences(
         t("Military personnel rate (% of state population)"),
@@ -193,6 +198,7 @@ function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
       key: "alert",
       label: t("War Alert"),
       width: "5.5em",
+      mobileHidden: true,
       sortBy: row => row.alert,
       tip: sentences(
         t("War Alert"),
@@ -204,8 +210,19 @@ function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
       key: "upkeep",
       label: t("Upkeep"),
       width: "5em",
+      hidden: true,
       sortBy: row => row.upkeep,
       tip: sentences(EconomyTerms.upkeep(), t("Click to sort"))
+    },
+    {
+      key: "power",
+      label: t("Power"),
+      width: "5em",
+      sortBy: row => row.power,
+      tip: sentences(
+        t("Military power as the forces fight: units number multiplied by unit power and by upkeep"),
+        t("Click to sort")
+      )
     },
     { key: "regiments", width: "1.4em", permanent: true }
   ];
@@ -246,6 +263,7 @@ function getMilitaryData(): MilitaryRow[] {
         state,
         forces,
         total,
+        power: Military.getPower(state.i),
         population,
         rate: population ? (total / population) * 100 : 0,
         alert: state.alert ?? 0,
@@ -265,12 +283,13 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
   const totals = view.all.reduce(
     (result, row) => {
       result.total += row.total;
+      result.power += row.power;
       result.population += row.population;
       for (const unit of options.map.military.units)
         result.units[unit.name] = (result.units[unit.name] || 0) + row.forces[unit.name];
       return result;
     },
-    { total: 0, population: 0, units: {} as Record<string, number> }
+    { total: 0, power: 0, population: 0, units: {} as Record<string, number> }
   );
   const percent = (value: number, total: number) => `${rn(total ? (value / total) * 100 : 0)}%`;
   const lines = view.rows
@@ -285,11 +304,12 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
         <fill-box data-col="color" data-tip="${row.state.fullName}" fill="${row.state.color}" disabled></fill-box>
         <input data-col="state" data-tip="${row.state.fullName}" value="${row.state.name}" readonly />
         ${unitCells}
-        <div data-col="total" data-tip="${t("Total military personnel (considering crew)")}" style="font-weight:bold">${percentage ? percent(row.total, totals.total) : si(row.total)}</div>
+        <div data-col="total" data-tip="${t("Total military personnel (considering crew)")}" style="font-weight: bold">${percentage ? percent(row.total, totals.total) : si(row.total)}</div>
         <div data-col="population" data-tip="${t("State population")}">${percentage ? percent(row.population, totals.population) : si(row.population)}</div>
         <div data-col="rate" data-tip="${sentences(t("Military personnel rate (% of state population)"), t("Depends on war alert"))}">${rn(row.rate, 2)}%</div>
         <input data-col="alert" data-tip="${sentences(t("War Alert"), t("Modifier to military forces number, depends on political situation"))}" type="number" min="0" step=".01" value="${rn(row.alert, 2)}" />
         <div data-col="upkeep" data-tip="${EconomyTerms.upkeep()}">${rn(row.upkeep * 100)}%</div>
+                <div data-col="power" data-tip="${t("Military power as the forces fight: units number multiplied by unit power and by upkeep")}">${percentage ? percent(row.power, totals.power) : si(rn(row.power))}</div>
         <span data-col="regiments" data-tip="${t("Show regiments list")}" class="icon-list-bullet pointer"></span>
       </div>`;
     })
@@ -378,7 +398,7 @@ function togglePercentageMode(): void {
 
 function militaryCustomize(): void {
   renderOptions();
-  const types = ["melee", "ranged", "mounted", "machinery", "naval", "armored", "aviation", "magical"];
+  const types = ["levies", "melee", "ranged", "mounted", "machinery", "naval", "armored", "aviation", "magical"];
   const tableBody = ensureEl("militaryOptions").querySelector("tbody")!;
   const LIMIT_TIPS = {
     biomes: t("Select allowed biomes"),
@@ -447,6 +467,7 @@ function militaryCustomize(): void {
     if (type === "states") return selectLimitation(el, pack.states);
     if (type === "cultures") return selectLimitation(el, pack.cultures);
     if (type === "religions") return selectLimitation(el, pack.religions);
+    if (type === "goods") return selectGoods(el);
   });
 
   function removeUnitLines(): void {
@@ -487,12 +508,15 @@ function militaryCustomize(): void {
           <button data-type="icon" data-tip="${t("Click to select unit icon")}" translate="no"></button>
         </td>
         <td><input data-tip="${sentences(t("Name"), t("If name is changed for existing unit, old unit will be replaced"))}" value="${name}" /></td>
+        <td>
+          <button data-tip="${t("Goods that equip the unit. Conscripts the state cannot equip serve as levies")}" data-type="goods" title="${escapeHtml(getGoodsTitle(unit.goods))}" data-value="${getLimitValue(unit.goods)}">${getGoodsBadges(unit.goods)}</button>
+        </td>
         <td>${getLimitButton("biomes")}</td>
         <td>${getLimitButton("states")}</td>
         <td>${getLimitButton("cultures")}</td>
         <td>${getLimitButton("religions")}</td>
-        <td><input data-tip="${t("Conscription percentage for rural population")}" type="number" min="0" max="100" step=".01" value="${rural}" /></td>
-        <td><input data-tip="${t("Conscription percentage for urban population")}" type="number" min="0" max="100" step=".01" value="${urban}" /></td>
+        <td><input data-tip="${t("Most of the rural population that can be raised to the unit, in percent: fewer if the state lacks the unit's goods")}" type="number" min="0" max="100" step=".01" value="${rural}" /></td>
+        <td><input data-tip="${t("Most of the urban population that can be raised to the unit, in percent: fewer if the state lacks the unit's goods")}" type="number" min="0" max="100" step=".01" value="${urban}" /></td>
         <td><input data-tip="${t("Average number of people in crew (used for total personnel calculation)")}" type="number" min="1" step="1" value="${crew}" /></td>
         <td><input data-tip="${t("Unit military power (used for battle simulation)")}" type="number" min="0" step=".1" value="${power}" /></td>
         <td>
@@ -522,6 +546,34 @@ function militaryCustomize(): void {
   function restoreDefaultUnits(): void {
     removeUnitLines();
     Military.getDefaultOptions().map((unit: MilitaryUnit) => addUnitLine(unit));
+  }
+
+  function getGoodsTitle(goods?: number[]): string {
+    return goods?.length ? limitationTip(goods, pack.goods) : t("none");
+  }
+
+  function getGoodsBadges(goods?: number[]): string {
+    const badges = (goods ?? [])
+      .flatMap(goodId => Goods.get(goodId) ?? [])
+      .map(good => `<svg width="1.4em" height="1.4em" style="vertical-align: middle">${goodBadge(good)}</svg>`);
+    return badges.length ? badges.join("") : t("none");
+  }
+
+  function selectGoods(el: HTMLElement): void {
+    pickLimitation({
+      title: t("Unit goods"),
+      heading: t("Goods that equip the unit"),
+      items: pack.goods,
+      allowed: el.dataset.value ? el.dataset.value.split(",").map(Number) : [],
+      exact: true,
+      badge: item =>
+        `<svg width="1.4em" height="1.4em" style="vertical-align: middle">${goodBadge(item as Good)}</svg>`,
+      onApply: goods => {
+        el.dataset.value = goods.join(",");
+        el.innerHTML = getGoodsBadges(goods);
+        el.setAttribute("title", getGoodsTitle(goods));
+      }
+    });
   }
 
   function selectLimitation(el: HTMLElement, items: LimitationItem[]): void {
@@ -567,6 +619,7 @@ function militaryCustomize(): void {
         number[] | null,
         number[] | null,
         number[] | null,
+        number[] | null,
         number,
         number,
         number,
@@ -574,7 +627,7 @@ function militaryCustomize(): void {
         string,
         number
       ];
-      const [icon, , biomes, states, cultures, religions, rural, urban, crew, power, type, separate] = values;
+      const [icon, , goods, biomes, states, cultures, religions, rural, urban, crew, power, type, separate] = values;
 
       const unit: MilitaryUnit = {
         icon,
@@ -590,6 +643,7 @@ function militaryCustomize(): void {
       if (states) unit.states = states;
       if (cultures) unit.cultures = cultures;
       if (religions) unit.religions = religions;
+      if (goods) unit.goods = goods;
       return unit;
     });
     options.map.military.units = units;
@@ -619,12 +673,13 @@ function renderOptions(): void {
             <tr>
               <th data-tip="${t("Unit icon")}">${t("Icon")}</th>
               <th data-tip="${sentences(t("Name"), t("If name is changed for existing unit, old unit will be replaced"))}">${t("Name")}</th>
+              <th data-tip="${t("Goods that equip the unit. Conscripts the state cannot equip serve as levies")}">${t("Goods")}</th>
               <th style="width: 5em" data-tip="${t("Select allowed biomes")}">${t("Biomes")}</th>
               <th style="width: 5em" data-tip="${t("Select allowed states")}">${t("States")}</th>
               <th style="width: 5em" data-tip="${t("Select allowed cultures")}">${t("Cultures")}</th>
               <th style="width: 5em" data-tip="${t("Select allowed religions")}">${t("Religions")}</th>
-              <th data-tip="${t("Conscription percentage for rural population")}">${t("Rural")}</th>
-              <th data-tip="${t("Conscription percentage for urban population")}">${t("Urban")}</th>
+              <th data-tip="${t("Most of the rural population that can be raised to the unit, in percent: fewer if the state lacks the unit's goods")}">${t("Rural")}</th>
+              <th data-tip="${t("Most of the urban population that can be raised to the unit, in percent: fewer if the state lacks the unit's goods")}">${t("Urban")}</th>
               <th data-tip="${t("Average number of people in crew (used for total personnel calculation)")}">${t("Crew")}</th>
               <th data-tip="${t("Unit military power (used for battle simulation)")}">${t("Power")}</th>
               <th data-tip="${t("Unit type to apply special rules on forces recalculation")}">${t("Type")}</th>
@@ -659,12 +714,22 @@ function militaryRecalculate(): void {
 
 function downloadMilitaryData(): void {
   const units = options.map.military.units.map(u => u.name);
-  const headers = ["Id", "State", ...units.map(u => capitalize(u)), "Total", "Population", "Rate", "War Alert"];
+  const headers = [
+    "Id",
+    "State",
+    ...units.map(u => capitalize(u)),
+    "Total",
+    "Power",
+    "Population",
+    "Rate",
+    "War Alert"
+  ];
   const rows = getMilitaryData().map(row => [
     row.state.i,
     row.state.name,
     ...units.map(unit => row.forces[unit] || 0),
     row.total,
+    rn(row.power, 2),
     row.population,
     `${rn(row.rate, 2)}%`,
     row.alert

@@ -16,6 +16,7 @@ export interface LimitationItem {
 }
 
 const DIALOG_ID = "limitationPicker";
+const ROWS_PER_COLUMN = 20; // longer lists, such as goods, flow into up to four columns
 
 /** the entities a limitation can name: id 0 (marine, neutrals, no religion) and removed ones never */
 const choices = (items: readonly LimitationItem[]) => items.filter(item => item.i && !item.removed);
@@ -31,28 +32,32 @@ export function pickLimitation({
   heading,
   items,
   allowed,
-  onApply
+  onApply,
+  exact = false,
+  badge
 }: {
   title: string;
   heading: string;
   items: readonly LimitationItem[];
   allowed: readonly number[] | undefined;
   onApply: (allowed: number[]) => void; // empty when every entity is checked
+  exact?: boolean; // a selection, not a limitation: exactly the allowed are checked, and none is a valid choice
+  badge?: (item: LimitationItem) => string; // markup drawn before the name instead of the color dot
 }): void {
-  const rows = choices(items).map(
-    ({ i, name, fullName, color }) => /* html */ `<tr>
-      <td><span style="color:${escapeHtml(color ?? "")}">⬤</span></td>
-      <td>
-        <input data-i="${i}" id="limitation${i}" type="checkbox" class="checkbox" ${!allowed?.length || allowed.includes(i) ? "checked" : ""}>
-        <label for="limitation${i}" class="checkbox-label">${escapeHtml(fullName || name)}</label>
-      </td>
-    </tr>`
+  const entries = choices(items);
+  const rows = entries.map(
+    item => /* html */ `<div style="break-inside: avoid; display: flex; align-items: center; gap: .2em">
+      ${badge ? badge(item) : `<span style="color:${escapeHtml(item.color ?? "")}">⬤</span>`}
+      <input data-i="${item.i}" id="limitation${item.i}" type="checkbox" class="checkbox" ${allowed?.includes(item.i) || (!exact && !allowed?.length) ? "checked" : ""}>
+      <label for="limitation${item.i}" class="checkbox-label">${escapeHtml(item.fullName || item.name)}</label>
+    </div>`
   );
+  const columns = Math.min(4, Math.ceil(entries.length / ROWS_PER_COLUMN));
   Dialog.destroy(DIALOG_ID);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="${DIALOG_ID}" class="dialog"><b>${escapeHtml(heading)}:</b>
-      <table style="margin-top:.3em"><tbody>${rows.join("")}</tbody></table>
+      <div style="margin-top: .3em; columns: ${columns}; column-gap: 1.5em">${rows.join("")}</div>
     </div>`
   );
   const inputs = () => Array.from(ensureEl(DIALOG_ID).querySelectorAll<HTMLInputElement>("input"));
@@ -72,8 +77,10 @@ export function pickLimitation({
         label: t("Apply"),
         onClick: () => {
           const checked = inputs().filter(input => input.checked);
-          if (!checked.length) return tip(t("Select at least one element"), false, "error");
-          onApply(checked.length === inputs().length ? [] : checked.map(input => Number(input.dataset.i)));
+          const ids = checked.map(input => Number(input.dataset.i));
+          if (exact) onApply(ids);
+          else if (!checked.length) return tip(t("Select at least one element"), false, "error");
+          else onApply(checked.length === inputs().length ? [] : ids);
           Dialog.close(DIALOG_ID);
         }
       },

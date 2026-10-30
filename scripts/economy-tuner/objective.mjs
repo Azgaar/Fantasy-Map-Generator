@@ -1,5 +1,6 @@
 // What the tuner minimizes: misses against the KPI targets of docs/domain/economy.md, goods out of proportion to their
-// commonness (KPIs 1 and 2), values and coverage away from the goods reference (KPIs 3 and 4), and outsized goods
+// commonness (KPIs 1 and 2), values and coverage away from the goods reference (KPIs 3 and 4), and outsized goods:
+// over 5% of made units, or over their target where the reference expects more, as arms that equip every soldier
 
 const outside = (x, lo, hi) => Math.max(0, lo - x, x - hi);
 /** Doublings between a value and its reference */
@@ -92,7 +93,7 @@ export function objective(results, reference, over) {
     treasuryTop: Math.max(0, kpi.treasuryTop - 0.7),
     sold: Math.max(0, 0.5 - kpi.sold) * 2,
     prosperity: outside(kpi.prosperity, 0.4, 0.6) * 10,
-    outsized: Object.values(share).reduce((s, x) => s + Math.max(0, x - 0.05) * 20, 0)
+    outsized: Object.entries(share).reduce((s, [n, x]) => s + Math.max(0, x - Math.max(0.05, made.target[n] ?? 0)) * 20, 0)
   };
   return {
     loss: Object.values(parts).reduce((s, x) => s + x, 0),

@@ -73,6 +73,8 @@ class StateEconomyModule {
   private outputSource: unknown = null; // the deals the outputs describe
   private outputs = new Map<number, number[]>();
   private worldOutput: number[] = [];
+  private consumptionSource: unknown = null; // the deals the consumption describes
+  private consumption = new Map<number, number[]>();
 
   getAccounts(stateId: number): StateAccounts | null {
     this.index();
@@ -157,6 +159,30 @@ class StateEconomyModule {
   getWorldOutput(): number[] {
     this.indexOutputs();
     return this.worldOutput;
+  }
+
+  /** Units of each good the state's people and the state itself bought or kept a day, by good id */
+  getConsumption(stateId: number): number[] {
+    this.indexConsumption();
+    return this.consumption.get(stateId) ?? [];
+  }
+
+  private indexConsumption(): void {
+    if (this.consumptionSource === pack.deals) return;
+    this.consumptionSource = pack.deals;
+    this.consumption.clear();
+    const add = (stateId: number, goodId: number, units: number) => {
+      const values = this.consumption.get(stateId) ?? [];
+      this.consumption.set(stateId, values);
+      values[goodId] = (values[goodId] || 0) + units;
+    };
+    for (const [burgId, , goodId, kind, units] of pack.deals ?? [])
+      if (kind === DEAL_KINDS.demand || kind === DEAL_KINDS.kept || kind === DEAL_KINDS.order)
+        add(pack.burgs[burgId]?.state || 0, goodId, units);
+    for (const cellId of pack.cells.i)
+      Prosperity.getRuralCell(cellId)?.goods.forEach((units, goodId) => {
+        add(pack.cells.state[cellId], goodId, units);
+      });
   }
 
   private indexOutputs(): void {

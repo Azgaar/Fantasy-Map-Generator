@@ -134,30 +134,19 @@ export class GoodsModule {
 
     pack.cells.good = new Uint16Array(pack.cells.i.length);
     for (const good of shuffler(() => Math.random())([...pack.goods])) {
-      this.placeDeposits(good, { count: this.getDepositCount(good) });
+      this.placeDeposits(good, this.getDepositCount(good));
     }
     this.sync();
   }
 
   regeneratePlacement(goodId: number) {
-    const good = this.prepareDeposits(goodId);
-    if (good) this.placeDeposits(good, { count: this.getDepositCount(good) });
-  }
-
-  /** Re-place a good's deposits until they yield the units a day; output is what a deposit on the cell would yield. Returns the deposits placed */
-  placeOutput(goodId: number, units: number, output: (cellId: number) => number): number {
-    const good = this.prepareDeposits(goodId);
-    return good ? this.placeDeposits(good, { units, output }) : 0;
-  }
-
-  private prepareDeposits(goodId: number): Good | undefined {
     this.sync();
     const good = this.get(goodId);
     if (!good) return;
     const { cells } = pack;
     if (cells.good?.length !== cells.i.length) cells.good = new Uint16Array(cells.i.length);
     for (const cellId of cells.i) if (cells.good[cellId] === goodId) cells.good[cellId] = 0;
-    return good;
+    this.placeDeposits(good, this.getDepositCount(good));
   }
 
   private getDepositCount(good: Good): number {
@@ -167,19 +156,13 @@ export class GoodsModule {
   }
 
   /** Deposits form loose clusters: each next one lands beside the previous one by chance, or anywhere the good fits */
-  private placeDeposits(
-    good: Good,
-    target: { count: number } | { units: number; output: (cellId: number) => number }
-  ): number {
-    if (!good.distribution) return 0;
+  private placeDeposits(good: Good, count: number) {
+    if (!good.distribution) return;
     const { cells } = pack;
     const methods = `{${Object.keys(this.getMethods()).join(", ")}}`;
     const spread = new Function(methods, `return ${good.distribution}`);
-    const output = "output" in target ? target.output : null;
     const free = (cellId: number) =>
-      !cells.good[cellId] &&
-      !(cells.biome[cellId] === 11 && pack.biomes[11].habitability === 0) && // glaciers
-      (!output || output(cellId) > 0);
+      !cells.good[cellId] && !(cells.biome[cellId] === 11 && pack.biomes[11].habitability === 0); // glaciers
     const fits = (cellId: number) => free(cellId) && spread(this.getMethods(cellId));
 
     let eligible: number[] | null = null; // listed once random draws keep missing
@@ -202,9 +185,8 @@ export class GoodsModule {
     };
 
     let placed = 0;
-    let made = 0;
     let previous = -1;
-    while ("count" in target ? placed < target.count : made < target.units) {
+    while (placed < count) {
       let cellId = -1;
       if (previous >= 0 && Math.random() < DEPOSIT_CLUSTERING) {
         const near = cells.c[previous].filter(fits);
@@ -215,10 +197,8 @@ export class GoodsModule {
 
       cells.good[cellId] = good.i;
       placed++;
-      if (output) made += output(cellId);
       previous = cellId;
     }
-    return placed;
   }
 
   /** The default deposit range of a good by its name, if it is one of the defaults */

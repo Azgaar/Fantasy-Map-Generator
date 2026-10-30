@@ -1,5 +1,3 @@
-// The default goods catalogue. Values and demand coverage are tuned against the economy KPIs: scripts/economy-tuner writes them
-
 import type { Good } from "@/model/economy/goods-generator";
 
 export type GoodData = Omit<Good, "i"> & { recipes?: Record<string, number>[] };
@@ -47,7 +45,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Iron",
-    tags: ["ore", "military"],
+    tags: ["ore", "metal"],
     icon: "goods-iron",
     color: "#5D686E",
     value: 3.5,
@@ -60,7 +58,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Copper",
-    tags: ["ore"],
+    tags: ["ore", "metal"],
     icon: "goods-copper",
     color: "#b87333",
     value: 4,
@@ -72,7 +70,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Tin",
-    tags: ["ore"],
+    tags: ["ore", "metal"],
     icon: "goods-tin",
     color: "#454343",
     value: 4.5,
@@ -84,7 +82,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Silver",
-    tags: ["ore", "luxury"],
+    tags: ["ore", "luxury", "metal"],
     icon: "goods-silver",
     color: "#C0C0C0",
     value: 6,
@@ -96,7 +94,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Gold",
-    tags: ["ore", "luxury"],
+    tags: ["ore", "luxury", "metal"],
     icon: "goods-gold",
     color: "#ffd700",
     value: 13,
@@ -233,7 +231,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Horses",
-    tags: ["supply", "military"],
+    tags: ["supply", "mounted"],
     icon: "goods-horses",
     color: "#ba7447",
     value: 3,
@@ -260,7 +258,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Camels",
-    tags: ["supply", "military"],
+    tags: ["supply", "mounted"],
     icon: "goods-camels",
     color: "#C19A6B",
     value: 4,
@@ -274,7 +272,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Hemp",
-    tags: ["clothing", "naval"],
+    tags: ["clothing"],
     icon: "goods-hemp",
     color: "#069a06",
     value: 0.5,
@@ -399,7 +397,7 @@ export const GOODS_DATA: GoodData[] = [
     distribution: "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
     unit: "bale",
     multipliers: { cultureType: { Naval: 1.4, Highland: 2 } },
-    biomeOutput: { 2: 0.03, 4: 0.08 }
+    biomeOutput: { 2: 0.02, 4: 0.04 }
   },
   {
     name: "Slaves",
@@ -416,7 +414,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Tar",
-    tags: ["naval"],
+    tags: [],
     icon: "goods-tar",
     color: "#727272",
     value: 3,
@@ -427,7 +425,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Saltpeter",
-    tags: ["military", "mineral"],
+    tags: ["mineral"],
     icon: "goods-saltpeter",
     color: "#e6e3e3",
     value: 1.5,
@@ -552,7 +550,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Leather",
-    tags: ["clothing", "military"],
+    tags: ["clothing"],
     icon: "goods-leather",
     color: "#8b5a2b",
     value: 8,
@@ -612,7 +610,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Ropes",
-    tags: ["naval", "construction"],
+    tags: ["construction"],
     icon: "goods-ropes",
     color: "#ba9773",
     value: 4,
@@ -660,7 +658,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Sails",
-    tags: ["naval"],
+    tags: [],
     icon: "goods-sails",
     color: "#ffffff",
     value: 13,
@@ -683,7 +681,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Boots",
-    tags: ["clothing", "military"],
+    tags: ["clothing"],
     icon: "goods-boots",
     color: "#654321",
     value: 10,
@@ -694,7 +692,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Harnesses",
-    tags: ["military"],
+    tags: ["mounted"],
     icon: "goods-harnesses",
     color: "#a0522d",
     value: 9,
@@ -710,7 +708,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Barrels",
-    tags: ["naval", "storage"],
+    tags: ["storage"],
     icon: "goods-barrels",
     color: "#b46e3b",
     value: 12,
@@ -721,7 +719,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Bronze",
-    tags: ["military"],
+    tags: ["metal"],
     icon: "goods-bronze",
     color: "#e46f21",
     value: 15,
@@ -735,7 +733,7 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Tools",
-    tags: ["construction", "military"],
+    tags: ["construction"],
     icon: "goods-tools",
     color: "#808080",
     value: 16,
@@ -750,22 +748,22 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Arms",
-    tags: ["military"],
+    tags: ["melee", "ranged"],
     icon: "goods-arms",
     color: "#555555",
     value: 21,
     carriage: 1.6,
     recipes: [
-      { Iron: 0.5, Coal: 1, Leather: 0.5 },
-      { Bronze: 0.25, Coal: 1, Leather: 0.5 }
+      { Iron: 0.5, Coal: 0.5, Leather: 0.5 },
+      { Bronze: 0.25, Coal: 0.5, Leather: 0.5 }
     ],
     unit: "set",
-    demandCoverage: { military: 1.2 },
+    demandCoverage: { military: 2 },
     multipliers: { cultureType: { Highland: 1.5 } }
   },
   {
     name: "Gunpowder",
-    tags: ["military"],
+    tags: ["machinery"],
     icon: "goods-gunpowder",
     color: "#b0c4de",
     value: 13,
@@ -777,17 +775,17 @@ export const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Artillery",
-    tags: ["military"],
+    tags: ["machinery"],
     icon: "goods-artillery",
     color: "#cd7f32",
-    value: 22,
+    value: 25,
     carriage: 4,
     recipes: [
       { Iron: 2, Coal: 1 },
       { Bronze: 1, Coal: 1 }
     ],
     unit: "cannon",
-    demandCoverage: { military: 1.35 },
+    demandCoverage: { military: 1 },
     multipliers: { cultureType: { Nomadic: 0.25, Hunting: 0.25 } }
   },
   {
@@ -928,7 +926,7 @@ export const GOODS_DATA: GoodData[] = [
     tags: ["luxury", "ritual"],
     icon: "goods-perfume",
     color: "#ff69b4",
-    value: 18,
+    value: 20,
     carriage: 0.8,
     recipes: [
       { Olives: 1, Incense: 0.5, Glass: 0.5 },

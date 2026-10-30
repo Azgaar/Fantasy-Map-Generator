@@ -44,8 +44,9 @@ export function readReference(doc = readFileSync(`${ROOT}docs/domain/economy.md`
   const needs = header.slice(4).map(n => n.toLowerCase());
   const reference = { kind: {}, made: {}, raw: {}, value: {}, coverage: {} };
   for (const [name, kind, weight, value, ...cover] of rows) {
-    reference.kind[name] = kind.toLowerCase();
-    reference[kind === "Made" ? "made" : "raw"][name] = +weight;
+    const made = kind !== "Raw"; // made goods' kind is "Made" or "Mfg"
+    reference.kind[name] = made ? "made" : "raw";
+    reference[made ? "made" : "raw"][name] = +weight;
     reference.value[name] = +value;
     reference.coverage[name] = Object.fromEntries(needs.flatMap((need, i) => (cover[i] ? [[need, +cover[i]]] : [])));
   }

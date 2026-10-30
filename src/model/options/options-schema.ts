@@ -78,7 +78,8 @@ const militaryUnit = z.strictObject({
   biomes: ids,
   states: ids,
   cultures: ids,
-  religions: ids
+  religions: ids,
+  goods: ids
 });
 
 const transport = z.strictObject({

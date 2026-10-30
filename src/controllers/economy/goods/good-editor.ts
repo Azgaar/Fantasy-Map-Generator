@@ -307,17 +307,6 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             ${t("on the map")}
           </span>
           <span></span>
-          ${
-            editedGood?.distribution
-              ? /*html*/ `<label class="ge-top" data-tip="${t("Deposits' daily yield. Set it and click Place")}">${t("Deposit output")}</label>
-          <span class="ge-inline">
-            <input id="goodDepositTarget" class="ge-num" type="number" min="0" step="1" />
-            <button id="goodPlaceOutput" type="button" data-tip="${t("Re-place the deposits to yield this many units a day")}">${t("Place")}</button>
-            <span id="goodDepositOutput" class="ge-note"></span>
-          </span>
-          <span></span>`
-              : ""
-          }
         </div>
         <div id="newGoodRawNote" class="ge-note"></div>
       </div>
@@ -501,38 +490,6 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       recipes.push({ [defaultGoodId]: 1 });
       renderRecipes();
     });
-
-    if (editedGood?.distribution) {
-      const good = editedGood;
-      const showDepositOutput = () => {
-        let deposits = 0;
-        let units = 0;
-        for (const cellId of pack.cells.i) {
-          if (pack.cells.good[cellId] !== good.i) continue;
-          deposits++;
-          units += Production.getDepositOutput(good, cellId);
-        }
-        ensureEl("goodDepositOutput").textContent = t("{{units}} {{unit}} a day from {{deposits}} deposits", {
-          units: rn(units),
-          unit: good.unit,
-          deposits
-        });
-        ensureEl<HTMLInputElement>("goodDepositTarget").value = String(rn(units));
-      };
-      showDepositOutput();
-
-      ensureEl("goodPlaceOutput").addEventListener("click", () => {
-        const units = +ensureEl<HTMLInputElement>("goodDepositTarget").value;
-        if (!(units >= 0)) return;
-        const placed = Goods.placeOutput(good.i, units, cellId => Production.getDepositOutput(good, cellId));
-        Production.regenerateEconomy();
-        Layers.draw("markets", "goods");
-        Layers.draw("trade");
-        refreshEditors();
-        showDepositOutput();
-        tip(t("Placed {{deposits}} deposits", { deposits: placed }), false, "success", 4000);
-      });
-    }
 
     ensureEl("newGoodDistributionEditor").addEventListener("click", () => {
       const distEl = ensureEl("newGoodDistribution");

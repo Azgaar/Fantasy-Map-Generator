@@ -48,10 +48,6 @@ interface BattleState {
 }
 
 let battle: BattleState | null = null;
-const MIN_UPKEEP = 0.05; // unpaid troops still fight, if barely
-
-/** How far the state's spending keeps its troops: their power in battle is multiplied by it */
-const getUpkeep = (stateId: number) => Math.max(MIN_UPKEEP, Military.getUpkeep(stateId));
 
 function open(attacker: Regiment, defender: Regiment): void {
   if (options.app.mode) return;
@@ -571,7 +567,7 @@ function addRegimentToSide(side: Side, regiment: Regiment): void {
   const body = `<tbody id="battle${state.i}-${regiment.i}">`;
 
   let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment">${regiment.name}</td>`;
-  const upkeep = rn(getUpkeep(state.i) * 100);
+  const upkeep = rn(Military.getBattleUpkeep(state.i) * 100);
   const upkeepTip = sentences(EconomyTerms.upkeep(), t("Troops fight with this share of their power"));
   let casualtiesRow = `<tr class="battleCasualties"><td></td><td class="regiment">${state.fullName} <span data-tip="${upkeepTip}" class="${upkeep < 100 ? "negative" : ""}">(${t("upkeep {{upkeep}}%", { upkeep })})</span></td>`;
   let survivorsRow = `<tr class="battleSurvivors"><td></td><td data-tip="${t("Supply line length, affects morale")}">${t("Distance to base")}: ${distance} ${options.map.units.distance.unit}</td>`;
@@ -900,13 +896,17 @@ function calculateStrength(side: Side): void {
 
   const upkeep = new Map<number, number>();
   const forces = getJoinedForces(b[side].regiments, ({ state }) => {
-    if (!upkeep.has(state)) upkeep.set(state, getUpkeep(state));
+    if (!upkeep.has(state)) upkeep.set(state, Military.getBattleUpkeep(state));
     return upkeep.get(state)!;
   }); // ill-kept troops fight weaker
   const phase = b[side].phase!;
   const adjuster = Math.max(options.map.units.population.scale / 10, 10); // population adjuster, by default 100
   b[side].power =
-    sum(options.map.military.units.map(u => (forces[u.name] || 0) * u.power * scheme[phase][u.type])) / adjuster;
+    sum(
+      options.map.military.units.map(
+        u => (forces[u.name] || 0) * u.power * (scheme[phase][u.type] ?? scheme[phase].melee) // levies fight as melee
+      )
+    ) / adjuster;
   const uiValue = b[side].power ? Math.max(b[side].power | 0, 1) : 0;
   ensureEl(`battlePower_${side}`).innerHTML = String(uiValue);
 }

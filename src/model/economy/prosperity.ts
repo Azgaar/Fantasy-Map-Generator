@@ -27,8 +27,8 @@ export type ProsperityLevel = (typeof PROSPERITY_LEVELS)[number];
 /** A people's living: needs met (0–1), consumption at base prices in days of bare needs, the effective number of goods, their district's infrastructure (0–1), and prosperity (0–1) */
 export type Living = { needs: number; comfort: number; variety: number; infrastructure: number; prosperity: number };
 type Consumption = { people: number; goods: number[]; needsCost: number; infrastructure: number; needsMet?: number }; // goods: units by good id
-/** A cell's rural people: their living and their share of their market's rural earnings */
-export type RuralCell = { people: number; earned: number; living: Living };
+/** A cell's rural people: their living, their share of their market's rural earnings and of its rural purchases, units by good id */
+export type RuralCell = { people: number; earned: number; goods: number[]; living: Living };
 
 class ProsperityModule {
   private source: unknown = null; // the deals the cache describes
@@ -133,7 +133,7 @@ class ProsperityModule {
           infrastructure: infrastructure(cellId),
           needsMet: 1
         });
-        this.rural.set(cellId, { people, earned: market.rural.earned * share, living });
+        this.rural.set(cellId, { people, earned: market.rural.earned * share, goods, living });
       }
     }
   }
