@@ -116,7 +116,7 @@ function render(): void {
   edit = {
     budget: { ...state.economy.budget },
     rules: copyRules(state.economy.tariffs),
-    adjustments: [...(state.economy.adjustments ?? [])],
+    adjustments: [...state.economy.adjustments],
     collected: taxes.salesTax + taxes.tariffs + taxes.pollTax + taxes.marketFees
   };
   ensureEl("stateBudgetForm").innerHTML = renderForm(state);

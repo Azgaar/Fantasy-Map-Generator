@@ -1751,7 +1751,7 @@ class StatesModule {
           (tariffs[state.i] || 0) +
           (pollTax[state.i] || 0) +
           (marketFees[state.i] || 0) +
-          sum(adjustments ?? [], line => line.value), // none in a map saved by an early v1.157.0 build
+          sum(adjustments, line => line.value),
         2
       );
       const expenses = sum(EXPENSES.map(expense => budget[expense]));

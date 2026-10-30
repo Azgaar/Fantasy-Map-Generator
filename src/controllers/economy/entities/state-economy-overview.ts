@@ -229,7 +229,7 @@ function renderRevenue(stateId: number, accounts: StateAccounts): string {
     ${line(t("Import tariffs"), tariffs, "", "positive")}
     ${line(t("Poll tax: {{rate}} a head", { rate: economy.pollTax || 0 }), pollTax, pollTax ? EconomyTerms.collected(pollTax, pollTaxOwed) : "", "positive")}
     ${line(t("Market licenses: {{fee}} each", { fee: economy.marketFee || 0 }), marketFees, "", "positive")}
-    ${(economy.adjustments ?? []).map(({ name, value }) => line(escapeHtml(name) || t("Adjustments"), value, EconomyTerms.adjustments(), tone(value))).join("")}
+    ${economy.adjustments.map(({ name, value }) => line(escapeHtml(name) || t("Adjustments"), value, EconomyTerms.adjustments(), tone(value))).join("")}
     <div class="total">${line(t("Collected"), taxes + adjustments, t("Total collected taxes and fees"), "positive")}</div>
     <div class="muted">${t("{{share}}% of the product", { share })}</div>
   </div>`;

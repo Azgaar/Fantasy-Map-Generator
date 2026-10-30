@@ -280,7 +280,6 @@ export class MarketsModule {
     const marketId = maxId + 1;
     const market: Market = { i: marketId, centerBurgId: burgId, color: getRandomColor(), goods: {} };
     pack.markets.push(market);
-    pack.deals = [];
 
     this.sync();
     this.revision++;

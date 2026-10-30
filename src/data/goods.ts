@@ -575,7 +575,7 @@ export const GOODS_DATA: GoodData[] = [
     tags: ["clothing"],
     icon: "goods-garments",
     color: "#bd21ec",
-    value: 13,
+    value: 14,
     carriage: 1,
     recipes: [
       { Cloth: 1, Dyes: 0.5 },

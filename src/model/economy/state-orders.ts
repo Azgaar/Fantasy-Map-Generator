@@ -59,19 +59,12 @@ class StateOrdersModule {
         capital?.i && !capital.removed && Markets.ofBurg(capital)
           ? [{ burg: capital, share: 1, corruption: this.tendency(state, district), spent: 0 }]
           : [];
-      const atSeats = (): Seat[] => {
-        const seats = Districts.get(state.i).filter(d => d.seat && Markets.ofBurg(d.seat));
-        const total = seats.reduce((sum, d) => sum + d.share, 0);
-        if (!total) return atCapital();
-        return seats.map(d => ({
-          burg: d.seat!,
-          share: d.share / total,
-          corruption: this.tendency(state, d),
-          spent: 0
-        }));
-      };
-      const opening =
-        (dawn[state.i] || 0) + (fees[state.i] || 0) + sum(state.economy.adjustments ?? [], line => line.value);
+      // each seat spends its district's share, as collection counts officials' cut; a seat with no market leaves its share unspent
+      const atSeats = (): Seat[] =>
+        Districts.get(state.i)
+          .filter(d => d.seat && Markets.ofBurg(d.seat))
+          .map(d => ({ burg: d.seat!, share: d.share, corruption: this.tendency(state, d), spent: 0 }));
+      const opening = (dawn[state.i] || 0) + (fees[state.i] || 0) + sum(state.economy.adjustments, line => line.value);
       this.runs.push({
         stateId: state.i,
         dawn: opening,

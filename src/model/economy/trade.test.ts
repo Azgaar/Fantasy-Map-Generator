@@ -292,6 +292,41 @@ describe("TradeModule", () => {
       expect(importer.goods[0].price).toBe(0.2);
     });
 
+    it("prices a lot at the market's average price over the move it makes, so a big lot pays its own impact", () => {
+      const { importer, burg, good } = setupImport();
+      importer.centerBurgId = 1;
+      setRoutes({ 2: 0 });
+      importer.goods[0] = { stock: 0, price: 10 };
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      tradeModule["days"] = [
+        undefined,
+        undefined,
+        {
+          depth: [20],
+          rural: [],
+          ruralPeople: 0,
+          cash: 0,
+          income: 0,
+          spent: 0,
+          margin: 0,
+          covered: [],
+          bought: [],
+          pollTaxDue: []
+        }
+      ] as never;
+
+      const lot = (units: number) => (10 * Math.expm1((PRICE_RESPONSE * units) / 20)) / ((PRICE_RESPONSE * units) / 20);
+      const sale = tradeModule.sell({ burg, good, units: 20, taxRate: 0 })!;
+      expect(sale.price).toBeCloseTo(rn(lot(-20) * (1 - MARGIN), 2), 2); // well below the opening 10
+      expect(sale.price).toBeGreaterThan(rn(importer.goods[0].price * (1 - MARGIN), 2)); // but above where it left the price
+
+      importer.goods[0].price = 10;
+      const budget = 150;
+      const purchase = tradeModule.buy({ burg, good, units: 20, kind: DEAL_KINDS.demand, budget })!;
+      expect(purchase.units * purchase.price).toBeLessThanOrEqual(budget);
+      expect(purchase.price).toBeGreaterThan(10 * (1 + MARGIN)); // dearer than the opening price
+    });
+
     it("adds up small trades at a cheap price and rounds it when the run ends", () => {
       const { importer, burg, good } = setupImport();
       importer.centerBurgId = 1;
