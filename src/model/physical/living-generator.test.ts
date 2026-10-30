@@ -1228,3 +1228,270 @@ describe("Unified Figures slice 2: named dispatch", () => {
     expect(news.text).toContain("Aeloria");
   });
 });
+
+describe("Living (Lair Ascension Slice 3: Shared Emergent State Engine)", () => {
+  const buildStubPack = () => {
+    globalThis.options = {
+      map: {
+        seed: "test-emergent-state-seed",
+        population: { ruralFactor: 1, urbanization: 1 },
+        lore: {
+          name: "Test World",
+          description: "",
+          calendar: { year: 1000, era: "Age of Dawn", eraShort: "AD" },
+          history: { span: 500, realms: 0, density: 1, echoes: false, renames: false, mode: "archaeologist" }
+        }
+      },
+      generation: {
+        cultures: { traits: true },
+        states: { limit: 4, sizeVariety: 2, growthRate: 1 }
+      }
+    } as unknown as typeof options;
+
+    globalThis.pack = {
+      cells: {
+        i: [0, 1, 2, 3, 4, 5],
+        state: new Uint16Array([0, 1, 1, 1, 1, 2]),
+        province: new Uint16Array([0, 1, 1, 2, 3, 4]),
+        pop: [0, 120, 100, 90, 60, 80],
+        culture: [0, 1, 1, 1, 2, 2],
+        religion: [0, 1, 1, 1, 2, 2],
+        c: [[1], [0, 2], [1, 3], [2, 4], [3, 5], [4]],
+        p: [
+          [0, 0],
+          [10, 10],
+          [20, 20],
+          [30, 30],
+          [40, 40],
+          [50, 50]
+        ],
+        r: [0, 0, 0, 0, 0, 0]
+      },
+      cultures: [
+        { i: 0, name: "Wildlands", base: 0, center: 0 },
+        { i: 1, name: "Aeloran (Human)", base: 0, center: 1, alignment: "good" },
+        { i: 2, name: "Kazad (Dwarven)", base: 0, center: 5, alignment: "lawful" }
+      ],
+      religions: [
+        { i: 0, name: "No religion" },
+        { i: 1, name: "Solar Church" },
+        { i: 2, name: "Stone Ancestors" }
+      ],
+      burgs: [
+        { i: 0 },
+        {
+          i: 1,
+          name: "Aelor",
+          cell: 1,
+          x: 10,
+          y: 10,
+          state: 1,
+          culture: 1,
+          population: 18,
+          capital: 1,
+          walls: 1,
+          plaza: 1,
+          temple: 1,
+          citadel: 1
+        },
+        {
+          i: 2,
+          name: "Oakhaven",
+          cell: 3,
+          x: 30,
+          y: 30,
+          state: 1,
+          culture: 1,
+          population: 5,
+          capital: 0,
+          walls: 0,
+          plaza: 1,
+          temple: 0,
+          citadel: 0
+        },
+        {
+          i: 3,
+          name: "Khazad",
+          cell: 5,
+          x: 50,
+          y: 50,
+          state: 2,
+          culture: 2,
+          population: 10,
+          capital: 1,
+          walls: 1,
+          plaza: 1,
+          temple: 0,
+          citadel: 0
+        }
+      ],
+      states: [
+        { i: 0, name: "Neutrals" },
+        {
+          i: 1,
+          name: "Aeloria",
+          culture: 1,
+          capital: 1,
+          center: 1,
+          provinces: [1, 2, 3],
+          military: []
+        },
+        {
+          i: 2,
+          name: "Khazadia",
+          culture: 2,
+          capital: 3,
+          center: 5,
+          provinces: [4],
+          military: []
+        }
+      ],
+      provinces: [
+        { i: 0 },
+        { i: 1, name: "Heartland", state: 1, burg: 1, center: 1 },
+        { i: 2, name: "Oakshire", state: 1, burg: 2, center: 3 },
+        { i: 3, name: "Wildreach", state: 1, burg: 0, center: 4 },
+        { i: 4, name: "Ironpeak", state: 2, burg: 3, center: 5 }
+      ],
+      markers: [],
+      history: { events: [], realms: [], eras: [{ name: "Age of Dawn", from: 500, to: 1000 }], figures: [] }
+    } as unknown as typeof pack;
+  };
+
+  beforeEach(() => {
+    buildStubPack();
+  });
+
+  it("rejects ineligible troubles and lairs without mutating world state", () => {
+    Living.init();
+    const stateCountBefore = pack.states.length;
+
+    Living.spawnTrouble(2, "flooding", "resource", 7);
+    expect(Living.promoteTroubleToState(2)).toBeNull();
+    expect(pack.states.length).toBe(stateCountBefore);
+
+    Living.spawnTrouble(2, "monsters", "ruin", 7);
+    expect(Living.promoteTroubleToState(2)).toBeNull();
+
+    Living.spawnLair(2, "monster_nest", 8);
+    expect(Living.ascendLairToState(2)).toBeNull();
+
+    Living.spawnLair(2, "cursed_earth", 8);
+    expect(Living.ascendLairToState(2)).toBeNull();
+    expect(pack.states.length).toBe(stateCountBefore);
+  });
+
+  it("promotes an eligible trouble into a sovereign state by seizing the province burg", () => {
+    const living = Living.init();
+    Living.spawnTrouble(2, "demagogue", "burg", 7);
+
+    const newStateId = Living.promoteTroubleToState(2);
+    expect(newStateId).toBe(3);
+
+    const newState = pack.states[newStateId!];
+    expect(newState).toBeDefined();
+    expect(newState.expansionism).toBe(0.8);
+    expect(newState.treasury).toBe(150);
+    expect(newState.capital).toBe(2);
+    expect(newState.fullName).toContain("Revolutionary Tribune");
+
+    const capital = pack.burgs[2];
+    expect(capital.state).toBe(newStateId);
+    expect(capital.capital).toBe(1);
+    expect(pack.cells.state[3]).toBe(newStateId);
+    expect(pack.provinces[2].state).toBe(newStateId);
+
+    // Trouble cleared, order & stability scaffolded
+    const pSim = living.provinces[2];
+    expect(pSim.trouble).toBeNull();
+    expect(pSim.order).toBe(75);
+    expect(pSim.stability).toBe(3);
+
+    // Capital buildings scaffolded
+    const bSim = living.burgs[2];
+    expect(bSim.unrest).toBe(0);
+    expect(bSim.buildings).toEqual(expect.arrayContaining(["walls2", "barracks1", "market1", "temple1"]));
+
+    // Aggressive ruler minted & 1st Regiment raised
+    const sSim = living.states[newStateId!];
+    const ruler = pack.history.figures!.find(f => f.i === sSim.rulerId)!;
+    expect(ruler).toBeDefined();
+    expect(ruler.virtues).toContain("brave");
+    expect(ruler.vices.some(v => ["wrathful", "cruel", "vengeful"].includes(v))).toBe(true);
+    expect(newState.military?.length).toBe(1);
+    expect(newState.military![0].a).toBeGreaterThan(0);
+
+    // Mutual war, claim, and weight-60 grudges
+    expect(newState.diplomacy![1]).toBe("Enemy");
+    expect(pack.states[1].diplomacy![newStateId!]).toBe("Enemy");
+    expect(living.states[1].claims.some(c => c.burgId === 2 && c.heldByStateId === newStateId)).toBe(true);
+    expect(living.states[1].grudges.some(g => g.againstStateId === newStateId && g.weight === 60)).toBe(true);
+    expect(sSim.grudges.some(g => g.againstStateId === 1 && g.weight === 60)).toBe(true);
+
+    // Capacity viability invariant
+    expect(sSim.capacity.m.load).toBeLessThanOrEqual(sSim.capacity.m.gen);
+    expect(sSim.capacity.w.load).toBeLessThanOrEqual(sSim.capacity.w.gen);
+    expect(sSim.capacity.s.load).toBeLessThanOrEqual(sSim.capacity.s.gen);
+  });
+
+  it("ascends a wilderness lair by founding a new capital burg and hiding its dungeon marker", () => {
+    const living = Living.init();
+    const lair = Living.spawnLair(3, "demonic_master", 8, 4)!;
+    const markerId = lair.markerId!;
+    expect(pack.markers![markerId].hidden).toBeFalsy();
+
+    const burgsBefore = pack.burgs.length;
+    const newStateId = Living.ascendLairToState(3);
+    expect(newStateId).toBe(3);
+    expect(pack.burgs.length).toBe(burgsBefore + 1);
+
+    const newState = pack.states[newStateId!];
+    expect(newState.rosterId).toBe("demonBase");
+    expect(newState.fullName).toContain("Infernal Dominion");
+
+    const newCapital = pack.burgs[newState.capital];
+    expect(newCapital.cell).toBe(4);
+    expect(newCapital.capital).toBe(1);
+    expect(newCapital.state).toBe(newStateId);
+    expect(pack.cells.state[4]).toBe(newStateId);
+
+    // Dungeon marker hidden and lair cleared
+    expect(pack.markers![markerId].hidden).toBe(true);
+    expect(living.provinces[3].lair).toBeNull();
+    expect(living.provinces[3].order).toBe(75);
+
+    const sSim = living.states[newStateId!];
+    expect(sSim.capacity.m.load).toBeLessThanOrEqual(sSim.capacity.m.gen);
+    expect(sSim.capacity.w.load).toBeLessThanOrEqual(sSim.capacity.w.gen);
+    expect(sSim.capacity.s.load).toBeLessThanOrEqual(sSim.capacity.s.gen);
+  });
+
+  it("satisfies the capacity viability invariant across all 15 state-capable lairs and 19 promotable troubles", async () => {
+    const { STATE_CAPABLE_LAIR_IDS } = await import("@/data/living-lairs");
+    const { STATE_PROMOTABLE_TROUBLE_IDS } = await import("@/data/living-troubles");
+
+    for (const lairId of STATE_CAPABLE_LAIR_IDS) {
+      buildStubPack();
+      const living = Living.init();
+      Living.spawnLair(3, lairId, 10, 4);
+      const stateId = Living.ascendLairToState(3);
+      expect(stateId, `lair ${lairId} should ascend`).not.toBeNull();
+      const cap = living.states[stateId!].capacity;
+      expect(cap.m.load, `lair ${lairId} m load <= gen`).toBeLessThanOrEqual(cap.m.gen);
+      expect(cap.w.load, `lair ${lairId} w load <= gen`).toBeLessThanOrEqual(cap.w.gen);
+      expect(cap.s.load, `lair ${lairId} s load <= gen`).toBeLessThanOrEqual(cap.s.gen);
+    }
+
+    for (const troubleId of STATE_PROMOTABLE_TROUBLE_IDS) {
+      buildStubPack();
+      const living = Living.init();
+      Living.spawnTrouble(2, troubleId, "burg", 9);
+      const stateId = Living.promoteTroubleToState(2);
+      expect(stateId, `trouble ${troubleId} should promote`).not.toBeNull();
+      const cap = living.states[stateId!].capacity;
+      expect(cap.m.load, `trouble ${troubleId} m load <= gen`).toBeLessThanOrEqual(cap.m.gen);
+      expect(cap.w.load, `trouble ${troubleId} w load <= gen`).toBeLessThanOrEqual(cap.w.gen);
+      expect(cap.s.load, `trouble ${troubleId} s load <= gen`).toBeLessThanOrEqual(cap.s.gen);
+    }
+  });
+});

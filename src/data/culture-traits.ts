@@ -422,3 +422,19 @@ export function drawVice(rng: Rng, figure: { virtues?: string[]; vices?: string[
   const isFree = (word: string) => !taken.has(ANTONYMS.get(word) ?? "");
   return drawWords(rng, VICES, 1, taken, isFree)[0];
 }
+
+const AGGRESSIVE_VICES = ["wrathful", "cruel", "vengeful"];
+
+/** a founding warlord's traits: brave, plus one martial vice that no kept virtue contradicts */
+export function aggressiveTraits(traits: { virtues: string[]; vices: string[] }): {
+  virtues: string[];
+  vices: string[];
+} {
+  const virtues = traits.virtues.includes("brave") ? [...traits.virtues] : [...traits.virtues, "brave"];
+  const vices = traits.vices.filter(vice => vice !== ANTONYMS.get("brave"));
+  if (!vices.some(vice => AGGRESSIVE_VICES.includes(vice))) {
+    const free = AGGRESSIVE_VICES.find(vice => !virtues.includes(ANTONYMS.get(vice) ?? ""));
+    if (free) vices.push(free);
+  }
+  return { virtues, vices };
+}
