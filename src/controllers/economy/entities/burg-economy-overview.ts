@@ -44,6 +44,7 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { economyStyle } from "./economy-parts";
 
 type RowType = "LOCAL" | "BUY" | "MFG" | "SELL" | "KEEP" | "NEED";
 type HistoryRow = {
@@ -65,6 +66,7 @@ type HistoryRow = {
 
 let activeBurgId = 0;
 const dialogId = "burgEconomyOverview" as const;
+const DIALOG_CLASS = "burgEconomyDialog";
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 const goodName = (row: HistoryRow) => Goods.get(row.goodId)?.name ?? "";
 const marketName = (row: HistoryRow) => {
@@ -105,13 +107,22 @@ function open(burgId: number): void {
 
 function renderDialog(): void {
   Dialog.destroy(dialogId);
-  const html = /* html */ `<div id="${dialogId}" class="dialog stable">
+  const html = /* html */ `<div id="${dialogId}" class="dialog stable ${DIALOG_CLASS}">
+      ${economyStyle(DIALOG_CLASS)}
       <style>
         #${dialogId} > div { width: auto }
         #${dialogId}Stats { margin-bottom: 0.85em; line-height: 1.6em }
         #${dialogId}Stats > div > span { margin-right: 0.6em }
         #${dialogId}Stats .oneLine { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
         #${dialogId}Treasury { width: 7em; margin-left: 0.2em }
+        #${dialogId}Body { max-height: 35vh }
+        #${dialogId} .columns { margin-bottom: 0.6em }
+        #${dialogId} .columns h4 { margin-top: 0.3em }
+        #${dialogId} .row { line-height: 1.6 }
+        #${dialogId} .row.plain .right { font-variant-numeric: tabular-nums }
+        #${dialogId} .row.need { grid-template-columns: 7em 1fr 7.5em 3em; white-space: nowrap }
+        #${dialogId} .adjustments .head { grid-template-columns: 1fr 6em; line-height: 1.6 }
+        #${dialogId} .adjustments .head > span:last-child { text-align: right; font-variant-numeric: tabular-nums }
         #${dialogId} .productionGood { display: inline-flex; align-items: center; gap: 0.2em; vertical-align: middle }
         #${dialogId} table { width: 100%; table-layout: fixed; border-collapse: collapse; line-height: 1 }
         #${dialogId} thead th { position: sticky; top: 0; background: #eee }
@@ -595,53 +606,99 @@ function renderStats(burg: Burg): void {
 
   const product = Math.max(0, burg.product || 0);
   const wealth = population > 0 ? product / population : 0;
-  const treasury = burg.treasury || 0;
-  // a market center's merchants take the margin on every trade at its market, so its treasury is more than its deals
-  const isCenter = market?.centerBurgId === burg.i;
-  const margin = isCenter
-    ? pack.deals.reduce((sum, deal) => sum + (deal[1] === market.i ? Trade.getMargin(deal) : 0), 0) +
-      (market.rural?.margin || 0)
-    : 0;
-  const treasuryTip = isCenter
-    ? sentences(EconomyTerms.treasury(), t("As its market's center, it also takes the market margin"))
-    : EconomyTerms.treasury();
 
   ensureEl(`${dialogId}Stats`).innerHTML = /* html */ `
     <div>
       <span><b>${t("Population")}:</b> ${population}</span>
       ${EconomyDebug.get(burg.i!) ? `<span><b>${t("Order")}:</b> ${t("{{rank}} of {{total}}", { rank: burgs.indexOf(burg) + 1, total: burgs.length })}</span>` : ""}
       <span><b>${t("Market")}:</b> ${market ? Markets.getName(market) : ""}</span>
+      <span data-tip="${EconomyTerms.product()}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
+      <span data-tip="${EconomyTerms.wealth()}"><b>${t("Wealth")}:</b> <span class="positive">${formatPrice(wealth)}</span></span>
     </div>
     <div data-tip="${t("Production: goods the burg made today, units a day")}"><b>${t("Production")}:</b> ${renderGoods(burg.production ?? []) || t("None")}</div>
     <div data-tip="${t("Consumption: goods the people bought or kept")}"><b>${t("Consumption")}:</b> ${renderGoods(consumption.flatMap((units, goodId) => (units ? [[goodId, units] as [number, number]] : []))) || t("None")}</div>
-    <div data-tip="${t("Demand: needs covered, plus wants")}"><b>${t("Demand")}:</b> ${renderDemand(covered, targets)}</div>
     ${living ? `<div class="oneLine" data-tip="${prosperityTip(living.prosperity)}"><b>${t("Prosperity")}:</b> ${renderProsperity(living.prosperity)}, ${renderProsperityParts(living)}</div>` : ""}
-    <div>
-      <span data-tip="${EconomyTerms.product()}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
-      <span data-tip="${EconomyTerms.wealth()}"><b>${t("Wealth")}:</b> <span class="positive">${formatPrice(wealth)}</span></span>
-      ${isCenter && market.feePaid ? `<span data-tip="${t("The license its state charges a market's center a day")}"><b>${t("Market License")}:</b> <span class="negative">${formatPrice(market.feePaid)}</span></span>` : ""}
-      ${isCenter ? `<span data-tip="${t("Market margin: {{rate}}% of every trade at its market", { rate: rn(Trade.getMarginRate(market) * 100, 1) })}"><b>${t("Market margin")}:</b> <span class="positive">${formatPrice(margin)}</span></span>` : ""}
-      ${burg.pollTaxPaid ? `<span data-tip="${t("Poll tax: {{rate}} a head", { rate: pack.states[burg.state || 0]?.economy.pollTax || 0 })}"><b>${t("Poll Tax")}:</b> ${formatPrice(burg.pollTaxPaid)}</span>` : ""}
-      <span data-tip="${treasuryTip}"><b>${t("Balance")}:</b> <span class="${treasury >= 0 ? "positive" : "negative"}">${formatPrice(treasury)}</span></span>
-    </div>
-    <div id="${dialogId}Adjustments" style="max-width: 26em"></div>`;
+    <div class="columns">
+      <div>${renderBalance(burg)}</div>
+      ${renderDemand(covered, targets)}
+    </div>`;
   mountAdjustments(
     ensureEl(`${dialogId}Adjustments`),
     burg.adjustments ?? [],
     sentences(EconomyTerms.burgAdjustments(), t("They take effect when production is regenerated")),
-    adjustments => Burgs.setAdjustments(burg.i!, adjustments)
+    adjustments => Burgs.setAdjustments(burg.i!, adjustments),
+    signed
   );
 }
 
+/** An amount with its sign, the coin left to the column's header */
+const signed = (value: number) => {
+  const rounded = rn(value, 2);
+  return rounded > 0 ? `+${rounded}` : rounded < 0 ? `−${-rounded}` : "0";
+};
+
+/** The day's money flows adding up to the burg's balance */
+function renderBalance(burg: Burg): string {
+  const market = Markets.ofBurg(burg);
+  const isCenter = market?.centerBurgId === burg.i;
+  const fee = isCenter ? market.feePaid || 0 : 0;
+  const flows = { sales: 0, ingredients: 0, consumption: 0 };
+  for (const [dealBurg, , , kind, units, price, tax, tariff] of pack.deals) {
+    if (dealBurg !== burg.i) continue;
+    if (kind === DEAL_KINDS.sale) flows.sales += units * price - tax - tariff;
+    else if (kind === DEAL_KINDS.input) flows.ingredients -= units * price;
+    else if (kind === DEAL_KINDS.demand) flows.consumption -= units * price; // a state order is the state's money
+  }
+  const adjustments = (burg.adjustments ?? []).reduce((total, line) => total + line.value, 0);
+  const treasury = burg.treasury || 0;
+  const known = adjustments - (burg.pollTaxPaid || 0) - fee + flows.sales + flows.ingredients + flows.consumption;
+  // the margin is paid trade by trade, so what is left of the balance is what the center took
+  const margin = isCenter ? treasury - known : 0;
+
+  const line = (label: string, tip: string, value: number, shown = value !== 0) =>
+    shown
+      ? `<div class="row plain" data-tip="${tip}"><span class="name">${label}</span><span class="right ${value ? tone(value) : ""}">${signed(value)}</span></div>`
+      : "";
+  const treasuryTip = isCenter
+    ? sentences(EconomyTerms.treasury(), t("As its market's center, it also takes the market margin"))
+    : EconomyTerms.treasury();
+
+  return /* html */ `<h4><span>${t("Income and expenses")}</span><span>🟡</span></h4>
+    ${line(t("Ingredients"), t("Paid for goods bought to make others"), flows.ingredients)}
+    ${line(t("Sales"), t("Got for goods sold, carriage and sales tax taken off"), flows.sales, true)}
+    ${line(t("Consumption"), t("Paid for goods the people bought"), flows.consumption)}
+    ${line(t("Poll Tax"), t("Poll tax: {{rate}} a head", { rate: pack.states[burg.state || 0]?.economy.pollTax || 0 }), -(burg.pollTaxPaid || 0))}
+    ${line(t("Market License"), t("The license its state charges a market's center a day"), -fee)}
+    ${isCenter ? line(t("Market Margin"), t("Market margin: {{rate}}% of every trade at its market", { rate: rn(Trade.getMarginRate(market) * 100, 1) }), margin, true) : ""}
+    <div id="${dialogId}Adjustments"></div>
+    <div class="total">${line(t("Day Balance"), treasuryTip, treasury, true)}</div>`;
+}
+
+/** Each demand: a bar of how much of the need the burg covered, and what it bought beyond as wants */
 function renderDemand(covered: number[], targets: number[]): string {
-  return DEMAND_PRIORITY.map((category, index) => {
+  const rows = DEMAND_PRIORITY.map((category, index) => {
     const target = rn(targets[index] || 0, 2);
     const met = rn(Math.min(covered[index] || 0, target), 2);
     const wants = rn(Math.max(0, (covered[index] || 0) - target), 2);
+    const share = target ? met / target : 1;
     const tip = `${DEMAND_CATEGORY_LABELS[category]}: ${t("{{covered}} of {{target}} needed", { covered: met, target })}${wants ? `, ${t("{{wants}} more as wants", { wants })}` : ""}`;
-    const extra = wants ? ` <span class="positive">+${wants}</span>` : "";
-    return `<span data-tip="${tip}">${DEMAND_CATEGORY_ICONS[category]} <span class="${met < target ? "negative" : ""}">${met}</span>/${target}${extra}</span>`;
-  }).join(" • ");
+    const color = share >= 1 ? "#6a9a3a" : "#d98a32";
+    const bar = `<div class="bar"><div style="width: ${share * 100}%; background: ${color}"></div></div>`;
+    return /* html */ `<div class="row need" data-tip="${tip}">
+        <span class="name">${DEMAND_CATEGORY_ICONS[category]} ${DEMAND_CATEGORY_LABELS[category]}</span>
+        ${bar}
+        <span class="right ${share < 1 ? "negative" : ""}">${met} / ${target}</span>
+        <span class="right positive">${wants ? `+${wants}` : ""}</span>
+      </div>`;
+  });
+  return /* html */ `<div>
+      <h4 class="row need" data-tip="${t("Demand: needs covered, plus wants")}">
+        <span>${t("Demands")}</span><span></span>
+        <span class="right muted">${t("covered / needed")}</span>
+        <span class="right muted" data-tip="${t("Bought beyond the need: wants raise prosperity")}">${t("wants")}</span>
+      </h4>
+      ${rows.join("")}
+    </div>`;
 }
 
 const SHOWN_GOODS = 8; // the rest are listed on hover

@@ -28,7 +28,7 @@ export const ECONOMY_COLORS = {
 export const BADGE_COLORS = {
   local: ["#d9e7f5", "#346"],
   buy: ["#f5d9d6", "#a33"],
-  manufactured: ["#f8e7bf", "#b67a00"],
+  mfg: ["#f8e7bf", "#b67a00"],
   sell: ["#dff0e2", "#2f8a46"],
   keep: ["#e6e0f2", "#5a4a8a"],
   need: ["#e4e4e4", "#555"]
@@ -288,13 +288,14 @@ export function mountAdjustments(
   container: HTMLElement,
   initial: Adjustment[],
   tip: string,
-  onChange: (adjustments: Adjustment[]) => void
+  onChange: (adjustments: Adjustment[]) => void,
+  formatTotal = formatPrice
 ): void {
   const lines = initial.map(line => ({ ...line }));
   const renderHead = () => {
     const total = sum(lines, line => line.value);
     const count = lines.length ? ` (${lines.length})` : "";
-    return `<span>${expanded ? "▾" : "▸"} ${t("Adjustments")}${count}</span><span class="${total > 0 ? "positive" : total < 0 ? "negative" : ""}">${formatPrice(total)}</span>`;
+    return `<span>${expanded ? "▾" : "▸"} ${t("Adjustments")}${count}</span><span class="${total > 0 ? "positive" : total < 0 ? "negative" : ""}">${formatTotal(total)}</span>`;
   };
   const render = () => {
     const rows = lines.map(

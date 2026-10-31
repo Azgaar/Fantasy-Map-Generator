@@ -16,6 +16,8 @@ const CROSSROADS_BONUS = 0.25; // score a burg gains for each route beyond a roa
 const SPACING_RANGE = [0.5, 2.5]; // the spacing a burg needs, as a share of the base, from the busiest land to the emptiest
 const DENSITY_PULL = 0.6; // how far markets follow burgs: 1 gives every market about as many burgs, 0 spaces them evenly
 
+type ScoredBurg = { burg: Burg; score: number };
+
 export type Market = {
   i: number;
   centerBurgId: number;
@@ -46,8 +48,11 @@ export class MarketsModule {
 
   generate(regenerate: boolean = false): Market[] {
     if (!regenerate) Math.random = Alea(options.map.seed);
-    const markets = this.createMarkets();
+    const scored = this.scoreBurgs();
+    const markets = this.createMarkets(scored);
+    this.recenter(markets, scored, this.expandMarkets(markets));
     this.expandMarkets(markets);
+    this.markPlazas(markets);
 
     pack.markets = markets;
     pack.deals = [];
@@ -55,25 +60,26 @@ export class MarketsModule {
     return markets;
   }
 
-  private createMarkets(): Market[] {
-    const feeFactor = (burg: Burg) => 1 + States.getMarketFee(burg.state || 0) / MARKET_FEE_DETERRENCE;
-    // Score each burg by population; capitals, ports and crossroads are weighted higher, a dear market license lower
-    const scored = pack.burgs
+  /** Burgs by their claim to a market, best first: population, capitals, ports and crossroads weighted higher, a dear market license lower */
+  private scoreBurgs(): ScoredBurg[] {
+    return pack.burgs
       .map(burg => {
         let score = burg.population || 0;
         if (burg.capital) score *= 2.5;
         if (burg.port) score *= 1.2;
         const roads = Object.keys(pack.cells.routes?.[burg.cell!] ?? {}).length;
         score *= 1 + CROSSROADS_BONUS * minmax(roads - 2, 0, 4);
-        score /= feeFactor(burg);
+        score /= this.feeFactor(burg);
         score *= Math.random() * 2 + 0.5; // add some noise
         return { burg, score };
       })
       .sort((a, b) => b.score - a.score);
+  }
 
+  private createMarkets(scored = this.scoreBurgs()): Market[] {
     const spacing = this.getSpacing(
       scored.map(({ burg }) => burg).filter(burg => burg.i && !burg.removed),
-      feeFactor
+      this.feeFactor
     );
 
     const markets: Market[] = [];
@@ -121,6 +127,21 @@ export class MarketsModule {
     return markets;
   }
 
+  private feeFactor(burg: Burg) {
+    return 1 + States.getMarketFee(burg.state || 0) / MARKET_FEE_DETERRENCE;
+  }
+
+  /** Moves each market to the best burg it serves on its center's landmass: spacing alone can seat a hamlet beside a blocked city */
+  private recenter(markets: Market[], scored: ScoredBurg[], cellMarket: Uint16Array): void {
+    const best = new Map<number, number>();
+    for (const { burg } of scored) {
+      const marketId = cellMarket[burg.cell];
+      if (!burg.i || burg.removed || !marketId || best.has(marketId)) continue;
+      if (burg.feature === pack.burgs[this.marketById[marketId].centerBurgId].feature) best.set(marketId, burg.i);
+    }
+    for (const market of markets) market.centerBurgId = best.get(market.i) ?? market.centerBurgId;
+  }
+
   /** How far a burg must be from other market centers to become one: closer where burgs crowd and licenses are cheap */
   private getSpacing(burgs: Burg[], feeFactor: (burg: Burg) => number): Map<number, number> {
     const base = ((options.map.graph.width + options.map.graph.height) * 2.5) / pack.burgs.length ** 0.6;
@@ -157,7 +178,9 @@ export class MarketsModule {
 
   expandTerritories(): Uint16Array {
     this.sync();
-    return this.expandMarkets(pack.markets);
+    const cellMarket = this.expandMarkets(pack.markets);
+    this.markPlazas(pack.markets);
+    return cellMarket;
   }
 
   sync(): void {
@@ -180,11 +203,9 @@ export class MarketsModule {
 
     const nativeOwner = new Uint8Array(cells.i.length); // cell is owned by a market of its own state
 
-    const tradeCenters = {} as Record<number, boolean>;
     for (const market of markets) {
       const centerBurg = pack.burgs[market.centerBurgId];
       if (!centerBurg) continue;
-      tradeCenters[centerBurg.i] = true;
 
       const startCell = centerBurg.cell;
       cellMarket[startCell] = market.i;
@@ -224,13 +245,15 @@ export class MarketsModule {
     }
 
     pack.cells.market = cellMarket;
-
-    for (const burg of pack.burgs) {
-      if (!burg.i || burg.removed) continue;
-      burg.plaza = burg.plaza || tradeCenters[burg.i] ? 1 : 0;
-    }
-
     return cellMarket;
+  }
+
+  /** Market centers get a plaza */
+  private markPlazas(markets: Market[]): void {
+    for (const { centerBurgId } of markets) {
+      const burg = pack.burgs[centerBurgId];
+      if (burg && !burg.removed) burg.plaza = 1;
+    }
   }
 
   public get(marketId: number | undefined): Market | undefined {

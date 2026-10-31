@@ -146,12 +146,12 @@ function renderCards(
 
   const treasuryCard = stateId
     ? card(
-        t("Balance"),
+        t("Day Balance"),
         formatPrice(treasury),
         [stateRank(stateId, id => pack.states[id].economy.treasury || 0), t("Tax burden: {{burden}}%", { burden })],
         sentences(EconomyTerms.stateTreasury(), t("Tax burden: the taxes' share of the product"))
       )
-    : card(t("Balance"), "—", [t("Neutrals collect no taxes")], EconomyTerms.stateTreasury());
+    : card(t("Day Balance"), "—", [t("Neutrals collect no taxes")], EconomyTerms.stateTreasury());
   const populationRank = stateRank(stateId, id => {
     const other = accountsOf(id);
     return other ? people(other).total : 0;
@@ -245,7 +245,7 @@ function renderExpenses(stateId: number): string {
   const swatch = `<span class="swatch" style="background: ${ECONOMY_COLORS.pocketed}"></span>`;
   return `<div><h4 data-tip="${EconomyTerms.budget()}"><span>${t("Expenses")}</span>${budgetButton()}</h4>
     ${EXPENSES.map(expense => row(EXPENSE_LABELS[expense], budget[expense], `<div class="bar" style="background: ${budgetBackground(budget[expense], budget.corruption)}"></div>`, -economy.spent[expense], EconomyTerms.expenseTip(expense), "negative")).join("")}
-    <div class="total">${row(t("Balance"), balance, "<span></span>", economy.treasury, EconomyTerms.stateTreasury(), tone(economy.treasury))}</div>
+    <div class="total">${row(t("Day Balance"), balance, "<span></span>", economy.treasury, EconomyTerms.stateTreasury(), tone(economy.treasury))}</div>
     <div data-tip="${EconomyTerms.corruption()}" class="row plain muted"><span class="name">${swatch}${t("Corruption: {{rate}}%", { rate: rn(Districts.getStateCorruption(pack.states[stateId], economy.collected)) })}</span><span class="right negative">${formatPrice(-economy.pocketed)}</span></div>
   </div>`;
 }

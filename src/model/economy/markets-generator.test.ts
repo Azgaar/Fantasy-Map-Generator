@@ -137,6 +137,22 @@ describe("market placement", () => {
     expect(centers).toEqual([1, 3, 5]);
   });
 
+  it("moves a market to the best burg it serves on its center's landmass", () => {
+    const burg = (i: number, feature: number, population: number) => ({ i, cell: i, feature, population }) as Burg;
+    globalThis.pack = {
+      burgs: [{ i: 0 } as Burg, burg(1, 1, 0.9), burg(2, 1, 23.6), burg(3, 2, 50)],
+      markets: [{ i: 1, centerBurgId: 1, color: "", goods: {} }]
+    } as unknown as typeof pack;
+    const markets = new MarketsModule();
+    markets.sync();
+    const scored = [3, 2, 1].map(i => ({ burg: pack.burgs[i], score: pack.burgs[i].population! }));
+
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    markets["recenter"](pack.markets, scored, Uint16Array.from([0, 1, 1, 1]));
+
+    expect(pack.markets[0].centerBurgId).toBe(2); // the hamlet's city, not the bigger burg across the water
+  });
+
   it("spaces markets closer where burgs crowd and wider where the license is dear", () => {
     options.map.graph = { width: 1000, height: 800, points: 10000, sampling: "square", jitter: 0.9 };
     const burgs = [0, 10, 20, 30, 40, 50, 5000].map((x, index) => ({ i: index + 1, x, y: 0 }) as Burg);

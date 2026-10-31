@@ -24,7 +24,7 @@ const SECTOR_COLORS: Record<Sector, string> = { rural: "#6a9a3a", manufacturing:
 type Sectors = Record<Sector | "product", number>;
 type Living = { towns: GroupLiving | null; country: GroupLiving | null; levels: Record<"towns" | "country", number[]> };
 
-const economyStyle = (dialog: string) => /* html */ `<style>
+export const economyStyle = (dialog: string) => /* html */ `<style>
   .${dialog} > div { width: auto }
   .${dialog} .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4em; margin-bottom: 0.8em }
   .${dialog} .card { border: 1px solid #ccc; border-top: 3px solid var(--header); padding: 0.3em 0.5em; line-height: 1.3 }

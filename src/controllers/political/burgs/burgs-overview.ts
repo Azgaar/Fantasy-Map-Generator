@@ -164,12 +164,28 @@ const columns: EditorColumn<Burg>[] = [
     sortBy: b => rn(b.treasury || 0, 2)
   },
   {
-    key: "features",
-    label: t("Features", { context: "burg" }),
-    width: "5em",
+    key: "capital",
+    label: t("Capital"),
+    icon: "icon-star-empty",
+    width: "2.2em",
     mobileHidden: true,
-    sortType: "alpha",
-    sortBy: getFeaturesKey
+    sortBy: b => (b.capital ? 1 : 0)
+  },
+  {
+    key: "port",
+    label: t("Port"),
+    icon: "icon-anchor",
+    width: "2.2em",
+    mobileHidden: true,
+    sortBy: b => (b.port ? 1 : 0)
+  },
+  {
+    key: "market",
+    label: t("Market"),
+    icon: "icon-store",
+    width: "2.2em",
+    mobileHidden: true,
+    sortBy: b => (getCenteredMarket(b) ? 1 : 0)
   },
   {
     key: "tags",
@@ -406,7 +422,6 @@ function renderBurgsPage(view: TableView<Burg>): void {
     const productPerCapita = rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
     const treasury = rn(b.treasury || 0, 2);
     const living = Prosperity.getBurg(b.i!);
-    const features = getFeaturesKey(b);
     const market = getCenteredMarket(b);
     const state = pack.states[b.state!].name;
     const prov = pack.cells.province[b.cell];
@@ -426,7 +441,6 @@ function renderBurgsPage(view: TableView<Burg>): void {
         data-productpercapita=${productPerCapita}
         data-prosperity=${living ? rn(living.prosperity * 100) : ""}
         data-treasury=${treasury}
-        data-features="${features}"
       >
         <span data-tip="${t("Click to zoom")}" class="icon-dot-circled pointer" data-col="locate"></span>
         <input data-tip="${t("Name")}" class="burgName" value="${b.name}" data-col="name" disabled />
@@ -453,15 +467,14 @@ function renderBurgsPage(view: TableView<Burg>): void {
           <span>🟡</span>
           <input class="pointer" value=${treasury} readonly />
         </div>
-        <div data-col="features">
-          <span
-            data-tip="${b.capital ? t("This burg is a state capital") : t("This burg is NOT a state capital")}"
-            class="icon-star-empty${b.capital ? "" : " inactive"}" style="padding: 0 1px;"></span>
-          <span data-tip="${b.port ? t("This burg is a port") : t("This burg is NOT a port")}"
-          class="icon-anchor${b.port ? "" : " inactive"}" style="font-size: .9em; padding: 0 1px;"></span>
-          <span data-tip="${market ? t("Center of the {{market}} market. Click to open", { market: Markets.getName(market) }) : t("This burg is NOT a market center")}"
-          class="icon-store${market ? " pointer" : " inactive"}" data-market="${market?.i ?? ""}" style="font-size: .85em; padding: 0 1px;"></span>
-        </div>
+        <span data-col="capital"
+          data-tip="${b.capital ? t("This burg is a state capital") : t("This burg is NOT a state capital")}"
+          class="icon-star-empty${b.capital ? "" : " inactive"}"></span>
+        <span data-col="port" data-tip="${b.port ? t("This burg is a port") : t("This burg is NOT a port")}"
+          class="icon-anchor${b.port ? "" : " inactive"}"></span>
+        <span data-col="market"
+          data-tip="${market ? t("Center of the {{market}} market. Click to open", { market: Markets.getName(market) }) : t("This burg is NOT a market center")}"
+          class="icon-store${market ? " pointer" : " inactive"}" data-market="${market?.i ?? ""}"></span>
         <div data-col="tags">
           <input
             data-tip="${t("Tags (comma-separated)")}"
@@ -515,11 +528,6 @@ function renderBurgsPage(view: TableView<Burg>): void {
 /** The market whose center the burg is, if any */
 function getCenteredMarket(burg: Burg) {
   return pack.markets.find(market => market.centerBurgId === burg.i);
-}
-
-/** Sorts capitals first, then ports, then market centers */
-function getFeaturesKey(burg: Burg): string {
-  return [burg.capital, burg.port, getCenteredMarket(burg)].map(feature => (feature ? "a" : "z")).join("");
 }
 
 function burgChangeTags(this: HTMLInputElement): void {

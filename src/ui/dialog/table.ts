@@ -95,6 +95,7 @@ export function renderEditorPagination(
 export type EditorColumn<T = never> = {
   key: string;
   label?: string;
+  icon?: string;
   width?: string;
   tip?: string;
   sortBy?: (item: T) => string | number;
@@ -153,7 +154,11 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
       index === lastVisibleIndex
         ? `<button id="${dialogId}ColumnsButton" data-tip="${t("Show or hide columns")}" class="icon-sliders" style="line-height: 0;padding: 0 .2em;"></button>`
         : "";
-    const label = column.label ? `<span>${column.label}</span>` : "";
+    const label = column.icon
+      ? `<span class="${column.icon}"></span>`
+      : column.label
+        ? `<span>${column.label}</span>`
+        : "";
     return `<div ${attributes}${style ? ` style="${style}"` : ""}>${label}${button}</div>`;
   });
   return `<div id="${dialogId}Header" class="header">${cells.join("")}</div>`;

@@ -303,7 +303,7 @@ function renderGoodsPage(view: TableView<Good>) {
   const renderTypeBadge = (type: string) => {
     const commonStyles =
       "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
-    const [background, color] = BADGE_COLORS[type === "RAW" ? "local" : "manufactured"];
+    const [background, color] = BADGE_COLORS[type === "RAW" ? "local" : "mfg"];
     const style = `${commonStyles};background:${background};color:${color}`;
     if (type === "RAW")
       return `<span style="${style}" data-tip="${t("Raw goods come from the land and deposits")}">${t("RAW")}</span>`;
