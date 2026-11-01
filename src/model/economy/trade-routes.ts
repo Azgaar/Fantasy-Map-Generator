@@ -77,13 +77,13 @@ export class TradeRoutesModule {
     return costs;
   }
 
-  private createSearch(): RouteSearch {
+  createSearch(): RouteSearch {
     const states = pack.cells.h.length * 2;
     return { cost: new Float64Array(states), prevCell: new Int32Array(states), prevState: new Int32Array(states) };
   }
 
   /** Each route link's travel cost: its length, a fifth of it on water */
-  private buildGraph(): RouteGraph {
+  buildGraph(): RouteGraph {
     const { cells, routes } = pack;
     const isWaterRoute: boolean[] = [];
     for (const route of routes) isWaterRoute[route.i] = route.group === "searoutes";

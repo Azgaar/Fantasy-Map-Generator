@@ -3,6 +3,7 @@ import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
+import { TradeTraffic } from "@/model/economy/trade-traffic";
 import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { MapEntities } from "@/model/map-entities";
@@ -247,7 +248,31 @@ function getMarketTip(target: SVGElement): string | undefined {
   return withHint(t("{{burg}} market", { burg: centerBurg.name }), t("Click to view"));
 }
 
+/** The displayed goods the line's link at the hovered cell carries in a day, the most first */
+function getTrafficTip(target: SVGElement, cellId: number): string | undefined {
+  const cells = target.dataset.cells?.split(",").map(Number) ?? [];
+  const at = Math.min(Math.max(0, cells.indexOf(cellId)), cells.length - 2);
+  const link = cells.length > 1 ? TradeTraffic.get(cells[at], cells[at + 1]) : undefined;
+  if (!link) return undefined;
+
+  const MAX_LISTED = 5;
+  const carried = [...link.goods]
+    .map(([goodId, units]) => [Goods.get(goodId), units] as const)
+    .filter(([good]) => Goods.isDisplayed(good))
+    .sort((a, b) => b[1] - a[1]);
+  const goods = carried.slice(0, MAX_LISTED).map(([good, units]) => {
+    const amount = rn(units, units < 10 ? 1 : 0);
+    const unit = !good!.unit ? "" : amount === 1 ? ` ${good!.unit}` : ` ${good!.unit}s`;
+    return `${good!.name.toLowerCase()} ${amount}${unit}`;
+  });
+  if (carried.length > MAX_LISTED) goods.push("…");
+  const list = goods.join(", ");
+  return link.water ? t("By water a day: {{goods}}", { goods: list }) : t("By land a day: {{goods}}", { goods: list });
+}
+
 function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
+  if (target.closest("#goodsTraffic")) return getTrafficTip(target, cellId);
+
   const formatProduction = (produced: Record<string, number>) =>
     Object.entries(produced)
       .filter(([goodId]) => Goods.isDisplayed(Goods.get(Number(goodId))))

@@ -593,6 +593,25 @@ export const stylesSchema = z.strictObject({
           })
         }),
         { gate: "options.render", label: t("Burgs") }
+      ),
+      goodsTraffic: meta(
+        z.strictObject({
+          attrs: z.strictObject({
+            opacity,
+            stroke: variant(stroke, {
+              group: t("Stroke"),
+              tip: t("Color of the routes while more than one good is shown")
+            }),
+            "stroke-linecap": variant(strokeLinecap, { group: t("Stroke") }),
+            "stroke-linejoin": variant(strokeLinejoin, { group: t("Stroke") }),
+            filter
+          }),
+          options: z.strictObject({
+            render: flag({ label: t("Traffic"), tip: t("Show how many goods each route carried in the last run") }),
+            size: number({ label: t("Width"), range: [0.5, 10], step: 0.5, tip: t("Width of the busiest routes") })
+          })
+        }),
+        { gate: "options.render", label: t("Traffic") }
       )
     })
   }),

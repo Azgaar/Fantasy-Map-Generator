@@ -18,6 +18,7 @@ The economy is **one frozen cycle: a typical day**, not a simulation over time. 
 | Taxes, budgets and treasuries                                     | `States` ([states-generator.ts](../../src/model/political/states-generator.ts))           | `state.economy` (taxes, fees, tariffs, budget, treasury) |
 | State orders                                                      | `StateOrders` ([state-orders.ts](../../src/model/economy/state-orders.ts))                | `state.economy.spent`, `order` deals                     |
 | Trade animation                                                   | `TradeAnimation` ([trade-animation.ts](../../src/renderers/trade-animation.ts))           | nothing: a read-only view of the deals                   |
+| Trade traffic                                                     | `TradeTraffic` ([trade-traffic.ts](../../src/model/economy/trade-traffic.ts))             | nothing: summed from the deals when drawn                |
 
 ## When it runs
 
@@ -120,6 +121,7 @@ Goods pay for the path they travel, the one the trade animation draws.
 - **A decima** is a tenth of the map's diagonal, so carriage feels the same on any map size.
 - **Carriage per unit** = min(route cost in decimas, 10) × `good.carriage`, × 2 from another state's market (`IMPORT_CARRIAGE_FACTOR`).
 - **Who pays**: every deal carries the carriage between the market's center and the burg, added to what the burg pays and taken off what it gets. A burg with no route to its own market pays the cap; another market with no route to the burg cannot trade with it.
+- **Traffic**: the Goods layer's Traffic group (style option, off by default) adds each deal's units (kept goods aside) to every link of the cheapest path between its burg and its market's center: one search per market center, as for prices. It shows the goods the layer shows: route width grows with the square root of their units, saturating at the links' 95th percentile at the style's width; links under 1% of that are left out. The style's color, or the good's when one is selected. The tooltip lists the units a day of the goods shown, by land or by water. Summed only when drawn, cached until the deals change, never saved and never read by the model.
 
 ## Money and taxes
 
@@ -251,7 +253,7 @@ It averages about 0.7 on the KPI maps. Rebel zones rise in a state by the square
 
 ## What the user sees
 
-- **Layers**: Goods (deposits and burg production), Markets (territories), Trade (animated deals along the priced route).
+- **Layers**: Goods (deposits, burg production and, when switched on in its style, route traffic), Markets (territories), Trade (animated deals along the priced route).
 - **Goods editor and good editor**: the catalogue, values, carriage, coverage, recipes, multipliers, distribution and deposits, deposit output, painting goods on cells, production chains, stock by location.
 - **Markets overview and market dialogs**: stock and prices, prices compared across markets, a market's deals, adding, relocating and removing markets.
 - **Economy Overview** (per burg): production, consumption, each need's coverage and wants, prosperity with its parts, product, wealth, its balance (the treasury) and its adjustments, one collapsible row whose lines the user adds, names and removes; then the day summarised from the deals (or the step log in debug mode).

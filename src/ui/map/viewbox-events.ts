@@ -46,7 +46,8 @@ type Opener = (target: SVGElement, parent: SVGElement) => void;
 const PARENT_EDITORS: Record<string, Opener> = {
   ice: target => Controllers.IceEditor.open(target),
   terrain: target => Controllers.ReliefEditor.open(target),
-  goodsCells: () => Controllers.GoodsEditor.open()
+  goodsCells: () => Controllers.GoodsEditor.open(),
+  goodsTraffic: () => Controllers.GoodsEditor.open()
 };
 
 const GRAND_EDITORS: Record<string, Opener> = {

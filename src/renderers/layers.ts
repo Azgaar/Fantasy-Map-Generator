@@ -384,7 +384,7 @@ const mapLayers = [
   new Layer({
     id: "goods",
     parent: "viewbox",
-    children: ["goodsCells", "goodsBurgs", "goodsIcons"].map(id => ({ id, tag: "g" })),
+    children: ["goodsCells", "goodsTraffic", "goodsBurgs", "goodsIcons"].map(id => ({ id, tag: "g" })),
     draw: drawGoods,
     erase: removeGoods
   }),

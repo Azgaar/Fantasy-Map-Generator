@@ -3,6 +3,7 @@ import { Production } from "@/model/economy/production-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
+import { buildTraffic, clearTraffic, renderTraffic } from "@/renderers/draw-trade-traffic";
 import { Layers } from "@/renderers/layers";
 import {
   type Box,
@@ -20,6 +21,8 @@ let cellProduction: CellProduction[] = [];
 let resourceIcons: ResourceIcon[] = [];
 let burgCircles: BurgCircle[] = [];
 let sourcePack: PackedGraph | null = null;
+let shownGoods = new Set<number>();
+let trafficShown: Set<number> | null = null; // the goods the traffic was built for, built only once drawn
 
 const ICON_FRAME = 100; // every goods icon is drawn in a 0 0 100 100 frame
 const OVERVIEW_SATURATION = 0.95; // percentile from which cells get the darkest color and burgs the biggest circle
@@ -89,6 +92,8 @@ function buildScene(): void {
   else buildCellOverview();
   buildResourceIcons(shown);
   buildBurgCircles(shown);
+  shownGoods = shown;
+  trafficShown = null;
   sourcePack = pack;
 }
 
@@ -98,6 +103,8 @@ export function removeGoods(): void {
   cellProduction = [];
   resourceIcons = [];
   burgCircles = [];
+  trafficShown = null;
+  clearTraffic();
 
   const root = findEl("goods");
   if (root) for (const child of Array.from(root.children)) child.replaceChildren();
@@ -107,9 +114,19 @@ function reconcileGoods({ root, bounds }: ViewportRenderContext): void {
   if (!Layers.isOn("goods")) return;
   if (sourcePack !== pack || root !== document) buildScene();
 
-  const { goodsCells, goodsIcons, goodsBurgs } = styles.goods.groups;
+  const { goodsCells, goodsTraffic, goodsIcons, goodsBurgs } = styles.goods.groups;
   const cells = root.querySelector<SVGGElement>("#goodsCells");
   if (cells) cells.innerHTML = goodsCells.options.render ? renderCellProduction(bounds) : "";
+
+  if (goodsTraffic.options.render && trafficShown !== shownGoods) {
+    buildTraffic(shownGoods); // the slowest part, so only once drawn
+    trafficShown = shownGoods;
+  }
+  const traffic = root.querySelector<SVGGElement>("#goodsTraffic");
+  if (traffic) {
+    traffic.setAttribute("fill", "none");
+    traffic.innerHTML = goodsTraffic.options.render ? renderTraffic(bounds) : "";
+  }
 
   const icons = root.querySelector<SVGGElement>("#goodsIcons");
   if (icons) icons.innerHTML = goodsIcons.options.render ? renderResourceIcons(bounds) : "";

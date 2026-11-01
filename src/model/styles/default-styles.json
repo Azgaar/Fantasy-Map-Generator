@@ -551,6 +551,19 @@
           "render": true,
           "size": 3
         }
+      },
+      "goodsTraffic": {
+        "attrs": {
+          "opacity": 0.7,
+          "stroke": "#808080",
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+          "filter": null
+        },
+        "options": {
+          "render": false,
+          "size": 3
+        }
       }
     }
   },
