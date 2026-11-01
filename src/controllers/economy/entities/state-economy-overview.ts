@@ -147,7 +147,7 @@ function renderCards(
   const treasuryCard = stateId
     ? card(
         t("Day Balance"),
-        formatPrice(treasury),
+        `<span class="${tone(treasury)}">${formatPrice(treasury)}</span>`,
         [stateRank(stateId, id => pack.states[id].economy.treasury || 0), t("Tax burden: {{burden}}%", { burden })],
         sentences(EconomyTerms.stateTreasury(), t("Tax burden: the taxes' share of the product"))
       )

@@ -1,5 +1,5 @@
 import { type District, Districts } from "@/model/political/districts";
-import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods, getNeedsCost } from "./goods-generator";
+import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, type Good, Goods, getNeedsCost } from "./goods-generator";
 import { Production } from "./production-generator";
 import { DEAL_KINDS } from "./trade";
 
@@ -8,6 +8,8 @@ const COMFORT_SHARE = 0.4;
 const VARIETY_SHARE = 0.4;
 const COMFORT_TOP = 15; // consuming this many times bare needs at the cheapest is full comfort
 const VARIETY_TOP = 14; // consuming this many goods in even measure is full variety
+const RURAL_COMFORT_TOP = 6; // a village's plenty: rural people are measured against village wants, not a city's
+const RURAL_VARIETY_TOP = 8;
 const INFRASTRUCTURE_SHARE = 0.15; // of prosperity, the state's public works serving its people
 
 export const PROSPERITY_LEVELS = [
@@ -26,8 +28,17 @@ export type ProsperityLevel = (typeof PROSPERITY_LEVELS)[number];
 
 /** A people's living: needs met (0–1), consumption at base prices in days of bare needs, the effective number of goods, their district's infrastructure (0–1), and prosperity (0–1) */
 export type Living = { needs: number; comfort: number; variety: number; infrastructure: number; prosperity: number };
-type Consumption = { people: number; goods: number[]; needsCost: number; infrastructure: number; needsMet?: number }; // goods: units by good id
-/** A cell's rural people: their living, their share of their market's rural earnings and of its rural purchases, units by good id */
+type Consumption = {
+  people: number;
+  goods: number[]; // units by good id
+  needsCost: number;
+  infrastructure: number;
+  needsMet?: number;
+  comfortTop?: number;
+  varietyTop?: number;
+};
+const isNeeded = (good?: Good) => Object.values(good?.demandCoverage ?? {}).some(Boolean);
+/** A cell's rural people: their living, their share of their market's rural earnings and purchases, and their own unsold produce they keep, units by good id */
 export type RuralCell = { people: number; earned: number; goods: number[]; living: Living };
 
 class ProsperityModule {
@@ -122,16 +133,25 @@ class ProsperityModule {
       if (!market.i || !market.rural || !cells) continue;
       const totalProduce = cells.reduce((sum, cell) => sum + cell.produce, 0);
       const totalPeople = cells.reduce((sum, cell) => sum + cell.people, 0);
+      // unsold produce stays with those who grew it; only what meets a need is lived on
+      const grown: number[] = [];
+      for (const { cellId } of cells)
+        for (const [goodId, units] of Object.entries(output[cellId])) grown[+goodId] = (grown[+goodId] || 0) + units;
+      const kept = (market.rural.kept ?? []).filter(([goodId]) => grown[goodId] && isNeeded(Goods.get(goodId)));
       for (const { cellId, people, produce } of cells) {
         const share = totalProduce ? produce / totalProduce : people / totalPeople;
         const goods: number[] = [];
         for (const [goodId, units] of market.rural.bought) goods[goodId] = units * share;
+        for (const [goodId, units] of kept)
+          goods[goodId] = (goods[goodId] || 0) + (units * (output[cellId][goodId] || 0)) / grown[goodId];
         const living = this.measure({
           people,
           goods,
           needsCost,
           infrastructure: infrastructure(cellId),
-          needsMet: 1
+          needsMet: 1,
+          comfortTop: RURAL_COMFORT_TOP,
+          varietyTop: RURAL_VARIETY_TOP
         });
         this.rural.set(cellId, { people, earned: market.rural.earned * share, goods, living });
       }
@@ -152,7 +172,15 @@ class ProsperityModule {
     };
   }
 
-  private measure({ people, goods, needsCost, infrastructure, needsMet }: Consumption): Living {
+  private measure({
+    people,
+    goods,
+    needsCost,
+    infrastructure,
+    needsMet,
+    comfortTop = COMFORT_TOP,
+    varietyTop = VARIETY_TOP
+  }: Consumption): Living {
     const bare = people * needsCost;
     const totalFactor = DEMAND_PRIORITY.reduce((sum, category) => sum + DEMAND_TARGET_FACTORS[category], 0);
     const covered = DEMAND_PRIORITY.map(() => 0);
@@ -181,8 +209,8 @@ class ProsperityModule {
     );
     const variety = total ? Math.exp(entropy) : 0;
 
-    const comfortScore = comfort > 1 ? Math.min(1, Math.log(comfort) / Math.log(COMFORT_TOP)) : 0;
-    const varietyScore = variety > 1 ? Math.min(1, (variety - 1) / (VARIETY_TOP - 1)) : 0;
+    const comfortScore = comfort > 1 ? Math.min(1, Math.log(comfort) / Math.log(comfortTop)) : 0;
+    const varietyScore = variety > 1 ? Math.min(1, (variety - 1) / (varietyTop - 1)) : 0;
     const living = needs * (NEEDS_SHARE + COMFORT_SHARE * comfortScore + VARIETY_SHARE * varietyScore);
     const prosperity = (1 - INFRASTRUCTURE_SHARE) * living + INFRASTRUCTURE_SHARE * infrastructure;
     return { needs, comfort, variety, infrastructure, prosperity };

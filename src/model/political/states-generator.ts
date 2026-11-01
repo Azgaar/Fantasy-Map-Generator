@@ -205,8 +205,8 @@ type TaxBases = { salesTax: number; pollTax: number; marketFee: number };
 const MAX_MARKET_FEE_FACTOR = 1.5; // the most a state's market fee lies above its form's base, however high its sales tax
 
 const DEFAULT_TAX_BY_FORM: Record<string, TaxBases> = {
-  Monarchy: { salesTax: 0.1, pollTax: 0.1, marketFee: 35 },
-  Theocracy: { salesTax: 0.05, pollTax: 0.1, marketFee: 60 },
+  Monarchy: { salesTax: 0.08, pollTax: 0.07, marketFee: 30 },
+  Theocracy: { salesTax: 0.05, pollTax: 0.07, marketFee: 50 },
   Union: { salesTax: 0.1, pollTax: 0, marketFee: 0 },
   Republic: { salesTax: 0.05, pollTax: 0.05, marketFee: 15 },
   Anarchy: { salesTax: 0, pollTax: 0, marketFee: 0 }

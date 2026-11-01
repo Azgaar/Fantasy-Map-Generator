@@ -135,6 +135,7 @@ const columns: EditorColumn<State>[] = [
     key: "treasury",
     label: t("Balance"),
     width: "6em",
+    hidden: true,
     mobileHidden: true,
     tip: sentences(EconomyTerms.stateTreasury(), EconomyTerms.openValue()),
     sortBy: s => s.economy.treasury || 0

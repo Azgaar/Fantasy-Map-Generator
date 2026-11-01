@@ -485,11 +485,24 @@ export class TradeModule {
 
   /** Ends the run: prices are rounded, each market keeps its rural day, with the poll tax its people paid, for the views */
   endRun(): void {
+    const sold = new Map<number, number[]>(); // burgs' sales by market, units by good id
+    for (const [, marketId, goodId, kind, units] of pack.deals) {
+      if (kind !== DEAL_KINDS.sale) continue;
+      const byGood = sold.get(marketId) ?? [];
+      byGood[goodId] = (byGood[goodId] || 0) + units;
+      sold.set(marketId, byGood);
+    }
     for (const market of pack.markets) {
       for (const marketGood of Object.values(market.goods)) marketGood.price = rn(marketGood.price, 2);
       const day = this.days[market.i];
       if (!day) continue;
       const bought = day.bought.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)] as [number, number]] : []));
+      // what is left in stock is the rural people's and the burgs' wares alike, by what each brought
+      const kept = day.rural.flatMap((units, goodId) => {
+        const supplied = units + (sold.get(market.i)?.[goodId] || 0);
+        const left = units * Math.min(1, (market.goods[goodId]?.stock || 0) / supplied);
+        return left >= 0.01 ? [[goodId, rn(left, 2)] as [number, number]] : [];
+      });
       const share = day.pollTaxShare ?? this.getPollTaxShare(day);
       const pollTax = day.pollTaxDue.flatMap((owed, stateId) =>
         owed ? [[stateId, rn(owed, 2), rn(owed * share, 2)] as [number, number, number]] : []
@@ -498,6 +511,7 @@ export class TradeModule {
         earned: rn(day.income, 2),
         spent: rn(day.spent, 2),
         bought,
+        kept,
         margin: rn(day.margin, 2)
       };
       if (pollTax.length) market.rural.pollTax = pollTax;

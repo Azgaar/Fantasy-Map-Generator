@@ -29,11 +29,12 @@ export type Market = {
   note?: string;
 };
 
-/** A market's rural people's day: what their produce earned, what they bought with it, and the poll tax they owed and paid by state */
+/** A market's rural people's day: what their produce earned, what they bought with it, the produce no one bought, and the poll tax they owed and paid by state */
 export type RuralDay = {
   earned: number;
   spent: number;
   bought: [goodId: number, units: number][];
+  kept?: [goodId: number, units: number][]; // their produce left unsold, which they keep; missing in maps saved before it
   margin?: number; // what the market's center took on their produce sold and their purchases, in no deal
   pollTax?: [stateId: number, owed: number, paid: number][];
 };

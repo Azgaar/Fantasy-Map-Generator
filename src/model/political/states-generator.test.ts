@@ -143,7 +143,7 @@ describe("StatesModule.collectTaxes", () => {
     expect(StatesModule.getMarketFee(1)).toBe(30);
     expect(StatesModule.getMarketFee(0)).toBe(0);
     // twice the Monarchy's base sales tax: its base fee × 1.5 at most; a tenth of the Republic's: a quarter at least
-    expect(StatesModule.defineMarketFee(globalThis.pack.states[1])).toBe(53);
+    expect(StatesModule.defineMarketFee(globalThis.pack.states[1])).toBe(45);
     expect(StatesModule.defineMarketFee(globalThis.pack.states[2])).toBe(4);
     expect(StatesModule.defineMarketFee(globalThis.pack.states[3])).toBe(0);
   });
