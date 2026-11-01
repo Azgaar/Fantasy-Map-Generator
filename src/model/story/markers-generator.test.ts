@@ -93,7 +93,7 @@ describe("MarkersModule.rename", () => {
 });
 
 describe("MarkersModule mines", () => {
-  it("places mines only in burgs extracting an ore or mineral, named after it", async () => {
+  it("places mines in burgs on an ore or mineral, played out where the burg extracts none", async () => {
     await import("./markers-generator");
     const goods = [
       { i: 1, name: "Iron", tags: ["ore"] },
@@ -108,17 +108,63 @@ describe("MarkersModule mines", () => {
       },
       burgs: [
         {},
-        { name: "Ironton", population: 1, production: [[1, 2]] },
-        { name: "Farmton", population: 1, production: [[2, 2]] },
-        { name: "Smithton", population: 1, production: [[3, 2]] } // sits on iron but makes no iron
-      ]
+        { i: 1, name: "Ironton", population: 1, production: [[1, 2]] },
+        { i: 2, name: "Farmton", population: 1, production: [[2, 2]] },
+        { i: 3, name: "Smithton", population: 1, production: [[3, 2]] } // sits on iron but makes no iron
+      ],
+      deals: [[1, 1, 1, 0, 2, 1, 0, 0, 0]]
     } as any;
     const markers = Markers as any;
 
-    expect(markers.listMines(pack)).toEqual([1]);
-    const marker = { i: 0, cell: 1 } as Marker;
-    markers.addMine(marker, 1);
-    expect(marker.name).toBe("Ironton — iron mining town");
+    expect(markers.listMines(pack)).toEqual([1, 3]);
+    const mine = { i: 0, cell: 1 } as Marker;
+    markers.addMine(mine, 1);
+    expect(mine.name).toBe("Ironton — iron mining town");
+    const old = { i: 1, cell: 3 } as Marker;
+    markers.addMine(old, 3);
+    expect(old.name).toBe("Smithton — old iron mine");
+  });
+});
+
+describe("MarkersModule weighted pick", () => {
+  it("draws once, in proportion to the weights, and removes the pick", () => {
+    const markers = Markers as any;
+    const random = Math.random;
+    Math.random = () => 0.5;
+    const cells = [10, 11, 12];
+    const weights = [1, 0, 3];
+    expect(markers.extractWeighted(cells, weights)).toEqual([12]);
+    expect(cells).toEqual([10, 11]);
+    expect(weights).toEqual([1, 0]);
+    expect(markers.extractWeighted([7, 8], [0, 0])).toEqual([8]); // uniform without any weight
+    Math.random = random;
+  });
+});
+
+describe("MarkersModule guild halls", () => {
+  it("gives a burg the hall of the made good it leads world output of", () => {
+    const goods = [
+      { i: 1, name: "Cloth", tags: [], recipes: [{ 2: 1 }] },
+      { i: 2, name: "Wool", tags: [] }
+    ];
+    Object.assign(Goods, { get: (id: number) => goods.find(good => good.i === id) });
+    globalThis.pack = {
+      burgs: [
+        {},
+        {
+          i: 1,
+          production: [
+            [1, 6],
+            [2, 50]
+          ]
+        },
+        { i: 2, production: [[1, 2]] },
+        { i: 3, production: [[1, 2]], removed: true }
+      ]
+    } as any;
+    const guilds = (Markers as any).indexGuilds();
+    expect([...guilds.keys()]).toEqual([1]);
+    expect(guilds.get(1).share).toBe(0.75);
   });
 });
 
@@ -136,5 +182,44 @@ describe("MarkersModule migrations", () => {
     expect(["Reindeer", "Musk oxen", "Wolves", "Foxes", "Geese", "Hares", "Owls"]).toContain(
       marker.name.replace(" migration", "")
     );
+  });
+});
+
+describe("MarkersModule customs houses", () => {
+  it("lists one road crossing for each pair of states trading under tariffs", () => {
+    const markers = Markers as any;
+    globalThis.pack = {
+      cells: {
+        i: [0, 1, 2, 3, 4],
+        state: [1, 2, 1, 2, 3],
+        // 0-1 and 2-3 cross by road between states 1 and 2; 3-4 by a trail into state 3
+        routes: [{ 1: 0 }, { 0: 0 }, { 3: 0 }, { 2: 0, 4: 1 }, { 3: 1 }]
+      },
+      routes: [
+        { i: 0, group: "roads" },
+        { i: 1, group: "trails" }
+      ]
+    } as any;
+    markers.tradeSource = pack.deals;
+    markers.tradeIndex = {
+      tariffs: new Map([
+        [markers.getStatePair(1, 2), 5],
+        [markers.getStatePair(2, 3), 9]
+      ])
+    };
+    expect(markers.listCustomsHouses(pack)).toEqual([0]);
+    expect(markers.getCustomsBorder(3)).toEqual({ state: 1, tariffs: 5 });
+    markers.tradeIndex = undefined;
+  });
+});
+
+describe("MarkersModule trade index", () => {
+  it("sums the economy run again once its deals are replaced", () => {
+    const markers = Markers as any;
+    globalThis.pack = { burgs: [{}], markets: [], deals: [] } as any;
+    const first = markers.trade;
+    expect(markers.trade).toBe(first);
+    pack.deals = [];
+    expect(markers.trade).not.toBe(first);
   });
 });

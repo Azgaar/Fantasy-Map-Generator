@@ -1,7 +1,8 @@
-import { max, mean } from "d3";
+import { mean } from "d3";
 import { Routes } from "@/model/economy/routes-generator";
+import { DEAL_KINDS } from "@/model/economy/trade";
 import { Districts } from "@/model/political/districts";
-import { Stability } from "@/model/political/stability";
+import { Stability, type StabilityPart } from "@/model/political/stability";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { requireColor } from "@/utils/color-utils";
@@ -44,7 +45,6 @@ interface ZoneConfig {
 
 class ZonesModule {
   private config: Record<string, ZoneConfig>;
-  private byStability = false; // only on the user's regeneration: seeded generation stays independent of the economy
 
   constructor() {
     this.config = {
@@ -58,7 +58,8 @@ class ZonesModule {
       avalanche: { quantity: 0.8, generate: u => this.addAvalanche(u) },
       fault: { quantity: 1, generate: u => this.addFault(u) },
       flood: { quantity: 1, generate: u => this.addFlood(u) },
-      tsunami: { quantity: 1, generate: u => this.addTsunami(u) }
+      tsunami: { quantity: 1, generate: u => this.addTsunami(u) },
+      famine: { quantity: 1, generate: u => this.addFamine(u) }
     };
   }
 
@@ -136,12 +137,7 @@ class ZonesModule {
   }
 
   regenerate(globalModifier = 1): void {
-    this.byStability = true;
-    try {
-      this.generate(globalModifier);
-    } finally {
-      this.byStability = false;
-    }
+    this.generate(globalModifier);
   }
 
   generate(globalModifier = 1) {
@@ -167,7 +163,7 @@ class ZonesModule {
       .flatMap(s => s.campaigns!)
       .filter(c => !c.end);
     if (!ongoingConflicts.length) return;
-    const { defender, attacker } = ra(ongoingConflicts);
+    const { defender, attacker, name: war } = ra(ongoingConflicts);
 
     const borderCells = cells.i.filter(cellId => {
       if (usedCells[cellId]) return false;
@@ -175,7 +171,11 @@ class ZonesModule {
       return cells.c[cellId].some(c => cells.state[c] === attacker);
     });
 
-    const startCell = ra(borderCells);
+    // invaders strike where the land is richest
+    const startCell = pickWeighted(
+      borderCells,
+      borderCells.map(cellId => (cells.prosperity?.[cellId] || 0) ** 2)
+    );
     if (startCell === undefined) return;
 
     const invasionCells: number[] = [];
@@ -212,10 +212,12 @@ class ZonesModule {
       Skirmishes: 1
     });
     const name = `${getAdjective(states[attacker].name)} ${subtype}`;
+    const note = `Troops of ${states[attacker].name} have crossed into ${states[defender].name} in the ${war}. They raid, besiege and hold the land here, the richest along the border, and its people flee before them.`;
 
     pack.zones.push({
       i: pack.zones.length,
       name,
+      note,
       type: "Invasion",
       cells: invasionCells,
       color: "url(#hatch1)"
@@ -225,27 +227,26 @@ class ZonesModule {
   private addRebels(usedCells: Uint8Array) {
     const { cells, states } = pack;
 
-    // on regeneration unstable states rise more often, in their least stable district; all alike before the economy has run
+    // unstable states rise more often, in their least stable district; all alike before the economy has run
     const instability = (stability = 0.5) => (1 - stability) ** 2;
     const candidates = states.filter(s => s.i && !s.removed && s.neighbors?.some(Boolean));
-    const state = this.byStability
-      ? pickWeighted(
-          candidates,
-          candidates.map(s => instability(Stability.get(s.i)?.stability))
-        )
-      : ra(candidates);
+    const state = pickWeighted(
+      candidates,
+      candidates.map(s => instability(Stability.get(s.i)?.stability))
+    );
     if (!state) return;
 
     const neibStateId = ra(state.neighbors!.filter((n: number) => n && !states[n].removed));
     if (!neibStateId) return;
 
-    const districts = this.byStability ? Stability.getDistricts(state.i).filter(d => d.district.people) : [];
-    const district = districts.length
+    const districts = Stability.getDistricts(state.i).filter(d => d.district.people);
+    const districtStability = districts.length
       ? pickWeighted(
           districts,
           districts.map(d => instability(d.stability))
-        )?.district
+        )
       : undefined;
+    const district = districtStability?.district;
     const inside = (cellId: number) =>
       cells.state[cellId] === state.i && (!district || Districts.at(cellId) === district);
     const atBorder = (cellId: number) => cells.c[cellId].some(c => cells.state[c] === neibStateId);
@@ -273,26 +274,45 @@ class ZonesModule {
       });
     }
 
-    const rebels = rw({
-      Rebels: 5,
-      Insurrection: 2,
-      Mutineers: 1,
-      Insurgents: 1,
-      Rebellion: 1,
-      Renegades: 1,
-      Revolters: 1,
-      Revolutionaries: 1,
-      Rioters: 1,
-      Separatists: 1,
-      Secessionists: 1,
-      Conspiracy: 1
-    });
+    const parts = districtStability?.parts;
+    const TAX_REVOLT_BURDEN = 0.1; // stability the tax burden takes from a district, its largest loss, for its rebels to be a tax revolt
+    const isTaxRevolt =
+      !!parts && parts.burden <= -TAX_REVOLT_BURDEN && Object.values(parts).every(part => part >= parts.burden);
+    const rebels = isTaxRevolt
+      ? rw({ "Tax Revolt": 3, "Tax Rebels": 2, "Tithe Riots": 1, "Peasant Revolt": 1 })
+      : rw({
+          Rebels: 5,
+          Insurrection: 2,
+          Mutineers: 1,
+          Insurgents: 1,
+          Rebellion: 1,
+          Renegades: 1,
+          Revolters: 1,
+          Revolutionaries: 1,
+          Rioters: 1,
+          Separatists: 1,
+          Secessionists: 1,
+          Conspiracy: 1
+        });
 
     const province = district?.province ? pack.provinces[district.province] : undefined;
-    const name = `${getAdjective(borderCellId !== undefined || !province ? states[neibStateId].name : province.name)} ${rebels}`;
+    const named = isTaxRevolt
+      ? (province ?? state)
+      : borderCellId !== undefined || !province
+        ? states[neibStateId]
+        : province;
+    const name = `${getAdjective(named.name)} ${rebels}`;
+    const place = province?.name ?? state.name;
+    const cause = parts && this.getUnrestCause(parts);
+    const note = isTaxRevolt
+      ? `Crushed by the taxes of ${state.name}, the people of ${place} refuse to pay and have taken up arms against the tax collectors.`
+      : borderCellId !== undefined
+        ? `People of ${state.name} along the border with ${states[neibStateId].name} have taken up arms against their rulers, backed by their neighbor${cause ? `. ${cause}` : ""}.`
+        : `${place} has risen against the rule of ${state.name}${cause ? `. ${cause}` : ""}.`;
     pack.zones.push({
       i: pack.zones.length,
       name,
+      note,
       type: "Rebels",
       cells: cellsArray,
       color: "url(#hatch3)"
@@ -336,9 +356,11 @@ class ZonesModule {
     }
 
     const name = `${getAdjective(religion.name.split(" ")[0])} Proselytism`;
+    const note = `Missionaries of ${religion.name} preach among the followers of ${religions[targetReligionId]?.name || "other faiths"} here, winning converts village by village.`;
     pack.zones.push({
       i: pack.zones.length,
       name,
+      note,
       type: "Proselytism",
       cells: proselytismCells,
       color: "url(#hatch6)"
@@ -359,9 +381,11 @@ class ZonesModule {
     }
 
     const name = `${getAdjective(heresy.name.split(" ")[0])} Crusade`;
+    const note = `${heresy.name} is condemned as heresy. Crusaders march against its followers wherever they live, burning their shrines.`;
     pack.zones.push({
       i: pack.zones.length,
       name,
+      note,
       type: "Crusade",
       cells: Array.from(crusadeCells),
       color: "url(#hatch6)"
@@ -371,7 +395,12 @@ class ZonesModule {
   private addDisease(usedCells: Uint8Array) {
     const { cells, burgs } = pack;
 
-    const burg = ra(burgs.filter(b => !usedCells[b.cell] && b.i && !b.removed));
+    // disease breaks out in the busiest markets and ports
+    const candidates = burgs.filter(b => !usedCells[b.cell] && b.i && !b.removed);
+    const burg = pickWeighted(
+      candidates,
+      this.getBurgTrade(candidates).map((trade, k) => Math.sqrt(trade) * (candidates[k].port ? 2 : 1))
+    );
     if (!burg) return;
 
     const cellsArray: number[] = [];
@@ -416,18 +445,86 @@ class ZonesModule {
       Leprosy: 1,
       Smallpox: 1,
       Pestilence: 1,
-      Consumption: 1,
       Malaria: 1,
       Dropsy: 1
     });
     const name = `${prefix} ${disease}`;
+    const origin = burg.port ? `the port of ${burg.name}, brought by ships` : `the market of ${burg.name}`;
+    const note = `An outbreak of ${name.toLowerCase()} that began in ${origin}. Merchants and travelers carry it along the roads.`;
 
     pack.zones.push({
       i: pack.zones.length,
       name,
+      note,
       type: "Disease",
       cells: cellsArray,
       color: "url(#hatch12)"
+    });
+  }
+
+  /** What weakens a district most, as a sentence; none when nothing takes much */
+  private getUnrestCause(parts: Record<StabilityPart, number>): string | undefined {
+    const UNREST_CAUSE = 0.05; // stability a part takes from a district for the note to name it
+    const causes: Partial<Record<StabilityPart, string>> = {
+      remoteness: "The capital is far away, and its rule is weak here",
+      diversity: "Its people are strangers to the ruling culture",
+      corruption: "Corrupt officials have turned the people against their rulers",
+      army: "The army goes unpaid and does not keep order"
+    };
+    const [part, value] = Object.entries(parts)
+      .filter(([part]) => part in causes)
+      .reduce((worst, entry) => (entry[1] < worst[1] ? entry : worst), ["", 0]);
+    return value <= -UNREST_CAUSE ? causes[part as StabilityPart] : undefined;
+  }
+
+  /** Each burg's trade value in the last economy run */
+  private getBurgTrade(burgs: { i: number }[]): number[] {
+    const trade: number[] = [];
+    for (const [burgId, , , kind, units, price] of pack.deals ?? [])
+      if (kind !== DEAL_KINDS.kept) trade[burgId] = (trade[burgId] || 0) + units * price;
+    return burgs.map(burg => trade[burg.i] || 0);
+  }
+
+  /** A famine breaks out in the poorest countryside and spreads through the poor land around */
+  private addFamine(usedCells: Uint8Array) {
+    const { cells, states } = pack;
+    if (!cells.prosperity) return; // a map from before the economy
+    const isPoor = (cellId: number, top: number) =>
+      !usedCells[cellId] && cells.pop[cellId] > 0 && cells.prosperity[cellId] > 0 && cells.prosperity[cellId] <= top;
+    const FAMINE_START = 20; // rural prosperity %, at most, where a famine breaks out
+    const FAMINE_SPREAD = 30; // and that it spreads through
+    const poorest = cells.i.filter(cellId => isPoor(cellId, FAMINE_START));
+    const start = pickWeighted(
+      poorest,
+      poorest.map(cellId => (FAMINE_START + 1 - cells.prosperity[cellId]) ** 2)
+    );
+    if (start === undefined) return;
+
+    const famineCells: number[] = [];
+    const queue = [start];
+    usedCells[start] = 1;
+    const maxCells = rand(10, 40);
+    while (queue.length && famineCells.length < maxCells) {
+      const cellId = queue.shift()!;
+      famineCells.push(cellId);
+      for (const neibCellId of cells.c[cellId]) {
+        if (!isPoor(neibCellId, FAMINE_SPREAD)) continue;
+        usedCells[neibCellId] = 1;
+        queue.push(neibCellId);
+      }
+    }
+    if (famineCells.length < 3) return;
+
+    const state = states[cells.state[start]];
+    const place = state?.i ? state.name : Names.getCulture(cells.culture[start]);
+    const famine = rw({ Famine: 5, Hunger: 2, Dearth: 1, Starvation: 1 });
+    pack.zones.push({
+      i: pack.zones.length,
+      name: `${getAdjective(place)} ${famine}`,
+      note: `The poorest countryside of ${place}. The harvest has failed, and its people have no money to buy grain from the markets, so they go hungry.`,
+      type: "Famine",
+      cells: famineCells,
+      color: "url(#hatch10)"
     });
   }
 
@@ -536,19 +633,26 @@ class ZonesModule {
     }
 
     const type = rw({
-      Famine: 5,
       Drought: 3,
       Earthquake: 3,
-      Dearth: 1,
       Tornadoes: 1,
       Wildfires: 1,
       Storms: 1,
       Blight: 1
     });
     const name = `${getAdjective(burg.name!)} ${type}`;
+    const note = {
+      Drought: `No rain has fallen around ${burg.name} for months. Wells run dry and the crops wither in the fields.`,
+      Earthquake: `An earthquake has struck ${burg.name} and the land around, toppling houses and blocking roads.`,
+      Tornadoes: `Tornadoes have torn through the land around ${burg.name}, leaving a trail of wrecked farms.`,
+      Wildfires: `Wildfires burn around ${burg.name}, and smoke hangs over the burnt fields and woods.`,
+      Storms: `Storms batter ${burg.name} and the land around, flattening crops and tearing off roofs.`,
+      Blight: `A blight rots the crops around ${burg.name}, and the harvest is lost.`
+    }[type];
     pack.zones.push({
       i: pack.zones.length,
       name,
+      note,
       type: "Disaster",
       cells: cellsArray,
       color: "url(#hatch5)"
@@ -584,6 +688,7 @@ class ZonesModule {
     pack.zones.push({
       i: pack.zones.length,
       name,
+      note: `${volcanoe.name || "The volcano"} is erupting. Ash and lava cover the land around it, and people flee its slopes.`,
       type: "Eruption",
       cells: cellsArray,
       color: "url(#hatch7)"
@@ -619,6 +724,7 @@ class ZonesModule {
     pack.zones.push({
       i: pack.zones.length,
       name,
+      note: "Avalanches have buried the mountain road here. The pass is closed until the snow is cleared.",
       type: "Avalanche",
       cells: cellsArray,
       color: "url(#hatch5)"
@@ -654,6 +760,7 @@ class ZonesModule {
     pack.zones.push({
       i: pack.zones.length,
       name,
+      note: "A fault line where the ground cracks and shakes with frequent tremors. Few dare to build here.",
       type: "Fault",
       cells: cellsArray,
       color: "url(#hatch2)"
@@ -662,48 +769,46 @@ class ZonesModule {
 
   private addFlood(usedCells: Uint8Array) {
     const cells = pack.cells;
+    const FLOOD_BANK = 3; // height over the river a bank may stand and still flood
 
-    const fl = cells.fl.filter(Boolean);
-    const meanFlux = mean(fl) ?? 0;
-    const maxFlux = max(fl) ?? 0;
-    const fluxThreshold = (maxFlux - meanFlux) / 2 + meanFlux;
+    const meanFlux = mean(cells.fl.filter(Boolean)) ?? 0;
+    const isBigRiver = (cellId: number) => cells.r[cellId] && cells.fl[cellId] >= meanFlux;
 
-    const bigRiverCells = cells.i.filter(
-      i => !usedCells[i] && cells.h[i] < 50 && cells.r[i] && cells.fl[i] > fluxThreshold && cells.burg[i]
+    // a lowland burg on a bigger river than most, the bigger the likelier
+    const riverBurgCells = cells.i.filter(i => !usedCells[i] && cells.h[i] < 50 && cells.burg[i] && isBigRiver(i));
+    const startCell = pickWeighted(
+      riverBurgCells,
+      riverBurgCells.map(i => cells.fl[i])
     );
-    if (!bigRiverCells.length) return;
-
-    const startCell = ra(bigRiverCells);
+    if (startCell === undefined) return;
     usedCells[startCell] = 1;
 
+    // the water spreads up and down the river and over its low banks
     const riverId = cells.r[startCell];
     const cellsArray: number[] = [];
     const queue = [startCell];
     const maxCells = rand(5, 30);
 
-    while (queue.length) {
-      const cellId = queue.pop()!;
+    while (queue.length && cellsArray.length < maxCells) {
+      const cellId = queue.shift()!;
       cellsArray.push(cellId);
-      if (cellsArray.length >= maxCells) break;
+      if (!isBigRiver(cellId)) continue; // a flooded bank spreads no further
 
-      cells.c[cellId].forEach(neibCellId => {
-        if (
-          usedCells[neibCellId] ||
-          cells.h[neibCellId] < 20 ||
-          cells.r[neibCellId] !== riverId ||
-          cells.h[neibCellId] > 50 ||
-          cells.fl[neibCellId] < meanFlux
-        )
-          return;
+      for (const neibCellId of cells.c[cellId]) {
+        if (usedCells[neibCellId] || cells.h[neibCellId] < 20 || cells.h[neibCellId] >= 50) continue;
+        if (!isBigRiver(neibCellId) && cells.h[neibCellId] > cells.h[cellId] + FLOOD_BANK) continue;
         usedCells[neibCellId] = 1;
         queue.push(neibCellId);
-      });
+      }
     }
 
-    const name = `${getAdjective(pack.burgs[cells.burg[startCell]].name!)} Flood`;
+    const burgName = pack.burgs[cells.burg[startCell]].name!;
+    const name = `${getAdjective(burgName)} Flood`;
+    const river = pack.rivers.find(river => river.i === riverId);
     pack.zones.push({
       i: pack.zones.length,
       name,
+      note: `The ${river ? `${river.name} ${river.type.toLowerCase()}` : "river"} has burst its banks at ${burgName}, flooding the streets and the fields along it.`,
       type: "Flood",
       cells: cellsArray,
       color: "url(#hatch13)"
@@ -743,6 +848,7 @@ class ZonesModule {
     pack.zones.push({
       i: pack.zones.length,
       name,
+      note: "A great wave from the sea has struck this coast, wrecking harbors and drowning the villages along the shore.",
       type: "Tsunami",
       cells: cellsArray,
       color: "url(#hatch13)"

@@ -978,7 +978,7 @@ Religions are generated from cultures: Folk religions follow one culture, Organi
 
 ### What are zones?
 
-Highlighted areas for events such as invasions, rebels, plagues or disasters. Edit them in Tools -> Zones (Shift + Z): add a zone, paint its cells and set its type, color and description
+Highlighted areas for events such as invasions, rebels, plagues, famines or disasters. Zones follow the economy: invasions strike rich border land, rebels rise in unstable states (as a tax revolt where taxes weigh heavily), disease breaks out in busy markets and ports, and famine in the poorest countryside. Each generated zone has a short legend: hover it on the map to read what is happening there. Edit them in Tools -> Zones (Shift + Z): add a zone, paint its cells and set its type, color and description
 
 ### How are routes generated? Can I add a road?
 
