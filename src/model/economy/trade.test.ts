@@ -527,6 +527,20 @@ describe("TradeModule", () => {
       expect(center.treasury).toBeCloseTo(importer.rural!.margin!, 1);
     });
 
+    it("rural people keep what is left of their produce, as each purchase took its share of the stock", () => {
+      const { importer, burg, good } = setupImport();
+      importer.goods[0] = { stock: 100, price: 10 };
+      globalThis.pack.markets = [importer];
+      const day = { depth: [1e9], rural: [100], ruralPeople: 1, cash: 0, income: 0, spent: 0, margin: 0 };
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      tradeModule["days"] = [undefined, undefined, { ...day, covered: [], bought: [], pollTaxDue: [] }] as never;
+
+      tradeModule.sell({ burg, good, units: 100, taxRate: 0 });
+      tradeModule.buy({ burg, good, units: 100, kind: DEAL_KINDS.demand });
+      tradeModule.endRun();
+      expect(importer.rural!.kept).toEqual([[0, 50]]); // half the stock was theirs when the buyer took half of it
+    });
+
     it("measures routes again once the route network changes", () => {
       setupImport();
       const measure = vi.spyOn(TradeRoutes, "measure").mockReturnValue([]);

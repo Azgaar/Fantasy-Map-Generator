@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Burg } from "@/model/political/burgs-generator";
 import { noFinance } from "@/model/political/states-generator";
 import { rn } from "@/utils/number-utils";
+import { EconomyDebug } from "./economy-debug";
 import type { Good } from "./goods-generator";
 import { Goods, NOVELTY, VARIETY } from "./goods-generator";
 import { type Market, Markets } from "./markets-generator";
@@ -14,6 +15,8 @@ import {
   ProductionModule,
   WORKFORCE_SHARE
 } from "./production-generator";
+import { Prosperity } from "./prosperity";
+import { StateOrders } from "./state-orders";
 import { DEAL_KINDS, PRICE_RESPONSE, type SourceOption, Trade } from "./trade";
 import { TradeRoutes } from "./trade-routes";
 
@@ -625,5 +628,33 @@ describe("market stock in planning", () => {
     const { index, state } = prepare();
     // biome-ignore lint/complexity/useLiteralKeys: private test access
     expect(production["quote"](index, state, 1).stock).toBe(0);
+  });
+});
+
+describe("the run's rounds", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("go on after a round in which burgs put only their last workers to work, so idle burgs try again", () => {
+    globalThis.pack.burgs.push({ i: 2, cell: 0, population: 50 } as Burg);
+    for (const method of ["collectRuralProduction", "initializeMarketPrices", "measureRoutes", "owesLicenses"] as const)
+      vi.spyOn(Trade, method).mockImplementation(() => {});
+    for (const method of ["spendRural", "settleLicenses", "endRun"] as const)
+      vi.spyOn(Trade, method).mockImplementation(() => {});
+    for (const method of ["start", "place", "end"] as const) vi.spyOn(StateOrders, method).mockImplementation(() => {});
+    vi.spyOn(EconomyDebug, "start").mockReturnValue(false);
+    vi.spyOn(Prosperity, "getCellsProsperity").mockReturnValue(new Uint8Array(1));
+    vi.spyOn(production, "getRuralOutput").mockReturnValue([]);
+    const internal = production as unknown as Record<string, (...args: any[]) => unknown>;
+    for (const method of ["sellInventoryToMarket", "fillDemand", "spendOnWants"])
+      vi.spyOn(internal, method).mockImplementation(() => {});
+    const turns: number[] = [];
+    vi.spyOn(internal, "runWorkerLoop").mockImplementation((_index, state) => {
+      turns.push(state.burg.i);
+      if (state.burg.i === 1) state.workersUsed = state.population; // its last workers: none left to report
+      return false;
+    });
+
+    production.produce();
+    expect(turns).toEqual([1, 2, 2]); // burg 2 idles, then tries again after burg 1's last work
   });
 });

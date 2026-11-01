@@ -112,8 +112,9 @@ export class ProductionModule {
     while (working.length) {
       let worked = false;
       working = working.filter(state => {
+        const before = state.workersUsed;
         const hasWork = this.runWorkerLoop(index, state, WORKERS_PER_TURN);
-        worked ||= hasWork;
+        worked ||= state.workersUsed > before; // a burg putting its last workers to work worked too
         // inputs made for the chain still under way wait for its next step
         const inputs = hasWork ? this.getChainInputs(index, state.activeGoalGoodId) : null;
         this.sellInventoryToMarket(index, state, goodId => !inputs?.has(goodId));
