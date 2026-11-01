@@ -178,6 +178,7 @@ function renderForm(state: State): string {
     `<tr><td colspan="3" data-tip="${tipText}">${label}</td><td class="amount" data-tip="${tipText}">${value}</td></tr>`;
   const share = (value: number) => `${rn(value * 100)}%`;
   const curbed = rn(Districts.getStateCorruption(state, state.economy.collected));
+  const uncurbed = rn(Districts.getStateTendency(state)); // the setting as the expenses' districts weigh it
 
   return /* html */ `<table>${columns}
       <tbody>
@@ -198,7 +199,7 @@ function renderForm(state: State): string {
       <tbody>
         <tr><th colspan="4" data-tip="${t("What the state's expenses achieved in the last run")}">${t("Effects")}</th></tr>
         ${effect(t("Army upkeep"), share(Military.getUpkeep(state.i)), EconomyTerms.upkeep())}
-        ${effect(t("Corruption curbed"), `${budget.corruption}% → ${curbed}%`, EconomyTerms.expenseTip("administration"))}
+        ${effect(t("Corruption curbed"), `${uncurbed}% → ${curbed}%`, EconomyTerms.expenseTip("administration"))}
         ${effect(t("Infrastructure served"), share(States.getProvision(state, "infrastructure")), EconomyTerms.expenseTip("infrastructure"))}
         ${effect(t("Court and clergy served"), share(States.getProvision(state, "court")), EconomyTerms.expenseTip("court"))}
       </tbody>
@@ -217,11 +218,17 @@ function drawCollected(): void {
 
 /** Expenses: each a share of the taxes, corruption grays the part officials pocket; the balance is what is left or lacking */
 function drawBudget(): void {
+  const { economy } = pack.states[stateId];
+  const set = economy.budget.corruption;
+  const taken = set ? Districts.getStateCorruption(pack.states[stateId], economy.collected) / set : 1; // the last run's take per point set
   for (const input of ensureEl("stateBudget").querySelectorAll<HTMLInputElement>("input.share")) {
     const key = input.dataset.key as keyof StateBudget;
     input.value = String(edit.budget[key]);
     if (input.type === "range")
-      input.style.background = budgetBackground(edit.budget[key], key === "corruption" ? 100 : edit.budget.corruption);
+      input.style.background = budgetBackground(
+        edit.budget[key],
+        key === "corruption" ? 100 : edit.budget.corruption * taken
+      );
   }
   const balance = 100 - sum(EXPENSES.map(expense => edit.budget[expense]));
   ensureEl("stateBudgetBalance").innerHTML = `<span class="${tone(balance)}">${balance}%</span>`;

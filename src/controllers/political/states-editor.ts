@@ -617,7 +617,7 @@ function renderStatesPage(view: TableView<State>): void {
       </div>
       <div data-tip="${treasuryTip}" class="stateTreasury stateEconomy pointer" data-col="treasury">🟡 ${si(s.economy.treasury)}</div>
       <div data-tip="${sentences(t("Tax burden: the taxes' share of the product"), EconomyTerms.open())}" class="stateEconomy pointer" data-col="burden">${burden === null ? "—" : `${rn(burden, 1)}%`}</div>
-      <div data-tip="${sentences(EconomyTerms.corruption(), t("Before administration: {{rate}}%", { rate: s.economy.budget.corruption || 0 }), EconomyTerms.open())}" class="stateEconomy pointer" data-col="corruption">${rn(Districts.getStateCorruption(s, s.economy.collected))}%</div>
+      <div data-tip="${sentences(EconomyTerms.corruption(), t("Before administration: {{rate}}%", { rate: rn(Districts.getStateTendency(s)) }), EconomyTerms.open())}" class="stateEconomy pointer" data-col="corruption">${rn(Districts.getStateCorruption(s, s.economy.collected))}%</div>
       ${EXPENSES.map(expense => `<div data-tip="${sentences(EconomyTerms.expenseTip(expense), EconomyTerms.open())}" class="stateEconomy pointer" data-col="${expense}">${expenses[expense]}%</div>`).join("")}
       <div data-tip="${accounts?.prosperity == null ? EconomyTerms.noData() : sentences(prosperityTip(accounts.prosperity), EconomyTerms.open())}" class="stateEconomy stateProsperity pointer" data-col="prosperity">${accounts?.prosperity == null ? "—" : renderProsperityPercent(accounts.prosperity)}</div>
       <div data-tip="${stability ? sentences(EconomyTerms.stability(), t("Click to open the stability overview")) : EconomyTerms.noData()}" class="stateStability pointer" data-col="stability">${stability ? `${rn(stability.stability * 100)}%` : "—"}</div>

@@ -55,15 +55,26 @@ class DistrictsModule {
 
   /** The state's corruption on the whole: its districts' by where each expense is spent, or by their people when it spends nothing */
   getStateCorruption(state: State, collected: number): number {
+    return (
+      this.byExpenses(state, d => this.getCorruption(state, d, collected)) ?? States.getCorruption(state, collected)
+    );
+  }
+
+  /** The state's corruption before administration, weighed as getStateCorruption: the capital's district, where the court and the army spend, is usually the least corrupt */
+  getStateTendency(state: State): number {
+    return this.byExpenses(state, d => this.getTendency(state, d)) ?? state.economy.budget.corruption;
+  }
+
+  /** A districts' rate for the state by where each expense is spent, or by their people when it spends nothing; null without districts */
+  private byExpenses(state: State, rate: (district: District) => number): number | null {
     const districts = this.get(state.i);
     const capital = this.getCapital(state);
-    if (!districts.length || !capital) return States.getCorruption(state, collected);
-    const atSeats = districts.reduce((sum, d) => sum + d.share * this.getCorruption(state, d, collected), 0);
+    if (!districts.length || !capital) return null;
+    const atSeats = districts.reduce((sum, d) => sum + d.share * rate(d), 0);
     const { court, military, administration, infrastructure } = state.economy.budget;
     const total = court + military + administration + infrastructure;
     if (!total) return atSeats;
-    const atCapital = this.getCorruption(state, capital, collected);
-    return ((court + military) * atCapital + (administration + infrastructure) * atSeats) / total;
+    return ((court + military) * rate(capital) + (administration + infrastructure) * atSeats) / total;
   }
 
   /** How fully the last run's infrastructure spending served each district's people, 0 to 1, by district index: the state's spending went to its seats by their people, less what each one's officials pocketed */

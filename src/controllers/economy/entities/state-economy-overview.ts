@@ -243,10 +243,11 @@ function renderExpenses(stateId: number): string {
   const row = (name: string, share: number, bar: string, value: number, tip: string, tone: string) =>
     `<div data-tip="${tip}" class="row budget"><span class="name">${name}</span><span class="right">${share}%</span>${bar}<span class="right ${tone}">${formatPrice(value)}</span></div>`;
   const swatch = `<span class="swatch" style="background: ${ECONOMY_COLORS.pocketed}"></span>`;
+  const corruption = Districts.getStateCorruption(pack.states[stateId], economy.collected);
   return `<div><h4 data-tip="${EconomyTerms.budget()}"><span>${t("Expenses")}</span>${budgetButton()}</h4>
-    ${EXPENSES.map(expense => row(EXPENSE_LABELS[expense], budget[expense], `<div class="bar" style="background: ${budgetBackground(budget[expense], budget.corruption)}"></div>`, -economy.spent[expense], EconomyTerms.expenseTip(expense), "negative")).join("")}
+    ${EXPENSES.map(expense => row(EXPENSE_LABELS[expense], budget[expense], `<div class="bar" style="background: ${budgetBackground(budget[expense], corruption)}"></div>`, -economy.spent[expense], EconomyTerms.expenseTip(expense), "negative")).join("")}
     <div class="total">${row(t("Day Balance"), balance, "<span></span>", economy.treasury, EconomyTerms.stateTreasury(), tone(economy.treasury))}</div>
-    <div data-tip="${EconomyTerms.corruption()}" class="row plain muted"><span class="name">${swatch}${t("Corruption: {{rate}}%", { rate: rn(Districts.getStateCorruption(pack.states[stateId], economy.collected)) })}</span><span class="right negative">${formatPrice(-economy.pocketed)}</span></div>
+    <div data-tip="${EconomyTerms.corruption()}" class="row plain muted"><span class="name">${swatch}${t("Corruption: {{rate}}%", { rate: rn(corruption) })}</span><span class="right negative">${formatPrice(-economy.pocketed)}</span></div>
   </div>`;
 }
 

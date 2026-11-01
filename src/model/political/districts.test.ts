@@ -90,4 +90,13 @@ describe("Districts", () => {
     const atSeats = Districts.get(1).reduce((sum, d) => sum + d.share * Districts.getCorruption(state, d, 100), 0);
     expect(Districts.getStateCorruption(state, 100)).toBeCloseTo(atSeats); // infrastructure only, spent at the seats
   });
+
+  it("weigh the state's corruption before administration as after it: the court and the army spend in the least corrupt crown lands", () => {
+    const state = pack.states[1];
+    expect(Districts.getStateTendency(state)).toBeCloseTo(20); // infrastructure only: the districts by their people
+    state.economy.budget.court = 20;
+    const crown = Districts.getTendency(state, Districts.getCapital(state)!);
+    expect(Districts.getStateTendency(state)).toBeCloseTo((20 * crown + 20 * 20) / 40);
+    expect(Districts.getStateTendency(state)).toBeLessThan(20);
+  });
 });
