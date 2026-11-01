@@ -161,7 +161,7 @@ class StateEconomyModule {
     return this.worldOutput;
   }
 
-  /** Units of each good the state's people and the state itself bought or kept a day, by good id */
+  /** Units of each good the state's people and the state itself bought a day, burgs' own output kept back included, by good id; rural people's unsold produce is not the state's to equip with */
   getConsumption(stateId: number): number[] {
     this.indexConsumption();
     return this.consumption.get(stateId) ?? [];
@@ -180,7 +180,7 @@ class StateEconomyModule {
       if (kind === DEAL_KINDS.demand || kind === DEAL_KINDS.kept || kind === DEAL_KINDS.order)
         add(pack.burgs[burgId]?.state || 0, goodId, units);
     for (const cellId of pack.cells.i)
-      Prosperity.getRuralCell(cellId)?.goods.forEach((units, goodId) => {
+      Prosperity.getRuralCell(cellId)?.bought.forEach((units, goodId) => {
         add(pack.cells.state[cellId], goodId, units);
       });
   }

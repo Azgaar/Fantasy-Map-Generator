@@ -22,11 +22,14 @@ beforeEach(() => {
     ]
   } as any;
   Goods.sync();
-  vi.spyOn(Prosperity, "getRuralCell").mockImplementation(cellId => ({ goods: cellId ? [] : [0, 0, 1] }) as any);
+  // cell 0's rural people bought a unit of good 2 and kept 7 of good 1 they could not sell
+  vi.spyOn(Prosperity, "getRuralCell").mockImplementation(
+    cellId => (cellId ? { bought: [], goods: [] } : { bought: [0, 0, 1], goods: [0, 7, 1] }) as any
+  );
 });
 
 describe("StateEconomy.getConsumption", () => {
-  it("sums the units the state's burgs bought or kept, its orders and its rural people's purchases", () => {
+  it("sums the units the state's burgs bought or kept back, its orders and its rural people's purchases, not their unsold produce", () => {
     expect(StateEconomy.getConsumption(1).slice(1)).toEqual([4, 3]);
     expect(StateEconomy.getConsumption(2).slice(1)).toEqual([5]);
     expect(StateEconomy.getConsumption(3)).toEqual([]);

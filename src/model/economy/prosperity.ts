@@ -38,8 +38,8 @@ type Consumption = {
   varietyTop?: number;
 };
 const isNeeded = (good?: Good) => Object.values(good?.demandCoverage ?? {}).some(Boolean);
-/** A cell's rural people: their living, their share of their market's rural earnings and purchases, and their own unsold produce they keep, units by good id */
-export type RuralCell = { people: number; earned: number; goods: number[]; living: Living };
+/** A cell's rural people: their living, their share of their market's rural earnings and purchases, and what they live on, units by good id: those purchases and their own unsold produce */
+export type RuralCell = { people: number; earned: number; bought: number[]; goods: number[]; living: Living };
 
 class ProsperityModule {
   private source: unknown = null; // the deals the cache describes
@@ -140,8 +140,9 @@ class ProsperityModule {
       const kept = (market.rural.kept ?? []).filter(([goodId]) => grown[goodId] && isNeeded(Goods.get(goodId)));
       for (const { cellId, people, produce } of cells) {
         const share = totalProduce ? produce / totalProduce : people / totalPeople;
-        const goods: number[] = [];
-        for (const [goodId, units] of market.rural.bought) goods[goodId] = units * share;
+        const bought: number[] = [];
+        for (const [goodId, units] of market.rural.bought) bought[goodId] = units * share;
+        const goods = bought.slice();
         for (const [goodId, units] of kept)
           goods[goodId] = (goods[goodId] || 0) + (units * (output[cellId][goodId] || 0)) / grown[goodId];
         const living = this.measure({
@@ -153,7 +154,7 @@ class ProsperityModule {
           comfortTop: RURAL_COMFORT_TOP,
           varietyTop: RURAL_VARIETY_TOP
         });
-        this.rural.set(cellId, { people, earned: market.rural.earned * share, goods, living });
+        this.rural.set(cellId, { people, earned: market.rural.earned * share, bought, goods, living });
       }
     }
   }
