@@ -14,7 +14,7 @@ import {
   ProductionModule,
   WORKFORCE_SHARE
 } from "./production-generator";
-import { DEAL_KINDS, type SourceOption, Trade } from "./trade";
+import { DEAL_KINDS, PRICE_RESPONSE, type SourceOption, Trade } from "./trade";
 import { TradeRoutes } from "./trade-routes";
 
 const good = (i: number, name: string, value: number, recipes?: Good["recipes"]): Good => ({
@@ -530,6 +530,48 @@ describe("sales tax in choosing work", () => {
 
   it("leaves the worker idle when the sales tax on the engine would eat its margin", () => {
     expect(engines(0.8)).toBe(0); // 95 × 0.2 = 19 back, for inputs that cost 14 × (1.05 + 0.8)
+  });
+});
+
+describe("price impact in choosing work", () => {
+  // an engine opens at 95 and takes 14 inputs, but its market expects to sell only part of one a day
+  const withEngineDepth = (depth: number) => {
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    Trade["days"] = [
+      undefined,
+      { depth: [0, 1e9, 1e9, 1e9, depth, 1e9], rural: [], covered: [], bought: [], pollTaxDue: [] }
+    ] as never;
+  };
+  afterEach(() => {
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    Trade["days"] = [];
+  });
+
+  it("values a step at what its lot fetches, not at the market's price for one unit", () => {
+    withEngineDepth(2);
+    const move = -PRICE_RESPONSE / 2;
+    const lot = Math.expm1(move) / move; // the engine's average price over its own sale
+    expect(plan(4, 1)?.normalizedGain).toBeCloseTo(rn(100 * (1 - MARGIN), 2) * lot - 14 * rn(1 + MARGIN, 2), 1);
+  });
+
+  it("leaves the worker idle when even its smallest step would sell for less than its inputs cost", () => {
+    withEngineDepth(0.05); // half an engine sells for about 12 apiece
+    burg.population = 1;
+    const { index, state } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["runWorkerLoop"](index, state);
+    expect(state.produced[4] ?? 0).toBe(0);
+  });
+
+  it("makes in a thin market only what still pays, a step at a time", () => {
+    withEngineDepth(0.2); // half an engine sells for about 41 apiece, and leaves the price at a seventh
+    catalogue[4].recipes = []; // no ship to put the engines into
+    burg.population = 1;
+    const { index, state } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["runWorkerLoop"](index, state);
+    expect(state.produced[4]).toBe(0.5);
+    expect(state.workersUsed).toBe(0.5); // the other half finds nothing worth making
   });
 });
 

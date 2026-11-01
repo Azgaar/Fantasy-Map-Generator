@@ -26,6 +26,7 @@ import {
   DEAL_KINDS,
   type DealKind,
   MIN_LOCAL_STOCK,
+  type Outlet,
   type SourceOption,
   type SourceQuote,
   Trade,
@@ -44,6 +45,8 @@ export const MAX_BONUS_VALUE = 200; // a burg's free units are worth at most thi
 const MAX_WORKERS = 1000;
 export const WORKFORCE_SHARE = 0.32; // townspeople working in trades; the rest serve, build, farm or are too young or old
 const WORKERS_PER_TURN = 5;
+export const LOT_DEPTH_SHARE = 0.5; // a step sells at most this share of a day's sales where it sells, so a thin market gets what pays and no more
+const MIN_STEP = 0.5; // the fewest workers a step takes, so a thin market does not take endless decisions
 export const BURG_SPECIALIZATION = 1.89;
 export const MARKET_SPECIALIZATION = 0.6;
 
@@ -66,13 +69,12 @@ export class ProductionModule {
 
   produce() {
     this.zoneCellSets = null; // rebuild lookup to reflect any in-place zone edits
-    // a market's license is its center burg's first claim, with the poll tax: a quiet market can end the day in debt. Set first: the market's margin follows it
-    const marketFees: number[] = [];
+    // a market's center pays its license out of the market's margin as it comes in. Set first: the margin rate follows it
     for (const market of pack.markets) {
       const center = pack.burgs[market.centerBurgId];
       market.feePaid = center?.i && !center.removed ? States.getMarketFee(center.state || 0) : 0;
-      marketFees[market.centerBurgId] = (marketFees[market.centerBurgId] || 0) + market.feePaid;
     }
+    Trade.owesLicenses();
 
     const rural = this.getRuralOutput();
     Trade.collectRuralProduction(rural);
@@ -90,7 +92,7 @@ export class ProductionModule {
       const market = Markets.ofBurg(burg);
       // the poll tax is the day's first claim: the burg starts owing it and pays it from its first sales
       burg.pollTaxPaid = market ? rn(States.getPollTaxDue(burg.state || 0, burg.population || 0), 2) : 0;
-      burg.treasury = sum(burg.adjustments ?? [], line => line.value) - burg.pollTaxPaid - (marketFees[burg.i!] || 0); // adjustments come at dawn too
+      burg.treasury = sum(burg.adjustments ?? [], line => line.value) - burg.pollTaxPaid; // adjustments come at dawn too
       if (market) states.push(this.createBurgProductionState(burg, market, recording));
       else {
         burg.product = 0; // out of every market: nothing made
@@ -108,17 +110,29 @@ export class ProductionModule {
     // states what their taxes brought in
     let working = states;
     while (working.length) {
+      let worked = false;
       working = working.filter(state => {
         const hasWork = this.runWorkerLoop(index, state, WORKERS_PER_TURN);
+        worked ||= hasWork;
         // inputs made for the chain still under way wait for its next step
         const inputs = hasWork ? this.getChainInputs(index, state.activeGoalGoodId) : null;
         this.sellInventoryToMarket(index, state, goodId => !inputs?.has(goodId));
         this.fillDemand(index, state, hasWork && state.population ? state.workersUsed / state.population : 1);
         this.spendOnWants(index, state);
-        return hasWork;
+        state.settled = state.burg.treasury || 0;
+        // a burg with idle workers tries again next round: buyers between rounds move the prices that idled it
+        return hasWork || state.workersUsed < state.population - 0.001;
       });
       for (const market of pack.markets) Trade.spendRural(market);
       StateOrders.place();
+      if (!worked) break; // a whole round found nothing worth making
+    }
+    Trade.settleLicenses(); // what the margin did not pay of a license is paid now: a quiet market ends the day in debt
+    // money that came after a burg's last turn, as a market center's margin, buys its people's day too
+    for (const state of states) {
+      if ((state.burg.treasury || 0) <= state.settled + 0.01) continue;
+      this.fillDemand(index, state);
+      this.spendOnWants(index, state);
     }
     StateOrders.place(true);
     Trade.endRun();
@@ -189,6 +203,7 @@ export class ProductionModule {
       revenue: 0,
       workersUsed: 0,
       spent: 0,
+      settled: 0,
       outlets: { turn: 0, quotes: [] },
       demandCoverage: new Array(DEMAND_PRIORITY.length).fill(0),
       consumed: [],
@@ -205,13 +220,18 @@ export class ProductionModule {
     state.sources.turn++; // other burgs traded since the last turn
     state.outlets.turn++;
 
+    let runnerUp = Infinity; // the best other goal's gain a worker at the last decision
     while (used < workers - 0.001) {
       const workersLeft = state.population - state.workersUsed;
       const workerFraction = Math.min(1, workersLeft, workers - used);
       if (workerFraction <= 0.001) return false;
 
-      const decision = this.makeProductionDecision(index, state, state.activeGoalGoodId, workersLeft, workerFraction);
-      if (!decision) return false;
+      let decision = this.continueGoal(index, state, workersLeft, workerFraction, runnerUp);
+      if (!decision) {
+        decision = this.makeProductionDecision(index, state, state.activeGoalGoodId, workersLeft, workerFraction);
+        if (!decision) return false;
+        runnerUp = decision.runnerUp;
+      }
 
       state.activeGoalGoodId = decision.goalGoodId;
       const spent = this.executeManufacture(index, state, decision, workerFraction);
@@ -300,6 +320,7 @@ export class ProductionModule {
     const market = this.getSupplier(index, state, good);
     if (!market) return null;
     if (market !== state.market) state.sources.quotes[good.i] = undefined; // the source's stock and price moved
+    state.outlets.quotes[good.i] = undefined; // so may the best place to sell it
 
     const trade = Trade.buy({ burg, good, units, kind, source: market, terms: index.tradeTerms, budget });
     if (trade) state.log?.push({ goodId: good.i, market: market.i, kind, ...trade, sources: sources || undefined });
@@ -311,10 +332,20 @@ export class ProductionModule {
     const local = Trade.quoteMarket(state.market, goodId, state.burg);
     const good = Goods.get(goodId);
     const supplier = good && this.getSupplier(index, state, good);
-    if (!supplier) return { ...local, stock: 0 }; // a remainder too small to buy is no stock
-    if (supplier === state.market) return local;
+    const { sellPrice, carriage } = local;
+    if (!supplier || supplier === state.market) {
+      const stock = supplier ? local.stock : 0; // a remainder too small to buy is no stock
+      return { stock, buyPrice: local.buyPrice, sellPrice, carriage, source: state.market, sourceCarriage: carriage };
+    }
     const source = this.getSource(index, state, good)!;
-    return { ...local, stock: source.stock, buyPrice: source.buyPrice };
+    return {
+      stock: source.stock,
+      buyPrice: source.buyPrice,
+      sellPrice,
+      carriage,
+      source: source.source,
+      sourceCarriage: source.carriage
+    };
   }
 
   /** Where the burg buys the good this turn */
@@ -327,9 +358,9 @@ export class ProductionModule {
     return this.cached(state.sources, good, () => Trade.quoteSource(state.burg, good, index.tradeTerms));
   }
 
-  /** The best price at the burg's door for a unit of the good, in any market it reaches */
-  private getOutletPrice(index: ProductionIndex, state: BurgProductionState, good: Good): number {
-    return this.cached(state.outlets, good, () => Trade.getOutlet(state.burg, good, index.tradeTerms)?.price ?? 0);
+  /** The market paying the most at the burg's door for a unit of the good; the burg's own trades in the good drop it */
+  private getOutlet(index: ProductionIndex, state: BurgProductionState, good: Good): Outlet | null {
+    return this.cached(state.outlets, good, () => Trade.getOutlet(state.burg, good, index.tradeTerms));
   }
 
   /** The turn's quote of the good: one made this turn, or earlier while the good's rows are as they were, is what a new one would be */
@@ -394,8 +425,9 @@ export class ProductionModule {
       state.inventory[goodId] = 0;
 
       const good = Goods.get(goodId)!;
-      const market = Trade.getOutlet(state.burg, good, index.tradeTerms)?.market ?? state.market; // where it fetches the most
+      const market = this.getOutlet(index, state, good)?.market ?? state.market; // where it fetches the most
       const trade = Trade.sell({ burg: state.burg, good, units, taxRate, market, terms: index.tradeTerms });
+      state.outlets.quotes[goodId] = undefined; // the sale moved its price
       if (!trade) continue;
 
       const revenue = trade.units * trade.price - trade.tax - (trade.tariff || 0);
@@ -516,6 +548,7 @@ export class ProductionModule {
         if (own && own.price <= this.quote(index, state, candidate.goodId).buyPrice) {
           const kept = Trade.keep({ burg, good: candidate.good, units, budget });
           if (kept) {
+            state.outlets.quotes[candidate.goodId] = undefined; // taking it back moved its price
             state.log?.push({ goodId: candidate.goodId, market: state.market.i, kind: DEAL_KINDS.kept, ...kept });
             units -= kept.units;
           }
@@ -655,15 +688,28 @@ export class ProductionModule {
     return 1 + BURG_SPECIALIZATION * Math.min(own, 1) + MARKET_SPECIALIZATION * excess;
   }
 
-  /** What a unit made brings the burg: the sell price less its own sales tax, as its inputs' prices hold theirs */
+  /** What the workers' output brings the burg per worker: the price its lot fetches where it fetches most, less its own sales tax, as its inputs' prices hold theirs */
   private getSaleValue(
     index: ProductionIndex,
     state: BurgProductionState,
     good: Good,
     quote: MarketQuote,
-    modifier: number
+    modifier: number,
+    workers: number
   ): number {
-    return Math.max(quote.sellPrice, this.getOutletPrice(index, state, good)) * modifier * (1 - state.taxRate);
+    const units = -modifier * workers;
+    const outlet = this.getOutlet(index, state, good);
+    let price = Trade.atLot(quote.sellPrice, quote.carriage, state.market, good, units);
+    // a lot never fetches more than a unit, so an outlet paying no more for a unit cannot win
+    if (outlet && outlet.market !== state.market && outlet.price > price)
+      price = Math.max(price, Trade.atLot(outlet.price, outlet.carriage, outlet.market, good, units));
+    return Math.max(price, 0) * modifier * (1 - state.taxRate);
+  }
+
+  /** What buying the units costs at the burg's door where it buys them: the lot moves the price */
+  private getLotCost(quote: MarketQuote, goodId: number, units: number): number {
+    if (units <= 0) return 0;
+    return units * Trade.atLot(quote.buyPrice, quote.sourceCarriage, quote.source, Goods.get(goodId)!, units);
   }
 
   private buildImmediateManufactureCandidate(
@@ -673,7 +719,8 @@ export class ProductionModule {
     units: number,
     goalGoodId: number,
     stock: PlanningStock | undefined,
-    quotes: MarketQuote[]
+    quotes: MarketQuote[],
+    saleValue: number // per worker, for a lot of the units
   ): { action: PlannedAction; candidate: ProductionCandidate } | null {
     let maxYield = Infinity;
     let marketCostTotal = 0;
@@ -697,12 +744,15 @@ export class ProductionModule {
       const inventoryAvailable = (stock?.inventory ?? state.inventory)[ingredient.goodId] || 0;
       const amountNeeded = actualUnits * ingredient.amount;
       const fromMarket = Math.max(0, amountNeeded - Math.min(inventoryAvailable, amountNeeded));
-      marketCostTotal += fromMarket * quote.buyPrice;
+      marketCostTotal += this.getLotCost(quote, ingredient.goodId, fromMarket);
     }
 
     const modifier = this.getWorkerOutput(index, state, recipe.good);
     quotes[recipe.good.i] ??= this.quote(index, state, recipe.good.i);
-    const sellValue = this.getSaleValue(index, state, recipe.good, quotes[recipe.good.i], modifier);
+    const sellValue =
+      actualUnits === units
+        ? saleValue
+        : this.getSaleValue(index, state, recipe.good, quotes[recipe.good.i], modifier, actualUnits);
     const ingredientCost = marketCostTotal / actualUnits;
     const score = sellValue - ingredientCost;
 
@@ -750,7 +800,7 @@ export class ProductionModule {
       const fromMarket = Math.min(units * amount - fromInventory, market);
       reserved.inventory[goodId] = inventory - fromInventory;
       reserved.market[goodId] = market - fromMarket;
-      marketCost += fromMarket * quote.buyPrice;
+      marketCost += this.getLotCost(quote, goodId, fromMarket);
       const remaining = units * amount - fromInventory - fromMarket;
       if (remaining > 0.001) missing.push({ goodId, amount: remaining });
     }
@@ -767,23 +817,20 @@ export class ProductionModule {
     workersLeft: number,
     path: boolean[] = [],
     stock?: PlanningStock,
-    quotes: MarketQuote[] = []
+    quotes: MarketQuote[] = [],
+    saleValue?: number // per worker, when the caller knows it
   ): GoalActionPlan | null {
     if (workersLeft <= 0 || targetUnits <= 0 || targetUnits > workersLeft + 0.001) return null;
     if (path[good.i]) return null;
 
+    const recipeList = index.recipesByOutput[good.i];
+    if (!recipeList?.length) return null;
     path[good.i] = true;
 
     const modifier = this.getWorkerOutput(index, state, good);
     quotes[good.i] ??= this.quote(index, state, good.i);
-    const sellValuePerUnit = this.getSaleValue(index, state, good, quotes[good.i], modifier);
+    const sellValuePerUnit = saleValue ?? this.getSaleValue(index, state, good, quotes[good.i], modifier, targetUnits);
     const totalProjectedGain = sellValuePerUnit * targetUnits;
-
-    const recipeList = index.recipesByOutput[good.i];
-    if (!recipeList?.length) {
-      path[good.i] = false;
-      return null;
-    }
 
     let bestPlan: GoalActionPlan | null = null;
     let bestStock: PlanningStock | null = null;
@@ -796,7 +843,8 @@ export class ProductionModule {
         targetUnits,
         good.i,
         stock,
-        quotes
+        quotes,
+        sellValuePerUnit
       );
       if (immediate) {
         const perUnitNetGain = immediate.candidate.score;
@@ -905,20 +953,93 @@ export class ProductionModule {
     const candidates: ProductionCandidate[] = [];
     const quotes: MarketQuote[] = []; // No trades occur within a decision.
 
-    let chosenGoal: GoalActionPlan | null = null;
     let activeGoal: GoalActionPlan | null = null;
-    for (const good of index.productiveGoods) {
-      const goalPlan = this.planGoodAction(index, state, good, fraction, fraction, workersLeft, [], undefined, quotes);
+    const plans: GoalActionPlan[] = [];
+    let unplanned = -Infinity; // the bound of the first goal left unplanned
+    let best = -Infinity;
+    for (const { good, bound, step, saleValue } of this.rankGoals(index, state, activeGoalGoodId, fraction, quotes)) {
+      // it and the rest cannot beat the choice: planned only for the debug log
+      const beaten = unplanned > -Infinity || (plans.length > 0 && bound <= best + 0.001);
+      if (beaten && unplanned === -Infinity) unplanned = bound;
+      if (beaten && !state.log) break;
+      const goalPlan = this.planGoodAction(
+        index,
+        state,
+        good,
+        step,
+        step,
+        workersLeft,
+        [],
+        undefined,
+        quotes,
+        saleValue
+      );
       if (!goalPlan || goalPlan.projectedGain <= 0) continue;
       if (state.log) candidates.push(goalPlan.candidate); // only the debug log reads them
+      if (beaten) continue;
       if (good.i === activeGoalGoodId) activeGoal = goalPlan;
-      if (!chosenGoal || goalPlan.normalizedGain > chosenGoal.normalizedGain + 0.001) chosenGoal = goalPlan;
+      plans.push(goalPlan);
+      best = Math.max(best, goalPlan.normalizedGain);
     }
 
+    let chosenGoal: GoalActionPlan | null = null;
+    for (const plan of plans)
+      if (!chosenGoal || plan.normalizedGain > chosenGoal.normalizedGain + 0.001) chosenGoal = plan;
     if (activeGoal && chosenGoal && activeGoal.normalizedGain >= chosenGoal.normalizedGain) chosenGoal = activeGoal;
     if (!chosenGoal) return null;
 
-    return { action: chosenGoal.action, candidates, goalGoodId: chosenGoal.goalGoodId };
+    // what the best other goal could gain: what it was planned to, or at most the first unplanned one's bound
+    let runnerUp = unplanned;
+    for (const plan of plans) if (plan !== chosenGoal) runnerUp = Math.max(runnerUp, plan.normalizedGain);
+    return { action: chosenGoal.action, candidates, goalGoodId: chosenGoal.goalGoodId, runnerUp };
+  }
+
+  /** The goal under way again, with no new decision, while it still beats the best other goal of the last one: the burg's own trades only make the others' inputs dearer */
+  private continueGoal(
+    index: ProductionIndex,
+    state: BurgProductionState,
+    workersLeft: number,
+    fraction: number,
+    runnerUp: number
+  ): ProductionDecision | null {
+    const good = state.activeGoalGoodId === null ? undefined : Goods.get(state.activeGoalGoodId);
+    if (!good || runnerUp === Infinity) return null;
+    const quotes: MarketQuote[] = [];
+    quotes[good.i] = this.quote(index, state, good.i);
+    const modifier = this.getWorkerOutput(index, state, good);
+    const step = this.getStep(index, state, good, modifier, fraction);
+    const saleValue = this.getSaleValue(index, state, good, quotes[good.i], modifier, step);
+    if (saleValue <= runnerUp + 0.001) return null;
+    const plan = this.planGoodAction(index, state, good, step, step, workersLeft, [], undefined, quotes, saleValue);
+    if (!plan || plan.projectedGain <= 0 || plan.normalizedGain <= runnerUp + 0.001) return null;
+    return { action: plan.action, candidates: state.log ? [plan.candidate] : [], goalGoodId: good.i, runnerUp };
+  }
+
+  /** Goals that can pay with the workers a step of each takes, the active one first, then best paying first: a goal gains at most its sale value a worker */
+  private rankGoals(
+    index: ProductionIndex,
+    state: BurgProductionState,
+    activeGoalGoodId: number | null,
+    fraction: number,
+    quotes: MarketQuote[]
+  ): RankedGoal[] {
+    const goals: RankedGoal[] = [];
+    for (const good of index.productiveGoods) {
+      quotes[good.i] ??= this.quote(index, state, good.i);
+      const modifier = this.getWorkerOutput(index, state, good);
+      const step = this.getStep(index, state, good, modifier, fraction);
+      const saleValue = this.getSaleValue(index, state, good, quotes[good.i], modifier, step);
+      if (good.i === activeGoalGoodId) goals.push({ good, bound: Infinity, step, saleValue });
+      else if (saleValue > 0) goals.push({ good, bound: saleValue, step, saleValue });
+    }
+    return goals.sort((a, b) => b.bound - a.bound);
+  }
+
+  /** Workers a step of the good takes: what sells a share of a day's sales where it sells, so the burg stops where the price stops paying */
+  private getStep(index: ProductionIndex, state: BurgProductionState, good: Good, modifier: number, fraction: number) {
+    const market = this.getOutlet(index, state, good)?.market ?? state.market;
+    const workers = (LOT_DEPTH_SHARE * Trade.getDepth(market, good)) / modifier;
+    return Math.max(Math.min(workers, fraction), Math.min(MIN_STEP, fraction));
   }
 
   private buildRecipesArray(goods: Good[]): Recipe[] {
@@ -1067,7 +1188,8 @@ type ProductionIndex = {
 };
 
 type PlanningStock = { inventory: number[]; market: number[] };
-type MarketQuote = ReturnType<typeof Trade.quoteMarket>;
+type RankedGoal = { good: Good; bound: number; step: number; saleValue: number }; // bound orders the planning
+type MarketQuote = ReturnType<typeof Trade.quoteMarket> & { source: Market; sourceCarriage: number }; // source: where the burg buys
 
 type BurgProductionState = {
   burg: Burg;
@@ -1081,7 +1203,8 @@ type BurgProductionState = {
   revenue: number;
   workersUsed: number;
   spent: number; // on the burg's needs and wants this run
-  outlets: QuoteCache<number>; // the best price at the burg's door
+  settled: number; // the treasury after the burg last bought for its people
+  outlets: QuoteCache<Outlet | null>; // the market paying the most at the burg's door
   demandCoverage: number[]; // by demand category: what the burg's purchases covered so far this run
   consumed: number[]; // by good: units the burg bought or kept for itself this run
   workersByGood: number[]; // workers put into each good this run, for division of labor
@@ -1099,6 +1222,7 @@ type ProductionDecision = {
   action: PlannedAction;
   candidates: ProductionCandidate[];
   goalGoodId: number | null;
+  runnerUp: number; // the best other goal's gain a worker, or at most this
 };
 
 export type ProductionCandidate = {

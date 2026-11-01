@@ -130,6 +130,34 @@ describe("TradeModule", () => {
       expect(center.treasury).toBeCloseTo(margins, 1);
     });
 
+    it("pays the license out of the margin as it comes in, and what the margin left unpaid at the day's end", () => {
+      const market: Market = { i: 1, centerBurgId: 1, color: "#f00", goods: { 0: { stock: 100, price: 10 } } };
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      Markets["marketById"] = [market, market];
+      globalThis.pack.markets = [market];
+      const center: Burg = { i: 1, cell: 1, treasury: 0 } as any;
+      globalThis.pack.burgs = [{ i: 0 } as any, center];
+      const good = globalThis.pack.goods[0];
+      const margin = (units: number) => units * 10 * tradeModule.getMarginRate(market);
+
+      market.feePaid = 1;
+      tradeModule.owesLicenses();
+      tradeModule.buy({ burg: center, good, units: 2, kind: DEAL_KINDS.demand });
+      expect(center.treasury).toBe(0); // all of it went to the license
+      tradeModule.buy({ burg: center, good, units: 2, kind: DEAL_KINDS.demand });
+      expect(center.treasury).toBeCloseTo(margin(4) - 1, 5);
+      tradeModule.settleLicenses();
+      expect(center.treasury).toBeCloseTo(margin(4) - 1, 5); // paid off already
+
+      market.feePaid = 5; // a quiet market
+      center.treasury = 0;
+      tradeModule.owesLicenses();
+      tradeModule.buy({ burg: center, good, units: 2, kind: DEAL_KINDS.demand });
+      expect(center.treasury).toBe(0);
+      tradeModule.settleLicenses();
+      expect(center.treasury).toBeCloseTo(margin(2) - 5, 5);
+    });
+
     it("buy() adds the market's state sales tax to the price and records it for that state", () => {
       const market: Market = { i: 1, centerBurgId: 1, color: "#f00", goods: { 0: { stock: 100, price: 10 } } };
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
@@ -325,6 +353,25 @@ describe("TradeModule", () => {
       const purchase = tradeModule.buy({ burg, good, units: 20, kind: DEAL_KINDS.demand, budget })!;
       expect(purchase.units * purchase.price).toBeLessThanOrEqual(budget);
       expect(purchase.price).toBeGreaterThan(10 * (1 + MARGIN)); // dearer than the opening price
+    });
+
+    it("atLot() turns a unit's price at the burg's door into what buy() and sell() charge for the lot", () => {
+      const { exporter, burg, good, importGood } = setupImport();
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      tradeModule["days"] = [undefined, { depth: [20], rural: [], covered: [], bought: [], pollTaxDue: [] }] as never;
+      const unit = { buyPrice: rn(5 * (1 + MARGIN), 2) + transport, sellPrice: rn(5 * (1 - MARGIN), 2) - transport };
+
+      const buyAtLot = tradeModule.atLot(unit.buyPrice, transport, exporter, good, 10);
+      expect(buyAtLot).toBeGreaterThan(unit.buyPrice);
+      expect(importGood(10)!.price).toBeCloseTo(buyAtLot, 1);
+
+      exporter.goods[0].price = 5;
+      const sellAtLot = tradeModule.atLot(unit.sellPrice, transport, exporter, good, -10);
+      expect(sellAtLot).toBeLessThan(unit.sellPrice);
+      expect(tradeModule.sell({ burg, good, units: 10, taxRate: 0, market: exporter })!.price).toBeCloseTo(
+        sellAtLot,
+        1
+      );
     });
 
     it("adds up small trades at a cheap price and rounds it when the run ends", () => {
@@ -696,9 +743,9 @@ describe("market margin", () => {
   it("rises with the license fee the market's center paid, by the fee factor's root, in whole percents", () => {
     const market = { i: 1, centerBurgId: 1, color: "", goods: {} } as Market;
     expect(Trade.getMarginRate(market)).toBe(Math.round(MARKET_MARGIN * 100) / 100);
-    market.feePaid = 50; // a typical monarchy's
+    market.feePaid = 35; // a typical monarchy's
     expect(Trade.getMarginRate(market)).toBe(0.05);
-    market.feePaid = 150; // a fee factor of 4
+    market.feePaid = 105; // a fee factor of 4
     expect(Trade.getMarginRate(market)).toBe(Math.round(MARKET_MARGIN * 200) / 100);
   });
 });

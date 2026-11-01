@@ -2,7 +2,7 @@
 // economy run headless. A pool of workers, one per exported map, runs each candidate on every map at once; several
 // chains share the pool. Every 30 s a PROGRESS line, with the best checked on a held-out map in the real game.
 // The best is saved to .cache/best.json on every improvement and on any failure; a .cache/STOP file ends the run.
-//   node scripts/economy-tuner/search.mjs [--budget=1000] [--chains=6] [--test-seed=8888] [--url=http://localhost:5173/...]
+//   node scripts/economy-tuner/search.mjs [--budget=1000] [--chains=6] [--t0=0.3] [--test-seed=8888] [--url=http://localhost:5173/...]
 // Needs the dev server running and the maps exported (export-maps.mjs); apply.mjs writes the best into the source
 import {
   appendFileSync,
@@ -36,6 +36,7 @@ import { RANGES, readTunables, TUNABLES } from "./tunables.mjs";
 const arg = (name, fallback) => process.argv.find(a => a.startsWith(`--${name}=`))?.split("=")[1] ?? fallback;
 const budget = +arg("budget", 1000),
   chainCount = +arg("chains", 6),
+  startTemperature = +arg("t0", 0.3), // starting temperature: lower keeps the chains near the source, to refine an applied result
   testSeed = arg("test-seed", "8888"),
   url = arg("url", DEFAULT_URL);
 const CACHE = fileURLToPath(new URL("./.cache/", import.meta.url));
@@ -288,7 +289,7 @@ async function chain(index) {
     save();
   };
   consider(theta, current);
-  const T0 = 0.3,
+  const T0 = startTemperature,
     T1 = 0.005;
   for (let e = 1; e < evalsPerChain && !stopping && runs + inflight + pool.length <= budget; e++) {
     const T = T0 * (T1 / T0) ** (e / evalsPerChain);

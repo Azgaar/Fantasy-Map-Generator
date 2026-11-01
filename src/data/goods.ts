@@ -114,7 +114,7 @@ export const GOODS_DATA: GoodData[] = [
     deposits: [3, 5],
     distribution: "biome(4, 6) && (river() || random(30))",
     unit: "wain",
-    demandCoverage: { food: 0.5 },
+    demandCoverage: { food: 0.4 },
     multipliers: { cultureType: { River: 2, Lake: 1.5, Nomadic: 0.5 } },
     biomeOutput: { 4: 0.1, 6: 0.06 }
   },
@@ -239,7 +239,7 @@ export const GOODS_DATA: GoodData[] = [
     deposits: [3, 6],
     distribution: "biome(3) || (biome(2) && nth(4))",
     unit: "head",
-    demandCoverage: { utilities: 0.6, military: 0.6 },
+    demandCoverage: { utilities: 0.6, military: 0.9 },
     multipliers: { cultureType: { Nomadic: 3 } },
     biomeOutput: { 2: 0.02, 4: 0.03 }
   },
@@ -266,7 +266,7 @@ export const GOODS_DATA: GoodData[] = [
     deposits: [2, 4],
     distribution: "biome(1, 2)",
     unit: "head",
-    demandCoverage: { utilities: 0.7, military: 0.6 },
+    demandCoverage: { utilities: 0.7, military: 0.8 },
     multipliers: { cultureType: { Nomadic: 3, Generic: 0.8 } },
     biomeOutput: { 1: 0.05, 2: 0.05 }
   },
@@ -301,7 +301,7 @@ export const GOODS_DATA: GoodData[] = [
     tags: ["luxury", "mineral"],
     icon: "goods-gemstones",
     color: "#e463e4",
-    value: 27,
+    value: 33,
     carriage: 0.8,
     deposits: [1, 2],
     distribution: "minHeight(60) || (minHeight(30) && elevation() && nth(3))",
@@ -369,7 +369,7 @@ export const GOODS_DATA: GoodData[] = [
     deposits: [2, 2],
     distribution: "shore(1) && biome(6, 7, 8, 9)",
     unit: "stone",
-    demandCoverage: { luxury: 0.55 },
+    demandCoverage: { luxury: 0.7 },
     multipliers: { cultureType: { Generic: 1.2 } }
   },
   {
@@ -382,7 +382,7 @@ export const GOODS_DATA: GoodData[] = [
     deposits: [1, 2],
     distribution: "biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))",
     unit: "pelt",
-    demandCoverage: { utilities: 0.25, luxury: 0.5 },
+    demandCoverage: { utilities: 0.25, luxury: 0.75 },
     multipliers: { cultureType: { Hunting: 3 } },
     biomeOutput: { 9: 0.06, 10: 0.06 }
   },
@@ -465,7 +465,7 @@ export const GOODS_DATA: GoodData[] = [
     tags: ["luxury"],
     icon: "goods-tropicalTimber",
     color: "#a45a52",
-    value: 5,
+    value: 4,
     carriage: 1,
     deposits: [1, 2],
     distribution: "biome(5, 7) && random(50)",
@@ -743,7 +743,7 @@ export const GOODS_DATA: GoodData[] = [
       { Bronze: 0.5, Coal: 1 }
     ],
     unit: "set",
-    demandCoverage: { utilities: 0.8 },
+    demandCoverage: { utilities: 0.6 },
     multipliers: { cultureType: { Highland: 2 } }
   },
   {
@@ -778,7 +778,7 @@ export const GOODS_DATA: GoodData[] = [
     tags: ["machinery"],
     icon: "goods-artillery",
     color: "#cd7f32",
-    value: 25,
+    value: 26,
     carriage: 4,
     recipes: [
       { Iron: 2, Coal: 1 },
@@ -808,7 +808,7 @@ export const GOODS_DATA: GoodData[] = [
     tags: ["luxury"],
     icon: "goods-jewelry",
     color: "#81D8D0",
-    value: 32,
+    value: 34,
     carriage: 1.4,
     recipes: [
       { Gemstones: 1, Gold: 0.5 },

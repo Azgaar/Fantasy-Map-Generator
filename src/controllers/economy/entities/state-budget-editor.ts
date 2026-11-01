@@ -44,7 +44,7 @@ const STYLE = /* css */ `
   #stateBudgetForm td.amount { font-variant-numeric: tabular-nums }
   #stateBudgetForm td.amount input { width: 100%; text-align: right }
   #stateBudgetForm input[type="number"] { width: 4em; margin: 0 }
-  #stateBudgetForm button { font-size: 0.8em; padding: 0 0.4em; }
+  #stateBudgetForm button { font-size: 0.9em; padding: 0 0.4em; }
   #stateBudgetForm button::before { margin-right: 0.2em; }
   #stateBudgetForm .muted { color: #666 }
   #stateBudgetForm tr.total td { font-weight: bold; border-top: 1px solid #ccc }

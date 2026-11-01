@@ -13,7 +13,9 @@ export const TUNABLES = {
     MARKET_SPECIALIZATION: [0, 2],
     DEPOSIT_RICHNESS: [0.25, 4],
     BONUS_URBAN_PRODUCTION: [0, 6],
-    RURAL_OUTPUT_FACTOR: [0.5, 3]
+    RURAL_OUTPUT_FACTOR: [0.5, 3],
+    LOT_DEPTH_SHARE: [0.02, 2],
+    MIN_STEP: [0.02, 1]
   },
   "src/model/economy/trade.ts": {
     PRICE_RESPONSE: [0, 4],

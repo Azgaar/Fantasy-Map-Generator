@@ -202,12 +202,13 @@ const getStateForm = (formName: string): StateForm | undefined =>
   FORMS.find(form => (STATE_FORMS[form] as readonly string[]).includes(formName));
 
 type TaxBases = { salesTax: number; pollTax: number; marketFee: number };
+const MAX_MARKET_FEE_FACTOR = 1.5; // the most a state's market fee lies above its form's base, however high its sales tax
 
 const DEFAULT_TAX_BY_FORM: Record<string, TaxBases> = {
-  Monarchy: { salesTax: 0.1, pollTax: 0.1, marketFee: 50 },
-  Theocracy: { salesTax: 0.05, pollTax: 0.1, marketFee: 100 },
+  Monarchy: { salesTax: 0.1, pollTax: 0.1, marketFee: 35 },
+  Theocracy: { salesTax: 0.05, pollTax: 0.1, marketFee: 60 },
   Union: { salesTax: 0.1, pollTax: 0, marketFee: 0 },
-  Republic: { salesTax: 0.05, pollTax: 0.05, marketFee: 20 },
+  Republic: { salesTax: 0.05, pollTax: 0.05, marketFee: 15 },
   Anarchy: { salesTax: 0, pollTax: 0, marketFee: 0 }
 };
 const DEFAULT_TAX: TaxBases = DEFAULT_TAX_BY_FORM.Monarchy;
@@ -1128,7 +1129,7 @@ class StatesModule {
     if (!state.i || state.removed) return 0;
     const { salesTax, marketFee } = DEFAULT_TAX_BY_FORM[state.form || ""] || DEFAULT_TAX;
     if (!salesTax || !marketFee) return 0;
-    return Math.round(marketFee * minmax((state.economy.salesTax || 0) / salesTax, 0.25, 2));
+    return Math.round(marketFee * minmax((state.economy.salesTax || 0) / salesTax, 0.25, MAX_MARKET_FEE_FACTOR));
   }
 
   defineTaxRates(state: State) {
