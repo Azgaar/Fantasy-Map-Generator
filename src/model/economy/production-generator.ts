@@ -83,9 +83,7 @@ export class ProductionModule {
     const recording = EconomyDebug.start();
 
     const index = this.buildProductionIndex(pack.goods);
-    const sortedBurgs = pack.burgs
-      .filter(burg => burg.i && !burg.removed)
-      .sort((a, b) => b.population! - a.population!);
+    const sortedBurgs = this.getTurnOrder(pack.burgs.filter(burg => burg.i && !burg.removed));
 
     const states: BurgProductionState[] = [];
     for (const burg of sortedBurgs) {
@@ -105,7 +103,7 @@ export class ProductionModule {
       index.worldPopulation += population;
     }
 
-    // burgs take turns, largest first, so the first in line cannot drain a market alone; each turn a burg works, sells,
+    // burgs take turns by state and province, up to 5 workers each, so the first in line cannot drain a market alone; each turn a burg works, sells,
     // buys its needs in step with the work done, then spends what it can spare; rural people spend what their produce earned,
     // states what their taxes brought in
     let working = states;
@@ -147,6 +145,15 @@ export class ProductionModule {
       burg.production = produced.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)]] : []));
       if (log) EconomyDebug.set(burg.i!, log);
     }
+  }
+
+  /** Burgs go state by state and province by province in id order, neutrals and burgs outside a province last, largest first within each */
+  private getTurnOrder(burgs: Burg[]): Burg[] {
+    const rank = (id = 0) => id || Number.MAX_SAFE_INTEGER;
+    const province = (burg: Burg) => rank(pack.cells.province[burg.cell]);
+    return burgs.sort(
+      (a, b) => rank(a.state) - rank(b.state) || province(a) - province(b) || b.population! - a.population!
+    );
   }
 
   private buildProductionIndex(goods: Good[]): ProductionIndex {
@@ -508,10 +515,12 @@ export class ProductionModule {
     return demandGoodsByCategory;
   }
 
-  /** Buys the share of the burg's daily needs due so far, cheaper goods getting more; what it could not get waits for its next turn */
+  /** Buys the share of the burg's daily needs due so far, cheaper goods getting more, a poor burg only the cheapest; what it could not get waits for its next turn */
   private fillDemand(index: ProductionIndex, state: BurgProductionState, share = 1): void {
     const { burg, demandCoverage } = state;
     const demandTargets = getDemandTargets(burg.population || 0).map(target => target * share);
+    const poor = this.getAffluence(index, state) < share; // earns less than the needs due: only the cheapest will do
+    if (poor && (burg.treasury || 0) <= 0.01) return; // nothing to buy with, nor a want to signal
     state.sources.turn++; // other burgs traded since its last turn
 
     for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
@@ -524,6 +533,7 @@ export class ProductionModule {
         const own = this.quoteKeep(state, candidate.good);
         const quote = this.quote(index, state, candidate.goodId);
         if (!own && quote.stock <= 0.01) {
+          if (poor) continue; // the poor signal no shortage
           const costPerCoverage =
             Trade.quoteMarket(state.market, candidate.goodId, burg).buyPrice / candidate.coverageWeight;
           if (costPerCoverage > 0) missing.push({ candidate, costPerCoverage });
@@ -561,14 +571,16 @@ export class ProductionModule {
       };
 
       // every good covering the need gets its share; a good nobody stocks turns its buyers away, raising its price
-      const options = [...sortedCandidates, ...missing];
-      const shares = this.getShares(index, state, categoryIndex, options);
-      const wanted = shortage;
-      options.forEach(({ candidate }, k) => {
-        if (k >= sortedCandidates.length)
-          Trade.signalShortage(state.market, candidate.good, (wanted * shares[k]) / candidate.coverageWeight);
-        else buy(candidate, Math.min(shortage, wanted * shares[k]));
-      });
+      if (!poor) {
+        const options = [...sortedCandidates, ...missing];
+        const shares = this.getShares(index, state, categoryIndex, options);
+        const wanted = shortage;
+        options.forEach(({ candidate }, k) => {
+          if (k >= sortedCandidates.length)
+            Trade.signalShortage(state.market, candidate.good, (wanted * shares[k]) / candidate.coverageWeight);
+          else buy(candidate, Math.min(shortage, wanted * shares[k]));
+        });
+      }
       for (const { candidate } of sortedCandidates) {
         if (shortage <= 0.001 || (burg.treasury || 0) <= 0.01) break;
         buy(candidate, shortage);
@@ -576,11 +588,11 @@ export class ProductionModule {
     }
   }
 
-  /** How many days of its needs a person of the burg earns so far, at least 1 */
+  /** How many days of its needs a person of the burg earns so far */
   private getAffluence(index: ProductionIndex, state: BurgProductionState): number {
     const income = (state.burg.treasury || 0) + state.spent;
     const perPerson = state.burg.population ? income / state.burg.population : 0;
-    return index.needsCost ? Math.max(1, perPerson / index.needsCost) : 1;
+    return index.needsCost ? perPerson / index.needsCost : 1;
   }
 
   /** Shares of the need's spending by price per coverage; the richer the burg, the more it pays for goods it has had little of */
@@ -590,7 +602,7 @@ export class ProductionModule {
     category: number,
     options: { candidate: DemandGoodCandidate; costPerCoverage: number }[]
   ): number[] {
-    const bonus = NOVELTY * Math.log10(this.getAffluence(index, state));
+    const bonus = NOVELTY * Math.log10(Math.max(1, this.getAffluence(index, state)));
     const covered = state.demandCoverage[category];
     return getVarietyShares(
       options.map(({ candidate, costPerCoverage }) => {
@@ -610,7 +622,7 @@ export class ProductionModule {
     if (budget <= 0.01) return;
 
     const targets = getDemandTargets(burg.population || 0);
-    const affluence = this.getAffluence(index, state);
+    const affluence = Math.max(1, this.getAffluence(index, state));
     let left = budget;
     DEMAND_PRIORITY.forEach((category, categoryIndex) => {
       // what the capped wants leave goes to those that grow with affluence: the rich spend on luxury, not on more bread

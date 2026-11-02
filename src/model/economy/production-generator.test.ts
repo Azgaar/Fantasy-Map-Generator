@@ -57,7 +57,7 @@ beforeEach(() => {
   burg = { i: 1, cell: 0, population: 100 } as Burg;
   globalThis.pack = {
     goods: catalogue,
-    cells: { good: [0], market: [1, 2] },
+    cells: { good: [0], market: [1, 2], province: [0, 0] },
     burgs: [{ i: 0 }, burg],
     markets: [market],
     deals: []
@@ -656,5 +656,22 @@ describe("the run's rounds", () => {
 
     production.produce();
     expect(turns).toEqual([1, 2, 2]); // burg 2 idles, then tries again after burg 1's last work
+  });
+});
+
+describe("the turn order", () => {
+  it("goes state by state and province by province in id order, neutrals and burgs outside a province last", () => {
+    globalThis.pack.cells.province = [3, 1, 2, 0, 0] as never;
+    const burgs = [
+      { i: 1, cell: 0, state: 2, population: 10 },
+      { i: 2, cell: 1, state: 1, population: 3 },
+      { i: 3, cell: 2, state: 1, population: 9 },
+      { i: 4, cell: 0, state: 2, population: 1 },
+      { i: 5, cell: 3, state: 0, population: 50 },
+      { i: 6, cell: 4, state: 1, population: 20 }
+    ] as Burg[];
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    const order = production["getTurnOrder"](burgs).map(burg => burg.i);
+    expect(order).toEqual([2, 3, 6, 1, 4, 5]);
   });
 });
