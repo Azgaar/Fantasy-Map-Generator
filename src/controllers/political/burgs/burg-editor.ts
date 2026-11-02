@@ -185,7 +185,7 @@ function renderDialog(): void {
             <div data-tip="${sentences(EconomyTerms.wealth(), EconomyTerms.product())}">
               <div class="label">${t("Wealth")}:</div>
               <span id="burgWealth"></span>
-              <span id="burgEconomyOverview" data-tip="${EconomyTerms.open()}" class="icon-chart-bar pointer" style="margin-left: 0.3em"></span>
+              <span id="burgWealthEconomy" data-tip="${EconomyTerms.open()}" class="icon-chart-bar pointer" style="margin-left: 0.3em"></span>
             </div>
             <div data-tip="${t("Burg tags (comma-separated)")}">
               <div class="label"><label for="burgTags">${t("Tags")}:</label></div>
@@ -233,7 +233,7 @@ function renderDialog(): void {
         <button id="burgSetPreviewLink" data-tip="${t("Set custom burg map URL")}" class="icon-map-o"></button>
         <button id="burgLocate" data-tip="${t("Zoom map and center view in the burg")}" class="icon-target"></button>
         <button
-          id="burgburgEconomyOverview"
+          id="burgEconomyButton"
           data-tip="${EconomyTerms.open()}"
           class="icon-chart-bar"
         ></button>
@@ -263,7 +263,7 @@ function renderDialog(): void {
   ensureEl("burgCulture").addEventListener("change", changeCulture);
   ensureEl("burgNameReCulture").addEventListener("click", generateNameCulture);
   ensureEl("burgPopulation").addEventListener("change", changePopulation);
-  ensureEl("burgEconomyOverview").addEventListener("click", showburgEconomyOverview);
+  ensureEl("burgWealthEconomy").addEventListener("click", showBurgEconomy);
   ensureEl("burgTags").addEventListener("change", changeTags);
   ensureEl("burgBody")
     .querySelectorAll<HTMLElement>(".burgFeature")
@@ -289,7 +289,7 @@ function renderDialog(): void {
   ensureEl("burgLock").addEventListener("click", toggleBurgLockButton);
   ensureEl("burgRemove").addEventListener("click", removeSelectedBurg);
   ensureEl("burgTemperatureGraph").addEventListener("click", showTemperatureGraph);
-  ensureEl("burgburgEconomyOverview").addEventListener("click", showburgEconomyOverview);
+  ensureEl("burgEconomyButton").addEventListener("click", showBurgEconomy);
 }
 
 function getSelectedId(): number {
@@ -742,7 +742,7 @@ function showTemperatureGraph(): void {
   void Controllers.TemperatureGraph.open(id);
 }
 
-function showburgEconomyOverview(): void {
+function showBurgEconomy(): void {
   const id = getSelectedId();
   Controllers.burgEconomyOverview.open(id);
 }

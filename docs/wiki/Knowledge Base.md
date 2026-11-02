@@ -830,7 +830,7 @@ On the biggest burgs, favoring capitals, ports and crossroads. To change them, o
 
 ### What is the market margin?
 
-A market buys below its price and sells above it by its margin, which goes to the merchants of the burg at its center, so busy markets make their hub rich. It is 4% where the market pays little or no license and rises with the state's license fee: 5% under a typical monarchy, up to 8% under a greedy theocracy. See it in the Markets overview
+A market buys below its price and sells above it by its margin, which goes to the merchants of the burg at its center, so busy markets make their hub rich. It is 4% where the market pays little or no license, as under unions and republics, and rises with the state's license fee: 5% under a typical monarchy, up to 6% under a greedy theocracy. See it in the Markets overview
 
 ### What do Sales, Buys and Value mean in the Markets overview?
 
@@ -838,7 +838,7 @@ Sales is what burgs paid the market for its goods, Buys is what it paid burgs fo
 
 ### How is production calculated?
 
-The countryside produces raw goods depending on its people and biome. Burgs make products from those goods and sell where they get the most. Prices differ between markets with supply and demand. To see what a burg makes, click its pie on the Goods layer or the production button in the Burg Editor; Tools -> Goods -> production chains shows what each product needs
+The countryside produces raw goods depending on its people and biome. Burgs make products from those goods and sell where they get the most. Prices differ between markets with supply and demand. To see what a burg makes, click its pie on the Goods layer or the chart button in the Burg Editor; Tools -> Goods -> production chains shows what each product needs
 
 ### What does the Goods layer show?
 
@@ -846,7 +846,7 @@ Each cell in the color of its most valuable good, icons on deposits, and pies of
 
 ### What is prosperity? How happy are a burg's people?
 
-How well people live, from 0% to 100%, based on what they can buy; bare needs is about 20%. It is not happiness. See it in Tools -> Burgs, the Burg Editor and Tools -> States
+How well people live, from 0% to 100%, based on what they can buy; bare needs is about 17%. It is not happiness. See it in Tools -> Burgs, the Burg Editor and Tools -> States
 
 ### How does trade work?
 
@@ -862,7 +862,7 @@ It animates the day's deals as flows between burgs. Click a flow to see the deal
 
 ### Where can I see how rich a state is?
 
-Open Tools -> States: Treasury shows what the state keeps and Prosperity how well its people live. Click either to open the state's Economy dialog with its product, wealth, trade and main goods
+Open Tools -> States: Balance shows what the state keeps of the day's taxes and Prosperity how well its people live. Click either to open the state's Economy dialog with its product, wealth, trade and main goods
 
 ### What taxes does a state collect?
 
@@ -870,7 +870,7 @@ A sales tax on every sale, a poll tax per person, a license fee from each market
 
 ### How do I change a state's taxes?
 
-Open Tools -> States and click the state's Treasury to open its Economy dialog, then press the bank button. There you set taxes, tariffs and how the budget is spent
+Open Tools -> States and click the state's Balance to open its Economy dialog, then press the bank button. There you set taxes, tariffs and how the budget is spent
 
 ### What are tariffs and embargoes?
 
@@ -886,7 +886,7 @@ The share of state spending officials pocket. It depends on the form of governme
 
 ### What does a state spend its taxes on?
 
-Court and clergy, administration, infrastructure and military; the treasury keeps the rest. Change the shares in the state's taxes dialog
+Court and clergy, administration, infrastructure and military; what is left stays in its balance. Change the shares in the state's taxes dialog
 
 ### What does each state expense achieve?
 
@@ -900,9 +900,9 @@ How firmly a province holds together, from 0% to 100%. Prosperity, court and cle
 
 They have no taxes or budget of their own. To see a province's economy, click its Prosperity in Tools -> Provinces
 
-### What is a burg's treasury?
+### What is a burg's balance?
 
-What the burg has at the end of the day after selling, buying and paying taxes. See it in the burg's Economy Overview (the production button in the Burg Editor). It can be negative
+What the burg has at the end of the day after selling, buying and paying taxes. See it as Day Balance in the burg's Economy Overview (the chart button in the Burg Editor). It can be negative
 
 ### How do I make a burg richer or poorer?
 

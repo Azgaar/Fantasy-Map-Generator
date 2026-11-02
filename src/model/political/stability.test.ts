@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Goods } from "@/model/economy/goods-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import { StateEconomy } from "@/model/economy/state-economy";
-import { Military } from "./military-generator";
+import { Military, UPKEEP_COST } from "./military-generator";
 import { Stability } from "./stability";
 import { noFinance } from "./states-generator";
 
@@ -27,7 +27,7 @@ beforeEach(() => {
         rural: 100, // 100 000 people
         urban: 0,
         military: army(500), // half a percent of them
-        economy: { ...noFinance(), spent: { ...noFinance().spent, military: 40 } }
+        economy: { ...noFinance(), spent: { ...noFinance().spent, military: UPKEEP_COST } }
       }
     ]
   } as any;
@@ -35,7 +35,7 @@ beforeEach(() => {
 
 describe("Military.getUpkeep", () => {
   it("is the military spending against what the forces' power needs, up to 1", () => {
-    expect(Military.getUpkeep(1)).toBe(1); // 500 troops of power 1 need 20
+    expect(Military.getUpkeep(1)).toBe(1); // 500 troops of power 1 need half of it
     pack.states[1].military = army(2000) as any;
     expect(Military.getUpkeep(1)).toBe(0.5);
   });

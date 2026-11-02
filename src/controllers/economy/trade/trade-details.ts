@@ -94,8 +94,8 @@ const columns: EditorColumn<TradeDetailRow>[] = [
   },
   {
     key: "income",
-    label: t("Income"),
-    tip: sentences(tips.income, t("Click to sort by {{column}}", { column: t("Income") })),
+    label: t("Revenue"),
+    tip: sentences(tips.income, t("Click to sort by {{column}}", { column: t("Revenue") })),
     width: "5em",
     sortBy: item => Math.abs(item.income),
     defaultSort: "desc"
@@ -165,7 +165,7 @@ function renderDialog(): void {
         <div id="tradeDetailsFooter" class="totalLine">
           <div style="margin-left: 5px">${t("Distance")}: <span id="tradeDetailsFooterDistance">0</span></div>
           <div data-col="units" style="margin-left: 12px" data-tip="${t("Total traded units")}">${t("Units")}: <span id="tradeDetailsFooterUnits">0</span></div>
-          <div data-col="income" style="margin-left: 12px" data-tip="${tips.income}">${t("Income")}: <span id="tradeDetailsFooterIncome">0</span></div>
+          <div data-col="income" style="margin-left: 12px" data-tip="${tips.income}">${t("Revenue")}: <span id="tradeDetailsFooterIncome">0</span></div>
         </div>
         <div id="tradeDetailsBottom">${economyWikiButton("tradeDetailsWiki")}</div>
       </div>

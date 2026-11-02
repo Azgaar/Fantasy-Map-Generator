@@ -805,7 +805,7 @@ export class TradeModule {
     const due = this.licenseDue[market.i] || 0;
     const toLicense = amount > 0 ? Math.min(due, amount) : 0; // a margin given back on goods kept stays with the center
     if (toLicense) this.licenseDue[market.i] = due - toLicense;
-    center.treasury = rn((center.treasury || 0) + amount - toLicense, 2);
+    center.treasury = (center.treasury || 0) + amount - toLicense;
   }
 
   /** Each market's center owes its license for the day, paid out of the margin as it comes in */
@@ -819,7 +819,7 @@ export class TradeModule {
     for (const market of pack.markets) {
       const due = this.licenseDue[market.i];
       const center = pack.burgs[market.centerBurgId];
-      if (due && center?.i && !center.removed) center.treasury = rn((center.treasury || 0) - due, 2);
+      if (due && center?.i && !center.removed) center.treasury = (center.treasury || 0) - due;
     }
     this.licenseDue = [];
   }

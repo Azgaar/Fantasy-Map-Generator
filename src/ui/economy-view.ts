@@ -51,9 +51,9 @@ export const EconomyTerms = {
   stateProduct: () => t("Product: what the state's people make in a day"),
   wealth: () => t("Wealth: product per person"),
   treasury: () => t("Balance: the burg's money at the end of the day"),
-  burgAdjustments: () => t("Adjustments: the burg's income or costs a day besides trade, set by you"),
-  stateTreasury: () => t("Treasury balance: the day's taxes less the state's expenses"),
-  adjustments: () => t("Adjustments: the state's income or costs a day besides taxes, set by you"),
+  burgAdjustments: () => t("Adjustments: the burg's revenue or costs a day besides trade, set by you"),
+  stateTreasury: () => t("Balance: the day's taxes less the state's expenses"),
+  adjustments: () => t("Adjustments: the state's revenue or costs a day besides taxes, set by you"),
   budget: () => t("Expenses: the shares of its taxes the state spends"),
   expenseTip: (expense: Expense) =>
     ({
@@ -176,7 +176,7 @@ export const tradeColumnTips = () => ({
   carriage: sentences(t("Carriage per unit"), t("Transportation price between the market and the burg")),
   tax: sentences(t("Sales tax per unit"), t("Paid by the seller to its state")),
   tariff: sentences(t("Import tariff per unit"), t("Paid by the burg to the importing market's state")),
-  income: sentences(t("Burg total income"), t("Positive on a sale, negative on a purchase"))
+  income: sentences(t("Burg total revenue"), t("Positive on a sale, negative on a purchase"))
 });
 
 /** Where a burg's trade with a market stands: the route it is carried along, whether it is an import, and the states its taxes go to */
@@ -255,7 +255,7 @@ export function tradeCellTips(cell: TradeCell) {
           rate(tariffRate)
         )
       : t("No tariff: not an import from another state"),
-    income: `${t("Burg total income")}: ${formula}`
+    income: `${t("Burg total revenue")}: ${formula}`
   };
 }
 
@@ -308,7 +308,7 @@ export function mountAdjustments(
     container.innerHTML = /* html */ `${ADJUSTMENTS_STYLE}<div class="adjustments">
       <div class="head" data-tip="${tip}">${renderHead()}</div>
       <div class="lines" ${expanded ? "" : "hidden"}>${rows.join("")}
-        <button type="button" class="add icon-plus" data-tip="${t("Add an income or a cost")}">${t("Add")}</button>
+        <button type="button" class="add icon-plus" data-tip="${t("Add revenue or a cost")}">${t("Add")}</button>
       </div>
     </div>`;
   };

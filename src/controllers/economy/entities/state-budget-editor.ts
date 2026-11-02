@@ -193,7 +193,7 @@ function renderForm(state: State): string {
       <tbody id="stateBudget">
         <tr><th colspan="3" data-tip="${EconomyTerms.budget()}">${t("Expenses")}</th><th class="actions"><button id="stateBudgetReset" type="button" class="icon-arrows-cw" data-tip="${t("Reset the budget to the state's defaults")}">${t("Reset")}</button></th></tr>
         ${EXPENSES.map(expense => shareRow(expense, EXPENSE_LABELS[expense], EconomyTerms.expenseTip(expense), budget[expense], amount(-state.economy.spent[expense], "negative"))).join("")}
-        <tr class="total"><td data-tip="${EconomyTerms.stateTreasury()}">${t("Balance")}</td><td></td><td id="stateBudgetBalance"></td>${amount(state.economy.treasury, tone(state.economy.treasury), EconomyTerms.stateTreasury())}</tr>
+        <tr class="total"><td data-tip="${EconomyTerms.stateTreasury()}">${t("Day Balance")}</td><td></td><td id="stateBudgetBalance"></td>${amount(state.economy.treasury, tone(state.economy.treasury), EconomyTerms.stateTreasury())}</tr>
         ${shareRow("corruption", t("Corruption"), EconomyTerms.corruption(), budget.corruption, amount(-corruption, "negative"))}
       </tbody>
       <tbody>

@@ -54,7 +54,7 @@ type MarketDealRow = {
 };
 
 const tips = tradeColumnTips();
-const marketIncomeTip = sentences(t("Market income"), t("Positive when the market sells, negative when it buys"));
+const marketIncomeTip = sentences(t("Market revenue"), t("Positive when the market sells, negative when it buys"));
 const columns: EditorColumn<MarketDealRow>[] = [
   { key: "icon", width: "2em", permanent: true },
   { key: "good", label: t("Good"), width: "6.8em", permanent: true, sortBy: row => row.good.name, sortType: "alpha" },
@@ -111,8 +111,8 @@ const columns: EditorColumn<MarketDealRow>[] = [
   },
   {
     key: "income",
-    label: t("Income"),
-    tip: sentences(marketIncomeTip, t("Click to sort by {{column}}", { column: t("Income") })),
+    label: t("Revenue"),
+    tip: sentences(marketIncomeTip, t("Click to sort by {{column}}", { column: t("Revenue") })),
     width: "6em",
     sortBy: row => row.income
   },
@@ -278,7 +278,7 @@ function renderDealLine(row: MarketDealRow): string {
       <div data-col="carriage" data-tip="${cellTips.carriage}">${money(carriage, false)}</div>
       <div data-col="tax" data-tip="${cellTips.tax}">${money(tax, false)}</div>
       <div data-col="tariff" data-tip="${cellTips.tariff}">${tariffCell(tariff, isImport)}</div>
-      <div data-col="income" class="${tone(income)}" data-tip="${t("Market income")}: ${formula}">${formatPrice(rn(income, 2))}</div>
+      <div data-col="income" class="${tone(income)}" data-tip="${t("Market revenue")}: ${formula}">${formatPrice(rn(income, 2))}</div>
     </div>`;
 }
 
@@ -325,7 +325,7 @@ function renderTotals(rows: MarketDealRow[]): void {
         )
       )
     ),
-    total(t("Income"), marketIncomeTip, `<span class="${tone(income)}">${formatPrice(rn(income, 2))}</span>`)
+    total(t("Revenue"), marketIncomeTip, `<span class="${tone(income)}">${formatPrice(rn(income, 2))}</span>`)
   ].join("");
 }
 
@@ -354,7 +354,7 @@ function downloadDealsCsv(): void {
   });
   Csv.download(
     `Market_${activeMarketId}_Deals`,
-    ["Id", "Good", "Type", "Burg", "Units", "Net Unit Price", "Carriage", "Tax", "Tariff", "Income"],
+    ["Id", "Good", "Type", "Burg", "Units", "Net Unit Price", "Carriage", "Tax", "Tariff", "Revenue"],
     rows
   );
 }

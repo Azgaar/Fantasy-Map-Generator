@@ -52,7 +52,7 @@ interface Platoon {
   children?: Platoon[]; // merged platoons
 }
 
-const UPKEEP_COST = 40; // military spending a day that keeps troops of power 1, a population point's worth
+export const UPKEEP_COST = 20; // military spending a day that keeps troops of power 1, a population point's worth
 const MIN_UPKEEP = 0.05; // unpaid troops still fight, if barely
 const EQUIPMENT_DAYS = 365; // days of a state's consumption of a unit's goods that equip its troops
 const FRONT_DEPTH = 2; // lines of cells behind the border a state at war deploys its regiments to

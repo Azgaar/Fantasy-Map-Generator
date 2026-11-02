@@ -142,6 +142,7 @@ export class ProductionModule {
     pack.cells.prosperity = Prosperity.getCellsProsperity(rural);
 
     for (const { burg, produced, revenue, ingredientCosts, log } of states) {
+      burg.treasury = rn(burg.treasury || 0, 2); // unrounded during the run, so sub-cent margins add up
       burg.product = rn(revenue - ingredientCosts, 2); // a burg whose inputs cost more than its sales made a loss
       burg.production = produced.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)]] : []));
       if (log) EconomyDebug.set(burg.i!, log);
@@ -271,7 +272,7 @@ export class ProductionModule {
       if (trade) {
         const marketCost = trade.units * trade.price;
         state.ingredientCosts += marketCost;
-        state.burg.treasury = rn((state.burg.treasury || 0) - marketCost, 2);
+        state.burg.treasury = (state.burg.treasury || 0) - marketCost;
         state.inventory[ingredientId] = (state.inventory[ingredientId] || 0) + trade.units;
       }
       // short of an input, the step makes nothing: what was bought waits in the inventory
@@ -437,7 +438,7 @@ export class ProductionModule {
     }
 
     state.revenue += phaseRevenue;
-    state.burg.treasury = rn((state.burg.treasury || 0) + phaseRevenue, 2);
+    state.burg.treasury = (state.burg.treasury || 0) + phaseRevenue;
   }
 
   /** Every good the good's recipes take, down its whole production chain */
@@ -660,7 +661,7 @@ export class ProductionModule {
   /** Pays for what the burg bought for its own use and counts the needs it covers; returns the cost */
   private consume(index: ProductionIndex, state: BurgProductionState, goodId: number, trade: Transaction): number {
     const cost = trade.units * trade.price;
-    state.burg.treasury = rn((state.burg.treasury || 0) - cost, 2);
+    state.burg.treasury = (state.burg.treasury || 0) - cost;
     state.spent += cost;
     state.consumed[goodId] = (state.consumed[goodId] || 0) + trade.units;
     const coverage = index.demandCoverageByGood[goodId];

@@ -363,7 +363,7 @@ function render(): void {
             <th class="right" data-tip="${tips.tax}">${t("Tax")}</th>
             <th class="right" data-tip="${tips.tariff}">${t("Tariff")}</th>
             <th class="right" data-tip="${tips.units}">${t("Units")}</th>
-            <th class="right" data-tip="${tips.income}">${t("Income")}</th>
+            <th class="right" data-tip="${tips.income}">${t("Revenue")}</th>
           </tr>
         </thead>
         <tbody>${rows.join("")}</tbody>
@@ -559,7 +559,7 @@ function renderTotals(rows: HistoryRow[]): void {
         )
       )
     ),
-    total(t("Income"), tradeColumnTips().income, `<span class="${tone(income)}">${formatPrice(rn(income, 2))}</span>`)
+    total(t("Revenue"), tradeColumnTips().income, `<span class="${tone(income)}">${formatPrice(rn(income, 2))}</span>`)
   ].join("");
 }
 
@@ -643,17 +643,16 @@ function renderBalance(burg: Burg): string {
   const isCenter = market?.centerBurgId === burg.i;
   const fee = isCenter ? market.feePaid || 0 : 0;
   const flows = { sales: 0, ingredients: 0, consumption: 0 };
-  for (const [dealBurg, , , kind, units, price, tax, tariff] of pack.deals) {
+  let margin = isCenter ? market.rural?.margin || 0 : 0;
+  for (const deal of pack.deals) {
+    const [dealBurg, marketId, , kind, units, price, tax, tariff] = deal;
+    if (isCenter && marketId === market.i) margin += Trade.getMargin(deal);
     if (dealBurg !== burg.i) continue;
     if (kind === DEAL_KINDS.sale) flows.sales += units * price - tax - tariff;
     else if (kind === DEAL_KINDS.input) flows.ingredients -= units * price;
     else if (kind === DEAL_KINDS.demand) flows.consumption -= units * price; // a state order is the state's money
   }
-  const adjustments = (burg.adjustments ?? []).reduce((total, line) => total + line.value, 0);
   const treasury = burg.treasury || 0;
-  const known = adjustments - (burg.pollTaxPaid || 0) - fee + flows.sales + flows.ingredients + flows.consumption;
-  // the margin is paid trade by trade, so what is left of the balance is what the center took
-  const margin = isCenter ? treasury - known : 0;
 
   const line = (label: string, tip: string, value: number, shown = value !== 0) =>
     shown
@@ -663,7 +662,7 @@ function renderBalance(burg: Burg): string {
     ? sentences(EconomyTerms.treasury(), t("As its market's center, it also takes the market margin"))
     : EconomyTerms.treasury();
 
-  return /* html */ `<h4><span>${t("Income and expenses")}</span><span>🟡</span></h4>
+  return /* html */ `<h4><span>${t("Revenue and expenses")}</span><span>🟡</span></h4>
     ${line(t("Ingredients"), t("Paid for goods bought to make others"), flows.ingredients)}
     ${line(t("Sales"), t("Got for goods sold, carriage and sales tax taken off"), flows.sales, true)}
     ${line(t("Consumption"), t("Paid for goods the people bought"), flows.consumption)}
@@ -742,7 +741,7 @@ function downloadHistoryCsv(): void {
     row.income === undefined ? "" : rn(row.income, 2)
   ]);
   const name = pack.burgs[activeBurgId]?.name ?? activeBurgId;
-  const headers = ["Good", "Type", "Market", "Net Unit Price", "Carriage", "Tax", "Tariff", "Units", "Income"];
+  const headers = ["Good", "Type", "Market", "Net Unit Price", "Carriage", "Tax", "Tariff", "Units", "Revenue"];
   Csv.download(`Production_${name}`, headers, rows);
 }
 
