@@ -842,7 +842,7 @@ The countryside produces raw goods depending on its people and biome. Burgs make
 
 ### What does the Goods layer show?
 
-Each cell in the color of its most valuable good, icons on deposits, and pies of each burg's main goods. Select goods in Tools -> Goods to show only them, and click a burg pie to see its production. Style -> Goods turns the cells, icons and pies on or off
+Each cell in the color of its most valuable good, icons on deposits, and pies of each burg's main goods. Select goods in Tools -> Goods to show only them, and click a burg pie's ring to see its production. Style -> Goods turns the cells, icons and pies on or off
 
 ### What is prosperity? How happy are a burg's people?
 
@@ -862,7 +862,7 @@ It animates the day's deals as flows between burgs. Click a flow to see the deal
 
 ### Where can I see how rich a state is?
 
-Open Tools -> States: Balance shows what the state keeps of the day's taxes and Prosperity how well its people live. Click either to open the state's Economy dialog with its product, wealth, trade and main goods
+Open Tools -> States: Prosperity shows how well a state's people live, and Balance, shown from the column menu, what the state keeps of the day's taxes. Click either to open the state's Economy dialog with its product, wealth, trade and main goods
 
 ### What taxes does a state collect?
 
@@ -870,7 +870,7 @@ A sales tax on every sale, a poll tax per person, a license fee from each market
 
 ### How do I change a state's taxes?
 
-Open Tools -> States and click the state's Balance to open its Economy dialog, then press the bank button. There you set taxes, tariffs and how the budget is spent
+Open Tools -> States and click the state's Prosperity to open its Economy dialog, then press the bank button. There you set taxes, tariffs and how the budget is spent
 
 ### What are tariffs and embargoes?
 

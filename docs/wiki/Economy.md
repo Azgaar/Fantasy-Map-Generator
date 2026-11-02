@@ -6,9 +6,9 @@ The economy is a **snapshot of one typical day**, not a running simulation. Ever
 
 1. Open the _Layers_ tab and turn on **Goods**, **Markets** and **Trade**.
 2. **Markets** colors the map by trade region. Click a market to see its stock and local prices.
-3. **Goods** colors the cells by what they produce, marks deposits with icons, and shows each burg as a pie of what it makes. Click a burg pie to open its **Economy Overview**.
+3. **Goods** colors the cells by what they produce, marks deposits with icons, and shows each burg as a pie of what it makes. Click a burg pie's ring to open its **Economy Overview**; its center is the burg icon, which opens the _Burg Editor_.
 4. **Trade** animates the day's trade: wagons on roads, ships at sea. Click a moving marker to see what the burg sells or buys there and how the price adds up.
-5. Open _Tools_ → _States_ and look at the **Balance** column to see which states got rich.
+5. Open _Tools_ → _States_ and click a state's **Prosperity** to open its **Economy** dialog. Show the **Balance** column from the column menu to see which states got rich.
 
 # Goods
 
@@ -86,7 +86,7 @@ So 🟡 1 is a lot of money for one person and modest for a town. The anchor is 
 
 ## Taxes and tariffs
 
-Every state sets these in its taxes dialog (_Tools_ → _States_, click a Balance value to open the state's Economy dialog, then the bank button on its Revenue or Expenses card):
+Every state sets these in its taxes dialog (_Tools_ → _States_, click a Prosperity value to open the state's Economy dialog, then the bank button on its Revenue or Expenses card):
 
 - **Sales tax**: charged on every sale by a seller of the state. A burg pays it out of what it earns from selling; a market adds it to the price it charges a burg.
 - **Poll tax**: a flat amount per person. A burg pays it first, out of its first sales of the day, so it never stops work; it only delays what its people buy. Rural people set it aside from what their produce earns and pay what they can, so a poor countryside pays less than the rate asks. The Revenue card and the taxes dialog show how much of what was owed the state collected, such as "96% of 🟡107 collected".
@@ -124,7 +124,7 @@ What each expense achieves depends on how much it actually spent against what a 
 
 # Reading a burg's Economy Overview
 
-Click a burg pie on the Goods layer, or the chart button in the _Burg Editor_. The top shows:
+Click the ring of a burg pie on the Goods layer, or the chart button in the _Burg Editor_. The top shows:
 
 - **Production**: what the burg made today. Most of it is sold, often to other markets.
 - **Consumption**: what its people bought or kept for themselves.
@@ -160,7 +160,7 @@ Prosperity shows in the _Burgs overview_ (click it, or Wealth, to open the burg'
 
 # A state's economy
 
-A state's treasury only shows its cut. A trade republic with low taxes has a small treasury, while its people may be wealthy and prosperous. To see the whole picture, open _Tools_ → _States_ and click a **Balance** or **Prosperity** value; the column menu can also show **Product** and **Wealth**. The state's **Economy** dialog shows:
+A state's treasury only shows its cut. A trade republic with low taxes has a small treasury, while its people may be wealthy and prosperous. To see the whole picture, open _Tools_ → _States_ and click a **Prosperity** value; the column menu can also show **Balance**, **Product** and **Wealth**, and clicking them opens the same dialog. The state's **Economy** dialog shows:
 
 - **Product**: what its people make in a day, by sector: **rural** (rural people's earnings), **manufacturing** (its burgs' product) and **trade** (the margins its market centers take).
 - **Economy type**: the sector the state leans on more than the world does (**Agrarian**, **Artisan** or **Mercantile**), how far it leans, and the good it is **known for**: the one it makes most of compared with the rest of the world.
@@ -169,7 +169,7 @@ A state's treasury only shows its cut. A trade republic with low taxes has a sma
 
 Provinces have their own economy dialog: open _Tools_ → _Provinces_ and click a province's **Prosperity** or **Corruption**. It is laid out like the state's: cards for its population, product, wealth, prosperity, taxes collected, corruption, infrastructure and stability, each ranked among its state's provinces and set against the state's; its sectors and how its people live; one block of the **taxes collected** there for its state, in red as its people pay them, and the **state orders** placed at its burgs, in green as they benefit from them (its seat's, and at the capital the court's and the army's), with the corruption officials took of its share; and its most valuable goods. A province whose seat has no market shows the crown lands' corruption, infrastructure and stability. Provinces have no budgets or taxes of their own: the state sets them.
 
-Open several states' dialogs to compare them side by side. The neutral lands have one too: click their Prosperity, Product or Wealth. The total line shows the average balance and prosperity. The bank button on the Revenue or Expenses card opens the state's taxes, budget and tariffs. In the States Editor's percent mode, product shows as a share of the world's, and wealth and prosperity against the world average.
+Open several states' dialogs to compare them side by side. The neutral lands have one too: click their Prosperity, Product or Wealth. The total line shows the average prosperity, and the average balance when the Balance column is shown. The bank button on the Revenue or Expenses card opens the state's taxes, budget and tariffs. In the States Editor's percent mode, product shows as a share of the world's, and wealth and prosperity against the world average.
 
 # Shaping the economy for your world
 

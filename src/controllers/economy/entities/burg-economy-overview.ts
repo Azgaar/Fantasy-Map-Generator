@@ -606,10 +606,12 @@ function renderStats(burg: Burg): void {
 
   const product = Math.max(0, burg.product || 0);
   const wealth = population > 0 ? product / population : 0;
+  const { scale, urbanization } = options.map.units.population;
+  const people = rn(population * scale * urbanization.rate);
 
   ensureEl(`${dialogId}Stats`).innerHTML = /* html */ `
     <div>
-      <span><b>${t("Population")}:</b> ${population}</span>
+      <span><b>${t("Population")}:</b> ${people}</span>
       ${EconomyDebug.get(burg.i!) ? `<span><b>${t("Order")}:</b> ${t("{{rank}} of {{total}}", { rank: burgs.indexOf(burg) + 1, total: burgs.length })}</span>` : ""}
       <span><b>${t("Market")}:</b> ${market ? Markets.getName(market) : ""}</span>
       <span data-tip="${EconomyTerms.product()}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
