@@ -14,6 +14,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 **Unreleased**:
 
+- Options: the interface size slider no longer jumps while dragged
 - Military units: the limit picker stays on screen with long lists
 
 **[1.156.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.156.0) - 2026-10-25**:

@@ -133,6 +133,18 @@ describe("options tab bindings", () => {
     expect(JSON.parse(localStorage.getItem("fmg-options")!).generation.states.limit).toBe(30);
   });
 
+  it("resizes the interface when the size slider is released, not while it is dragged", () => {
+    const range = control("uiSize").querySelector<HTMLInputElement>('input[type="range"]')!;
+    const before = document.body.style.fontSize;
+    edit(range, "1.2");
+    edit(range, "1.4");
+    expect(document.body.style.fontSize).toBe(before);
+
+    range.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(document.body.style.fontSize).toBe("14px");
+    expect(options.app.ui.size).toBe(1.4);
+  });
+
   it("applies select effects once, after updating the preference", () => {
     vi.mocked(toggleAssistant).mockImplementation(() => {
       expect(options.app.ui.assistant).toBe("hide");
@@ -238,6 +250,12 @@ describe("options tab bindings", () => {
     options.generation.states.limit = 42;
     document.getElementById("lock_statesNumber")!.click();
     expect(Pins.valueOr("statesNumber", 0)).toBe(42);
+  });
+
+  it("stops the interface size slider at what the window can fit", () => {
+    tab.restoreUi();
+    const range = control("uiSize").querySelector<HTMLInputElement>('input[type="range"]')!;
+    expect(Number(range.max)).toBeLessThan(3);
   });
 });
 
