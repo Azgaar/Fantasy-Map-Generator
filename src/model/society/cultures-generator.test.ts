@@ -68,3 +68,14 @@ it("recomputes a renamed culture's code without clashing with other cultures", (
   expect(pack.cultures[1]).toMatchObject({ name: "Saltmere", code: "SA" });
   expect(() => Cultures.rename(5, "X")).toThrow("Culture 5 does not exist");
 });
+
+it("finds a predefined culture's development by its name, for maps made before cultures had one", () => {
+  options = Options.getDefaultOptions();
+  const cells = { i: [0], s: [1], h: [], t: [] };
+  vi.stubGlobal("pack", { cells });
+  vi.stubGlobal("grid", { cells: { temp: [] } });
+  expect(Cultures.getDefaultDevelopment("Khazadur")).toBe(53);
+  expect(Cultures.getDefaultDevelopment("Uruk")).toBe(18);
+  expect(Cultures.getDefaultDevelopment("Germanic")).toBe(16);
+  expect(Cultures.getDefaultDevelopment("Nobody")).toBeUndefined();
+});

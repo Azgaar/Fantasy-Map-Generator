@@ -29,6 +29,7 @@ Terms every `be.json` string uses the same way. Rules for all catalogs are in
 | state                         | дзяржава                           |                                                       |
 | province                      | правінцыя                          |                                                       |
 | culture                       | культура                           |                                                       |
+| development / era             | развіццё / эпоха                   | a people's technology level, 0–100                    |
 | religion                      | рэлігія                            |                                                       |
 | namesbase                     | база імён                          | the tab and the culture field are “Імёны”             |
 | heightmap                     | вышыні                | the layer and the editor are “Вышыні”                                 |

@@ -26,6 +26,7 @@ Terms every `fr.json` string uses the same way. Rules for all catalogs are in
 | state                           | État                                  | capitalized                            |
 | province                        | province                              |                                        |
 | culture                         | culture                               |                                        |
+| development / era               | développement / époque                | a people's technology level, 0–100     |
 | religion                        | religion                              |                                        |
 | namesbase                       | base de noms (pl. bases de noms)      |                                        |
 | heightmap                       | carte des hauteurs                    | the layer is “Hauteurs”                |

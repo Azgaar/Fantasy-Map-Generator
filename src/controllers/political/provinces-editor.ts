@@ -16,6 +16,7 @@ import type { Province } from "@/model/political/provinces-generator";
 import { Provinces } from "@/model/political/provinces-generator";
 import { Stability } from "@/model/political/stability";
 import type { State } from "@/model/political/states-generator";
+import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
@@ -25,6 +26,7 @@ import { Layers } from "@/renderers/layers";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { Csv } from "@/services/io/csv";
 import { speak } from "@/services/speech";
+import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import { noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
@@ -57,6 +59,7 @@ import { errorText } from "@/utils/string-utils";
 const dialogId = "provincesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { stateId: number; search?: string };
+let development: (number | undefined)[] = []; // the people's average by province, as the table was last built
 
 const CSV_COLUMNS = [
   "Id",
@@ -179,6 +182,15 @@ const columns: EditorColumn<Province>[] = [
     mobileHidden: true,
     tip: sentences(EconomyTerms.stability(), t("Click a value to open the stability overview")),
     sortBy: province => Stability.getProvince(province.i)?.stability ?? -1
+  },
+  {
+    key: "development",
+    label: t("Development"),
+    width: "7.5em",
+    hidden: true,
+    mobileHidden: true,
+    tip: t("Development: the people's average technology, 0–100, and its era"),
+    sortBy: province => development[province.i] ?? -1
   },
   {
     key: "tags",
@@ -408,6 +420,7 @@ function updateFilter(): void {
 }
 
 function getProvincesData(): Province[] {
+  development = Development.getAverages(pack.cells.province);
   const provinces = pack.provinces.filter(province => province.i && !province.removed);
   let filtered =
     filterState.stateId === -1 ? provinces : provinces.filter(province => province.state === filterState.stateId);
@@ -472,6 +485,11 @@ function renderProvincesPage(view: TableView<Province>): void {
         <span data-tip="${populationTip}" class="culturePopulation">${percentage ? `${rn(totals.population ? (population / totals.population) * 100 : 0)}%` : si(population)}</span>
       </div>
       ${renderGovernance(p)}
+      ${
+        development[p.i] === undefined
+          ? `<div class="placeholder" data-col="development"></div>`
+          : `<div data-tip="${developmentTip(development[p.i]!)}" data-col="development">${rn(development[p.i]!)}</div>`
+      }
       <div data-col="tags">
         <input
           data-tip="${t("Tags (comma-separated)")}"

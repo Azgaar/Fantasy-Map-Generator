@@ -25,6 +25,7 @@ Terms every `bn.json` string uses the same way. Rules for all catalogs are in
 | state                           | রাষ্ট্র                          |                                       |
 | province                        | প্রদেশ                           |                                       |
 | culture                         | সংস্কৃতি                         |                                       |
+| development / era               | উন্নয়ন / যুগ                    | a people's technology level, 0–100    |
 | religion                        | ধর্ম                             |                                       |
 | namesbase                       | নামের ভিত্তি                     |                                       |
 | heightmap                       | উচ্চতা মানচিত্র                  |                                       |

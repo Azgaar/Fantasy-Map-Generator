@@ -9,6 +9,7 @@ import { Tags } from "@/model/tags";
 import { getDecima, getDistance, getMoneyUnit } from "@/model/units";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
+import { eraLabel } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { bindEconomyWiki, economyWikiButton } from "@/ui/economy-view";
@@ -95,6 +96,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           const tags = Tags.parse(tagsInput);
           const value = +ensureEl<HTMLInputElement>("newGoodValue").value;
           const carriage = +ensureEl<HTMLInputElement>("newGoodCarriage").value;
+          const development = +ensureEl<HTMLInputElement>("newGoodDevelopment").value;
           const deposits: [number, number] = [
             +ensureEl<HTMLInputElement>("newGoodDepositsMin").value,
             +ensureEl<HTMLInputElement>("newGoodDepositsMax").value
@@ -107,6 +109,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           if (!Number.isFinite(value) || value < 0) errors.push(t("Value must be a valid non-negative number"));
           if (!Number.isFinite(carriage) || carriage < 0)
             errors.push(t("Carriage price must be a valid non-negative number"));
+          if (!Number.isInteger(development) || development < 0 || development > 100)
+            errors.push(t("Development must be a whole number from 0 to 100"));
           if (deposits.some(count => !Number.isFinite(count) || count < 0) || deposits[0] > deposits[1])
             errors.push(t("Deposits must be a range of non-negative numbers, the minimum first"));
 
@@ -163,6 +167,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             Goods.recolor(id, color);
             Goods.setPrice(id, value);
             Goods.setCarriage(id, carriage);
+            Goods.setDevelopment(id, development);
             Goods.setUnit(id, unit);
             Goods.setProduction(id, {
               deposits,
@@ -198,6 +203,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
               color,
               value,
               carriage,
+              development: development || undefined,
               deposits,
               unit,
               demandCoverage: demandCoverageState,
@@ -276,6 +282,10 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
           <label for="newGoodCarriage" data-tip="${t("Carriage: price of one unit per decima ({{distance}})", { distance: getDistance(getDecima()) })}">${t("Carriage Price")}*</label>
           <span class="ge-inline"><input id="newGoodCarriage" class="ge-num" type="number" min="0" step="0.1" value="${editedGood?.carriage ?? DEFAULT_CARRIAGE}" /> 🟡</span>
+          <span></span>
+
+          <label for="newGoodDevelopment" data-tip="${t("The least development, 0–100, a land needs to produce the good; 0 for none")}">${t("Development")}</label>
+          <span class="ge-inline"><input id="newGoodDevelopment" class="ge-num" type="number" min="0" max="100" step="1" value="${editedGood?.development ?? 0}" /> <span id="newGoodEra">${eraLabel(editedGood?.development ?? 0)}</span></span>
           <span></span>
 
           <label for="newGoodUnit">${t("Unit")}</label>
@@ -514,6 +524,11 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       const circle = ensureEl("newGoodIconCircle");
       circle.setAttribute("fill", colorInput.value);
       circle.setAttribute("stroke", Goods.getStroke(colorInput.value));
+    };
+
+    const developmentInput = ensureEl<HTMLInputElement>("newGoodDevelopment");
+    developmentInput.oninput = () => {
+      ensureEl("newGoodEra").textContent = eraLabel(+developmentInput.value);
     };
   }
 }

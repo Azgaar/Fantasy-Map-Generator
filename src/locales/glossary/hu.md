@@ -30,6 +30,7 @@ Terms every `hu.json` string uses the same way. Rules for all catalogs are in
 | state                           | állam                                   |                                                   |
 | province                        | tartomány                               |                                                   |
 | culture                         | kultúra                                 |                                                   |
+| development / era               | fejlettség / korszak                    | a people's technology level, 0–100                |
 | religion                        | vallás                                  |                                                   |
 | namesbase                       | névbázis                                |                                                   |
 | heightmap                       | magassági térkép                        | the layer is “Magasság”                           |

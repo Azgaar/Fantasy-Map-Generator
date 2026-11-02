@@ -14,6 +14,7 @@ import { LegendBoxes } from "@/renderers/legend-boxes";
 import { Csv } from "@/services/io/csv";
 import type { LegendItem } from "@/types/legend";
 import { runMapCommand } from "@/ui/app-commands";
+import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import { noteIcon, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -43,6 +44,7 @@ const CSV_COLUMNS = [
   "Tags",
   "Value",
   "Carriage",
+  "Development",
   "Unit",
   "Demand Coverage",
   "Deposits",
@@ -110,6 +112,14 @@ const columns: EditorColumn<Good>[] = [
     hidden: true,
     sortBy: good => good.carriage,
     tip: sentences(t("Carriage: price of one unit per decima"), t("Click to sort"))
+  },
+  {
+    key: "development",
+    label: t("Development"),
+    width: "7em",
+    hidden: true,
+    sortBy: good => good.development ?? 0,
+    tip: sentences(t("The least development a land needs to produce the good"), t("Click to sort"))
   },
   {
     key: "deposits",
@@ -340,6 +350,7 @@ function renderGoodsPage(view: TableView<Good>) {
         </div>
         <div data-col="price" data-tip="${sentences(t("Base (initial) price"), t("Click to compare prices across markets"))}" class="goodBasePrice pointer">🟡 ${good.value}</div>
         <div data-col="carriage" data-tip="${t("Carriage: price of one unit per decima")}">🟡 ${good.carriage}</div>
+        <div data-col="development" data-tip="${good.development ? developmentTip(good.development) : t("Needs no development")}">${good.development ?? 0}</div>
         <div data-col="deposits" data-tip="${t("Deposits placed, and their range")} (${formatDeposits(good)})">${good.distribution ? (depositsByGood[good.i] ?? 0) : ""}</div>
         <div data-col="coverage" data-tip="${t("How much of each demand category one unit covers")}">${renderCoverage(good)}</div>
         <div data-col="tags" data-tip="${t("Tags")}">${Tags.format(good.tags)}</div>
@@ -623,6 +634,7 @@ function enterResourceAssignMode(this: HTMLElement) {
     "stock",
     "price",
     "carriage",
+    "development",
     "deposits",
     "coverage",
     "tags",
@@ -714,6 +726,7 @@ function downloadGoodsData() {
       good.tags.join(";"),
       good.value,
       good.carriage,
+      good.development ?? 0,
       good.unit,
       demandCoverage,
       formatDeposits(good),
@@ -745,6 +758,7 @@ async function uploadGoodsCsv(text: string): Promise<void> {
       row.assign("Tags", tags => Goods.setTags(id, list(tags)), good.tags.join(";"));
       row.apply("Value", value => Goods.setPrice(id, +value), good.value);
       row.apply("Carriage", value => Goods.setCarriage(id, +value), good.carriage);
+      row.apply("Development", value => Goods.setDevelopment(id, +value), good.development ?? 0);
       row.assign("Unit", unit => Goods.setUnit(id, unit), good.unit);
       row.assign(
         "Demand Coverage",

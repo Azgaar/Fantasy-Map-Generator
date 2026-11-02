@@ -28,6 +28,7 @@ Terms every `pt-BR.json` string uses the same way. Rules for all catalogs are in
 | state                         | estado                     |                                                     |
 | province                      | província                  |                                                     |
 | culture                       | cultura                    |                                                     |
+| development / era             | desenvolvimento / era      | a people's technology level, 0–100                  |
 | religion                      | religião                   |                                                     |
 | namesbase                     | base de nomes              |                                                     |
 | heightmap                     | mapa de altura             |                                                     |

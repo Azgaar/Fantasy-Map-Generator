@@ -24,6 +24,7 @@ Terms every `ro.json` string uses the same way. Rules for all catalogs are in
 | state                           | stat                             |                                               |
 | province                        | provincie                        |                                               |
 | culture                         | cultură                          |                                               |
+| development / era               | dezvoltare / epocă               | a people's technology level, 0–100            |
 | religion                        | religie                          |                                               |
 | namesbase                       | bază de nume                     |                                               |
 | heightmap                       | hartă a înălțimilor              |                                               |

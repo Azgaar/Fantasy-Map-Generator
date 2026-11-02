@@ -6,6 +6,7 @@ import { Relief } from "@/model/physical/relief-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Provinces } from "@/model/political/provinces-generator";
+import { Development } from "@/model/society/development-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import type { PackedGraph } from "@/types/packed-graph";
 import { createAvailableLandCellFinder, MapRestoration } from "./map-restoration";
@@ -25,6 +26,7 @@ const internals = MapRestoration as unknown as {
   restoreProvinces(parent: PackedGraph, projection: Projection): void;
   restoreRoutes(parent: PackedGraph, projection: Projection, featureIds: Map<number, number>): void;
   restoreZones(parent: PackedGraph, links: Links): void;
+  restoreDevelopment(parent: PackedGraph, links: Links): void;
   fillPathGaps(points: [number, number, number][]): [number, number, number][];
   restoreJourneys(parent: PackedGraph, projection: Projection): void;
   expandMarkets(): void;
@@ -915,5 +917,25 @@ describe("expandMarkets", () => {
 
     expect(pack.markets.map(market => market.centerBurgId)).toEqual([1, 3]);
     expect(Array.from(pack.cells.market)).toEqual([1, 1, 1, 2, 2]);
+  });
+});
+
+describe("restoreDevelopment", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("keeps painted levels on their cells, generates new land and settles a burg moved to empty land", () => {
+    vi.stubGlobal(
+      "pack",
+      graph({ cells: { ...lineCells([30, 30, 30, 30, 10]), pop: [1, 1, 1, 1, 0], burg: [0, 0, 0, 1, 0] } })
+    );
+    vi.spyOn(Development, "generate").mockImplementation(() => {
+      pack.cells.development = Uint8Array.from([7, 7, 7, 7, 0]);
+    });
+    const parent = graph({ cells: { development: Uint8Array.from([40, 0, 25, 3, 0]), burg: [0, 0, 0, 0, 0] } });
+
+    internals.restoreDevelopment(parent, links([0, 1, -1, 3, 4]));
+
+    // painted 40 and 0 kept, new land generated, the moved burg's cell raised to a town's least
+    expect([...pack.cells.development!]).toEqual([40, 0, 7, 5, 0]);
   });
 });

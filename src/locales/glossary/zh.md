@@ -27,6 +27,7 @@ Terms every `zh.json` string uses the same way. Rules for all catalogs are in
 | state                         | 国家                    | never 州                                          |
 | province                      | 省份                    |                                                   |
 | culture                       | 文化                    |                                                   |
+| development / era             | 发展程度 / 时代             | a people's technology level, 0–100                |
 | religion                      | 宗教                    |                                                   |
 | namesbase                     | 命名库                  | the tab and the culture field are “名称”          |
 | heightmap                     | 高程图                  | the layer is “高程”                               |

@@ -19,6 +19,7 @@ export const Controllers = createRegistry(
     CsvUpload: () => import("@/controllers/csv-upload").then(m => m.CsvUpload),
     CulturesEditor: () => import("@/controllers/society/cultures-editor").then(m => m.CulturesEditor),
     DiplomacyEditor: () => import("@/controllers/political/diplomacy-editor").then(m => m.DiplomacyEditor),
+    DevelopmentOverview: () => import("@/controllers/society/development-overview").then(m => m.DevelopmentOverview),
     DiplomacyOverview: () => import("@/controllers/political/diplomacy-overview").then(m => m.DiplomacyOverview),
     DistributionEditor: () =>
       import("@/controllers/economy/goods/goods-distribution-editor").then(m => m.DistributionEditor),

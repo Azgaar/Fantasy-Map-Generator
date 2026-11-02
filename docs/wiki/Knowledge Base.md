@@ -848,6 +848,18 @@ Each cell in the color of its most valuable good, icons on deposits, and pies of
 
 How well people live, from 0% to 100%, based on what they can buy; bare needs is about 17%. It is not happiness. See it in Tools -> Burgs, the Burg Editor and Tools -> States
 
+### What is development? How advanced are my cultures?
+
+A land's technology from 1 to 100 (0 where nobody lives), from hunter-gatherers to a post-human civilization; up to the Late Middle Ages every era takes three points, so 12 is the Bronze Age, 18 the Iron Age, 30 the High Middle Ages and gunpowder, 36 established artillery and 40 the printing press. Each culture has its own level, set by the culture set: most sets give a medieval world with a few leaders such as dwarves at 50–53 and elves at 44–46, and laggards such as orcs at 18 and giants at 8; the Antique set gives a classical world. It spreads from each culture's center along routes. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Development
+
+### Why is my state called a Tribe, a Chiefdom or a Shamanate?
+
+Its capital's development is under 12, before the Bronze Age, so its people know no kingdoms: monarchies become Tribes, Chiefdoms or Paramount Chiefdoms (Hordes for nomads), republics Tribal Councils, unions Clans Unions and theocracies Shamanates. Change the form in the States editor, or raise the culture's level in the Cultures editor and regenerate development and states. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Development
+
+### Why can't a burg make tools, glass or gunpowder?
+
+Goods need development to be made or gathered, by the era they were first traded in: grain and cattle 6, tools 15, iron 18, paper and books 21, glass 24, gunpowder 30, artillery 36. A burg in a less developed region cannot make them and buys them instead. Past 30, development also raises output: every good yields development / 30 times as much, so 1.5 times at 45. Development is set when the map is generated; see and paint it in Tools -> Development (Shift + X), then regenerate the economy. A culture's own level is set in the Cultures editor's Development column, a biome's effect in the Biomes editor's; regenerate development to apply. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Development
+
 ### How does trade work?
 
 Burgs buy from their own market; when it lacks a good, they buy it from the cheapest other market they can reach. They sell to whichever market pays best. Turn on the Trade layer to watch the deals

@@ -49,6 +49,7 @@ export interface PackedGraph {
     good: Uint16Array; // cell good id
     market: Uint16Array; // cell market id
     prosperity: Uint8Array; // cell rural prosperity %, 0 if none
+    development?: Uint8Array; // technological development, 1–100; 0 where nobody lives
     routes: Record<number, Record<number, number>>;
   };
   vertices: {

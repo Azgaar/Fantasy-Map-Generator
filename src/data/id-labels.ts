@@ -1,5 +1,6 @@
 // Interface names for ids the data stores in English: a select shows the label, keeps the id as its value
 
+import type { DevelopmentEra } from "@/data/development";
 import type { LabelType } from "@/model/annotations/labels-generator";
 import type { DemandCategory } from "@/model/economy/goods-generator";
 import type { ProsperityLevel } from "@/model/economy/prosperity";
@@ -168,6 +169,30 @@ export const PROSPERITY_LEVEL_LABELS: Record<ProsperityLevel, string> = {
   Opulent: t("Opulent"),
   Splendid: t("Splendid"),
   Peerless: t("Peerless")
+};
+
+export const ERA_LABELS: Record<DevelopmentEra, string> = {
+  Paleolithic: t("Paleolithic"),
+  Mesolithic: t("Mesolithic"),
+  Neolithic: t("Neolithic"),
+  "Copper Age": t("Copper Age"),
+  "Bronze Age": t("Bronze Age"),
+  "Late Bronze Age": t("Late Bronze Age"),
+  "Iron Age": t("Iron Age"),
+  "Classical Age": t("Classical Age"),
+  "Late Antiquity": t("Late Antiquity"),
+  "Early Middle Ages": t("Early Middle Ages"),
+  "High Middle Ages": t("High Middle Ages"),
+  "Commercial Revolution": t("Commercial Revolution"),
+  "Late Middle Ages": t("Late Middle Ages"),
+  Renaissance: t("Renaissance"),
+  "Age of Discovery": t("Age of Discovery"),
+  "Scientific Revolution": t("Scientific Revolution"),
+  Enlightenment: t("Enlightenment"),
+  "Industrial Revolution": t("Industrial Revolution"),
+  "Machine Age": t("Machine Age"),
+  "Space Age": t("Space Age"),
+  "Post-human": t("Post-human")
 };
 
 /** the map's SVG filters, by element id */

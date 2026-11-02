@@ -28,6 +28,7 @@ Terms every `af.json` string uses the same way. Rules for all catalogs are in
 | state                         | staat (pl. state)                  |                                       |
 | province                      | provinsie                          |                                       |
 | culture                       | kultuur (pl. kulture)              |                                       |
+| development / era             | ontwikkeling / tydperk             | a people's technology level, 0–100    |
 | religion                      | godsdiens (pl. godsdienste)        |                                       |
 | namesbase                     | naambasis (pl. naambasisse)        |                                       |
 | heightmap                     | hoogtekaart                        |                                       |

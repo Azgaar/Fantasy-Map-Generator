@@ -2,11 +2,15 @@
 // Production.regenerate run as the game runs it, the KPIs scored. Bundled by build.mjs
 import "./stubs";
 import { readFileSync } from "node:fs";
+import { GOODS_DATA } from "@/data/goods";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import { StateEconomy } from "@/model/economy/state-economy";
+import { Biomes } from "@/model/physical/biomes-generator";
+import { Cultures } from "@/model/society/cultures-generator";
+import { Development } from "@/model/society/development-generator";
 import { log } from "@/utils/logger";
 import { score } from "./score.js";
 import { setTunables } from "./tunables.mjs";
@@ -33,6 +37,7 @@ export function loadMap(file: string): { seed: string; snapshot: Snapshot } {
 }
 
 const MUTABLE = ["burgs", "markets", "states", "goods", "deals", "routes"];
+const TIERS = new Map(GOODS_DATA.map(good => [good.name, good.development])); // maps exported before goods had tiers
 
 /** One day on a fresh copy of the map's mutable state */
 export function runEconomy(snap: Snapshot, over: Overrides = {}) {
@@ -44,6 +49,7 @@ export function runEconomy(snap: Snapshot, over: Overrides = {}) {
       delete burg.product;
     }
   for (const good of pack.goods) {
+    good.development ??= TIERS.get(good.name);
     if (over.value?.[good.name] !== undefined) good.value = over.value[good.name];
     if (over.coverage?.[good.name]) good.demandCoverage = { ...over.coverage[good.name] };
   }
@@ -51,6 +57,12 @@ export function runEconomy(snap: Snapshot, over: Overrides = {}) {
   Object.assign(globalThis, { pack, grid: snap.grid, options: snap.options });
   Goods.sync(); // the indexes the loader rebuilds, as services/io/load.ts does
   Markets.sync();
+  if (!pack.cells.development) {
+    const biomes = Biomes.getDefault();
+    for (const biome of pack.biomes) biome.development ??= biomes[biome.i]?.development ?? 0;
+    for (const culture of pack.cultures) if (culture.i) culture.development ??= Cultures.getDefaultDevelopment(culture.name);
+    Development.generate(); // maps exported before cells had development
+  }
   const start = performance.now();
   Production.regenerate();
   return {

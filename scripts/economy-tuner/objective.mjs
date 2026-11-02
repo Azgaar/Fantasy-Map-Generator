@@ -82,7 +82,7 @@ export function objective(results, reference, over) {
     rawProportion: Math.max(0, 0.6 - kpi.rawProportion) * 2 + raw.offBy * 0.1,
     prices: fit.priceOff * 0.1,
     coverage: fit.coverageOff * 0.05,
-    produced: Math.max(0, 0.95 - kpi.produced) * 10,
+    produced: Math.max(0, 0.9 - kpi.produced) * 10,
     positive: Math.max(0, 0.75 - kpi.positive) * 2,
     regions: Math.max(0, Math.log(5 / Math.max(kpi.regions, 1e-6))) * 0.5,
     apart: Math.max(0, 0.3 - kpi.apart),

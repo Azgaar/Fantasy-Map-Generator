@@ -207,7 +207,8 @@ function prepareMapData(viewOnly = false): string {
     graphOverride,
     journeys,
     legends,
-    pack.cells.prosperity
+    pack.cells.prosperity,
+    pack.cells.development
   ].join("\r\n");
   return mapData;
 }

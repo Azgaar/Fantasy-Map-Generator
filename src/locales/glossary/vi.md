@@ -24,6 +24,7 @@ Terms every `vi.json` string uses the same way. Rules for all catalogs are in
 | state                           | quốc gia                         | “nước” for short labels                       |
 | province                        | tỉnh                             |                                               |
 | culture                         | văn hóa                          |                                               |
+| development / era               | trình độ phát triển / thời đại   | a people's technology level, 0–100            |
 | religion                        | tôn giáo                         |                                               |
 | namesbase                       | bộ tên                           |                                               |
 | heightmap                       | bản đồ độ cao                    |                                               |

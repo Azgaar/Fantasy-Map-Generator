@@ -24,6 +24,7 @@ Terms every `tr.json` string uses the same way. Rules for all catalogs are in
 | state                      | devlet                     |                                     |
 | province                   | eyalet                     |                                     |
 | culture                    | kültür                     |                                     |
+| development / era          | gelişmişlik / çağ          | a people's technology level, 0–100  |
 | religion                   | din                        |                                     |
 | namesbase                  | isim tabanı                |                                     |
 | heightmap                  | yükseklik haritası         | the layer is “Yükseklik”            |

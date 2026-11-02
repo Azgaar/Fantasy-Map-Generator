@@ -26,6 +26,7 @@ Terms every `ja.json` string uses the same way. Rules for all catalogs are in
 | state                         | 国家                      | “国” for short labels                             |
 | province                      | 州                        |                                                   |
 | culture                       | 文化                      |                                                   |
+| development / era             | 発展度 / 時代                | a people's technology level, 0–100                |
 | religion                      | 宗教                      |                                                   |
 | namesbase                     | 命名ベース                | the tab and the culture field are “名前”          |
 | heightmap                     | 高度マップ                | the layer is “高度”                               |

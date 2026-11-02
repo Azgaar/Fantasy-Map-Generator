@@ -25,6 +25,7 @@ Terms every `hi.json` string uses the same way. Rules for all catalogs are in
 | state                           | राज्य                        |                                        |
 | province                        | प्रांत                       |                                        |
 | culture                         | संस्कृति                     |                                        |
+| development / era               | विकास / युग                  | a people's technology level, 0–100     |
 | religion                        | धर्म                         |                                        |
 | namesbase                       | नाम-आधार                     |                                        |
 | heightmap                       | ऊँचाई-मानचित्र               |                                        |

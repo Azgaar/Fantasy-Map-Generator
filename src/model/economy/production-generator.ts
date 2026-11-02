@@ -3,6 +3,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { States } from "@/model/political/states-generator";
 import type { Zone } from "@/model/political/zones-generator";
 import { DEFAULT_CULTURE_TYPE } from "@/model/society/cultures-generator";
+import { Development } from "@/model/society/development-generator";
 import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
 import { EconomyDebug } from "./economy-debug";
@@ -46,6 +47,7 @@ const MAX_WORKERS = 1000;
 export const WORKFORCE_SHARE = 0.32; // townspeople working in trades; the rest serve, build, farm or are too young or old
 const WORKERS_PER_TURN = 5;
 export const LOT_DEPTH_SHARE = 0.5; // a step sells at most this share of a day's sales where it sells, so a thin market gets what pays and no more
+const PRODUCTIVITY_START = 30; // development past the High Middle Ages makes more of every good: ×1.5 at 45, ×2 at 60
 const MIN_STEP = 0.5; // the fewest workers a step takes, so a thin market does not take endless decisions
 export const BURG_SPECIALIZATION = 1.89;
 export const MARKET_SPECIALIZATION = 0.6;
@@ -103,7 +105,7 @@ export class ProductionModule {
       index.worldPopulation += population;
     }
 
-    // burgs take turns by state and province, up to 5 workers each, so the first in line cannot drain a market alone; each turn a burg works, sells,
+    // burgs take turns by √population × development, up to 5 workers each, so the first in line cannot drain a market alone; each turn a burg works, sells,
     // buys its needs in step with the work done, then spends what it can spare; rural people spend what their produce earned,
     // states what their taxes brought in
     let working = states;
@@ -147,13 +149,11 @@ export class ProductionModule {
     }
   }
 
-  /** Burgs go state by state and province by province in id order, neutrals and burgs outside a province last, largest first within each */
+  /** Burgs go by √population × development, so the advanced take the best trades first and size counts less than it */
   private getTurnOrder(burgs: Burg[]): Burg[] {
-    const rank = (id = 0) => id || Number.MAX_SAFE_INTEGER;
-    const province = (burg: Burg) => rank(pack.cells.province[burg.cell]);
-    return burgs.sort(
-      (a, b) => rank(a.state) - rank(b.state) || province(a) - province(b) || b.population! - a.population!
-    );
+    const development = pack.cells.development;
+    const weight = (burg: Burg) => Math.sqrt(burg.population || 0) * (development?.[burg.cell] ?? 1);
+    return burgs.sort((a, b) => weight(b) - weight(a));
   }
 
   private buildProductionIndex(goods: Good[]): ProductionIndex {
@@ -1132,8 +1132,11 @@ export class ProductionModule {
   }
 
   private getModifiers(good: Good, cellId: number): number {
+    const development = Development.ofCell(cellId);
+    if (good.development && development !== undefined && development < good.development) return 0; // beyond the cell's technology
+    const productivity = Math.max(1, (development ?? 0) / PRODUCTIVITY_START);
     const mult = good.multipliers;
-    if (!mult) return 1;
+    if (!mult) return productivity;
 
     const biomeId = pack.cells.biome[cellId];
     const cultureId = pack.cells.culture[cellId];
@@ -1159,7 +1162,7 @@ export class ProductionModule {
       }
     }
 
-    return modifier;
+    return modifier * productivity;
   }
 
   private getZoneCellSets(): Map<number, Set<number>> {

@@ -28,6 +28,7 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 | state                           | Estado                                | capitalized                            |
 | province                        | provincia                             |                                        |
 | culture                         | cultura                               |                                        |
+| development / era               | desarrollo / época                    | a people's technology level, 0–100     |
 | religion                        | religión                              |                                        |
 | namesbase                       | base de nombres (pl. bases de nombres) | the Tools button is “Nombres”         |
 | heightmap                       | mapa de alturas                       | the layer is “Alturas”                 |

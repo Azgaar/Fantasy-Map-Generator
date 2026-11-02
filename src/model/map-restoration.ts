@@ -32,6 +32,7 @@ import type { LockedRiver, River } from "./physical/river-generator";
 import type { Burg } from "./political/burgs-generator";
 import type { Regiment } from "./political/military-generator";
 import type { Province } from "./political/provinces-generator";
+import { Development } from "./society/development-generator";
 import { Population } from "./society/population-generator";
 
 type Projection = (x: number, y: number) => Point;
@@ -170,6 +171,7 @@ class MapRestorationModule {
       this.restoreRiverData(parent, links, projection);
     }
     Features.defineNames();
+    this.restoreDevelopment(parent, links);
     this.restoreEconomy(parent);
   }
 
@@ -959,6 +961,20 @@ class MapRestorationModule {
       const onMap = this.isInMap(x, y) || restored.label.pathPoints?.some(point => this.isInMap(...point));
       return onMap ? [restored] : [];
     });
+  }
+
+  /** development follows its cells, painted levels included; land the snapshot did not have is generated, and a burg moved to empty land settles it */
+  private restoreDevelopment(parent: PackedGraph, links: CellLinks) {
+    Development.generate(); // of the restored cultures, routes and land
+    const from = parent.cells.development;
+    if (!from) return;
+    const { cells } = pack;
+    for (const cell of cells.i) {
+      const source = links.sameType[cell];
+      if (source === -1 || isWater(cell, pack)) continue;
+      cells.development![cell] = Development.isPeopled(cell) ? from[source] : 0;
+      if (cells.burg[cell] && !parent.cells.burg[source]) Development.settle(cell);
+    }
   }
 
   /** goods and market anchors are kept, everything cell-bound in the economy is rebuilt */

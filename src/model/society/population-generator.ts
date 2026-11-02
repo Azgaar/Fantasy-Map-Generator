@@ -1,6 +1,7 @@
 import { max, mean, median, sum } from "d3";
 import { Goods } from "@/model/economy/goods-generator";
 import type { Burg } from "@/model/political/burgs-generator";
+import { Development } from "@/model/society/development-generator";
 import { isWater } from "@/utils/height-utils";
 import { normalize, rn } from "@/utils/number-utils";
 import { gauss } from "@/utils/probability-utils";
@@ -65,7 +66,9 @@ class PopulationModule {
 
   /** recalculate rural and urban population, keeping locked burgs */
   regenerate(): void {
+    const wasPeopled = Array.from(pack.cells.i, cell => Development.isPeopled(cell));
     this.rankCells();
+    Development.resettle(wasPeopled);
 
     pack.burgs.forEach(burg => {
       if (!burg.i || burg.removed || burg.lock) return;

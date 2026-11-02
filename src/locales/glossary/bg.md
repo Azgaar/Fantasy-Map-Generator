@@ -25,6 +25,7 @@ Terms every `bg.json` string uses the same way. Rules for all catalogs are in
 | state                           | държава                        |                                        |
 | province                        | провинция                      |                                        |
 | culture                         | култура                        |                                        |
+| development / era               | развитие / епоха               | a people's technology level, 0–100     |
 | religion                        | религия                        |                                        |
 | namesbase                       | база от имена                  |                                        |
 | heightmap                       | карта на височините            | layer and tool button: “Височини”      |

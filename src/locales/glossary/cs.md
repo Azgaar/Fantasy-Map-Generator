@@ -29,6 +29,7 @@ Terms every `cs.json` string uses the same way. Rules for all catalogs are in
 | state                           | stát                                    |                                                   |
 | province                        | provincie                               |                                                   |
 | culture                         | kultura                                 |                                                   |
+| development / era               | vyspělost / epocha                      | a people's technology level, 0–100                |
 | religion                        | náboženství                             |                                                   |
 | namesbase                       | databáze jmen                           |                                                   |
 | heightmap                       | výšková mapa                            | the layer is “Výška”                              |

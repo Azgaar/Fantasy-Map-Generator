@@ -24,6 +24,7 @@ Terms every `el.json` string uses the same way. Rules for all catalogs are in
 | state                           | κράτος                        |                                        |
 | province                        | επαρχία                       |                                        |
 | culture                         | πολιτισμός                    |                                        |
+| development / era               | ανάπτυξη / εποχή              | a people's technology level, 0–100     |
 | religion                        | θρησκεία                      |                                        |
 | namesbase                       | βάση ονομάτων                 |                                        |
 | heightmap                       | χάρτης υψομέτρου              |                                        |

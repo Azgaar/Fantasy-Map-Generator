@@ -23,6 +23,7 @@ Terms every `nl.json` string uses the same way. Rules for all catalogs are in
 | state                           | staat                            |                                               |
 | province                        | provincie                        |                                               |
 | culture                         | cultuur                          |                                               |
+| development / era               | ontwikkeling / tijdperk          | a people's technology level, 0–100            |
 | religion                        | religie                          |                                               |
 | namesbase                       | naambasis (mv. naambases)        |                                               |
 | heightmap                       | hoogtekaart                      |                                               |

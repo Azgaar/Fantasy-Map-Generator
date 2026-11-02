@@ -7,6 +7,7 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Districts } from "@/model/political/districts";
 import { Stability } from "@/model/political/stability";
 import { EXPENSES, STATE_FORMS, type State, States } from "@/model/political/states-generator";
+import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
@@ -18,6 +19,7 @@ import { fog, unfog } from "@/renderers/overlays/fogging";
 import { Csv } from "@/services/io/csv";
 import { speak } from "@/services/speech";
 import type { LegendItem } from "@/types/legend";
+import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import { noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
@@ -57,6 +59,13 @@ const dialogId = "statesEditor" as const;
 const LEGEND_NAME = "States"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string };
+let development: (number | undefined)[] = []; // the people's average by state, as the table was last built
+
+/** The people's average development; a dash where nobody lives */
+const renderDevelopmentCell = (level: number | undefined): string =>
+  level === undefined
+    ? `<div class="placeholder" data-col="development"></div>`
+    : `<div data-tip="${developmentTip(level)}" data-col="development">${rn(level)}</div>`;
 
 /** Taxes as a percentage of the state's product; null for the neutral lands or before an economy run */
 const taxBurden = (s: State): number | null => {
@@ -204,6 +213,15 @@ const columns: EditorColumn<State>[] = [
     sortBy: s => StateEconomy.getAccounts(s.i)?.wealth ?? 0
   },
   {
+    key: "development",
+    label: t("Development"),
+    width: "7.5em",
+    hidden: true,
+    mobileHidden: true,
+    tip: t("Development: the people's average technology, 0–100, and its era"),
+    sortBy: s => development[s.i] ?? -1
+  },
+  {
     key: "type",
     label: t("Type"),
     width: "5em",
@@ -275,7 +293,10 @@ function getFilteredStates(): State[] {
 }
 
 const statesTable = initEditorTable<State>({
-  getData: () => sortDataByColumns(dialogId, getFilteredStates(), columns),
+  getData: () => {
+    development = Development.getAverages(pack.cells.state);
+    return sortDataByColumns(dialogId, getFilteredStates(), columns);
+  },
   onUpdate: renderStatesPage
 });
 
@@ -551,6 +572,7 @@ function renderStatesPage(view: TableView<State>): void {
         <div class="stateProduct placeholder" data-col="product"></div>
         <div class="stateWealth placeholder" data-col="wealth"></div>`
         }
+        ${renderDevelopmentCell(development[0])}
         <select class="cultureType placeholder" data-col="type">${getTypeOptions(0)}</select>
         <div data-col="expansionism">
           <span class="icon-resize-full placeholder"></span>
@@ -623,6 +645,7 @@ function renderStatesPage(view: TableView<State>): void {
       <div data-tip="${stability ? sentences(EconomyTerms.stability(), t("Click to open the stability overview")) : EconomyTerms.noData()}" class="stateStability pointer" data-col="stability">${stability ? `${rn(stability.stability * 100)}%` : "—"}</div>
       <div data-tip="${sentences(EconomyTerms.stateProduct(), EconomyTerms.open())}" class="stateEconomy stateProduct pointer" data-col="product">🟡 ${si(accounts?.product ?? 0)}</div>
       <div data-tip="${sentences(EconomyTerms.wealth(), EconomyTerms.open())}" class="stateEconomy stateWealth pointer" data-col="wealth">🟡 ${rn(accounts?.wealth ?? 0, 2)}</div>
+      ${renderDevelopmentCell(development[s.i])}
       <select data-tip="${sentences(t("State type"), t("Defines growth model"), t("Click to change"))}" class="cultureType" data-col="type">${getTypeOptions(
         s.type
       )}</select>

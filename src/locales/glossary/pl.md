@@ -30,6 +30,7 @@ Terms every `pl.json` string uses the same way. Rules for all catalogs are in
 | state                           | państwo (n.)                            |                                                   |
 | province                        | prowincja                               |                                                   |
 | culture                         | kultura                                 |                                                   |
+| development / era               | rozwój / epoka                          | a people's technology level, 0–100                |
 | religion                        | religia                                 |                                                   |
 | namesbase                       | baza nazw (pl. bazy nazw)               |                                                   |
 | heightmap                       | mapa wysokości                          | the layer is “Wysokości”                          |

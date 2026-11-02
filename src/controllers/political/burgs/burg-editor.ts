@@ -11,6 +11,7 @@ import { removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { speak } from "@/services/speech";
+import { renderDevelopment } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import { noteButton } from "@/ui/dialog/dialog-helpers";
 import { EconomyTerms, prosperityTip, renderProsperity } from "@/ui/economy-view";
@@ -63,7 +64,7 @@ function renderDialog(): void {
           <svg data-tip="${sentences(t("Burg emblem"), t("Click to edit"))}" class="pointer" viewBox="0 0 200 200" width="13em" height="13em">
             <use id="burgEmblem"></use>
           </svg>
-          <div style="display: grid; grid-auto-rows: minmax(1.6em, auto)">
+          <div style="display: grid; grid-auto-rows: minmax(2em, auto)">
             <div id="burgProvinceAndState" style="font-weight: bold; max-width: 16em"></div>
             <div>
               <div class="label">${t("Name")}:</div>
@@ -177,6 +178,10 @@ function renderDialog(): void {
                 class="burgFeature icon-campground"
                 style="font-size: 1em"
               ></span>
+            </div>
+            <div id="burgDevelopmentLine" data-tip="${t("Development of the burg's land, 0–100, and its era: what it can make")}">
+              <div class="label">${t("Development")}:</div>
+              <span id="burgDevelopment"></span>
             </div>
             <div id="burgProsperityLine">
               <div class="label">${t("Prosperity")}:</div>
@@ -344,6 +349,8 @@ function updateBurgValues(): void {
   const living = Prosperity.getBurg(b.i!);
   ensureEl("burgProsperity").innerHTML = living ? renderProsperity(living.prosperity) : "—";
   ensureEl("burgProsperityLine").dataset.tip = living ? prosperityTip(living.prosperity) : EconomyTerms.noData();
+  const development = pack.cells.development?.[b.cell];
+  ensureEl("burgDevelopment").textContent = development === undefined ? "—" : renderDevelopment(development);
 
   updateBurgLockIcon();
 

@@ -25,6 +25,7 @@ Terms every `th.json` string uses the same way. Rules for all catalogs are in
 | state                           | รัฐ                              |                                               |
 | province                        | จังหวัด                          |                                               |
 | culture                         | วัฒนธรรม                         |                                               |
+| development / era               | ระดับการพัฒนา / ยุค              | a people's technology level, 0–100            |
 | religion                        | ศาสนา                            |                                               |
 | namesbase                       | ฐานชื่อ                          |                                               |
 | heightmap                       | แผนที่ความสูง                    |                                               |

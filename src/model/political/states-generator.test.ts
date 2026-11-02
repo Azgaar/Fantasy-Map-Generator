@@ -686,3 +686,30 @@ describe("StatesModule.defineCorruption", () => {
     expect(States.defineCorruption(pack.states[0])).toBe(0);
   });
 });
+
+describe("StatesModule tribal forms", () => {
+  const tribal = (development: number, state: object, tier = 1, formName = "Kingdom") => {
+    globalThis.pack = {
+      burgs: [{ i: 0 }, { i: 1, cell: 0 }],
+      cells: { development: Uint8Array.from([development]) }
+    } as any;
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    return States["getTribalForm"]({ capital: 1, ...state } as any, tier, formName);
+  };
+
+  it("titles states ruled from before the Bronze Age as tribes, chiefdoms and hordes", () => {
+    expect(tribal(5, { form: "Monarchy" }, 1)).toBe("Tribe");
+    expect(tribal(5, { form: "Monarchy" }, 3)).toBe("Chiefdom");
+    expect(tribal(5, { form: "Monarchy" }, 4, "Empire")).toBe("Paramount Chiefdom");
+    expect(tribal(11, { form: "Monarchy", type: "Nomadic" })).toBe("Horde");
+    expect(tribal(5, { form: "Republic" }, 1, "Republic")).toBe("Tribal Council");
+    expect(tribal(5, { form: "Union" }, 1, "League")).toBe("Clans Union");
+    expect(tribal(5, { form: "Theocracy" }, 1, "Diocese")).toBe("Shamanate");
+    expect(tribal(5, { form: "Anarchy" }, 1, "Commune")).toBe("Commune");
+  });
+
+  it("keeps the form's title from the Bronze Age on, and where development is unknown", () => {
+    expect(tribal(12, { form: "Monarchy" }, 4, "Empire")).toBe("Empire");
+    expect(tribal(0, { form: "Monarchy" }, 4, "Empire")).toBe("Empire");
+  });
+});

@@ -123,6 +123,7 @@ interface Campaign {
 export const STATE_FORMS = {
   Monarchy: [
     "Beylik",
+    "Chiefdom",
     "Despotate",
     "Dominion",
     "Duchy",
@@ -135,11 +136,13 @@ export const STATE_FORMS = {
     "Khanate",
     "Kingdom",
     "Marches",
+    "Paramount Chiefdom",
     "Principality",
     "Satrapy",
     "Shogunate",
     "Sultanate",
     "Tsardom",
+    "Tribe",
     "Ulus",
     "Viceroyalty"
   ],
@@ -156,9 +159,11 @@ export const STATE_FORMS = {
     "Republic",
     "Tetrarchy",
     "Trade Company",
+    "Tribal Council",
     "Triumvirate"
   ],
   Union: [
+    "Clans Union",
     "Confederacy",
     "Confederation",
     "Conglomerate",
@@ -188,13 +193,16 @@ export const STATE_FORMS = {
     "Imamah",
     "Patriarchate",
     "See",
+    "Shamanate",
     "Thearchy",
-    "Theocracy"
+    "Theocracy",
+    "Priesthood"
   ],
   Anarchy: ["Commune", "Community", "Council", "Free Territory", "Tribes"]
 } as const satisfies Record<string, readonly string[]>;
 type StateForm = keyof typeof STATE_FORMS;
 const FORMS = Object.keys(STATE_FORMS) as StateForm[];
+const TRIBAL_DEVELOPMENT = 12; // below the Bronze Age, a state's capital rules a tribe or chiefdom
 
 /** The form of government a listed form name belongs to */
 const getStateForm = (formName: string): StateForm | undefined =>
@@ -1007,7 +1015,7 @@ class StatesModule {
         }
       };
 
-      s.formName = selectForm(s, tier);
+      s.formName = this.getTribalForm(s, tier, selectForm(s, tier)); // rolled first, so a tribe draws as a kingdom would
       s.fullName = this.getFullName(s);
 
       const taxes = this.defineTaxRates(s);
@@ -1018,6 +1026,21 @@ class StatesModule {
       s.alert = this.defineAlert(s);
       s.economy.budget = this.defineBudget(s, this.defineCorruption(s));
     }
+  }
+
+  /** A title for a people before the Bronze Age, where kingdoms and republics are not yet known; others keep the form's */
+  private getTribalForm(state: State, tier: number, formName: string | undefined): string | undefined {
+    const capital = pack.burgs[state.capital];
+    const development = capital ? pack.cells.development?.[capital.cell] : undefined;
+    if (!development || development >= TRIBAL_DEVELOPMENT) return formName;
+    if (state.form === "Monarchy") {
+      if (state.type === "Nomadic") return "Horde";
+      return tier < 2 ? "Tribe" : tier < 4 ? "Chiefdom" : "Paramount Chiefdom";
+    }
+    if (state.form === "Republic") return "Tribal Council";
+    if (state.form === "Union") return "Clans Union";
+    if (state.form === "Theocracy") return "Shamanate";
+    return formName;
   }
 
   /** How ready for war the state is, from 0.1 to 5 */

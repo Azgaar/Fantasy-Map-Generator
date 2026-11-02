@@ -17,6 +17,7 @@ catalog's terms are in [zh.md](zh.md); this file lists where Taiwan usage differ
 | ---------------------------- | --------------- | ---------------------------- |
 | undo / redo                  | 撤销 / 重做     | 復原 / 重做                  |
 | apply                        | 应用            | 套用                         |
+| development / era            | 发展程度 / 时代     | 發展程度 / 時代                  |
 | add (a new item)             | 添加            | 新增                         |
 | current                      | 当前            | 目前                         |
 | lost (data)                  | 丢失            | 遺失                         |

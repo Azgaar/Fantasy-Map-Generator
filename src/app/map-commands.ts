@@ -299,6 +299,13 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.GoodsEditor.open()
   },
   {
+    id: "overviewDevelopmentButton",
+    name: t("Development Overview"),
+    link: true,
+    aliases: "technology tech level era civilization progress",
+    run: () => Controllers.DevelopmentOverview.open()
+  },
+  {
     id: "overviewMarketsButton",
     name: t("Markets Overview"),
     link: true,

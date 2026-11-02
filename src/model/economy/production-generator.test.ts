@@ -57,7 +57,7 @@ beforeEach(() => {
   burg = { i: 1, cell: 0, population: 100 } as Burg;
   globalThis.pack = {
     goods: catalogue,
-    cells: { good: [0], market: [1, 2], province: [0, 0] },
+    cells: { good: [0], market: [1, 2], h: [30, 30] },
     burgs: [{ i: 0 }, burg],
     markets: [market],
     deals: []
@@ -660,18 +660,40 @@ describe("the run's rounds", () => {
 });
 
 describe("the turn order", () => {
-  it("goes state by state and province by province in id order, neutrals and burgs outside a province last", () => {
-    globalThis.pack.cells.province = [3, 1, 2, 0, 0] as never;
+  it("goes by √population × development, the most first", () => {
+    globalThis.pack.cells.development = Uint8Array.from([80, 20, 50]);
     const burgs = [
-      { i: 1, cell: 0, state: 2, population: 10 },
-      { i: 2, cell: 1, state: 1, population: 3 },
-      { i: 3, cell: 2, state: 1, population: 9 },
-      { i: 4, cell: 0, state: 2, population: 1 },
-      { i: 5, cell: 3, state: 0, population: 50 },
-      { i: 6, cell: 4, state: 1, population: 20 }
+      { i: 1, cell: 1, population: 16 },
+      { i: 2, cell: 0, population: 4 },
+      { i: 3, cell: 2, population: 9 }
     ] as Burg[];
     // biome-ignore lint/complexity/useLiteralKeys: private test access
     const order = production["getTurnOrder"](burgs).map(burg => burg.i);
-    expect(order).toEqual([2, 3, 6, 1, 4, 5]);
+    expect(order).toEqual([2, 3, 1]); // 160, 150, 80
+  });
+});
+
+describe("technology tiers", () => {
+  it("make nothing of a good where development is below its tier", () => {
+    catalogue[0].development = 50;
+    const modifiers = (level: number) => {
+      globalThis.pack.cells.development = Uint8Array.from([level]);
+      // biome-ignore lint/complexity/useLiteralKeys: private test access
+      return production["getModifiers"](catalogue[0], 0);
+    };
+    expect(modifiers(40)).toBe(0);
+    expect(modifiers(50)).toBeCloseTo(50 / 30);
+  });
+
+  it("make more of every good past the High Middle Ages", () => {
+    const modifiers = (level: number) => {
+      globalThis.pack.cells.development = Uint8Array.from([level]);
+      // biome-ignore lint/complexity/useLiteralKeys: private test access
+      return production["getModifiers"](catalogue[0], 0);
+    };
+    expect(modifiers(20)).toBe(1);
+    expect(modifiers(30)).toBe(1);
+    expect(modifiers(60)).toBe(2);
+    expect(modifiers(90)).toBe(3);
   });
 });

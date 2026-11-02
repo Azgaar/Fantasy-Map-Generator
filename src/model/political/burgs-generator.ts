@@ -10,6 +10,7 @@ import type { River } from "@/model/physical/river-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { CULTURE_TYPES, type CultureType, DEFAULT_CULTURE_TYPE } from "@/model/society/cultures-generator";
+import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import type { BurgGroup } from "@/types/burg-groups";
@@ -824,6 +825,7 @@ class BurgModule {
 
     pack.burgs.push(burg);
     cells.burg[cellId] = burgId;
+    Development.settle(cellId);
 
     Routes.connect(cellId);
     return burgId;
@@ -837,6 +839,7 @@ class BurgModule {
 
     const newBurgs: Burg[] = [0 as unknown as Burg];
     const burgsTree = quadtree<[number, number]>();
+    const oldCells = burgs.filter(burg => burg.i && !burg.removed).map(burg => burg.cell);
     cells.burg = new Uint16Array(cells.i.length);
     states
       .filter(state => state.i)
@@ -900,6 +903,7 @@ class BurgModule {
       newBurgs.push({ cell, x, y, state: stateId, i: id, culture, name, capital, feature: cells.f[cell] });
       burgsTree.add([x, y]);
       cells.burg[cell] = id;
+      Development.settle(cell);
     }
 
     pack.burgs = newBurgs;
@@ -918,6 +922,7 @@ class BurgModule {
         this.changeGroup(burg, null);
       });
 
+    for (const cell of oldCells) Development.vacate(cell); // land a dropped burg stood on alone
     this.specify();
     Routes.regenerate();
   }
@@ -1033,7 +1038,9 @@ class BurgModule {
       throw new Error(`Burg ${burgId} is the capital of province ${province.i} and cannot leave it`);
 
     cells.burg[burg.cell] = 0;
+    Development.vacate(burg.cell);
     cells.burg[cell] = burgId;
+    Development.settle(cell);
     Object.assign(burg, { cell, state, x: rn(x, 2), y: rn(y, 2), feature: cells.f[cell] });
     if (burg.capital) pack.states[state].center = cell;
     if (province) province.center = cell;
@@ -1082,6 +1089,7 @@ class BurgModule {
       throw new Error(`Burg ${burgId} is a market center; remove the market first`);
 
     pack.cells.burg[burg.cell] = 0;
+    Development.vacate(burg.cell);
     burg.removed = true;
     delete burg.note;
     delete burg.coa;

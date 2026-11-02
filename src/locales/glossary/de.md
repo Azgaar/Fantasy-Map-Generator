@@ -23,6 +23,7 @@ Terms every `de.json` string uses the same way. Rules for all catalogs are in
 | state                        | Staat                           |                                          |
 | province                     | Provinz                         |                                          |
 | culture                      | Kultur                          |                                          |
+| development / era            | Entwicklung / Epoche            | a people's technology level, 0–100       |
 | religion                     | Religion                        |                                          |
 | namesbase                    | Namensbasis (pl. Namensbasen)   |                                          |
 | heightmap                    | Höhenkarte                      |                                          |

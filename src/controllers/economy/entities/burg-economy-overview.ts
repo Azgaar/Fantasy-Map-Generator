@@ -19,6 +19,7 @@ import { type Burg, Burgs } from "@/model/political/burgs-generator";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Csv } from "@/services/io/csv";
+import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import {
   BADGE_COLORS,
@@ -608,10 +609,12 @@ function renderStats(burg: Burg): void {
   const wealth = population > 0 ? product / population : 0;
   const { scale, urbanization } = options.map.units.population;
   const people = rn(population * scale * urbanization.rate);
+  const development = pack.cells.development?.[burg.cell];
 
   ensureEl(`${dialogId}Stats`).innerHTML = /* html */ `
     <div>
       <span><b>${t("Population")}:</b> ${people}</span>
+      ${development === undefined ? "" : `<span data-tip="${developmentTip(development)}"><b>${t("Development")}:</b> ${development}</span>`}
       ${EconomyDebug.get(burg.i!) ? `<span><b>${t("Order")}:</b> ${t("{{rank}} of {{total}}", { rank: burgs.indexOf(burg) + 1, total: burgs.length })}</span>` : ""}
       <span><b>${t("Market")}:</b> ${market ? Markets.getName(market) : ""}</span>
       <span data-tip="${EconomyTerms.product()}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>

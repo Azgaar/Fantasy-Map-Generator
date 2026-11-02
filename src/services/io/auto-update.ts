@@ -3,6 +3,7 @@
 import { extent, min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
 import { isDrawable } from "@/controllers/political/emblems/drawability";
+import { DEFAULT_DEVELOPMENT } from "@/data/development";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
@@ -29,6 +30,7 @@ import { Provinces } from "@/model/political/provinces-generator";
 import { noFinance, type State, type StateFinance, States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
+import { Development } from "@/model/society/development-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { getDefaultMarkerName, type Marker, Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
@@ -147,6 +149,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
         name,
         color: colors[i] || defaultBiome?.color || "#999999",
         habitability: habitability[i] ?? defaultBiome?.habitability ?? 50,
+        development: defaultBiome?.development ?? 0,
         iconsDensity: defaultBiome?.iconsDensity ?? 0,
         icons: defaultBiome?.icons ?? [],
         cost: defaultBiome?.cost ?? 50,
@@ -2217,6 +2220,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     if (pack.goods?.some(good => "chance" in good)) migrateDeposits();
 
     for (const burg of pack.burgs ?? []) delete (burg as { market?: number } | undefined)?.market;
+    addDevelopment(); // the rerun's technology tiers read it
     if (pack.markets?.length) {
       Goods.sync();
       Markets.sync();
@@ -2228,6 +2232,19 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       if (pack.cells?.i) pack.cells.prosperity = new Uint8Array(pack.cells.i.length);
     }
   }
+
+  if (isOlderThan("1.158.0")) addDevelopment();
+}
+
+/** v1.158.0 keeps each cell's technological development: predefined cultures get their level by name, generated biomes their offset by id */
+function addDevelopment() {
+  if (!pack.cells?.h || !pack.cultures || pack.cells.development?.length) return;
+  const biomes = Biomes.getDefault();
+  for (const biome of pack.biomes ?? []) if (biome) biome.development ??= biomes[biome.i]?.development ?? 0;
+  for (const culture of pack.cultures ?? [])
+    if (culture?.i && !culture.removed)
+      culture.development ??= Cultures.getDefaultDevelopment(culture.name) ?? DEFAULT_DEVELOPMENT;
+  Development.generate();
 }
 
 // rendered for the geometry the steps measure, in a shadow root so its ids never meet the live map's

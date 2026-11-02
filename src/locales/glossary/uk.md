@@ -26,6 +26,7 @@ Terms every `uk.json` string uses the same way. Rules for all catalogs are in
 | state                         | держава                   | “держава” for the polity; “стан” is never used    |
 | province                      | провінція                 |                                                   |
 | culture                       | культура                  |                                                   |
+| development / era             | розвиток / епоха          | a people's technology level, 0–100                |
 | religion                      | релігія                   |                                                   |
 | namesbase                     | база назв                 | the tab and the culture field are “Назви”         |
 | heightmap                     | карта висот               | the layer is “Висота”                             |

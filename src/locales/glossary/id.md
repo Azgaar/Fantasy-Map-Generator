@@ -27,6 +27,7 @@ Terms every `id.json` string uses the same way. Rules for all catalogs are in
 | state                      | negara                 |                                            |
 | province                   | provinsi               |                                            |
 | culture                    | budaya                 |                                            |
+| development / era          | perkembangan / zaman   | a people's technology level, 0–100         |
 | religion                   | agama                  |                                            |
 | namesbase                  | basis nama             |                                            |
 | heightmap                  | peta ketinggian        | the layer is “Ketinggian”                  |

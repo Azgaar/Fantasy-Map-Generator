@@ -26,6 +26,7 @@ Terms every `ko.json` string uses the same way. Rules for all catalogs are in
 | state                         | 국가                |                                          |
 | province                      | 주                  |                                          |
 | culture                       | 문화                |                                          |
+| development / era             | 발전도 / 시대          | a people's technology level, 0–100       |
 | religion                      | 종교                |                                          |
 | namesbase                     | 이름 데이터베이스   | the tab and the culture field are “이름” |
 | heightmap                     | 높이맵              | the layer is “높이”                      |

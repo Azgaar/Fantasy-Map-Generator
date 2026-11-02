@@ -23,6 +23,7 @@ Terms every `da.json` string uses the same way. Rules for all catalogs are in
 | state                           | stat                             |                                               |
 | province                        | provins                          |                                               |
 | culture                         | kultur                           |                                               |
+| development / era               | udvikling / tidsalder            | a people's technology level, 0–100            |
 | religion                        | religion                         |                                               |
 | namesbase                       | navnebase (pl. navnebaser)       |                                               |
 | heightmap                       | højdekort                        |                                               |

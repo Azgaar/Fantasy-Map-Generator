@@ -227,6 +227,9 @@ describe("Biomes", () => {
     Biomes.setHabitability(0, 40);
     expect(pack.biomes[0]).toMatchObject({ name: "Deep sea", habitability: 40 });
     expect(() => Biomes.setHabitability(0, -5)).toThrow("non-negative");
+    Biomes.setDevelopment(0, -6);
+    expect(pack.biomes[0].development).toBe(-6);
+    expect(() => Biomes.setDevelopment(0, 51)).toThrow("from -50 to 50");
     expect(() => Biomes.rename(3, "X")).toThrow("Biome 3 does not exist");
   });
 });
@@ -437,6 +440,9 @@ describe("Cultures and Religions removal", () => {
     expect(() => Religions.setType(2, "Pantheon")).toThrow("The type must be one of");
     expect(() => Religions.setExpansion(2, "world")).toThrow("The expansion must be one of");
     expect(() => Cultures.setExpansionism(2, 100)).toThrow("from 0 to 99");
+    Cultures.setDevelopment(2, 40);
+    expect(pack.cultures[2].development).toBe(40);
+    expect(() => Cultures.setDevelopment(2, 0)).toThrow("from 1 to 100");
   });
 });
 
@@ -1147,6 +1153,11 @@ describe("Goods and Markets", () => {
     expect(() => Goods.setProduction(1, { recipes: [{ 9: 1 }] })).toThrow("unknown 9");
     expect(() => Goods.setProduction(1, { deposits: [3, 1] })).toThrow("must not exceed");
     expect(() => Goods.setCarriage(1, -1)).toThrow("non-negative");
+    Goods.setDevelopment(1, 18);
+    expect(pack.goods[0].development).toBe(18);
+    Goods.setDevelopment(1, 0);
+    expect("development" in pack.goods[0] && pack.goods[0].development !== undefined).toBe(false);
+    expect(() => Goods.setDevelopment(1, 101)).toThrow("0 to 100");
     Goods.setProduction(1, { recipes: null });
     expect("recipes" in pack.goods[0]).toBe(false);
   });

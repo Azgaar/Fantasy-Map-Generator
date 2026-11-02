@@ -107,6 +107,7 @@ World data is mainly stored in typed arrays within `cells` object in both `grid`
 - `pack.cells.good`: `number[]` - the good of the deposit on the cell (`0` if none). Marks the special good extracted on the cell. `Uint16Array`
 - `pack.cells.market`: `number[]` - cells market index (`0` if unassigned). Filled by the market territory flood-fill. `Uint16Array`
 - `pack.cells.prosperity`: `number[]` - cells rural prosperity in percent (`0` where no one lives or the economy has not run), kept by the economy run for quick reads. `Uint8Array`
+- `pack.cells.development`: `number[]` - cells technological development, 1–100 where people live (`0`: nobody lives there, or water), generated from cultures, routes and land before markets. Stored in .map file. `Uint8Array`
 - `pack.cells.area`: `number[]` - cells area in pixels. `Uint16Array`
 - `pack.cells.pop`: `number[]` - cells population in population points (1 point = 1000 people by default). `Float32Array`, not rounded to not lose population of high population rate
 - `pack.cells.r`: `number[]` - cells river index. `Uint16Array`
@@ -134,6 +135,7 @@ Cultures (races, language zones) data is stored as an array of objects with stri
 - `code`: `string` - culture name abbreviation. Used to render cultures tree
 - `color`: `string` - culture color in hex (e.g. `#45ff12`) or link to hatching pattern (e.g. `url(#hatch7)`, or `url(#hatch7-c0392b)` for one drawn in a color)
 - `expansionism`: `number` - culture growth multiplier. Used mainly during cultures generation to spread cultures not uniformly
+- `development`: `number` - technological development at the culture center, 1–100, before its type's adjustment. Set from the predefined culture; `33` when none
 - `type`: `string` - culture type, see [culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types)
 - `area`: `number` - culture area in pixels
 - `cells`: `number` - number of cells assigned to culture
@@ -484,6 +486,7 @@ Goods (tradable resources and products) are stored in `pack.goods: Good[]`. Good
 - `distribution`: `string` - JS expression evaluated per cell to decide where the raw good is placed (see [Goods spread functions](../wiki/Goods-spread-functions.md)). Optional
 - `biomeOutput`: `Record<biomeId, number>` - units produced per rural population point per production cycle, per biome. Optional
 - `recipes`: `Record<goodId, number>[]` - array of alternative recipes; each maps input good id → units consumed per 1 unit of output. Optional
+- `development`: `number` - the least cell development, 1–100, needed to produce the good, raw or made. Optional: absent is no tier
 - `multipliers`: `object` - per-dimension production scalars, each an optional `Record<id, number>`: `cultureType`, `culture`, `state`, `religion`, `biome`, `zone`. Absent or `1` = no effect, `0` = fully suppressed; active factors combine multiplicatively. Only the map-independent `cultureType` is present in `GOODS_DATA`; the rest are set per map via the editor. Optional
 - `demandCoverage`: `Record<category, number>` - how much one unit of the good covers each demand category (`food`, `utilities`, `construction`, `military`, `luxury`). Optional
 - `note`: `string` - optional. The user's note (legend) about the good, as html. Removed with it
@@ -510,6 +513,7 @@ Biome definitions are stored in `pack.biomes: Biome[]`, where `i` equals the arr
 - `color`: `string` - biome color in hex (e.g. `#45ff12`) or link to a hatching pattern (e.g. `url(#hatch7)`, or `url(#hatch7-c0392b)` for one drawn in a color)
 - `cost`: `number` - non-negative movement cost used during culture, state and religion growth
 - `habitability`: `number` - non-negative suitability value; `0` means uninhabitable
+- `development`: `number` - points the biome adds to its people's development: `2` temperate deciduous forest to `-8` glacier, `0` custom. See [development](../domain/development.md)
 - `icons`: `Record<string, { weight: number; size?: number }>` - the relief pool: lowland relief entries in insertion order, each with a positive weight and an optional positive `size`, a multiplier of the pool's icon size (absent is 1). A key is a relief type (`dune`) or an icon reference (`custom-1a2b3c4d`). Before v1.154.0 a list of repeated entries
 - `iconsDensity`: `number` - how packed the biome's lowland relief is. An integer from `0` (none) to `250`
 - `removed`: `boolean` - optional marker for a removed custom biome

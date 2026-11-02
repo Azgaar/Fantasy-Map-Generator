@@ -17,6 +17,7 @@ export interface Good {
   distribution?: string;
   biomeOutput?: Partial<Record<number, number>>;
   recipes?: Record<number, number>[];
+  development?: number; // the least technological development, 0–100, a cell needs to produce it
 
   // multipliers; absent or 1 = no effect; 0 = fully suppressed
   multipliers?: {
@@ -289,6 +290,13 @@ export class GoodsModule {
     if (typeof carriage !== "number" || !(carriage >= 0 && Number.isFinite(carriage)))
       throw new Error("The carriage price must be a non-negative number");
     this.living(goodId).carriage = carriage;
+  }
+
+  /** Set the least development, 0–100, a cell needs to produce a good; 0 for none. Takes effect on the next economy run */
+  setDevelopment(goodId: number, development: number): void {
+    if (!Number.isInteger(development) || development < 0 || development > 100)
+      throw new Error("The development must be a whole number from 0 to 100");
+    this.living(goodId).development = development || undefined;
   }
 
   /** The default good's carriage price by name, otherwise a tenth of the good's value */

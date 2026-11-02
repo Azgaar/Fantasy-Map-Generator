@@ -10,6 +10,7 @@ import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/u
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
+import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -146,6 +147,15 @@ const columns: EditorColumn<Burg>[] = [
     mobileHidden: true,
     tip: sentences(EconomyTerms.prosperity(), EconomyTerms.openValue()),
     sortBy: b => Prosperity.getBurg(b.i!)?.prosperity ?? -1
+  },
+  {
+    key: "development",
+    label: t("Development"),
+    width: "7.5em",
+    hidden: true,
+    mobileHidden: true,
+    tip: t("Development of the burg's land, 0–100, and its era"),
+    sortBy: b => pack.cells.development?.[b.cell] ?? -1
   },
   {
     key: "productpercapita",
@@ -459,6 +469,11 @@ function renderBurgsPage(view: TableView<Burg>): void {
         <div data-col="prosperity" class="burgEconomy pointer" data-tip="${living ? sentences(prosperityTip(living.prosperity), openTip) : EconomyTerms.noData()}">
           ${living ? renderProsperityPercent(living.prosperity) : "—"}
         </div>
+        ${
+          pack.cells.development
+            ? `<div data-tip="${developmentTip(pack.cells.development[b.cell])}" data-col="development">${pack.cells.development[b.cell]}</div>`
+            : `<div class="placeholder" data-col="development"></div>`
+        }
         <div data-col="productpercapita" class="burgEconomy pointer" data-tip="${sentences(EconomyTerms.wealth(), openTip)}">
           <span>🟡</span>
           <input class="pointer" value=${productPerCapita} readonly />

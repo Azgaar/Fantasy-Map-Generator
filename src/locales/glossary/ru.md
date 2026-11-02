@@ -28,6 +28,7 @@ Terms every `ru.json` string uses the same way. Rules for all catalogs are in
 | state                         | страна                             | never “государство”                                       |
 | province                      | провинция                          |                                                           |
 | culture                       | культура                           |                                                           |
+| development / era             | развитие / эпоха                   | a people's technology level, 0–100                        |
 | religion                      | религия                            |                                                           |
 | namesbase                     | база имён (pl. базы имён)          | the tab and the culture field are “Имена”                 |
 | heightmap                     | карта высот                        | the layer is “Высоты”                                     |
