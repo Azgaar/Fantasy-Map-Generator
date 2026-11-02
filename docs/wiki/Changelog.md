@@ -12,6 +12,10 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+**Unreleased**:
+
+- Options: the interface size slider no longer jumps while dragged
+
 **[1.156.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.156.0) - 2026-10-25**:
 
 - Migration: folders are reworked
