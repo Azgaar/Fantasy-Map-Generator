@@ -323,7 +323,7 @@ function regenerateProvinceNames(): void {
   }
 
   provincesTable.refresh();
-  Layers.draw("provinces", "labels");
+  Layers.draw("labels");
 }
 
 function collectStatistics(): void {
