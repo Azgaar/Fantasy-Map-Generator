@@ -56,6 +56,12 @@ describe("pickLimitation", () => {
     expect(onApply).not.toHaveBeenCalled();
   });
 
+  it("keeps a long list on screen by capping the dialog height", () => {
+    pick([]);
+    const content = document.getElementById("limitationPicker")!;
+    expect(content.style.maxHeight).toMatch(/px$/);
+  });
+
   it("names the allowed entities", () => {
     expect(limitationTip(undefined, items)).toBe("all");
     expect(limitationTip([3, 1], items)).toBe("Taiga, Desert");

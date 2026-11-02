@@ -59,6 +59,7 @@ export function pickLimitation({
 
   Dialog.open(DIALOG_ID, {
     width: "fit-content",
+    maxHeight: Math.max(window.innerHeight - 40, 300),
     title,
     position: { my: "center", at: "center", of: "svg" },
     buttons: [
