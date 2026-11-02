@@ -1216,6 +1216,21 @@ describe("v1.157.0 carriage per good", () => {
 
     expect(pack.goods.map(good => good.carriage)).toEqual([0.5, 3, 2]);
   });
+
+  it("gives default goods their development tier by name, as the rerun economy reads it", async () => {
+    globalThis.pack = {
+      features: [],
+      goods: [
+        { i: 1, name: "Tools", value: 16 },
+        { i: 2, name: "Wood", value: 1 },
+        { i: 3, name: "Dragon scales", value: 30 }
+      ]
+    } as unknown as typeof pack;
+
+    await resolveVersionConflicts("1.156.0", []);
+
+    expect(pack.goods.map(good => good.development)).toEqual([15, undefined, undefined]);
+  });
 });
 
 describe("v1.157.0 deposit counts", () => {

@@ -963,7 +963,7 @@ class MapRestorationModule {
     });
   }
 
-  /** development follows its cells, painted levels included; land the snapshot did not have is generated, and a burg moved to empty land settles it */
+  /** development follows its peopled cells, painted levels included; land the snapshot had no people on is generated, and a burg moved to empty land settles it */
   private restoreDevelopment(parent: PackedGraph, links: CellLinks) {
     Development.generate(); // of the restored cultures, routes and land
     const from = parent.cells.development;
@@ -971,8 +971,9 @@ class MapRestorationModule {
     const { cells } = pack;
     for (const cell of cells.i) {
       const source = links.sameType[cell];
-      if (source === -1 || isWater(cell, pack)) continue;
-      cells.development![cell] = Development.isPeopled(cell) ? from[source] : 0;
+      if (source === -1 || !Development.isPeopled(cell)) continue;
+      if (!parent.cells.pop[source] && !parent.cells.burg[source]) continue; // its 0 is no people, not a painted level
+      cells.development![cell] = from[source];
       if (cells.burg[cell] && !parent.cells.burg[source]) Development.settle(cell);
     }
   }

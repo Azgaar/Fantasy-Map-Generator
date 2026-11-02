@@ -931,11 +931,25 @@ describe("restoreDevelopment", () => {
     vi.spyOn(Development, "generate").mockImplementation(() => {
       pack.cells.development = Uint8Array.from([7, 7, 7, 7, 0]);
     });
-    const parent = graph({ cells: { development: Uint8Array.from([40, 0, 25, 3, 0]), burg: [0, 0, 0, 0, 0] } });
+    const parent = graph({
+      cells: { development: Uint8Array.from([40, 0, 25, 3, 0]), pop: [1, 1, 1, 1, 0], burg: [0, 0, 0, 0, 0] }
+    });
 
     internals.restoreDevelopment(parent, links([0, 1, -1, 3, 4]));
 
     // painted 40 and 0 kept, new land generated, the moved burg's cell raised to a town's least
     expect([...pack.cells.development!]).toEqual([40, 0, 7, 5, 0]);
+  });
+
+  it("generates land newly peopled where the snapshot had nobody", () => {
+    vi.stubGlobal("pack", graph({ cells: { ...lineCells([30, 30]), pop: [1, 1], burg: [0, 0] } }));
+    vi.spyOn(Development, "generate").mockImplementation(() => {
+      pack.cells.development = Uint8Array.from([7, 7]);
+    });
+    const parent = graph({ cells: { development: Uint8Array.from([0, 20]), pop: [0, 1], burg: [0, 0] } });
+
+    internals.restoreDevelopment(parent, links([0, 1]));
+
+    expect([...pack.cells.development!]).toEqual([7, 20]);
   });
 });

@@ -2195,8 +2195,11 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       state.economy.adjustments ??= [];
     }
 
-    // v1.157.0 charges carriage per good and places a count of richer deposits per good instead of a chance per cell
-    for (const good of pack.goods ?? []) good.carriage ??= Goods.getDefaultCarriage(good);
+    // v1.157.0 charges carriage per good, gives goods development tiers and places a count of richer deposits per good instead of a chance per cell
+    for (const good of pack.goods ?? []) {
+      good.carriage ??= Goods.getDefaultCarriage(good);
+      good.development ??= Goods.getDefaultDevelopment(good.name);
+    }
     function migrateDeposits() {
       const { cells } = pack;
       const goods = pack.goods as (Good & { chance?: number })[];
@@ -2220,7 +2223,19 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     if (pack.goods?.some(good => "chance" in good)) migrateDeposits();
 
     for (const burg of pack.burgs ?? []) delete (burg as { market?: number } | undefined)?.market;
-    addDevelopment(); // the rerun's technology tiers read it
+
+    /** v1.157.0 keeps each cell's technological development */
+    function addDevelopment() {
+      if (!pack.cells?.h || !pack.cultures || pack.cells.development?.length) return;
+      const biomes = Biomes.getDefault();
+      for (const biome of pack.biomes ?? []) if (biome) biome.development ??= biomes[biome.i]?.development ?? 0;
+      for (const culture of pack.cultures ?? [])
+        if (culture?.i && !culture.removed)
+          culture.development ??= Cultures.getDefaultDevelopment(culture.name) ?? DEFAULT_DEVELOPMENT;
+      Development.generate();
+    }
+    addDevelopment();
+
     if (pack.markets?.length) {
       Goods.sync();
       Markets.sync();
@@ -2232,19 +2247,6 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       if (pack.cells?.i) pack.cells.prosperity = new Uint8Array(pack.cells.i.length);
     }
   }
-
-  if (isOlderThan("1.158.0")) addDevelopment();
-}
-
-/** v1.158.0 keeps each cell's technological development: predefined cultures get their level by name, generated biomes their offset by id */
-function addDevelopment() {
-  if (!pack.cells?.h || !pack.cultures || pack.cells.development?.length) return;
-  const biomes = Biomes.getDefault();
-  for (const biome of pack.biomes ?? []) if (biome) biome.development ??= biomes[biome.i]?.development ?? 0;
-  for (const culture of pack.cultures ?? [])
-    if (culture?.i && !culture.removed)
-      culture.development ??= Cultures.getDefaultDevelopment(culture.name) ?? DEFAULT_DEVELOPMENT;
-  Development.generate();
 }
 
 // rendered for the geometry the steps measure, in a shadow root so its ids never meet the live map's

@@ -88,6 +88,7 @@ export const WANT_LIMITS: Record<DemandCategory, number> = {
   military: 1,
   luxury: 4
 }; // the most a person buys beyond their needs, in days of need: richer people eat only so much more
+
 export const SAVINGS_RATE = 0.32; // share of a day's income households keep
 export const VARIETY = 2.8; // buyers spread their spending over the goods covering a need, by (price per coverage)^-VARIETY: higher buys only the cheapest
 export const NOVELTY = 5.3; // how much more a buyer pays per tenfold of affluence for a good it has had none of yet
@@ -205,6 +206,11 @@ export class GoodsModule {
   /** The default deposit range of a good by its name, if it is one of the defaults */
   getDefaultDeposits(name: string): [number, number] | undefined {
     return this.defaultGoods.find(good => good.name === name)?.deposits;
+  }
+
+  /** The default development tier of a good by its name, if it is one of the defaults and has one */
+  getDefaultDevelopment(name: string): number | undefined {
+    return this.defaultGoods.find(good => good.name === name)?.development;
   }
 
   restoreDefaults() {
