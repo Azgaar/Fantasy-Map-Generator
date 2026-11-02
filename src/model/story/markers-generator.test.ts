@@ -166,6 +166,16 @@ describe("MarkersModule guild halls", () => {
     expect([...guilds.keys()]).toEqual([1]);
     expect(guilds.get(1).share).toBe(0.75);
   });
+
+  it("gives a hall to every burg making 30% or more of a good, not only the leader", () => {
+    const goods = [{ i: 1, name: "Cloth", tags: [], recipes: [{ 2: 1 }] }];
+    Object.assign(Goods, { get: (id: number) => goods.find(good => good.i === id) });
+    globalThis.pack = {
+      burgs: [{}, { i: 1, production: [[1, 4]] }, { i: 2, production: [[1, 3.5]] }, { i: 3, production: [[1, 2.5]] }]
+    } as any;
+    const guilds = (Markers as any).indexGuilds();
+    expect([...guilds.keys()]).toEqual([1, 2]); // 40% and 35%; 25% falls short
+  });
 });
 
 describe("MarkersModule migrations", () => {

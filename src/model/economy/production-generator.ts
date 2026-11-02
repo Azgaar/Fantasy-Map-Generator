@@ -142,7 +142,7 @@ export class ProductionModule {
     pack.cells.prosperity = Prosperity.getCellsProsperity(rural);
 
     for (const { burg, produced, revenue, ingredientCosts, log } of states) {
-      burg.treasury = rn(burg.treasury || 0, 2); // unrounded during the run, so sub-cent margins add up
+      burg.treasury = rn(burg.treasury || 0, 2) || 0; // unrounded during the run, so sub-cent margins add up; no -0
       burg.product = rn(revenue - ingredientCosts, 2); // a burg whose inputs cost more than its sales made a loss
       burg.production = produced.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)]] : []));
       if (log) EconomyDebug.set(burg.i!, log);

@@ -849,40 +849,28 @@ class BurgModule {
         province.burg = 0;
       });
 
-    const lockedBurgs = burgs.filter(burg => burg.i && !burg.removed && burg.lock);
-    for (const lockedBurg of lockedBurgs) {
+    // locked burgs and market centers stay, renumbered; markets follow their centers to the new ids
+    const living = burgs.filter(burg => burg.i && !burg.removed);
+    const centerIds = new Set(pack.markets.map(market => market.centerBurgId));
+    const keptBurgs = [
+      ...living.filter(burg => burg.lock),
+      ...living.filter(burg => !burg.lock && centerIds.has(burg.i!))
+    ];
+    const newIds = new Map<number, number>();
+    for (const burg of keptBurgs) {
       const newId = newBurgs.length;
-      lockedBurg.i = newId;
-      newBurgs.push(lockedBurg);
-      burgsTree.add([lockedBurg.x, lockedBurg.y]);
-      cells.burg[lockedBurg.cell] = newId;
+      newIds.set(burg.i!, newId);
+      burg.i = newId;
+      newBurgs.push(burg);
+      burgsTree.add([burg.x, burg.y]);
+      cells.burg[burg.cell] = newId;
 
-      if (lockedBurg.capital && lockedBurg.state !== undefined) {
-        states[lockedBurg.state].capital = newId;
-        states[lockedBurg.state].center = lockedBurg.cell;
+      if (burg.capital && burg.state !== undefined) {
+        states[burg.state].capital = newId;
+        states[burg.state].center = burg.cell;
       }
     }
-
-    const marketCenterIds = new Set(pack.markets.map(market => market.centerBurgId));
-    const unlockedMarketCenters = burgs.filter(
-      burg => burg.i && !burg.removed && !burg.lock && marketCenterIds.has(burg.i)
-    );
-    for (const centerBurg of unlockedMarketCenters) {
-      const oldId = centerBurg.i;
-      const newId = newBurgs.length;
-      const market = pack.markets.find(market => market.centerBurgId === oldId);
-      if (market) market.centerBurgId = newId;
-
-      centerBurg.i = newId;
-      newBurgs.push(centerBurg);
-      burgsTree.add([centerBurg.x, centerBurg.y]);
-      cells.burg[centerBurg.cell] = newId;
-
-      if (centerBurg.capital && centerBurg.state !== undefined) {
-        states[centerBurg.state].capital = newId;
-        states[centerBurg.state].center = centerBurg.cell;
-      }
-    }
+    for (const market of pack.markets) market.centerBurgId = newIds.get(market.centerBurgId) ?? market.centerBurgId;
 
     const score = new Int16Array(cells.s.map(value => value * Math.random()));
     const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]);

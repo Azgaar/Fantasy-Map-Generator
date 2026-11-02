@@ -485,6 +485,14 @@ export class TradeModule {
 
   /** Ends the run: prices are rounded, each market keeps its rural day, with the poll tax its people paid, for the views */
   endRun(): void {
+    // average prices keep 4 decimals, so units × price gives back what was paid to the cent
+    for (const deal of pack.deals) {
+      deal[4] = rn(deal[4], 2);
+      deal[5] = rn(deal[5], 4);
+      deal[6] = rn(deal[6], 2);
+      deal[7] = rn(deal[7], 2);
+      deal[8] = rn(deal[8], 4);
+    }
     for (const market of pack.markets) {
       for (const marketGood of Object.values(market.goods)) marketGood.price = rn(marketGood.price, 2);
       const day = this.days[market.i];
@@ -723,11 +731,11 @@ export class TradeModule {
     this.creditTaxes(deal, trade.tax, tariff);
 
     const units = deal[4] + trade.units;
-    deal[5] = rn((deal[4] * deal[5] + trade.units * trade.price) / units, 2);
-    deal[8] = rn((deal[4] * deal[8] + trade.units * carriage) / units, 2);
-    deal[4] = rn(units, 2);
-    deal[6] = rn(deal[6] + trade.tax, 2);
-    deal[7] = rn(deal[7] + tariff, 2);
+    deal[5] = (deal[4] * deal[5] + trade.units * trade.price) / units; // unrounded until the run ends
+    deal[8] = (deal[4] * deal[8] + trade.units * carriage) / units;
+    deal[4] = units;
+    deal[6] += trade.tax;
+    deal[7] += tariff;
   }
 
   /** The states' taxes so far in the run, which they spend as they come */

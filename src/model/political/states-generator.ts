@@ -24,7 +24,6 @@ import { escapeHtml } from "@/utils/string-utils";
 import { requireAdjustments, requireName, requireOneOf } from "@/utils/validation-utils";
 import { Burgs } from "./burgs-generator";
 import type { Regiment } from "./military-generator";
-import { Military } from "./military-generator";
 import type { Province } from "./provinces-generator";
 import { Provinces } from "./provinces-generator";
 
@@ -256,7 +255,6 @@ class StatesModule {
     this.generateDiplomacy();
     this.defineStateForms();
     Provinces.regenerate(false);
-    Military.regenerate();
 
     return { warning, error };
   }

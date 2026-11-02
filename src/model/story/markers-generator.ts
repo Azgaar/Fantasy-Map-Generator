@@ -155,7 +155,7 @@ type TradeIndex = {
   goods: number[]; // by burg: goods it traded
   burgTrade: number[]; // by burg: value of its trade
   tariffs: Map<number, number>; // by state pair
-  guilds: Map<number, { good: Good; share: number }>; // by burg: a made good it leads world output of
+  guilds: Map<number, { good: Good; share: number }>; // by burg: the made good it makes most of the world's output of
 };
 
 class MarkersModule {
@@ -816,23 +816,22 @@ class MarkersModule {
 
   /** Burgs making at least GUILD_SHARE of the world's output of a made good */
   private indexGuilds(): Map<number, { good: Good; share: number }> {
-    const made = new Map<number, { total: number; burg: number; units: number }>();
+    const totals = new Map<number, number>();
+    const makers: [burgId: number, goodId: number, units: number][] = [];
     for (const burg of pack.burgs) {
       if (!burg.i || burg.removed) continue;
       for (const [goodId, units] of burg.production ?? []) {
         if (!Goods.get(goodId)?.recipes?.length) continue;
-        const entry = made.get(goodId) ?? { total: 0, burg: 0, units: 0 };
-        entry.total += units;
-        if (units > entry.units) Object.assign(entry, { burg: burg.i, units });
-        made.set(goodId, entry);
+        totals.set(goodId, (totals.get(goodId) || 0) + units);
+        makers.push([burg.i, goodId, units]);
       }
     }
     const guilds = new Map<number, { good: Good; share: number }>();
     const GUILD_SHARE = 0.3; // of world output of a made good, for a burg to keep its guild hall
-    for (const [goodId, { total, burg, units }] of made) {
-      const share = units / total;
-      if (share < GUILD_SHARE || share <= (guilds.get(burg)?.share ?? 0)) continue;
-      guilds.set(burg, { good: Goods.get(goodId)!, share });
+    for (const [burgId, goodId, units] of makers) {
+      const share = units / totals.get(goodId)!;
+      if (share < GUILD_SHARE || share <= (guilds.get(burgId)?.share ?? 0)) continue;
+      guilds.set(burgId, { good: Goods.get(goodId)!, share }); // one hall a burg, for its largest share
     }
     return guilds;
   }

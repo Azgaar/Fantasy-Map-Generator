@@ -18,6 +18,7 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Provinces } from "@/model/political/provinces-generator";
 import { States } from "@/model/political/states-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
+import { Transports } from "@/model/story/journeys/transports-generator";
 import type { Point } from "@/types/global";
 import type { JourneyPoint, JourneySegment } from "@/types/journey";
 import type { PackedGraph, TypedArray } from "@/types/packed-graph";
@@ -926,7 +927,8 @@ class MapRestorationModule {
         points.push([x, y, this.findPathCell(parent, projection, cell, x, y)]);
       }
       if (!points.length) return null;
-      points = this.fillPathGaps(points);
+      const direct = !segment.custom && ["air", "stay"].includes(Transports.getDomain(segment.transport));
+      if (!direct) points = this.fillPathGaps(points); // a flight or a stay goes in a direct line
       const from = segment.from === undefined ? undefined : points[0][2];
       const to = segment.to === undefined ? undefined : points.at(-1)![2];
       return { ...segment, points, from, to, distance: Journeys.getPathLength(points) };

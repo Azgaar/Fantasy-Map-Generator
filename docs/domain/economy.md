@@ -32,7 +32,7 @@ The user reruns parts from Tools → Regenerate, the goods and markets editors a
 | Markets       | Rebuilds markets and their territories (`Markets.regenerate`), then as Production        |
 | Production    | `Production.regenerate()`: clears deals and stock, runs the day, collects taxes          |
 | Economy       | `Production.regenerateEconomy()`: re-floods the markets' territories, then as Production |
-| States, Burgs | Regenerate them, then as Economy: the deals name the burgs and the states taxing them    |
+| States, Burgs | Regenerate them, then as Economy: the deals name the burgs and the states taxing them; States then regenerate the military, equipped from the new run |
 
 Loading a map does not rerun the economy, except a map saved before v1.157.0, whose economy `auto-update.ts` runs again. A submap or resample reruns it for the new land (`map-restoration.ts`). The run uses no randomness: the same goods, markets and burgs give the same deals.
 
@@ -180,7 +180,7 @@ Anarchies spend nothing. The **war alert** (`state.alert`, `States.defineAlert`,
 
 **State orders** (`StateOrders`) spend the budget during the run, so state demand pulls production rather than taking leftovers. A state's money at any moment is what it has collected so far: its burgs' poll tax and its market licenses at dawn, then each sales tax and tariff as its deal is recorded (`Trade.getTaxesSoFar`). After each round, each expense's seat (the capital, or each district's seat by its share of the state's people: a province's seat, or the capital for the crown lands) spends its share of that expense's percent of the money so far, less what officials pocket of it, once it has gathered at least 🟡 1 (`MIN_ORDER`). It spreads the money over the goods covering the need as rural people do, cheaper ones getting more, and buys like a burg: at its own market while it stocks a unit, otherwise where it is delivered cheapest. Goods it cannot find raise their price, so makers turn to them. Orders pay the margin and carriage, and the sales tax and tariff of another state; a state pays none to itself. The burg's treasury is untouched: the deal is the state's, kind `order`. After the last round, the day's last orders spend the rest of each expense, the rural poll tax just paid included, so budgets are nearly all spent; what the markets cannot supply, and the share of a district whose seat has no market, stays in the treasury, though officials still pocket their cut of it, as collection counts. Expenses past 100% spend money the state never collected. What each expense spent is kept in `state.economy.spent`.
 
-**Collection** (`States.collectTaxes`) resets every state treasury, adds each deal's tax and tariff to the states `Trade.getTaxStates` names, then the poll tax its burgs and rural people paid (`States.getPollTax`) and the license fees of markets centered in it (`States.getMarketFees`). It adds the state's **adjustments** (`state.economy.adjustments`: named lines the user sets, such as tribute, crown estates or loans, negative for debts or tribute paid, summed; kept on regeneration and spent from dawn like the taxes known then), and keeps the total (`state.economy.collected`), officials pocket the corruption share of each expense (`state.economy.pocketed`: collected × the expenses' sum × corruption) and the treasury balance is collected − pocketed − spent, below zero for a state spending beyond its taxes. A map saved before the poll tax was charged keeps its states' rate × people until its economy is regenerated.
+**Collection** (`States.collectTaxes`) resets every state treasury, adds each deal's tax and tariff to the states `Trade.getTaxStates` names, then the poll tax its burgs and rural people paid (`States.getPollTax`) and the license fees of markets centered in it (`States.getMarketFees`). It adds the state's **adjustments** (`state.economy.adjustments`: named lines the user sets, such as tribute, crown estates or loans, negative for debts or tribute paid, summed; kept on regeneration and spent from dawn like the taxes known then), and keeps the total (`state.economy.collected`), officials pocket the corruption share of each expense (`state.economy.pocketed`: collected × the expenses' sum × corruption) and the treasury balance is collected − pocketed − spent, below zero for a state spending beyond its taxes.
 
 **Example.** States A and B tax sales at 15%; A's tariff on B is 20%. Ten units of a good priced 10 at the market, carried for 0.5 each:
 
@@ -192,7 +192,7 @@ Anarchies spend nothing. The **war alert** (`state.alert`, `States.defineAlert`,
 
 ## The deal log
 
-`pack.deals` is the only record of trade. One deal per burg, market, good and kind sums the run's trades: units and taxes summed, price and carriage averaged by volume. Its id is its array index.
+`pack.deals` is the only record of trade. One deal per burg, market, good and kind sums the run's trades: units and taxes summed, price and carriage averaged by volume and kept to 4 decimals, so units × price gives back what was paid. Its id is its array index.
 
 | Kind     | Meaning                                                                    | Market                                    |
 | -------- | -------------------------------------------------------------------------- | ----------------------------------------- |
@@ -204,7 +204,7 @@ Anarchies spend nothing. The **war alert** (`state.alert`, `States.defineAlert`,
 
 Invariants:
 
-- A burg's treasury change equals its adjustments and its deals, `order` deals aside, as the state pays them: to the cent, as balances stay unrounded until the run ends: sales (price × units − tax) minus purchases, plus, for a market's center, the margin on every deal at its market (`Trade.getMargin`) and on its rural people's produce sold and purchases (`market.rural.margin`).
+- A burg's treasury change equals its adjustments and its deals, `order` deals aside, as the state pays them, within a cent or two, as balances stay unrounded until the run ends: sales (price × units − tax) minus purchases, plus, for a market's center, the margin on every deal at its market (`Trade.getMargin`) and on its rural people's produce sold and purchases (`market.rural.margin`).
 - An **import** is trade between the burg's own market and a market of another state, either way (`Trade.isImport`); only an import may carry a tariff. Trade with the neutral lands never is.
 - A deal's money to its market (`Trade.getMarketIncome`) is what the burg paid less the taxes passed to the states when the market sells, and minus price × units when it buys; 0 when kept. The Markets overview sums it into Sales and Buys; Value adds the stock at its prices. It only reports.
 - Rural purchases make no deals, so a market's stock falls by more than its deals explain.

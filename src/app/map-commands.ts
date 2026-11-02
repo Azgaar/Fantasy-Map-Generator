@@ -869,6 +869,7 @@ function regenerateStates(): void {
   if (warning) tip(warning, false, "warn");
 
   Production.regenerateEconomy(); // the new states tax the deals
+  Military.regenerate(); // after the economy, as armies are equipped from what their states consume
   unfog();
   Layers.draw(
     "states",
