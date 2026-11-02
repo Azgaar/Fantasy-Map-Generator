@@ -56,6 +56,7 @@ export const UPKEEP_COST = 20; // military spending a day that keeps troops of p
 const MIN_UPKEEP = 0.05; // unpaid troops still fight, if barely
 const EQUIPMENT_DAYS = 365; // days of a state's consumption of a unit's goods that equip its troops
 const FRONT_DEPTH = 2; // lines of cells behind the border a state at war deploys its regiments to
+const REGIMENT_SIZE = 3; // regiment box height at the default style, map units; layout ignores the style
 
 class MilitaryModule {
   regenerate(): void {
@@ -498,13 +499,14 @@ class MilitaryModule {
       });
     }
 
-    const size = styles.military.options.boxSize;
-    const width = size * 9; // regiment box with its icon, and a margin
+    const width = REGIMENT_SIZE * 9; // regiment box with its icon, and a margin
     const placed = quadtree<{ x: number; y: number }>()
       .x(d => d.x)
       .y(d => d.y);
     const blocked = (x: number, y: number) =>
-      findAllInQuadtree(x, y, width, placed).some(o => Math.abs(o.x - x) < width && Math.abs(o.y - y) < size * 3);
+      findAllInQuadtree(x, y, width, placed).some(
+        o => Math.abs(o.x - x) < width && Math.abs(o.y - y) < REGIMENT_SIZE * 3
+      );
     const deploy = (regiment: Regiment, lines: number[][], feature: number) => {
       const { x, y } = regiment;
       const distance = (i: number) => (p[i][0] - x) ** 2 + (p[i][1] - y) ** 2;
@@ -833,7 +835,7 @@ class MilitaryModule {
     regiment.u = Object.fromEntries(Object.entries(regiment.u).map(([unit, count]) => [unit, Math.ceil(count / 2)]));
     regiment.a = sum(Object.values(regiment.u));
 
-    const shift = styles.military.options.boxSize * 2;
+    const shift = REGIMENT_SIZE * 2;
     let y = regiment.y + shift;
     while (military.some(other => other.x === regiment.x && other.y === y)) y += shift;
     const i = Math.max(...military.map(other => other.i)) + 1;
