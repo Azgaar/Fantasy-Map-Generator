@@ -3,7 +3,6 @@ import { convertTemperature, getHeight } from "@/model/units";
 import { Dialog } from "@/ui/dialog/dialog";
 import { t } from "@/utils/i18n";
 import { list } from "@/utils/language-utils";
-import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
 type ParamType = "none" | "number" | "biomes" | "shore" | "featureType";
@@ -210,12 +209,13 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
   }
 
   const popupEl = document.createElement("div");
+  const popupById = <T extends HTMLElement>(id: string) => popupEl.querySelector<T>(`#${id}`)!;
 
   function updateOutput() {
     const expr = generateExpression();
-    ensureEl<HTMLInputElement>("distExprOutput").value = expr;
-    ensureEl<HTMLElement>("distCellCount").textContent = countMatchingCells(expr) || "";
-    ensureEl<HTMLElement>("distHumanPreview").textContent = interpretDistribution(expr);
+    popupById<HTMLInputElement>("distExprOutput").value = expr;
+    popupById<HTMLElement>("distCellCount").textContent = countMatchingCells(expr) || "";
+    popupById<HTMLElement>("distHumanPreview").textContent = interpretDistribution(expr);
   }
 
   function openBiomePicker(cond: DistCondition, onApplied: () => void) {
@@ -514,7 +514,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
   }
 
   function renderGroupList() {
-    const groupList = ensureEl<HTMLElement>("distGroupList")!;
+    const groupList = popupById<HTMLElement>("distGroupList");
     groupList.innerHTML = "";
 
     groups.forEach((group, groupIdx) => {
@@ -659,7 +659,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
   renderGroupList();
   updateOutput();
 
-  ensureEl<HTMLButtonElement>("distAddGroup").addEventListener("click", () => {
+  popupById<HTMLButtonElement>("distAddGroup").addEventListener("click", () => {
     groups.push([createDefaultCondition()]);
     renderGroupList();
     updateOutput();
