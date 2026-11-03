@@ -15,6 +15,7 @@ import { applyZoomBehavior, invokeActiveZooming, setMapZoom, setTranslateExtent,
 beforeEach(() => {
   document.body.innerHTML = /* html */ `
     <svg id="map">
+      <defs><mask id="land"></mask><mask id="water"></mask></defs>
       <g id="viewbox"></g>
       <g id="burgIcons"></g>
       <g id="markers"></g>
@@ -123,6 +124,19 @@ describe("viewport redraw during zoom", () => {
 
     expect(ViewportLayers.schedule).not.toHaveBeenCalled();
     expect(ViewportLayers.renderNow).toHaveBeenCalledTimes(1);
+  });
+
+  it("bounds feature masks at maximum zoom even when viewport redraw is deferred", () => {
+    options.app.performance.viewportRedraw = "settled";
+    zoomTo(700, 400, 20, 0);
+
+    for (const mask of document.querySelectorAll("mask")) {
+      expect(mask.getAttribute("maskUnits")).toBe("userSpaceOnUse");
+      expect(Number(mask.getAttribute("x"))).toBeCloseTo((-viewport.x - 1) / 20);
+      expect(Number(mask.getAttribute("y"))).toBeCloseTo((-viewport.y - 1) / 20);
+      expect(Number(mask.getAttribute("width")) * 20).toBeCloseTo(1002);
+      expect(Number(mask.getAttribute("height")) * 20).toBeCloseTo(602);
+    }
   });
 });
 
