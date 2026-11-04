@@ -189,8 +189,8 @@ Open several states' dialogs to compare them side by side. The neutral lands hav
 # Shaping the economy for your world
 
 - **Make a region famous for a product**: give the good a multiplier for that culture, state, religion or a zone you draw, or paint deposits there.
-- **Make a good scarce or plentiful**: set its deposit output, or its deposits range for new placements.
-- **Make a good more or less worth making**: raise or lower its base price against its ingredients.
+- **Gather more or less of a raw good**: change its Biome Baseline Production, or its Deposits if it mostly comes from deposits. Multipliers do the same in one region. Base Price and Demand Coverage change what it earns, not how much is gathered.
+- **Make more or less of a manufactured good**: workers take whatever pays best, so a gain often comes at another good's expense. Multipliers are the strongest control: doubling one can triple or quadruple output. Lighter recipes and more Demand Coverage can each nearly double it, though coverage barely moves goods like tools or boats. Raising Base Price adds little, while cutting it or making recipes heavier can end a trade that only just pays. Combine them for a big change. An ingredient follows the trades that use it, so change their recipes too.
 - **Make trade local or far-reaching**: raise a good's carriage to keep it near its source, lower it to let it travel.
 - **Open or close a region**: build or remove roads and sea routes, or add a port.
 - **Start a trade war**: set tariffs or an embargo in a state's taxes dialog.
@@ -200,7 +200,7 @@ Changes take effect when you regenerate. _Tools_ → _Regenerate_ has four butto
 
 | Button         | What it does                                                                                        |
 | -------------- | --------------------------------------------------------------------------------------------------- |
-| **Goods**      | Re-places deposits on the map                                                                       |
+| **Goods**      | Re-places deposits on the map, which new deposit counts need                                        |
 | **Markets**    | Rebuilds markets and their regions                                                                  |
 | **Production** | Recalculates the day: production, trade and taxes, from the current goods, markets and burgs        |
 | **Economy**    | Redraws market regions, then recalculates the day. Market cells you painted by hand are redrawn too |

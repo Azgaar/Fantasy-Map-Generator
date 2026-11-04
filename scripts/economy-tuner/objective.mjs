@@ -78,16 +78,16 @@ export function objective(results, reference, over) {
   const [top, topShare] = Object.entries(share).sort((a, b) => b[1] - a[1])[0];
   // fees per unit of miss, set in docs/domain/economy.md#kpis; KPI 1 is the most important
   const parts = {
-    proportion: Math.max(0, 0.85 - kpi.proportion) * 10 + made.offBy * 0.5,
+    proportion: Math.max(0, 0.8 - kpi.proportion) * 10 + made.offBy * 0.5,
     rawProportion: Math.max(0, 0.6 - kpi.rawProportion) * 2 + raw.offBy * 0.1,
     prices: fit.priceOff * 0.1,
     coverage: fit.coverageOff * 0.05,
     produced: Math.max(0, 0.9 - kpi.produced) * 10,
-    positive: Math.max(0, 0.75 - kpi.positive) * 2,
+    positive: Math.max(0, 0.7 - kpi.positive) * 2,
     regions: Math.max(0, Math.log(5 / Math.max(kpi.regions, 1e-6))) * 0.5,
     apart: Math.max(0, 0.3 - kpi.apart),
     specialization: Math.max(0, 0.6 - kpi.specialization) * 2,
-    taxShare: outside(kpi.taxShare, 0.15, 0.35),
+    taxShare: outside(kpi.taxShare, 0.1, 0.4),
     stateLink: Math.max(0, 0.2 - kpi.stateLink),
     wealthGini: outside(kpi.wealthGini, 0.4, 0.6) * 3,
     treasuryTop: Math.max(0, kpi.treasuryTop - 0.7),

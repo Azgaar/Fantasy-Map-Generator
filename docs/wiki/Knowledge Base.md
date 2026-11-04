@@ -840,6 +840,10 @@ Sales is what burgs paid the market for its goods, Buys is what it paid burgs fo
 
 The countryside produces raw goods depending on its people and biome. Burgs make products from those goods and sell where they get the most. Prices differ between markets with supply and demand. To see what a burg makes, click its pie on the Goods layer or the chart button in the Burg Editor; Tools -> Goods -> production chains shows what each product needs
 
+### How do I make a good more or less common?
+
+For a raw good, change its biome output or deposits in the Goods Editor: its price and demand coverage do not change how much is gathered. For a manufactured good, workers choose what pays best, so use multipliers first, then its recipe, demand coverage and base price, and combine them for a big change. See the Economy page
+
 ### What does the Goods layer show?
 
 Each cell in the color of its most valuable good, icons on deposits, and pies of each burg's main goods. Select goods in Tools -> Goods to show only them, and click a burg pie's ring to see its production. Style -> Goods turns the cells, icons and pies on or off

@@ -91,7 +91,7 @@ export const GOODS_DATA: GoodData[] = [
     color: "#C0C0C0",
     value: 6,
     carriage: 0.3,
-    deposits: [2, 6],
+    deposits: [2, 4],
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     development: 9,
     unit: "bullion",
@@ -146,12 +146,13 @@ export const GOODS_DATA: GoodData[] = [
     icon: "goods-fish",
     color: "#7fcdff",
     value: 1.5,
-    carriage: 0.5,
-    deposits: [5, 10],
+    carriage: 0.6,
+    deposits: [3, 6],
     distribution: 'shore(-1) && type("ocean", "freshwater", "salt") || river()',
     unit: "wain",
     demandCoverage: { food: 0.75 },
-    multipliers: { cultureType: { River: 2, Lake: 2.5, Naval: 2.5, Nomadic: 0.2 } }
+    multipliers: { cultureType: { River: 2, Lake: 3, Naval: 2.5, Nomadic: 0.2 } },
+    biomeOutput: { 0: 0.03 }
   },
   {
     name: "Game",
@@ -208,8 +209,7 @@ export const GOODS_DATA: GoodData[] = [
     distribution: "biome(6, 8, 9)",
     unit: "barrel",
     demandCoverage: { food: 0.6 },
-    multipliers: { cultureType: { Generic: 1.2 } },
-    biomeOutput: { 6: 0.03, 8: 0.02, 9: 0.02 }
+    biomeOutput: { 6: 0.02, 8: 0.01, 9: 0.01 }
   },
   {
     name: "Salt",
@@ -218,7 +218,7 @@ export const GOODS_DATA: GoodData[] = [
     color: "#E5E4E5",
     value: 2.5,
     carriage: 0.4,
-    deposits: [2, 4],
+    deposits: [3, 6],
     distribution: 'shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
     development: 6,
     unit: "bag",
@@ -253,7 +253,7 @@ export const GOODS_DATA: GoodData[] = [
     development: 12,
     unit: "head",
     demandCoverage: { utilities: 0.6, military: 0.9 },
-    multipliers: { cultureType: { Nomadic: 3 } },
+    multipliers: { cultureType: { Nomadic: 3, Naval: 0.5, Highland: 0.5 } },
     biomeOutput: { 2: 0.02, 4: 0.03 }
   },
   {
@@ -281,7 +281,7 @@ export const GOODS_DATA: GoodData[] = [
     development: 12,
     unit: "head",
     demandCoverage: { utilities: 0.7, military: 0.8 },
-    multipliers: { cultureType: { Nomadic: 3, Generic: 0.8 } },
+    multipliers: { cultureType: { Nomadic: 4, Generic: 0.8, Naval: 0.25, Highland: 0.25 } },
     biomeOutput: { 1: 0.05, 2: 0.05 }
   },
   {
@@ -296,7 +296,7 @@ export const GOODS_DATA: GoodData[] = [
     development: 6,
     unit: "wain",
     multipliers: { cultureType: { River: 2, Lake: 2 } },
-    biomeOutput: { 6: 0.02, 8: 0.03 }
+    biomeOutput: { 6: 0.01, 8: 0.01 }
   },
   {
     name: "Pearls",
@@ -443,6 +443,7 @@ export const GOODS_DATA: GoodData[] = [
     value: 3,
     carriage: 0.6,
     unit: "barrel",
+    demandCoverage: { utilities: 0.1 },
     multipliers: { cultureType: { Hunting: 1.2, Nomadic: 0.5 } },
     recipes: [{ Wood: 1 }]
   },
@@ -506,11 +507,11 @@ export const GOODS_DATA: GoodData[] = [
     color: "#7fcdff",
     value: 1,
     carriage: 0.3,
-    deposits: [1, 3],
+    deposits: [4, 8],
     distribution: "shore(-1) && type('ocean') && maxTemp(7)",
     unit: "barrel",
     demandCoverage: { food: 0.5, utilities: 0.4 },
-    multipliers: { cultureType: { Naval: 2.5, Nomadic: 0.5 } }
+    multipliers: { cultureType: { Naval: 3, Nomadic: 0.25, Highland: 0.25 } }
   },
   {
     name: "Sugar",
@@ -583,7 +584,7 @@ export const GOODS_DATA: GoodData[] = [
     tags: ["clothing"],
     icon: "goods-leather",
     color: "#8b5a2b",
-    value: 8,
+    value: 6,
     carriage: 0.4,
     recipes: [{ Cattle: 1 }, { Game: 1 }, { Horses: 1 }, { Camels: 1 }],
     unit: "roll",
@@ -596,7 +597,7 @@ export const GOODS_DATA: GoodData[] = [
     color: "#e8e69c",
     value: 8,
     carriage: 0.3,
-    recipes: [{ Wool: 1 }, { Hemp: 1 }, { Silk: 0.5 }],
+    recipes: [{ Wool: 1 }, { Hemp: 1 }, { Silk: 0.25 }],
     development: 6,
     unit: "bolt",
     multipliers: { cultureType: { River: 1.5, Lake: 1.5 } }
@@ -606,28 +607,29 @@ export const GOODS_DATA: GoodData[] = [
     tags: ["clothing"],
     icon: "goods-garments",
     color: "#bd21ec",
-    value: 14,
-    carriage: 1,
+    value: 20,
+    carriage: 0.5,
     recipes: [
       { Cloth: 1, Dyes: 0.5 },
       { Cloth: 0.5, Furs: 1 }
     ],
     development: 12,
     unit: "set",
-    demandCoverage: { utilities: 0.95 }
+    demandCoverage: { utilities: 0.5, luxury: 0.7 },
+    multipliers: { cultureType: { Generic: 1.5, Naval: 0.5, Nomadic: 0.5 } }
   },
   {
     name: "Ceramics",
     tags: ["storage", "construction"],
     icon: "goods-ceramics",
     color: "#c1440e",
-    value: 11,
+    value: 12,
     carriage: 1,
     recipes: [{ Clay: 0.5, Tools: 0.2 }],
     development: 9,
     unit: "wain",
-    demandCoverage: { utilities: 0.95 },
-    multipliers: { cultureType: { Nomadic: 0.5 } }
+    demandCoverage: { utilities: 1 },
+    multipliers: { cultureType: { Nomadic: 0.5, Generic: 1.4 } }
   },
   {
     name: "Glass",
@@ -833,7 +835,7 @@ export const GOODS_DATA: GoodData[] = [
     ],
     development: 36,
     unit: "cannon",
-    demandCoverage: { military: 1 },
+    demandCoverage: { military: 1.5 },
     multipliers: { cultureType: { Nomadic: 0.25, Hunting: 0.25 } }
   },
   {
@@ -876,20 +878,20 @@ export const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "goods-salted-fish",
     color: "#c2b280",
-    value: 20,
-    carriage: 1,
+    value: 12,
+    carriage: 0.6,
     recipes: [
-      { Fish: 1, Salt: 1 },
-      { Cattle: 1, Salt: 1 },
-      { Game: 1, Salt: 1 },
-      { Fish: 1, Vinegar: 0.5 },
-      { Cattle: 1, Vinegar: 0.5 },
-      { Game: 1, Vinegar: 0.5 },
-      { Fish: 1, Wood: 1 }
+      { Fish: 0.5, Salt: 0.5 },
+      { Cattle: 0.5, Salt: 0.5 },
+      { Game: 0.5, Salt: 0.5 },
+      { Fish: 0.5, Vinegar: 0.25 },
+      { Cattle: 0.5, Vinegar: 0.25 },
+      { Game: 0.5, Vinegar: 0.25 },
+      { Fish: 0.5, Wood: 0.5 }
     ],
     development: 12,
     unit: "wain",
-    demandCoverage: { food: 1 }
+    demandCoverage: { food: 1.5 }
   },
   {
     name: "Vinegar",
@@ -924,7 +926,7 @@ export const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "goods-beer",
     color: "#fbb117",
-    value: 10,
+    value: 9,
     carriage: 0.6,
     recipes: [
       { Grain: 1, Barrels: 0.5 },
@@ -933,7 +935,7 @@ export const GOODS_DATA: GoodData[] = [
     development: 6,
     unit: "barrel",
     demandCoverage: { food: 1 },
-    multipliers: { cultureType: { Nomadic: 0.5 } }
+    multipliers: { cultureType: { Nomadic: 0.5, Generic: 2 } }
   },
   {
     name: "Liquor",
