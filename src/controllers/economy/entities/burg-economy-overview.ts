@@ -4,7 +4,7 @@ import type { Good } from "@/model/economy/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import type { ProductionCandidate, ProductionLogEntry } from "@/model/economy/production-generator";
-import { isDemandEntry, isManufacturingEntry, isTradeEntry } from "@/model/economy/production-generator";
+import { isDemandEntry, isTradeEntry } from "@/model/economy/production-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import {
   DEAL_KINDS,
@@ -189,7 +189,7 @@ function getHistoryRows(): HistoryRow[] {
 function getSummaryRows(burg: Burg): HistoryRow[] {
   const production = burg.production ?? [];
   const deals = pack.deals.filter(([dealBurg]) => dealBurg === burg.i);
-  const isLocal = (goodId: number) => goodId === pack.cells.good[burg.cell] && !Goods.get(goodId)?.recipes?.length;
+  const isLocal = (goodId: number) => goodId === pack.cells.good[burg.cell]; // worked in place of its recipes
   const byValue = (a: Deal, b: Deal) => b[4] * b[5] - a[4] * a[5];
   const dealRows = (kind: DealKind) =>
     deals
@@ -238,7 +238,9 @@ function getLogRow(entry: ProductionLogEntry): HistoryRow {
     const row = getTradeRow(entry.goodId, entry.market, entry.kind, entry);
     return entry.sources ? { ...row, details: renderSources(entry.market, entry.sources) } : row;
   }
-  if (!isManufacturingEntry(entry)) return getLocalRow(entry.goodId, entry.units);
+  const workers = `${t("Workers")}: ${entry.workers}. `;
+  if (!entry.recipe.length)
+    return { ...getLocalRow(entry.goodId, entry.units), details: `${workers}${renderDecision(entry.candidates)}` };
 
   const inputs = entry.recipe.map(item => `${rn(item.units, 2)} ${goodDot(item.goodId)}`).join(` ${t("and")} `);
   const modifier = entry.cultureModifier ?? 1;
@@ -246,7 +248,7 @@ function getLogRow(entry: ProductionLogEntry): HistoryRow {
   const specializationNote = entry.specialization ? `. ${t("Division of labor bonus")}: x${entry.specialization}` : "";
   return {
     ...getManufacturingRow(entry.goodId, entry.units),
-    details: `${t("Manufacturing from {{- inputs}}", { inputs })}${modifierNote}${specializationNote}${renderDecision(entry.candidates)}`
+    details: `${workers}${t("Manufacturing from {{- inputs}}", { inputs })}${modifierNote}${specializationNote}${renderDecision(entry.candidates)}`
   };
 }
 
@@ -271,7 +273,7 @@ const getManufacturingRow = (goodId: number, units: number): HistoryRow => ({
 });
 
 function getTradeRow(goodId: number, marketId: number, kind: DealKind, trade: Transaction): HistoryRow {
-  if (kind === DEAL_KINDS.kept) return getKeepRow(goodId, trade.units);
+  if (kind === DEAL_KINDS.kept) return getKeepRow(goodId, trade.units, trade.units * trade.price);
   const isSale = kind === DEAL_KINDS.sale;
   const { units } = trade;
   const { goodsPrice, carriage, tax, tariff, value, formula } = splitDealPrice(trade, isSale);
@@ -291,8 +293,8 @@ function getTradeRow(goodId: number, marketId: number, kind: DealKind, trade: Tr
   };
 }
 
-// nothing changes hands, so no prices
-const getKeepRow = (goodId: number, units: number): HistoryRow => ({
+// a kept deal has no price, as its sale shrank; the debug log logs the sale whole, so its keep pays back what that sale earned
+const getKeepRow = (goodId: number, units: number, refund = 0): HistoryRow => ({
   type: "KEEP",
   goodId,
   units,
@@ -300,6 +302,7 @@ const getKeepRow = (goodId: number, units: number): HistoryRow => ({
   tax: 0,
   tariff: 0,
   carriage: 0,
+  ...(refund && { income: -refund }),
   details: ""
 });
 
@@ -320,7 +323,8 @@ function renderDecision(candidates: readonly ProductionCandidate[]): string {
       const formula = candidate.isPreparation
         ? `${t("goal sell")} ${formatPrice((candidate.gainPerWorker || 0) * workers)} ÷ ${t("workers")} ${workers} × ${t("units")} ${rn(candidate.units, 2)}`
         : `${t("sell")} ${formatPrice(candidate.sellPrice)} - ${t("cost")} ${formatPrice(candidate.ingredientCost)}`;
-      return `<li><b>${name}</b>${prep}: ${formula} = ${score(candidate.score)}. ${t("Ingredients")}: ${ingredients}</li>`;
+      const inputs = ingredients ? ` ${t("Ingredients")}: ${ingredients}` : ` ${t("Gathered from the deposit")}`;
+      return `<li><b>${name}</b>${prep}: ${formula} = ${score(candidate.score)}.${inputs}</li>`;
     });
   const basis = t("highest score among feasible options ({{options}})", { options: candidates.length });
   return `<div><b>${t("Decision basis")}:</b> ${basis}:</div><ul>${items.join("")}</ul>`;
@@ -466,7 +470,11 @@ function renderHistoryLine(row: HistoryRow, expandable: boolean): string {
     t("Produced locally and kept to cover the burg's demand")
   ];
   const purpose =
-    row.kind !== undefined ? purposes[row.kind] : row.type === "MFG" ? t("Manufacturing step") : t("Local production");
+    row.kind !== undefined
+      ? purposes[row.kind]
+      : row.type === "MFG"
+        ? t("Manufacturing step")
+        : t("Gathered from the burg's deposit by its workers");
   const covers = row.kind === DEAL_KINDS.demand || row.kind === DEAL_KINDS.kept ? renderCoverage(good, row.units) : "";
   const typeTip = covers ? sentences(purpose, t("Covers demand: {{- demand}}", { demand: covers })) : purpose;
   const badge = `<span class="typeBadge ${row.type.toLowerCase()}">${TYPE_LABELS[row.type]()}</span>`;
@@ -518,7 +526,7 @@ function renderCoverage(good: Good, units: number): string {
 function renderTotals(rows: HistoryRow[]): void {
   const sum = (pick: (row: HistoryRow) => number) => rows.reduce((total, row) => total + pick(row), 0);
   const purchases = -sum(row => (row.type === "BUY" ? (row.income ?? 0) : 0));
-  const sales = sum(row => (row.type === "SELL" ? (row.income ?? 0) : 0));
+  const sales = sum(row => (row.type === "SELL" || row.type === "KEEP" ? (row.income ?? 0) : 0));
   const income = sales - purchases;
   const total = (label: string, tip: string, amount: string) =>
     `<div style="margin-left: 12px" data-tip="${tip}">${label}: ${amount}</div>`;

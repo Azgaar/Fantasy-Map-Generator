@@ -172,15 +172,15 @@ export const GOODS_DATA: GoodData[] = [
     tags: ["food", "luxury"],
     icon: "goods-wine",
     color: "#963e48",
-    value: 9,
+    value: 7,
     carriage: 0.3,
     deposits: [3, 5],
     distribution: "biome(6) || (biome(4) && random(50) && river())",
     development: 6,
     unit: "barrel",
-    demandCoverage: { food: 1, luxury: 0.55 },
+    demandCoverage: { food: 1, luxury: 0.5 },
     multipliers: { cultureType: { Highland: 1.2, Nomadic: 0.5 } },
-    biomeOutput: { 6: 0.01 }
+    biomeOutput: { 6: 0.005 }
   },
   {
     name: "Olives",
@@ -992,6 +992,6 @@ export const GOODS_DATA: GoodData[] = [
     ],
     development: 15,
     unit: "bottle",
-    demandCoverage: { luxury: 0.65 }
+    demandCoverage: { luxury: 0.8 }
   }
 ];

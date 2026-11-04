@@ -355,6 +355,26 @@ describe("TradeModule", () => {
       expect(purchase.price).toBeGreaterThan(10 * (1 + MARGIN)); // dearer than the opening price
     });
 
+    it("sells only the units that fetch something at the burg's door: a glut keeps the rest", () => {
+      const { importer, burg, good } = setupImport();
+      importer.centerBurgId = 1;
+      setRoutes({ 2: 200 });
+      importer.goods[0] = { stock: 0, price: 10 };
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      tradeModule["days"] = [undefined, undefined, { depth: [20], rural: [] }] as never;
+
+      const least = (carriage(200) + 0.01) / (1 - MARGIN); // the price at which a unit fetches a cent
+      const sale = tradeModule.sell({ burg, good, units: 1000, taxRate: 0 })!;
+      expect(sale.units).toBeCloseTo((20 / PRICE_RESPONSE) * Math.log(10 / least), 1);
+      expect(sale.price).toBeGreaterThan(0);
+      expect(importer.goods[0].price).toBeCloseTo(least, 2);
+      expect(tradeModule.sell({ burg, good, units: 1, taxRate: 0 })).toBeNull(); // nothing more fetches a cent
+
+      importer.goods[0].price = 10;
+      setRoutes({}); // no route to its own market: ten decimas of carriage cost more than the price
+      expect(tradeModule.sell({ burg, good, units: 1, taxRate: 0 })).toBeNull();
+    });
+
     it("atLot() turns a unit's price at the burg's door into what buy() and sell() charge for the lot", () => {
       const { exporter, burg, good, importGood } = setupImport();
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing

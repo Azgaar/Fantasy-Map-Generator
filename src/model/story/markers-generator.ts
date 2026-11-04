@@ -931,7 +931,7 @@ class MarkersModule {
     const good = Goods.get(pack.cells.good[cell]);
     if (!good?.tags.some(tag => tag === "ore" || tag === "mineral")) return;
     const burg = pack.burgs[pack.cells.burg[cell]];
-    const extracts = burg?.production?.some(([goodId]) => goodId === good.i); // a raw good comes from the local bonus
+    const extracts = burg?.production?.some(([goodId]) => goodId === good.i); // a raw good comes from its workers on the deposit
     return extracts ? good : undefined;
   }
 

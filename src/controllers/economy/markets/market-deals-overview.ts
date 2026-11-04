@@ -175,7 +175,7 @@ function renderDialog(): void {
     const line = (event.target as HTMLElement)
       .closest<HTMLElement>(".marketDealBurg")
       ?.closest<HTMLElement>(".marketDeal");
-    const burg = pack.burgs[pack.deals[Number(line?.dataset.id)]?.[0] ?? 0];
+    const burg = pack.burgs[Number(line?.dataset.burgId) || 0];
     if (burg?.i) zoomTo(burg.x, burg.y, 8, 2000);
   });
 }
@@ -266,7 +266,7 @@ function renderDealLine(row: MarketDealRow): string {
       : t("The market buys the goods from the burg");
   const badge = isOrder ? t("State") : isSale ? t("Sell") : t("Buy");
 
-  return /* html */ `<div class="states marketDeal" data-id="${pack.deals.indexOf(deal)}" data-good="${good.name}" data-side="${side}" data-burg="${burg}" data-units="${rn(units, 2)}" data-income="${rn(income, 2)}">
+  return /* html */ `<div class="states marketDeal" data-burg-id="${deal[0]}" data-good="${good.name}" data-side="${side}" data-burg="${burg}" data-units="${rn(units, 2)}" data-income="${rn(income, 2)}">
       <svg data-col="icon" data-tip="${t("Good icon")}" width="1.3em" height="1.3em" class="goodIcon">
         ${goodBadge(good)}
       </svg>
@@ -332,14 +332,14 @@ function renderTotals(rows: MarketDealRow[]): void {
 function downloadDealsCsv(): void {
   if (!Markets.get(activeMarketId)) return;
   const perUnit = (amount: number) => (rn(amount, 2) ? rn(amount, 2) : "");
+  const ids = new Map(pack.deals.map((deal, id) => [deal, id]));
   const rows = getMarketDeals(pack.deals, activeMarketId).flatMap(deal => {
     const row = getMarketDealRow(deal);
     if (!row) return [];
     const { good, side, burg, units, net, carriage, tax, tariff, income } = row;
-    const id = pack.deals.indexOf(deal);
     return [
       [
-        id,
+        ids.get(deal),
         good.name,
         side,
         burg,

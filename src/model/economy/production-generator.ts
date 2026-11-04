@@ -5,7 +5,7 @@ import type { Zone } from "@/model/political/zones-generator";
 import { DEFAULT_CULTURE_TYPE } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
 import { log } from "@/utils/logger";
-import { minmax, rn } from "@/utils/number-utils";
+import { rn } from "@/utils/number-utils";
 import { EconomyDebug } from "./economy-debug";
 import type { DemandCategory, Good } from "./goods-generator";
 import {
@@ -39,10 +39,8 @@ const RURAL_OUTPUT_FACTOR = 1.23;
 export const DEPOSIT_RICHNESS = 2.52; // units a deposit yields a day per population point of its cell, on a map of DEPOSIT_MAP_CELLS
 const DEPOSIT_MAP_CELLS = 5000; // deposit counts are per map: their yield grows with the map's cells
 const DEPOSIT_MAX_POPULATION = 10; // a deposit's yield stops growing past this population
-export const BONUS_URBAN_PRODUCTION = 3.59; // free units per population point of a burg on a deposit
-const MIN_BONUS_PRODUCTION = 1;
-const MAX_BONUS_PRODUCTION = 5;
-export const MAX_BONUS_VALUE = 200; // a burg's free units are worth at most this at base value, so a rich deposit can't flood its treasury
+export const MAX_DEPOSIT_VALUE = 200; // worth at base value a burg's deposit yields a day at most, so a large burg cannot grind it, nor a gemstone mine flood its treasury
+export const DEPOSIT_OUTPUT = 2; // units a worker gets from the burg's own deposit a day, before multipliers: a unit of a made good takes a day's work
 const MAX_WORKERS = 1000;
 export const WORKFORCE_SHARE = 0.32; // townspeople working in trades; the rest serve, build, farm or are too young or old
 const WORKERS_PER_TURN = 5;
@@ -93,7 +91,7 @@ export class ProductionModule {
       // the poll tax is the day's first claim: the burg starts owing it and pays it from its first sales
       burg.pollTaxPaid = market ? rn(States.getPollTaxDue(burg.state || 0, burg.population || 0), 2) : 0;
       burg.treasury = sum(burg.adjustments ?? [], line => line.value) - burg.pollTaxPaid; // adjustments come at dawn too
-      if (market) states.push(this.createBurgProductionState(burg, market, recording));
+      if (market) states.push(this.createBurgProductionState(index, burg, market, recording));
       else {
         burg.product = 0; // out of every market: nothing made
         burg.production = [];
@@ -183,30 +181,28 @@ export class ProductionModule {
     return Math.min(rn((burg.population || 0) * WORKFORCE_SHARE, 2), MAX_WORKERS);
   }
 
-  private createBurgProductionState(burg: Burg, market: Market, recording = false): BurgProductionState {
+  private createBurgProductionState(
+    index: ProductionIndex,
+    burg: Burg,
+    market: Market,
+    recording = false
+  ): BurgProductionState {
     const population = this.getWorkers(burg);
     if (population === MAX_WORKERS) log.warn(`Burg ${burg.name} (${burg.i}) workforce is capped at ${MAX_WORKERS}`);
-    const inventory: number[] = [];
-    const produced: number[] = [];
-    const productionLog: ProductionLogEntry[] | undefined = recording ? [] : undefined;
-
-    const good = Goods.get(pack.cells.good[burg.cell]);
-    if (good) {
-      const localBonus = this.getLocalBonus(good, burg);
-      if (localBonus > 0) {
-        inventory[good.i] = localBonus;
-        produced[good.i] = localBonus;
-        productionLog?.push({ goodId: good.i, units: rn(localBonus, 2) });
-      }
-    }
+    const deposit = Goods.get(pack.cells.good[burg.cell]);
+    const goals =
+      deposit && !index.productiveGoods.includes(deposit) ? [...index.productiveGoods, deposit] : index.productiveGoods;
 
     return {
       burg,
       market,
       population,
-      inventory,
-      produced,
-      log: productionLog,
+      inventory: [],
+      produced: [],
+      log: recording ? [] : undefined,
+      deposit,
+      depositLeft: deposit?.value ? MAX_DEPOSIT_VALUE / deposit.value : Infinity,
+      goals,
       taxRate: States.getSalesTax(burg),
       ingredientCosts: 0,
       revenue: 0,
@@ -262,10 +258,12 @@ export class ProductionModule {
     workerFraction: number
   ): number {
     const { good, ingredients, maxYield } = decision.action;
-    const actualYield = Math.min(workerFraction, maxYield);
     const cultureModifier = this.getBurgModifiers(state, good);
     const specialization = this.getSpecialization(index, state, good.i);
-    const produced = rn(actualYield * cultureModifier * specialization, 2);
+    const output = cultureModifier * specialization; // units a worker makes
+    let actualYield = Math.min(workerFraction, maxYield);
+    if (!ingredients.length) actualYield = Math.min(actualYield, state.depositLeft / output); // the deposit yields no more
+    const produced = rn(actualYield * output, 2);
     if (!produced) return workerFraction;
 
     // buy what the inventory lacks; inputs bought before a failed purchase stay in the inventory
@@ -298,6 +296,7 @@ export class ProductionModule {
       state.inventory[ingredient.goodId] = left < 0.01 ? 0 : left; // a purchase rounded up leaves crumbs, not stock
     }
 
+    if (!ingredients.length) state.depositLeft -= produced;
     state.inventory[good.i] = (state.inventory[good.i] || 0) + produced;
     state.produced[good.i] = (state.produced[good.i] || 0) + produced;
     state.workersByGood[good.i] = (state.workersByGood[good.i] || 0) + actualYield;
@@ -307,7 +306,13 @@ export class ProductionModule {
     index.worldWorkers[good.i] = (index.worldWorkers[good.i] || 0) + actualYield;
 
     if (state.log) {
-      const entry: ManufacturingEntry = { goodId: good.i, units: produced, recipe, candidates: decision.candidates };
+      const entry: ManufacturingEntry = {
+        goodId: good.i,
+        units: produced,
+        workers: rn(actualYield, 2),
+        recipe,
+        candidates: decision.candidates
+      };
       if (cultureModifier !== 1) entry.cultureModifier = cultureModifier;
       if (specialization !== 1) entry.specialization = rn(specialization, 2);
       state.log.push(entry);
@@ -418,7 +423,7 @@ export class ProductionModule {
     state.log!.push({ category, shortage: rn(shortage, 2), options });
   }
 
-  /** Sells the goods of the burg's inventory it chooses, all by default, where each fetches the most */
+  /** Sells the goods of the burg's inventory it chooses, all by default, where each fetches the most; what fetches nothing there waits for its next turn */
   private sellInventoryToMarket(
     index: ProductionIndex,
     state: BurgProductionState,
@@ -431,13 +436,14 @@ export class ProductionModule {
       const goodId = +goodIdStr;
       const units = state.inventory[goodId];
       if (units <= 0 || !sells(goodId)) continue;
-      state.inventory[goodId] = 0;
 
       const good = Goods.get(goodId)!;
       const market = this.getOutlet(index, state, good)?.market ?? state.market; // where it fetches the most
       const trade = Trade.sell({ burg: state.burg, good, units, taxRate, market, terms: index.tradeTerms });
-      state.outlets.quotes[goodId] = undefined; // the sale moved its price
       if (!trade) continue;
+      const left = units - trade.units;
+      state.inventory[goodId] = left < 0.01 ? 0 : left;
+      state.outlets.quotes[goodId] = undefined; // the sale moved its price
 
       const revenue = trade.units * trade.price - trade.tax - (trade.tariff || 0);
       phaseRevenue += revenue;
@@ -686,10 +692,16 @@ export class ProductionModule {
     return this.getBurgModifiers(state, good) * this.getSpecialization(index, state, good.i);
   }
 
-  /** The burg's modifiers for the good, fixed for the run */
+  /** The burg's modifiers for the good, fixed for the run; its deposit gives a worker more */
   private getBurgModifiers(state: BurgProductionState, good: Good): number {
-    state.modifiers[good.i] ??= this.getModifiers(good, state.burg.cell);
+    state.modifiers[good.i] ??=
+      this.getModifiers(good, state.burg.cell) * (good === state.deposit ? DEPOSIT_OUTPUT : 1);
     return state.modifiers[good.i];
+  }
+
+  /** How the burg can make the good: by working its deposit of it, otherwise by its recipes */
+  private getRecipes(index: ProductionIndex, state: BurgProductionState, good: Good): Recipe[] | undefined {
+    return good === state.deposit ? [{ good, ingredients: [] }] : index.recipesByOutput[good.i];
   }
 
   /** Division of labor: the more of the burg's workers make a good, and the more its market makes of it than the world, the more each makes */
@@ -707,13 +719,13 @@ export class ProductionModule {
     index: ProductionIndex,
     state: BurgProductionState,
     good: Good,
-    quote: MarketQuote,
     modifier: number,
     workers: number
   ): number {
     const units = -modifier * workers;
     const outlet = this.getOutlet(index, state, good);
-    let price = Trade.atLot(quote.sellPrice, quote.carriage, state.market, good, units);
+    const local = Trade.quoteMarket(state.market, good.i, state.burg); // selling needs no source to buy from
+    let price = Trade.atLot(local.sellPrice, local.carriage, state.market, good, units);
     // a lot never fetches more than a unit, so an outlet paying no more for a unit cannot win
     if (outlet && outlet.market !== state.market && outlet.price > price)
       price = Math.max(price, Trade.atLot(outlet.price, outlet.carriage, outlet.market, good, units));
@@ -736,7 +748,10 @@ export class ProductionModule {
     quotes: MarketQuote[],
     saleValue: number // per worker, for a lot of the units
   ): { action: PlannedAction; candidate: ProductionCandidate } | null {
+    // workers the burg's deposit still has work for; a recipe's inputs bound it below
     let maxYield = Infinity;
+    if (!recipe.ingredients.length)
+      maxYield = state.depositLeft >= 0.01 ? state.depositLeft / this.getWorkerOutput(index, state, recipe.good) : 0;
     let marketCostTotal = 0;
 
     for (const ingredient of recipe.ingredients) {
@@ -749,7 +764,7 @@ export class ProductionModule {
       maxYield = Math.min(maxYield, totalAvailable / ingredient.amount);
     }
 
-    if (!Number.isFinite(maxYield) || maxYield <= 0) return null;
+    if (maxYield <= 0) return null;
 
     const actualUnits = Math.min(units, maxYield);
     for (const ingredient of recipe.ingredients) {
@@ -762,11 +777,8 @@ export class ProductionModule {
     }
 
     const modifier = this.getWorkerOutput(index, state, recipe.good);
-    quotes[recipe.good.i] ??= this.quote(index, state, recipe.good.i);
     const sellValue =
-      actualUnits === units
-        ? saleValue
-        : this.getSaleValue(index, state, recipe.good, quotes[recipe.good.i], modifier, actualUnits);
+      actualUnits === units ? saleValue : this.getSaleValue(index, state, recipe.good, modifier, actualUnits);
     const ingredientCost = marketCostTotal / actualUnits;
     const score = sellValue - ingredientCost;
 
@@ -822,6 +834,26 @@ export class ProductionModule {
     return { reserved, missing, marketCost };
   }
 
+  /** The stocks to plan a recipe from: as they are, and, when it takes the burg's deposit good and its market has some, with that stock left alone, so working the deposit is weighed against buying */
+  private getRecipeStocks(
+    index: ProductionIndex,
+    state: BurgProductionState,
+    recipe: Recipe,
+    stock: PlanningStock | undefined,
+    quotes: MarketQuote[]
+  ): (PlanningStock | undefined)[] {
+    const { deposit } = state;
+    if (!deposit || !recipe.ingredients.some(({ goodId }) => goodId === deposit.i)) return [stock];
+    quotes[deposit.i] ??= this.quote(index, state, deposit.i);
+    if ((stock?.market[deposit.i] ?? quotes[deposit.i].stock) <= 0.001) return [stock];
+    const own: PlanningStock = {
+      inventory: (stock?.inventory ?? state.inventory).slice(),
+      market: stock?.market.slice() ?? []
+    };
+    own.market[deposit.i] = 0;
+    return [stock, own];
+  }
+
   private planGoodAction(
     index: ProductionIndex,
     state: BurgProductionState,
@@ -837,117 +869,117 @@ export class ProductionModule {
     if (workersLeft <= 0 || targetUnits <= 0 || targetUnits > workersLeft + 0.001) return null;
     if (path[good.i]) return null;
 
-    const recipeList = index.recipesByOutput[good.i];
+    const recipeList = this.getRecipes(index, state, good);
     if (!recipeList?.length) return null;
     path[good.i] = true;
 
     const modifier = this.getWorkerOutput(index, state, good);
-    quotes[good.i] ??= this.quote(index, state, good.i);
-    const sellValuePerUnit = saleValue ?? this.getSaleValue(index, state, good, quotes[good.i], modifier, targetUnits);
+    const sellValuePerUnit = saleValue ?? this.getSaleValue(index, state, good, modifier, targetUnits);
     const totalProjectedGain = sellValuePerUnit * targetUnits;
 
     let bestPlan: GoalActionPlan | null = null;
     let bestStock: PlanningStock | null = null;
 
-    for (const recipe of recipeList) {
-      const immediate = this.buildImmediateManufactureCandidate(
-        index,
-        state,
-        recipe,
-        targetUnits,
-        good.i,
-        stock,
-        quotes,
-        sellValuePerUnit
-      );
-      if (immediate) {
-        const perUnitNetGain = immediate.candidate.score;
+    for (const recipe of recipeList)
+      for (const recipeStock of this.getRecipeStocks(index, state, recipe, stock, quotes)) {
+        const immediate = this.buildImmediateManufactureCandidate(
+          index,
+          state,
+          recipe,
+          targetUnits,
+          good.i,
+          recipeStock,
+          quotes,
+          sellValuePerUnit
+        );
+        if (immediate) {
+          const perUnitNetGain = immediate.candidate.score;
+          const plan: GoalActionPlan = {
+            goalGoodId: good.i,
+            workersNeeded: targetUnits,
+            marketCost: immediate.candidate.ingredientCost * targetUnits,
+            projectedGain: perUnitNetGain * targetUnits,
+            normalizedGain: perUnitNetGain,
+            action: immediate.action,
+            candidate: { ...immediate.candidate, units: Math.min(stepUnits, targetUnits) }
+          };
+          if (!bestPlan || plan.normalizedGain > bestPlan.normalizedGain + 0.001) {
+            bestPlan = plan;
+            bestStock = stock
+              ? this.reserveRecipeInputs(index, state, recipe, targetUnits, recipeStock, quotes).reserved
+              : null;
+          }
+          continue;
+        }
+
+        let workersNeeded = targetUnits;
+        const reservation = this.reserveRecipeInputs(index, state, recipe, targetUnits, recipeStock, quotes);
+        const { reserved, missing } = reservation;
+        let marketCost = reservation.marketCost;
+        let feasible = true;
+        let nextActionPlan: GoalActionPlan | null = null;
+
+        for (const ingredient of missing) {
+          const ingredientGood = Goods.get(ingredient.goodId);
+          if (!ingredientGood) {
+            feasible = false;
+            break;
+          }
+
+          // the step's workers: a worker makes more or less than a unit of the input
+          const subPlan = this.planGoodAction(
+            index,
+            state,
+            ingredientGood,
+            ingredient.amount / this.getWorkerOutput(index, state, ingredientGood),
+            stepUnits,
+            workersLeft - workersNeeded,
+            path,
+            reserved,
+            quotes
+          );
+
+          if (!subPlan) {
+            feasible = false;
+            break;
+          }
+
+          workersNeeded += subPlan.workersNeeded;
+          marketCost += subPlan.marketCost;
+
+          if (!nextActionPlan || subPlan.normalizedGain > nextActionPlan.normalizedGain + 0.001) {
+            nextActionPlan = subPlan;
+          }
+        }
+
+        if (!feasible || !nextActionPlan || workersNeeded > workersLeft + 0.001) continue;
+
+        const projectedGain = totalProjectedGain - marketCost;
+        const normalizedGain = projectedGain / workersNeeded;
+        const action = nextActionPlan.action;
+        const candidate: ProductionCandidate = {
+          ...nextActionPlan.candidate,
+          score: normalizedGain * Math.min(stepUnits, targetUnits),
+          goalGoodId: good.i,
+          isPreparation: nextActionPlan.goalGoodId !== good.i,
+          gainPerWorker: normalizedGain,
+          workersNeeded
+        };
+
         const plan: GoalActionPlan = {
           goalGoodId: good.i,
-          workersNeeded: targetUnits,
-          marketCost: immediate.candidate.ingredientCost * targetUnits,
-          projectedGain: perUnitNetGain * targetUnits,
-          normalizedGain: perUnitNetGain,
-          action: immediate.action,
-          candidate: { ...immediate.candidate, units: Math.min(stepUnits, targetUnits) }
+          workersNeeded,
+          marketCost,
+          projectedGain,
+          normalizedGain,
+          action,
+          candidate
         };
         if (!bestPlan || plan.normalizedGain > bestPlan.normalizedGain + 0.001) {
           bestPlan = plan;
-          bestStock = stock
-            ? this.reserveRecipeInputs(index, state, recipe, targetUnits, stock, quotes).reserved
-            : null;
-        }
-        continue;
-      }
-
-      let workersNeeded = targetUnits;
-      const reservation = this.reserveRecipeInputs(index, state, recipe, targetUnits, stock, quotes);
-      const { reserved, missing } = reservation;
-      let marketCost = reservation.marketCost;
-      let feasible = true;
-      let nextActionPlan: GoalActionPlan | null = null;
-
-      for (const ingredient of missing) {
-        const ingredientGood = Goods.get(ingredient.goodId);
-        if (!ingredientGood) {
-          feasible = false;
-          break;
-        }
-
-        // the step's workers: a worker makes more or less than a unit of the input
-        const subPlan = this.planGoodAction(
-          index,
-          state,
-          ingredientGood,
-          ingredient.amount / this.getWorkerOutput(index, state, ingredientGood),
-          stepUnits,
-          workersLeft - workersNeeded,
-          path,
-          reserved,
-          quotes
-        );
-
-        if (!subPlan) {
-          feasible = false;
-          break;
-        }
-
-        workersNeeded += subPlan.workersNeeded;
-        marketCost += subPlan.marketCost;
-
-        if (!nextActionPlan || subPlan.normalizedGain > nextActionPlan.normalizedGain + 0.001) {
-          nextActionPlan = subPlan;
+          bestStock = reserved;
         }
       }
-
-      if (!feasible || !nextActionPlan || workersNeeded > workersLeft + 0.001) continue;
-
-      const projectedGain = totalProjectedGain - marketCost;
-      const normalizedGain = projectedGain / workersNeeded;
-      const action = nextActionPlan.action;
-      const candidate: ProductionCandidate = {
-        ...nextActionPlan.candidate,
-        score: normalizedGain * Math.min(stepUnits, targetUnits),
-        goalGoodId: good.i,
-        isPreparation: nextActionPlan.goalGoodId !== good.i,
-        gainPerWorker: normalizedGain,
-        workersNeeded
-      };
-
-      const plan: GoalActionPlan = {
-        goalGoodId: good.i,
-        workersNeeded,
-        marketCost,
-        projectedGain,
-        normalizedGain,
-        action,
-        candidate
-      };
-      if (!bestPlan || plan.normalizedGain > bestPlan.normalizedGain + 0.001) {
-        bestPlan = plan;
-        bestStock = reserved;
-      }
-    }
 
     path[good.i] = false;
     if (stock && bestStock) {
@@ -971,7 +1003,7 @@ export class ProductionModule {
     const plans: GoalActionPlan[] = [];
     let unplanned = -Infinity; // the bound of the first goal left unplanned
     let best = -Infinity;
-    for (const { good, bound, step, saleValue } of this.rankGoals(index, state, activeGoalGoodId, fraction, quotes)) {
+    for (const { good, bound, step, saleValue } of this.rankGoals(index, state, activeGoalGoodId, fraction)) {
       // it and the rest cannot beat the choice: planned only for the debug log
       const beaten = unplanned > -Infinity || (plans.length > 0 && bound <= best + 0.001);
       if (beaten && unplanned === -Infinity) unplanned = bound;
@@ -1018,13 +1050,11 @@ export class ProductionModule {
   ): ProductionDecision | null {
     const good = state.activeGoalGoodId === null ? undefined : Goods.get(state.activeGoalGoodId);
     if (!good || runnerUp === Infinity) return null;
-    const quotes: MarketQuote[] = [];
-    quotes[good.i] = this.quote(index, state, good.i);
     const modifier = this.getWorkerOutput(index, state, good);
     const step = this.getStep(index, state, good, modifier, fraction);
-    const saleValue = this.getSaleValue(index, state, good, quotes[good.i], modifier, step);
+    const saleValue = this.getSaleValue(index, state, good, modifier, step);
     if (saleValue <= runnerUp + 0.001) return null;
-    const plan = this.planGoodAction(index, state, good, step, step, workersLeft, [], undefined, quotes, saleValue);
+    const plan = this.planGoodAction(index, state, good, step, step, workersLeft, [], undefined, [], saleValue);
     if (!plan || plan.projectedGain <= 0 || plan.normalizedGain <= runnerUp + 0.001) return null;
     return { action: plan.action, candidates: state.log ? [plan.candidate] : [], goalGoodId: good.i, runnerUp };
   }
@@ -1034,15 +1064,13 @@ export class ProductionModule {
     index: ProductionIndex,
     state: BurgProductionState,
     activeGoalGoodId: number | null,
-    fraction: number,
-    quotes: MarketQuote[]
+    fraction: number
   ): RankedGoal[] {
     const goals: RankedGoal[] = [];
-    for (const good of index.productiveGoods) {
-      quotes[good.i] ??= this.quote(index, state, good.i);
+    for (const good of state.goals) {
       const modifier = this.getWorkerOutput(index, state, good);
       const step = this.getStep(index, state, good, modifier, fraction);
-      const saleValue = this.getSaleValue(index, state, good, quotes[good.i], modifier, step);
+      const saleValue = this.getSaleValue(index, state, good, modifier, step);
       if (good.i === activeGoalGoodId) goals.push({ good, bound: Infinity, step, saleValue });
       else if (saleValue > 0) goals.push({ good, bound: saleValue, step, saleValue });
     }
@@ -1117,13 +1145,6 @@ export class ProductionModule {
     return pop * DEPOSIT_RICHNESS * mapScale * this.getModifiers(good, cellId);
   }
 
-  /** Free units a burg on a deposit of the good starts its day with */
-  getLocalBonus(good: Good, burg: Burg): number {
-    const population = minmax(rn(burg.population || 0, 2), MIN_BONUS_PRODUCTION, MAX_BONUS_PRODUCTION);
-    const units = population * BONUS_URBAN_PRODUCTION * this.getModifiers(good, burg.cell);
-    return good.value > 0 ? Math.min(units, MAX_BONUS_VALUE / good.value) : units;
-  }
-
   /** A land cell's people, or a water cell's from the land around it */
   private getCellPopulation(cellId: number): number {
     const { cells } = pack;
@@ -1177,7 +1198,6 @@ export class ProductionModule {
   }
 }
 
-export const isManufacturingEntry = (entry: ProductionLogEntry): entry is ManufacturingEntry => "recipe" in entry;
 export const isTradeEntry = (entry: ProductionLogEntry): entry is TradeEntry => "kind" in entry;
 export const isDemandEntry = (entry: ProductionLogEntry): entry is DemandEntry => "category" in entry;
 
@@ -1213,7 +1233,10 @@ type BurgProductionState = {
   market: Market;
   population: number;
   inventory: number[];
-  produced: number[]; // by good, local bonus included
+  produced: number[]; // by good, what its deposit yielded included
+  deposit: Good | undefined; // the good of the burg's cell, worked in place of its recipes
+  depositLeft: number; // units the deposit can still yield this run
+  goals: Good[]; // what it can make: goods with recipes, and its deposit's
   log?: ProductionLogEntry[]; // kept only in debug mode
   taxRate: number; // the burg's sales tax, paid on what it sells
   ingredientCosts: number;
@@ -1268,15 +1291,14 @@ type GoalActionPlan = {
 
 type ProductionRecipeEntry = { goodId: number; units: number };
 
-/** Units of each good a burg made in the last production run, local bonus included */
+/** Units of each good a burg made in the last production run, what its deposit yielded included */
 export type BurgProduction = [good: number, units: number][];
-
-type LocalEntry = { goodId: number; units: number };
 
 type ManufacturingEntry = {
   goodId: number;
   units: number;
-  recipe: ProductionRecipeEntry[];
+  workers: number;
+  recipe: ProductionRecipeEntry[]; // empty for the burg's deposit
   cultureModifier?: number; // omitted when 1
   specialization?: number; // division of labor factor, omitted when 1
   candidates: readonly ProductionCandidate[];
@@ -1292,6 +1314,6 @@ type DemandEntry = {
 };
 
 /** One step of a burg's production run, logged in debug mode */
-export type ProductionLogEntry = LocalEntry | ManufacturingEntry | TradeEntry | DemandEntry;
+export type ProductionLogEntry = ManufacturingEntry | TradeEntry | DemandEntry;
 
 export const Production = new ProductionModule();

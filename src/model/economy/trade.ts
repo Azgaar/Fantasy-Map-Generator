@@ -38,6 +38,7 @@ type Carriage = {
 type GoodBook = {
   rows: Market["goods"][number][];
   stocked: Uint8Array; // 1 where the market has more than MIN_STOCK
+  stockedCount: number;
   sellPrices: Float64Array; // what the market pays for a unit, before carriage and tariff
   buyPrices: Float64Array; // what it asks for a unit, before taxes and carriage
   bySell: Int32Array; // positions, the best paying first
@@ -235,7 +236,8 @@ export class TradeModule {
       buyRanks[at] = rank;
     });
     const stocked = Uint8Array.from(rows, row => Number(row.stock > MIN_STOCK));
-    return { rows, stocked, sellPrices, buyPrices, bySell, byBuy, sellRanks, buyRanks, revision: 0 };
+    const stockedCount = stocked.reduce((count, flag) => count + flag, 0);
+    return { rows, stocked, stockedCount, sellPrices, buyPrices, bySell, byBuy, sellRanks, buyRanks, revision: 0 };
   }
 
   /** Changes on every change to a market's row of the good in the economy run, so a quote can tell it is stale; NaN outside a run */
@@ -253,7 +255,9 @@ export class TradeModule {
     const at = this.run?.positions[market.i];
     if (!book || at === undefined) return; // outside a run, or a run that failed: the next one indexes afresh
     book.revision++;
-    book.stocked[at] = Number(marketGood.stock > MIN_STOCK);
+    const stocked = Number(marketGood.stock > MIN_STOCK);
+    book.stockedCount += stocked - book.stocked[at];
+    book.stocked[at] = stocked;
     book.sellPrices[at] = this.customerSellPrice(market, marketGood.price);
     book.buyPrices[at] = this.customerBuyPrice(market, marketGood.price);
     reorder(book.bySell, book.sellRanks, book.sellPrices, at, true);
@@ -682,7 +686,18 @@ export class TradeModule {
     return { units: kept, price: rn(quote.price, 2), tax: 0 };
   }
 
-  /** The burg sells to a market, its own unless another is given; another state's market levies its tariff, off the revenue as the sales tax. Null under an embargo */
+  /** Units the market takes before the next one fetches less than a cent at the burg's door: each unit sold lowers the price */
+  private getSellable(market: Market, good: Good, carriage: number, tariffRate: number): number {
+    const kept = 1 - this.getMarginRate(market) - tariffRate; // of the market's price, what reaches the burg before carriage
+    const price = this.getMarketGood(market, good).price;
+    const least = kept > 0 ? (carriage + 0.01) / kept : Infinity; // the market's price at which a unit fetches a cent
+    if (price <= least) return 0;
+    const depth = this.days[market.i]?.depth[good.i];
+    if (!depth || least <= good.value * PRICE_FLOOR_FACTOR) return Infinity; // the price never falls that low
+    return (depth / PRICE_RESPONSE) * Math.log(price / least);
+  }
+
+  /** The burg sells to a market, its own unless another is given, as many of the units as fetch something at its door; another state's market levies its tariff, off the revenue as the sales tax. Null under an embargo or when none would */
   sell({
     burg,
     good,
@@ -701,19 +716,21 @@ export class TradeModule {
     if (!market || units <= 0) return null;
 
     const marketGood = this.getMarketGood(market, good);
-    const lot = this.getLotPrice(market, good, -units); // the lot pays its own impact
-    const tariff = this.getSaleTariff(Markets.ofBurg(burg), market, good, lot, terms);
-    if (tariff === null) return null;
-    const grossPrice = this.customerSellPrice(market, lot);
-    const transport = Math.min(this.getTransport(market, burg, good), grossPrice);
-    const price = rn(grossPrice - transport, 2);
-    const tax = rn(units * price * taxRate, 2);
-    const trade = { units: rn(units, 2), price, tax, tariff: rn(units * tariff, 2), carriage: rn(transport, 2) };
+    const tariffRate = this.getSaleTariff(Markets.ofBurg(burg), market, good, 1, terms);
+    if (tariffRate === null) return null;
+    const transport = this.getTransport(market, burg, good);
+    const sold = rn(Math.min(units, this.getSellable(market, good, transport, tariffRate)), 2);
+    if (sold < 0.01) return null;
+
+    const lot = this.getLotPrice(market, good, -sold); // the lot pays its own impact
+    const price = rn(this.customerSellPrice(market, lot) - transport, 2);
+    const tax = rn(sold * price * taxRate, 2);
+    const trade = { units: sold, price, tax, tariff: rn(sold * tariffRate * lot, 2), carriage: rn(transport, 2) };
     this.recordDeal(burg.i!, market.i, good.i, DEAL_KINDS.sale, trade);
     this.payMargin(market, DEAL_KINDS.sale, trade);
 
-    this.setStock(market, good, marketGood, rn(marketGood.stock + units, 2));
-    this.movePrice(market, good, -units);
+    this.setStock(market, good, marketGood, rn(marketGood.stock + sold, 2));
+    this.movePrice(market, good, -sold);
     return trade;
   }
 
@@ -974,14 +991,17 @@ export class TradeModule {
     if (!market) return null;
 
     const { atDecimas, atFactors } = this.getCarriage(burg);
-    const { rows, stocked, buyPrices, byBuy } = this.getBook(good);
+    const { rows, stocked, buyPrices, byBuy, stockedCount } = this.getBook(good);
     const markets = pack.markets;
     let best: SourceQuote | null = null;
     let bestAt = Infinity; // an equal price goes to the market first in pack.markets
+    let unseen = stockedCount; // the stocked markets still ahead: none left ends the search
     for (const at of byBuy) {
+      if (!unseen) break;
       const withMargin = buyPrices[at];
       if (best && withMargin > best.buyPrice) break; // taxes and carriage only add to the rest
       if (!stocked[at]) continue;
+      unseen--;
       const source = markets[at];
       if (source === market) continue;
       const distance = atDecimas[at];
