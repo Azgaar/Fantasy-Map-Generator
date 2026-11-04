@@ -188,7 +188,7 @@ export class TradeModule {
     return initial;
   }
 
-  /** Each market expects to sell a day's demand of its people and trades; an ingredient its trades need less than a unit of a day opens below its value */
+  /** Each market expects to sell a day's demand of its people and trades, or all the countryside brings if more; an ingredient its trades need less than a unit of a day opens below its value, and the countryside's produce lowers its price as a sale does */
   initializeMarketPrices(): void {
     const demandFactors = this.collectDemand(pack.goods);
     const populationByMarket = this.calculatePopulationByMarket();
@@ -199,10 +199,12 @@ export class TradeModule {
       const people = (populationByMarket[market.i] || 0) + day.ruralPeople;
       for (const good of pack.goods) {
         const expected = people * (demandFactors[good.i] || 0);
-        day.depth[good.i] = Math.max(1, expected);
+        const rural = day.rural[good.i] || 0;
+        day.depth[good.i] = Math.max(1, expected, rural);
         const coversNeeds = Object.keys(good.demandCoverage ?? {}).length > 0;
         const price = coversNeeds ? good.value : good.value * Math.min(1, expected) ** OPENING_ELASTICITY;
-        this.getMarketGood(market, good).price = Math.max(price, good.value * PRICE_FLOOR_FACTOR);
+        const supplied = price * Math.exp((-PRICE_RESPONSE * rural) / day.depth[good.i]);
+        this.getMarketGood(market, good).price = Math.max(supplied, good.value * PRICE_FLOOR_FACTOR);
       }
     }
 

@@ -355,6 +355,29 @@ describe("TradeModule", () => {
       expect(purchase.price).toBeGreaterThan(10 * (1 + MARGIN)); // dearer than the opening price
     });
 
+    it("lowers a good's opening price by what the countryside brings, as a sale of it would", () => {
+      const { importer, good } = setupImport();
+      globalThis.pack.goods = [{ ...good, demandCoverage: { food: 1 } }];
+      globalThis.pack.cells = { routes: {}, market: [], burg: [] } as never;
+      const day = { depth: [], rural: [], ruralPeople: 40, pollTaxDue: [] };
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      tradeModule["days"] = [undefined, undefined, day] as never;
+      globalThis.pack.markets = [importer];
+      const open = (rural: number) => {
+        day.rural = [rural] as never;
+        tradeModule.initializeMarketPrices();
+        return importer.goods[0].price;
+      };
+      const value = good.value;
+      expect(open(0)).toBe(value); // no supply: its value
+      const expected = day.depth[0] as number;
+      expect(open(expected / 2)).toBeCloseTo(value * Math.exp(-PRICE_RESPONSE / 2)); // half a day's sales
+      expect(day.depth[0]).toBe(expected);
+      expect(open(expected)).toBeCloseTo(value * Math.exp(-PRICE_RESPONSE)); // a day's sales
+      expect(open(expected * 100)).toBeCloseTo(value * Math.exp(-PRICE_RESPONSE)); // a glut opens no lower
+      expect(day.depth[0]).toBe(expected * 100); // and takes as much to move
+    });
+
     it("sells only the units that fetch something at the burg's door: a glut keeps the rest", () => {
       const { importer, burg, good } = setupImport();
       importer.centerBurgId = 1;
