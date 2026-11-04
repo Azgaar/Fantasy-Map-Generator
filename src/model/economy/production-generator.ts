@@ -47,6 +47,8 @@ const WORKERS_PER_TURN = 5;
 export const LOT_DEPTH_SHARE = 0.5; // a step sells at most this share of a day's sales where it sells, so a thin market gets what pays and no more
 const PRODUCTIVITY_START = 30; // development past the High Middle Ages makes more of every good: ×1.5 at 45, ×2 at 60
 const MIN_STEP = 0.5; // the fewest workers a step takes, so a thin market does not take endless decisions
+export const MIN_PURCHASE = 1; // the fewest coins a burg spends on a good for a need or want, so it buys fewer goods in bigger lots
+const MIN_SMALL_PURCHASE = 0.25; // the same when all it has for the need or want is less than MIN_PURCHASE
 export const BURG_SPECIALIZATION = 1.89;
 export const MARKET_SPECIALIZATION = 0.6;
 
@@ -432,10 +434,9 @@ export class ProductionModule {
     let phaseRevenue = 0;
     const { taxRate } = state;
 
-    for (const goodIdStr in state.inventory) {
-      const goodId = +goodIdStr;
+    for (let goodId = 0; goodId < state.inventory.length; goodId++) {
       const units = state.inventory[goodId];
-      if (units <= 0 || !sells(goodId)) continue;
+      if (!units || units <= 0 || !sells(goodId)) continue;
 
       const good = Goods.get(goodId)!;
       const market = this.getOutlet(index, state, good)?.market ?? state.market; // where it fetches the most
@@ -576,11 +577,16 @@ export class ProductionModule {
         cover(candidate, this.acquire(index, state, candidate.good, units, DEAL_KINDS.demand, burg.treasury || 0));
       };
 
-      // every good covering the need gets its share; a good nobody stocks turns its buyers away, raising its price
+      // every good covering the need gets its share; a good nobody stocks turns its buyers away, which is demand too
       if (!poor) {
         const options = [...sortedCandidates, ...missing];
-        const shares = this.getShares(index, state, categoryIndex, options);
         const wanted = shortage;
+        const shares = this.getLotShares(
+          this.getShares(index, state, categoryIndex, options),
+          k => k < sortedCandidates.length,
+          k => wanted * options[k].costPerCoverage,
+          burg.treasury || 0
+        );
         options.forEach(({ candidate }, k) => {
           if (k >= sortedCandidates.length)
             Trade.signalShortage(state.market, candidate.good, (wanted * shares[k]) / candidate.coverageWeight);
@@ -620,6 +626,40 @@ export class ProductionModule {
     );
   }
 
+  /**
+   * The shares of a need's or want's spending with those buying too little dropped and their money going to the rest, so a burg buys fewer goods in bigger lots.
+   * `buyable` are the options that can be bought, the rest keep their shares; `cost` is what an option's whole need would cost; `budget` is what the burg has for it
+   */
+  private getLotShares(
+    shares: number[],
+    buyable: (k: number) => boolean,
+    cost: (k: number) => number,
+    budget: number
+  ): number[] {
+    let kept = shares.flatMap((share, k) => (share > 0 && buyable(k) ? [k] : []));
+    if (kept.length < 2) return shares;
+    const sum = (list: number[], value: (k: number) => number) => list.reduce((total, k) => total + value(k), 0);
+    const total = sum(kept, k => shares[k]);
+    const full = sum(kept, k => shares[k] * cost(k));
+    const affordable = full > budget ? budget / full : 1; // what it spends on each as it runs out of money
+    const least = Math.min(full, budget) < MIN_PURCHASE ? MIN_SMALL_PURCHASE : MIN_PURCHASE;
+    const lot = (k: number, raised: number) => shares[k] * raised * cost(k) * affordable;
+
+    for (;;) {
+      const raised = total / sum(kept, k => shares[k]);
+      const enough = kept.filter(k => lot(k, raised) >= least);
+      if (enough.length === kept.length) break;
+      if (!enough.length) {
+        kept = [kept.reduce((best, k) => (lot(k, raised) > lot(best, raised) ? k : best))]; // too little for any lot: the largest
+        break;
+      }
+      kept = enough;
+    }
+
+    const raised = total / sum(kept, k => shares[k]);
+    return shares.map((share, k) => (buyable(k) ? (kept.includes(k) ? share * raised : 0) : share));
+  }
+
   /** Spends what the burg can spare beyond its needs, up to (1 - savings) of its income, spread over the goods of every category as its needs are */
   private spendOnWants(index: ProductionIndex, state: BurgProductionState): void {
     const { burg } = state;
@@ -645,8 +685,13 @@ export class ProductionModule {
         })
         .filter(({ price }) => price > 0);
       if (!options.length) return;
-      const shares = this.getShares(index, state, categoryIndex, options);
       const total = money;
+      const shares = this.getLotShares(
+        this.getShares(index, state, categoryIndex, options),
+        k => options[k].stocked,
+        () => total,
+        total
+      );
       const purchase = (candidate: DemandGoodCandidate, price: number, spend: number) => {
         const units = Math.min(spend / price, cap() / candidate.coverageWeight);
         if (spend <= 0.01 || units < 0.01) return;
@@ -667,7 +712,7 @@ export class ProductionModule {
       });
       const stocked = options
         .map((option, k) => ({ ...option, share: shares[k] }))
-        .filter(option => option.stocked)
+        .filter(option => option.stocked && option.share > 0)
         .sort((a, b) => b.share - a.share); // what is left goes to the goods the burg favors most
       for (const { candidate } of stocked) {
         if (money <= 0.01 || cap() <= 0.001) break;
@@ -724,7 +769,7 @@ export class ProductionModule {
   ): number {
     const units = -modifier * workers;
     const outlet = this.getOutlet(index, state, good);
-    const local = Trade.quoteMarket(state.market, good.i, state.burg); // selling needs no source to buy from
+    const local = Trade.quoteSale(state.market, good, state.burg);
     let price = Trade.atLot(local.sellPrice, local.carriage, state.market, good, units);
     // a lot never fetches more than a unit, so an outlet paying no more for a unit cannot win
     if (outlet && outlet.market !== state.market && outlet.price > price)

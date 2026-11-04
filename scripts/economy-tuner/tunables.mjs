@@ -15,10 +15,11 @@ export const TUNABLES = {
     DEPOSIT_OUTPUT: [1, 4],
     RURAL_OUTPUT_FACTOR: [0.5, 3],
     LOT_DEPTH_SHARE: [0.02, 2],
-    MIN_STEP: [0.02, 1]
+    MIN_STEP: [0.02, 1],
+    MIN_PURCHASE: [0.25, 3]
   },
   "src/model/economy/trade.ts": {
-    PRICE_RESPONSE: [0, 4],
+    PRICE_CURVE: [1, 3],
     WANTS_ESTIMATE: [0, 3],
     OPENING_ELASTICITY: [0, 1]
   }

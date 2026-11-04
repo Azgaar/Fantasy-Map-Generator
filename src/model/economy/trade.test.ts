@@ -4,15 +4,7 @@ import { noFinance, States } from "@/model/political/states-generator";
 import { rn } from "@/utils/number-utils";
 import { Goods, SAVINGS_RATE } from "./goods-generator";
 import { type Market, Markets, MarketsModule } from "./markets-generator";
-import {
-  DEAL_KINDS,
-  type Deal,
-  IMPORT_CARRIAGE_FACTOR,
-  MARKET_MARGIN,
-  PRICE_RESPONSE,
-  Trade,
-  TradeModule
-} from "./trade";
+import { DEAL_KINDS, type Deal, IMPORT_CARRIAGE_FACTOR, MARKET_MARGIN, PRICE_CURVE, Trade, TradeModule } from "./trade";
 import { TradeRoutes } from "./trade-routes";
 
 const MARGIN = Trade.getMarginRate(); // a market that paid no license fee
@@ -289,7 +281,7 @@ describe("TradeModule", () => {
       expect(tradeModule.getTransport(importer, burg, good)).toBe(10 * good.carriage);
     });
 
-    it("moves the price against the market's expected daily sales: a day's worth moves it e^PRICE_RESPONSE times", () => {
+    it("prices a good by the day's demand against its supply, expected sales counted in both, in any order of trades", () => {
       const { importer, burg, good } = setupImport();
       importer.centerBurgId = 1;
       setRoutes({ 2: 0 });
@@ -300,6 +292,9 @@ describe("TradeModule", () => {
         undefined,
         {
           depth: [20],
+          listPrice: [10],
+          demand: [],
+          supply: [],
           rural: [],
           ruralPeople: 0,
           cash: 0,
@@ -313,9 +308,11 @@ describe("TradeModule", () => {
       ] as never;
 
       tradeModule.sell({ burg, good, units: 20, taxRate: 0 }); // a day's sales offered
-      expect(importer.goods[0].price).toBeCloseTo(10 * Math.exp(-PRICE_RESPONSE), 1);
-      tradeModule.buy({ burg, good, units: 20, kind: DEAL_KINDS.demand }); // and bought back up
-      expect(importer.goods[0].price).toBeCloseTo(10, 1);
+      expect(importer.goods[0].price).toBeCloseTo(10 * (20 / 40) ** PRICE_CURVE); // a surplus: below the list price
+      tradeModule.buy({ burg, good, units: 20, kind: DEAL_KINDS.demand }); // and all bought
+      expect(importer.goods[0].price).toBeCloseTo(10); // balanced: the list price, wherever the trades left it
+      tradeModule.signalShortage(importer, good, 20); // buyers turned away
+      expect(importer.goods[0].price).toBeCloseTo(10 * (60 / 40) ** PRICE_CURVE); // a shortage: above it
       tradeModule.sell({ burg, good, units: 1000, taxRate: 0 }); // a glut: the floor, 2% of the value
       expect(importer.goods[0].price).toBe(0.2);
     });
@@ -331,6 +328,9 @@ describe("TradeModule", () => {
         undefined,
         {
           depth: [20],
+          listPrice: [10],
+          demand: [],
+          supply: [],
           rural: [],
           ruralPeople: 0,
           cash: 0,
@@ -343,7 +343,9 @@ describe("TradeModule", () => {
         }
       ] as never;
 
-      const lot = (units: number) => (10 * Math.expm1((PRICE_RESPONSE * units) / 20)) / ((PRICE_RESPONSE * units) / 20);
+      const steps = Array.from({ length: 1000 }, (_, k) => (k + 0.5) / 1000); // the lot, unit by unit
+      const mean = (price: (share: number) => number) => steps.reduce((sum, k) => sum + price(k), 0) / steps.length;
+      const lot = (units: number) => mean(k => 10 * (20 / (20 - units * k)) ** PRICE_CURVE);
       const sale = tradeModule.sell({ burg, good, units: 20, taxRate: 0 })!;
       expect(sale.price).toBeCloseTo(rn(lot(-20) * (1 - MARGIN), 2), 2); // well below the opening 10
       expect(sale.price).toBeGreaterThan(rn(importer.goods[0].price * (1 - MARGIN), 2)); // but above where it left the price
@@ -355,11 +357,11 @@ describe("TradeModule", () => {
       expect(purchase.price).toBeGreaterThan(10 * (1 + MARGIN)); // dearer than the opening price
     });
 
-    it("lowers a good's opening price by what the countryside brings, as a sale of it would", () => {
+    it("counts what the countryside brings as the day's first supply", () => {
       const { importer, good } = setupImport();
       globalThis.pack.goods = [{ ...good, demandCoverage: { food: 1 } }];
       globalThis.pack.cells = { routes: {}, market: [], burg: [] } as never;
-      const day = { depth: [], rural: [], ruralPeople: 40, pollTaxDue: [] };
+      const day = { depth: [], listPrice: [], demand: [], supply: [], rural: [], ruralPeople: 40, pollTaxDue: [] };
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
       tradeModule["days"] = [undefined, undefined, day] as never;
       globalThis.pack.markets = [importer];
@@ -371,11 +373,53 @@ describe("TradeModule", () => {
       const value = good.value;
       expect(open(0)).toBe(value); // no supply: its value
       const expected = day.depth[0] as number;
-      expect(open(expected / 2)).toBeCloseTo(value * Math.exp(-PRICE_RESPONSE / 2)); // half a day's sales
+      expect(open(expected)).toBeCloseTo(value * 0.5 ** PRICE_CURVE); // a day's sales
+      expect(open(expected * 3)).toBeCloseTo(value * 0.25 ** PRICE_CURVE); // three days'
+      expect(open(expected * 1000)).toBeCloseTo(value * 0.02); // never below the floor
       expect(day.depth[0]).toBe(expected);
-      expect(open(expected)).toBeCloseTo(value * Math.exp(-PRICE_RESPONSE)); // a day's sales
-      expect(open(expected * 100)).toBeCloseTo(value * Math.exp(-PRICE_RESPONSE)); // a glut opens no lower
-      expect(day.depth[0]).toBe(expected * 100); // and takes as much to move
+    });
+
+    it("counts an import as demand once, shared by the markets nearer the buyer than its source, the nearest the most", () => {
+      const { exporter, importer, burg, good } = setupImport();
+      const near: Market = { i: 3, centerBurgId: 1, color: "#00f", goods: { 0: { stock: 0, price: 5 } } };
+      const far: Market = { i: 4, centerBurgId: 1, color: "#ff0", goods: { 0: { stock: 0, price: 5 } } };
+      globalThis.pack.markets = [exporter, importer, near, far];
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      Markets["marketById"] = [exporter, exporter, importer, near, far];
+      const decima = Math.hypot(1000, 800) / 10;
+      setRoutes({ 1: 2 * decima, 2: 0, 3: decima, 4: 3 * decima });
+      globalThis.pack.cells = { routes: {}, market: [0, 1, 2] } as never;
+      const row = (rural: number[] = []) => ({
+        depth: [100],
+        listPrice: [5],
+        demand: [],
+        supply: [],
+        rural,
+        covered: [],
+        bought: [],
+        pollTaxDue: []
+      });
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      tradeModule["days"] = [undefined, row(), row(), row(), row()] as never;
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      tradeModule["routeCostsSource"] = [pack.cells.routes, pack.markets, Markets.revision, pack.burgs.length];
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      tradeModule["run"] = { books: [tradeModule["buildBook"](good)], positions: [undefined, 0, 1, 2, 3] } as never;
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      tradeModule["carriage"] = [];
+
+      const trade = tradeModule.buy({ burg, good, units: 9, kind: DEAL_KINDS.demand, source: exporter })!;
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      const demand = (market: Market) => tradeModule["days"][market.i].demand[0] || 0;
+      expect(demand(exporter)).toBe(trade.units); // the deal
+      expect(demand(importer)).toBeCloseTo((2 / 3) * trade.units); // the buyer's own market, at no distance
+      expect(demand(near)).toBeCloseTo((1 / 3) * trade.units); // half the way to the source
+      expect(demand(far)).toBe(0); // further than the source
+      expect(importer.goods[0].price).toBeGreaterThan(5); // short of it: above the list price
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      tradeModule["run"] = null;
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      tradeModule["carriage"] = null;
     });
 
     it("sells only the units that fetch something at the burg's door: a glut keeps the rest", () => {
@@ -384,11 +428,15 @@ describe("TradeModule", () => {
       setRoutes({ 2: 200 });
       importer.goods[0] = { stock: 0, price: 10 };
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
-      tradeModule["days"] = [undefined, undefined, { depth: [20], rural: [] }] as never;
+      tradeModule["days"] = [
+        undefined,
+        undefined,
+        { depth: [20], listPrice: [10], demand: [], supply: [], rural: [] }
+      ] as never;
 
       const least = (carriage(200) + 0.01) / (1 - MARGIN); // the price at which a unit fetches a cent
       const sale = tradeModule.sell({ burg, good, units: 1000, taxRate: 0 })!;
-      expect(sale.units).toBeCloseTo((20 / PRICE_RESPONSE) * Math.log(10 / least), 1);
+      expect(sale.units).toBeCloseTo(20 * ((10 / least) ** (1 / PRICE_CURVE) - 1), 1);
       expect(sale.price).toBeGreaterThan(0);
       expect(importer.goods[0].price).toBeCloseTo(least, 2);
       expect(tradeModule.sell({ burg, good, units: 1, taxRate: 0 })).toBeNull(); // nothing more fetches a cent
@@ -401,7 +449,10 @@ describe("TradeModule", () => {
     it("atLot() turns a unit's price at the burg's door into what buy() and sell() charge for the lot", () => {
       const { exporter, burg, good, importGood } = setupImport();
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
-      tradeModule["days"] = [undefined, { depth: [20], rural: [], covered: [], bought: [], pollTaxDue: [] }] as never;
+      tradeModule["days"] = [
+        undefined,
+        { depth: [20], listPrice: [5], demand: [], supply: [], rural: [], covered: [], bought: [], pollTaxDue: [] }
+      ] as never;
       const unit = { buyPrice: rn(5 * (1 + MARGIN), 2) + transport, sellPrice: rn(5 * (1 - MARGIN), 2) - transport };
 
       const buyAtLot = tradeModule.atLot(unit.buyPrice, transport, exporter, good, 10);
@@ -429,6 +480,9 @@ describe("TradeModule", () => {
         undefined,
         {
           depth: [100],
+          listPrice: [0.5],
+          demand: [],
+          supply: [],
           rural: [],
           ruralPeople: 0,
           cash: 0,
@@ -442,9 +496,9 @@ describe("TradeModule", () => {
       ] as never;
 
       for (let sale = 0; sale < 50; sale++) tradeModule.sell({ burg, good, units: 1, taxRate: 0 });
-      expect(importer.goods[0].price).toBeCloseTo(0.5 * Math.exp((-PRICE_RESPONSE * 50) / 100), 4);
+      expect(importer.goods[0].price).toBeCloseTo(0.5 * (100 / 150) ** PRICE_CURVE, 4);
       tradeModule.endRun();
-      expect(importer.goods[0].price).toBe(rn(0.5 * Math.exp((-PRICE_RESPONSE * 50) / 100), 2));
+      expect(importer.goods[0].price).toBe(rn(0.5 * (100 / 150) ** PRICE_CURVE, 2));
     });
 
     it("keep() takes back only the burg's own goods, never the rural produce in stock", () => {
@@ -458,6 +512,9 @@ describe("TradeModule", () => {
         undefined,
         {
           depth: [1e9],
+          listPrice: [10],
+          demand: [],
+          supply: [],
           rural: [10],
           ruralPeople: 0,
           cash: 0,
@@ -487,6 +544,9 @@ describe("TradeModule", () => {
         undefined,
         {
           depth: [1e9],
+          listPrice: [10],
+          demand: [],
+          supply: [],
           rural: [50],
           ruralPeople: 10,
           cash: 0,
@@ -518,6 +578,9 @@ describe("TradeModule", () => {
       globalThis.pack.markets = [importer];
       const day = (income: number, pollTaxDue: number[]) => ({
         depth: [1e9],
+        listPrice: [1],
+        demand: [],
+        supply: [],
         rural: [],
         ruralPeople: 10,
         cash: income,
@@ -558,7 +621,18 @@ describe("TradeModule", () => {
       globalThis.pack.markets = [importer];
       const center = globalThis.pack.burgs[2];
       center.treasury = 0;
-      const day = { depth: [1e9], rural: [], ruralPeople: 1000, cash: 100, income: 100, spent: 0, margin: 0 };
+      const day = {
+        depth: [1e9],
+        listPrice: [10],
+        demand: [],
+        supply: [],
+        rural: [],
+        ruralPeople: 1000,
+        cash: 100,
+        income: 100,
+        spent: 0,
+        margin: 0
+      };
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
       tradeModule["days"] = [undefined, undefined, { ...day, covered: [], bought: [], pollTaxDue: [] }] as never;
 
@@ -574,7 +648,18 @@ describe("TradeModule", () => {
       const { importer, burg, good } = setupImport();
       importer.goods[0] = { stock: 100, price: 10 };
       globalThis.pack.markets = [importer];
-      const day = { depth: [1e9], rural: [100], ruralPeople: 1, cash: 0, income: 0, spent: 0, margin: 0 };
+      const day = {
+        depth: [1e9],
+        listPrice: [10],
+        demand: [],
+        supply: [],
+        rural: [100],
+        ruralPeople: 1,
+        cash: 0,
+        income: 0,
+        spent: 0,
+        margin: 0
+      };
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
       tradeModule["days"] = [undefined, undefined, { ...day, covered: [], bought: [], pollTaxDue: [] }] as never;
 

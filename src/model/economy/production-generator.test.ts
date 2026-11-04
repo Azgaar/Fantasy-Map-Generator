@@ -17,7 +17,7 @@ import {
 } from "./production-generator";
 import { Prosperity } from "./prosperity";
 import { StateOrders } from "./state-orders";
-import { DEAL_KINDS, PRICE_RESPONSE, type SourceOption, Trade } from "./trade";
+import { DEAL_KINDS, PRICE_CURVE, type SourceOption, Trade } from "./trade";
 import { TradeRoutes } from "./trade-routes";
 
 const good = (i: number, name: string, value: number, recipes?: Good["recipes"]): Good => ({
@@ -413,6 +413,40 @@ describe("deposits", () => {
   });
 });
 
+describe("a burg's purchases for a need", () => {
+  const lots = (shares: number[], cost: number, budget = Infinity, buyable = (_k: number) => true) =>
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["getLotShares"](shares, buyable, () => cost, budget);
+
+  it("keep every good whose share buys at least the minimum", () => {
+    expect(lots([0.5, 0.3, 0.2], 10)).toEqual([0.5, 0.3, 0.2]);
+  });
+
+  it("drop goods buying less than the minimum, their money going to the rest", () => {
+    const shares = lots([0.6, 0.35, 0.05], 10); // 6, 3.5 and 0.5 coins
+    expect(shares[2]).toBe(0);
+    expect(shares[0]).toBeCloseTo(0.6 / 0.95);
+    expect(shares[1]).toBeCloseTo(0.35 / 0.95);
+  });
+
+  it("take a smaller minimum when all there is for the need is less than the usual one", () => {
+    const shares = lots([0.6, 0.3, 0.1], 0.9); // 0.54, 0.27 and 0.09 coins
+    expect(shares[2]).toBe(0);
+    expect(shares[0]).toBeCloseTo(2 / 3);
+    expect(shares[1]).toBeCloseTo(1 / 3);
+  });
+
+  it("go to the largest share when even that buys too little, and split no budget into lots below the minimum", () => {
+    expect(lots([0.7, 0.3], 0.2)).toEqual([1, 0]); // 0.14 and 0.06 coins
+    expect(lots([0.6, 0.4], 10, 1.5)).toEqual([1, 0]); // the money runs out: 0.9 and 0.6 coins
+  });
+
+  it("leave goods nobody stocks their shares, as they turn buyers away", () => {
+    const shares = lots([0.6, 0.35, 0.05], 10, Infinity, k => k !== 2);
+    expect(shares).toEqual([0.6, 0.35, 0.05]);
+  });
+});
+
 describe("workforce", () => {
   it("is the share of townspeople working in trades, capped", () => {
     vi.restoreAllMocks();
@@ -586,7 +620,19 @@ describe("price impact in choosing work", () => {
     // biome-ignore lint/complexity/useLiteralKeys: private test access
     Trade["days"] = [
       undefined,
-      { depth: [0, 1e9, 1e9, 1e9, depth, 1e9], rural: [], covered: [], bought: [], pollTaxDue: [] }
+      {
+        depth: [0, 1e9, 1e9, 1e9, depth, 1e9],
+        listPrice: catalogue.reduce((prices: number[], good) => {
+          prices[good.i] = good.value;
+          return prices;
+        }, []),
+        demand: [],
+        supply: [],
+        rural: [],
+        covered: [],
+        bought: [],
+        pollTaxDue: []
+      }
     ] as never;
   };
   afterEach(() => {
@@ -596,13 +642,13 @@ describe("price impact in choosing work", () => {
 
   it("values a step at what its lot fetches, not at the market's price for one unit", () => {
     withEngineDepth(2);
-    const move = -PRICE_RESPONSE / 2;
-    const lot = Math.expm1(move) / move; // the engine's average price over its own sale
+    const steps = Array.from({ length: 1000 }, (_, k) => (k + 0.5) / 1000); // the sale, unit by unit
+    const lot = steps.reduce((sum, k) => sum + (2 / (2 + k)) ** PRICE_CURVE, 0) / steps.length; // the engine's average price over its own sale
     expect(plan(4, 1)?.normalizedGain).toBeCloseTo(rn(100 * (1 - MARGIN), 2) * lot - 14 * rn(1 + MARGIN, 2), 1);
   });
 
   it("leaves the worker idle when even its smallest step would sell for less than its inputs cost", () => {
-    withEngineDepth(0.05); // half an engine sells for about 12 apiece
+    withEngineDepth(0.05); // half an engine sells for about 9 apiece
     burg.population = 1;
     const { index, state } = prepare();
     // biome-ignore lint/complexity/useLiteralKeys: private test access
@@ -611,7 +657,7 @@ describe("price impact in choosing work", () => {
   });
 
   it("makes in a thin market only what still pays, a step at a time", () => {
-    withEngineDepth(0.2); // half an engine sells for about 41 apiece, and leaves the price at a seventh
+    withEngineDepth(0.2); // half an engine sells for about 27 apiece, and leaves the price at a twelfth
     catalogue[4].recipes = []; // no ship to put the engines into
     burg.population = 1;
     const { index, state } = prepare();

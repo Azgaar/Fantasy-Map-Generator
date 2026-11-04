@@ -7,7 +7,7 @@ const NEEDS_SHARE = 0.2; // what needs met alone are worth, living on bare needs
 const COMFORT_SHARE = 0.4;
 const VARIETY_SHARE = 0.4;
 const COMFORT_TOP = 15; // consuming this many times bare needs at the cheapest is full comfort
-const VARIETY_TOP = 14; // consuming this many goods in even measure is full variety
+const VARIETY_TOP = 8; // consuming this many goods in even measure is full variety
 const RURAL_COMFORT_TOP = 6; // a village's plenty: rural people are measured against village wants, not a city's
 const RURAL_VARIETY_TOP = 8;
 const INFRASTRUCTURE_SHARE = 0.15; // of prosperity, the state's public works serving its people
@@ -173,6 +173,15 @@ class ProsperityModule {
     };
   }
 
+  /** Each need counts by its size */
+  private getNeedsMet(people: number, covered: number[]): number {
+    const totalFactor = DEMAND_PRIORITY.reduce((sum, category) => sum + DEMAND_TARGET_FACTORS[category], 0);
+    return DEMAND_PRIORITY.reduce((sum, category, index) => {
+      const target = people * DEMAND_TARGET_FACTORS[category];
+      return sum + (DEMAND_TARGET_FACTORS[category] / totalFactor) * Math.min(1, covered[index] / target);
+    }, 0);
+  }
+
   private measure({
     people,
     goods,
@@ -183,25 +192,19 @@ class ProsperityModule {
     varietyTop = VARIETY_TOP
   }: Consumption): Living {
     const bare = people * needsCost;
-    const totalFactor = DEMAND_PRIORITY.reduce((sum, category) => sum + DEMAND_TARGET_FACTORS[category], 0);
     const covered = DEMAND_PRIORITY.map(() => 0);
     const values: number[] = needsMet === undefined ? [] : [bare]; // rural fields count as one good worth bare needs
     goods.forEach((units, goodId) => {
       const good = Goods.get(goodId);
       if (!good || !units) return;
       values.push(units * good.value);
+      if (needsMet !== undefined) return; // no need to count what they cover
       DEMAND_PRIORITY.forEach((category, index) => {
         covered[index] += units * (good.demandCoverage?.[category] || 0);
       });
     });
 
-    // each need counts by its size
-    const needs =
-      needsMet ??
-      DEMAND_PRIORITY.reduce((sum, category, index) => {
-        const target = people * DEMAND_TARGET_FACTORS[category];
-        return sum + (DEMAND_TARGET_FACTORS[category] / totalFactor) * Math.min(1, covered[index] / target);
-      }, 0);
+    const needs = needsMet ?? this.getNeedsMet(people, covered);
     const total = values.reduce((sum, value) => sum + value, 0);
     const comfort = bare ? total / bare : 0;
     const entropy = values.reduce(
