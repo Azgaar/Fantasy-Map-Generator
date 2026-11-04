@@ -20,8 +20,8 @@ export const STABILITY_PARTS = [
   "burden"
 ] as const;
 export type StabilityPart = (typeof STABILITY_PARTS)[number];
-export type StateStability = { stability: number; parts: Record<StabilityPart, number> };
-export type DistrictStability = StateStability & { district: District };
+type StateStability = { stability: number; parts: Record<StabilityPart, number> };
+type DistrictStability = StateStability & { district: District };
 
 const BASE = 0.5;
 const PROSPERITY = 0.5; // added at PROSPERITY_TOP prosperity or more

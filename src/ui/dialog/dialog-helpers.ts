@@ -1,5 +1,6 @@
 // Building blocks shared by editor dialogs
 
+import { Dialog } from "@/ui/dialog/dialog";
 import { findEl } from "@/utils/node-utils";
 
 /** The note button every entity dialog puts in its toolbar, with its translated tooltip */
@@ -35,6 +36,14 @@ const REFRESHABLE_EDITORS = [
   "markersOverviewRefresh",
   "journeysOverviewRefresh"
 ];
+
+/** Close the dialogs about one burg, state, province or trade: after a regeneration their ids may name another */
+export function closeEntityDialogs(): void {
+  const dialogs = document.querySelectorAll(
+    ".burgEconomyDialog, .stateEconomyDialog, .provinceEconomyDialog, #tradeDetails, #stateBudgetEditor, #tariffSelectorDialog"
+  );
+  for (const { id } of dialogs) Dialog.close(id);
+}
 
 /** Refresh every editor that is currently open */
 export function refreshEditors(): void {

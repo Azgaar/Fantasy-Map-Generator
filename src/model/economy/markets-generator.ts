@@ -30,7 +30,7 @@ export type Market = {
 };
 
 /** A market's rural people's day: what their produce earned, what they bought with it, the produce no one bought, and the poll tax they owed and paid by state */
-export type RuralDay = {
+type RuralDay = {
   earned: number;
   spent: number;
   bought: [goodId: number, units: number][];

@@ -3,7 +3,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { unfog } from "@/renderers/overlays/fogging";
 import { Dialog } from "@/ui/dialog/dialog";
-import { refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
@@ -81,6 +81,7 @@ function regenerate(): void {
   Provinces.regenerate(true, stateIds);
   unfog();
   Layers.draw("borders", "provinces", "labels", "emblems");
+  closeEntityDialogs();
   refreshEditors();
   Dialog.close(DIALOG_ID);
 }

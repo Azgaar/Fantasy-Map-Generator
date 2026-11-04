@@ -17,12 +17,13 @@ import {
 } from "@/ui/economy-view";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/node-utils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
 import {
   card,
   economyDialog,
+  getStackOffset,
   line,
   rank,
   renderGoods,
@@ -53,7 +54,7 @@ function open(stateId: number): void {
   addListeners(stateId);
   refresh(stateId);
 
-  const offset = 10 + 660 * (document.querySelectorAll(`.${DIALOG_CLASS}`).length - 1); // each next one to the left of the last
+  const offset = getStackOffset(DIALOG_CLASS);
   Dialog.open(dialogId(stateId), {
     title: stateId
       ? t("Economy of {{- state}}", { state: state.fullName || state.name })
@@ -86,7 +87,8 @@ function onClick(stateId: number, target: HTMLElement): void {
 }
 
 function refresh(stateId: number): void {
-  ensureEl(`${dialogId(stateId)}Body`).innerHTML = renderBody(stateId);
+  const body = findEl(`${dialogId(stateId)}Body`); // closed while the budget stayed open
+  if (body) body.innerHTML = renderBody(stateId);
 }
 
 function cleanup(stateId: number): void {
@@ -261,7 +263,7 @@ function renderPartners(partners: Map<number, { exports: number; imports: number
     .map(({ stateId, exports, imports }) => {
       const partner = pack.states[stateId];
       const balance = exports - imports;
-      const name = `<span class="swatch" style="background: ${partner?.color || "#ccc"}"></span>${partner?.name || t("Neutrals")}`;
+      const name = `<span class="swatch" style="background: ${partner?.color || "#ccc"}"></span>${escapeHtml(partner?.name || t("Neutrals"))}`;
       const part = (value: number, color: string) =>
         `<div style="width: ${(value / most) * 100}%; background: ${color}"></div>`;
       const bar = `<div class="bar stack">${part(exports, ECONOMY_COLORS.positive)}${part(imports, ECONOMY_COLORS.negative)}</div>`;

@@ -397,6 +397,20 @@ export class GoodsModule {
     return good;
   }
 
+  /** Removes the good and what names it: its deposits, the recipes taking it and the unit equipment */
+  remove(goodId: number): void {
+    const { cells } = pack;
+    for (const cell of cells.i) if (cells.good[cell] === goodId) cells.good[cell] = 0;
+    pack.goods = pack.goods.filter(good => good.i !== goodId);
+    for (const good of pack.goods) {
+      if (!good.recipes) continue;
+      good.recipes = good.recipes.filter(recipe => !(goodId in recipe));
+      if (!good.recipes.length) delete good.recipes;
+    }
+    for (const unit of options.map.military.units) unit.goods = unit.goods?.filter(id => id !== goodId);
+    this.sync();
+  }
+
   sync() {
     this.goodById = [];
     for (const good of pack.goods) this.goodById[good.i] = good;

@@ -14,7 +14,8 @@ import {
 import type { PackedGraph } from "@/types/packed-graph";
 import { log } from "@/utils/logger";
 import { findEl } from "@/utils/node-utils";
-import { normalize, rn } from "@/utils/number-utils";
+import { getPercentile, normalize, rn } from "@/utils/number-utils";
+import { getBoundingBox } from "@/utils/path-utils";
 
 const layer = ViewportLayers.register({ id: "goods", render: reconcileGoods });
 let cellProduction: CellProduction[] = [];
@@ -176,8 +177,7 @@ function buildCellProduction(displayedGoods: Set<number>): void {
 
 /** A high percentile of the values: a few outliers would leave everything else pale and small against the maximum */
 function getSaturation(values: number[]): number {
-  const sorted = values.toSorted((a, b) => a - b);
-  return sorted[Math.floor((sorted.length - 1) * OVERVIEW_SATURATION)] || 1;
+  return getPercentile(values, OVERVIEW_SATURATION) || 1;
 }
 
 /** Every producing cell in its most valuable good's color, its opacity following its output value */
@@ -334,12 +334,5 @@ function renderPie(x: number, y: number, r: number, sectors: PieSector[]): strin
 }
 
 function getPolygonBox(cellId: number): Box {
-  const box = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
-  for (const [x, y] of Pack.getPolygon(cellId)) {
-    if (x < box.x0) box.x0 = x;
-    if (y < box.y0) box.y0 = y;
-    if (x > box.x1) box.x1 = x;
-    if (y > box.y1) box.y1 = y;
-  }
-  return box;
+  return getBoundingBox(Pack.getPolygon(cellId));
 }

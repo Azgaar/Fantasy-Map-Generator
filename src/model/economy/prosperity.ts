@@ -39,7 +39,7 @@ type Consumption = {
 };
 const isNeeded = (good?: Good) => Object.values(good?.demandCoverage ?? {}).some(Boolean);
 /** A cell's rural people: their living, their share of their market's rural earnings and purchases, and what they live on, units by good id: those purchases and their own unsold produce */
-export type RuralCell = { people: number; earned: number; bought: number[]; goods: number[]; living: Living };
+type RuralCell = { people: number; earned: number; bought: number[]; goods: number[]; living: Living };
 
 class ProsperityModule {
   private source: unknown = null; // the deals the cache describes

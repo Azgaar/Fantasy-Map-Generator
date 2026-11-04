@@ -26,7 +26,7 @@ type Seat = { burg: Burg; share: number; corruption: number; spent: number }; //
 type StateRun = {
   stateId: number;
   dawn: number; // money known at dawn: the poll tax its burgs owe, its market fees and its adjustments
-  collected: number; // so far
+  ruralPollTax: number; // settled at the day's last orders
   seats: Record<Expense, Seat[]>;
   terms: TradeTerms;
 };
@@ -68,7 +68,7 @@ class StateOrdersModule {
       this.runs.push({
         stateId: state.i,
         dawn: opening,
-        collected: opening,
+        ruralPollTax: 0,
         seats: { court: atCapital(), administration: atSeats(), infrastructure: atSeats(), military: atCapital() },
         terms: this.exempt(terms, state.i)
       });
@@ -82,8 +82,8 @@ class StateOrdersModule {
     for (const run of this.runs) {
       const state = pack.states[run.stateId];
       const { budget } = state.economy;
-      const collected = run.dawn + Trade.getTaxesSoFar(run.stateId) + (ruralPollTax[run.stateId] || 0);
-      run.collected = collected;
+      if (last) run.ruralPollTax = ruralPollTax[run.stateId] || 0;
+      const collected = this.getCollected(run);
       for (const expense of EXPENSES) {
         for (const seat of run.seats[expense]) {
           const corruption = States.getCorruption(state, collected, seat.corruption); // officials pocket it of the seat's allowance
@@ -96,13 +96,18 @@ class StateOrdersModule {
     }
   }
 
+  /** What the state collected so far, including taxes other states' orders pay it */
+  private getCollected(run: StateRun): number {
+    return run.dawn + run.ruralPollTax + Trade.getTaxesSoFar(run.stateId);
+  }
+
   /** Ends the run: each state keeps what its expenses spent, and what it collected, so what reads it before collection sees this run's */
   end(): void {
     for (const run of this.runs) {
       const spent = noExpenses();
       for (const expense of EXPENSES) spent[expense] = rn(sum(run.seats[expense].map(seat => seat.spent)), 2);
       pack.states[run.stateId].economy.spent = spent;
-      pack.states[run.stateId].economy.collected = rn(run.collected, 2);
+      pack.states[run.stateId].economy.collected = rn(this.getCollected(run), 2);
     }
     this.runs = [];
     this.goodsFor.clear();

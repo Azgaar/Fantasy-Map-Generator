@@ -31,7 +31,7 @@ export type StateAccounts = {
   burgWealth: number[]; // each burg's product per person
 };
 
-export type StateTrade = {
+type StateTrade = {
   exports: number;
   imports: number;
   partners: Map<number, { exports: number; imports: number }>;
@@ -176,7 +176,7 @@ class StateEconomyModule {
       this.consumption.set(stateId, values);
       values[goodId] = (values[goodId] || 0) + units;
     };
-    for (const [burgId, , goodId, kind, units] of pack.deals ?? [])
+    for (const [burgId, , goodId, kind, units] of pack.deals)
       if (kind === DEAL_KINDS.demand || kind === DEAL_KINDS.kept || kind === DEAL_KINDS.order)
         add(pack.burgs[burgId]?.state || 0, goodId, units);
     for (const cellId of pack.cells.i)
@@ -215,18 +215,18 @@ class StateEconomyModule {
     if (!pack.deals?.length) return; // no economy run: nothing to sum
     const world = emptyAccounts();
     this.world = world;
-    const of = (stateId: number) => {
+    const accountsOf = (stateId: number) => {
       const accounts = this.accounts.get(stateId) ?? emptyAccounts();
       this.accounts.set(stateId, accounts);
       return accounts;
     };
-    const andWorld = (stateId: number) => [of(stateId), world];
-    for (const state of pack.states) if (!state.removed) of(state.i); // a state with no people, the neutral lands too, has empty accounts
+    const withWorld = (stateId: number) => [accountsOf(stateId), world];
+    for (const state of pack.states) if (!state.removed) accountsOf(state.i); // a state with no people, the neutral lands too, has empty accounts
     // people-weighted sums of each group's living, averaged at the end
     const sums = new Map<StateAccounts, Partial<Record<Group, GroupLiving>>>();
-    const live = (stateId: number, group: Group, people: number, living: Living | null) => {
+    const addLiving = (stateId: number, group: Group, people: number, living: Living | null) => {
       if (!living || !people) return;
-      for (const accounts of andWorld(stateId)) {
+      for (const accounts of withWorld(stateId)) {
         const groups = sums.get(accounts) ?? {};
         sums.set(accounts, groups);
         const row = groups[group] ?? { people: 0, needs: 0, comfort: 0, variety: 0, infrastructure: 0, prosperity: 0 };
@@ -243,13 +243,13 @@ class StateEconomyModule {
 
     for (const burg of pack.burgs) {
       if (!burg.i || burg.removed || !burg.population) continue;
-      for (const accounts of andWorld(burg.state || 0)) {
+      for (const accounts of withWorld(burg.state || 0)) {
         accounts.people += burg.population;
         accounts.townspeople += burg.population;
         accounts.manufacturing += burg.product || 0;
         accounts.burgWealth.push((burg.product || 0) / burg.population);
       }
-      live(burg.state || 0, "towns", burg.population, Prosperity.getBurg(burg.i));
+      addLiving(burg.state || 0, "towns", burg.population, Prosperity.getBurg(burg.i));
     }
 
     // each cell's rural people count in the state the cell is in, with its earnings and living
@@ -258,23 +258,23 @@ class StateEconomyModule {
       if (!people) continue;
       const stateId = pack.cells.state[cellId];
       const rural = Prosperity.getRuralCell(cellId);
-      for (const accounts of andWorld(stateId)) {
+      for (const accounts of withWorld(stateId)) {
         accounts.people += people;
         accounts.rural += rural?.earned || 0;
       }
-      live(stateId, "country", people, rural?.living ?? null);
+      addLiving(stateId, "country", people, rural?.living ?? null);
     }
 
     for (const deal of pack.deals) {
       const margin = Trade.getMargin(deal);
       if (!margin) continue;
-      for (const accounts of andWorld(Markets.getState(Markets.get(deal[1])))) accounts.trade += margin;
+      for (const accounts of withWorld(Markets.getState(Markets.get(deal[1])))) accounts.trade += margin;
     }
     // rural purchases make no deals, but their margin goes to the center too
     for (const market of pack.markets) {
       const margin = market.rural?.margin;
       if (!margin) continue;
-      for (const accounts of andWorld(Markets.getState(market))) accounts.trade += margin;
+      for (const accounts of withWorld(Markets.getState(market))) accounts.trade += margin;
     }
 
     const average = (row: GroupLiving | undefined): GroupLiving | null =>
@@ -290,7 +290,7 @@ class StateEconomyModule {
         : null;
     const { salesTax, tariffs } = Trade.getTaxesByState();
     const taxes = [salesTax, tariffs, States.getPollTax().paid, States.getMarketFees()];
-    const close = (accounts: StateAccounts, collected: number) => {
+    const closeAccounts = (accounts: StateAccounts, collected: number) => {
       accounts.product = accounts.rural + accounts.manufacturing + accounts.trade;
       accounts.taxes = collected;
       accounts.wealth = accounts.people ? accounts.product / accounts.people : 0;
@@ -303,11 +303,11 @@ class StateEconomyModule {
         : null;
     };
     for (const [stateId, accounts] of this.accounts)
-      close(
+      closeAccounts(
         accounts,
         sum(taxes, byState => byState[stateId] || 0)
       );
-    close(world, sum(taxes.flat()));
+    closeAccounts(world, sum(taxes.flat()));
   }
 }
 

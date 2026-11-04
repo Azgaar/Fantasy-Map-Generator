@@ -654,3 +654,20 @@ export function curveLength(points: [number, number][], curve: CurveFactory): nu
     .context(context as CanvasRenderingContext2D)(points);
   return length;
 }
+
+/** The smallest box around the points */
+export function getBoundingBox(points: Iterable<ArrayLike<number>>): {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+} {
+  const box = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+  for (const { 0: x, 1: y } of points) {
+    if (x < box.x0) box.x0 = x;
+    if (y < box.y0) box.y0 = y;
+    if (x > box.x1) box.x1 = x;
+    if (y > box.y1) box.y1 = y;
+  }
+  return box;
+}

@@ -830,7 +830,7 @@ On the biggest burgs, favoring capitals, ports and crossroads. To change them, o
 
 ### What is the market margin?
 
-A market buys below its price and sells above it by its margin, which goes to the merchants of the burg at its center, so busy markets make their hub rich. It is 4% where the market pays little or no license, as under unions and republics, and rises with the state's license fee: 5% under a typical monarchy, up to 6% under a greedy theocracy. See it in the Markets overview
+A market buys below its price and sells above it by its margin, which goes to the merchants of the burg at its center, so busy markets make their hub rich. It is 4% where the market pays little or no license, as under unions and most republics, and rises with the state's license fee: 5% under a typical monarchy, up to 6% under a greedy theocracy. See it in the Markets overview
 
 ### What do Sales, Buys and Value mean in the Markets overview?
 

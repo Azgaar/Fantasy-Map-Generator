@@ -12,7 +12,7 @@ import { DEAL_KINDS, Trade } from "./trade";
 
 type Group = "towns" | "country";
 
-export type ProvinceTaxes = { salesTax: number; tariffs: number; pollTax: number; marketFees: number };
+type ProvinceTaxes = { salesTax: number; tariffs: number; pollTax: number; marketFees: number };
 
 /** The sum of a province's figures; product is rural + manufacturing + trade */
 export type ProvinceAccounts = {

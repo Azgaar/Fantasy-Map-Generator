@@ -45,6 +45,7 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 import { economyStyle } from "./economy-parts";
 
 type RowType = "LOCAL" | "BUY" | "MFG" | "SELL" | "KEEP" | "NEED";
@@ -403,7 +404,7 @@ function renderDemandOptions(options: DemandEntry["options"]): string {
         ? t("from its own market")
         : t("from {{- market}}", { market: Markets.getName(Markets.get(market)!) });
     const per = coverage === 1 ? "" : ` (${t("{{coverage}} per unit", { coverage: rn(coverage, 2) })})`;
-    return `<li>${goodDot(goodId)}${Goods.get(goodId)?.name}: ${formatPrice(costPerCoverage)} ${t("per covered need")}${per}, ${where}</li>`;
+    return `<li>${goodDot(goodId)}${escapeHtml(Goods.get(goodId)?.name ?? "")}: ${formatPrice(costPerCoverage)} ${t("per covered need")}${per}, ${where}</li>`;
   });
   const more = options.length > 10 ? `<li>${t("and {{count}} more", { count: options.length - 10 })}</li>` : "";
   return `<div>${t("Goods that could cover the need")}:</div><ul>${items.join("")}${more}</ul>`;
@@ -419,7 +420,7 @@ function renderSources(chosen: number, sources: SourceOption[]): string {
   if (picked && !shown.includes(picked)) shown.push(picked);
 
   const name = (market: number) => {
-    const label = Markets.getName(Markets.get(market)!);
+    const label = escapeHtml(Markets.getName(Markets.get(market)!));
     return market === own ? `${label} (${t("own")})` : label;
   };
   const rows = shown.map(
@@ -489,7 +490,7 @@ function renderHistoryLine(row: HistoryRow, expandable: boolean): string {
 
   return /* html */ `<tr${row.details ? " data-expandable" : ""}>
       ${expandable ? `<td>${row.details ? '<span class="icon-right-open"></span>' : ""}</td>` : ""}
-      <td data-tip="${row.goodTip ?? typeTip}">${goodDot(row.goodId)}${good.name}${badge}</td>
+      <td data-tip="${row.goodTip ?? typeTip}">${goodDot(row.goodId)}${escapeHtml(good.name)}${badge}</td>
       <td>${renderMarket(row)}</td>
       ${cell(isTrade ? money(row.price!, isSale) : "", tips?.net)}
       ${cell(isTrade ? money(row.carriage, false) || formatPrice(0) : "", tips?.carriage)}
@@ -582,7 +583,7 @@ function renderMarket(row: HistoryRow): string {
   const zoomTip = isImport
     ? sentences(t("Import from {{market}}", { market: name }), distance, t("Click to zoom"))
     : sentences(distance, t("Click to zoom"));
-  return `<span class="pointer" data-zoom-market="${marketId}" data-tip="${zoomTip}">${name}</span>`;
+  return `<span class="pointer" data-zoom-market="${marketId}" data-tip="${zoomTip}">${escapeHtml(name)}</span>`;
 }
 
 const getContext = ({ goodId, marketId = 0, kind = DEAL_KINDS.sale }: HistoryRow) =>
@@ -617,14 +618,14 @@ function renderStats(burg: Burg): void {
   const wealth = population > 0 ? product / population : 0;
   const { scale, urbanization } = options.map.units.population;
   const people = rn(population * scale * urbanization.rate);
-  const development = pack.cells.development?.[burg.cell];
+  const development = pack.cells.development[burg.cell];
 
   ensureEl(`${dialogId}Stats`).innerHTML = /* html */ `
     <div>
       <span><b>${t("Population")}:</b> ${people}</span>
-      ${development === undefined ? "" : `<span data-tip="${developmentTip(development)}"><b>${t("Development")}:</b> ${development}</span>`}
+      <span data-tip="${developmentTip(development)}"><b>${t("Development")}:</b> ${development}</span>
       ${EconomyDebug.get(burg.i!) ? `<span><b>${t("Order")}:</b> ${t("{{rank}} of {{total}}", { rank: burgs.indexOf(burg) + 1, total: burgs.length })}</span>` : ""}
-      <span><b>${t("Market")}:</b> ${market ? Markets.getName(market) : ""}</span>
+      <span><b>${t("Market")}:</b> ${market ? escapeHtml(Markets.getName(market)) : ""}</span>
       <span data-tip="${EconomyTerms.product()}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
       <span data-tip="${EconomyTerms.wealth()}"><b>${t("Wealth")}:</b> <span class="positive">${formatPrice(wealth)}</span></span>
     </div>
@@ -758,4 +759,4 @@ function downloadHistoryCsv(): void {
   Csv.download(`Production_${name}`, headers, rows);
 }
 
-export const burgEconomyOverview = { open };
+export const BurgEconomyOverview = { open };

@@ -16,7 +16,16 @@ import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
-import { card, economyDialog, line, rank, renderGoods, renderLiving, renderSectors } from "./economy-parts";
+import {
+  card,
+  economyDialog,
+  getStackOffset,
+  line,
+  rank,
+  renderGoods,
+  renderLiving,
+  renderSectors
+} from "./economy-parts";
 
 const DIALOG_CLASS = "provinceEconomyDialog";
 
@@ -38,7 +47,7 @@ function open(provinceId: number): void {
   addListeners(provinceId);
   refresh(provinceId);
 
-  const offset = 10 + 660 * (document.querySelectorAll(`.${DIALOG_CLASS}`).length - 1); // each next one to the left of the last
+  const offset = getStackOffset(DIALOG_CLASS);
   Dialog.open(dialogId(provinceId), {
     title: t("Economy of {{- province}}", { province: province.fullName || province.name }),
     width: "46em",
@@ -69,8 +78,9 @@ function cleanup(provinceId: number): void {
 
 function renderBody(provinceId: number): string {
   const accounts = ProvinceEconomy.get(provinceId);
-  const stateId = pack.provinces[provinceId].state;
-  const state = StateEconomy.getAccounts(stateId);
+  const province = pack.provinces[provinceId];
+  if (!province) return "";
+  const state = StateEconomy.getAccounts(province.state);
   if (!accounts || !state) return "";
   return [
     renderCards(provinceId, accounts),

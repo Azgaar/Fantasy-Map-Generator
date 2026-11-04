@@ -103,7 +103,7 @@ The States, Provinces and Cultures editors and the Burgs Overview each have a De
 
 On the economy tuner's ten maps:
 
-- **Spread**: medieval maps' median burg stands at 30–34, their best at 39–48; the Antique map's median is 13.
+- **Spread**: medieval maps' median burg stands at 34–47, their best at 42–60; the Antique map's median is 18.
 - **Gunpowder and artillery**: made on nine maps in ten, all but the Antique one.
 - **Wealth**: burgs below half their needs are 87% under 10, 60% under 30, 25% at 30–39 and 5% at 40 or more; product per worker is 1.5 at 10–19 and 8.3 at 40 or more.
 - **Goods**: about 93% of the catalogue is made on a map. Tropical goods (incense, spices, sugar, mahogany) often fall in land below their tier and are missing on some maps.

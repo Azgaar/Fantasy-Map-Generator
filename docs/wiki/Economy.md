@@ -43,13 +43,13 @@ Click a good in the editor to change it:
 | **Multipliers**                   | Production bonuses or penalties by culture type, culture, state, religion, biome or zone. Make one culture famous for its wine, or one zone a mining district                                                                                                                                                                                                                                                                   |
 | **Distribution** and **Deposits** | Where deposits can appear, and how many the map gets, whatever its size. The Goods Editor can show how many are placed in its Deposits column, hidden by default and turned on from the column menu. Click a good's Produced value to see which states and provinces make it in their cells, and which burgs make it. See [Goods spread functions](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions) |
 
-When you apply changes to a good, the dialog can re-place its deposits and recalculate the economy right away (_regenerate economy on apply_); uncheck it to edit without disturbing the current numbers. You can also add your own goods, change icons, paint deposits onto cells with the brush, open the **production chains** view to see how goods depend on each other, and show a **legend box** of the selected goods, or of all goods.
+When you apply changes to a good, the dialog can recalculate the economy right away, re-placing its deposits if their distribution or count changed (_regenerate economy on apply_); uncheck it to edit without disturbing the current numbers. You can also add your own goods, change icons, paint deposits onto cells with the brush, open the **production chains** view to see how goods depend on each other, and show a **legend box** of the selected goods, or of all goods.
 
 # Markets
 
 A **market** is a regional trade hub. Markets are placed on the larger towns, favoring capitals, ports, crossroads and states that charge little for a market license. Where burgs crowd, markets sit closer together; steppes, deserts and states with dear licenses get few, far apart. Each market's region spreads over the land around it, preferring to stay within one state and one landmass. Most inhabited islands get a market of their own, and an island with no port always does. Every burg belongs to exactly one market.
 
-Each market keeps a stock and a price for every good. It buys below its price and sells above it by its **market margin**, which goes to the merchants of the burg at the market's center, so busy markets make their hub rich. The margin is a whole percent: 4% where the market pays little or no license, as under unions and republics, rising with the state's license fee as merchants pass it on: 5% under a typical monarchy and up to 6% under a greedy theocracy. See it in the Market Overview. A greedy state's markets are dearer, so its trade and its people suffer.
+Each market keeps a stock and a price for every good. It buys below its price and sells above it by its **market margin**, which goes to the merchants of the burg at the market's center, so busy markets make their hub rich. The margin is a whole percent: 4% where the market pays little or no license, as under unions and most republics, rising with the state's license fee as merchants pass it on: 5% under a typical monarchy and up to 6% under a greedy theocracy. See it in the Market Overview. A greedy state's markets are dearer, so its trade and its people suffer.
 
 Open _Tools_ → _Markets_ for the overview. There you can add a market on any burg, remove one, paint market regions by hand and **compare** a good's stock and price across all markets. Click a market to rename it, move its center to another burg or see its deals. These changes take effect when you regenerate production. Cells left without a market take no part in the economy.
 
@@ -86,9 +86,9 @@ Prices are in 🟡, the map's money. Its unit is the **uncia**, a gold coin of o
 
 |                                                                                | Price | 🟡 1 is about                                         |
 | ------------------------------------------------------------------------------ | ----- | ----------------------------------------------------- |
-| A bullion of **gold**, an ingot of 15 troy ounces (about 470 g)                | 🟡 15 | one troy ounce of gold, 31 g                          |
+| A bullion of **gold**, an ingot of 15 troy ounces (about 470 g)                | 🟡 13 | one troy ounce of gold, 31 g                          |
 | The same in **silver**, with gold worth 11 times silver, as in medieval Europe |       | 340 g of silver, close to a pound; 240 silver pennies |
-| A wain of **grain**, a wagon-load of about a tonne                             | 🟡 1  | a wagon-load of grain                                 |
+| A wain of **grain**, a wagon-load of about a tonne                             | 🟡 1.5 | two-thirds of a wagon-load of grain                  |
 | A laborer's wage, 1–2 pennies a day                                            |       | four to eight months of a laborer's work              |
 
 So 🟡 1 is a lot of money for one person and modest for a town. The anchor is gold: if you change the base price of Gold, this scale shifts with it. To call the money something else, open _Tools_ → _Units_ and pick another name under **Money**.
@@ -97,7 +97,7 @@ So 🟡 1 is a lot of money for one person and modest for a town. The anchor is 
 
 - A **burg's balance** (its treasury) is what it ends the day with: sales, minus ingredients, minus what its people bought, minus the poll tax, plus its **adjustments**. It can be below zero: a burg that sold too little to cover its poll tax ends the day in debt, and keeps working. A market's center also pays its state a **market license** every day, so a quiet market in a greedy state can end the day in debt. A market's center burg also earns the market margin on every trade at its market. See it in the burg's Economy Overview. The balance itself is not edited: open its **Adjustments** row there instead and add lines, each with a name and an amount a day besides trade, such as rents or a patron's gifts, or a negative amount for debts, tribute or upkeep. It arrives at dawn, so the burg's people spend it the same day and live better, or tighten their belts; it stays when the economy is regenerated and takes effect on the next regeneration.
 - A **state's treasury balance** (**Balance** in the tables) is what it keeps of what it collected that day, below zero if it spent more: its sales taxes and tariffs, plus the **poll tax** its people paid and the **market licenses** of its markets, less what its **budget** spent and what **corruption** took. The poll tax collected can be less than the poll tax they owed; the state's Revenue card shows the share collected. What officials pocket never reaches the treasury.
-- **Markets hold no money**, but the Markets overview shows what passed through them. **Sales** is what burgs paid the market for its goods, carriage included, less the taxes handed to the states. **Buys** is what the market paid burgs for theirs. **Value** is Sales minus Buys, plus the unsold stock at its prices. The market keeps the carriage, as if its merchants did the carrying. Rural people's purchases and goods a burg kept for itself are not counted.
+- **Markets hold no money**, but the Markets overview shows what passed through them. **Sales** is what burgs paid the market for its goods, carriage included, less the taxes handed to the states and its center burg's margin. **Buys** is what the market paid burgs for theirs, plus that margin. **Value** is Sales minus Buys, plus the unsold stock at its prices. The market keeps the carriage, as if its merchants did the carrying. Rural people's purchases and goods a burg kept for itself are not counted.
 
 ## Taxes and tariffs
 
@@ -165,7 +165,7 @@ Each trade shows the net price, the carriage, tax and tariff per unit, the units
 - **Needs met**: how much of their food, utilities, construction, military and luxury needs is covered. A people going short is never prosperous.
 - **Comfort**: how much and how fine their goods are, compared with bare needs bought the cheapest way.
 - **Variety**: how many different goods they enjoy.
-- **Infrastructure**: 15% of it is how fully their state's infrastructure spending serves its people, the same for every burg and rural cell of the state.
+- **Infrastructure**: 15% of it is how fully their state's infrastructure spending serves their province: far and foreign provinces are served worse.
 
 Living on bare needs is about 17%, or 32% under full infrastructure. Ten levels of 10% each: **Desolate**, **Destitute**, **Poor**, **Modest**, **Comfortable**, **Thriving**, **Affluent**, **Opulent**, **Splendid** and **Peerless**. The typical burg is Modest, its people on average Thriving, and a few of the richest reach Peerless. Most rural cells are Poor or Modest. Rural people grow their own needs and buy their wants at their market with what their produce earns, and keep what of their produce goes unsold, so their prosperity counts too, and it varies from place to place: a valley on a rich deposit lives better than barren hills nearby, and fertile country whose harvest its market cannot absorb lives comfortably. Villages are measured by village standards, so a Comfortable village still consumes less than a Comfortable town.
 
@@ -205,7 +205,7 @@ Changes take effect when you regenerate. _Tools_ → _Regenerate_ has four butto
 | **Production** | Recalculates the day: production, trade and taxes, from the current goods, markets and burgs        |
 | **Economy**    | Redraws market regions, then recalculates the day. Market cells you painted by hand are redrawn too |
 
-After Goods or Markets, run Production or Economy to see the effect on trade. Keep a saved copy if you want to compare before and after.
+Regenerating Goods or Markets reruns Production by itself; run Economy to redraw market territories as well. Keep a saved copy if you want to compare before and after.
 
 # Questions
 
@@ -219,4 +219,4 @@ After Goods or Markets, run Production or Economy to see the effect on trade. Ke
 
 **Why do state treasuries change when I only edit a burg?** They do not until you regenerate production; then all deals and taxes are recalculated.
 
-**Why did nothing change when I added an adjustment to a burg?** Adjustments, like edits to goods, markets, routes and burgs, take effect when you regenerate Production or Economy. Only Apply in a state's taxes dialog recalculates the day at once.
+**Why did nothing change when I added an adjustment to a burg?** Adjustments, like most edits to routes and burgs, take effect when you regenerate Production or Economy. Apply in a state's taxes dialog or in the good editor recalculates the day at once, and so does removing a good, a burg or a market.

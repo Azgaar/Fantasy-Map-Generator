@@ -32,6 +32,7 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 let activeMarketId = 0;
 
@@ -266,11 +267,11 @@ function renderDealLine(row: MarketDealRow): string {
       : t("The market buys the goods from the burg");
   const badge = isOrder ? t("State") : isSale ? t("Sell") : t("Buy");
 
-  return /* html */ `<div class="states marketDeal" data-burg-id="${deal[0]}" data-good="${good.name}" data-side="${side}" data-burg="${burg}" data-units="${rn(units, 2)}" data-income="${rn(income, 2)}">
+  return /* html */ `<div class="states marketDeal" data-burg-id="${deal[0]}" data-good="${escapeHtml(good.name)}" data-side="${side}" data-burg="${escapeHtml(burg)}" data-units="${rn(units, 2)}" data-income="${rn(income, 2)}">
       <svg data-col="icon" data-tip="${t("Good icon")}" width="1.3em" height="1.3em" class="goodIcon">
         ${goodBadge(good)}
       </svg>
-      <div data-col="good" data-tip="${t("Name")}" class="goodName">${good.name}</div>
+      <div data-col="good" data-tip="${t("Name")}" class="goodName">${escapeHtml(good.name)}</div>
       <div data-col="side" data-tip="${sideTip}"><span class="marketBadge ${isSale ? "positive" : "negative"}">${badge.toUpperCase()}</span></div>
       <div data-col="burg" class="marketDealBurg pointer" data-tip="${t("Click to zoom")}">${burg}</div>
       <div data-col="units" data-tip="${cellTips.units}">${rn(units, 2)}</div>

@@ -53,6 +53,22 @@ describe("GoodsModule", () => {
     Object.assign(Goods, goodsModule);
   });
 
+  it("removes a good with its deposits, the recipes taking it and the unit equipment", () => {
+    pack.goods.push(
+      { i: 3, name: "Made", recipes: [{ 1: 1 }, { 2: 1 }] } as never,
+      { i: 4, name: "Only A", recipes: [{ 1: 1 }] } as never
+    );
+    const units = options.map.military.units;
+    options.map.military.units = [{ name: "Guard", goods: [1, 2] }] as never;
+    Goods.remove(1);
+    expect(options.map.military.units[0].goods).toEqual([2]);
+    options.map.military.units = units;
+    expect(Goods.get(1)).toBeUndefined();
+    expect(Array.from(pack.cells.good)).toEqual([0, 2, 0, 2]);
+    expect(Goods.get(3)?.recipes).toEqual([{ 2: 1 }]);
+    expect(Goods.get(4)?.recipes).toBeUndefined();
+  });
+
   it("keeps the current catalogue when rerolling placement", () => {
     goodsModule.generate({ randomSeed: 123 });
 

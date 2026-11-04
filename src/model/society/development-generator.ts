@@ -42,7 +42,6 @@ class DevelopmentGenerator {
   getAverages(ids: ArrayLike<number>): (number | undefined)[] {
     const { cells, burgs } = pack;
     const development = cells.development;
-    if (!development) return [];
     const rate = options.map.units.population.urbanization.rate;
     const people: number[] = [];
     const total: number[] = [];
@@ -69,7 +68,6 @@ class DevelopmentGenerator {
     if (!Number.isInteger(level) || level < 0 || level > 100)
       throw new Error("The development must be an integer from 0 to 100");
     const { development } = pack.cells;
-    if (!development) throw new Error("The map has no development; regenerate it first");
     for (const cell of cells) {
       if (this.isPeopled(cell)) development[cell] = level;
     }
@@ -77,39 +75,33 @@ class DevelopmentGenerator {
 
   /** A burg founded after generation: its cell takes the best development of the land around if it had none, and at least MIN_BURG */
   settle(cell: number): void {
-    const { development, c, h } = pack.cells;
-    if (!development) return;
-    let level = development[cell];
-    if (!level) for (const neighbor of c[cell]) if (h[neighbor] >= 20) level = Math.max(level, development[neighbor]);
-    development[cell] = Math.max(MIN_BURG, level);
+    const { development } = pack.cells;
+    development[cell] = Math.max(MIN_BURG, development[cell] || this.getBestAround(cell));
   }
 
   /** A cell a burg left: no development once nobody lives there */
   vacate(cell: number): void {
-    const { development } = pack.cells;
-    if (development && !this.isPeopled(cell)) development[cell] = 0;
+    if (!this.isPeopled(cell)) pack.cells.development[cell] = 0;
   }
 
   /** After the people moved, as when population is regenerated: land newly peopled takes the best level around it, at least 1, and land left empty has none */
   resettle(wasPeopled: readonly boolean[]): void {
-    const { development, i, c, h } = pack.cells;
-    if (!development) return;
+    const { development, i, h } = pack.cells;
     for (const cell of i) {
       if (h[cell] < 20) continue;
       if (!this.isPeopled(cell)) development[cell] = 0;
-      else if (!wasPeopled[cell]) {
-        let level = 0;
-        for (const neighbor of c[cell]) if (h[neighbor] >= 20) level = Math.max(level, development[neighbor]);
-        development[cell] = Math.max(1, level);
-      }
+      else if (!wasPeopled[cell]) development[cell] = Math.max(1, this.getBestAround(cell));
     }
   }
 
   /** A cell's development; a water cell, worked from the shore, takes the best of the land around it */
-  ofCell(cell: number): number | undefined {
+  ofCell(cell: number): number {
+    return pack.cells.h[cell] >= 20 ? pack.cells.development[cell] : this.getBestAround(cell);
+  }
+
+  /** The best development of the land around the cell */
+  private getBestAround(cell: number): number {
     const { development, c, h } = pack.cells;
-    if (!development) return undefined;
-    if (h[cell] >= 20) return development[cell];
     let level = 0;
     for (const neighbor of c[cell]) if (h[neighbor] >= 20) level = Math.max(level, development[neighbor]);
     return level;
@@ -197,11 +189,11 @@ class DevelopmentGenerator {
   }
 
   /** The best level reaching each cell from a culture center, losing a step's decay per cell, more in a foreign culture's land; water only by sea routes */
-  private spread(levels: number[]): Float32Array {
+  private spread(levels: number[]): Float64Array {
     const { cells, cultures, routes } = pack;
     const n = cells.i.length;
     const step = SPREAD_DECAY / Math.sqrt(n);
-    const reached = new Float32Array(n);
+    const reached = new Float64Array(n); // as precise as the queue: a rounded-up level would drop its own cell
     const source = new Uint16Array(n); // the culture whose level reached the cell
     const queue = new FlatQueue<number>();
     for (const culture of cultures) {

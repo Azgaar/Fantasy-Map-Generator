@@ -44,10 +44,10 @@ export const DEPOSIT_OUTPUT = 2; // units a worker gets from the burg's own depo
 const MAX_WORKERS = 1000;
 export const WORKFORCE_SHARE = 0.32; // townspeople working in trades; the rest serve, build, farm or are too young or old
 const WORKERS_PER_TURN = 5;
-export const LOT_DEPTH_SHARE = 0.5; // a step sells at most this share of a day's sales where it sells, so a thin market gets what pays and no more
+const LOT_DEPTH_SHARE = 0.5; // a step sells at most this share of a day's sales where it sells, so a thin market gets what pays and no more
 const PRODUCTIVITY_START = 30; // development past the High Middle Ages makes more of every good: ×1.5 at 45, ×2 at 60
 const MIN_STEP = 0.5; // the fewest workers a step takes, so a thin market does not take endless decisions
-export const MIN_PURCHASE = 1; // the fewest coins a burg spends on a good for a need or want, so it buys fewer goods in bigger lots
+const MIN_PURCHASE = 1; // the fewest coins a burg spends on a good for a need or want, so it buys fewer goods in bigger lots
 const MIN_SMALL_PURCHASE = 0.25; // the same when all it has for the need or want is less than MIN_PURCHASE
 export const BURG_SPECIALIZATION = 1.89;
 export const MARKET_SPECIALIZATION = 0.6;
@@ -152,7 +152,7 @@ export class ProductionModule {
   /** Burgs go by √population × development, so the advanced take the best trades first and size counts less than it */
   private getTurnOrder(burgs: Burg[]): Burg[] {
     const development = pack.cells.development;
-    const weight = (burg: Burg) => Math.sqrt(burg.population || 0) * (development?.[burg.cell] ?? 1);
+    const weight = (burg: Burg) => Math.sqrt(burg.population || 0) * development[burg.cell];
     return burgs.sort((a, b) => weight(b) - weight(a));
   }
 
@@ -445,6 +445,7 @@ export class ProductionModule {
       const left = units - trade.units;
       state.inventory[goodId] = left < 0.01 ? 0 : left;
       state.outlets.quotes[goodId] = undefined; // the sale moved its price
+      if (market !== state.market) state.sources.quotes[goodId] = undefined; // and that market's stock
 
       const revenue = trade.units * trade.price - trade.tax - (trade.tariff || 0);
       phaseRevenue += revenue;
@@ -567,6 +568,7 @@ export class ProductionModule {
         if (own && own.price <= this.quote(index, state, candidate.goodId).buyPrice) {
           const kept = Trade.keep({ burg, good: candidate.good, units, budget });
           if (kept) {
+            state.revenue -= kept.units * kept.price; // as if it never sold them
             state.outlets.quotes[candidate.goodId] = undefined; // taking it back moved its price
             state.log?.push({ goodId: candidate.goodId, market: state.market.i, kind: DEAL_KINDS.kept, ...kept });
             units -= kept.units;
@@ -1199,8 +1201,8 @@ export class ProductionModule {
 
   private getModifiers(good: Good, cellId: number): number {
     const development = Development.ofCell(cellId);
-    if (good.development && development !== undefined && development < good.development) return 0; // beyond the cell's technology
-    const productivity = Math.max(1, (development ?? 0) / PRODUCTIVITY_START);
+    if (good.development && development < good.development) return 0; // beyond the cell's technology
+    const productivity = Math.max(1, development / PRODUCTIVITY_START);
     const mult = good.multipliers;
     if (!mult) return productivity;
 

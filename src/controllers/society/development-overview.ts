@@ -39,7 +39,7 @@ const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 
 type Era = { i: number; name: string; label: string; from: number; to: number; color: string }; // name is the data's, label the interface's
 type EraStatistics = { cells: number; area: number; rural: number; urban: number; burgs: number };
-export type DevelopmentStatistics = { eras: EraStatistics[]; cells: number; mean: number; min: number; max: number };
+type DevelopmentStatistics = { eras: EraStatistics[]; cells: number; mean: number; min: number; max: number };
 
 let statistics: DevelopmentStatistics = { eras: [], cells: 0, mean: 0, min: 0, max: 0 };
 let percentage = false; // eras' shares of the totals instead of their values
@@ -85,7 +85,6 @@ function getEras(): Era[] {
 
 function open(): void {
   if (options.app.mode) return;
-  if (!pack.cells.development) Development.generate();
   painting = false;
   Dialog.closeAll(`#${dialogId}, .stable`);
   Layers.hide("biomes", "states", "cultures", "religions", "provinces");

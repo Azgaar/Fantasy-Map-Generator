@@ -2,6 +2,7 @@ import { select } from "d3";
 import { Controllers } from "@/controllers";
 import { ColorPicker } from "@/controllers/color-picker";
 import { type Market, Markets } from "@/model/economy/markets-generator";
+import { Production } from "@/model/economy/production-generator";
 import { Trade } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
@@ -28,6 +29,7 @@ import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const dialogId = "marketsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
@@ -243,8 +245,8 @@ function renderMarketRow(
   const { market, name, owner, cells, burgs, stock, sales, buys, value } = row;
   return /*html*/ `<div class="states market" data-id="${market.i}">
     <div data-col="color"><fill-box fill="${market.color}"></fill-box></div>
-    <div data-col="market" data-tip="${t("Market name. Click to view details")}" class="marketName">${name}</div>
-    <div data-col="owner" data-tip="${t("Owning state")}" class="marketOwner">${owner}</div>
+    <div data-col="market" data-tip="${t("Market name. Click to view details")}" class="marketName">${escapeHtml(name)}</div>
+    <div data-col="owner" data-tip="${t("Owning state")}" class="marketOwner">${escapeHtml(owner)}</div>
     <div data-col="cells" data-tip="${t("Number of cells in market territory")}" class="marketCells">${format("cells", cells)}</div>
     <div data-col="burgs" data-tip="${t("Number of burgs in market territory")}" class="marketBurgs">${format("burgs", burgs)}</div>
     <div data-col="stock" data-tip="${t("Total stock of all goods in this market")}" class="marketStock">${format("stock", stock)}</div>
@@ -351,7 +353,8 @@ function confirmRemoveMarket(marketId: number): void {
     confirm: t("Remove"),
     onConfirm: () => {
       Markets.removeMarket(marketId);
-      Layers.draw("markets");
+      Production.regenerate(); // the deals named it
+      Layers.draw("markets", "goods", "trade");
       marketsTable.refresh();
     }
   });

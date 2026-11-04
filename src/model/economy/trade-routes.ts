@@ -6,7 +6,7 @@ const SWITCH_SPACINGS = 4; // loading between land and water at a port, in cell 
 const LANDING_SPACINGS = 40; // loading anywhere else a road meets a river route: taken only when there is no other way
 
 /** A search over the route network; states are `cell * 2`, plus 1 when arriving by water */
-export type RouteSearch = { cost: Float64Array; prevCell: Int32Array; prevState: Int32Array };
+type RouteSearch = { cost: Float64Array; prevCell: Int32Array; prevState: Int32Array };
 
 /** The route network as flat arrays: each cell's links from `offsets[cell]`, with their travel cost and mode */
 type RouteGraph = {
@@ -117,8 +117,8 @@ export class TradeRoutesModule {
       costs: Float64Array.from(costs),
       water: Uint8Array.from(water),
       isPort,
-      switchCost: SWITCH_SPACINGS * (globalThis.grid?.spacing || 1),
-      landingCost: LANDING_SPACINGS * (globalThis.grid?.spacing || 1)
+      switchCost: SWITCH_SPACINGS * grid.spacing,
+      landingCost: LANDING_SPACINGS * grid.spacing
     };
   }
 

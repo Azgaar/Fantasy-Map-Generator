@@ -355,7 +355,7 @@ class MilitaryModule {
     }
 
     // conscripts the state cannot equip with their unit's goods serve as levies where they were raised
-    const levies = options.map.military.units.find(unit => unit.type === "levies");
+    const levyUnit = options.map.military.units.find(unit => unit.type === "levies");
     for (const [stateId, draft] of drafts) {
       const demand: Record<string, number> = {};
       for (const platoon of draft.platoons) demand[platoon.u] = (demand[platoon.u] || 0) + platoon.a;
@@ -366,12 +366,12 @@ class MilitaryModule {
         if (share >= 1) continue;
         const unequipped = platoon.a - rn(platoon.a * share);
         platoon.a = platoon.t = platoon.a - unequipped;
-        if (!levies || !unequipped) continue;
+        if (!levyUnit || !unequipped) continue;
         const levy = raised.get(platoon.cell);
         if (levy) levy.a = levy.t = levy.a + unequipped;
         else {
           const [x, y] = p[platoon.cell];
-          const { name: u, separate: s, type } = levies;
+          const { name: u, separate: s, type } = levyUnit;
           raised.set(platoon.cell, { cell: platoon.cell, a: unequipped, t: unequipped, x, y, u, n: 0, s, type });
         }
       }
@@ -628,7 +628,7 @@ class MilitaryModule {
     return `${number}${proper ? ` (${proper}) ` : ` `}${form}`;
   }
 
-  /** Share of each unit's conscripts, by unit name, the state can equip: a unit's goods are a year of what the state consumes of them times their military coverage, each good split between the units needing it by their troops; 1 for a unit needing no goods, and before the economy has run */
+  /** Share of each unit's conscripts the state can equip from a year of the goods it consumes; 1 needing no goods or before the economy ran */
   getEquipped(stateId: number, demand: Record<string, number>): Record<string, number> {
     const units = options.map.military.units;
     const consumed = StateEconomy.getConsumption(stateId);

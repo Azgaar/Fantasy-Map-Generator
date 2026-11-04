@@ -52,7 +52,8 @@ describe("StatesEditor", () => {
       cells: {
         i: [0, 1, 2],
         state: [0, 1, 2],
-        h: [20, 25, 30]
+        h: [20, 25, 30],
+        development: [0, 0, 0]
       },
       burgs: [
         { i: 0, name: "Neutral Burg", x: 0, y: 0 },

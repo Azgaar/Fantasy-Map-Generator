@@ -37,7 +37,7 @@ import { toggleSaveReminder } from "@/services/autosave";
 import { copyMapURL } from "@/services/url-params";
 import { confirmCleanupData } from "@/services/versioning";
 import { Dialog } from "@/ui/dialog/dialog";
-import { refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { changeMapZoom, resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { isCtrlClick } from "@/utils/common-utils";
@@ -814,6 +814,7 @@ function isQuestion(text: string): boolean {
 function confirmRegeneration(action: () => void): void {
   const apply = () => {
     action();
+    closeEntityDialogs();
     refreshEditors();
   };
   if (sessionStorage.getItem("regenerateFeatureDontAsk")) {
@@ -900,7 +901,8 @@ function regenerateBurgs(): void {
 
 function regenerateGoods(): void {
   Goods.regenerate();
-  Layers.draw("goods");
+  Production.regenerate();
+  Layers.draw("goods", "trade");
 }
 
 function regenerateMarkets(): void {

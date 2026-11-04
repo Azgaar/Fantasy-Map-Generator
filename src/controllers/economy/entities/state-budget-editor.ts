@@ -33,6 +33,7 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { minmax, rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const STYLE = /* css */ `
   #stateBudgetForm { width: auto; max-height: 70vh; overflow: auto; margin: 0.2em 0 0.4em }
@@ -244,8 +245,8 @@ function drawRules(): void {
         const isEmbargo = rule.rate === "embargo";
         const rate = rn((rule.rate === "embargo" ? 0.1 : rule.rate) * 100, 2);
         return `<tr data-index="${index}">
-          <td><button type="button" class="pick states" data-tip="${sentences(states.tip, t("Click to select"))}">${states.label}</button></td>
-          <td><button type="button" class="pick goods" data-tip="${sentences(goods.tip, t("Click to select"))}">${goods.label}</button></td>
+          <td><button type="button" class="pick states" data-tip="${sentences(escapeHtml(states.tip), t("Click to select"))}">${escapeHtml(states.label)}</button></td>
+          <td><button type="button" class="pick goods" data-tip="${sentences(escapeHtml(goods.tip), t("Click to select"))}">${escapeHtml(goods.label)}</button></td>
           <td><select class="policy"><option value="tariff" ${isEmbargo ? "" : "selected"}>${t("Tariff")}</option><option value="embargo" ${isEmbargo ? "selected" : ""}>${t("Embargo")}</option></select></td>
           <td>${isEmbargo ? "" : `<input class="rate" type="number" min="0" max="1000" step="1" value="${rate}" data-tip="${t("Import tariff rate")}"/> %`}</td>
           <td><span class="icon-trash-empty pointer remove" data-tip="${t("Remove rule")}"></span></td></tr>`;
@@ -374,7 +375,7 @@ function openChecklist({
   const itemsHtml = items
     .map(
       item =>
-        `<label style="display: flex; align-items: center; column-gap: 0.35em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><input type="checkbox" class="native tariffItemCheck" value="${item.id}" ${item.checked ? "checked" : ""} />${item.badgeHtml ?? ""}<span>${item.name}</span></label>`
+        `<label style="display: flex; align-items: center; column-gap: 0.35em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><input type="checkbox" class="native tariffItemCheck" value="${item.id}" ${item.checked ? "checked" : ""} />${item.badgeHtml ?? ""}<span>${escapeHtml(item.name)}</span></label>`
     )
     .join("");
   ensureEl("dialogs").insertAdjacentHTML(

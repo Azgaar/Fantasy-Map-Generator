@@ -77,6 +77,17 @@ describe("state orders", () => {
     expect(orders.every(deal => deal[6] === 0)).toBe(true);
   });
 
+  it("count taxes other states pay it after its last orders in what it collected", () => {
+    StateOrders.start();
+    StateOrders.place(true);
+    const collected = 100; // the capital's poll tax
+    // biome-ignore lint/complexity/useLiteralKeys: taxes that arrive after the state's last turn
+    Trade["taxes"][1] = (Trade["taxes"][1] || 0) + 7;
+    const before = Trade.getTaxesSoFar(1);
+    StateOrders.end();
+    expect(state.economy.collected).toBeCloseTo(collected + before, 2);
+  });
+
   it("spend more as more taxes come in during the run", () => {
     StateOrders.start();
     StateOrders.place();

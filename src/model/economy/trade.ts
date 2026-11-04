@@ -796,7 +796,7 @@ export class TradeModule {
     return (depth + (this.days[market.i].supply[good.i] || 0)) * ((price / least) ** (1 / PRICE_CURVE) - 1);
   }
 
-  /** The burg sells to a market, its own unless another is given, as many of the units as fetch something at its door; another state's market levies its tariff, off the revenue as the sales tax. Null under an embargo or when none would */
+  /** The burg sells to a market, its own by default, as many units as fetch something at its door. Null under an embargo or when none would */
   sell({
     burg,
     good,
@@ -980,7 +980,7 @@ export class TradeModule {
   getTaxesByState(): { salesTax: number[]; tariffs: number[] } {
     const salesTax: number[] = [];
     const tariffs: number[] = [];
-    for (const deal of pack.deals ?? []) {
+    for (const deal of pack.deals) {
       const { taxState, tariffState } = this.getTaxStates(deal);
       if (deal[6]) salesTax[taxState] = (salesTax[taxState] || 0) + deal[6];
       if (deal[7]) tariffs[tariffState] = (tariffs[tariffState] || 0) + deal[7];

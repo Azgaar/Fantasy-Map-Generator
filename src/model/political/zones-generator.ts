@@ -480,7 +480,7 @@ class ZonesModule {
   /** Each burg's trade value in the last economy run */
   private getBurgTrade(burgs: { i: number }[]): number[] {
     const trade: number[] = [];
-    for (const [burgId, , , kind, units, price] of pack.deals ?? [])
+    for (const [burgId, , , kind, units, price] of pack.deals)
       if (kind !== DEAL_KINDS.kept) trade[burgId] = (trade[burgId] || 0) + units * price;
     return burgs.map(burg => trade[burg.i] || 0);
   }

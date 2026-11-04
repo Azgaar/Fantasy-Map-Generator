@@ -27,6 +27,7 @@ import {
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 type TableSpec<T> = {
   id: string;
@@ -126,7 +127,7 @@ function openGoods(stateId: number, kind: GoodsKind): void {
     row: row => {
       const good = Goods.get(row.goodId)!;
       const badge = `<svg width="1.4em" height="1.4em">${goodBadge(good)}</svg>`;
-      return `<div data-col="good" style="display: flex; align-items: center; gap: 0.2em">${badge}${good.name}</div>
+      return `<div data-col="good" style="display: flex; align-items: center; gap: 0.2em">${badge}${escapeHtml(good.name)}</div>
         <div data-col="units">${rn(row.units, 2)}</div>
         <div data-col="value">${money(row.value)}</div>
         <div data-col="share">${rn(row.share, 1)}%</div>`;
@@ -169,7 +170,7 @@ function openPartners(stateId: number): void {
     columns,
     rows,
     row: row => `<fill-box data-col="color" fill="${pack.states[row.stateId]?.color || "#ccc"}"></fill-box>
-      <div data-col="state">${name(row)}</div>
+      <div data-col="state">${escapeHtml(name(row))}</div>
       <div data-col="exports">${money(row.exports)}</div>
       <div data-col="imports">${money(row.imports)}</div>
       <div data-col="balance" style="color: ${ECONOMY_COLORS[tone(row.balance)]}">${money(row.balance)}</div>
@@ -211,7 +212,7 @@ function openProsperity(stateId: number): void {
       { key: "actions", width: "1.4em", permanent: true }
     ],
     rows,
-    row: row => `<div data-col="name">${row.name}</div>
+    row: row => `<div data-col="name">${escapeHtml(row.name)}</div>
       <div data-col="people">${si(row.people)}</div>
       <div data-col="prosperity">${renderProsperityPercent(row.prosperity)}</div>
       <div data-col="level">${prosperityLevel(row.prosperity)}</div>

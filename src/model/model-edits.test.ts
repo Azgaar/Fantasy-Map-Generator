@@ -291,6 +291,9 @@ describe("Burgs: capital, move, remove", () => {
         state: [0, 1, 1, 0, 0],
         province: [0, 1, 1, 1, 0],
         h: [10, 30, 30, 30, 30],
+        development: [0, 0, 0, 0, 0],
+        pop: [0, 0, 0, 0, 0],
+        c: [[], [], [], [], []],
         f: [0, 1, 1, 1, 1]
       }
     });

@@ -155,6 +155,7 @@ class MapRestorationModule {
     else pack.relief = [];
     this.restoreRoutes(parent, projection, features); // before the states: a new capital connects to the roads
     this.restoreCultures(parent, projection);
+    pack.cells.development = new Uint8Array(pack.cells.i.length); // founded capitals settle it before it is generated
     const strayed = this.restoreBurgs(parent, projection, scale);
     this.restoreStates(parent, projection, strayed);
     this.restoreProvinces(parent, projection, strayed);
@@ -967,13 +968,12 @@ class MapRestorationModule {
   private restoreDevelopment(parent: PackedGraph, links: CellLinks) {
     Development.generate(); // of the restored cultures, routes and land
     const from = parent.cells.development;
-    if (!from) return;
     const { cells } = pack;
     for (const cell of cells.i) {
       const source = links.sameType[cell];
       if (source === -1 || !Development.isPeopled(cell)) continue;
       if (!parent.cells.pop[source] && !parent.cells.burg[source]) continue; // its 0 is no people, not a painted level
-      cells.development![cell] = from[source];
+      cells.development[cell] = from[source];
       if (cells.burg[cell] && !parent.cells.burg[source]) Development.settle(cell);
     }
   }

@@ -33,6 +33,7 @@ import { zoomTo } from "@/ui/map/zoom";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 /** A burg's trades with one market in one direction: it sells to its market, or buys from a market */
 type Flow = { deals: Deal[]; burgId: number; marketId: number; isSale: boolean };
@@ -234,17 +235,26 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
   const zoom = (target: string) =>
     `<span class="icon-dot-circled pointer" data-zoom="${target}" data-tip="${t("Click to zoom")}"></span>`;
   ensureEl("tradeDetailsSummary").innerHTML = /* html */ `
-    <span><b>${t("Burg")}</b>: ${burg?.name} ${zoom("burg")}</span>
-    <span style="margin-left:5px" data-tip="${carriageDistance(context.decimas)}"><b>${isSale ? t("Sells to market") : isImport ? t("Imports from market") : t("Buys from market")}</b>: ${market ? Markets.getName(market) : ""} ${zoom("market")}</span>`;
+    <span><b>${t("Burg")}</b>: ${escapeHtml(burg?.name ?? "")} ${zoom("burg")}</span>
+    <span style="margin-left:5px" data-tip="${carriageDistance(context.decimas)}"><b>${isSale ? t("Sells to market") : isImport ? t("Imports from market") : t("Buys from market")}</b>: ${market ? escapeHtml(Markets.getName(market)) : ""} ${zoom("market")}</span>`;
 
   const html = view.rows.map(({ goodId, units, price, carriage, tax, tariff, income, formula }) => {
     const good = Goods.get(goodId)!;
-    const cellTips = tradeCellTips({ good, units, net: price, carriage, tax, tariff, formula, ...context });
-    return /* html */ `<div class="states tradeDeal" data-good="${good.name}" data-units="${rn(units, 2)}" data-income="${rn(income, 2)}">
+    const cellTips = tradeCellTips({
+      good,
+      units,
+      net: price,
+      carriage,
+      tax,
+      tariff,
+      formula,
+      ...getTradeContext(burgId, marketId, goodId, deals[0][3])
+    });
+    return /* html */ `<div class="states tradeDeal" data-good="${escapeHtml(good.name)}" data-units="${rn(units, 2)}" data-income="${rn(income, 2)}">
     <svg data-col="icon" data-tip="${t("Good icon")}" width="2em" height="2em" class="goodIcon">
       ${goodBadge(good)}
     </svg>
-    <div data-col="good" data-tip="${t("Name")}" class="goodName">${good.name}</div>
+    <div data-col="good" data-tip="${t("Name")}" class="goodName">${escapeHtml(good.name)}</div>
     <div data-col="units" data-tip="${cellTips.units}">${rn(units, 2)}</div>
     <div data-col="net" data-tip="${cellTips.net}">${money(price, isSale)}</div>
     <div data-col="carriage" data-tip="${cellTips.carriage}">${money(carriage, false)}</div>

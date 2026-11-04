@@ -61,8 +61,8 @@ export const Controllers = createRegistry(
     Omnibar: () => import("@/controllers/omnibar").then(m => m.Omnibar),
     PaintEditor: () => import("@/controllers/paint-editor").then(m => m.PaintEditor),
     ProductionChains: () => import("@/controllers/economy/goods/production-chains").then(m => m.ProductionChains),
-    burgEconomyOverview: () =>
-      import("@/controllers/economy/entities/burg-economy-overview").then(m => m.burgEconomyOverview),
+    BurgEconomyOverview: () =>
+      import("@/controllers/economy/entities/burg-economy-overview").then(m => m.BurgEconomyOverview),
     ProvincesEditor: () => import("@/controllers/political/provinces-editor").then(m => m.ProvincesEditor),
     ProvincesRegeneration: () =>
       import("@/controllers/political/provinces-regeneration").then(m => m.ProvincesRegeneration),

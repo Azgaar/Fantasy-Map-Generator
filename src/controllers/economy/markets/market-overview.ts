@@ -28,6 +28,7 @@ import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 let activeMarketId = 0;
 const dialogId = "marketOverview" as const;
@@ -210,13 +211,13 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
     const good = Goods.get(row.goodId)!;
 
     return /*html*/ `<div class="states marketGood"
-      data-good="${good.name}"
+      data-good="${escapeHtml(good.name)}"
       data-stock="${rn(row.stock, 2)}"
       data-price="${rn(row.price, 2)}">
       <svg data-col="icon" data-tip="${t("Good icon")}" width="1.6em" height="1.6em" class="goodIcon">
         ${goodBadge(good)}
       </svg>
-      <div data-col="good" data-tip="${t("Name")}" class="goodName">${good.name}</div>
+      <div data-col="good" data-tip="${t("Name")}" class="goodName">${escapeHtml(good.name)}</div>
       <div data-col="stock" data-tip="${t("Good stock")}" class="marketGoodStock">${rn(row.stock, 2)}</div>
       <div data-col="price" data-tip="${priceTip(row.price, good.value)}" class="marketGoodPrice pointer" data-good-id="${good.i}">${formatPrice(row.price)}</div>
     </div>`;
@@ -229,7 +230,7 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
   if (state) EmblemRenderer.trigger(coaId, state.coa);
 
   ensureEl("marketOverviewInfo").innerHTML =
-    `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#${coaId}"></use></svg><b>${t("Owner")}:</b> ${state.fullName || state.name}`;
+    `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#${coaId}"></use></svg><b>${t("Owner")}:</b> ${escapeHtml(state.fullName || state.name)}`;
 
   const burgs = pack.burgs.filter(b => b.i && !b.removed && pack.cells.market[b.cell] === market.i);
   const totalUnits = view.all.reduce((sum, row) => sum + row.stock, 0);

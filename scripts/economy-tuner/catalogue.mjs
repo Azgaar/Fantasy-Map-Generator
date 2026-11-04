@@ -92,7 +92,7 @@ export function thetaOf(catalogue, params = {}) {
   return theta;
 }
 
-/** Values, coverage (within the caps: made ≤ 1, or 2 from value 20; raw ≥ 0.1) and tunables a parameter vector gives */
+/** Values, coverage (within the caps: made ≤ 1, or 2 from value 20 and for preserved food; raw ≥ 0.1) and tunables a parameter vector gives */
 export function overridesOf(catalogue, theta) {
   const byName = new Map(catalogue.map(g => [g.name, g]));
   const value = {};
@@ -108,7 +108,7 @@ export function overridesOf(catalogue, theta) {
   for (const g of catalogue) v(g.name);
   const coverage = Object.fromEntries(catalogue.map(g => [g.name, {}]));
   for (const [name, c, x] of theta.cov) {
-    const cap = value[name] >= 20 ? 2 : 1;
+    const cap = value[name] >= 20 || name === "Preserved food" ? 2 : 1;
     coverage[name][c] = Math.min(cap, Math.max(byName.get(name).made ? 0.02 : 0.1, x));
   }
   return { value, coverage, params: { ...theta.params } };

@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/renderers/layers", () => ({ Layers: { draw: mocks.draw, toggle: vi.fn() } }));
 vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
   ...(await importOriginal<typeof import("@/ui/dialog/dialog-helpers")>()),
+  closeEntityDialogs: vi.fn(),
   refreshEditors: mocks.refresh
 }));
 vi.mock("@/app/chrome/tabs/layers-tab", () => ({

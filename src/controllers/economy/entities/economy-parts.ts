@@ -14,6 +14,7 @@ import {
 } from "@/ui/economy-view";
 import { t } from "@/utils/i18n";
 import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const TOP_ROWS = 6;
 
@@ -23,6 +24,9 @@ const SECTOR_COLORS: Record<Sector, string> = { rural: "#6a9a3a", manufacturing:
 
 type Sectors = Record<Sector | "product", number>;
 type Living = { towns: GroupLiving | null; country: GroupLiving | null; levels: Record<"towns" | "country", number[]> };
+
+/** Pixels from the right edge, so each next dialog of the class opens to the left of the last */
+export const getStackOffset = (className: string) => 10 + 660 * (document.querySelectorAll(`.${className}`).length - 1);
 
 export const economyStyle = (dialog: string) => /* html */ `<style>
   .${dialog} > div { width: auto }
@@ -162,7 +166,7 @@ export function renderGoods(title: string, values: number[], button = ""): strin
     .map(([goodId, value]) => {
       const good = Goods.get(goodId);
       if (!good) return "";
-      const name = `<svg width="1.4em" height="1.4em">${goodBadge(good)}</svg>${good.name}`;
+      const name = `<svg width="1.4em" height="1.4em">${goodBadge(good)}</svg>${escapeHtml(good.name)}`;
       const bar = `<div class="bar"><div style="width: ${(value / most) * 100}%; background: var(--header)"></div></div>`;
       return `<div class="row"><span class="name">${name}</span>${bar}<span class="right">${formatPrice(value)}</span></div>`;
     })

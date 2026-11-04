@@ -57,7 +57,7 @@ beforeEach(() => {
   burg = { i: 1, cell: 0, population: 100 } as Burg;
   globalThis.pack = {
     goods: catalogue,
-    cells: { good: [0], market: [1, 2], h: [30, 30] },
+    cells: { good: [0], market: [1, 2], h: [30, 30], development: [1, 1] },
     burgs: [{ i: 0 }, burg],
     markets: [market],
     deals: []
@@ -354,7 +354,12 @@ describe("inputs missing in the burg's market", () => {
 describe("deposits", () => {
   it("yield their cell's population, up to 10, scaled to the map's cells", () => {
     const cells = (count: number) => {
-      globalThis.pack.cells = { i: Array.from({ length: count }, (_, i) => i), h: [30, 30], pop: [4, 25] } as never;
+      globalThis.pack.cells = {
+        i: Array.from({ length: count }, (_, i) => i),
+        h: [30, 30],
+        pop: [4, 25],
+        development: [1, 1]
+      } as never;
     };
     cells(5000);
     expect(production.getDepositOutput(catalogue[0], 0)).toBeCloseTo(4 * DEPOSIT_RICHNESS);
@@ -504,8 +509,10 @@ describe("demand fill", () => {
     pack.deals.push([1, 1, 3, DEAL_KINDS.sale, 4, 1, 0.8, 0, 0]); // sold 4 steel at 1, 0.2 tax each: earned 0.8 each
     const { index, state } = prepare();
     state.produced[3] = 4;
+    state.revenue = 3.2;
     // biome-ignore lint/complexity/useLiteralKeys: private test access
     production["fillDemand"](index, state);
+    expect(state.revenue).toBeCloseTo(0, 2); // what it took back is no longer a sale
 
     const byKind = (kind: number) => pack.deals.find(([, , goodId, k]) => goodId === 3 && k === kind)!;
     const [sale, kept, bought] = [DEAL_KINDS.sale, DEAL_KINDS.kept, DEAL_KINDS.demand].map(byKind);

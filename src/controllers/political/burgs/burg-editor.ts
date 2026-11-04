@@ -1,6 +1,7 @@
 import { type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import { type Market, Markets } from "@/model/economy/markets-generator";
+import { Production } from "@/model/economy/production-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
@@ -448,7 +449,8 @@ function confirmRemoveMarket(market: Market): void {
     confirm: t("Remove"),
     onConfirm: () => {
       Markets.removeMarket(market.i);
-      Layers.draw("markets");
+      Production.regenerate(); // the deals named it
+      Layers.draw("markets", "goods", "trade");
       updateBurgValues();
     }
   });
@@ -736,7 +738,7 @@ function toggleRelocateBurg(): void {
 function relocateBurgOnClick(this: SVGGElement, event: MouseEvent): void {
   const [x, y] = getPointer(event, this);
   if (!tryEdit(() => Burgs.move(getSelectedId(), x, y))) return;
-  Layers.draw("burgIcons", "labels");
+  Layers.draw("burgIcons", "labels", "goods", "markets");
   if (event.shiftKey === false) toggleRelocateBurg();
 }
 
@@ -751,7 +753,7 @@ function showTemperatureGraph(): void {
 
 function showBurgEconomy(): void {
   const id = getSelectedId();
-  Controllers.burgEconomyOverview.open(id);
+  Controllers.BurgEconomyOverview.open(id);
 }
 
 function removeSelectedBurg(): void {
@@ -776,7 +778,8 @@ function removeSelectedBurg(): void {
       onConfirm: () => {
         Burgs.remove(burgId);
         removeEmblem("burg", burgId);
-        Layers.draw("burgIcons", "labels");
+        Production.regenerate(); // the deals named it
+        Layers.draw("burgIcons", "labels", "goods", "trade");
         Dialog.close("burgEditor");
       }
     });

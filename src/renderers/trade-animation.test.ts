@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./draw-trade-animation", () => ({
-  draw: vi.fn(),
+  draw: vi.fn(() => Promise.resolve()),
   clear: vi.fn(),
   highlight: vi.fn(),
   clearHighlight: vi.fn()
@@ -52,6 +52,7 @@ vi.mock("@/renderers/layers", () => ({
 }));
 
 beforeEach(() => {
+  globalThis.grid = { spacing: 10 } as never;
   vi.clearAllMocks();
   ta = new TradeAnimationModule();
   globalThis.pack = makePack() as any;

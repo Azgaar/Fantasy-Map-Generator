@@ -4,6 +4,7 @@ import { DEAL_KINDS, type Deal } from "@/model/economy/trade";
 import { TradeRoutes } from "@/model/economy/trade-routes";
 import type { Point } from "@/model/graph/voronoi";
 import { Layers } from "@/renderers/layers";
+import { log } from "@/utils/logger";
 import { ra } from "@/utils/probability-utils";
 import { clear, draw } from "./draw-trade-animation";
 
@@ -60,7 +61,7 @@ export class TradeAnimationModule {
 
       const gen = this.generation;
       this.activeCount++;
-      draw(
+      void draw(
         deal,
         path.segments,
         () => {
@@ -69,7 +70,10 @@ export class TradeAnimationModule {
           this.topUp();
         },
         () => gen !== this.generation
-      );
+      ).catch(error => {
+        log.warn("Trade animation", error);
+        if (gen === this.generation) this.activeCount--; // the next draw of the layer tries again
+      });
       return true;
     }
     return false;

@@ -59,7 +59,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       <span id="mSummary_${dim}" class="ge-summary">${multiplierSummary(dim)}</span>
       <button class="mEdit icon-pencil ge-edit ge-top" data-dim="${dim}" data-tip="${t("Edit {{dimension}} multipliers", { dimension: label })}"></button>`;
 
-  const recipes: Record<number, number>[] = editedGood?.recipes || [];
+  const recipes: Record<number, number>[] = structuredClone(editedGood?.recipes ?? []); // Cancel drops them
   let icon = editedGood?.icon || "goods-unknown";
 
   let dialog: HTMLElement;
@@ -74,7 +74,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
     footer:
       economyWikiButton("goodEditorWiki") +
       (editedGood
-        ? /*html*/ `<div class="dontAsk" data-tip="${t("Re-place the good and recompute the economy")}">
+        ? /*html*/ `<div class="dontAsk" data-tip="${t("Recompute the economy. If the good's distribution or deposits changed, re-place it and redraw market territories, discarding hand-painted cells")}">
           <input id="goodRegenerateEconomy" class="checkbox" type="checkbox" checked />
           <label for="goodRegenerateEconomy" class="checkbox-label"><i>${t("regenerate economy on apply")}</i></label>
         </div>`
@@ -178,12 +178,14 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             });
             editedGood.distribution = distribution || undefined; // code the user typed, checked above; never an operation
 
-            // opt-out: by default re-place the good and recompute the economy to reflect the change
+            // opt-out: by default recompute the economy to reflect the change; only a re-placed good redraws market territories
             if (ensureEl<HTMLInputElement>("goodRegenerateEconomy").checked) {
-              if (placementChanged) Goods.regeneratePlacement(editedGood.i); // keeps deposits placed by output
-              Production.regenerateEconomy();
-              Layers.draw("markets", "goods");
-              Layers.draw("trade");
+              Goods.sync();
+              if (placementChanged) {
+                Goods.regeneratePlacement(editedGood.i);
+                Production.regenerateEconomy();
+              } else Production.regenerate();
+              Layers.draw("markets", "goods", "trade");
               refreshEditors();
             } else {
               Goods.sync();
@@ -259,7 +261,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
         <div class="ge-section-title">${t("General")}</div>
         <div class="ge-grid">
           <label for="newGoodName">${t("Name")}*</label>
-          <input id="newGoodName" class="ge-field" value="${editedGood?.name || ""}" />
+          <input id="newGoodName" class="ge-field" value="${escapeHtml(editedGood?.name || "")}" />
           <span></span>
 
           <label for="newGoodTags">${t("Tags")}</label>
@@ -289,7 +291,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           <span></span>
 
           <label for="newGoodUnit">${t("Unit")}</label>
-          <input id="newGoodUnit" class="ge-field" placeholder="${t("e.g. wagon, barrel")}" value="${editedGood?.unit || ""}" />
+          <input id="newGoodUnit" class="ge-field" placeholder="${t("e.g. wagon, barrel")}" value="${escapeHtml(editedGood?.unit || "")}" />
           <span></span>
 
           <label class="ge-top" data-tip="${t("Needs one unit covers. Click the pencil to edit")}">${t("Demand Coverage")}</label>
@@ -389,7 +391,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
                 .map(
                   ([ingredientId, amount], ingredientIndex) => /*html*/ `
                     <div class="ge-recipe-ing" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}">
-                      <select class="recipeGoodSelect" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}">${sortedGoods.map(good => `<option value="${good.i}" ${good.i === Number(ingredientId) ? "selected" : ""}>${good.name}</option>`).join("")}</select>
+                      <select class="recipeGoodSelect" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}">${sortedGoods.map(good => `<option value="${good.i}" ${good.i === Number(ingredientId) ? "selected" : ""}>${escapeHtml(good.name)}</option>`).join("")}</select>
                       <input class="recipeAmountInput" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" type="number" min="1" step="1" value="${amount}" />
                       <span class="recipeRemoveIngredient icon-trash-empty pointer" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" data-tip="${t("Remove")}" />
                     </div>`
@@ -408,8 +410,9 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           const ingredientIndex = +select.dataset.ingredientIndex!;
           const recipe = recipes[recipeIndex];
 
-          const oldAmount = recipe[ingredientIndex] || 0;
-          delete recipe[ingredientIndex];
+          const ingredientId = Number(Object.keys(recipe)[ingredientIndex]);
+          const oldAmount = recipe[ingredientId];
+          delete recipe[ingredientId];
           recipe[selectedGoodId] = oldAmount;
           renderRecipes();
         };
@@ -603,8 +606,8 @@ function openMultiplierPopup(
 
   const rows = entities.map(entity => {
     const val = currentValues[entity.id] ?? 1;
-    const box = `<fill-box fill="${entity.color || getRandomColor()}" size="1em" disabled data-tip="${entity.name}"></fill-box>`;
-    return `${box}<span>${entity.name}</span><input type="number" class="mPopupInput" data-id="${entity.id}" min="0" step="0.1" style="width:5em;" value="${val}" />`;
+    const box = `<fill-box fill="${entity.color || getRandomColor()}" size="1em" disabled data-tip="${escapeHtml(entity.name)}"></fill-box>`;
+    return `${box}<span>${escapeHtml(entity.name)}</span><input type="number" class="mPopupInput" data-id="${entity.id}" min="0" step="0.1" style="width:5em;" value="${val}" />`;
   });
 
   const popupEl = document.createElement("div");
@@ -680,7 +683,7 @@ function openBiomeProductionPopup(
     .filter(biome => !biome.removed)
     .map(({ i, name }) => {
       const val = currentValues[i] ?? 0;
-      return `<span>${name}</span><input type="number" class="bpPopupInput" data-id="${i}" min="0" step="0.01" style="width:5em;" value="${val}" />`;
+      return `<span>${escapeHtml(name)}</span><input type="number" class="bpPopupInput" data-id="${i}" min="0" step="0.01" style="width:5em;" value="${val}" />`;
     })
     .join("");
 

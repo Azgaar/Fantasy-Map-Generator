@@ -3,7 +3,8 @@ import { Goods } from "@/model/economy/goods-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { TradeTraffic, type TrafficLink } from "@/model/economy/trade-traffic";
 import { type Box, boundsIntersect } from "@/renderers/viewport/viewport-renderer";
-import { rn } from "@/utils/number-utils";
+import { getPercentile, rn } from "@/utils/number-utils";
+import { getBoundingBox } from "@/utils/path-utils";
 
 const SATURATION = 0.95; // percentile of the links' units from which routes are drawn at full width
 const MIN_SHARE = 0.01; // of the saturation units: quieter links are left out
@@ -22,8 +23,7 @@ export function buildTraffic(shown: Set<number>): void {
     for (const [goodId, goodUnits] of link.goods) if (shown.has(goodId)) sum += goodUnits;
     if (sum) units.set(link, sum);
   }
-  const sorted = [...units.values()].sort((a, b) => a - b);
-  const saturation = sorted[Math.floor((sorted.length - 1) * SATURATION)] ?? 0;
+  const saturation = getPercentile([...units.values()], SATURATION) ?? 0;
   color = shown.size === 1 ? (Goods.get([...shown][0])?.color ?? "") : "";
   lines = [];
 
@@ -42,15 +42,8 @@ export function buildTraffic(shown: Set<number>): void {
       if (link && share >= MIN_SHARE && (drawnBy.get(link) ?? route.i) === route.i) {
         drawnBy.set(link, route.i);
         const run = points.slice(start, end + 2);
-        const box = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
-        for (const [x, y] of run) {
-          box.x0 = Math.min(box.x0, x);
-          box.y0 = Math.min(box.y0, y);
-          box.x1 = Math.max(box.x1, x);
-          box.y1 = Math.max(box.y1, y);
-        }
         const d = Routes.getPath({ group: route.group, points: run });
-        lines.push({ ...box, d, share: Math.sqrt(share), cells: link.cells });
+        lines.push({ ...getBoundingBox(run), d, share: Math.sqrt(share), cells: link.cells });
       }
       start = end + 1;
     }

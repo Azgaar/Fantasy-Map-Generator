@@ -9,6 +9,7 @@ import { tip } from "@/ui/tooltips";
 import { C_12 } from "@/utils/color-utils";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const CARD_WIDTH = 98;
 const CARD_HEIGHT = 34;
@@ -770,7 +771,7 @@ function renderNodeContent(node: GraphNode, displayName: string): string {
   return `<use href="${Icons.href(node.good.icon)}" x="${iconX - ICON_RADIUS}" y="${iconY - ICON_RADIUS}"
     width="${ICON_RADIUS * 2}" height="${ICON_RADIUS * 2}"${goodIconLines()}/>
   <text x="${textX}" y="${iconY - 2}" font-size="10" font-family="sans-serif"
-    fill="#111" font-weight="600">${displayName}</text>
+    fill="#111" font-weight="600">${escapeHtml(displayName)}</text>
   <text x="${textX}" y="${iconY + 8}" font-size="8.5" font-family="sans-serif" fill="#888">🟡 ${node.good.value}</text>`;
 }
 

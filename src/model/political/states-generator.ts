@@ -1031,7 +1031,7 @@ class StatesModule {
   /** A title for a people before the Bronze Age, where kingdoms and republics are not yet known; others keep the form's */
   private getTribalForm(state: State, tier: number, formName: string | undefined): string | undefined {
     const capital = pack.burgs[state.capital];
-    const development = capital ? pack.cells.development?.[capital.cell] : undefined;
+    const development = capital ? pack.cells.development[capital.cell] : undefined;
     if (!development || development >= TRIBAL_DEVELOPMENT) return formName;
     if (state.form === "Monarchy") {
       if (state.type === "Nomadic") return "Horde";

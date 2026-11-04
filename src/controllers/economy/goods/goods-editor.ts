@@ -35,6 +35,7 @@ import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const CSV_COLUMNS = [
   "Id",
@@ -337,9 +338,9 @@ function renderGoodsPage(view: TableView<Good>) {
         <div data-col="display"><input type="checkbox" data-tip="${t("Show this good on the Goods layer")}" class="native goodDisplayed" style="margin: 0; width: 1.2em;" ${good.visible ? "checked" : ""} /></div>
         <div data-col="name" style="display:flex; align-items:center"><svg data-tip="${t("Good icon")}" width="2em" height="2em" class="goodIcon">
           ${goodBadge(good)}
-        </svg><span data-tip="${t("Name")}" class="goodName">${good.name}</span></div>
+        </svg><span data-tip="${t("Name")}" class="goodName">${escapeHtml(good.name)}</span></div>
         <div data-col="type" data-tip="${t("Good types")}" class="goodType">${types.map(renderTypeBadge).join(" ")}</div>
-        <div data-col="unit" data-tip="${t("Unit of production")}" class="goodUnit">${good.unit ?? ""}</div>
+        <div data-col="unit" data-tip="${t("Unit of production")}" class="goodUnit">${escapeHtml(good.unit ?? "")}</div>
         <div data-col="produced" data-tip="${sentences(producedTip, t("Click to see states, provinces and burgs producing this good"))}" class="goodProduced pointer" style="text-align: right">
           <div style="display: inline-block; width: 3em">${percentage ? `${rn(totalProduced ? (produced / totalProduced) * 100 : 0, 2)}%` : produced}</div>
           <div style="display: inline-block; width: 0.4em; font-size: 1.5em;">⚒</div>
@@ -452,7 +453,7 @@ function openProducersDialog(goodId: number) {
           <div data-tip="${t("Click to zoom")}" class="states pointer" data-x="${x}" data-y="${y}">
             <div class="icon-dot-circled" style="width:1.6em"></div>
             <div style="width:5em">${type}</div>
-            <div style="width:9em">${name}</div>
+            <div style="width:9em">${escapeHtml(name)}</div>
             <div style="width:4em">${rn(units, 1)}</div>
           </div>`
       )
@@ -511,7 +512,7 @@ function openStockDialog(goodId: number) {
         source => /*html*/ `
         <div data-tip="${t("Click to zoom")}" class="states pointer" data-x="${source.x}" data-y="${source.y}">
           <div class="icon-store" style="width:1em"></div>
-          <div style="width:7em;">${source.name}</div>
+          <div style="width:7em;">${escapeHtml(source.name)}</div>
           <div style="width:4em;">${source.stock}</div>
         </div>`
       )
@@ -839,17 +840,11 @@ function updateDisplayAllCheckbox() {
 function removeGood(good: Good) {
   const message = `${t("Are you sure you want to remove the resource?")}<br>${t("This action cannot be reverted")}`;
   const onConfirm = () => {
-    for (const i of pack.cells.i) {
-      if (pack.cells.good[i] === good.i) {
-        pack.cells.good[i] = 0;
-      }
-    }
-
-    pack.goods = pack.goods.filter(g => g.i !== good.i);
-    Goods.sync();
+    Goods.remove(good.i);
     States.pruneTariffs({ goods: [good.i] });
-    goodsTable.refresh();
-    Layers.draw("goods");
+    Production.regenerate(); // the deals and stocks named it
+    Layers.draw("goods", "trade");
+    refreshEditors();
   };
   Dialog.confirm({ title: t("Remove"), message, confirm: t("Remove"), onConfirm });
 }

@@ -128,18 +128,17 @@ export function prosperityTip(prosperity: number): string {
  */
 export function splitDealPrice({ units, price, tax, tariff = 0, carriage = 0 }: Transaction, isSale: boolean) {
   const perUnit = (total: number) => (units ? total / units : 0);
-  const unitCarriage = carriage;
   const unitTax = perUnit(tax);
   const unitTariff = perUnit(tariff);
   const terms: [string, number][] = [
-    [t("Carriage"), unitCarriage],
+    [t("Carriage"), carriage],
     [t("Sales Tax"), unitTax],
     [t("Tariff"), unitTariff]
   ];
   const added = terms.reduce((sum, [, value]) => sum + value, 0);
 
   // a purchase pays them on top of the goods' price; a sale gets the goods' price less them
-  const goodsPrice = isSale ? price + unitCarriage : price - added;
+  const goodsPrice = isSale ? price + carriage : price - added;
   const value = isSale ? units * price - tax - tariff : units * price;
 
   const sign = isSale ? "−" : "+";
@@ -149,7 +148,7 @@ export function splitDealPrice({ units, price, tax, tariff = 0, carriage = 0 }: 
   const income = isSale ? value : -value;
   const split = `(${t("Net")} ${formatPrice(rn(goodsPrice, 2))}${shown.join("")}) × ${rn(units, 2)}`;
   const formula = `${isSale ? "" : "−"}${split} = ${formatPrice(rn(income, 2))}`;
-  return { goodsPrice, carriage: unitCarriage, tax: unitTax, tariff: unitTariff, value, formula };
+  return { goodsPrice, carriage, tax: unitTax, tariff: unitTariff, value, formula };
 }
 
 /** The route distance the carriage is paid for, in decimas and the map's distance unit */

@@ -1067,7 +1067,7 @@ function togglePercentageMode(): void {
     const totalBurgs = +ensureEl("statesFooterBurgs").textContent;
     const totalArea = +ensureEl("statesFooterArea").dataset.area!;
     const totalPopulation = +ensureEl("statesFooterPopulation").dataset.population!;
-    const totalTreasury = pack.states.reduce((sum, s) => sum + (s.economy.treasury || 0), 0);
+    const totalTreasury = pack.states.reduce((sum, s) => sum + (s.i && !s.removed ? s.economy.treasury || 0 : 0), 0);
     const world = StateEconomy.getWorld();
     const totalCells = pack.states.reduce((sum, s) => sum + (s.i && !s.removed ? s.cells || 0 : 0), 0);
 

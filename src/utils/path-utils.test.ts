@@ -2,7 +2,7 @@ import { curveCatmullRom, curveLinear, curveLinearClosed } from "d3";
 import { describe, expect, it } from "vitest";
 import type { Point } from "@/model/graph/voronoi";
 import { getLabelPath } from "../renderers/labels/label-markup";
-import { curveLength, meander, parsePathPoints } from "./path-utils";
+import { curveLength, getBoundingBox, meander, parsePathPoints } from "./path-utils";
 
 describe("parsePathPoints", () => {
   it("restores knots from a natural curve path", () => {
@@ -261,5 +261,17 @@ describe("curveLength", () => {
     const curve = curveLength(points, curveCatmullRom.alpha(0.1));
     expect(curve).toBeGreaterThan(polyline);
     expect(curve).toBeLessThan(polyline * 1.2);
+  });
+});
+
+describe("getBoundingBox", () => {
+  it("surrounds the points", () => {
+    expect(
+      getBoundingBox([
+        [3, -1],
+        [0, 4],
+        [2, 2]
+      ])
+    ).toEqual({ x0: 0, y0: -1, x1: 3, y1: 4 });
   });
 });

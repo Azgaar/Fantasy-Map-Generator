@@ -19,6 +19,7 @@ import { bindEconomyWiki, economyWikiButton } from "@/ui/economy-view";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const dialogId = "marketsGoodCompare" as const;
 const position = { my: "right top", at: "left-10 top" };
@@ -146,9 +147,9 @@ function renderComparePricesPage(view: TableView<Market>): void {
     const price = rn(goodData?.price ?? 0, 2);
     const stockText = percentage ? (totalStock ? `${rn((stock / totalStock) * 100, 2)}%` : "0%") : String(stock);
 
-    return /*html*/ `<div class="states" data-id="${market.i}" data-market="${centerName}" data-stock="${stock}" data-price="${price}">
+    return /*html*/ `<div class="states" data-id="${market.i}" data-market="${escapeHtml(centerName)}" data-stock="${stock}" data-price="${price}">
       <fill-box data-col="color" fill="${market.color}"></fill-box>
-      <div data-col="market">${centerName}</div>
+      <div data-col="market">${escapeHtml(centerName)}</div>
       <div data-col="stock" data-type="stock">${stockText}</div>
       <div data-col="price" data-tip="${sentences(`${t("Market price")}: ${formatPrice(price)}`, t("{{percent}} of the base price", { percent: ofBase(price) }))}">${priceText(price)}</div>
     </div>`;
@@ -182,7 +183,7 @@ function rebuildGoodSelect(): void {
   const prev = activeGoodId >= 0 ? activeGoodId : +select.value;
   const sortedGoods = [...pack.goods].sort((a, b) => a.name.localeCompare(b.name));
   select.innerHTML = sortedGoods
-    .map(g => `<option value="${g.i}" ${g.i === prev ? "selected" : ""}>${g.name}</option>`)
+    .map(g => `<option value="${g.i}" ${g.i === prev ? "selected" : ""}>${escapeHtml(g.name)}</option>`)
     .join("");
   if (prev >= 0 && Goods.get(prev)) {
     activeGoodId = prev;

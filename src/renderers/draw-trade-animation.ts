@@ -20,7 +20,9 @@ function ensureSymbols(): Promise<void> {
     await Promise.all(
       Object.values(MARKER_SYMBOLS).map(async ({ id, src }) => {
         if (defs.querySelector(`#${id}`)) return;
-        const text = await fetch(src).then(r => r.text());
+        const response = await fetch(src);
+        if (!response.ok) throw new Error(`Trade marker ${src}: ${response.status}`);
+        const text = await response.text();
         const svgNode = new DOMParser().parseFromString(text, "image/svg+xml").documentElement;
         const symbol = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
         symbol.id = id;
@@ -30,7 +32,10 @@ function ensureSymbols(): Promise<void> {
         defs.appendChild(symbol);
       })
     );
-  })();
+  })().catch(error => {
+    symbolsReady = null; // the next draw tries again
+    throw error;
+  });
   return symbolsReady;
 }
 
