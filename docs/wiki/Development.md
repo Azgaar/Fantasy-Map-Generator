@@ -1,4 +1,4 @@
-Every cell where people live has a technological **development** from 1 to 100: how advanced its people are. Land nobody lives on, and water, have none (0). Development comes from the map's cultures: dwarves forge steel while giants still hunt with stone. It spreads over the land from each culture's heart, and it decides what each region can produce and how rich it gets.
+Every cell where people live has a technological **development** from 1 to 100: how advanced its people are. Land nobody lives on, and water, have none (0). Development comes from the map's cultures: dwarves forge steel while giants still hunt with stone. It stays with each people, shaped by the land and the routes, and it decides what each region can produce and how rich it gets.
 
 Development is part of the world's lore, not a clock: it does not grow over time.
 
@@ -34,7 +34,7 @@ The scale runs from hunter-gatherers to a post-human civilization: a custom hist
 
 ## Cultures
 
-Each culture has its own level, the development of its heartland. The [culture set](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-sets) you pick decides your world's era:
+Each culture has its own level, the development of its lands. The [culture set](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-sets) you pick decides your world's era:
 
 | Culture set  | Typical level | Leaders                                                | Laggards                                         |
 | ------------ | ------------- | ------------------------------------------------------ | ------------------------------------------------ |
@@ -51,16 +51,13 @@ Most maps get a medieval world with a few leaders that field artillery and print
 
 A culture's [type](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types) moves its level a little: naval peoples are three points ahead, river peoples two and lake peoples one; highlanders are two behind, nomads three and hunters four. Unclaimed wildlands stand at 3, foragers.
 
-## Spread over the land
+## Across the land
 
-Development is highest at a culture's center and spreads from it:
+Every cell starts at its people's level, and development stays with them: an advanced neighbor softens the border a little, but orcs next to elves stay orcs. Knowledge does not spread across the map.
 
-- **Along routes** it travels far: roads carry it best, then sea routes, then trails. Off the routes it fades fast, and it crosses the sea only by sea routes.
 - **Routes lift the land along them**: trade and travel bring new ideas, so the land on a road stands about two eras above the backcountry, and the lift fades over a few cells from the road. Sea routes lift their ports, and trails a little less.
-- **Into another people's land** it fades four times faster: an advanced neighbor lifts its borderlands, but orcs next to elves stay orcs.
-- **Far from the center** a region falls less than two eras behind its culture's heartland.
 - **The land** matters: temperate deciduous forests are a little ahead, while harsh lands hold peoples back: savanna and tropical seasonal forest a point, wetland two, taiga and tropical rainforest three, hot desert four, cold desert and tundra five and glaciers eight. Custom biomes add nothing until you set them in the Biomes editor. Rivers and coasts add a point.
-- **Broad waves**: borders between peoples and lands are softened into gradual slopes, and broad waves raise or lower whole regions by up to three eras, so a people's lands differ in large patches rather than cell by cell.
+- **Broad waves**: borders between peoples and lands are softened into short slopes, and broad waves raise or lower whole regions by up to three eras, so a people's lands differ in large patches rather than cell by cell.
 
 Land nobody lives on has no development.
 

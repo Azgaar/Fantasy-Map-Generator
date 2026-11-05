@@ -1,6 +1,6 @@
 # Development
 
-A cell's technological **development**: how advanced its people are, from hunter-gatherers to a post-human civilization. It is set by the cultures and spread over the land, and it decides what the land can produce and how much, who picks a trade first in the economy's day, and whether a state is a kingdom or a tribe. The user guide is the [Development wiki page](../wiki/Development.md).
+A cell's technological **development**: how advanced its people are, from hunter-gatherers to a post-human civilization. It is set by the cultures and varies over the land, and it decides what the land can produce and how much, who picks a trade first in the economy's day, and whether a state is a kingdom or a tribe. The user guide is the [Development wiki page](../wiki/Development.md).
 
 Development is a world-building lever, not a simulation: it does not grow over time. The culture set decides a map's development: a medieval set gives a medieval world with a few leaders and a few laggards, the Antique set a classical one.
 
@@ -40,7 +40,7 @@ The names are data (`DEVELOPMENT_ERAS`), each era from the level it begins at; `
 
 ## Culture levels
 
-Each predefined culture carries its own `development` in `Cultures.getDefault`, its level at its center before its type's offset. Levels are per culture, not per name base: the Antique set's Germanic (16) and the medieval Shwazen (36) share a name base but not an era.
+Each predefined culture carries its own `development` in `Cultures.getDefault`, its level before its type's offset. Levels are per culture, not per name base: the Antique set's Germanic (16) and the medieval Shwazen (36) share a name base but not an era.
 
 | Set          | Range | Typical | Leaders                                            | Laggards                                  |
 | ------------ | ----- | ------- | -------------------------------------------------- | ----------------------------------------- |
@@ -60,14 +60,13 @@ Each predefined culture carries its own `development` in `Cultures.getDefault`, 
 
 ## The field
 
-`Development.generate()` writes `pack.cells.development`, a `Uint8Array` of 1–100 on peopled cells (`isPeopled`: land with rural people or a burg) and 0 elsewhere; the steps below work over all land, so empty land still carries the field between peoples. It runs in `O(n log n)`, about 4–6 ms on a 5,000-cell map.
+`Development.generate()` writes `pack.cells.development`, a `Uint8Array` of 1–100 on peopled cells (`isPeopled`: land with rural people or a burg) and 0 elsewhere; the steps below work over all land, so empty land still carries the field between peoples. It runs in `O(n)`.
 
-1. **Spread** (`spread`). A binary-heap search from every culture center at its level (with the type offset). Each step to a neighbor costs `SPREAD_DECAY ÷ √cells` (30 ÷ √cells), so the decay across the map does not depend on the cell count. A step along a route costs a share of it (`ROUTE_DECAY`): roads 0.15, sea routes 0.25, trails 0.4. A step into another culture's land costs four times it (`FOREIGN`), so knowledge crosses peoples slowly: an advanced neighbor lifts its borderlands without making orcs as advanced as elves. Water is crossed only along sea routes. Each cell keeps the best level reaching it.
-2. **Hinterland**. A cell falls at most 5 points, under two eras, behind its own culture's center level (`HINTERLAND`), however far from it.
-3. **Land**. Each biome adds its own offset (`biome.development`, in the biomes data and saved with the map; a custom biome starts at 0, older maps' generated biomes get theirs on load): temperate deciduous forest +2, grassland, temperate rainforest and marine 0, savanna and tropical seasonal forest −1, wetland −2, taiga and tropical rainforest −3, hot desert −4, cold desert and tundra −5, glacier −8. The Biomes editor edits them (`Biomes.setDevelopment`). It does not follow habitability, which sets population. A river and the coast add 1 each.
-4. **Smoothing** (`smooth`). Five passes average each land cell with its land neighbors (`SMOOTHING`): the borders between peoples and biomes become slopes instead of steps.
-5. **Routes** (`getRouteBonus`). A cell on a road gains 5 points, on a sea route 3 (its port too), on a trail 2 (`ROUTE_BONUS`); each cell further keeps 0.6 of it (`ROUTE_FALLOFF`), up to 4 cells away (`ROUTE_REACH`), and the bonus is smoothed once. Added after the smoothing, so roads stand out as corridors of trade and contact: a route cell averages about 6 points, two eras, above land away from routes.
-6. **Noise**. Smooth value noise in two octaves of about three waves across the map, ±9 (`NOISE`, `WAVES`), seeded by a hash of the map seed: the broad rises and dips within a people, its main source of variety (about 3 points of the 3.6 a cell typically differs from its culture's mean).
+1. **Culture**. Each land cell starts at its culture's level, with the type offset (`ofCulture`). Wildlands take 3.
+2. **Land**. Each biome adds its own offset (`biome.development`, in the biomes data and saved with the map; a custom biome starts at 0, older maps' generated biomes get theirs on load): temperate deciduous forest +2, grassland, temperate rainforest and marine 0, savanna and tropical seasonal forest −1, wetland −2, taiga and tropical rainforest −3, hot desert −4, cold desert and tundra −5, glacier −8. The Biomes editor edits them (`Biomes.setDevelopment`). It does not follow habitability, which sets population. A river and the coast add 1 each.
+3. **Smoothing** (`smooth`). Two passes average each land cell with its land neighbors (`SMOOTHING`): the borders between peoples and biomes become short slopes instead of steps.
+4. **Routes** (`getRouteBonus`). A cell on a road gains 5 points, on a sea route 3 (its port too), on a trail 2 (`ROUTE_BONUS`); each cell further keeps 0.6 of it (`ROUTE_FALLOFF`), up to 4 cells away (`ROUTE_REACH`), and the bonus is smoothed once. Added after the smoothing, so roads stand out as corridors of trade and contact: a route cell averages about 6 points, two eras, above land away from routes.
+5. **Noise**. Smooth value noise in two octaves of about three waves across the map, ±9 (`NOISE`, `WAVES`), seeded by a hash of the map seed: the broad rises and dips within a people, its main source of variety (about 3 points of the 3.6 a cell typically differs from its culture's mean).
 
 A generated burg's cell is at least 5 (`MIN_BURG`), a town being past the foragers' era; painting may set it lower. A burg added, moved or regenerated later settles its cell (`Development.settle`): a cell with none takes the best level of the land around, and the cell is raised to 5. A cell a burg leaves, moved, removed or dropped by Regenerate Burgs, goes back to 0 if nobody else lives there (`vacate`). Regenerating population resettles the land (`resettle`): land newly peopled takes the best level around it, at least 1, and land left empty has none; painted levels of land that stays peopled are kept. Resample, submap and heightmap edits carry development over with the peopled cells, painted levels included, and generate it for land the old map had no people on (`MapRestoration.restoreDevelopment`): there its 0 means nobody lived there, not a painted level. Development is otherwise not updated by later edits: regenerate it after changing cultures, their levels, biomes or routes. Maps older than v1.157.0 get it generated on load, and their default goods their tiers, before their economy is rerun. On the tuner's maps neighboring cells differ by about 0.9 points on average.
 
@@ -103,7 +102,7 @@ The States, Provinces and Cultures editors and the Burgs Overview each have a De
 
 On the economy tuner's ten maps:
 
-- **Spread**: medieval maps' median burg stands at 34–47, their best at 42–60; the Antique map's median is 18.
+- **Spread**: medieval maps' median burg stands at 25–40, their best at 43–61; the Antique map's median is 20.
 - **Gunpowder and artillery**: made on nine maps in ten, all but the Antique one.
 - **Wealth**: burgs below half their needs are 87% under 10, 60% under 30, 25% at 30–39 and 5% at 40 or more; product per worker is 1.5 at 10–19 and 8.3 at 40 or more.
 - **Goods**: about 93% of the catalogue is made on a map. Tropical goods (incense, spices, sugar, mahogany) often fall in land below their tier and are missing on some maps.

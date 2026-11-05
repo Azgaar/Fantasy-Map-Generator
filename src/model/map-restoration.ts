@@ -895,7 +895,8 @@ class MapRestorationModule {
   private restoreMarkers(parent: PackedGraph, projection: Projection) {
     pack.markers = parent.markers.flatMap(marker => {
       const [x, y] = projection(marker.x, marker.y).map(value => rn(value, 2));
-      if (!this.isInMap(x, y)) return [];
+      const home = this.projectPoint(parent, marker.cell, projection) ?? [x, y]; // a port's marker can lie off the edge
+      if (!this.isInMap(...home)) return [];
       return [{ ...marker, x, y, cell: this.findCell(x, y) }];
     });
   }

@@ -34,15 +34,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-it("falls from the culture center, but less than two eras behind it", () => {
-  stubMap();
-  Development.generate();
-  const development = pack.cells.development!;
-  expect(development[0]).toBeGreaterThan(development[3]);
-  expect(development[5]).toBeGreaterThanOrEqual(development[0] - 5); // the hinterland floor, smoothed
-});
-
-it("carries further along a road", () => {
+it("lifts the land along a road", () => {
   stubMap();
   Development.generate();
   const offRoad = pack.cells.development![1];
@@ -159,23 +151,4 @@ it("holds peoples back in harsh biomes", () => {
   pack.biomes[0].development = -6; // as tundra
   Development.generate();
   expect(pack.cells.development![0]).toBe(forest - 8);
-});
-
-it("spreads along a whole chain of cells: rounding never drops a level", () => {
-  const n = 200;
-  const c = Array.from({ length: n }, (_, i) => [i - 1, i + 1].filter(next => next >= 0 && next < n));
-  globalThis.pack = {
-    cells: {
-      i: Array.from({ length: n }, (_, i) => i),
-      c,
-      h: new Uint8Array(n).fill(30),
-      culture: new Uint16Array(n).fill(1)
-    },
-    cultures: [{ i: 0 }, { i: 1, center: 0 }],
-    routes: []
-  } as never;
-  const reached = (Development as unknown as { spread(levels: number[]): ArrayLike<number> }).spread([0, 50]);
-  const step = 30 / Math.sqrt(n);
-  expect(reached[n - 1]).toBeLessThan(reached[0]);
-  expect(reached[20]).toBeCloseTo(50 - 20 * step, 5);
 });

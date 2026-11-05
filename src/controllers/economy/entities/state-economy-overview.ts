@@ -36,7 +36,6 @@ import {
 import { type GoodsKind, StateEconomyTables } from "./state-economy-tables";
 
 const TOP_PARTNERS = 6;
-const KNOWN_FOR_SHARE = 0.03; // a good the state is known for makes at least this share of its output
 const DIALOG_CLASS = "stateEconomyDialog";
 
 const dialogId = (stateId: number) => `stateEconomy${stateId}`;
@@ -184,21 +183,24 @@ function economyNotes(stateId: number, accounts: StateAccounts, world: StateAcco
   return notes;
 }
 
-/** The good whose share of the state's output most exceeds its share of the world's, of those it makes in some measure */
+/** The good weighing most in the state's exports, more the rarer it is in the world's: its share² ÷ its world share */
 function knownFor(stateId: number): string | null {
-  const output = StateEconomy.getOutput(stateId);
-  const worldOutput = StateEconomy.getWorldOutput();
-  const total = output.reduce((sum, value) => sum + (value || 0), 0);
-  const worldTotal = worldOutput.reduce((sum, value) => sum + (value || 0), 0);
-  if (!total || !worldTotal) return null;
+  const { exported, exports } = StateEconomy.getTrade(stateId);
+  if (!exports) return null;
+  const world: number[] = [];
+  for (const state of pack.states) {
+    if (state.removed) continue;
+    StateEconomy.getTrade(state.i).exported.forEach((value, goodId) => {
+      world[goodId] = (world[goodId] || 0) + value;
+    });
+  }
+  const worldTotal = world.reduce((total, value) => total + value, 0);
   let bestId = -1;
   let bestLean = 0;
-  for (let goodId = 0; goodId < output.length; goodId++) {
-    const value = output[goodId];
-    if (!value || value / total < KNOWN_FOR_SHARE) continue;
-    const lean = value / total / ((worldOutput[goodId] || value) / worldTotal);
+  exported.forEach((value, goodId) => {
+    const lean = (value / exports) ** 2 / (world[goodId] / worldTotal);
     if (lean > bestLean) [bestId, bestLean] = [goodId, lean];
-  }
+  });
   return Goods.get(bestId)?.name ?? null;
 }
 

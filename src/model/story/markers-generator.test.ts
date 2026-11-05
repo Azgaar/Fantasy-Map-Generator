@@ -142,39 +142,51 @@ describe("MarkersModule weighted pick", () => {
 });
 
 describe("MarkersModule guild halls", () => {
-  it("gives a burg the hall of the made good it leads world output of", () => {
-    const goods = [
-      { i: 1, name: "Cloth", tags: [], recipes: [{ 2: 1 }] },
-      { i: 2, name: "Wool", tags: [] }
-    ];
-    Object.assign(Goods, { get: (id: number) => goods.find(good => good.i === id) });
+  const cloth = { i: 1, name: "Cloth", tags: [], value: 10, recipes: [{ 2: 1 }] };
+  const wool = { i: 2, name: "Wool", tags: [], value: 1 };
+  const guildsOf = (production: Record<number, number[][]>, states: Record<number, number> = {}) => {
+    Object.assign(Goods, { get: (id: number) => [cloth, wool].find(good => good.i === id) });
+    const burgs = Object.entries(production).map(([i, made]) => ({ i: +i, state: states[+i] ?? 1, production: made }));
+    globalThis.pack = { burgs: [{}, ...burgs] } as any;
+    return (Markers as any).indexGuilds() as Map<number, { good: { i: number }; renown: number }>;
+  };
+
+  it("fames a burg that leads the good's many makers, without a set share of the world", () => {
+    const small = Object.fromEntries(Array.from({ length: 24 }, (_, k) => [k + 2, [[1, 0.5]]]));
+    const guilds = guildsOf({ 1: [[1, 3]], ...small }); // 20% of the world and of its state, among 25 makers
+    expect(guilds.has(1)).toBe(false); // 0.2 × √(25 × 0.2) is short of it
+
+    const elsewhere = Object.fromEntries(Object.keys(small).map(i => [i, 2]));
+    const famed = guildsOf({ 1: [[1, 3]], ...small }, elsewhere); // the same, and all of its state
+    expect(famed.get(1)?.good.i).toBe(1);
+    expect(famed.size).toBe(1);
+  });
+
+  it("skips a good that is a burg's sideline or too little", () => {
+    expect(guildsOf({ 1: [[1, 1]] }).size).toBe(0); // worth 10 a day
+    const silk = { i: 3, name: "Silk", tags: [], value: 100, recipes: [{ 2: 1 }] };
+    Object.assign(Goods, { get: (id: number) => [cloth, wool, silk].find(good => good.i === id) });
     globalThis.pack = {
       burgs: [
         {},
         {
           i: 1,
+          state: 1,
           production: [
-            [1, 6],
-            [2, 50]
+            [1, 2],
+            [3, 1]
           ]
-        },
-        { i: 2, production: [[1, 2]] },
-        { i: 3, production: [[1, 2]], removed: true }
+        }
       ]
     } as any;
-    const guilds = (Markers as any).indexGuilds();
-    expect([...guilds.keys()]).toEqual([1]);
-    expect(guilds.get(1).share).toBe(0.75);
+    expect((Markers as any).indexGuilds().get(1).good).toBe(silk); // cloth is a sixth of its work
   });
 
-  it("gives a hall to every burg making 30% or more of a good, not only the leader", () => {
-    const goods = [{ i: 1, name: "Cloth", tags: [], recipes: [{ 2: 1 }] }];
-    Object.assign(Goods, { get: (id: number) => goods.find(good => good.i === id) });
-    globalThis.pack = {
-      burgs: [{}, { i: 1, production: [[1, 4]] }, { i: 2, production: [[1, 3.5]] }, { i: 3, production: [[1, 2.5]] }]
-    } as any;
-    const guilds = (Markers as any).indexGuilds();
-    expect([...guilds.keys()]).toEqual([1, 2]); // 40% and 35%; 25% falls short
+  it("skips raw goods and removed burgs", () => {
+    expect(guildsOf({ 1: [[2, 500]] }).size).toBe(0);
+    Object.assign(Goods, { get: () => cloth });
+    globalThis.pack = { burgs: [{}, { i: 1, removed: true, production: [[1, 50]] }] } as any;
+    expect((Markers as any).indexGuilds().size).toBe(0);
   });
 });
 

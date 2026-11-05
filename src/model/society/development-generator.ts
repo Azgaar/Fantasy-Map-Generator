@@ -6,17 +6,12 @@ import {
   type DevelopmentEra,
   WILDLANDS_DEVELOPMENT
 } from "@/data/development";
-import { FlatQueue } from "@/utils/flat-queue";
 import type { Culture } from "./cultures-generator";
 
-const SPREAD_DECAY = 30; // points lost crossing land as wide as the map is in cells, off the routes
-const ROUTE_DECAY: Record<string, number> = { roads: 0.15, trails: 0.4, searoutes: 0.25 }; // of the decay off the routes
-const FOREIGN = 4; // times the decay in another culture's land: knowledge crosses peoples slowly
-const HINTERLAND = 5; // the most a cell falls behind its culture's center, under two eras, however far from it
 const ROUTE_BONUS: Record<string, number> = { roads: 5, searoutes: 3, trails: 2 }; // points a cell on the route gains
 const ROUTE_FALLOFF = 0.6; // of the bonus a cell further from the route keeps
 const ROUTE_REACH = 4; // cells from a route its bonus still reaches
-const SMOOTHING = 5; // passes averaging each land cell with its neighbors, before the routes and the noise
+const SMOOTHING = 2; // passes averaging each land cell with its neighbors, before the routes and the noise: a short slope between peoples
 const NOISE = 9; // the waves' amplitude, in points
 const WAVES = 3; // waves across the map
 const RIVER = 1;
@@ -112,17 +107,15 @@ class DevelopmentGenerator {
     const { cells, cultures, biomes } = pack;
     const n = cells.i.length;
     const levels = cultures.map(culture => (culture && !culture.removed ? this.ofCulture(culture) : 0));
-    const spread = this.spread(levels);
     const noise = this.getNoise();
 
     const routes = this.getRouteBonus();
     const field = new Float32Array(n);
     for (let cell = 0; cell < n; cell++) {
       if (cells.h[cell] < 20) continue;
-      const base = Math.max(spread[cell], levels[cells.culture[cell]] - HINTERLAND);
       const biome = biomes[cells.biome[cell]]?.development ?? 0;
       const water = (cells.r[cell] ? RIVER : 0) + (cells.harbor[cell] ? COAST : 0);
-      field[cell] = base + biome + water;
+      field[cell] = levels[cells.culture[cell]] + biome + water;
     }
     const smooth = this.smooth(field);
 
@@ -186,44 +179,6 @@ class DevelopmentGenerator {
   ofCulture(culture: Culture): number {
     if (!culture.i) return WILDLANDS_DEVELOPMENT;
     return (culture.development ?? DEFAULT_DEVELOPMENT) + (CULTURE_TYPE_DEVELOPMENT[culture.type] ?? 0);
-  }
-
-  /** The best level reaching each cell from a culture center, losing a step's decay per cell, more in a foreign culture's land; water only by sea routes */
-  private spread(levels: number[]): Float64Array {
-    const { cells, cultures, routes } = pack;
-    const n = cells.i.length;
-    const step = SPREAD_DECAY / Math.sqrt(n);
-    const reached = new Float64Array(n); // as precise as the queue: a rounded-up level would drop its own cell
-    const source = new Uint16Array(n); // the culture whose level reached the cell
-    const queue = new FlatQueue<number>();
-    for (const culture of cultures) {
-      if (!culture?.i || culture.removed || culture.center === undefined) continue;
-      const level = levels[culture.i];
-      if (level > reached[culture.center]) {
-        reached[culture.center] = level;
-        source[culture.center] = culture.i;
-        queue.push(culture.center, -level);
-      }
-    }
-
-    while (queue.length) {
-      const level = -queue.peekValue();
-      const cell = queue.pop();
-      if (level < reached[cell]) continue;
-      const links = cells.routes?.[cell];
-      for (const next of cells.c[cell]) {
-        const routeId = links?.[next];
-        const group = routeId === undefined ? undefined : routes[routeId]?.group;
-        if (!group && (cells.h[next] < 20 || cells.h[cell] < 20)) continue;
-        const foreign = cells.culture[next] && cells.culture[next] !== source[cell] ? FOREIGN : 1;
-        const nextLevel = level - step * foreign * (group ? (ROUTE_DECAY[group] ?? 1) : 1);
-        if (nextLevel <= reached[next] + 0.01) continue;
-        reached[next] = nextLevel;
-        source[next] = source[cell];
-        queue.push(next, -nextLevel);
-      }
-    }
-    return reached;
   }
 
   /** Smooth waves over the map, the same for the same seed: value noise in two octaves */

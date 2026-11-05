@@ -46,6 +46,7 @@ import { Routes } from "@/model/economy/routes-generator";
 import { DEAL_KINDS, Trade } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import type { Burg } from "@/model/political/burgs-generator";
 import { States } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names-generator";
 import { Notes } from "@/model/story/notes";
@@ -155,7 +156,7 @@ type TradeIndex = {
   goods: number[]; // by burg: goods it traded
   burgTrade: number[]; // by burg: value of its trade
   tariffs: Map<number, number>; // by state pair
-  guilds: Map<number, { good: Good; share: number }>; // by burg: the made good it makes most of the world's output of
+  guilds: Map<number, { good: Good; renown: number }>; // by burg: the made good it is famed for
 };
 
 class MarkersModule {
@@ -814,24 +815,37 @@ class MarkersModule {
     return { volume, margin, goods: traded.map(goods => goods.size), burgTrade, tariffs, guilds: this.indexGuilds() };
   }
 
-  /** Burgs making at least GUILD_SHARE of the world's output of a made good */
-  private indexGuilds(): Map<number, { good: Good; share: number }> {
-    const totals = new Map<number, number>();
-    const makers: [burgId: number, goodId: number, units: number][] = [];
+  /** Burgs famed for a made good: leaders among its many makers and in their state, where the good is a real part of their work */
+  private indexGuilds(): Map<number, { good: Good; renown: number }> {
+    const GUILD_RENOWN = 0.75; // world share × √makers × √state share a burg needs: a lead among many makers counts for more
+    const GUILD_FOCUS = 0.25; // share of the value a burg makes that the good must be
+    const GUILD_MIN_VALUE = 15; // value of the good a burg makes a day
+    const world: number[] = [];
+    const makers: number[] = [];
+    const inState = new Map<number, number>(); // by state and good
+    const worth: number[] = []; // by burg: the value of all it makes
+    const crafts: { burg: Burg; good: Good; units: number; stateKey: number }[] = [];
     for (const burg of pack.burgs) {
       if (!burg.i || burg.removed) continue;
       for (const [goodId, units] of burg.production ?? []) {
-        if (!Goods.get(goodId)?.recipes?.length) continue;
-        totals.set(goodId, (totals.get(goodId) || 0) + units);
-        makers.push([burg.i, goodId, units]);
+        const good = Goods.get(goodId);
+        if (!good?.recipes?.length) continue;
+        const stateKey = (burg.state || 0) * 65536 + goodId;
+        world[goodId] = (world[goodId] || 0) + units;
+        makers[goodId] = (makers[goodId] || 0) + 1;
+        inState.set(stateKey, (inState.get(stateKey) || 0) + units);
+        worth[burg.i] = (worth[burg.i] || 0) + units * good.value;
+        crafts.push({ burg, good, units, stateKey });
       }
     }
-    const guilds = new Map<number, { good: Good; share: number }>();
-    const GUILD_SHARE = 0.3; // of world output of a made good, for a burg to keep its guild hall
-    for (const [burgId, goodId, units] of makers) {
-      const share = units / totals.get(goodId)!;
-      if (share < GUILD_SHARE || share <= (guilds.get(burgId)?.share ?? 0)) continue;
-      guilds.set(burgId, { good: Goods.get(goodId)!, share }); // one hall a burg, for its largest share
+
+    const guilds = new Map<number, { good: Good; renown: number }>();
+    for (const { burg, good, units, stateKey } of crafts) {
+      const value = units * good.value;
+      if (value < GUILD_MIN_VALUE || value / worth[burg.i!] < GUILD_FOCUS) continue;
+      const renown = (units / world[good.i]) * Math.sqrt(makers[good.i] * (units / inState.get(stateKey)!));
+      if (renown < GUILD_RENOWN || renown <= (guilds.get(burg.i!)?.renown ?? 0)) continue;
+      guilds.set(burg.i!, { good, renown }); // one hall a burg, for what it is most famed for
     }
     return guilds;
   }

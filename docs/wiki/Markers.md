@@ -76,7 +76,7 @@ Criteria and types of randomly added markers are defined in the generator and ca
 * Libraries: burgs with a culture and a noticeable population.
 * Fairs: small burgs, more often those trading many goods.
 * Customs houses: at most one where a road crosses into a state the other trades with under tariffs, more often on the borders with the most tariffs.
-* Guild halls: every burg that makes at least 30% of the world's output of a manufactured good, placed before mines so a mining town can keep its guild.
+* Guild halls: burgs famed for a manufactured good, placed before mines so a mining town can keep its guild. A burg is famed when it leads the good's makers across the world and in its state, and the good is a real part of its work.
 * Merchant houses: market centers, more often those whose market margin earns the most.
 * Caves: populated cells at height 50 and above.
 * Disturbed burials: populated land cells. Fantasy culture sets only.
