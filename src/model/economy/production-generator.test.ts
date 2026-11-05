@@ -427,6 +427,23 @@ describe("deposits", () => {
     expect(production["planGoodAction"](index, state, catalogue[0], 1, 1, 100)).toBeNull(); // spent: no worker wasted on it
   });
 
+  it("give way to the good's recipes once capped, at the usual output", () => {
+    pack.cells.good = Uint16Array.of(1);
+    const { index, state } = prepare();
+    const oil = catalogue[0];
+    const recipes = [{ good: oil, ingredients: [{ goodId: 2, amount: 1 }] }];
+    index.recipesByOutput[oil.i] = recipes;
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    const recipesNow = () => production["getRecipes"](index, state, oil);
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    const output = () => production["getBurgModifiers"](state, oil);
+    const worked = output();
+    expect(recipesNow()).toEqual([{ good: oil, ingredients: [] }]);
+    state.depositLeft = 0;
+    expect(recipesNow()).toBe(recipes);
+    expect(output()).toBe(worked / DEPOSIT_OUTPUT);
+  });
+
   it("are worked for a chain's input when that pays a worker more than buying it", () => {
     pack.cells.good = Uint16Array.of(1);
     market.goods[1].price = 30; // the engine's 2 oil cost 60 bought, a worker gathered

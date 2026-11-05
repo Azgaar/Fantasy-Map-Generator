@@ -128,7 +128,7 @@ function renderDialog(): void {
         <button id="developmentPaint" data-tip="${t("Paint development by era")}" class="icon-brush"></button>
         <button
           id="developmentRegenerate"
-          data-tip="${t("Regenerate development from the cultures, routes and land, discarding manual changes")}"
+          data-tip="${t("Regenerate development from the cultures and land, discarding manual changes")}"
           class="icon-retweet"
         ></button>
         <button id="developmentExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
@@ -159,6 +159,7 @@ function renderDialog(): void {
 function refresh(): void {
   statistics = collectDevelopmentStatistics();
   erasTable.refresh();
+  if (overlayShown) drawDevelopmentOverlay();
 }
 
 type StatisticsSource = {
@@ -288,7 +289,7 @@ function toggleLegend(): void {
 
 function openPaintEditor(): void {
   const development = pack.cells.development;
-  if (!development) return;
+  if (!development || options.app.mode) return;
   painting = true; // the overlay stays under the brush
   void Controllers.PaintEditor.open({
     title: t("Paint Development"),
@@ -316,11 +317,10 @@ function applyChanges(changes: ReadonlyMap<number, number>): void {
 function confirmRegenerate(): void {
   Dialog.confirm({
     title: t("Regenerate development"),
-    message: t("Regenerate development from the cultures, routes and land? Manual changes will be lost"),
+    message: t("Regenerate development from the cultures and land? Manual changes will be lost"),
     confirm: t("Regenerate"),
     onConfirm: () => {
       Development.generate();
-      if (overlayShown) drawDevelopmentOverlay();
       refresh();
     }
   });

@@ -21,6 +21,7 @@ import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
 import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import {
   bindEconomyWiki,
   budgetBackground,
@@ -117,6 +118,7 @@ function addListeners(): void {
 
 /** Fills the form from the state, dropping unapplied edits */
 function render(): void {
+  Dialog.close("tariffSelectorDialog"); // its rule is about to be replaced
   const state = pack.states[stateId];
   const taxes = StateEconomy.getBudget(stateId);
   edit = {
@@ -156,8 +158,8 @@ function apply(): void {
   if (ensureEl<HTMLInputElement>("stateBudgetRegenerate").checked) {
     Production.regenerate(); // the views read the run, so it spends and taxes as now set
     Layers.draw("goods", "trade");
-  }
-  if (findEl("statesEditor")) void Controllers.StatesEditor.refresh();
+    refreshEditors();
+  } else if (findEl("statesEditor")) void Controllers.StatesEditor.refresh();
   onApplied?.();
   render();
 }
@@ -291,6 +293,7 @@ function onClick(event: MouseEvent): void {
     edit.rules.push({ states: "all", goods: "all", rate: 0.1 });
     drawRules();
   } else if (target.closest("#stateTariffReset")) {
+    Dialog.close("tariffSelectorDialog");
     edit.rules = copyRules(States.defineTariffs(state));
     drawRules();
   } else {
@@ -298,6 +301,7 @@ function onClick(event: MouseEvent): void {
     const rule = row && edit.rules[+row.dataset.index!];
     if (!rule) return;
     if (target.classList.contains("remove")) {
+      Dialog.close("tariffSelectorDialog");
       edit.rules.splice(+row.dataset.index!, 1);
       drawRules();
     } else if (target.classList.contains("states")) pickStates(rule);

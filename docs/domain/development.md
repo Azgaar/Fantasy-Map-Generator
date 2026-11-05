@@ -65,17 +65,16 @@ Each predefined culture carries its own `development` in `Cultures.getDefault`, 
 1. **Culture**. Each land cell starts at its culture's level, with the type offset (`ofCulture`). Wildlands take 3.
 2. **Land**. Each biome adds its own offset (`biome.development`, in the biomes data and saved with the map; a custom biome starts at 0, older maps' generated biomes get theirs on load): temperate deciduous forest +2, grassland, temperate rainforest and marine 0, savanna and tropical seasonal forest −1, wetland −2, taiga and tropical rainforest −3, hot desert −4, cold desert and tundra −5, glacier −8. The Biomes editor edits them (`Biomes.setDevelopment`). It does not follow habitability, which sets population. A river and the coast add 1 each.
 3. **Smoothing** (`smooth`). Two passes average each land cell with its land neighbors (`SMOOTHING`): the borders between peoples and biomes become short slopes instead of steps.
-4. **Routes** (`getRouteBonus`). A cell on a road gains 5 points, on a sea route 3 (its port too), on a trail 2 (`ROUTE_BONUS`); each cell further keeps 0.6 of it (`ROUTE_FALLOFF`), up to 4 cells away (`ROUTE_REACH`), and the bonus is smoothed once. Added after the smoothing, so roads stand out as corridors of trade and contact: a route cell averages about 6 points, two eras, above land away from routes.
-5. **Noise**. Smooth value noise in two octaves of about three waves across the map, ±9 (`NOISE`, `WAVES`), seeded by a hash of the map seed: the broad rises and dips within a people, its main source of variety (about 3 points of the 3.6 a cell typically differs from its culture's mean).
+4. **Noise**. Smooth value noise in two octaves of about three waves across the map, ±9 (`NOISE`, `WAVES`), seeded by a hash of the map seed: the broad rises and dips within a people, its main source of variety (about 3 points of the 3.6 a cell typically differs from its culture's mean).
 
 A generated burg's cell is at least 5 (`MIN_BURG`), a town being past the foragers' era; painting may set it lower. A burg added, moved or regenerated later settles its cell (`Development.settle`): a cell with none takes the best level of the land around, and the cell is raised to 5. A cell a burg leaves, moved, removed or dropped by Regenerate Burgs, goes back to 0 if nobody else lives there (`vacate`). Regenerating population resettles the land (`resettle`): land newly peopled takes the best level around it, at least 1, and land left empty has none; painted levels of land that stays peopled are kept. Resample, submap and heightmap edits carry development over with the peopled cells, painted levels included, and generate it for land the old map had no people on (`MapRestoration.restoreDevelopment`): there its 0 means nobody lived there, not a painted level. Development is otherwise not updated by later edits: regenerate it after changing cultures, their levels, biomes or routes. Maps older than v1.157.0 get it generated on load, and their default goods their tiers, before their economy is rerun. On the tuner's maps neighboring cells differ by about 0.9 points on average.
 
 ## When it runs
 
-- **Generation**: its own step in the generation and erosion pipelines, right after routes, so state forms and markets can read it ([generation-pipeline.ts](../../src/model/generation-pipeline.ts)). It reads the cultures, burgs, routes, rivers, coast and biomes, and draws no random numbers, so its place does not change the rest of the map.
+- **Generation**: its own step in the generation and erosion pipelines, right after routes, so state forms and markets can read it ([generation-pipeline.ts](../../src/model/generation-pipeline.ts)). It reads the cultures, burgs, rivers, coast and biomes, and draws no random numbers, so its place does not change the rest of the map.
 - **Map restoration** (resample, submap, heightmap edits): `restoreDevelopment` carries each peopled cell's level over, painted levels included, and generates it for land that had no people, before the economy is rebuilt.
-- **Load**: read from `.map` record 55. A map older than v1.157.0 gets it in auto-update (`addDevelopment`): cultures without a level get the predefined culture's of the same name (`Cultures.getDefaultDevelopment`), skipping the English and Random sets that name at random, and the field is made. Its default goods get their tiers by name (`Goods.getDefaultDevelopment`), as its economy is rerun.
-- **Not on edits**: changing a culture, its level or type, a biome's offset or the routes does not remake the field; the economy reads it as it was made. The Development Overview's Regenerate makes it again. Burgs and population keep it in step on their own (see above).
+- **Load**: read from `.map` record 55. A map older than v1.157.0 gets it in auto-update (`addDevelopment`): cultures without a level get the predefined culture's of the same name (`Cultures.getDefaultDevelopment`), skipping the English and Random sets that name at random, and the field is made. Its default goods get their tiers by name (`Goods.getDefaultDevelopment`).
+- **Not on edits**: changing a culture, its level or type or a biome's offset does not remake the field; routes never enter it; the economy reads it as it was made. The Development Overview's Regenerate makes it again. Burgs and population keep it in step on their own (see above).
 
 ## Editing
 
@@ -95,14 +94,14 @@ The States, Provinces and Cultures editors and the Burgs Overview each have a De
 - **Never draw from `Math.random`**: the noise and the Random set's levels are hashes. A draw in this step would shift markets, military, markers and zones on every new map.
 - **Saltpeter's tier is low on purpose** (12). Each map has only 2–4 saltpeter deposits; at its era's tier, a map whose deposits fell in backward land made no gunpowder at all. The requirement sits on gunpowder.
 - **Dwarves and elves start above their era** (dwarves 50–53, elves 44–46). Their land is pulled down by their types (dwarves often get Highland, Hunting or Nomadic) and by small homelands averaged with lower neighbors: on random maps dwarves' people averaged about 9 points below their culture's level, elves about 4. The levels make up for it.
-- **Antique maps make no artillery and little gunpowder**: their best cultures stand at 24, 27 for Naval Romans, and only a few cells on Roman roads reach 30 with the noise. That is the set's era, not a bug.
+- **Antique maps make no artillery and little gunpowder**: their best cultures stand at 24, 27 for Naval Romans, and only a few cells reach 30, on the noise's crests. That is the set's era, not a bug.
 - **Tiers are absolute**: raising every culture by an era makes more goods available everywhere; the KPIs of the [economy](economy.md#kpis) shift with it.
 
 ## Measured
 
 On the economy tuner's ten maps:
 
-- **Spread**: medieval maps' median burg stands at 25–40, their best at 43–61; the Antique map's median is 20.
+- **Spread**: medieval maps' median burg stands at 32–41, their best at 44–57; the Antique map's median is 17, its best 25.
 - **Gunpowder and artillery**: made on nine maps in ten, all but the Antique one.
 - **Wealth**: burgs below half their needs are 87% under 10, 60% under 30, 25% at 30–39 and 5% at 40 or more; product per worker is 1.5 at 10–19 and 8.3 at 40 or more.
 - **Goods**: about 93% of the catalogue is made on a map. Tropical goods (incense, spices, sugar, mahogany) often fall in land below their tier and are missing on some maps.

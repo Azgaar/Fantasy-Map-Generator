@@ -7,6 +7,8 @@ export type TrafficLink = { cells: [number, number]; goods: Map<number, number>;
 
 export class TradeTrafficModule {
   private source: unknown = null; // the deals the cache describes
+  private network: unknown = null; // and the route links they followed
+  private routeCount = 0;
   private links = new Map<number, TrafficLink>(); // by link key
 
   /** Every link that carried goods in the last run */
@@ -28,8 +30,11 @@ export class TradeTrafficModule {
 
   /** Each deal's goods follow the cheapest route between the burg and its market's center, as their carriage was priced */
   private index(): void {
-    if (this.source === pack.deals) return;
+    const { cells, routes } = pack;
+    if (this.source === pack.deals && this.network === cells.routes && this.routeCount === routes.length) return;
     this.source = pack.deals;
+    this.network = cells.routes;
+    this.routeCount = routes.length;
     this.links.clear();
     if (!pack.deals?.length) return;
 

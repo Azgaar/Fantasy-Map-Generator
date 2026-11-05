@@ -1,4 +1,4 @@
-// Technological development of each peopled cell, 1–100 (0 where nobody lives): spread from culture centers along routes, waved by noise, shaped by land
+// Technological development of each peopled cell, 1–100 (0 where nobody lives): its people's level, shaped by land and waved by noise
 import {
   CULTURE_TYPE_DEVELOPMENT,
   DEFAULT_DEVELOPMENT,
@@ -8,10 +8,7 @@ import {
 } from "@/data/development";
 import type { Culture } from "./cultures-generator";
 
-const ROUTE_BONUS: Record<string, number> = { roads: 5, searoutes: 3, trails: 2 }; // points a cell on the route gains
-const ROUTE_FALLOFF = 0.6; // of the bonus a cell further from the route keeps
-const ROUTE_REACH = 4; // cells from a route its bonus still reaches
-const SMOOTHING = 2; // passes averaging each land cell with its neighbors, before the routes and the noise: a short slope between peoples
+const SMOOTHING = 2; // passes averaging each land cell with its neighbors, before the noise: a short slope between peoples
 const NOISE = 9; // the waves' amplitude, in points
 const WAVES = 3; // waves across the map
 const RIVER = 1;
@@ -19,6 +16,31 @@ const COAST = 1;
 const MIN_BURG = 5; // a generated town is past the foragers' era, whatever its land
 
 class DevelopmentGenerator {
+  /** Make development again from the cultures and land; custom levels are lost */
+  generate(): void {
+    const { cells, cultures, biomes } = pack;
+    const n = cells.i.length;
+    const levels = cultures.map(culture => (culture && !culture.removed ? this.ofCulture(culture) : 0));
+    const noise = this.getNoise();
+
+    const field = new Float32Array(n);
+    for (let cell = 0; cell < n; cell++) {
+      if (cells.h[cell] < 20) continue;
+      const biome = biomes[cells.biome[cell]]?.development ?? 0;
+      const water = (cells.r[cell] ? RIVER : 0) + (cells.harbor[cell] ? COAST : 0);
+      field[cell] = levels[cells.culture[cell]] + biome + water;
+    }
+    const smooth = this.smooth(field);
+
+    const development = new Uint8Array(n);
+    for (let cell = 0; cell < n; cell++) {
+      if (cells.h[cell] < 20 || (!cells.pop[cell] && !cells.burg[cell])) continue; // no people, no development
+      const least = cells.burg[cell] ? MIN_BURG : 1;
+      development[cell] = Math.max(least, Math.min(100, Math.round(smooth[cell] + noise(cell))));
+    }
+    cells.development = development;
+  }
+
   /** The index in DEVELOPMENT_ERAS of the era a development level falls in */
   getEraIndex(level: number): number {
     let index = 0;
@@ -102,62 +124,11 @@ class DevelopmentGenerator {
     return level;
   }
 
-  /** Make development again from the cultures, routes and land; painted levels are lost */
-  generate(): void {
-    const { cells, cultures, biomes } = pack;
-    const n = cells.i.length;
-    const levels = cultures.map(culture => (culture && !culture.removed ? this.ofCulture(culture) : 0));
-    const noise = this.getNoise();
-
-    const routes = this.getRouteBonus();
-    const field = new Float32Array(n);
-    for (let cell = 0; cell < n; cell++) {
-      if (cells.h[cell] < 20) continue;
-      const biome = biomes[cells.biome[cell]]?.development ?? 0;
-      const water = (cells.r[cell] ? RIVER : 0) + (cells.harbor[cell] ? COAST : 0);
-      field[cell] = levels[cells.culture[cell]] + biome + water;
-    }
-    const smooth = this.smooth(field);
-
-    const development = new Uint8Array(n);
-    for (let cell = 0; cell < n; cell++) {
-      if (cells.h[cell] < 20 || (!cells.pop[cell] && !cells.burg[cell])) continue; // no people, no development
-      const least = cells.burg[cell] ? MIN_BURG : 1;
-      development[cell] = Math.max(least, Math.min(100, Math.round(smooth[cell] + routes[cell] + noise(cell))));
-    }
-    cells.development = development;
-  }
-
-  /** What the routes add to each cell: the best route through it, fading each cell away, down to ROUTE_REACH cells, softened once */
-  private getRouteBonus(): Float32Array {
-    const { cells, routes } = pack;
-    const bonus = new Float32Array(cells.i.length);
-    let front: number[] = [];
-    for (const key in cells.routes ?? {}) {
-      const cell = +key;
-      const links = cells.routes[cell];
-      for (const next in links) bonus[cell] = Math.max(bonus[cell], ROUTE_BONUS[routes[links[next]]?.group] ?? 0);
-      if (bonus[cell]) front.push(cell);
-    }
-    for (let step = 0; step < ROUTE_REACH && front.length; step++) {
-      const next: number[] = [];
-      for (const cell of front)
-        for (const neighbor of cells.c[cell]) {
-          const fading = bonus[cell] * ROUTE_FALLOFF;
-          if (cells.h[neighbor] < 20 || bonus[neighbor] >= fading) continue;
-          bonus[neighbor] = fading;
-          next.push(neighbor);
-        }
-      front = next;
-    }
-    return this.smooth(bonus, 1);
-  }
-
   /** The land's field averaged with its land neighbors, a pass at a time: borders between peoples become slopes */
-  private smooth(field: Float32Array, passes = SMOOTHING): Float32Array {
+  private smooth(field: Float32Array): Float32Array {
     const { cells } = pack;
     let current = field;
-    for (let pass = 0; pass < passes; pass++) {
+    for (let pass = 0; pass < SMOOTHING; pass++) {
       const next = new Float32Array(current.length);
       for (let cell = 0; cell < current.length; cell++) {
         if (cells.h[cell] < 20) continue;

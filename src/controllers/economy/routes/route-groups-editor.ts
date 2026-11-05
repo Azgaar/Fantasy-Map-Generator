@@ -105,9 +105,11 @@ function removeGroup(group: string): void {
     message: `${t("Are you sure you want to remove the entire route group? All routes in this group will be removed.")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => {
+      Dialog.close("routeEditor"); // it may be editing one of them
       Routes.remove(...pack.routes.filter((r: Route) => r.group === group).map(route => route.i));
       if (!DEFAULT_GROUPS.includes(group)) delete styles.routes.groups[group];
-      Layers.draw("routes", "labels", "trade");
+      Layers.draw("routes", "labels", "goods", "trade");
+      findEl("routesOverviewRefresh")?.click();
       addLines();
     }
   });

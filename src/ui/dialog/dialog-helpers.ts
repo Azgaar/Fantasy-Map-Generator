@@ -32,15 +32,16 @@ const REFRESHABLE_EDITORS = [
   "riversOverviewRefresh",
   "featuresOverviewRefresh",
   "militaryOverviewRefresh",
+  "developmentRefresh",
   "regimentsOverviewRefresh",
   "markersOverviewRefresh",
   "journeysOverviewRefresh"
 ];
 
-/** Close the dialogs about one burg, state, province or trade: after a regeneration their ids may name another */
+/** Close the dialogs about one burg, state, province, market or trade: after a regeneration their ids may name another */
 export function closeEntityDialogs(): void {
   const dialogs = document.querySelectorAll(
-    ".burgEconomyDialog, .stateEconomyDialog, .provinceEconomyDialog, #tradeDetails, #stateBudgetEditor, #tariffSelectorDialog"
+    ".burgEconomyDialog, .stateEconomyDialog, .provinceEconomyDialog, [id^='stateEconomy'][id$='Table'], #marketOverview, #marketDeals, #tradeDetails, #stateBudgetEditor, #tariffSelectorDialog"
   );
   for (const { id } of dialogs) Dialog.close(id);
 }

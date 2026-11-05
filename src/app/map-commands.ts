@@ -897,7 +897,7 @@ function regenerateReliefIcons(): void {
 
 function regenerateRoutes(): void {
   Routes.regenerate();
-  Layers.draw("routes", "trade");
+  Layers.draw("routes", "goods", "trade");
 }
 
 function regenerateRivers(): void {
@@ -951,7 +951,7 @@ function regenerateEconomy(parts: Set<EconomyPart>): void {
 
   const markets = parts.has("markets");
   if (markets) Markets.regenerate();
-  else if (parts.has("territories")) Markets.expandTerritories();
+  else if (parts.has("territories")) Markets.expand();
 
   if (parts.has("production")) Production.regenerate();
   else if (restore || markets) Production.clear(); // the deals and stocks named what was replaced

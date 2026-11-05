@@ -107,7 +107,7 @@ World data is mainly stored in typed arrays within `cells` object in both `grid`
 - `pack.cells.good`: `number[]` - the good of the deposit on the cell (`0` if none). Marks the special good extracted on the cell. `Uint16Array`
 - `pack.cells.market`: `number[]` - cells market index (`0` if unassigned). Filled by the market territory flood-fill. `Uint16Array`
 - `pack.cells.prosperity`: `number[]` - cells rural prosperity in percent (`0` where no one lives or the economy has not run), kept by the economy run for quick reads. `Uint8Array`
-- `pack.cells.development`: `number[]` - cells technological development, 1–100 where people live (`0`: nobody lives there, or water), generated from cultures, routes and land before markets. Stored in .map file. `Uint8Array`
+- `pack.cells.development`: `number[]` - cells technological development, 1–100 where people live (`0`: nobody lives there, or water), generated from cultures and land before markets. Stored in .map file. `Uint8Array`
 - `pack.cells.area`: `number[]` - cells area in pixels. `Uint16Array`
 - `pack.cells.pop`: `number[]` - cells population in population points (1 point = 1000 people by default). `Float32Array`, not rounded to not lose population of high population rate
 - `pack.cells.r`: `number[]` - cells river index. `Uint16Array`

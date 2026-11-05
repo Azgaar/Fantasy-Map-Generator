@@ -101,7 +101,7 @@ describe("shared regeneration commands", () => {
       calls = [];
       const spy = (name: string) => () => void calls.push(name);
       Object.assign(Goods, { regenerate: spy("deposits") });
-      Object.assign(Markets, { regenerate: spy("markets"), expandTerritories: spy("territories") });
+      Object.assign(Markets, { regenerate: spy("markets"), expand: spy("territories") });
       Object.assign(Production, { regenerate: spy("production"), clear: spy("clear") });
     });
 

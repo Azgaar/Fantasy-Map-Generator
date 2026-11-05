@@ -6,10 +6,11 @@ import "@/model/physical/biomes-generator"; // the 1.139 step reads the default 
 import "@/model/physical/features-generator"; // migrations call the Features module through its global
 import "@/model/political/burgs-generator"; // the burg sets that tell style icon references from text
 import { Goods } from "@/model/economy/goods-generator"; // also the goods icon namespace the 1.154 step migrates into
-import { Production } from "@/model/economy/production-generator";
+import { DEAL_KINDS } from "@/model/economy/trade";
 import "@/model/physical/relief-generator"; // the relief set namespace the 1.154 step migrates into
 import { Pack } from "@/model/graph/pack-generator";
 import { Options } from "@/model/options/options-model";
+import { Military } from "@/model/political/military-generator";
 import { Names } from "@/model/society/names-generator";
 import { Styles } from "@/model/styles/styles";
 import * as versioning from "@/services/versioning";
@@ -1176,7 +1177,7 @@ describe("v1.157.0 contour spacing in height units", () => {
 });
 
 describe("v1.157.0 economy", () => {
-  it("moves state finances, drops burg markets and runs the day again", async () => {
+  it("moves state finances and drops burg markets, keeping the last run", async () => {
     globalThis.pack = {
       features: [],
       cells: { i: [0], state: [1], culture: [1], religion: [1], pop: [1], burg: [1] },
@@ -1187,17 +1188,123 @@ describe("v1.157.0 economy", () => {
       ],
       goods: [{ i: 1, name: "Wood", value: 1, carriage: 0.5 }],
       markets: [{ i: 1, centerBurgId: 1, color: "#fff", goods: {} }],
-      deals: [{ i: 0, seller: 1, sellerType: "burg", buyer: 1, buyerType: "market", good: 1, units: 1, price: 1 }]
+      deals: []
     } as unknown as typeof pack;
-    const regenerate = vi.spyOn(Production, "regenerate").mockImplementation(() => {});
 
     await resolveVersionConflicts("1.156.0", []);
 
-    expect(regenerate).toHaveBeenCalledOnce();
-    regenerate.mockRestore();
     expect(pack.burgs[1]).not.toHaveProperty("market");
     expect(pack.states[1]).not.toHaveProperty("treasury");
-    expect(pack.states[1].economy).toMatchObject({ salesTax: 0.15, pollTax: 0.2, tariffs: [] });
+    expect(pack.states[1].economy).toMatchObject({
+      salesTax: 0.15,
+      pollTax: 0.2,
+      tariffs: [],
+      collected: 40,
+      treasury: 40
+    });
+  });
+
+  it("sums old deals by burg, market, good and kind, dropping what has no burg or good", async () => {
+    const deal = (
+      seller: number,
+      sellerType: string,
+      buyer: number,
+      buyerType: string,
+      good: number,
+      rest: object
+    ) => ({
+      seller,
+      sellerType,
+      buyer,
+      buyerType,
+      good,
+      ...rest
+    });
+    globalThis.pack = {
+      features: [],
+      burgs: [0, { i: 1 }, { i: 2, removed: true }],
+      goods: [
+        { i: 1, name: "Wood", value: 1, carriage: 0.5 },
+        { i: 2, name: "Iron", value: 2, carriage: 0.5 }
+      ],
+      markets: [{ i: 1, centerBurgId: 1, color: "#fff", goods: {} }],
+      deals: [
+        deal(1, "market", 1, "burg", 1, { units: 1, price: 2, tax: 0 }), // an input, bought in its turn
+        deal(1, "burg", 1, "market", 2, { units: 1, price: 2, tax: 0.1 }),
+        deal(1, "burg", 1, "market", 2, { units: 3, price: 4, tax: 0.3 }),
+        deal(2, "burg", 1, "market", 2, { units: 9, price: 9, tax: 9 }), // of a removed burg
+        deal(1, "burg", 1, "market", 9, { units: 9, price: 9, tax: 9 }), // of a removed good
+        deal(1, "market", 1, "market", 1, { units: 9, price: 9, tax: 9, tariff: 9 }), // between markets
+        deal(1, "market", 1, "burg", 1, { units: 2, price: 3, tax: 0 }) // a need, bought once all had sold
+      ]
+    } as unknown as typeof pack;
+
+    await resolveVersionConflicts("1.156.0", []);
+
+    expect(pack.deals).toEqual([
+      [1, 1, 1, DEAL_KINDS.input, 1, 2, 0, 0, 0],
+      [1, 1, 2, DEAL_KINDS.sale, 4, 3.5, 0.4, 0, 0],
+      [1, 1, 1, DEAL_KINDS.demand, 2, 3, 0, 0, 0]
+    ]);
+  });
+
+  it("sums a burg's old production records by good", async () => {
+    globalThis.pack = {
+      features: [],
+      goods: [
+        { i: 1, name: "Wood", value: 1, carriage: 0.5 },
+        { i: 2, name: "Iron", value: 2, carriage: 0.5 }
+      ],
+      markets: [],
+      burgs: [
+        { i: 0 },
+        {
+          i: 1,
+          product: 7,
+          treasury: 12,
+          production: [
+            { goodId: 1, units: 2 }, // the deposit's
+            { dealId: 0 },
+            { goodId: 2, units: 1.5, recipe: [] },
+            { goodId: 1, units: 1, recipe: [] },
+            { goodId: 9, units: 1 } // a removed good's
+          ]
+        }
+      ]
+    } as unknown as typeof pack;
+
+    await resolveVersionConflicts("1.156.0", []);
+
+    expect(pack.burgs[1].production).toEqual([
+      [1, 3],
+      [2, 1.5]
+    ]);
+    expect(pack.burgs[1]).toMatchObject({ product: 7, treasury: 12 });
+  });
+});
+
+describe("v1.157.0 armies", () => {
+  it("counts saved armies as fully kept until the next run, with no goods to equip them", async () => {
+    globalThis.pack = {
+      features: [],
+      cells: { i: [0], state: [1], culture: [1], religion: [1], pop: [1], burg: [1] },
+      cultures: [{ i: 0 }, { i: 1, type: "Generic" }],
+      religions: [{ i: 0 }, { i: 1, type: "Folk" }],
+      burgs: [{ i: 0 }, { i: 1, cell: 0, state: 1 }],
+      goods: [{ i: 1, name: "Wood", value: 1, carriage: 0.5 }],
+      markets: [{ i: 1, centerBurgId: 1, color: "#fff", goods: {} }],
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, name: "Old", form: "Monarchy", capital: 1, salesTax: 0.1, military: [{ u: { infantry: 500 } }] }
+      ],
+      deals: [{ seller: 1, sellerType: "burg", buyer: 1, buyerType: "market", good: 1, units: 1, price: 1 }]
+    } as unknown as typeof pack;
+
+    await resolveVersionConflicts("1.156.0", []);
+
+    expect(pack.deals.length).toBe(1);
+    expect(Military.getUpkeepNeed(1)).toBeGreaterThan(0);
+    expect(Military.getUpkeep(1)).toBe(1);
   });
 });
 
@@ -1217,7 +1324,7 @@ describe("v1.157.0 carriage per good", () => {
     expect(pack.goods.map(good => good.carriage)).toEqual([0.5, 3, 2]);
   });
 
-  it("gives default goods their development tier by name, as the rerun economy reads it", async () => {
+  it("gives default goods their development tier by name", async () => {
     globalThis.pack = {
       features: [],
       goods: [
@@ -1256,21 +1363,5 @@ describe("v1.157.0 deposit counts", () => {
     expect(pack.goods[1].deposits).toEqual([338, 563]);
     expect(pack.goods[2].deposits).toEqual(Goods.getDefaultDeposits("Gold"));
     expect(pack.goods.some(good => "chance" in good)).toBe(false);
-  });
-});
-
-describe("v1.157.0 maps without markets", () => {
-  it("drops the deals and production in their old shape, as no market reruns them", async () => {
-    globalThis.pack = {
-      features: [],
-      markets: [],
-      burgs: [{ i: 0 }, { i: 1, production: [{ goodId: 1, units: 2 }] }],
-      deals: [{ seller: 1, sellerType: "burg" }]
-    } as unknown as typeof pack;
-
-    await resolveVersionConflicts("1.156.0", []);
-
-    expect(pack.deals).toEqual([]);
-    expect(pack.burgs[1].production).toEqual([]);
   });
 });

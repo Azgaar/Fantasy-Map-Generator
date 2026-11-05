@@ -190,7 +190,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
               return nextId;
             };
 
-            pack.goods.push({
+            const good: Good = {
               i: getNextId(),
               name,
               tags,
@@ -206,8 +206,9 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
               distribution: distribution || undefined,
               biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : undefined,
               recipes: recipes.length ? recipes : undefined
-            });
-            Goods.sync();
+            };
+            pack.goods.push(good);
+            Goods.regeneratePlacement(good.i);
           }
 
           tip(editedGood ? t("Good is updated") : t("Good is added"), false, "success", 5000);
@@ -426,10 +427,9 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           event.preventDefault();
           const recipeIndex = +button.dataset.recipeIndex!;
           const recipe = recipes[recipeIndex];
-          const newIngredientId = Object.keys(recipe).length
-            ? Math.max(...Object.keys(recipe).map(id => +id)) + 1
-            : defaultGoodId;
-          recipe[newIngredientId] = 1;
+          const newIngredient = sortedGoods.find(good => !(good.i in recipe) && good.i !== editedGood?.i);
+          if (!newIngredient) return;
+          recipe[newIngredient.i] = 1;
           renderRecipes();
         };
       });

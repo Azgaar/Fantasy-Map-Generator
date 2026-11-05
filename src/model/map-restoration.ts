@@ -967,7 +967,7 @@ class MapRestorationModule {
 
   /** development follows its peopled cells, painted levels included; land the snapshot had no people on is generated, and a burg moved to empty land settles it */
   private restoreDevelopment(parent: PackedGraph, links: CellLinks) {
-    Development.generate(); // of the restored cultures, routes and land
+    Development.generate(); // of the restored cultures and land
     const from = parent.cells.development;
     const { cells } = pack;
     for (const cell of cells.i) {
@@ -1009,11 +1009,11 @@ class MapRestorationModule {
 
   /** a burg no kept market reaches, as on land cut off by deep water, centers a market of its own */
   private expandMarkets() {
-    for (let cellMarket = Markets.expandTerritories(); pack.markets.length; ) {
+    for (let cellMarket = Markets.expand(); pack.markets.length; ) {
       const unreached = this.findMostPopulous(burg => !cellMarket[burg.cell]);
       if (!unreached) return;
       Markets.addMarket(unreached.i);
-      cellMarket = Markets.expandTerritories();
+      cellMarket = Markets.expand();
     }
   }
 }

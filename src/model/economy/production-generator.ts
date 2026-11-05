@@ -156,8 +156,9 @@ export class ProductionModule {
     pack.deals = pack.deals.filter(deal => deal[4] > 0); // sales kept back whole
     pack.cells.prosperity = Prosperity.getCellsProsperity(rural);
 
+    // unrounded during the run, so sub-cent margins add up; a center outside every market has them too; no -0
+    for (const burg of sortedBurgs) burg.treasury = rn(burg.treasury || 0, 2) || 0;
     for (const { burg, produced, revenue, ingredientCosts, log } of states) {
-      burg.treasury = rn(burg.treasury || 0, 2) || 0; // unrounded during the run, so sub-cent margins add up; no -0
       burg.product = rn(revenue - ingredientCosts, 2); // a burg whose inputs cost more than its sales made a loss
       burg.production = produced.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)]] : []));
       if (log) EconomyDebug.set(burg.i!, log);
@@ -754,16 +755,19 @@ export class ProductionModule {
     return this.getBurgModifiers(state, good) * this.getSpecialization(index, state, good.i);
   }
 
-  /** The burg's modifiers for the good, fixed for the run; its deposit gives a worker more */
-  private getBurgModifiers(state: BurgProductionState, good: Good): number {
-    state.modifiers[good.i] ??=
-      this.getModifiers(good, state.burg.cell) * (good === state.deposit ? DEPOSIT_OUTPUT : 1);
-    return state.modifiers[good.i];
+  private isWorkingDeposit(state: BurgProductionState, good: Good): boolean {
+    return good === state.deposit && state.depositLeft >= 0.01;
   }
 
-  /** How the burg can make the good: by working its deposit of it, otherwise by its recipes */
+  /** The burg's modifiers for the good, fixed for the run; its deposit gives a worker more while it lasts */
+  private getBurgModifiers(state: BurgProductionState, good: Good): number {
+    state.modifiers[good.i] ??= this.getModifiers(good, state.burg.cell);
+    return state.modifiers[good.i] * (this.isWorkingDeposit(state, good) ? DEPOSIT_OUTPUT : 1);
+  }
+
+  /** How the burg can make the good: by working its deposit of it while that lasts, otherwise by its recipes */
   private getRecipes(index: ProductionIndex, state: BurgProductionState, good: Good): Recipe[] | undefined {
-    return good === state.deposit ? [{ good, ingredients: [] }] : index.recipesByOutput[good.i];
+    return this.isWorkingDeposit(state, good) ? [{ good, ingredients: [] }] : index.recipesByOutput[good.i];
   }
 
   /** Division of labor: the more of the burg's workers make a good, and the more its market makes of it than the world, the more each makes */
@@ -1171,6 +1175,14 @@ export class ProductionModule {
   getRuralOutput(): Record<number, number>[] {
     const biomes = Goods.getBiomesProduction();
     return Array.from(pack.cells.i, cellId => this.getCellOutput(cellId, biomes));
+  }
+
+  /** The land cell whose people work a cell's output: its own, or for water a shore cell of the same market */
+  getWorkingCell(cellId: number): number {
+    const { c, h, market } = pack.cells;
+    if (h[cellId] >= 20) return cellId;
+    const shore = c[cellId].filter(neighbor => h[neighbor] >= 20);
+    return shore.find(neighbor => market[neighbor] === market[cellId]) ?? shore[0] ?? cellId;
   }
 
   /** A cell's rural output a day, units by good id */

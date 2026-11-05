@@ -162,7 +162,13 @@ function openPartners(stateId: number): void {
     { key: "exports", label: t("Exports"), width: "6em", sortBy: row => row.exports },
     { key: "imports", label: t("Imports"), width: "6em", sortBy: row => row.imports },
     { key: "balance", label: t("Balance"), width: "6em", sortBy: row => row.balance },
-    { key: "share", label: t("Share", { context: "portion" }), width: "4em", sortBy: row => row.share, defaultSort: "desc" },
+    {
+      key: "share",
+      label: t("Share", { context: "portion" }),
+      width: "4em",
+      sortBy: row => row.share,
+      defaultSort: "desc"
+    },
     { key: "actions", width: "1.4em", permanent: true }
   ];
   open({

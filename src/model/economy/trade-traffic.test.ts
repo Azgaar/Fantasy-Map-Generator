@@ -84,4 +84,12 @@ describe("TradeTraffic", () => {
     pack.deals = [...pack.deals];
     expect(traffic.get(0, 1)?.goods.get(0)).toBe(2);
   });
+
+  it("follows the routes as they change", () => {
+    pack.deals = [[2, 1, 0, DEAL_KINDS.sale, 1, 1, 0, 0, 0]] as any;
+    expect(traffic.get(0, 1)).toBeDefined();
+    pack.routes = [];
+    pack.cells.routes = {};
+    expect(traffic.get(0, 1)).toBeUndefined();
+  });
 });

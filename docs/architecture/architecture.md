@@ -543,6 +543,8 @@ Static content: lookup tables, templates, tuning constants, reference lists.
   the next load skips it. Code outside `auto-update` (the loader, generators, renderers, editors)
   assumes the current shape: it never back-fills fields older maps lack, nor carries fallbacks for
   them. When a format changes, add the migration block, not a guard in the code that reads the field.
+- **Migrations keep the user's data.** A migration converts what the file holds. It never reruns a
+  generator over it: a generator only fills in what the file lacks.
 
 ## Services
 

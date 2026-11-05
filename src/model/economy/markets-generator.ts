@@ -177,7 +177,7 @@ export class MarketsModule {
     );
   }
 
-  expandTerritories(): Uint16Array {
+  expand(): Uint16Array {
     this.sync();
     const cellMarket = this.expandMarkets(pack.markets);
     this.markPlazas(pack.markets);

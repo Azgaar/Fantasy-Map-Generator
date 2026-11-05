@@ -26,7 +26,7 @@ import { bindEconomyWiki, economyWikiButton } from "@/ui/economy-view";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, getPointer } from "@/utils/node-utils";
+import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
 
@@ -79,6 +79,7 @@ function open(marketId: number): void {
 
   Dialog.closeAll(`#${dialogId}, .stable`);
 
+  if (findEl("marketOverviewRelocate")?.classList.contains("pressed")) toggleRelocateMarket(); // of the market shown so far
   renderDialog();
   marketOverviewTable.reset();
   refreshNameInput(market);

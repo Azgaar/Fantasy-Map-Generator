@@ -217,7 +217,7 @@ export const GOODS_DATA: GoodData[] = [
     value: 2,
     carriage: 0.4,
     deposits: [4, 8],
-    distribution: 'shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
+    distribution: 'shore(-1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
     development: 6,
     unit: "bag",
     demandCoverage: { utilities: 1 },

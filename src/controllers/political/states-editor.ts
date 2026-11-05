@@ -21,7 +21,7 @@ import { speak } from "@/services/speech";
 import type { LegendItem } from "@/types/legend";
 import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { noteIcon } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -1045,6 +1045,7 @@ function stateRemove(stateId: number): void {
   removeEmblem("state", stateId);
   for (const province of pack.states[stateId].provinces || []) removeEmblem("province", province);
   States.remove(stateId);
+  closeEntityDialogs();
   select("#debug").selectAll(".highlight").remove();
 
   Layers.draw("burgIcons", "labels", "military", "borders", "provinces", "states");
@@ -1494,6 +1495,7 @@ const statesAnnex = createAnnexMode({
 function mergeStates(statesToMerge: number[], rulingStateId: number, asProvinces = false): void {
   for (const stateId of statesToMerge) removeEmblem("state", stateId);
   States.merge(rulingStateId, statesToMerge, asProvinces);
+  closeEntityDialogs();
 
   unfog();
   select("#debug").selectAll(".highlight").remove();

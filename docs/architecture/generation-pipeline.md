@@ -253,7 +253,7 @@ reaches a phase you change.
 3. If the step's output is cell-indexed or stores a cell id, restore it in `MapRestoration.restore()`:
    per-cell arrays in `restoreCells`, entities in their own step, each id found again by position.
    Call the generator directly only when the output cannot be recovered from the snapshot, and prefer
-   a partial method (cf. `Markets.expandTerritories`) over a full regeneration.
+   a partial method (cf. `Markets.expand`) over a full regeneration.
 4. Teach [`MapIntegrity`](../../src/model/map-integrity.ts) the step's ids and run
    `map-restoration.scenarios.test.ts`, which restores real maps and fails on any id the restore breaks: a
    missed id does not throw, it silently points at an unrelated cell. See

@@ -125,7 +125,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   const shouldShowLoading = getPointsNumber(options.generation.graph.density) > 10000;
   shouldShowLoading && showLoading();
 
-  Dialog.closeAll("#worldConfigurator, #options3d");
+  Dialog.closeAll("#worldConfigurator, #options3d", { minimized: true });
   options.app.mode = null;
   resetZoom(1000);
   undraw();

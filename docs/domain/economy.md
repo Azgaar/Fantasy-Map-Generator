@@ -28,7 +28,7 @@ Generation runs `Goods.generate()` early, before population ranking, which reads
 | Restore goods | `Goods.restoreDefaults`, placing all deposits                                                                |               |              |                  |
 | Deposits      | `Goods.regenerate`                                                                                           |               | ✓            |                  |
 | Markets       | `Markets.regenerate`, drawing their areas                                                                    |               |              | ✓                |
-| Market areas  | `Markets.expandTerritories`, discarding hand-painted cells                                                   |               |              |                  |
+| Market areas  | `Markets.expand`, discarding hand-painted cells                                                              |               |              |                  |
 | Production    | `Production.regenerate`: gives new water deposits a market, clears deals and stock, runs the day, pays taxes | ✓             | ✓            | ✓                |
 
 **Burgs** and **States** stay out of it, behind the plain confirmation: Burgs runs burgs, then Markets, then Production; States runs states, then Production, then the military, equipped from the new run.
@@ -36,12 +36,12 @@ Generation runs `Goods.generate()` early, before population ranking, which reads
 - **It always asks**, with no "Do not ask again": choosing is the point of it.
 - **Without Production**, new deposits or areas leave the run as it was; new markets or restored goods call `Production.clear()`, as the run named what is gone.
 - **Water deposits** join a market when production runs (`Markets.claimWaterDeposits`), as the flood skips water without goods. It keeps the land, so hand-painted cells survive.
-- **Removing** a good, a burg or a market prunes what names it from the run and reruns nothing, so the rest stays until the next run.
+- **Removing** a good, a burg or a market prunes what names it from the run and reruns nothing, so the rest stays until the next run. The military roster outlives the map, so it keeps a removed good's id and units ignore it while the map lacks that good.
 - **Painting deposits** by hand only changes the cells.
 - **Apply** in the good editor and the State budget dialog reruns only with its footer checkbox ticked, on by default. The good editor re-places a good whose distribution or deposit count changed either way.
-- **Locks** protect a state or burg, not its numbers: a day is one shared run, so its production, prices and treasury are recomputed. A locked state keeps its taxes, license fee, budget, adjustments and tariffs, with rules on dropped states gone, and a locked burg its adjustments. Diplomacy is rebuilt for every state, so a locked state's tariffs may no longer match its relations.
+- **Locks** protect a state or burg, not its numbers: its production, prices and treasury are recomputed. A locked state keeps its taxes, license fee, budget, adjustments and tariffs, with rules on dropped states gone, and a locked burg its adjustments. Diplomacy is rebuilt for every state, so a locked state's tariffs may no longer match its relations.
 
-Loading a map does not rerun the economy, except a map saved before v1.157.0 (`auto-update.ts`). A submap or resample reruns it for the new land (`map-restoration.ts`): those burgs and markets are gone, and the user asked for a new map.
+Loading a map does not rerun the economy, and a map saved before v1.157.0 counts its armies as fully kept until its next run (`migrateEconomyRun`). A submap or resample reruns it for the new land (`map-restoration.ts`): those burgs and markets are gone, and the user asked for a new map.
 
 ## Development
 
@@ -81,7 +81,7 @@ Each market floods out from its center by cost: another state's land or another 
 
 ### Stock and price
 
-A market holds no money, only per-good `{ stock, price }`, rebuilt by every run. `price` is a midpoint: burgs buy above it and sell below it by the market's margin rate (`Trade.getMarginRate`), `MARKET_MARGIN` × √(fee factor) of the license its center paid, rounded to a whole percent: 4% with no license, usually 5% in a monarchy. So a greedy state's markets are dearer and slower. The **margin** goes to the market's center burg as each trade happens (`payMargin`), kept out of `burg.product` and untaxed.
+A market holds no money, only per-good `{ stock, price }`, rebuilt by every run. `price` is a midpoint: burgs buy above it and sell below it by the market's margin rate (`Trade.getMarginRate`), `MARKET_MARGIN` × √(fee factor) of the license its center paid, rounded to a whole percent, at most `MAX_MARKET_MARGIN`: 4% with no license, usually 5% in a monarchy. So a greedy state's markets are dearer and slower. The **margin** goes to the market's center burg as each trade happens (`payMargin`), kept out of `burg.product` and untaxed.
 
 Each market expects to sell a day's demand of each good, its **depth** (`initializeMarketPrices`, `collectDemand`): its people × what a person buys of the good, with `WANTS_ESTIMATE` for wants, plus what the trades making its products need, down whole production chains.
 
@@ -108,7 +108,7 @@ Each market expects to sell a day's demand of each good, its **depth** (`initial
 
 When rural stock is bought, rural people are paid the price less the margin (`takeStock`). Their purchases make no deals and pay no tax.
 
-A burg on a deposit gets nothing free: **working the deposit** is one more thing its workers can make, with no inputs (`getRecipes`), chosen by what it pays. A worker gets `DEPOSIT_OUTPUT` units a day from it, up to `MAX_DEPOSIT_VALUE` a day at base value, so a large burg cannot grind a gemstone mine. A recipe taking the deposit's good is planned both with the good bought and with it worked (`getRecipeStocks`).
+A burg on a deposit gets nothing free: **working the deposit** is one more thing its workers can make, with no inputs (`getRecipes`), chosen by what it pays. A worker gets `DEPOSIT_OUTPUT` units a day from it, up to `MAX_DEPOSIT_VALUE` a day at base value, so a large burg cannot grind a gemstone mine. While the deposit lasts it replaces the good's recipes; once capped, they apply again at the usual output. A recipe taking the deposit's good is planned both with the good bought and with it worked (`getRecipeStocks`).
 
 ### What a burg makes
 
@@ -391,7 +391,6 @@ A constant at the edge of its range is a sign the range is too narrow.
 - **Most edits apply on the next run.** Only the ticked checkbox in the State budget dialog and the good editor reruns at once.
 - **A state's last orders can miss late taxes.** Taxes other states' final orders pay it after its turn count in what it collected, but stay in its treasury that day.
 - **Good values and deposits shape the map**, so retuning defaults can break seed-pinned tests.
-- **UI labels.** A table names the treasury **Balance**, a dialog or card **Day Balance**; the money a trade brings is **Revenue**, signed.
 
 ## Further reading
 

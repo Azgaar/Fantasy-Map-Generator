@@ -1,6 +1,7 @@
 import { Goods } from "@/model/economy/goods-generator";
 import { convertTemperature, getHeight } from "@/model/units";
 import { Dialog } from "@/ui/dialog/dialog";
+import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { list } from "@/utils/language-utils";
 import { ensureEl } from "@/utils/node-utils";
@@ -164,7 +165,12 @@ function createDefaultCondition(): DistCondition {
 }
 
 function open(onApply: (distribution: string) => void, initialExpression = "") {
-  const groups: DistCondition[][] = parseExpression(initialExpression) ?? [[createDefaultCondition()]];
+  const parsed = parseExpression(initialExpression);
+  if (initialExpression && !parsed) {
+    tip(t("This distribution is too complex for the visual editor"), false, "error", 5000);
+    return; // a blank builder would replace it on Apply
+  }
+  const groups: DistCondition[][] = parsed ?? [[createDefaultCondition()]];
 
   function conditionToExpr(c: DistCondition): string {
     const def = FN_DEFS.find(f => f.id === c.fnId);
@@ -756,19 +762,22 @@ function parseConditionStr(s: string): DistCondition | null {
   return cond;
 }
 
-function parseExpression(expr: string): DistCondition[][] | null {
+/** The expression as an OR of ANDs, as the builder shows it: a nested OR multiplies out. Null if it holds anything else */
+export function parseExpression(expr: string): DistCondition[][] | null {
   if (!expr) return null;
 
   const groups: DistCondition[][] = [];
-  for (const orPart of splitTopLevel(expr, " || ")) {
-    const groupStr = stripOuterParens(orPart.trim());
-    const group: DistCondition[] = [];
-    for (const andPart of splitTopLevel(groupStr, " && ")) {
-      const cond = parseConditionStr(andPart.trim());
-      if (!cond) return null; // unparseable
-      group.push(cond);
+  for (const orPart of splitTopLevel(stripOuterParens(expr.trim()), " || ")) {
+    let alternatives: DistCondition[][] = [[]];
+    for (const andPart of splitTopLevel(orPart, " && ")) {
+      const part = andPart.trim();
+      const cond = parseConditionStr(part);
+      const inner = stripOuterParens(part);
+      const nested = cond ? [[cond]] : inner !== part ? parseExpression(inner) : null;
+      if (!nested) return null;
+      alternatives = alternatives.flatMap(left => nested.map(right => [...left, ...right]));
     }
-    if (group.length) groups.push(group);
+    groups.push(...alternatives);
   }
   return groups.length ? groups : null;
 }

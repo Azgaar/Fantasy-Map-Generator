@@ -1,4 +1,4 @@
-Every cell where people live has a technological **development** from 1 to 100: how advanced its people are. Land nobody lives on, and water, have none (0). Development comes from the map's cultures: dwarves forge steel while giants still hunt with stone. It stays with each people, shaped by the land and the routes, and it decides what each region can produce and how rich it gets.
+Every cell where people live has a technological **development** from 1 to 100: how advanced its people are. Land nobody lives on, and water, have none (0). Development comes from the map's cultures: dwarves forge steel while giants still hunt with stone. It stays with each people, shaped by the land, and it decides what each region can produce and how rich it gets.
 
 Development is part of the world's lore, not a clock: it does not grow over time.
 
@@ -55,7 +55,6 @@ A culture's [type](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-
 
 Every cell starts at its people's level, and development stays with them: an advanced neighbor softens the border a little, but orcs next to elves stay orcs. Knowledge does not spread across the map.
 
-- **Routes lift the land along them**: trade and travel bring new ideas, so the land on a road stands about two eras above the backcountry, and the lift fades over a few cells from the road. Sea routes lift their ports, and trails a little less.
 - **The land** matters: temperate deciduous forests are a little ahead, while harsh lands hold peoples back: savanna and tropical seasonal forest a point, wetland two, taiga and tropical rainforest three, hot desert four, cold desert and tundra five and glaciers eight. Custom biomes add nothing until you set them in the Biomes editor. Rivers and coasts add a point.
 - **Broad waves**: borders between peoples and lands are softened into short slopes, and broad waves raise or lower whole regions by up to three eras, so a people's lands differ in large patches rather than cell by cell.
 
@@ -100,7 +99,7 @@ Development is set when the map is generated, and saved with it. Open **Tools �
 - **The map** shows development while the overview is open: every peopled cell in its era's color, from the dark stone ages through the greens of antiquity and the yellows of the Middle Ages to the reds of the modern eras. Hover a cell for its level and era. The eye button hides or shows it, and the choice is kept the next time the overview opens. Closing the overview hides it; there is no separate layer.
 - **The table** lists the eras on the map, with their levels, cells, area, people and burgs; the percent button shows each era's share of the totals instead. Hover a row to highlight its land; hover the map to find a cell's row. The bottom line shows the people's average development and the land's lowest and highest.
 - **The brush** paints development by era: pick an era, drag over the land, and apply. Only cells where people live are painted. A painted cell takes the level its era begins at; a cell already in that era keeps its own. **No development**, first in the list, clears the cells to 0, as if nothing were known of their people. Undo steps back, cancel discards the strokes.
-- **Regenerate** makes development again from the cultures, routes and land, discarding painted changes. Do it after editing cultures, their levels or types, biomes or the routes, which do not change development by themselves.
+- **Regenerate** makes development again from the cultures and land, discarding painted changes. Do it after editing cultures, their levels or types, or biomes, which do not change development by themselves.
 - **Legend** adds the eras to the map's legend, and **Export** saves the table as a CSV file.
 
 Development also shows across the editors: the **States**, **Provinces** and **Cultures** editors and the **Burgs Overview** have a Development column, hidden by default and turned on from the column menu. It shows the people's average, with its era in the tip, and a burg's own level in the Burgs Overview. In the **Cultures** editor the column sets the culture's own level, 1 to 100, with its heartland and the people's average in the tip; in the **Biomes** editor it sets what a biome adds or takes away, in points. Change them, then press Regenerate in the Development Overview to apply. The **Burg Editor** and **Burg Economy** show the burg's development and era. The **Goods Editor** lists each good's development, and **Edit good** sets it. A generated burg stands at 5 or more, a town being past the foragers' era; the brush can still set it lower.
@@ -110,7 +109,7 @@ Painted development applies to production the next time the economy is regenerat
 # Questions
 
 **Why does no one on my map make gunpowder?**
-Gunpowder needs development 30 and artillery 36, which only the leading cultures of a medieval world reach. The Antique set's cultures stand at 12–24: a few cells on Roman roads reach 30, so a classical world makes a little gunpowder and no artillery.
+Gunpowder needs development 30 and artillery 36, which only the leading cultures of a medieval world reach. The Antique set's cultures stand at 12–24: only a few cells reach 30, so a classical world makes a little gunpowder and no artillery.
 
 **How do I make a people more advanced?**
 Set its level in the Development column of the Cultures editor, then press Regenerate in the Development Overview. To change a few places only, paint them with the brush.

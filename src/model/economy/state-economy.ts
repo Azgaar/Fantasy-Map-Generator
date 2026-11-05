@@ -167,6 +167,11 @@ class StateEconomyModule {
     return this.consumption.get(stateId) ?? [];
   }
 
+  /** Consumption goes by who holds each burg and cell now, which the deals do not tell */
+  forgetConsumption(): void {
+    this.consumptionSource = null;
+  }
+
   private indexConsumption(): void {
     if (this.consumptionSource === pack.deals) return;
     this.consumptionSource = pack.deals;
@@ -203,7 +208,8 @@ class StateEconomyModule {
         for (const [goodId, units] of burg.production ?? []) add(burg.state || 0, goodId, units);
     Production.getRuralOutput().forEach((produced, cellId) => {
       if (!pack.cells.market[cellId]) return;
-      for (const [goodId, units] of Object.entries(produced)) add(pack.cells.state[cellId], +goodId, units);
+      for (const [goodId, units] of Object.entries(produced))
+        add(pack.cells.state[Production.getWorkingCell(cellId)], +goodId, units);
     });
   }
 

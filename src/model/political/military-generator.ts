@@ -354,6 +354,7 @@ class MilitaryModule {
       }
     }
 
+    StateEconomy.forgetConsumption(); // burgs may have changed hands since the run
     // conscripts the state cannot equip with their unit's goods serve as levies where they were raised
     const levyUnit = options.map.military.units.find(unit => unit.type === "levies");
     for (const [stateId, draft] of drafts) {
@@ -656,8 +657,13 @@ class MilitaryModule {
   getUpkeep(stateId: number): number {
     const state = pack.states[stateId];
     if (!state || !levies(state) || !pack.deals?.length) return 1;
-    const need = (this.getNominalPower(stateId) / options.map.units.population.scale) * UPKEEP_COST;
+    const need = this.getUpkeepNeed(stateId);
     return need ? Math.min(1, state.economy.spent.military / need) : 1;
+  }
+
+  /** The military spending a day that keeps a state's forces in full */
+  getUpkeepNeed(stateId: number): number {
+    return (this.getNominalPower(stateId) / options.map.units.population.scale) * UPKEEP_COST;
   }
 
   /** How strongly a state's forces fight for their upkeep: it multiplies their power in battle */

@@ -890,4 +890,9 @@ describe("market margin", () => {
     market.feePaid = 105; // a fee factor of 4
     expect(Trade.getMarginRate(market)).toBe(Math.round(MARKET_MARGIN * 200) / 100);
   });
+
+  it("stays below the price, however dear the license", () => {
+    const market = { i: 1, centerBurgId: 1, color: "", goods: {}, feePaid: 1000000 } as Market;
+    expect(Trade.getMarginRate(market)).toBe(0.5);
+  });
 });

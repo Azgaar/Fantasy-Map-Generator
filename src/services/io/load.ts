@@ -274,7 +274,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
   try {
     const { migrateLegacySettings, resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
 
-    Dialog.closeAll();
+    Dialog.closeAll(undefined, { minimized: true });
 
     migrateLegacySettings(mapVersion!, data);
     const settings = data[1] ? safeParseJSON(data[1]) : null;

@@ -233,7 +233,7 @@ export class GoodsModule {
       shore: (...rings: number[]) => rings.includes(pack.cells.t[cellId]),
       type: (...types: string[]) => {
         const feature = pack.features[pack.cells.f[cellId]];
-        return types.includes(feature.subtype || feature.type);
+        return types.includes(feature.type) || (!!feature.subtype && types.includes(feature.subtype));
       },
       river: () => pack.cells.r[cellId]
     };
@@ -397,7 +397,7 @@ export class GoodsModule {
     return good;
   }
 
-  /** Removes the good and what names it: its deposits, the recipes taking it, the unit equipment and its share of the run */
+  /** Removes the good and what names it on this map: its deposits, the recipes taking it and its share of the run. The roster outlives the map, and units ignore a good it lacks */
   remove(goodId: number): void {
     const { cells } = pack;
     for (const cell of cells.i) if (cells.good[cell] === goodId) cells.good[cell] = 0;
@@ -407,7 +407,6 @@ export class GoodsModule {
       good.recipes = good.recipes.filter(recipe => !(goodId in recipe));
       if (!good.recipes.length) delete good.recipes;
     }
-    for (const unit of options.map.military.units) unit.goods = unit.goods?.filter(id => id !== goodId);
     pack.deals = pack.deals.filter(deal => deal[2] !== goodId);
     const others = ([id]: [number, number]) => id !== goodId;
     for (const burg of pack.burgs) burg.production &&= burg.production.filter(others);

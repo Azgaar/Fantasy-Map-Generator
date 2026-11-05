@@ -9,7 +9,7 @@ import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labe
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
 import { type Good, Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
-import { Production } from "@/model/economy/production-generator";
+import { DEAL_KINDS, type Deal } from "@/model/economy/trade";
 import type { GraphOverrides } from "@/model/graph/graph-override";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
@@ -208,6 +208,9 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
     // v1.0 added state relations, provinces, forms and full names
     selectInSvg("#viewbox").insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
+    // these generators keep state finances and read development, which the v1.124.0 and v1.157.0 steps make for this map
+    for (const state of pack.states) state.economy ??= noFinance();
+    pack.cells.development = new Uint8Array(0);
     States.collectStatistics();
     States.generateCampaigns();
     States.generateDiplomacy();
@@ -422,6 +425,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       .attr("box-size", 3)
       .attr("stroke", "#000")
       .attr("stroke-width", 0.3);
+    pack.deals = []; // no economy before v1.124.0, so nothing to equip from
     Military.generate();
   }
 
@@ -1181,7 +1185,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     }
 
     Goods.generate();
-    Markets.generate(); // the v1.157.0 step runs the economy
+    Markets.generate();
   }
 
   if (isOlderThan("1.138.0")) {
@@ -2187,9 +2191,10 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     for (const state of pack.states ?? []) {
       if (!state) continue;
       const legacy = state as State & Partial<StateFinance>;
-      const { salesTax = 0, pollTax = 0, tariffs = [] } = legacy;
+      const { salesTax = 0, pollTax = 0, tariffs = [], treasury = 0 } = legacy;
       for (const key of FINANCE_KEYS) delete legacy[key];
-      state.economy ??= { ...noFinance(), salesTax, pollTax, tariffs }; // the v1.124.0 step sets it for older maps
+      // the v1.124.0 step sets it for older maps; the old treasury held one run's taxes
+      state.economy ??= { ...noFinance(), salesTax, pollTax, tariffs, collected: treasury, treasury };
       state.economy.marketFee = States.defineMarketFee(state);
       state.economy.budget = States.defineBudget(state, States.defineCorruption(state));
       state.economy.adjustments ??= [];
@@ -2236,16 +2241,64 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     }
     addDevelopment();
 
-    if (pack.markets?.length) {
-      Goods.sync();
-      Markets.sync();
-      Production.regenerate();
-    } else {
-      // no market to rerun them: drop the deals and production in their old shape
-      pack.deals = [];
-      for (const burg of pack.burgs ?? []) if (burg?.i) burg.production = [];
-      if (pack.cells?.i) pack.cells.prosperity = new Uint8Array(pack.cells.i.length);
+    /** v1.157.0 sums a burg's trades with a market by good and kind, and its output by good. Trade between markets has no burg to go to */
+    function migrateEconomyRun() {
+      type LegacyDeal = {
+        seller: number;
+        sellerType: "burg" | "market";
+        buyer: number;
+        buyerType: "burg" | "market";
+        good: number;
+        units: number;
+        price: number;
+        tax?: number;
+        tariff?: number;
+      };
+      const goods = new Set(pack.goods?.map(good => good.i));
+      const markets = new Set(pack.markets?.map(market => market.i));
+      const isBurg = (id: number) => Boolean(pack.burgs?.[id]?.i && !pack.burgs[id].removed);
+
+      const legacy = (pack.deals ?? []) as unknown as LegacyDeal[];
+      const lastSale = legacy.findLastIndex(deal => deal.sellerType === "burg"); // burgs bought their needs after all had sold
+      const deals = new Map<string, Deal>();
+      legacy.forEach((deal, id) => {
+        if (deal.sellerType === deal.buyerType) return;
+        const selling = deal.sellerType === "burg";
+        const [burgId, marketId] = selling ? [deal.seller, deal.buyer] : [deal.buyer, deal.seller];
+        if (!isBurg(burgId) || !markets.has(marketId) || !goods.has(deal.good)) return;
+        const kind = selling ? DEAL_KINDS.sale : id < lastSale ? DEAL_KINDS.input : DEAL_KINDS.demand;
+        const key = `${burgId}-${marketId}-${deal.good}-${kind}`;
+        const summed = deals.get(key) ?? ([burgId, marketId, deal.good, kind, 0, 0, 0, 0, 0] as Deal);
+        const units = summed[4] + deal.units;
+        summed[5] = units ? (summed[4] * summed[5] + deal.units * deal.price) / units : 0;
+        summed[4] = units;
+        summed[6] += deal.tax || 0;
+        summed[7] += deal.tariff || 0;
+        deals.set(key, summed);
+      });
+      pack.deals = [...deals.values()];
+      for (const deal of pack.deals) {
+        deal[4] = rn(deal[4], 2);
+        deal[5] = rn(deal[5], 4);
+        deal[6] = rn(deal[6], 2);
+        deal[7] = rn(deal[7], 2);
+      }
+
+      for (const burg of pack.burgs ?? []) {
+        if (!burg?.i) continue;
+        const made: number[] = [];
+        for (const { goodId, units } of (burg.production ?? []) as unknown as { goodId?: number; units: number }[])
+          if (goodId !== undefined && goods.has(goodId)) made[goodId] = (made[goodId] || 0) + units;
+        burg.production = made.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)]] : []));
+      }
+
+      if (pack.cells?.i) pack.cells.prosperity ??= new Uint8Array(pack.cells.i.length); // rural days were not kept
+
+      // the old run kept no military spending: the armies, saved as they were, count as fully kept until the next run
+      for (const state of pack.states ?? [])
+        if (state?.i && !state.removed) state.economy.spent.military = Military.getUpkeepNeed(state.i);
     }
+    migrateEconomyRun();
   }
 }
 

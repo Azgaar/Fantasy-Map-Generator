@@ -3,7 +3,7 @@ import { Options } from "@/model/options/options-model";
 import { Development } from "./development-generator";
 
 // a chain of six land cells and a water cell at one point, so the noise is the same everywhere
-function stubMap(routes: Record<number, Record<number, number>> = {}) {
+function stubMap() {
   const n = 7;
   vi.stubGlobal("pack", {
     cells: {
@@ -16,14 +16,12 @@ function stubMap(routes: Record<number, Record<number, number>> = {}) {
       r: new Array(n).fill(0),
       harbor: new Array(n).fill(0),
       burg: new Array(n).fill(0),
-      pop: [1, 1, 1, 1, 1, 1, 0],
-      routes
+      pop: [1, 1, 1, 1, 1, 1, 0]
     },
     cultures: [
       { i: 0, name: "Wildlands", base: 1, type: "Generic" },
       { i: 1, name: "Shwazen", base: 0, type: "Generic", center: 0, development: 70 }
     ],
-    routes: [{ i: 0, group: "roads" }],
     biomes: [{ habitability: 50 }]
   });
 }
@@ -33,15 +31,6 @@ beforeEach(() => {
   options.map.seed = "1";
 });
 afterEach(() => vi.unstubAllGlobals());
-
-it("lifts the land along a road", () => {
-  stubMap();
-  Development.generate();
-  const offRoad = pack.cells.development![1];
-  stubMap({ 0: { 1: 0 }, 1: { 0: 0 } });
-  Development.generate();
-  expect(pack.cells.development![1]).toBeGreaterThan(offRoad);
-});
 
 it("leaves water undeveloped", () => {
   stubMap();

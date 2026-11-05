@@ -53,7 +53,15 @@ describe("GoodsModule", () => {
     Object.assign(Goods, goodsModule);
   });
 
-  it("removes a good with its deposits, the recipes taking it, the unit equipment and its share of the run", () => {
+  it("matches a feature by its type or its subtype", () => {
+    pack.features = [{ type: "ocean", subtype: "gulf" }] as never;
+    const { type } = Goods.getMethods(0);
+    expect(type("ocean")).toBe(true);
+    expect(type("gulf")).toBe(true);
+    expect(type("sea")).toBe(false);
+  });
+
+  it("removes a good with its deposits, the recipes taking it and its share of the run, keeping the roster for later maps", () => {
     pack.deals = [[1, 1, 1, 0, 2, 3] as never, [1, 1, 2, 0, 2, 3] as never];
     pack.burgs = [
       {
@@ -83,7 +91,7 @@ describe("GoodsModule", () => {
     const units = options.map.military.units;
     options.map.military.units = [{ name: "Guard", goods: [1, 2] }] as never;
     Goods.remove(1);
-    expect(options.map.military.units[0].goods).toEqual([2]);
+    expect(options.map.military.units[0].goods).toEqual([1, 2]);
     options.map.military.units = units;
     expect(Goods.get(1)).toBeUndefined();
     expect(Array.from(pack.cells.good)).toEqual([0, 2, 0, 2]);

@@ -33,7 +33,7 @@ import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, getPointer } from "@/utils/node-utils";
+import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
 
@@ -202,7 +202,7 @@ function toggleLegend(): void {
 }
 
 function refreshEditor() {
-  goodsTable.refresh();
+  if (findEl(dialogId)) goodsTable.refresh(); // the good editor can outlive it
   Layers.draw("goods");
 }
 

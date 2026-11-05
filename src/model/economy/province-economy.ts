@@ -105,7 +105,8 @@ class ProvinceEconomyModule {
         for (const [goodId, units] of burg.production ?? []) make(of(burg.cell), goodId, units);
     Production.getRuralOutput().forEach((produced, cellId) => {
       if (!cells.market[cellId]) return;
-      for (const [goodId, units] of Object.entries(produced)) make(of(cellId), +goodId, units);
+      for (const [goodId, units] of Object.entries(produced))
+        make(of(Production.getWorkingCell(cellId)), +goodId, units);
     });
 
     // rural people pay what their market's share allowed of the poll tax each cell owed
