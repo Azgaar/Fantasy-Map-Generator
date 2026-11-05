@@ -53,7 +53,29 @@ describe("GoodsModule", () => {
     Object.assign(Goods, goodsModule);
   });
 
-  it("removes a good with its deposits, the recipes taking it and the unit equipment", () => {
+  it("removes a good with its deposits, the recipes taking it, the unit equipment and its share of the run", () => {
+    pack.deals = [[1, 1, 1, 0, 2, 3] as never, [1, 1, 2, 0, 2, 3] as never];
+    pack.burgs = [
+      {
+        production: [
+          [1, 2],
+          [2, 3]
+        ]
+      },
+      {}
+    ] as never;
+    pack.markets = [
+      {
+        goods: { 1: { stock: 1, price: 1 }, 2: { stock: 1, price: 1 } },
+        rural: {
+          bought: [[1, 1]],
+          kept: [
+            [1, 1],
+            [2, 1]
+          ]
+        }
+      }
+    ] as never;
     pack.goods.push(
       { i: 3, name: "Made", recipes: [{ 1: 1 }, { 2: 1 }] } as never,
       { i: 4, name: "Only A", recipes: [{ 1: 1 }] } as never
@@ -67,6 +89,11 @@ describe("GoodsModule", () => {
     expect(Array.from(pack.cells.good)).toEqual([0, 2, 0, 2]);
     expect(Goods.get(3)?.recipes).toEqual([{ 2: 1 }]);
     expect(Goods.get(4)?.recipes).toBeUndefined();
+    expect(pack.deals.map(deal => deal[2])).toEqual([2]);
+    expect(pack.burgs[0].production).toEqual([[2, 3]]);
+    expect(pack.burgs[1].production).toBeUndefined();
+    expect(Object.keys(pack.markets[0].goods)).toEqual(["2"]);
+    expect(pack.markets[0].rural).toEqual({ bought: [], kept: [[2, 1]] });
   });
 
   it("keeps the current catalogue when rerolling placement", () => {

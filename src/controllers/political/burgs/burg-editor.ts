@@ -1,7 +1,6 @@
 import { type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import { type Market, Markets } from "@/model/economy/markets-generator";
-import { Production } from "@/model/economy/production-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
@@ -449,7 +448,6 @@ function confirmRemoveMarket(market: Market): void {
     confirm: t("Remove"),
     onConfirm: () => {
       Markets.removeMarket(market.i);
-      Production.regenerate(); // the deals named it
       Layers.draw("markets", "goods", "trade");
       updateBurgValues();
     }
@@ -778,7 +776,6 @@ function removeSelectedBurg(): void {
       onConfirm: () => {
         Burgs.remove(burgId);
         removeEmblem("burg", burgId);
-        Production.regenerate(); // the deals named it
         Layers.draw("burgIcons", "labels", "goods", "trade");
         Dialog.close("burgEditor");
       }

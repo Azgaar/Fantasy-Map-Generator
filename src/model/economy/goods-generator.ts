@@ -397,7 +397,7 @@ export class GoodsModule {
     return good;
   }
 
-  /** Removes the good and what names it: its deposits, the recipes taking it and the unit equipment */
+  /** Removes the good and what names it: its deposits, the recipes taking it, the unit equipment and its share of the run */
   remove(goodId: number): void {
     const { cells } = pack;
     for (const cell of cells.i) if (cells.good[cell] === goodId) cells.good[cell] = 0;
@@ -408,6 +408,15 @@ export class GoodsModule {
       if (!good.recipes.length) delete good.recipes;
     }
     for (const unit of options.map.military.units) unit.goods = unit.goods?.filter(id => id !== goodId);
+    pack.deals = pack.deals.filter(deal => deal[2] !== goodId);
+    const others = ([id]: [number, number]) => id !== goodId;
+    for (const burg of pack.burgs) burg.production &&= burg.production.filter(others);
+    for (const market of pack.markets) {
+      delete market.goods[goodId];
+      if (!market.rural) continue;
+      market.rural.bought = market.rural.bought.filter(others);
+      market.rural.kept &&= market.rural.kept.filter(others);
+    }
     this.sync();
   }
 

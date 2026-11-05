@@ -1,6 +1,6 @@
 import { sum } from "d3";
 import type { Burg } from "@/model/political/burgs-generator";
-import { States } from "@/model/political/states-generator";
+import { noExpenses, States } from "@/model/political/states-generator";
 import type { Zone } from "@/model/political/zones-generator";
 import { DEFAULT_CULTURE_TYPE } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
@@ -35,13 +35,13 @@ import {
   type Transaction
 } from "./trade";
 
-const RURAL_OUTPUT_FACTOR = 1.23;
-export const DEPOSIT_RICHNESS = 2.52; // units a deposit yields a day per population point of its cell, on a map of DEPOSIT_MAP_CELLS
+const RURAL_OUTPUT_FACTOR = 0.9;
+export const DEPOSIT_RICHNESS = 2.2; // units a deposit yields a day per population point of its cell, on a map of DEPOSIT_MAP_CELLS
 const DEPOSIT_MAP_CELLS = 5000; // deposit counts are per map: their yield grows with the map's cells
 const DEPOSIT_MAX_POPULATION = 10; // a deposit's yield stops growing past this population
 export const MAX_DEPOSIT_VALUE = 200; // worth at base value a burg's deposit yields a day at most, so a large burg cannot grind it, nor a gemstone mine flood its treasury
 export const DEPOSIT_OUTPUT = 2; // units a worker gets from the burg's own deposit a day, before multipliers: a unit of a made good takes a day's work
-const MAX_WORKERS = 1000;
+const MAX_WORKERS = 300;
 export const WORKFORCE_SHARE = 0.32; // townspeople working in trades; the rest serve, build, farm or are too young or old
 const WORKERS_PER_TURN = 5;
 const LOT_DEPTH_SHARE = 0.5; // a step sells at most this share of a day's sales where it sells, so a thin market gets what pays and no more
@@ -67,6 +67,26 @@ export class ProductionModule {
     Goods.sync();
     Markets.expandTerritories();
     this.regenerate();
+  }
+
+  /** Forgets the run when what it names is gone: nothing is made or traded until production is regenerated. Adjustments stay */
+  clear(): void {
+    pack.deals = [];
+    for (const market of pack.markets) {
+      market.goods = {};
+      market.feePaid = 0;
+      delete market.rural;
+    }
+    for (const burg of pack.burgs) {
+      if (!burg.i || burg.removed) continue;
+      burg.product = 0;
+      burg.production = [];
+      burg.pollTaxPaid = 0;
+      burg.treasury = sum(burg.adjustments ?? [], line => line.value);
+    }
+    for (const state of pack.states) if (state.i && !state.removed) state.economy.spent = noExpenses();
+    pack.cells.prosperity = new Uint8Array(pack.cells.i.length);
+    States.collectTaxes();
   }
 
   produce() {

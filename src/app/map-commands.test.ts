@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   draw: vi.fn(),
   refresh: vi.fn(),
   regenerate: vi.fn(),
+  produce: vi.fn(),
+  clear: vi.fn(),
   applyPreset: vi.fn(),
   save: vi.fn()
 }));
@@ -31,6 +33,9 @@ vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
 vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
 
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Production } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { DIALOGS_MARKUP, dialogButton } from "@/ui/dialog/dialog-testing";
@@ -73,6 +78,47 @@ describe("shared regeneration commands", () => {
     MAP_COMMANDS.find(command => command.id === "regenerateRivers")!.run();
     expect(mocks.regenerate).toHaveBeenCalledOnce();
     expect(document.querySelector(".message")).toBeNull();
+  });
+
+  it.each([
+    ["regenerateGoods", "Deposits and production", "Deposits only"],
+    ["regenerateMarkets", "Markets and production", "Markets only"]
+  ])("%s reruns production only when asked to", (id, both, only) => {
+    const target = id === "regenerateGoods" ? Goods : Markets;
+    Object.assign(target, { regenerate: mocks.regenerate });
+    Object.assign(Production, { regenerate: mocks.produce, clear: mocks.clear });
+    sessionStorage.setItem("regenerateFeatureDontAsk", "true"); // the warning's preference does not answer the question
+
+    const run = MAP_COMMANDS.find(command => command.id === id)!.run;
+    run();
+    expect(mocks.regenerate).not.toHaveBeenCalled();
+    dialogButton("Cancel").click();
+    expect(mocks.regenerate).not.toHaveBeenCalled();
+
+    run();
+    dialogButton(only).click();
+    expect(mocks.regenerate).toHaveBeenCalledOnce();
+    expect(mocks.produce).not.toHaveBeenCalled();
+    expect(mocks.refresh).toHaveBeenCalledOnce();
+
+    run();
+    dialogButton(both).click();
+    expect(mocks.regenerate).toHaveBeenCalledTimes(2);
+    expect(mocks.produce).toHaveBeenCalledOnce();
+  });
+
+  it("clears the run new markets leave behind, and keeps it under new deposits", () => {
+    Object.assign(Goods, { regenerate: mocks.regenerate });
+    Object.assign(Markets, { regenerate: mocks.regenerate });
+    Object.assign(Production, { regenerate: mocks.produce, clear: mocks.clear });
+
+    MAP_COMMANDS.find(command => command.id === "regenerateGoods")!.run();
+    dialogButton("Deposits only").click();
+    expect(mocks.clear).not.toHaveBeenCalled();
+
+    MAP_COMMANDS.find(command => command.id === "regenerateMarkets")!.run();
+    dialogButton("Markets only").click();
+    expect(mocks.clear).toHaveBeenCalledOnce();
   });
 
   it("offers every built-in layers preset as a command", () => {

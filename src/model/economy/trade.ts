@@ -21,8 +21,8 @@ import { TradeRoutes } from "./trade-routes";
 const PRICE_FLOOR_FACTOR = 0.02;
 const PRICE_CEILING_FACTOR = 5.0;
 export const PRICE_CURVE = 2; // a price follows the ratio of demand to supply, expected sales counted in both, to this power
-const WANTS_ESTIMATE = 1.04; // expected sales: what people buy beyond their needs, as a multiple of them
-const OPENING_ELASTICITY = 0.08; // how far below its value an ingredient opens where its trades need less than a unit a day
+const WANTS_ESTIMATE = 0.93; // expected sales: what people buy beyond their needs, as a multiple of them
+const OPENING_ELASTICITY = 0.21; // how far below its value an ingredient opens where its trades need less than a unit a day
 export const MARKET_MARGIN = 0.035; // a market's margin before its license fee raises it
 const MAX_DECIMAS = 10; // the map's diagonal: the most carriage, paid with no route to the burg's own market
 export const MIN_LOCAL_STOCK = 1; // a buyer buys at its own market while it stocks this much, otherwise from the cheapest market

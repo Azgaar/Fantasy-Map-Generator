@@ -37,7 +37,7 @@ import { toggleSaveReminder } from "@/services/autosave";
 import { copyMapURL } from "@/services/url-params";
 import { confirmCleanupData } from "@/services/versioning";
 import { Dialog } from "@/ui/dialog/dialog";
-import { closeEntityDialogs, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { askEconomyRerun, closeEntityDialogs, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { changeMapZoom, resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { isCtrlClick } from "@/utils/common-utils";
@@ -502,7 +502,13 @@ export const MAP_COMMANDS: MapCommand[] = [
     id: "regenerateStates",
     name: `${t("Regenerate")}: ${t("States")}`,
     aliases: "generate countries kingdoms",
-    run: () => confirmRegeneration(regenerateStates)
+    run: () =>
+      confirmWithEconomy(regenerateStates, {
+        title: t("Regenerate states"),
+        message: economyClearedNote(),
+        both: t("States and economy"),
+        only: t("States only")
+      })
   },
   {
     id: "regenerateProvinces",
@@ -515,7 +521,13 @@ export const MAP_COMMANDS: MapCommand[] = [
     id: "regenerateBurgs",
     name: `${t("Regenerate")}: ${t("Burgs")}`,
     aliases: "generate settlements cities towns",
-    run: () => confirmRegeneration(regenerateBurgs)
+    run: () =>
+      confirmWithEconomy(regenerateBurgs, {
+        title: t("Regenerate burgs"),
+        message: economyClearedNote(),
+        both: t("Burgs and economy"),
+        only: t("Burgs only")
+      })
   },
   {
     id: "regenerateCultures",
@@ -588,13 +600,25 @@ export const MAP_COMMANDS: MapCommand[] = [
     id: "regenerateGoods",
     name: `${t("Regenerate")}: ${t("Goods")}`,
     aliases: "generate resources",
-    run: () => confirmRegeneration(regenerateGoods)
+    run: () =>
+      confirmWithEconomy(regenerateGoods, {
+        title: t("Regenerate deposits"),
+        message: t("Production and trade deals stay as they are until production is regenerated."),
+        both: t("Deposits and production"),
+        only: t("Deposits only")
+      })
   },
   {
     id: "regenerateMarkets",
     name: `${t("Regenerate")}: ${t("Markets")}`,
     aliases: "generate economy",
-    run: () => confirmRegeneration(regenerateMarkets)
+    run: () =>
+      confirmWithEconomy(regenerateMarkets, {
+        title: t("Regenerate markets"),
+        message: t("New markets start empty: production and trade deals are cleared until production is regenerated."),
+        both: t("Markets and production"),
+        only: t("Markets only")
+      })
   },
   {
     id: "regenerateProduction",
@@ -842,6 +866,26 @@ function confirmRegeneration(action: () => void): void {
   });
 }
 
+function confirmWithEconomy(
+  regenerate: (withEconomy: boolean) => void,
+  { message, ...question }: Omit<Parameters<typeof askEconomyRerun>[0], "onChoice">
+): void {
+  askEconomyRerun({
+    ...question,
+    message: `${t("Regeneration will remove all the custom changes for the element.")}<br><br>${message}`,
+    onChoice: withEconomy => {
+      regenerate(withEconomy);
+      closeEntityDialogs();
+      refreshEditors();
+    }
+  });
+}
+
+const economyClearedNote = () =>
+  t(
+    "Without the economy, production and trade deals are cleared until it is regenerated. The economy redraws market territories, discarding hand-painted cells."
+  );
+
 function regenerateStateLabels(): void {
   for (const state of pack.states) {
     if (!state.i || state.removed) continue;
@@ -871,12 +915,13 @@ function regeneratePopulation(): void {
   Layers.draw("population", "goods");
 }
 
-function regenerateStates(): void {
+function regenerateStates(withEconomy: boolean): void {
   const { warning, error } = States.regenerate();
   if (error) return void tip(error, false, "error");
   if (warning) tip(warning, false, "warn");
 
-  Production.regenerateEconomy(); // the new states tax the deals
+  if (withEconomy) Production.regenerateEconomy();
+  else Production.clear(); // the deals were taxed by the old states
   Military.regenerate(); // after the economy, as armies are equipped from what their states consume
   unfog();
   Layers.draw(
@@ -893,21 +938,23 @@ function regenerateStates(): void {
   );
 }
 
-function regenerateBurgs(): void {
+function regenerateBurgs(withEconomy: boolean): void {
   Burgs.regenerate();
-  Production.regenerateEconomy(); // the deals named the old burg ids
+  if (withEconomy) Production.regenerateEconomy();
+  else Production.clear(); // the deals named the old burg ids
   Layers.draw("burgIcons", "labels", "routes", "population", "markets", "goods", "trade", "emblems");
 }
 
-function regenerateGoods(): void {
+function regenerateGoods(withProduction: boolean): void {
   Goods.regenerate();
-  Production.regenerate();
+  if (withProduction) Production.regenerate();
   Layers.draw("goods", "trade");
 }
 
-function regenerateMarkets(): void {
+function regenerateMarkets(withProduction: boolean): void {
   Markets.regenerate();
-  Production.regenerate();
+  if (withProduction) Production.regenerate();
+  else Production.clear(); // the deals and stocks named the old markets
   Layers.draw("markets", "goods", "trade");
 }
 

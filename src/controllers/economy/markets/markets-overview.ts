@@ -2,7 +2,6 @@ import { select } from "d3";
 import { Controllers } from "@/controllers";
 import { ColorPicker } from "@/controllers/color-picker";
 import { type Market, Markets } from "@/model/economy/markets-generator";
-import { Production } from "@/model/economy/production-generator";
 import { Trade } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
@@ -353,7 +352,6 @@ function confirmRemoveMarket(marketId: number): void {
     confirm: t("Remove"),
     onConfirm: () => {
       Markets.removeMarket(marketId);
-      Production.regenerate(); // the deals named it
       Layers.draw("markets", "goods", "trade");
       marketsTable.refresh();
     }

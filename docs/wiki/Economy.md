@@ -205,7 +205,7 @@ Changes take effect when you regenerate. _Tools_ → _Regenerate_ has four butto
 | **Production** | Recalculates the day: production, trade and taxes, from the current goods, markets and burgs        |
 | **Economy**    | Redraws market regions, then recalculates the day. Market cells you painted by hand are redrawn too |
 
-Regenerating Goods or Markets reruns Production by itself; run Economy to redraw market territories as well. Keep a saved copy if you want to compare before and after.
+The numbers never change behind your back. Regenerating Goods or Markets asks whether to regenerate production too, and regenerating Burgs or States whether to regenerate the economy. If you decline, new deposits leave production and trade as they were, while new markets, burgs or states clear them, as they named what is gone, until you regenerate. Removing a good, a burg or a market only removes its own deals. Keep a saved copy if you want to compare before and after.
 
 # Questions
 
@@ -219,4 +219,4 @@ Regenerating Goods or Markets reruns Production by itself; run Economy to redraw
 
 **Why do state treasuries change when I only edit a burg?** They do not until you regenerate production; then all deals and taxes are recalculated.
 
-**Why did nothing change when I added an adjustment to a burg?** Adjustments, like most edits to routes and burgs, take effect when you regenerate Production or Economy. Apply in a state's taxes dialog or in the good editor recalculates the day at once, and so does removing a good, a burg or a market.
+**Why did nothing change when I added an adjustment to a burg?** Adjustments, like most edits to routes and burgs, take effect when you regenerate Production or Economy. Apply in a state's taxes dialog or in the good editor recalculates the day at once while its _regenerate_ checkbox is ticked.

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Burg } from "@/model/political/burgs-generator";
-import { noFinance } from "@/model/political/states-generator";
+import { noFinance, States } from "@/model/political/states-generator";
 import { rn } from "@/utils/number-utils";
 import { EconomyDebug } from "./economy-debug";
 import type { Good } from "./goods-generator";
@@ -81,6 +81,36 @@ function plan(output: number, workers: number, inventory: number[] = []) {
   // biome-ignore lint/complexity/useLiteralKeys: private test access
   return production["planGoodAction"](index, state, catalogue[output - 1], 1, 1, workers);
 }
+
+describe("clearing the run", () => {
+  it("leaves nothing made or traded, the adjustments alone", () => {
+    const state = { i: 1, economy: { ...noFinance(), spent: { ...noFinance().spent, military: 5 }, treasury: 9 } };
+    const run = {
+      i: 1,
+      product: 7,
+      production: [[1, 2]],
+      pollTaxPaid: 1,
+      treasury: 9,
+      adjustments: [{ name: "Rent", value: 3 }]
+    };
+    pack.deals = [[1, 1, 1, 0, 2, 3]] as never;
+    pack.burgs = [0, run] as never;
+    pack.markets = [{ i: 1, goods: { 1: { stock: 1, price: 1 } }, feePaid: 2, rural: { earned: 1 } }] as never;
+    pack.states = [{ i: 0 }, state] as never;
+    pack.cells = { i: [0, 1], prosperity: Uint8Array.from([5, 5]) } as never;
+    const collectTaxes = vi.spyOn(States, "collectTaxes").mockImplementation(() => {});
+
+    production.clear();
+
+    expect(pack.deals).toEqual([]);
+    expect(pack.markets[0]).toEqual({ i: 1, goods: {}, feePaid: 0 });
+    expect(run).toMatchObject({ product: 0, production: [], pollTaxPaid: 0, treasury: 3 });
+    expect(state.economy.spent.military).toBe(0);
+    expect(Array.from(pack.cells.prosperity)).toEqual([0, 0]);
+    expect(collectTaxes).toHaveBeenCalledOnce();
+    collectTaxes.mockRestore();
+  });
+});
 
 describe("manufacturing work with stocked inputs", () => {
   it("makes an engine in one step and an engine then ship in two steps", () => {

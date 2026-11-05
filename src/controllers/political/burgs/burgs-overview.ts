@@ -1,7 +1,6 @@
 import { type HierarchyCircularNode, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
 import { Markets } from "@/model/economy/markets-generator";
-import { Production } from "@/model/economy/production-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
@@ -612,7 +611,6 @@ function triggerBurgRemove(this: HTMLElement): void {
     onConfirm: () => {
       Burgs.remove(burgId);
       removeEmblem("burg", burgId);
-      Production.regenerate(); // the deals named it
       burgsTable.refresh();
       Layers.draw("burgIcons", "labels", "goods", "trade");
     }
@@ -901,7 +899,6 @@ function triggerAllBurgsRemove(): void {
         Burgs.remove(burg.i);
         removeEmblem("burg", burg.i);
       }
-      Production.regenerate(); // the deals named them
       burgsTable.refresh();
       Layers.draw("burgIcons", "labels", "goods", "trade");
     }

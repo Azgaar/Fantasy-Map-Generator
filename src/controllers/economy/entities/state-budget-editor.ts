@@ -70,7 +70,7 @@ let edit: {
   collected: number; // the taxes collected in the last run, before adjustments
 }; // what the form holds, read on Apply
 
-/** Opens the state's budget; Apply sets the changes, regenerates production and shows the outcome in place */
+/** Opens the state's budget; Apply sets the changes and, if ticked, regenerates production to show the outcome in place */
 function open(id: number, onApply?: () => void): void {
   const state = pack.states[id];
   if (!id || !state || state.removed) return;
@@ -85,9 +85,14 @@ function open(id: number, onApply?: () => void): void {
     title: t("Budget: {{- state}}", { state: state.name }),
     width: "32em",
     position: { my: "center", at: "center", of: "svg" },
-    footer: economyWikiButton("stateTaxesWiki"),
+    footer:
+      economyWikiButton("stateTaxesWiki") +
+      /*html*/ `<div class="dontAsk" data-tip="${t("Rerun the day to see the changes' effect. Unticked, they apply when production is next regenerated")}">
+        <input id="stateBudgetRegenerate" class="checkbox" type="checkbox" checked />
+        <label for="stateBudgetRegenerate" class="checkbox-label"><i>${t("regenerate production on apply")}</i></label>
+      </div>`,
     buttons: [
-      { label: t("Apply"), tip: t("Set the changes and regenerate production to see their effect"), onClick: apply },
+      { label: t("Apply"), tip: t("Set the changes"), onClick: apply },
       { label: t("Close"), onClick: () => Dialog.close(dialogId) }
     ],
     onClose: cleanup
@@ -148,8 +153,10 @@ function apply(): void {
   States.setTariffs(stateId, edit.rules);
   States.setAdjustments(stateId, edit.adjustments);
 
-  Production.regenerate(); // the views read the run, so it spends and taxes as now set
-  Layers.draw("goods", "trade");
+  if (ensureEl<HTMLInputElement>("stateBudgetRegenerate").checked) {
+    Production.regenerate(); // the views read the run, so it spends and taxes as now set
+    Layers.draw("goods", "trade");
+  }
   if (findEl("statesEditor")) void Controllers.StatesEditor.refresh();
   onApplied?.();
   render();

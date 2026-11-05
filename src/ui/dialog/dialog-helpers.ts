@@ -1,7 +1,16 @@
 // Building blocks shared by editor dialogs
 
 import { Dialog } from "@/ui/dialog/dialog";
+import { t } from "@/utils/i18n";
 import { findEl } from "@/utils/node-utils";
+
+type EconomyRerunQuestion = {
+  title: string;
+  message: string;
+  both: string; // the button that reruns it
+  only: string; // the button that leaves it
+  onChoice: (withEconomy: boolean) => void;
+};
 
 /** The note button every entity dialog puts in its toolbar, with its translated tooltip */
 export function noteButton(id: string, tip: string): string {
@@ -43,6 +52,20 @@ export function closeEntityDialogs(): void {
     ".burgEconomyDialog, .stateEconomyDialog, .provinceEconomyDialog, #tradeDetails, #stateBudgetEditor, #tariffSelectorDialog"
   );
   for (const { id } of dialogs) Dialog.close(id);
+}
+
+/** Regenerating what the economy rests on asks each time whether the economy follows: it never reruns unasked */
+export function askEconomyRerun({ title, message, both, only, onChoice }: EconomyRerunQuestion): void {
+  Dialog.message({
+    title,
+    message,
+    width: "32em",
+    buttons: [
+      { label: both, onClick: () => onChoice(true) },
+      { label: only, onClick: () => onChoice(false) },
+      { label: t("Cancel") }
+    ]
+  });
 }
 
 /** Refresh every editor that is currently open */

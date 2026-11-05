@@ -16,7 +16,7 @@ import type { LegendItem } from "@/types/legend";
 import { runMapCommand } from "@/ui/app-commands";
 import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { noteIcon, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { askEconomyRerun, noteIcon, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
 import {
@@ -595,16 +595,18 @@ function applyTagVisibilityFilter() {
 }
 
 function goodsRestoreDefaults() {
-  Dialog.confirm({
+  askEconomyRerun({
     title: t("Restore default goods"),
-    message: `${t("Are you sure you want to restore default goods?")}<br>${t("This action cannot be reverted")}`,
-    confirm: t("Restore"),
-    onConfirm: () => {
+    message: `${t("Are you sure you want to restore default goods?")}<br>${t("This action cannot be reverted")}<br><br>${t("Without the economy, production and trade deals are cleared until it is regenerated. The economy redraws market territories, discarding hand-painted cells.")}`,
+    both: t("Goods and economy"),
+    only: t("Goods only"),
+    onChoice: withEconomy => {
       const previousIds = pack.goods.map(good => good.i);
       Goods.restoreDefaults();
       States.pruneTariffs({ goods: previousIds.filter(id => !Goods.get(id)) }); // a later good could reuse the id
       Goods.generate();
-      Production.regenerateEconomy();
+      if (withEconomy) Production.regenerateEconomy();
+      else Production.clear(); // the deals and stocks named the old goods
       Layers.draw("markets", "goods");
       Layers.draw("trade");
       refreshEditors();
@@ -842,7 +844,6 @@ function removeGood(good: Good) {
   const onConfirm = () => {
     Goods.remove(good.i);
     States.pruneTariffs({ goods: [good.i] });
-    Production.regenerate(); // the deals and stocks named it
     Layers.draw("goods", "trade");
     refreshEditors();
   };

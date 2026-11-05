@@ -47,14 +47,14 @@ const columns: EditorColumn<MarketGoodRow>[] = [
   {
     key: "stock",
     label: t("Stock"),
-    width: "5em",
+    width: "6em",
     sortBy: item => item.stock,
     defaultSort: "desc"
   },
   {
     key: "price",
     label: t("Price"),
-    width: "5em",
+    width: "6em",
     sortBy: item => item.price
   },
   { key: "actions", width: "1.4em", permanent: true, hidden: true }
