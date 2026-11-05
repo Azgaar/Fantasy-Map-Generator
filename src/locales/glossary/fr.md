@@ -90,6 +90,9 @@ Terms every `fr.json` string uses the same way. Rules for all catalogs are in
 | inequality / tax burden          | inégalité / charge fiscale              |
 | sector: rural / manufacturing / trade | campagne / artisanat / commerce         |
 | economy type: agrarian / artisan / mercantile | agraire / artisanale / marchande        |
+| carriage / decima                | fret / décima                           |
+| tariff / market license          | droit de douane / licence de marché     |
+| upkeep / corruption              | entretien / corruption                  |
 
 ## Interface
 

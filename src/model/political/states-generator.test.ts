@@ -280,6 +280,32 @@ describe("StatesModule.generateDiplomacy", () => {
     vi.restoreAllMocks();
   });
 
+  it("keeps a locked state's tariffs and rebuilds the others'", () => {
+    const rules = [{ states: "all", goods: [1], rate: 0.5 }];
+    globalThis.pack = {
+      cells: { i: [0, 1], h: [30, 30], state: [1, 2], pop: [10, 10], f: [1, 1] },
+      states: withFinance([
+        { i: 0, name: "Neutrals" },
+        {
+          i: 1,
+          name: "A",
+          lock: true,
+          neighbors: [2],
+          center: 0,
+          expansionism: 1,
+          campaigns: [],
+          economy: { tariffs: rules }
+        },
+        { i: 2, name: "B", neighbors: [1], center: 1, expansionism: 1, campaigns: [], economy: { tariffs: rules } }
+      ])
+    } as any;
+
+    StatesModule.generateDiplomacy();
+
+    expect(globalThis.pack.states[1].economy.tariffs).toEqual(rules);
+    expect(globalThis.pack.states[2].economy.tariffs).not.toEqual(rules);
+  });
+
   it("skips removed states when vassals copy their suzerain's relations", () => {
     // state 2 is a populous state bordering the small state 3, which becomes its vassal; state 4 is far away
     const cellState = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 4];
@@ -711,5 +737,42 @@ describe("StatesModule tribal forms", () => {
   it("keeps the form's title from the Bronze Age on, and where development is unknown", () => {
     expect(tribal(12, { form: "Monarchy" }, 4, "Empire")).toBe("Empire");
     expect(tribal(0, { form: "Monarchy" }, 4, "Empire")).toBe("Empire");
+  });
+});
+
+describe("StatesModule regeneration of locked states", () => {
+  it("moves their tariff rules to the kept states' new ids and drops rules on dropped states", () => {
+    const random = Math.random;
+    globalThis.options = { generation: { states: { limit: 2 } }, map: { graph: { width: 100, height: 100 } } } as any;
+    const tariffs = [
+      { states: "all", goods: "all", rate: 0.05 },
+      { states: [3, 2], goods: "all", rate: 0.2 }, // 3 stays as 1, 2 is dropped
+      { states: [2], goods: [7], rate: "embargo" } // only the dropped state
+    ];
+    globalThis.pack = {
+      cells: { i: [0, 1, 2], state: [3, 5, 2] },
+      burgs: [
+        {},
+        { i: 1, x: 10, y: 10, capital: 1, state: 3 },
+        { i: 2, x: 50, y: 50, capital: 1, state: 5 },
+        { i: 3, x: 90, y: 90, state: 2 }
+      ],
+      provinces: [],
+      states: withFinance([
+        { i: 0, name: "Neutrals" },
+        { i: 2, name: "Unlocked", capital: 3 },
+        { i: 3, name: "A", lock: true, capital: 1 },
+        { i: 5, name: "B", lock: true, capital: 2, economy: { tariffs } }
+      ])
+    } as any;
+
+    const { states } = (States as any).recreate();
+    Math.random = random;
+
+    expect(states.map((state: any) => state.name)).toEqual(["Neutrals", "A", "B"]);
+    expect(states[2].economy.tariffs).toEqual([
+      { states: "all", goods: "all", rate: 0.05 },
+      { states: [1], goods: "all", rate: 0.2 }
+    ]);
   });
 });

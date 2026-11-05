@@ -99,6 +99,8 @@ Terms every `uk.json` string uses the same way. Rules for all catalogs are in
 | inequality / tax burden      | нерівність / податковий тягар         |
 | sector: rural / manufacturing / trade | село / ремесла / торгівля             |
 | economy type: agrarian / artisan / mercantile | аграрна / ремісницька / торговельна   |
+| tariff / carriage / decima   | мито / перевезення / децима |
+| upkeep / corruption          | утримання / корупція       |
 
 ## Interface
 

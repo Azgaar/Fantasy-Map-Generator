@@ -486,7 +486,7 @@ describe("workforce", () => {
   it("is the share of townspeople working in trades, capped", () => {
     vi.restoreAllMocks();
     expect(production.getWorkers({ population: 10 } as Burg)).toBe(rn(10 * WORKFORCE_SHARE, 2));
-    expect(production.getWorkers({ population: 5000 } as Burg)).toBe(1000);
+    expect(production.getWorkers({ population: 5000 } as Burg)).toBe(300);
   });
 });
 

@@ -60,7 +60,7 @@ const columns: EditorColumn<Good>[] = [
   {
     key: "unit",
     label: t("Unit"),
-    width: "4em",
+    width: "5.5em",
     sortBy: good => good.unit ?? "",
     sortType: "alpha",
     tip: sentences(t("Unit of production"), t("Click to sort"))
@@ -68,7 +68,7 @@ const columns: EditorColumn<Good>[] = [
   {
     key: "produced",
     label: t("Produced"),
-    width: "6em",
+    width: "7em",
     sortBy: good => rn((production[good.i]?.burg ?? 0) + (production[good.i]?.cell ?? 0)),
     defaultSort: "desc",
     tip: sentences(t("Units made a day, in cells and burgs"), t("Click to sort"))

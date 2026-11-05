@@ -781,10 +781,14 @@ function interpretDistribution(dist: string): string {
       const names = args.split(",").map((a: string) => pack.biomes[parseInt(a.trim(), 10)]?.name);
       return names.length === 1 ? names[0] : `${list(names)}`;
     })
-    .replace(/minHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => `min height ${getHeight(+h)}`)
-    .replace(/maxHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => `max height ${getHeight(+h)}`)
-    .replace(/minTemp\((-?\d+(?:\.\d+)?)\)/g, (_, t) => `min temp ${convertTemperature(+t)}`)
-    .replace(/maxTemp\((-?\d+(?:\.\d+)?)\)/g, (_, t) => `max temp ${convertTemperature(+t)}`)
+    .replace(/minHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => t("min height {{- height}}", { height: getHeight(+h) }))
+    .replace(/maxHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => t("max height {{- height}}", { height: getHeight(+h) }))
+    .replace(/minTemp\((-?\d+(?:\.\d+)?)\)/g, (_, temp) =>
+      t("min temperature {{- temperature}}", { temperature: convertTemperature(+temp) })
+    )
+    .replace(/maxTemp\((-?\d+(?:\.\d+)?)\)/g, (_, temp) =>
+      t("max temperature {{- temperature}}", { temperature: convertTemperature(+temp) })
+    )
     .replace(/shore\(([^)]+)\)/g, (_, args) =>
       args
         .split(",")
@@ -796,17 +800,17 @@ function interpretDistribution(dist: string): string {
         .replace(/["']/g, "")
         .split(",")
         .map((a: string) => a.trim());
-      return `type: ${types.join("/")}`;
+      return `${t("Type")}: ${types.join("/")}`;
     })
-    .replace(/river\(\)/g, "river presence")
-    .replace(/minHabitability\((\d+)\)/g, (_, n) => `habitability ≥ ${n}%`)
-    .replace(/habitability\(\)/g, "more habitable areas")
-    .replace(/elevation\(\)/g, "more elevated areas")
-    .replace(/nth\((\d+)\)/g, (_, n) => `1 in ${n} cells`)
-    .replace(/random\((\d+)\)/g, (_, n) => `${n}% chance`)
-    .replace(/\s*&&\s*/g, " AND ")
-    .replace(/\s*\|\|\s*/g, " OR ")
-    .replace(/!\s*/g, "NOT ")
+    .replace(/river\(\)/g, t("river presence"))
+    .replace(/minHabitability\((\d+)\)/g, (_, n) => t("habitability at least {{percent}}%", { percent: n }))
+    .replace(/habitability\(\)/g, t("more habitable areas"))
+    .replace(/elevation\(\)/g, t("more elevated areas"))
+    .replace(/nth\((\d+)\)/g, (_, n) => t("one in {{n}} cells", { n }))
+    .replace(/random\((\d+)\)/g, (_, n) => t("{{percent}}% chance", { percent: n }))
+    .replace(/\s*&&\s*/g, ` ${t("AND")} `)
+    .replace(/\s*\|\|\s*/g, ` ${t("OR")} `)
+    .replace(/!\s*/g, `${t("NOT")} `)
     .replace(/\s+/g, " ")
     .trim();
 }

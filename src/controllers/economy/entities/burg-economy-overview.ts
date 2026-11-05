@@ -122,7 +122,7 @@ function renderDialog(): void {
         #${dialogId} .columns h4 { margin-top: 0.3em }
         #${dialogId} .row { line-height: 1.6 }
         #${dialogId} .row.plain .right { font-variant-numeric: tabular-nums }
-        #${dialogId} .row.need { grid-template-columns: 7em 1fr 7.5em 3em; white-space: nowrap }
+        #${dialogId} .row.need { grid-template-columns: 8.5em 1fr 7.5em 3em; white-space: nowrap }
         #${dialogId} .adjustments .head { grid-template-columns: 1fr 6em; line-height: 1.6 }
         #${dialogId} .adjustments .head > span:last-child { text-align: right; font-variant-numeric: tabular-nums }
         #${dialogId} .productionGood { display: inline-flex; align-items: center; gap: 0.2em; vertical-align: middle }

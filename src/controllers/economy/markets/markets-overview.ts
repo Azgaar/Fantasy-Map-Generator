@@ -50,26 +50,26 @@ const columns: EditorColumn<MarketRow>[] = [
   { key: "market", label: t("Market"), width: "7em", permanent: true, sortBy: row => row.name, sortType: "alpha" },
   { key: "owner", label: t("Owner"), width: "7em", sortBy: row => row.owner, sortType: "alpha" },
   { key: "cells", label: t("Cells"), width: "4em", sortBy: row => row.cells },
-  { key: "burgs", label: t("Burgs"), width: "5em", sortBy: row => row.burgs },
-  { key: "stock", label: t("Stock"), width: "5em", sortBy: row => row.stock },
+  { key: "burgs", label: t("Burgs"), width: "6.5em", sortBy: row => row.burgs },
+  { key: "stock", label: t("Stock"), width: "6em", sortBy: row => row.stock },
   {
     key: "sales",
     label: t("Sales"),
-    width: "5em",
+    width: "6em",
     sortBy: row => row.sales,
     tip: sentences(t("Market income, less taxes and tariffs"), t("Click to sort"))
   },
   {
     key: "buys",
     label: t("Buys"),
-    width: "5em",
+    width: "6em",
     sortBy: row => row.buys,
     tip: sentences(t("Paid to burgs for the goods the market bought"), t("Click to sort"))
   },
   {
     key: "value",
     label: t("Value"),
-    width: "5em",
+    width: "6em",
     sortBy: row => row.value,
     defaultSort: "desc",
     tip: sentences(t("Market value: sales less buys, plus stock"), t("Click to sort"))

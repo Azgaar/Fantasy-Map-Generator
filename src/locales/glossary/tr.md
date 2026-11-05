@@ -97,6 +97,11 @@ Terms every `tr.json` string uses the same way. Rules for all catalogs are in
 | inequality / tax burden      | eşitsizlik / vergi yükü      |
 | sector: rural / manufacturing / trade | kırsal / zanaatlar / ticaret |
 | economy type: agrarian / artisan / mercantile | tarımsal / zanaatkâr / tüccar |
+| tariff / embargo             | tarife / ambargo         |
+| carriage / decima            | nakliye / desima         |
+| market license / margin      | pazar ruhsatı / marj     |
+| upkeep / corruption          | iaşe / yolsuzluk         |
+| crown lands                  | taç toprakları           |
 
 ## Interface
 

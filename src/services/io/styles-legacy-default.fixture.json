@@ -686,7 +686,7 @@
     "data-left": 10
   },
   "#goodsCells": {
-    "opacity": 0.4,
+    "opacity": 0.6,
     "filter": null
   },
   "#markets": {

@@ -87,6 +87,10 @@ Terms every `de.json` string uses the same way. Rules for all catalogs are in
 | inequality / tax burden      | Ungleichheit / Steuerlast       |
 | sector: rural / manufacturing / trade | Land / Handwerk / Handel        |
 | economy type: agrarian / artisan / mercantile | agrarisch / handwerklich / merkantil |
+| tariff / embargo             | Zoll / Embargo                  |
+| carriage (freight) / decima  | Fracht / Dezima                 |
+| market license / margin      | Marktlizenz / Marktspanne       |
+| upkeep / corruption          | Unterhalt / Korruption          |
 
 ## Interface
 

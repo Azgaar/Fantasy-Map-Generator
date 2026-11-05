@@ -46,6 +46,7 @@ export const economyStyle = (dialog: string) => /* html */ `<style>
   .${dialog} .row.plain { grid-template-columns: 1fr 6em }
   .${dialog} .row.budget { grid-template-columns: 2fr 2em 1fr 5em }
   .${dialog} .row .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; gap: 0.2em }
+  .${dialog} .row.plain .name, .${dialog} .row.budget .name { white-space: normal }
   .${dialog} .bar { height: 0.7em; background: #eee }
   .${dialog} .bar > div { height: 100% }
   .${dialog} .bar.stack { display: flex }

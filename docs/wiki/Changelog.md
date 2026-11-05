@@ -12,21 +12,28 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
-**[1.157.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.157.0) - 2026-10-30**:
+**[1.157.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.157.0) - 2026-11-12**:
 
-- Editors: cut too long column names
-- Hovering a cut value shows its text in the tooltip
-- Trade animation follows edited and custom routes
-- Heightmap: elevation labels
-- Heightmap: contours are spaced in round height units
-- Measurers, regiment controls and editing handles keep their size on zoom
-- Image Converter: fit, zoom and move the image before converting it
-- Update window: the latest releases info; F1 opens it again
-- The tour button on the map is removed: start the tour from the update window or the About tab
-- Emblems: Armoria pictures in older maps become COAs where possible
-- River style groups: regular, frozen, dry, lava and custom
+- Development: technology level of every cell
+- Economy: prices follow demand and supply
+- Economy: most developed burgs trade first
+- Economy: prosperity of burgs, provinces and states
+- Economy: state budgets, corruption and stability
+- Economy: state and province overview
+- Economy: army strength depends on upkeep
+- Trade: traffic sublayer
 - Rivers: tributaries bend gently into the downstream flow
-- Economy: prices from demand and supply, burgs trading in turns by development, state budgets, tariffs and corruption, state and province accounts, prosperity and a trade traffic sublayer
+- River style groups: regular, frozen, dry, lava and custom
+- Emblems: Armoria pictures in older maps become COAs where possible
+- The tour button on the map is removed: start the tour from the update window or the About tab
+- Update window: the latest releases info; F1 opens it again
+- Image Converter: fit, zoom and move the image before converting it
+- Measurers, regiment controls and editing handles keep their size on zoom
+- Heightmap: contours are spaced in round height units
+- Heightmap: elevation labels
+- Trade animation follows edited and custom routes
+- Hovering a cut value shows its text in the tooltip
+- Editors: cut too long column names
 
 # Releases
 

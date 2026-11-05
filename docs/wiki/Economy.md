@@ -208,7 +208,7 @@ Changes take effect when you regenerate. _Tools_ → _Regenerate_ → **Economy*
 
 Tick any combination; they always run in this order. Leaving production out keeps the numbers for new deposits or regions, while new markets or restored goods clear them until you regenerate production. Regenerating **Burgs** also rebuilds markets and recalculates production; regenerating **States** recalculates production. Removing a good, a burg or a market only removes its own deals, and painting deposits by hand only changes the cells. Keep a saved copy if you want to compare before and after.
 
-**Locked states and burgs** keep their taxes, budget and adjustments, but a day is one shared run, so their production, prices and balance are recalculated like everyone else's. Regenerating states also rebuilds diplomacy, and tariffs with it, for locked states too.
+**Locked states and burgs** keep their taxes, budget and adjustments, and locked states their tariffs too, but a day is one shared run, so their production, prices and balance are recalculated like everyone else's. Regenerating states drops a locked state's tariff rules on states that no longer exist, and rebuilds diplomacy for every state, so its tariffs may no longer match its relations.
 
 # Questions
 

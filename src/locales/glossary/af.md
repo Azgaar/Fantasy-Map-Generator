@@ -102,6 +102,8 @@ Terms every `af.json` string uses the same way. Rules for all catalogs are in
 | inequality / tax burden          | ongelykheid / belastinglas             |
 | sector: rural / manufacturing / trade | platteland / ambagte / handel          |
 | economy type: agrarian / artisan / mercantile | landbou / ambag / handel               |
+| carriage / tariff / market license | vervoerkoste / tarief / marklisensie |
+| decima / upkeep                  | desima / onderhoud                     |
 
 ## Interface
 

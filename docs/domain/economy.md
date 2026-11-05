@@ -39,7 +39,7 @@ Generation runs `Goods.generate()` early, before population ranking, which reads
 - **Removing** a good, a burg or a market prunes what names it from the run and reruns nothing, so the rest stays until the next run.
 - **Painting deposits** by hand only changes the cells.
 - **Apply** in the good editor and the State budget dialog reruns only with its footer checkbox ticked, on by default. The good editor re-places a good whose distribution or deposit count changed either way.
-- **Locks** protect a state or burg, not its numbers: a day is one shared run, so its production, prices and treasury are recomputed. A locked state keeps its taxes, license fee, budget and adjustments, and a locked burg its adjustments. Diplomacy and so tariffs are rebuilt for every state.
+- **Locks** protect a state or burg, not its numbers: a day is one shared run, so its production, prices and treasury are recomputed. A locked state keeps its taxes, license fee, budget, adjustments and tariffs, with rules on dropped states gone, and a locked burg its adjustments. Diplomacy is rebuilt for every state, so a locked state's tariffs may no longer match its relations.
 
 Loading a map does not rerun the economy, except a map saved before v1.157.0 (`auto-update.ts`). A submap or resample reruns it for the new land (`map-restoration.ts`): those burgs and markets are gone, and the user asked for a new map.
 

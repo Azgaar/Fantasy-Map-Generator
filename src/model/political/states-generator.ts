@@ -324,6 +324,15 @@ class StatesModule {
       newStates.push(state);
     }
 
+    // their tariff rules follow the kept states' new ids; a rule that named only dropped states goes
+    for (const { economy } of lockedStates) {
+      economy.tariffs = economy.tariffs.flatMap(rule => {
+        if (rule.states === "all") return [rule];
+        const states = rule.states.map(id => lockedStateIds.indexOf(id) + 1).filter(Boolean);
+        return states.length ? [{ ...rule, states }] : [];
+      });
+    }
+
     for (const cellId of pack.cells.i) {
       pack.cells.state[cellId] = lockedStateIds.indexOf(pack.cells.state[cellId]) + 1;
     }
@@ -675,7 +684,7 @@ class StatesModule {
     });
     if (valid.length < 2) {
       valid.forEach(s => {
-        s.economy.tariffs = this.defineTariffs(s);
+        if (!s.lock) s.economy.tariffs = this.defineTariffs(s);
       });
       return; // no states to generate relations with
     }
@@ -838,7 +847,7 @@ class StatesModule {
       chronicle.push(war); // add a record to diplomatical history
     }
     valid.forEach(s => {
-      s.economy.tariffs = this.defineTariffs(s);
+      if (!s.lock) s.economy.tariffs = this.defineTariffs(s);
     });
     log.timeEnd("generateDiplomacy");
   }
