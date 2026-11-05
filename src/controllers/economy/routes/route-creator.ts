@@ -152,6 +152,7 @@ function closeRouteCreator(): void {
   if (isCellsLayerForced) Layers.hide("cells");
   isCellsLayerForced = false;
 
+  creatorPoints = [];
   Dialog.destroy("routeCreator");
 }
 

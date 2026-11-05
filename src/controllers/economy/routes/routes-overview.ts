@@ -80,6 +80,7 @@ function getFilteredRoutes(): Route[] {
 }
 
 const routesTable = initEditorTable<Route>({
+  dialogId,
   getData: () => sortDataByColumns(dialogId, getFilteredRoutes(), columns),
   onUpdate: renderRoutesPage
 });
@@ -147,9 +148,6 @@ function renderDialog(): void {
 
 function closeRoutesOverview(): void {
   Dialog.destroy("routesOverview");
-  const view = routesTable.view();
-  view.rows = [];
-  view.all = [];
 }
 
 function createNewRoute(): void {

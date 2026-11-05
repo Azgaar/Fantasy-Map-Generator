@@ -61,6 +61,7 @@ const columns: EditorColumn<MarketGoodRow>[] = [
 ];
 
 const marketOverviewTable = initEditorTable<MarketGoodRow>({
+  dialogId,
   getData: getMarketGoods,
   onUpdate: renderMarketOverviewPage
 });

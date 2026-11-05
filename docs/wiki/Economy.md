@@ -43,7 +43,7 @@ Click a good in the editor to change it:
 | **Multipliers**                   | Production bonuses or penalties by culture type, culture, state, religion, biome or zone. Make one culture famous for its wine, or one zone a mining district                                                                                                                                                                                                                                                                   |
 | **Distribution** and **Deposits** | Where deposits can appear, and how many the map gets, whatever its size. The Goods Editor can show how many are placed in its Deposits column, hidden by default and turned on from the column menu. Click a good's Produced value to see which states and provinces make it in their cells, and which burgs make it. See [Goods spread functions](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions) |
 
-When you apply changes to a good, the dialog can recalculate the economy right away, re-placing its deposits if their distribution or count changed (_regenerate economy on apply_); uncheck it to edit without disturbing the current numbers. You can also add your own goods, change icons, paint deposits onto cells with the brush, open the **production chains** view to see how goods depend on each other, and show a **legend box** of the selected goods, or of all goods.
+When you apply changes to a good, its deposits are re-placed if their distribution or count changed, and the dialog can recalculate the day right away (_regenerate production on apply_); uncheck it to edit without disturbing the current numbers. You can also add your own goods, change icons, paint deposits onto cells with the brush, open the **production chains** view to see how goods depend on each other, and show a **legend box** of the selected goods, or of all goods.
 
 # Markets
 
@@ -84,12 +84,12 @@ So roads and ports shape the economy: a new road can open a region to trade, and
 
 Prices are in 🟡, the map's money. Its unit is the **uncia**, a gold coin of one troy ounce: 31.1 g of gold. Default prices work out like this:
 
-|                                                                                | Price | 🟡 1 is about                                         |
-| ------------------------------------------------------------------------------ | ----- | ----------------------------------------------------- |
-| A bullion of **gold**, an ingot of 15 troy ounces (about 470 g)                | 🟡 13 | one troy ounce of gold, 31 g                          |
-| The same in **silver**, with gold worth 11 times silver, as in medieval Europe |       | 340 g of silver, close to a pound; 240 silver pennies |
-| A wain of **grain**, a wagon-load of about a tonne                             | 🟡 1.5 | two-thirds of a wagon-load of grain                  |
-| A laborer's wage, 1–2 pennies a day                                            |       | four to eight months of a laborer's work              |
+|                                                                                | Price  | 🟡 1 is about                                         |
+| ------------------------------------------------------------------------------ | ------ | ----------------------------------------------------- |
+| A bullion of **gold**, an ingot of 15 troy ounces (about 470 g)                | 🟡 13  | one troy ounce of gold, 31 g                          |
+| The same in **silver**, with gold worth 11 times silver, as in medieval Europe |        | 340 g of silver, close to a pound; 240 silver pennies |
+| A wain of **grain**, a wagon-load of about a tonne                             | 🟡 1.5 | two-thirds of a wagon-load of grain                   |
+| A laborer's wage, 1–2 pennies a day                                            |        | four to eight months of a laborer's work              |
 
 So 🟡 1 is a lot of money for one person and modest for a town. The anchor is gold: if you change the base price of Gold, this scale shifts with it. To call the money something else, open _Tools_ → _Units_ and pick another name under **Money**.
 
@@ -196,16 +196,19 @@ Open several states' dialogs to compare them side by side. The neutral lands hav
 - **Start a trade war**: set tariffs or an embargo in a state's taxes dialog.
 - **Redraw trade regions**: add, move or remove markets, or paint market cells by hand in the Markets overview.
 
-Changes take effect when you regenerate. _Tools_ → _Regenerate_ has four buttons:
+Changes take effect when you regenerate. _Tools_ → _Regenerate_ → **Economy**, the regenerate button in the **Goods Editor** and the one in the **Markets Overview** all open the **Economy Regeneration** dialog, with these ticked to start with:
 
-| Button         | What it does                                                                                        |
-| -------------- | --------------------------------------------------------------------------------------------------- |
-| **Goods**      | Re-places deposits on the map, which new deposit counts need                                        |
-| **Markets**    | Rebuilds markets and their regions                                                                  |
-| **Production** | Recalculates the day: production, trade and taxes, from the current goods, markets and burgs        |
-| **Economy**    | Redraws market regions, then recalculates the day. Market cells you painted by hand are redrawn too |
+| Part              | What it does                                                                                 | Economy | Goods Editor | Markets Overview |
+| ----------------- | -------------------------------------------------------------------------------------------- | ------- | ------------ | ---------------- |
+| **Restore goods** | Brings back the default goods and places all their deposits                                  |         |              |                  |
+| **Deposits**      | Re-places deposits on the map, which new deposit counts need                                 |         | ✓            |                  |
+| **Markets**       | Rebuilds markets and their regions                                                           |         |              | ✓                |
+| **Market areas**  | Redraws market regions. Market cells you painted by hand are redrawn too                     |         |              |                  |
+| **Production**    | Recalculates the day: production, trade and taxes, from the current goods, markets and burgs | ✓       | ✓            | ✓                |
 
-The numbers never change behind your back. Regenerating Goods or Markets asks whether to regenerate production too, and regenerating Burgs or States whether to regenerate the economy. If you decline, new deposits leave production and trade as they were, while new markets, burgs or states clear them, as they named what is gone, until you regenerate. Removing a good, a burg or a market only removes its own deals. Keep a saved copy if you want to compare before and after.
+Tick any combination; they always run in this order. Leaving production out keeps the numbers for new deposits or regions, while new markets or restored goods clear them until you regenerate production. Regenerating **Burgs** also rebuilds markets and recalculates production; regenerating **States** recalculates production. Removing a good, a burg or a market only removes its own deals, and painting deposits by hand only changes the cells. Keep a saved copy if you want to compare before and after.
+
+**Locked states and burgs** keep their taxes, budget and adjustments, but a day is one shared run, so their production, prices and balance are recalculated like everyone else's. Regenerating states also rebuilds diplomacy, and tariffs with it, for locked states too.
 
 # Questions
 

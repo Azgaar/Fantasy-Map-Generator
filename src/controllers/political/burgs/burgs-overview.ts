@@ -211,6 +211,7 @@ const columns: EditorColumn<Burg>[] = [
 ];
 
 const burgsTable = initEditorTable<Burg>({
+  dialogId,
   getData: () => sortDataByColumns(dialogId, getFilteredBurgs(), columns),
   onUpdate: renderBurgsPage
 });

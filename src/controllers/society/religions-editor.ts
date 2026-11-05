@@ -144,6 +144,7 @@ function getFilteredReligions(): Religion[] {
 }
 
 const religionsTable = initEditorTable<Religion>({
+  dialogId,
   getData: () => sortDataByColumns(dialogId, getFilteredReligions(), columns),
   onUpdate: religionsEditorAddLines
 });
@@ -1020,9 +1021,6 @@ function closeReligionsEditor(): void {
   select("#debug").select("#religionCenters").remove();
   if (options.app.mode === "addReligion") exitAddReligionMode();
   Controllers.ColorPicker.close();
-  const view = religionsTable.view();
-  view.rows = [];
-  view.all = [];
   Dialog.destroy("religionsEditor");
 }
 

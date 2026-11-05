@@ -21,19 +21,25 @@ The FMG economy is **one frozen cycle: a typical day**, not a simulation over ti
 
 Generation runs `Goods.generate()` early, before population ranking, which reads good values and deposits. Near the end it runs `Markets.generate()` → `Production.produce()` → `States.collectTaxes()`.
 
-**The run changes only when the user asks for it.** Production and Economy are the explicit reruns. Everything the run rests on asks first which they want, in a dialog that "Do not ask again" does not skip (`askEconomyRerun`):
+**The run changes only when the user asks for it.** One dialog, `openEconomyRegeneration(preset)`, ticks what to run, always in this order. Tools has one Economy button for it; each button only opens it with its own ticks:
 
-| Regenerate    | Then, if the user adds it                                               | If not                                         |
-| ------------- | ----------------------------------------------------------------------- | ---------------------------------------------- |
-| Goods         | Production                                                              | The run stays, describing the old deposits     |
-| Markets       | Production                                                              | `Production.clear()`: it named the old markets |
-| States, Burgs | Economy; States also regenerate the military, equipped from the new run | `Production.clear()`: it no longer applies     |
-| Default goods | Economy                                                                 | `Production.clear()`: it named the old goods   |
+| Part          | Does                                                                                                         | Tools Economy | Goods Editor | Markets Overview |
+| ------------- | ------------------------------------------------------------------------------------------------------------ | ------------- | ------------ | ---------------- |
+| Restore goods | `Goods.restoreDefaults`, placing all deposits                                                                |               |              |                  |
+| Deposits      | `Goods.regenerate`                                                                                           |               | ✓            |                  |
+| Markets       | `Markets.regenerate`, drawing their areas                                                                    |               |              | ✓                |
+| Market areas  | `Markets.expandTerritories`, discarding hand-painted cells                                                   |               |              |                  |
+| Production    | `Production.regenerate`: gives new water deposits a market, clears deals and stock, runs the day, pays taxes | ✓             | ✓            | ✓                |
 
-- **Production**: `Production.regenerate()` clears deals and stock, runs the day, collects taxes.
-- **Economy**: `Production.regenerateEconomy()` re-floods the markets' territories, then as Production.
+**Burgs** and **States** stay out of it, behind the plain confirmation: Burgs runs burgs, then Markets, then Production; States runs states, then Production, then the military, equipped from the new run.
+
+- **It always asks**, with no "Do not ask again": choosing is the point of it.
+- **Without Production**, new deposits or areas leave the run as it was; new markets or restored goods call `Production.clear()`, as the run named what is gone.
+- **Water deposits** join a market when production runs (`Markets.claimWaterDeposits`), as the flood skips water without goods. It keeps the land, so hand-painted cells survive.
 - **Removing** a good, a burg or a market prunes what names it from the run and reruns nothing, so the rest stays until the next run.
-- **Apply** in the good editor and the State budget dialog reruns only with its footer checkbox ticked, on by default.
+- **Painting deposits** by hand only changes the cells.
+- **Apply** in the good editor and the State budget dialog reruns only with its footer checkbox ticked, on by default. The good editor re-places a good whose distribution or deposit count changed either way.
+- **Locks** protect a state or burg, not its numbers: a day is one shared run, so its production, prices and treasury are recomputed. A locked state keeps its taxes, license fee, budget and adjustments, and a locked burg its adjustments. Diplomacy and so tariffs are rebuilt for every state.
 
 Loading a map does not rerun the economy, except a map saved before v1.157.0 (`auto-update.ts`). A submap or resample reruns it for the new land (`map-restoration.ts`): those burgs and markets are gone, and the user asked for a new map.
 
@@ -381,7 +387,7 @@ A constant at the edge of its range is a sign the range is too narrow.
 - **Local first.** A trickle of local stock blocks cheaper sources until it is gone.
 - **The surplus is real.** Markets buy every unit offered at a falling price, so much of what is made stays unsold. Spending, not supply, limits goods sold.
 - **No route, no trade.** The Routes layer explains most odd trade patterns.
-- **Economy regeneration redraws territories**, discarding hand-painted market cells; Production keeps them. The good editor redraws them only when a good's distribution or deposits changed.
+- **Economy regeneration redraws territories**, discarding hand-painted market cells; Production keeps them.
 - **Most edits apply on the next run.** Only the ticked checkbox in the State budget dialog and the good editor reruns at once.
 - **A state's last orders can miss late taxes.** Taxes other states' final orders pay it after its turn count in what it collected, but stay in its treasury that day.
 - **Good values and deposits shape the map**, so retuning defaults can break seed-pinned tests.

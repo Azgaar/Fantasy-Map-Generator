@@ -207,7 +207,11 @@ const columns: EditorColumn<Province>[] = [
   { key: "lock", width: "1.1em" },
   { key: "remove", width: "1.4em", permanent: true }
 ];
-const provincesTable = initEditorTable<Province>({ getData: getProvincesData, onUpdate: renderProvincesPage });
+const provincesTable = initEditorTable<Province>({
+  dialogId,
+  getData: getProvincesData,
+  onUpdate: renderProvincesPage
+});
 
 function open(): void {
   if (options.app.mode) return;
@@ -1306,9 +1310,7 @@ function closeProvincesEditor(): void {
   if (options.app.mode === "addProvince") exitAddProvinceMode();
   provincesAnnex.exit();
   Controllers.ColorPicker.close();
-  const view = provincesTable.view();
-  view.rows = [];
-  view.all = [];
+  development = [];
   Dialog.destroy("provincesEditor");
 }
 

@@ -146,12 +146,11 @@ export const GOODS_DATA: GoodData[] = [
     color: "#7fcdff",
     value: 1.5,
     carriage: 0.6,
-    deposits: [3, 6],
+    deposits: [4, 8],
     distribution: 'shore(-1) && type("ocean", "freshwater", "salt") || river()',
     unit: "wain",
     demandCoverage: { food: 0.75 },
-    multipliers: { cultureType: { River: 2, Lake: 3, Naval: 2.5, Nomadic: 0.2 } },
-    biomeOutput: { 0: 0.03 }
+    multipliers: { cultureType: { River: 2, Lake: 3, Naval: 2.5, Nomadic: 0.2 } }
   },
   {
     name: "Game",

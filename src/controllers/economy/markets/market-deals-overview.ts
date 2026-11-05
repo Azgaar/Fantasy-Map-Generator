@@ -121,6 +121,7 @@ const columns: EditorColumn<MarketDealRow>[] = [
 ];
 
 const marketDealsTable = initEditorTable<MarketDealRow>({
+  dialogId,
   getData: getMarketDealRows,
   onUpdate: renderMarketDealsPage
 });

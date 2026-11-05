@@ -574,6 +574,7 @@ function closeLabelEditor(): void {
   select("#debug").select("#controlPoints").remove();
   select(`#${label.id}`).on(".drag", null).classed("draggable", false);
   applyDefaultViewboxEvents();
+  label = null!;
   Dialog.destroy("labelEditor");
 }
 

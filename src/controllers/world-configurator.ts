@@ -34,7 +34,7 @@ function open(): void {
   Dialog.open("worldConfigurator", {
     title: t("Configure World"),
     buttons: [{ label: t("Update world"), onClick: updateWorld, tip: t("Apply current settings to the map") }],
-    footer: /* html */ `<div class="dontAsk" data-tip="${t("Automatically update world on input changes and button clicks")}">
+    footer: /* html */ `<div data-tip="${t("Automatically update world on input changes and button clicks")}">
       <input id="wcAutoChange" class="checkbox" type="checkbox" checked />
       <label for="wcAutoChange" class="checkbox-label"><i>${t("auto-apply changes")}</i></label>
     </div>`

@@ -193,6 +193,7 @@ function getFilteredCultures(): Culture[] {
 }
 
 const culturesTable = initEditorTable<Culture>({
+  dialogId,
   getData: () => {
     development = Development.getAverages(pack.cells.culture);
     return sortDataByColumns(dialogId, getFilteredCultures(), columns);
@@ -1099,6 +1100,7 @@ function downloadCulturesCsv(): void {
 function closeCulturesEditor(): void {
   select("#debug #cultureCenters").remove();
   if (options.app.mode === "addCulture") exitAddCultureMode();
+  development = [];
   Dialog.destroy("culturesEditor");
 }
 

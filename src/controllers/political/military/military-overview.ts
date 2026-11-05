@@ -47,6 +47,7 @@ type MilitaryRow = {
 let columns: EditorColumn<MilitaryRow>[] = [];
 
 const militaryTable = initEditorTable<MilitaryRow>({
+  dialogId,
   getData: getMilitaryData,
   onUpdate: renderMilitaryPage
 });

@@ -13,10 +13,10 @@ import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { Csv } from "@/services/io/csv";
 import type { LegendItem } from "@/types/legend";
-import { runMapCommand } from "@/ui/app-commands";
+import { App } from "@/ui/app-commands";
 import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { askEconomyRerun, noteIcon, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { noteIcon, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
 import {
@@ -37,24 +37,6 @@ import { ensureEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
 
-const CSV_COLUMNS = [
-  "Id",
-  "Good",
-  "Color",
-  "Type",
-  "Tags",
-  "Value",
-  "Carriage",
-  "Development",
-  "Unit",
-  "Demand Coverage",
-  "Deposits",
-  "Model",
-  "Cells",
-  "Produced",
-  "Stock"
-];
-
 let production: ReturnType<typeof getProduction> = {};
 let depositsByGood: Record<number, number> = {};
 let stockData: ReturnType<typeof getAllStockData> = {};
@@ -62,7 +44,7 @@ let stockData: ReturnType<typeof getAllStockData> = {};
 const dialogId = "goodsEditor" as const;
 const LEGEND_NAME = "Goods"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
-let filterState: { visibleTags: string[]; search: string };
+let filterState: { search: string };
 
 const columns: EditorColumn<Good>[] = [
   { key: "display", width: "1.6em" },
@@ -150,19 +132,37 @@ const columns: EditorColumn<Good>[] = [
   { key: "edit", width: "1.1em" },
   { key: "remove", width: "1.4em", permanent: true }
 ];
-const goodsTable = initEditorTable<Good>({ getData: getGoodsData, onUpdate: renderGoodsPage });
+const goodsTable = initEditorTable<Good>({ dialogId, getData: getGoodsData, onUpdate: renderGoodsPage });
+
+const CSV_COLUMNS = [
+  "Id",
+  "Good",
+  "Color",
+  "Type",
+  "Tags",
+  "Value",
+  "Carriage",
+  "Development",
+  "Unit",
+  "Demand Coverage",
+  "Deposits",
+  "Model",
+  "Cells",
+  "Produced",
+  "Stock"
+];
 
 /** With a good id, the Goods layer shows only that good */
 function open(goodId?: number): void {
   void Icons.retry("goods");
   if (options.app.mode) return;
-  filterState = { search: "", ...dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] })) };
+  filterState = { search: dialogState.get(dialogId, "filters", () => ({ search: "" })).search ?? "" };
   Dialog.closeAll("#goodsEditor, .stable");
 
   if (goodId !== undefined) {
     for (const good of pack.goods) good.visible = good.i === goodId;
-    if (filterState.visibleTags.length || filterState.search) {
-      filterState = { visibleTags: [], search: "" };
+    if (filterState.search) {
+      filterState = { search: "" };
       dialogState.set(dialogId, "filters", filterState);
     }
     if (Layers.has("goods")) Layers.draw("goods");
@@ -226,25 +226,17 @@ function renderDialog(): void {
           data-tip="${t("Toggle percentage / absolute values views")}"
           class="icon-percent"
         ></button>
-        <button id="goodsTagsFilter" data-tip="${t("Filter goods by tags")}" class="icon-tags"></button>
         <button id="goodsLegend" data-tip="${t("Toggle Legend box")}" class="icon-list-bullet"></button>
         <button id="goodsAssign" data-tip="${t("Manually assign goods to cells")}" class="icon-brush"></button>
         <button id="goodsAdd" data-tip="${t("Add")}" class="icon-plus hide"></button>
-        <button id="goodsRegenerateGoods" data-tip="${t("Regenerate deposits")}" class="icon-arrows-cw hide"></button>
-        <button id="goodsRegenerateProduction" data-tip="${t("Regenerate production and trade deals")}" class="icon-retweet hide"></button>
+        <button id="goodsRegenerate" data-tip="${t("Open regeneration dialog")}" class="icon-arrows-cw hide"></button>
         <button id="goodsChains" data-tip="${t("Show production chains graph")}" class="icon-chart-line hide"></button>
-        <button
-          id="goodsRestore"
-          data-tip="${t("Restore default list and regenerate goods")}"
-          class="icon-history hide"
-        ></button>
         <button id="goodsExport" data-tip="${t("Save data as a CSV file")}" class="icon-download hide"></button>
         <button id="goodsImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload hide"></button>
         ${economyWikiButton("goodsWiki")}
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
-  ensureEl("goodsTagsFilter").classList.toggle("active", filterState.visibleTags.length > 0);
   ensureEl<HTMLInputElement>("goodsSearch").value = filterState.search;
   ensureEl(`${dialogId}Header`).querySelector<HTMLElement>('[data-col="display"]')!.innerHTML = /* html */ `<input
     type="checkbox" data-tip="${t("Select or clear all filtered goods")}" class="native" id="goodsDisplayAll"
@@ -260,17 +252,14 @@ function renderDialog(): void {
   ensureEl("goodsEditorRefresh").addEventListener("click", goodsTable.refresh);
   bindEconomyWiki("goodsWiki");
   ensureEl("goodsPercentage").addEventListener("click", togglePercentageMode);
-  ensureEl("goodsTagsFilter").addEventListener("click", openTagsVisibilityDialog);
   ensureEl("goodsLegend").addEventListener("click", toggleLegend);
   ensureEl("goodsAssign").addEventListener("click", enterResourceAssignMode);
   ensureEl("goodsAdd").addEventListener("click", () => Controllers.GoodEditor.open(undefined, refreshEditor));
-  ensureEl("goodsRestore").addEventListener("click", goodsRestoreDefaults);
   ensureEl("goodsExport").addEventListener("click", downloadGoodsData);
   ensureEl("goodsImport").addEventListener("click", () => Csv.pick(uploadGoodsCsv));
   ensureEl("goodsDisplayAll").addEventListener("change", toggleAllDisplayed);
   ensureEl("goodsChains").addEventListener("click", () => Controllers.ProductionChains.open());
-  ensureEl("goodsRegenerateGoods").addEventListener("click", () => runMapCommand("regenerateGoods"));
-  ensureEl("goodsRegenerateProduction").addEventListener("click", () => runMapCommand("regenerateProduction"));
+  ensureEl("goodsRegenerate").addEventListener("click", () => App.openEconomyRegeneration(["deposits", "production"]));
 
   ensureEl("goodsBody").addEventListener("click", ev => {
     const el = ev.target as HTMLElement;
@@ -289,12 +278,7 @@ function renderDialog(): void {
 function getGoodsData(): Good[] {
   production = getProduction();
   stockData = getAllStockData();
-  const { visibleTags, search } = filterState;
-  const goods = pack.goods.filter(
-    good =>
-      (!visibleTags.length || good.tags?.some(tag => visibleTags.includes(tag))) &&
-      Tags.matches(search, good.name, good.tags)
-  );
+  const goods = pack.goods.filter(good => Tags.matches(filterState.search, good.name, good.tags));
   return sortDataByColumns(dialogId, goods, columns);
 }
 
@@ -552,68 +536,6 @@ function getProduction() {
   return production;
 }
 
-function openTagsVisibilityDialog() {
-  const tags = Tags.all(pack.goods);
-  const renderTag = (tag: string) =>
-    `<label style="display: flex; align-items: center;"><input type="checkbox" class="native" value="${tag}" ${filterState.visibleTags.includes(tag) ? "checked" : ""} /> ${tag}</label>`;
-  const tagsMarkup = tags.length
-    ? tags.map(renderTag).join("")
-    : `<div style="color:#666">${t("No tags available")}</div>`;
-
-  const text = Dialog.message({
-    message: `
-    <div data-tip="${t("Show only goods with a selected tag")}" style="display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 0.3em;">${tagsMarkup}</div>
-  `,
-    title: t("Filter goods by tags"),
-    buttons: [
-      { label: t("Cancel") },
-      {
-        label: t("Clear filter"),
-        onClick: () => {
-          filterState.visibleTags = [];
-          dialogState.set(dialogId, "filters", filterState);
-          applyTagVisibilityFilter();
-        }
-      },
-      {
-        label: t("Apply"),
-        onClick: () => {
-          const checks = Array.from(text.querySelectorAll<HTMLInputElement>("input[type=checkbox]:checked"));
-          filterState.visibleTags = checks.map(check => check.value);
-          dialogState.set(dialogId, "filters", filterState);
-          applyTagVisibilityFilter();
-        }
-      }
-    ]
-  });
-}
-
-function applyTagVisibilityFilter() {
-  const hasFilter = filterState.visibleTags.length > 0;
-  ensureEl("goodsTagsFilter").classList.toggle("active", hasFilter);
-  goodsTable.reset();
-}
-
-function goodsRestoreDefaults() {
-  askEconomyRerun({
-    title: t("Restore default goods"),
-    message: `${t("Are you sure you want to restore default goods?")}<br>${t("This action cannot be reverted")}<br><br>${t("Without the economy, production and trade deals are cleared until it is regenerated. The economy redraws market territories, discarding hand-painted cells.")}`,
-    both: t("Goods and economy"),
-    only: t("Goods only"),
-    onChoice: withEconomy => {
-      const previousIds = pack.goods.map(good => good.i);
-      Goods.restoreDefaults();
-      States.pruneTariffs({ goods: previousIds.filter(id => !Goods.get(id)) }); // a later good could reuse the id
-      Goods.generate();
-      if (withEconomy) Production.regenerateEconomy();
-      else Production.clear(); // the deals and stocks named the old goods
-      Layers.draw("markets", "goods");
-      Layers.draw("trade");
-      refreshEditors();
-    }
-  });
-}
-
 function togglePercentageMode() {
   const body = ensureEl("goodsBody");
   body.dataset.type = body.dataset.type === "absolute" ? "percentage" : "absolute";
@@ -852,6 +774,9 @@ function removeGood(good: Good) {
 
 function closeGoodsEditor() {
   if (options.app.mode === "assignGoods") exitResourceAssignMode("close");
+  production = {};
+  depositsByGood = {};
+  stockData = {};
   Dialog.destroy("goodsEditor");
 }
 

@@ -51,6 +51,7 @@
 - **Save space**: Prefer laconic but clear code. Save space, I like my code to be compact.
 - **Keep it simple**: Avoid over-engineering.
 - **Dependencies**: Don't introduce new production dependencies without explicit permission. Keep the bundle lightweight.
+- **Dialog memory**: A dialog keeps no map data after it closes: clear what it computed and any references to entities or elements on close. Editor tables do it themselves. User choices it should remember, such as filters and tool settings, stay.
 - **Export**: Export only what another module imports. Types, helpers and constants used within one module stay unexported.
 
 # Workflow Rules

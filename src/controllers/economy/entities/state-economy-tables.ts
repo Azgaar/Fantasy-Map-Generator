@@ -42,6 +42,7 @@ type TableSpec<T> = {
 function open<T>(spec: TableSpec<T>): void {
   const { id, title, columns, rows, row } = spec;
   const table = initEditorTable<T>({
+    dialogId: id,
     getData: () => sortDataByColumns(id, rows(), columns),
     onUpdate: (view: TableView<T>) => {
       ensureEl(`${id}Body`).innerHTML = view.rows.map(item => `<div class="states">${row(item)}</div>`).join("");

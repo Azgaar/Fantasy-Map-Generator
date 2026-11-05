@@ -105,6 +105,7 @@ const columns: EditorColumn<TradeDetailRow>[] = [
 ];
 
 const tradeDetailsTable = initEditorTable<TradeDetailRow>({
+  dialogId,
   getData: getTradeDetails,
   onUpdate: renderTradeDetailsPage
 });

@@ -9,7 +9,7 @@ import { formatPrice } from "@/model/units";
 import { highlightMarketOff, highlightMarketOn } from "@/renderers/draw-markets";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
-import { runMapCommand } from "@/ui/app-commands";
+import { App } from "@/ui/app-commands";
 import { Dialog } from "@/ui/dialog/dialog";
 import { noteIcon } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -78,7 +78,7 @@ const columns: EditorColumn<MarketRow>[] = [
   { key: "remove", width: "1.4em", permanent: true }
 ];
 
-const marketsTable = initEditorTable<MarketRow>({ getData: getMarketsData, onUpdate: renderMarketsPage });
+const marketsTable = initEditorTable<MarketRow>({ dialogId, getData: getMarketsData, onUpdate: renderMarketsPage });
 
 function open(): void {
   if (options.app.mode) return;
@@ -114,8 +114,7 @@ function renderDialog(): void {
         <button id="marketsOverviewExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
         <button id="marketsManually" data-tip="${t("Manually re-assign market territories")}" class="icon-brush"></button>
         <button id="marketsAdd" data-tip="${sentences(t("Add"), t("Click on a burg on the map"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
-        <button id="marketsRegenerate" data-tip="${t("Regenerate markets and their territories")}" class="icon-arrows-cw"></button>
-        <button id="marketsRegenerateProduction" data-tip="${t("Regenerate production and trade deals")}" class="icon-retweet"></button>
+        <button id="marketsRegenerate" data-tip="${t("Open regeneration dialog")}" class="icon-arrows-cw"></button>
         ${economyWikiButton("marketsOverviewWiki")}
       </div>
     </div>`;
@@ -137,8 +136,7 @@ function renderDialog(): void {
     if (options.app.mode === "addMarket") exitAddMarketMode();
     else enterAddMarketMode();
   });
-  ensureEl("marketsRegenerate").addEventListener("click", () => runMapCommand("regenerateMarkets"));
-  ensureEl("marketsRegenerateProduction").addEventListener("click", () => runMapCommand("regenerateProduction"));
+  ensureEl("marketsRegenerate").addEventListener("click", () => App.openEconomyRegeneration(["markets", "production"]));
   ensureEl("marketsOverviewBody").addEventListener("click", (ev: Event) => {
     const target = ev.target as HTMLElement;
 

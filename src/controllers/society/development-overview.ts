@@ -41,7 +41,8 @@ type Era = { i: number; name: string; label: string; from: number; to: number; c
 type EraStatistics = { cells: number; area: number; rural: number; urban: number; burgs: number };
 type DevelopmentStatistics = { eras: EraStatistics[]; cells: number; mean: number; min: number; max: number };
 
-let statistics: DevelopmentStatistics = { eras: [], cells: 0, mean: 0, min: 0, max: 0 };
+const NO_STATISTICS: DevelopmentStatistics = { eras: [], cells: 0, mean: 0, min: 0, max: 0 };
+let statistics = NO_STATISTICS;
 let percentage = false; // eras' shares of the totals instead of their values
 let painting = false; // the brush is open over the overlay
 let overlayShown = true; // the user's choice, kept between openings
@@ -63,6 +64,7 @@ const columns: EditorColumn<Era>[] = [
 ];
 
 const erasTable = initEditorTable<Era>({
+  dialogId,
   getData: () =>
     sortDataByColumns(
       dialogId,
@@ -341,6 +343,7 @@ function downloadCsv(): void {
 }
 
 function close(): void {
+  statistics = NO_STATISTICS;
   Dialog.destroy(dialogId);
   if (!painting) removeDevelopmentOverlay();
 }

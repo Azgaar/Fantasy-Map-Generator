@@ -57,16 +57,11 @@ export class ProductionModule {
   private zoneCellSetsSource: Zone[] | null = null;
 
   regenerate(): void {
+    Markets.claimWaterDeposits();
     pack.deals = [];
     for (const market of pack.markets) market.goods = {};
     this.produce();
     States.collectTaxes();
-  }
-
-  regenerateEconomy(): void {
-    Goods.sync();
-    Markets.expandTerritories();
-    this.regenerate();
   }
 
   /** Forgets the run when what it names is gone: nothing is made or traded until production is regenerated. Adjustments stay */

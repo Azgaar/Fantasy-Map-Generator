@@ -184,6 +184,17 @@ export class MarketsModule {
     return cellMarket;
   }
 
+  /** A water cell is in a market only for its deposit, and deposits move: the flood finds markets for the new ones. Land stays, as it may be hand-painted */
+  claimWaterDeposits(): void {
+    const { cells } = pack;
+    const claimed = cells.market;
+    const isWater = (cell: number) => cells.h[cell] < 20;
+    const unclaimed = cells.i.some(cell => isWater(cell) && cells.good[cell] && !claimed[cell]);
+    const flood = unclaimed ? this.expandMarkets(pack.markets) : claimed;
+    cells.market = claimed;
+    for (const cell of cells.i) if (isWater(cell)) claimed[cell] = cells.good[cell] ? claimed[cell] || flood[cell] : 0;
+  }
+
   sync(): void {
     this.marketById = [];
     for (const market of pack.markets) if (market) this.marketById[market.i] = market;

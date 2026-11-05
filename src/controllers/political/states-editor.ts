@@ -293,6 +293,7 @@ function getFilteredStates(): State[] {
 }
 
 const statesTable = initEditorTable<State>({
+  dialogId,
   getData: () => {
     development = Development.getAverages(pack.cells.state);
     return sortDataByColumns(dialogId, getFilteredStates(), columns);
@@ -457,9 +458,7 @@ function closeStatesEditor(): void {
   statesAnnex.exit();
   Controllers.ColorPicker.close();
   select("#debug").selectAll(".highlight").remove();
-  const view = statesTable.view();
-  view.rows = [];
-  view.all = [];
+  development = [];
 }
 
 function refreshStatesEditor(): void {

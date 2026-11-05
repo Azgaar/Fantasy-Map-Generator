@@ -56,6 +56,7 @@ let activeGoodId = -1;
 let activeAnchor = "#marketsOverview";
 
 const comparePricesTable = initEditorTable<Market>({
+  dialogId,
   getData: () => sortDataByColumns(dialogId, [...pack.markets], columns),
   onUpdate: renderComparePricesPage
 });

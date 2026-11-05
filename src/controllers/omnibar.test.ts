@@ -261,7 +261,7 @@ describe("Omnibar public behavior", () => {
     const action = vi.fn();
     Object.assign(Rivers, { regenerate: action });
     Object.assign(Routes, { sync: () => {} });
-    sessionStorage.setItem("regenerateFeatureDontAsk", "true");
+    sessionStorage.setItem("regenerateDontAsk-regenerateRivers", "true");
     document.getElementById("regenerateRivers")!.remove();
     Omnibar.open();
     search("> regenerate rivers");

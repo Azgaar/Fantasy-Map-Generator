@@ -87,7 +87,7 @@ function open(id: number, onApply?: () => void): void {
     position: { my: "center", at: "center", of: "svg" },
     footer:
       economyWikiButton("stateTaxesWiki") +
-      /*html*/ `<div class="dontAsk" data-tip="${t("Rerun the day to see the changes' effect. Unticked, they apply when production is next regenerated")}">
+      /*html*/ `<div data-tip="${t("Rerun the day to see the changes' effect. Unticked, they apply when production is next regenerated")}">
         <input id="stateBudgetRegenerate" class="checkbox" type="checkbox" checked />
         <label for="stateBudgetRegenerate" class="checkbox-label"><i>${t("regenerate production on apply")}</i></label>
       </div>`,
@@ -166,6 +166,7 @@ function cleanup(): void {
   Dialog.destroy("tariffSelectorDialog");
   Dialog.destroy(dialogId);
   onApplied = undefined;
+  edit = null!;
 }
 
 const amount = (value: number, tone = "", tipText = "", id = "") =>

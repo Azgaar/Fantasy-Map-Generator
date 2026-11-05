@@ -97,6 +97,7 @@ const columns: EditorColumn<Biome>[] = [
 ];
 
 const biomesTable = initEditorTable<Biome>({
+  dialogId,
   getData: () =>
     sortDataByColumns(
       dialogId,
@@ -541,6 +542,7 @@ function restoreInitialBiomes(): void {
 }
 
 function closeBiomesEditor(): void {
+  currentBiomeStatistics = [];
   Dialog.destroy("biomesEditor");
 }
 

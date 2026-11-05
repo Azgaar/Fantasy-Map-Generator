@@ -76,6 +76,7 @@ const columns: EditorColumn<Journey>[] = [
 ];
 
 const journeysTable = initEditorTable<Journey>({
+  dialogId,
   getData: () => sortDataByColumns(dialogId, getFilteredJourneys(), columns),
   onUpdate: renderJourneysPage
 });

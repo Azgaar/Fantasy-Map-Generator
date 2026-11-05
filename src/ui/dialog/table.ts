@@ -18,17 +18,27 @@ type EditorTable<T> = {
   reset: () => void;
 };
 
+/** A table holds its data for the dialog `dialogId` and forgets it when the dialog closes */
 export function initEditorTable<T>({
+  dialogId,
   getData,
   onUpdate,
   pageSize
 }: {
+  dialogId: string;
   getData: () => T[];
   onUpdate: (view: TableView<T>) => void;
   pageSize?: number;
 }): EditorTable<T> {
   let page = 1;
-  let current: TableView<T> = { rows: [], all: [], page: 1, totalPages: 1, total: 0 };
+  const empty = (): TableView<T> => ({ rows: [], all: [], page: 1, totalPages: 1, total: 0 });
+  let current = empty();
+  let watched: HTMLElement | null = null;
+
+  const forget = () => {
+    current = empty();
+    watched = null;
+  };
 
   const refresh = () => {
     const size = pageSize ?? defaultPageSize();
@@ -39,6 +49,11 @@ export function initEditorTable<T>({
     const start = (page - 1) * size;
     current = { rows: all.slice(start, start + size), all, page, totalPages, total };
     onUpdate(current);
+    const dialog = findEl(dialogId);
+    if (dialog && dialog !== watched) {
+      watched = dialog;
+      dialog.addEventListener("dialog:close", forget, { once: true });
+    }
   };
 
   return {

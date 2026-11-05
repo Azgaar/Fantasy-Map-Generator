@@ -926,7 +926,7 @@ Open the burg's Economy Overview, expand its Adjustments row and add lines, each
 
 ### How do I regenerate the economy?
 
-Tools -> Regenerate has the relevant buttons: Goods re-places the deposits on the cells and Markets rebuilds markets and their territories, each asking whether to regenerate production too; Production recalculates production, trade deals and state taxes; Economy redraws market territories, then does the same. The Goods and Markets editors have the same buttons at the bottom of the dialog
+Tools -> Regenerate -> Economy, and the regenerate button in the Goods Editor and in the Markets Overview, all open the Economy Regeneration dialog, where you tick what to run: restore the default goods, deposits, markets, market areas, production
 
 ### Why is a market not making an expensive product even though its ingredients exist?
 

@@ -58,7 +58,7 @@ test.describe("Risk mode heightmap edit", () => {
       });
     const map = await fingerprint();
     await page.evaluate(() => {
-      (window as any).FMG.Production.regenerateEconomy = () => {
+      (window as any).FMG.Production.regenerate = () => {
         throw new Error("injected");
       };
     });

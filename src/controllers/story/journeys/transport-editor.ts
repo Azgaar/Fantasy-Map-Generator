@@ -36,6 +36,7 @@ const columns: EditorColumn<Transport>[] = [
 ];
 
 const typesTable = initEditorTable<Transport>({
+  dialogId,
   getData: () => Transports.all,
   onUpdate: renderTypesPage
 });

@@ -36,7 +36,11 @@ let filterState: { stateId: number; search: string };
 
 type RegimentRow = { state: State; regiment: Regiment };
 let columns: EditorColumn<RegimentRow>[] = [];
-const regimentsTable = initEditorTable<RegimentRow>({ getData: getRegimentsData, onUpdate: renderRegimentsPage });
+const regimentsTable = initEditorTable<RegimentRow>({
+  dialogId,
+  getData: getRegimentsData,
+  onUpdate: renderRegimentsPage
+});
 
 function open(state?: number): void {
   if (options.app.mode) return;

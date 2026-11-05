@@ -70,13 +70,13 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
   Dialog.open("goodEditor", {
     width: "36em",
     title: editedGood ? t("Edit good") : t("Add"),
-    // only edits can recompute the economy
+    // only edits can recompute production
     footer:
       economyWikiButton("goodEditorWiki") +
       (editedGood
-        ? /*html*/ `<div class="dontAsk" data-tip="${t("Recompute the economy. If the good's distribution or deposits changed, re-place it and redraw market territories, discarding hand-painted cells")}">
-          <input id="goodRegenerateEconomy" class="checkbox" type="checkbox" checked />
-          <label for="goodRegenerateEconomy" class="checkbox-label"><i>${t("regenerate economy on apply")}</i></label>
+        ? /*html*/ `<div>
+          <input id="goodRegenerateProduction" class="checkbox" type="checkbox" checked />
+          <label for="goodRegenerateProduction" class="checkbox-label"><i>${t("regenerate production on apply")}</i></label>
         </div>`
         : ""),
     buttons: [
@@ -178,18 +178,11 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             });
             editedGood.distribution = distribution || undefined; // code the user typed, checked above; never an operation
 
-            // opt-out: by default recompute the economy to reflect the change; only a re-placed good redraws market territories
-            if (ensureEl<HTMLInputElement>("goodRegenerateEconomy").checked) {
-              Goods.sync();
-              if (placementChanged) {
-                Goods.regeneratePlacement(editedGood.i);
-                Production.regenerateEconomy();
-              } else Production.regenerate();
-              Layers.draw("markets", "goods", "trade");
-              refreshEditors();
-            } else {
-              Goods.sync();
-            }
+            Goods.sync();
+            if (placementChanged) Goods.regeneratePlacement(editedGood.i);
+            if (ensureEl<HTMLInputElement>("goodRegenerateProduction").checked) Production.regenerate();
+            Layers.draw("markets", "goods", "trade");
+            refreshEditors();
           } else {
             const getNextId = () => {
               let nextId = pack.goods?.at(-1)?.i ?? 1;

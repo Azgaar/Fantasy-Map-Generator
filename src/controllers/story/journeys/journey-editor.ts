@@ -58,6 +58,7 @@ const columns: EditorColumn<JourneySegment>[] = [
 ];
 
 const segmentsTable = initEditorTable<JourneySegment>({
+  dialogId,
   getData: () => getJourney()?.segments ?? [],
   onUpdate: renderSegmentsPage
 });

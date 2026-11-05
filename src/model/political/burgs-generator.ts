@@ -852,17 +852,9 @@ class BurgModule {
         province.burg = 0;
       });
 
-    // locked burgs and market centers stay, renumbered; markets follow their centers to the new ids
-    const living = burgs.filter(burg => burg.i && !burg.removed);
-    const centerIds = new Set(pack.markets.map(market => market.centerBurgId));
-    const keptBurgs = [
-      ...living.filter(burg => burg.lock),
-      ...living.filter(burg => !burg.lock && centerIds.has(burg.i!))
-    ];
-    const newIds = new Map<number, number>();
-    for (const burg of keptBurgs) {
+    // locked burgs stay, renumbered
+    for (const burg of burgs.filter(burg => burg.i && !burg.removed && burg.lock)) {
       const newId = newBurgs.length;
-      newIds.set(burg.i!, newId);
       burg.i = newId;
       newBurgs.push(burg);
       burgsTree.add([burg.x, burg.y]);
@@ -873,7 +865,6 @@ class BurgModule {
         states[burg.state].center = burg.cell;
       }
     }
-    for (const market of pack.markets) market.centerBurgId = newIds.get(market.centerBurgId) ?? market.centerBurgId;
 
     const score = new Int16Array(cells.s.map(value => value * Math.random()));
     const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]);
