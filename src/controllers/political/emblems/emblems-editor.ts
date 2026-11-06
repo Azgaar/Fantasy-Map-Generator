@@ -606,8 +606,7 @@ async function pasteEmblem(): Promise<void> {
   }
 }
 
-/** A drawable COA becomes the blazon. Any other shows as the SVG Armoria sent, kept with its COA as a Custom icon;
- * without that SVG it throws */
+/** A drawable COA becomes the blazon; any other shows Armoria's SVG as a Custom icon, or throws */
 async function applyInput(type: EmblemType, id: number, coa: HeraldicEmblem, svg?: string): Promise<void> {
   const entity = getEmblemEntity(type, id);
   if (!entity) return;
@@ -642,13 +641,12 @@ function soleArmoriaPicture(emblem: Emblem): string | undefined {
   return uses === 1 ? emblem.icon : undefined;
 }
 
-/** an Armoria picture an emblem showed goes once nothing shows it: FMG made it, so it is not the author's upload */
+/** Drops an Armoria picture once nothing shows it: FMG made it, so it is not the author's upload */
 function releasePicture(previous: Emblem): void {
   if (!("icon" in previous) || !Armoria.pictureCoa(CustomIcons.get(previous.icon))) return;
   if (!Object.keys(Icons.uses(previous.icon)).length) CustomIcons.remove(previous.icon);
 }
 
-/** the editor is open on this emblem */
 function isEditing(type: EmblemType, id: number): boolean {
   return Dialog.isOpen("emblemEditor") && currentType === type && currentEl.i === id;
 }

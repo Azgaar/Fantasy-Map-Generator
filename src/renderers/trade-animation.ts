@@ -79,7 +79,7 @@ export class TradeAnimationModule {
     return false;
   }
 
-  /** Burgs the goods travel between: the market's center and the burg, in the direction of the deal */
+  /** Burgs the goods travel between: the market's center and the burg, in the deal's direction */
   getEnds([burgId, marketId, , kind]: Deal): { startBurgId: number; endBurgId: number } | null {
     const centerId = Markets.get(marketId)?.centerBurgId;
     const burg = pack.burgs[burgId];
@@ -171,8 +171,7 @@ export class TradeAnimationModule {
     }
     segments.push({ type: currentType, points: currentPoints });
 
-    // The goods leave and reach the burgs themselves, a port's straight from its harbor's center: the route's other points
-    // in those cells, such as the river course a sea route follows into a river port, would turn the path back on itself
+    // goods leave a port from its harbor's center: the route's points in those cells would double back
     const [startCell, endCell] = [cells[0], cells[cells.length - 1]];
     const startHarbor = this.getHarbor(startCell, cells[1]);
     const endHarbor = this.getHarbor(endCell, cells[cells.length - 2]);

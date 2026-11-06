@@ -192,7 +192,7 @@ test.describe("Goods display filter", () => {
 
   async function expectFilteredVisibility(page: Page, visible: boolean) {
     const expected = initial.map(good => ({ i: good.i, visible: good.matches ? visible : good.visible }));
-    expect(await page.evaluate(() => pack.goods.map(({ i, visible }) => ({ i, visible })))).toEqual(expected);
+    expect(await page.evaluate(() => options.map.goods.map(({ i, visible }) => ({ i, visible })))).toEqual(expected);
     await expect(page.locator("#goodsDisplayed")).toHaveText(String(expected.filter(good => good.visible).length));
     await expect(page.locator("#goodsNumber")).toHaveText(String(initial.length));
     await expect(page.locator("#goodsDisplayAll")).toHaveJSProperty("checked", visible);
@@ -216,14 +216,14 @@ test.describe("Goods display filter", () => {
     await page.goto("/?seed=goods-filter&width=1600&height=1000");
     await waitForMap(page);
     initial = await page.evaluate(() => {
-      pack.goods.forEach((good, index) => {
+      options.map.goods.forEach((good, index) => {
         good.tags = index === 0 ? ["batch-a"] : ["unrelated"];
         good.visible = index > 0 && index % 2 === 0;
       });
-      const firstId = Math.max(...pack.goods.map(good => good.i)) + 1;
+      const firstId = Math.max(...options.map.goods.map(good => good.i)) + 1;
       for (let index = 0; index < 104; index++) {
-        pack.goods.push({
-          ...structuredClone(pack.goods[0]),
+        options.map.goods.push({
+          ...structuredClone(options.map.goods[0]),
           i: firstId + index,
           name: `Filter test ${index}`,
           tags: [index % 2 ? "batch-a" : "batch-b"],
@@ -231,8 +231,8 @@ test.describe("Goods display filter", () => {
         });
       }
       const cell = pack.cells.i.find(i => pack.cells.h[i] >= 20)!;
-      pack.cells.good[cell] = pack.goods[0].i;
-      return pack.goods.map(good => ({
+      pack.cells.good[cell] = options.map.goods[0].i;
+      return options.map.goods.map(good => ({
         i: good.i,
         visible: Boolean(good.visible),
         matches: good.tags[0] !== "unrelated"
@@ -261,7 +261,7 @@ test.describe("Goods display filter", () => {
 
   test("master checkbox follows filtered goods and individual row changes", async ({ page }) => {
     await page.evaluate(() => {
-      for (const good of pack.goods) if (good.tags[0] !== "unrelated") good.visible = true;
+      for (const good of options.map.goods) if (good.tags[0] !== "unrelated") good.visible = true;
     });
     await page.click("#goodsEditorRefresh");
     await expectFilteredVisibility(page, true);

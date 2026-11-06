@@ -1,7 +1,5 @@
 import { easeSinIn, select, transition } from "d3";
 import { Controllers } from "@/controllers";
-import { DEVELOPMENT_ERAS } from "@/data/development";
-import { ERA_LABELS } from "@/data/id-labels";
 import { Development } from "@/model/society/development-generator";
 import { getArea, getAreaUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
@@ -14,7 +12,7 @@ import {
 import { Csv } from "@/services/io/csv";
 import type { LegendItem } from "@/types/legend";
 import type { PackedGraph } from "@/types/packed-graph";
-import { eraLabel } from "@/ui/development-view";
+import { eraLabel, eraName } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -30,8 +28,9 @@ import { groupByValue } from "@/utils/array-utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
-const dialogId = "developmentOverview" as const;
+const dialogId = "developmentEditor" as const;
 const CSV_COLUMNS = ["Era", "From", "To", "Cells", "Area", "Population", "Burgs"];
 const LEGEND_NAME = "Development";
 const NO_DEVELOPMENT_COLOR = "#d3d3d3"; // the brush's color for cells it clears
@@ -75,12 +74,13 @@ const erasTable = initEditorTable<Era>({
 });
 
 function getEras(): Era[] {
-  return DEVELOPMENT_ERAS.map(({ level, name }, i) => ({
+  const { eras } = Development;
+  return eras.map(({ level, name }, i) => ({
     i,
     name,
-    label: ERA_LABELS[name],
+    label: eraName(name),
     from: level,
-    to: (DEVELOPMENT_ERAS[i + 1]?.level ?? 101) - 1,
+    to: (eras[i + 1]?.level ?? 101) - 1,
     color: getEraColor(i)
   }));
 }
@@ -95,7 +95,7 @@ function open(): void {
   statistics = collectDevelopmentStatistics();
   erasTable.reset();
 
-  Dialog.open(dialogId, { title: t("Development Overview"), onClose: close, position });
+  Dialog.open(dialogId, { title: t("Development Editor"), onClose: close, position });
   if (overlayShown) drawDevelopmentOverlay();
 }
 
@@ -131,6 +131,7 @@ function renderDialog(): void {
           data-tip="${t("Regenerate development from the cultures and land, discarding manual changes")}"
           class="icon-retweet"
         ></button>
+        <button id="developmentEras" data-tip="${t("Rename the eras")}" class="icon-pencil"></button>
         <button id="developmentExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
       </div>
     </div>`;
@@ -147,6 +148,7 @@ function renderDialog(): void {
   ensureEl("developmentLegend").addEventListener("click", toggleLegend);
   ensureEl("developmentPaint").addEventListener("click", openPaintEditor);
   ensureEl("developmentRegenerate").addEventListener("click", confirmRegenerate);
+  ensureEl("developmentEras").addEventListener("click", () => void Controllers.ErasEditor.open());
   ensureEl("developmentExport").addEventListener("click", downloadCsv);
 
   bindColumnSorting(dialogId, erasTable.reset);
@@ -167,10 +169,10 @@ type StatisticsSource = {
   burgs: Array<{ population?: number; removed?: boolean } | undefined>;
 };
 
-/** Peopled land by era, and the people's average development: rural people by cell, townspeople by burg */
+/** Peopled land by era, and the people's average development */
 export function collectDevelopmentStatistics(source: StatisticsSource = pack): DevelopmentStatistics {
   const { cells, burgs } = source;
-  const eras = DEVELOPMENT_ERAS.map(() => ({ cells: 0, area: 0, rural: 0, urban: 0, burgs: 0 }));
+  const eras = Development.eras.map(() => ({ cells: 0, area: 0, rural: 0, urban: 0, burgs: 0 }));
   const development = cells.development;
   if (!development) return { eras, cells: 0, mean: 0, min: 0, max: 0 };
 
@@ -245,7 +247,7 @@ function addLines(view: TableView<Era>): void {
       <div class="states development" data-id="${era.i}">
         <div data-col="name">
           <fill-box fill="${era.color}" disabled></fill-box>
-          <span class="developmentEra">${era.label}</span>
+          <span class="developmentEra">${escapeHtml(era.label)}</span>
         </div>
         <div data-col="levels" class="hide" data-tip="${t("Development levels of the era")}">${era.from === era.to ? era.from : `${era.from}-${era.to}`}</div>
         <div data-col="cells" class="hide"><span data-tip="${t("Number of cells")}" class="icon-check-empty"></span><span data-tip="${t("Number of cells")}">${shown.cells}</span></div>
@@ -300,13 +302,13 @@ function openPaintEditor(): void {
       { id: 0, name: t("No development"), color: NO_DEVELOPMENT_COLOR },
       ...getEras().map(era => ({ id: era.from, name: `${era.from} ${era.label}`, color: era.color }))
     ],
-    getValue: cell => (development[cell] ? DEVELOPMENT_ERAS[Development.getEraIndex(development[cell])].level : 0),
+    getValue: cell => (development[cell] ? Development.eras[Development.getEraIndex(development[cell])].level : 0),
     filterCell: cell => Development.isPeopled(cell),
     onApply: applyChanges
   });
 }
 
-/** A painted cell takes the level its era begins at, or 0 for no development; a cell already in the era keeps its own */
+/** A painted cell takes its era's first level, or 0; a cell already in the era keeps its own */
 function applyChanges(changes: ReadonlyMap<number, number>): void {
   for (const [level, cells] of groupByValue(changes)) Development.setCells(level, cells);
   if (!changes.size) return;
@@ -360,4 +362,4 @@ function togglePercentage(): void {
   erasTable.refresh();
 }
 
-export const DevelopmentOverview = { open };
+export const DevelopmentEditor = { open, refreshNames: () => erasTable.refresh() };

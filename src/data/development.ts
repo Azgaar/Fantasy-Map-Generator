@@ -1,7 +1,12 @@
 import type { CultureType } from "@/model/society/cultures-generator";
 
-/** The eras of technological development, 1–100, each from the level it begins at: three points an era up to the Late Middle Ages; 0 is no development, where nobody lives (see the Development wiki page) */
-export const DEVELOPMENT_ERAS = [
+export interface Era {
+  level: number; // the level it begins at
+  name: string;
+}
+
+/** The eras, 1–100; 0 is no development, where nobody lives */
+export const DEFAULT_ERAS: readonly Era[] = [
   { level: 1, name: "Paleolithic" },
   { level: 3, name: "Mesolithic" },
   { level: 6, name: "Neolithic" },
@@ -23,8 +28,7 @@ export const DEVELOPMENT_ERAS = [
   { level: 80, name: "Machine Age" },
   { level: 90, name: "Space Age" },
   { level: 100, name: "Post-human" }
-] as const;
-export type DevelopmentEra = (typeof DEVELOPMENT_ERAS)[number]["name"];
+];
 
 export const DEFAULT_DEVELOPMENT = 33; // a culture's level when none is set: Commercial Revolution
 export const WILDLANDS_DEVELOPMENT = 3; // foragers

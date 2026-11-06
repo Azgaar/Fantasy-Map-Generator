@@ -7,10 +7,6 @@ import { DEAL_KINDS } from "./trade";
 
 beforeEach(() => {
   globalThis.pack = {
-    goods: [
-      { i: 1, value: 2 },
-      { i: 2, value: 10 }
-    ],
     burgs: [{ i: 0 }, { i: 1, state: 1 }, { i: 2, state: 2 }],
     cells: { i: [0, 1], state: [1, 2] },
     deals: [
@@ -22,6 +18,10 @@ beforeEach(() => {
       [2, 1, 1, DEAL_KINDS.demand, 5]
     ]
   } as any;
+  options.map.goods = [
+    { i: 1, value: 2 },
+    { i: 2, value: 10 }
+  ] as never;
   Goods.sync();
   // cell 0's rural people bought a unit of good 2 and kept 7 of good 1 they could not sell
   vi.spyOn(Prosperity, "getRuralCell").mockImplementation(

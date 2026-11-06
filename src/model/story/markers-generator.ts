@@ -815,9 +815,9 @@ class MarkersModule {
     return { volume, margin, goods: traded.map(goods => goods.size), burgTrade, tariffs, guilds: this.indexGuilds() };
   }
 
-  /** Burgs famed for a made good: leaders among its many makers and in their state, where the good is a real part of their work */
+  /** Burgs famed for a made good: leaders among many makers and in their state */
   private indexGuilds(): Map<number, { good: Good; renown: number }> {
-    const GUILD_RENOWN = 0.75; // world share × √makers × √state share a burg needs: a lead among many makers counts for more
+    const GUILD_RENOWN = 0.75; // world share × √makers × √state share a burg needs
     const GUILD_FOCUS = 0.25; // share of the value a burg makes that the good must be
     const GUILD_MIN_VALUE = 15; // value of the good a burg makes a day
     const world: number[] = [];

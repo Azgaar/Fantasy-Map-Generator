@@ -1,12 +1,14 @@
-// Development as the views show it: the level and its era, the era in the interface language
 import { ERA_LABELS } from "@/data/id-labels";
 import { Development } from "@/model/society/development-generator";
 import { t } from "@/utils/i18n";
 import { rn } from "@/utils/number-utils";
 
-/** The era of a development level, translated; 0 is no development */
+/** An era's name as shown: a default one translates, the user's own stays as typed */
+export const eraName = (name: string): string => ERA_LABELS[name] ?? name;
+
+/** The era of a development level, as shown; 0 is no development */
 export const eraLabel = (level: number): string =>
-  rn(level) ? ERA_LABELS[Development.getEra(rn(level))] : t("No development");
+  rn(level) ? eraName(Development.getEra(rn(level))) : t("No development");
 
 /** A development level and its era, as "34, Commercial Revolution" */
 export const renderDevelopment = (level: number): string =>

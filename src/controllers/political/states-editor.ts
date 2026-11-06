@@ -67,7 +67,7 @@ const renderDevelopmentCell = (level: number | undefined): string =>
     ? `<div class="placeholder" data-col="development"></div>`
     : `<div data-tip="${developmentTip(level)}" data-col="development">${rn(level)}</div>`;
 
-/** Taxes as a percentage of the state's product; null for the neutral lands or before an economy run */
+/** Taxes as a percent of product; null for the neutral lands or before an economy run */
 const taxBurden = (s: State): number | null => {
   const accounts = s.i ? StateEconomy.getAccounts(s.i) : null;
   return accounts?.product ? (accounts.taxes / accounts.product) * 100 : null;

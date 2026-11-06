@@ -1,6 +1,3 @@
-// A province's economy from the last run: what its people make and how well they live, the taxes raised there, the
-// state spending delivered there and what officials pocketed of its share. Worked out on demand, nothing saved
-
 import { type District, Districts } from "@/model/political/districts";
 import { EXPENSES, States } from "@/model/political/states-generator";
 import { Goods } from "./goods-generator";
@@ -145,7 +142,6 @@ class ProvinceEconomyModule {
       }
       if (!tax && !tariff) continue;
       const { taxState, tariffState } = Trade.getTaxStates(deal);
-      // sales tax is collected at the deal's market, a tariff at the importing one: the deal's on a sale, the burg's own on a purchase
       const raisedFor = (stateId: number, atMarket?: number) =>
         of(burg?.state === stateId ? burg.cell : atMarket === undefined ? undefined : center(atMarket)?.cell);
       const taxed = tax ? raisedFor(taxState, marketId) : undefined;
@@ -176,7 +172,7 @@ class ProvinceEconomyModule {
     }
   }
 
-  /** Each district's share of what officials pocketed, as collection counts it, split over its provinces by their people */
+  /** Each district's share of what officials pocketed, split over its provinces by their people */
   private addPocketed(of: (cellId: number | undefined) => ProvinceAccounts | undefined): void {
     const pocketed = new Map<District, number>();
     for (const state of pack.states) {

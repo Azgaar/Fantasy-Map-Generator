@@ -21,32 +21,32 @@ describe("GoodsModule", () => {
         c: [[1], [0, 2], [1, 3], [2]],
         good: Uint16Array.from([1, 2, 1, 2])
       },
-      features: [{ type: "land" }],
-      goods: [
-        {
-          i: 1,
-          name: "Custom A",
-          tags: [],
-          value: 1,
-          unit: "unit",
-          icon: "icon-a",
-          color: "#ffffff",
-          deposits: [2, 2],
-          distribution: "true"
-        },
-        {
-          i: 2,
-          name: "Custom B",
-          tags: [],
-          value: 1,
-          unit: "unit",
-          icon: "icon-b",
-          color: "#000000",
-          deposits: [2, 2],
-          distribution: "true"
-        }
-      ]
+      features: [{ type: "land" }]
     } as any;
+    options.map.goods = [
+      {
+        i: 1,
+        name: "Custom A",
+        tags: [],
+        value: 1,
+        unit: "unit",
+        icon: "icon-a",
+        color: "#ffffff",
+        deposits: [2, 2],
+        distribution: "true"
+      },
+      {
+        i: 2,
+        name: "Custom B",
+        tags: [],
+        value: 1,
+        unit: "unit",
+        icon: "icon-b",
+        color: "#000000",
+        deposits: [2, 2],
+        distribution: "true"
+      }
+    ] as never;
 
     const { GoodsModule } = await import("./goods-generator");
     goodsModule = new GoodsModule();
@@ -84,7 +84,7 @@ describe("GoodsModule", () => {
         }
       }
     ] as never;
-    pack.goods.push(
+    options.map.goods.push(
       { i: 3, name: "Made", recipes: [{ 1: 1 }, { 2: 1 }] } as never,
       { i: 4, name: "Only A", recipes: [{ 1: 1 }] } as never
     );
@@ -107,47 +107,69 @@ describe("GoodsModule", () => {
   it("keeps the current catalogue when rerolling placement", () => {
     goodsModule.generate({ randomSeed: 123 });
 
-    expect(globalThis.pack.goods).toHaveLength(2);
-    expect(globalThis.pack.goods[0].name).toBe("Custom A");
-    expect(globalThis.pack.goods[1].name).toBe("Custom B");
+    expect(globalThis.options.map.goods).toHaveLength(2);
+    expect(globalThis.options.map.goods[0].name).toBe("Custom A");
+    expect(globalThis.options.map.goods[1].name).toBe("Custom B");
   });
 
   it("restores the default catalogue when requested explicitly", () => {
     goodsModule.restoreDefaults();
 
-    expect(globalThis.pack.goods.some((good: any) => good.name === "Wood")).toBe(true);
-    expect(globalThis.pack.goods[0].name).not.toBe("Custom A");
+    expect(globalThis.options.map.goods.some((good: any) => good.name === "Wood")).toBe(true);
+    expect(globalThis.options.map.goods[0].name).not.toBe("Custom A");
   });
 
   it("restores the original defaults even after the current catalogue was edited", () => {
     goodsModule.generate();
-    globalThis.pack.goods[0].name = "Edited Wood";
+    globalThis.options.map.goods[0].name = "Edited Wood";
 
     goodsModule.restoreDefaults();
 
-    expect(globalThis.pack.goods[0].name).toBe("Wood");
+    expect(globalThis.options.map.goods[0].name).toBe("Wood");
+  });
+
+  it("clears only the multipliers keyed by a map's entities", () => {
+    const multipliers = {
+      cultureType: { Naval: 2 },
+      biome: { 5: 2 },
+      culture: { 1: 2 },
+      state: { 3: 0 },
+      religion: { 1: 2 },
+      zone: { 1: 2 }
+    };
+    const good = { i: 1, name: "Custom", value: 777, visible: true, multipliers } as any;
+
+    Goods.clearEntityMultipliers([good]);
+
+    expect(good).toEqual({
+      i: 1,
+      name: "Custom",
+      value: 777,
+      visible: true,
+      multipliers: { cultureType: { Naval: 2 }, biome: { 5: 2 } }
+    });
   });
 
   it("initialises the catalogue from defaults when none exists yet", () => {
-    globalThis.pack.goods = [];
+    globalThis.options.map.goods = [];
     goodsModule.generate();
 
-    expect(globalThis.pack.goods.some((good: any) => good.name === "Wood")).toBe(true);
+    expect(globalThis.options.map.goods.some((good: any) => good.name === "Wood")).toBe(true);
   });
 
   it("does not corrupt the default template when a restored good is edited", () => {
     goodsModule.restoreDefaults();
-    const wood = globalThis.pack.goods.find((good: any) => good.name === "Wood")!;
+    const wood = globalThis.options.map.goods.find((good: any) => good.name === "Wood")!;
     wood.name = "Edited Wood";
 
     goodsModule.restoreDefaults();
 
-    expect(globalThis.pack.goods.find((good: any) => good.name === "Edited Wood")).toBeUndefined();
-    expect(globalThis.pack.goods.some((good: any) => good.name === "Wood")).toBe(true);
+    expect(globalThis.options.map.goods.find((good: any) => good.name === "Edited Wood")).toBeUndefined();
+    expect(globalThis.options.map.goods.some((good: any) => good.name === "Wood")).toBe(true);
   });
 
   it("clears a single good when it is no longer placeable", () => {
-    globalThis.pack.goods[0].deposits = [0, 0];
+    globalThis.options.map.goods[0].deposits = [0, 0];
     goodsModule.regeneratePlacement(1);
 
     const goodIds = Array.from(globalThis.pack.cells.good);
@@ -156,7 +178,7 @@ describe("GoodsModule", () => {
   });
 
   it("places as many deposits as the good's range gives", () => {
-    globalThis.pack.goods[1].deposits = [0, 0];
+    globalThis.options.map.goods[1].deposits = [0, 0];
     goodsModule.generate({ randomSeed: 1 });
 
     expect(Array.from(globalThis.pack.cells.good).filter(id => id === 1)).toHaveLength(2);
@@ -165,17 +187,17 @@ describe("GoodsModule", () => {
 
   it("places deposits only where the distribution allows", () => {
     globalThis.pack.cells.biome = Uint8Array.from([0, 1, 1, 0]);
-    globalThis.pack.goods[0].distribution = "biome(1)";
-    globalThis.pack.goods[1].deposits = [0, 0];
+    globalThis.options.map.goods[0].distribution = "biome(1)";
+    globalThis.options.map.goods[1].deposits = [0, 0];
     goodsModule.generate({ randomSeed: 2 });
 
     expect(Array.from(globalThis.pack.cells.good)).toEqual([0, 1, 1, 0]);
   });
 
   it("picks a whole count within the range, rounding fractions up", () => {
-    globalThis.pack.goods[1].deposits = [0, 0];
+    globalThis.options.map.goods[1].deposits = [0, 0];
     const placed = (deposits: [number, number]) => {
-      globalThis.pack.goods[0].deposits = deposits;
+      globalThis.options.map.goods[0].deposits = deposits;
       return new Set(
         Array.from({ length: 50 }, (_, seed) => {
           goodsModule.generate({ randomSeed: seed });

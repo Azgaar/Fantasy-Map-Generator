@@ -111,7 +111,7 @@ function updateFields(point: Point, cellId: number, gridCellId: number): void {
   set("infoBurg", getNamedInfo(pack.burgs, cells.burg[cellId], "name"));
   set("infoFeature", featureId ? `${feature.subtype || feature.type} (${featureId})` : "n/a");
   set("infoBiome", pack.biomes[cells.biome[cellId]].name);
-  set("infoGood", getNamedInfo(pack.goods, cells.good[cellId], "name"));
+  set("infoGood", getNamedInfo(options.map.goods, cells.good[cellId], "name"));
   set("infoMarket", getMarketInfo(cells.market?.[cellId]));
 
   set("infoCellProduction", listProduction(Production.getCellProduction(cellId)));

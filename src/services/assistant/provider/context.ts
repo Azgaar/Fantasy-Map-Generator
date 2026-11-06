@@ -52,9 +52,9 @@ const GOTCHAS = `# Gotchas
 - Index 0 is reserved in states (neutrals), cultures (wildlands), religions (none) and provinces; in burgs and
   features element 0 is the number \`0\`. Cell 0 is real. Deleted entities keep their slot with \`removed: true\`:
   filter with \`x => x.i && !x.removed\`.
-- Ids are not always array indices: goods and markets start at 1 (\`pack.goods[0]\` is good 1); rivers, markers,
+- Ids are not always array indices: goods and markets start at 1 (\`options.map.goods[0]\` is good 1); rivers, markers,
   routes, zones, journeys and often deals are unordered. Look up with \`.find(x => x.i === id)\` or \`Goods.get(id)\`,
-  \`Markets.get(id)\`; never \`pack.goods[id]\`. Burg \`production\` records hold \`good\`/\`dealId\` ids: resolve each.
+  \`Markets.get(id)\`, never by index. Burg \`production\` records hold \`good\`/\`dealId\` ids: resolve each.
 - A cell's owner is \`cells.state[i]\` (0 = neutral); \`cells.s\` is a burg-site score. \`burgs\` and \`cells\` of states,
   provinces, cultures and religions are counts: a state's cells are
   \`pack.cells.i.filter(i => pack.cells.state[i] === id)\`, its burgs those with \`burg.state === id\`. \`center\` is a

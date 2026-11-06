@@ -1,14 +1,13 @@
-// Technological development of each peopled cell, 1–100 (0 where nobody lives): its people's level, shaped by land and waved by noise
 import {
   CULTURE_TYPE_DEVELOPMENT,
   DEFAULT_DEVELOPMENT,
-  DEVELOPMENT_ERAS,
-  type DevelopmentEra,
+  DEFAULT_ERAS,
+  type Era,
   WILDLANDS_DEVELOPMENT
 } from "@/data/development";
 import type { Culture } from "./cultures-generator";
 
-const SMOOTHING = 2; // passes averaging each land cell with its neighbors, before the noise: a short slope between peoples
+const SMOOTHING = 2; // passes averaging each land cell with its neighbors, before the noise
 const NOISE = 9; // the waves' amplitude, in points
 const WAVES = 3; // waves across the map
 const RIVER = 1;
@@ -16,6 +15,14 @@ const COAST = 1;
 const MIN_BURG = 5; // a generated town is past the foragers' era, whatever its land
 
 class DevelopmentGenerator {
+  get eras(): Era[] {
+    return options.map.eras;
+  }
+
+  getDefaultEras(): Era[] {
+    return DEFAULT_ERAS.map(era => ({ ...era }));
+  }
+
   /** Make development again from the cultures and land; custom levels are lost */
   generate(): void {
     const { cells, cultures, biomes } = pack;
@@ -41,21 +48,19 @@ class DevelopmentGenerator {
     cells.development = development;
   }
 
-  /** The index in DEVELOPMENT_ERAS of the era a development level falls in */
   getEraIndex(level: number): number {
     let index = 0;
-    DEVELOPMENT_ERAS.forEach((era, i) => {
+    this.eras.forEach((era, i) => {
       if (level >= era.level) index = i;
     });
     return index;
   }
 
-  /** The era a development level falls in */
-  getEra(level: number): DevelopmentEra {
-    return DEVELOPMENT_ERAS[this.getEraIndex(level)].name;
+  getEra(level: number): string {
+    return this.eras[this.getEraIndex(level)].name;
   }
 
-  /** The people's average development by the id each cell holds, as `cells.state`: rural people by cell, townspeople by burg */
+  /** The people's average development by the id each cell holds, as `cells.state` */
   getAverages(ids: ArrayLike<number>): (number | undefined)[] {
     const { cells, burgs } = pack;
     const development = cells.development;
@@ -80,7 +85,7 @@ class DevelopmentGenerator {
     return cells.h[cell] >= 20 && (cells.pop[cell] > 0 || cells.burg[cell] > 0);
   }
 
-  /** Set the development of land cells where people live, a whole number from 0 to 100: 0 is none. Empty land and water are skipped */
+  /** Set the development of peopled land cells, a whole number from 0 to 100: 0 is none. Empty land and water are skipped */
   setCells(level: number, cells: readonly number[]): void {
     if (!Number.isInteger(level) || level < 0 || level > 100)
       throw new Error("The development must be an integer from 0 to 100");
@@ -90,7 +95,7 @@ class DevelopmentGenerator {
     }
   }
 
-  /** A burg founded after generation: its cell takes the best development of the land around if it had none, and at least MIN_BURG */
+  /** A burg founded after generation: a cell with none takes the best around, at least MIN_BURG */
   settle(cell: number): void {
     const { development } = pack.cells;
     development[cell] = Math.max(MIN_BURG, development[cell] || this.getBestAround(cell));
@@ -101,7 +106,7 @@ class DevelopmentGenerator {
     if (!this.isPeopled(cell)) pack.cells.development[cell] = 0;
   }
 
-  /** After the people moved, as when population is regenerated: land newly peopled takes the best level around it, at least 1, and land left empty has none */
+  /** After people moved: newly peopled land takes the best around, at least 1; emptied has none */
   resettle(wasPeopled: readonly boolean[]): void {
     const { development, i, h } = pack.cells;
     for (const cell of i) {
@@ -111,12 +116,11 @@ class DevelopmentGenerator {
     }
   }
 
-  /** A cell's development; a water cell, worked from the shore, takes the best of the land around it */
+  /** A cell's development; a water cell, worked from the shore, takes the best of the land around */
   ofCell(cell: number): number {
     return pack.cells.h[cell] >= 20 ? pack.cells.development[cell] : this.getBestAround(cell);
   }
 
-  /** The best development of the land around the cell */
   private getBestAround(cell: number): number {
     const { development, c, h } = pack.cells;
     let level = 0;
@@ -124,7 +128,6 @@ class DevelopmentGenerator {
     return level;
   }
 
-  /** The land's field averaged with its land neighbors, a pass at a time: borders between peoples become slopes */
   private smooth(field: Float32Array): Float32Array {
     const { cells } = pack;
     let current = field;
@@ -152,7 +155,7 @@ class DevelopmentGenerator {
     return (culture.development ?? DEFAULT_DEVELOPMENT) + (CULTURE_TYPE_DEVELOPMENT[culture.type] ?? 0);
   }
 
-  /** Smooth waves over the map, the same for the same seed: value noise in two octaves */
+  /** Value noise in two octaves, the same for the same seed */
   private getNoise(): (cell: number) => number {
     const points = pack.cells.p;
     let minX = Infinity;

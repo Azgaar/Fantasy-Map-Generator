@@ -102,7 +102,10 @@ function open(burgId: number): void {
     title: t("Burg Economy: {{- burg}}", { burg: burg.name }),
     width: "56em",
     resizable: true,
-    onClose: () => Dialog.destroy(dialogId),
+    onClose: () => {
+      activeBurgId = 0;
+      Dialog.destroy(dialogId);
+    },
     position
   });
 }
@@ -180,7 +183,7 @@ function onBodyClick(event: MouseEvent): void {
     : "icon-down-open";
 }
 
-/** The run in order: the debug log step by step, otherwise summed as local bonus, inputs, manufacturing, sales and demand fill */
+/** The run in order: the debug log step by step, otherwise summed */
 function getHistoryRows(): HistoryRow[] {
   const burg = pack.burgs[activeBurgId];
   if (!burg?.production) return [];
@@ -294,7 +297,7 @@ function getTradeRow(goodId: number, marketId: number, kind: DealKind, trade: Tr
   };
 }
 
-// a kept deal has no price, as its sale shrank; the debug log logs the sale whole, so its keep pays back what that sale earned
+// a kept deal has no price, as its sale shrank; the log's keep pays back what the whole sale earned
 const getKeepRow = (goodId: number, units: number, refund = 0): HistoryRow => ({
   type: "KEEP",
   goodId,
@@ -523,7 +526,7 @@ function renderCoverage(good: Good, units: number): string {
   }).join(", ");
 }
 
-/** Sums of the run's trades in money: what the burg paid and got, and the carriage and taxes inside */
+/** The run's trades in money: what the burg paid and got, and the carriage and taxes inside */
 function renderTotals(rows: HistoryRow[]): void {
   const sum = (pick: (row: HistoryRow) => number) => rows.reduce((total, row) => total + pick(row), 0);
   const purchases = -sum(row => (row.type === "BUY" ? (row.income ?? 0) : 0));
@@ -687,7 +690,7 @@ function renderBalance(burg: Burg): string {
     <div class="total">${line(t("Day Balance"), treasuryTip, treasury, true)}</div>`;
 }
 
-/** Each demand: a bar of how much of the need the burg covered, and what it bought beyond as wants */
+/** Each demand: a bar of the need covered, and what it bought beyond as wants */
 function renderDemand(covered: number[], targets: number[]): string {
   const rows = DEMAND_PRIORITY.map((category, index) => {
     const target = rn(targets[index] || 0, 2);

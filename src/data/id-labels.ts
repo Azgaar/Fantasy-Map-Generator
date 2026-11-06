@@ -1,6 +1,5 @@
 // Interface names for ids the data stores in English: a select shows the label, keeps the id as its value
 
-import type { DevelopmentEra } from "@/data/development";
 import type { LabelType } from "@/model/annotations/labels-generator";
 import type { DemandCategory } from "@/model/economy/goods-generator";
 import type { ProsperityLevel } from "@/model/economy/prosperity";
@@ -171,7 +170,7 @@ export const PROSPERITY_LEVEL_LABELS: Record<ProsperityLevel, string> = {
   Peerless: t("Peerless")
 };
 
-export const ERA_LABELS: Record<DevelopmentEra, string> = {
+export const ERA_LABELS: Record<string, string> = {
   Paleolithic: t("Paleolithic"),
   Mesolithic: t("Mesolithic"),
   Neolithic: t("Neolithic"),

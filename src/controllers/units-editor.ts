@@ -1,4 +1,4 @@
-// The Units Editor: the distance, altitude, temperature, money and population scales a map is read in
+// The Units Editor: the scales a map is read in
 
 import { updateGridSizeReadout } from "@/controllers/style/controls";
 import { Options } from "@/model/options/options-model";

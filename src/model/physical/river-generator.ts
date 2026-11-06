@@ -759,7 +759,7 @@ class RiverModule {
     return DEFAULT_RIVER_GROUP;
   }
 
-  /** A river whose tributary is of another group falls back to the default one, and so on downstream */
+  /** A river with a tributary of another group falls back to the default, and so on downstream */
   private unifyGroups(tributaries: River[]): void {
     const byId = new Map(pack.rivers.map(river => [river.i, river]));
     const queue = [...tributaries];
@@ -809,7 +809,7 @@ class RiverModule {
     this.living(riverId).group = requireOneOf(group, Object.keys(styles.rivers.groups), "The river group");
   }
 
-  /** presets are applied before any map exists; custom groups live on the rivers, stock ones in the defaults */
+  /** presets come before any map; custom groups live on the rivers, stock ones in the defaults */
   ensureRiverGroupStyles(): void {
     const { groups } = styles.rivers;
     const template = groups[DEFAULT_RIVER_GROUP];

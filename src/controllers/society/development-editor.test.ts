@@ -1,6 +1,6 @@
 import { beforeEach, expect, it } from "vitest";
 import { Options } from "@/model/options/options-model";
-import { collectDevelopmentStatistics } from "./development-overview";
+import { collectDevelopmentStatistics } from "./development-editor";
 
 beforeEach(() => {
   options = Options.getDefaultOptions();

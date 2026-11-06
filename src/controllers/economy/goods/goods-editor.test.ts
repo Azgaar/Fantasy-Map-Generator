@@ -27,15 +27,20 @@ const good = (i: number, name: string, tags: string[]) => ({
 beforeEach(() => {
   dialogState.remove("goodsEditor", "filters");
   document.body.innerHTML = /* html */ `<div id="dialogs"></div><svg></svg>`;
-  vi.stubGlobal("options", { app: { mode: null } });
+  vi.stubGlobal("options", {
+    app: { mode: null },
+    map: { goods: [good(1, "Grain", ["food"]), good(2, "Iron", ["metal"]), good(3, "Bread", ["food", "baked"])] }
+  });
   vi.stubGlobal("pack", {
     cells: { i: [] },
     burgs: [],
     markets: [],
-    deals: [],
-    goods: [good(1, "Grain", ["food"]), good(2, "Iron", ["metal"]), good(3, "Bread", ["food", "baked"])]
+    deals: []
   });
-  Object.assign(Goods, { get: (id: number) => pack.goods.find(g => g.i === id), getBiomesProduction: () => ({}) });
+  Object.assign(Goods, {
+    get: (id: number) => options.map.goods.find(g => g.i === id),
+    getBiomesProduction: () => ({})
+  });
 });
 
 const search = (query: string) => {

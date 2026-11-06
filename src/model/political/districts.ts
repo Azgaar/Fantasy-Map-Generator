@@ -1,7 +1,3 @@
-// The parts of a state its government reaches through one seat each: a province whose seat burg has a market, and the
-// crown lands, the rest, governed from the capital. Each has its own people, minorities, remoteness and corruption.
-// Worked out on demand, cached per set of deals, nothing saved
-
 import { Markets } from "@/model/economy/markets-generator";
 import { getDecima } from "@/model/units";
 import type { Burg } from "./burgs-generator";
@@ -14,11 +10,11 @@ export type District = {
   share: number; // of the state's people
   diversity: number; // share outside the state's culture and its capital's faith, each counting half
   remoteness: number; // its seat's distance from the capital, 1 at REMOTE_DECIMAS or overseas; 0 for the crown lands
-  graft: number; // its corruption against the state's: above 1 where more remote or diverse than the state's average
+  graft: number; // its corruption against the state's: above 1 where more remote or diverse than average
 };
 
 const REMOTE_DECIMAS = 2; // tenths of the map's diagonal from the capital at which a seat is fully remote
-const REMOTE_CORRUPTION = 0.5; // how much more corrupt, relatively, a fully remote district is than its state's average
+const REMOTE_CORRUPTION = 0.5; // how much more corrupt a fully remote district is than its state's average
 const DIVERSITY_CORRUPTION = 1; // likewise a district of strangers only
 
 class DistrictsModule {
@@ -43,29 +39,29 @@ class DistrictsModule {
     return capital ? this.at(capital.cell) : undefined;
   }
 
-  /** The district's corruption before administration: the state's, higher in districts more remote or diverse than its average, lower in the rest */
+  /** Before administration: the state's, higher where more remote or diverse than average */
   getTendency(state: State, district: District): number {
     return Math.min(100, state.economy.budget.corruption * district.graft);
   }
 
-  /** Percent officials pocket of what is spent in the district once the state has collected this much, curbed by administration */
+  /** Percent officials pocket of what is spent in the district, curbed by administration */
   getCorruption(state: State, district: District, collected: number): number {
     return States.getCorruption(state, collected, this.getTendency(state, district));
   }
 
-  /** The state's corruption on the whole: its districts' by where each expense is spent, or by their people when it spends nothing */
+  /** By where each expense is spent, or by people when it spends nothing */
   getStateCorruption(state: State, collected: number): number {
     return (
       this.byExpenses(state, d => this.getCorruption(state, d, collected)) ?? States.getCorruption(state, collected)
     );
   }
 
-  /** The state's corruption before administration, weighed as getStateCorruption: the capital's district, where the court and the army spend, is usually the least corrupt */
+  /** Corruption before administration, weighed as getStateCorruption */
   getStateTendency(state: State): number {
     return this.byExpenses(state, d => this.getTendency(state, d)) ?? state.economy.budget.corruption;
   }
 
-  /** A districts' rate for the state by where each expense is spent, or by their people when it spends nothing; null without districts */
+  /** Districts' rate for the state by expense or else by people; null without districts */
   private byExpenses(state: State, rate: (district: District) => number): number | null {
     const districts = this.get(state.i);
     const capital = this.getCapital(state);
@@ -77,7 +73,7 @@ class DistrictsModule {
     return ((court + military) * rate(capital) + (administration + infrastructure) * atSeats) / total;
   }
 
-  /** How fully the last run's infrastructure spending served each district's people, 0 to 1, by district index: the state's spending went to its seats by their people, less what each one's officials pocketed */
+  /** How fully last run's infrastructure spending served each district, 0 to 1, by district index */
   getInfrastructure(state: State): number[] {
     const districts = this.get(state.i);
     if (!state.economy) return [];

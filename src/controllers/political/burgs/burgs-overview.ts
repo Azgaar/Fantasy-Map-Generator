@@ -541,7 +541,6 @@ function renderBurgsPage(view: TableView<Burg>): void {
     .forEach(el => void el.addEventListener("click", triggerBurgRemove));
 }
 
-/** The market whose center the burg is, if any */
 function getCenteredMarket(burg: Burg) {
   return pack.markets.find(market => market.centerBurgId === burg.i);
 }

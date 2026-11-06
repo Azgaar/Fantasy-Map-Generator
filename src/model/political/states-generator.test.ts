@@ -521,11 +521,15 @@ describe("StatesModule.tariffs", () => {
         { i: 1, name: "A", economy: { ...noFinance(), tariffs: [] } },
         { i: 2, name: "B" },
         { i: 3, name: "C", removed: true }
-      ],
-      goods: [
-        { i: 0, name: "Wheat" },
-        { i: 1, name: "Iron" }
       ]
+    } as any;
+    globalThis.options = {
+      map: {
+        goods: [
+          { i: 0, name: "Wheat" },
+          { i: 1, name: "Iron" }
+        ]
+      }
     } as any;
 
     States.setTariffs(1, [

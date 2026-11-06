@@ -1,10 +1,7 @@
-// A state's budget editor: its taxes, how it spends them, and its tariffs and embargoes
-
 import { sum } from "d3";
 import { Controllers } from "@/controllers";
 import { EXPENSE_LABELS } from "@/data/id-labels";
 import { Goods } from "@/model/economy/goods-generator";
-import { Production } from "@/model/economy/production-generator";
 import { StateEconomy } from "@/model/economy/state-economy";
 import { Districts } from "@/model/political/districts";
 import { Military } from "@/model/political/military-generator";
@@ -19,9 +16,8 @@ import {
 } from "@/model/political/states-generator";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
-import { Layers } from "@/renderers/layers";
+import { App } from "@/ui/app-commands";
 import { Dialog } from "@/ui/dialog/dialog";
-import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import {
   bindEconomyWiki,
   budgetBackground,
@@ -71,7 +67,7 @@ let edit: {
   collected: number; // the taxes collected in the last run, before adjustments
 }; // what the form holds, read on Apply
 
-/** Opens the state's budget; Apply sets the changes and, if ticked, regenerates production to show the outcome in place */
+/** Opens the state's budget; Apply sets the changes and offers the economy regeneration */
 function open(id: number, onApply?: () => void): void {
   const state = pack.states[id];
   if (!id || !state || state.removed) return;
@@ -86,12 +82,7 @@ function open(id: number, onApply?: () => void): void {
     title: t("Budget: {{- state}}", { state: state.name }),
     width: "32em",
     position: { my: "center", at: "center", of: "svg" },
-    footer:
-      economyWikiButton("stateTaxesWiki") +
-      /*html*/ `<div data-tip="${t("Rerun the day to see the changes' effect. Unticked, they apply when production is next regenerated")}">
-        <input id="stateBudgetRegenerate" class="checkbox" type="checkbox" checked />
-        <label for="stateBudgetRegenerate" class="checkbox-label"><i>${t("regenerate production on apply")}</i></label>
-      </div>`,
+    footer: economyWikiButton("stateTaxesWiki"),
     buttons: [
       { label: t("Apply"), tip: t("Set the changes"), onClick: apply },
       { label: t("Close"), onClick: () => Dialog.close(dialogId) }
@@ -155,18 +146,16 @@ function apply(): void {
   States.setTariffs(stateId, edit.rules);
   States.setAdjustments(stateId, edit.adjustments);
 
-  if (ensureEl<HTMLInputElement>("stateBudgetRegenerate").checked) {
-    Production.regenerate(); // the views read the run, so it spends and taxes as now set
-    Layers.draw("goods", "trade");
-    refreshEditors();
-  } else if (findEl("statesEditor")) void Controllers.StatesEditor.refresh();
+  if (findEl("statesEditor")) void Controllers.StatesEditor.refresh();
   onApplied?.();
   render();
+  App.openEconomyRegeneration(["production"]);
 }
 
 function cleanup(): void {
   Dialog.destroy("tariffSelectorDialog");
   Dialog.destroy(dialogId);
+  stateId = 0;
   onApplied = undefined;
   edit = null!;
 }
@@ -227,7 +216,7 @@ function drawCollected(): void {
   ensureEl("stateCollected").innerHTML = formatPrice(edit.collected + sum(edit.adjustments, line => line.value));
 }
 
-/** Expenses: each a share of the taxes, corruption grays the part officials pocket; the balance is what is left or lacking */
+/** Expenses: each a share of the taxes, officials' part grayed; the balance is left or lacking */
 function drawBudget(): void {
   const { economy } = pack.states[stateId];
   const set = economy.budget.corruption;
@@ -345,7 +334,7 @@ function pickStates(rule: TariffRule): void {
 }
 
 function pickGoods(rule: TariffRule): void {
-  const goods = pack.goods ?? [];
+  const goods = options.map.goods;
   const isAll = rule.goods === "all";
   const selected = new Set(Array.isArray(rule.goods) ? rule.goods : []);
   openChecklist({

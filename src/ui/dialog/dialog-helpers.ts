@@ -38,7 +38,7 @@ const REFRESHABLE_EDITORS = [
   "journeysOverviewRefresh"
 ];
 
-/** Close the dialogs about one burg, state, province, market or trade: after a regeneration their ids may name another */
+/** Close dialogs about one entity: after a regeneration their ids may name another */
 export function closeEntityDialogs(): void {
   const dialogs = document.querySelectorAll(
     ".burgEconomyDialog, .stateEconomyDialog, .provinceEconomyDialog, [id^='stateEconomy'][id$='Table'], #marketOverview, #marketDeals, #tradeDetails, #stateBudgetEditor, #tariffSelectorDialog"

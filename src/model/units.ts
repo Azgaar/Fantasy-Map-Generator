@@ -94,7 +94,6 @@ export function getCellPopulation(cellId: number, pack: PackedGraph): [number, n
   return [rural, urban];
 }
 
-/** The money unit selected in the Units editor */
 export function getMoneyUnit(plural = true): string {
   const name = options.map.units.money.unit || "uncia";
   return plural && !name.endsWith("s") ? `${name}s` : name;
@@ -170,7 +169,7 @@ const KM_IN_DISTANCE_UNIT: Record<string, number> = {
   nlg: 5.556 // nautical league: 3 nautical miles
 };
 
-/** A decima, a tenth of the map's diagonal in map units: a distance measure that scales with the map */
+/** A tenth of the map's diagonal in map units: a distance measure that scales with the map */
 export function getDecima(): number {
   return Math.hypot(options.map.graph.width, options.map.graph.height) / 10;
 }

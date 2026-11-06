@@ -60,7 +60,7 @@ function translateShell(): void {
   }
   findEl("assistantBubble")?.setAttribute("aria-label", t("Azgaar Assistant"));
   const tooltip = findEl("tooltip");
-  // the first-visit hint stays pinned until the options are opened once; pinned, it hides every map tip
+  // the first-visit hint stays until the options are first opened; pinned, it hides every map tip
   if (tooltip && !localStorage.getItem(ARROW_TIP_KEY))
     tooltip.dataset.main = t("Click the arrow button for options. Zoom in to see the map in details");
   const loading = findEl("loading-text")?.firstChild;

@@ -24,7 +24,8 @@ beforeEach(() => {
   vi.mocked(Icons.retry).mockClear();
   document.body.innerHTML = '<div id="dialogs"></div><svg id="defElements"><defs/></svg>';
   options.app.mode = "heightmap"; // every dialog bails out before touching its markup
-  globalThis.pack = { goods: [], burgs: [] } as unknown as typeof pack;
+  globalThis.pack = { burgs: [] } as unknown as typeof pack;
+  options.map.goods = [];
   Object.assign(Markets, { get: () => undefined });
 });
 

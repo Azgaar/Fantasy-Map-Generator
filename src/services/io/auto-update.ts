@@ -208,7 +208,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
     // v1.0 added state relations, provinces, forms and full names
     selectInSvg("#viewbox").insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
-    // these generators keep state finances and read development, which the v1.124.0 and v1.157.0 steps make for this map
+    // these generators read state finances and development, which the v1.124.0 and v1.157.0 steps make
     for (const state of pack.states) state.economy ??= noFinance();
     pack.cells.development = new Uint8Array(0);
     States.collectStatistics();
@@ -1972,7 +1972,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     // v1.154.0 derives symbol ids from the icon set directories: good-<name> is goods-<name>, uploads are custom-goods-<id>
     const goodIconId = (icon: string): string =>
       icon.replace(/^good-custom-/, "custom-goods-").replace(/^good-/, `${Goods.iconSet.id}-`);
-    for (const good of pack.goods ?? []) if (good.icon) good.icon = goodIconId(good.icon);
+    for (const good of options.map.goods) if (good.icon) good.icon = goodIconId(good.icon);
 
     // merging states kept the merged regiments' old state and could repeat an id; regiments are addressed by
     // their state and id since v1.154.0
@@ -1992,7 +1992,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     const kept = new Set(CustomIcons.all.map(icon => icon.id));
     if (data[45]) adoptGoodsUploads(data[45]);
     adoptLegacyIconSlots([
-      ...(pack.goods ?? []),
+      ...options.map.goods,
       ...(pack.markers ?? []),
       ...(pack.states ?? []).flatMap(state => state?.military ?? []),
       ...options.map.military.units
@@ -2092,9 +2092,21 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
   if (isOlderThan("1.155.0")) {
     // v1.155.0 added tags to every taggable entity
-    const { states, provinces, cultures, religions, burgs, markers, rivers, routes, zones, features, goods } = pack;
+    const { states, provinces, cultures, religions, burgs, markers, rivers, routes, zones, features } = pack;
     const regiments = (states ?? []).flatMap(state => state?.military ?? []);
-    const tagged = [states, provinces, cultures, religions, burgs, markers, rivers, routes, zones, features, goods];
+    const tagged = [
+      states,
+      provinces,
+      cultures,
+      religions,
+      burgs,
+      markers,
+      rivers,
+      routes,
+      zones,
+      features,
+      options.map.goods
+    ];
     for (const entity of [...tagged, regiments].flat() as { tags?: unknown }[]) {
       if (entity && typeof entity === "object" && !Array.isArray(entity.tags)) entity.tags = [];
     }
@@ -2143,7 +2155,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
   }
 
   if (isOlderThan("1.157.0")) {
-    // v1.157.0 spaces contours in height units, not generator heights (1 to 20): keep about as many lines
+    // v1.157.0 spaces contours in height units, not generator heights: keep about as many lines
     const record = data[48] ? safeParseJSON(data[48]) : undefined;
     const land = record?.heightmap?.groups?.landHeights?.options?.contours;
     const ocean = record?.heightmap?.groups?.oceanHeights?.options?.contours;
@@ -2186,7 +2198,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       else if (content !== icon.content) CustomIcons.update(icon.id, { content });
     }
 
-    // v1.157.0 moves state finances to state.economy and adds market fees, corruption and the state budget
+    // v1.157.0 moves state finances to state.economy, with market fees, corruption and the budget
     const FINANCE_KEYS = ["salesTax", "pollTax", "marketFee", "treasury", "tariffs"] as const;
     for (const state of pack.states ?? []) {
       if (!state) continue;
@@ -2200,24 +2212,24 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       state.economy.adjustments ??= [];
     }
 
-    // v1.157.0 charges carriage per good, gives goods development tiers and places a count of richer deposits per good instead of a chance per cell
-    for (const good of pack.goods ?? []) {
+    // v1.157.0 charges carriage per good, adds development tiers and places deposits by count per good
+    for (const good of options.map.goods) {
       good.carriage ??= Goods.getDefaultCarriage(good);
       good.development ??= Goods.getDefaultDevelopment(good.name);
     }
     function migrateDeposits() {
       const counts: number[] = [];
       for (const goodId of pack.cells.good) counts[goodId] = (counts[goodId] || 0) + 1;
-      for (const good of pack.goods as (Good & { chance?: number })[]) {
+      for (const good of options.map.goods as (Good & { chance?: number })[]) {
         const count = counts[good.i] || 0;
         if (good.chance && good.distribution)
           good.deposits = count
             ? [Math.max(1, Math.round(count * 0.75)), Math.max(1, Math.round(count * 1.25))]
-            : Goods.getDefaultDeposits(good.name);
+            : (Goods.getDefaultDeposits(good.name) ?? [1, 2]);
         delete good.chance;
       }
     }
-    if (pack.goods?.some(good => "chance" in good)) migrateDeposits();
+    if (options.map.goods.some(good => "chance" in good)) migrateDeposits();
 
     for (const burg of pack.burgs ?? []) delete (burg as { market?: number } | undefined)?.market;
 
@@ -2233,7 +2245,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     }
     addDevelopment();
 
-    /** v1.157.0 sums a burg's trades with a market by good and kind, and its output by good. Trade between markets has no burg to go to */
+    /** v1.157.0 sums a burg's trades by market, good and kind. Trade between markets has no burg */
     function migrateEconomyRun() {
       type LegacyDeal = {
         seller: number;
@@ -2246,7 +2258,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
         tax?: number;
         tariff?: number;
       };
-      const goods = new Set(pack.goods?.map(good => good.i));
+      const goods = new Set(options.map.goods.map(good => good.i));
       const markets = new Set(pack.markets?.map(market => market.i));
       const isBurg = (id: number) => Boolean(pack.burgs?.[id]?.i && !pack.burgs[id].removed);
 
@@ -2286,7 +2298,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
       if (pack.cells?.i) pack.cells.prosperity ??= new Uint8Array(pack.cells.i.length); // rural days were not kept
 
-      // the old run kept no military spending: the armies, saved as they were, count as fully kept until the next run
+      // the old run kept no military spending: armies count as fully kept until the next run
       for (const state of pack.states ?? [])
         if (state?.i && !state.removed) state.economy.spent.military = Military.getUpkeepNeed(state.i);
     }

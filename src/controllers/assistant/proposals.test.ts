@@ -243,10 +243,12 @@ it.each([
   ["market", "markets", { i: 3, name: "Fair" }],
   ["good", "goods", { i: 5, name: "Salt" }]
 ] as const)("records a note on a %s and leaves the map untouched", (type, collection, entity) => {
-  (pack as unknown as Record<string, unknown[]>)[collection] = [{ ...entity }];
+  const list = [{ ...entity }] as unknown as { note?: string }[];
+  if (collection === "goods") options.map.goods = list as typeof options.map.goods;
+  else (pack as unknown as Record<string, unknown[]>)[collection] = list;
   const key = `${type}:${entity.i}`;
   const proposal = proposeOk([{ op: "Notes.write", args: [key, "<p>Lore</p>"] }]);
-  const item = () => (pack as unknown as Record<string, { note?: string }[]>)[collection][0];
+  const item = () => list[0];
   expect(item().note).toBeUndefined();
   expect(proposal.change.map(row => [row.key, row.field, row.after])).toEqual([[key, "note", "<p>Lore</p>"]]);
   expect(apply(proposal, MAP)).toBe(true);

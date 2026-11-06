@@ -1,6 +1,3 @@
-// States spend their budget's expenses of the taxes they collect during the economy run, as the taxes come in:
-// the court and the army buy at the capital, administration and infrastructure at the provinces' seats
-
 import { sum } from "d3";
 import type { Burg } from "@/model/political/burgs-generator";
 import { type District, Districts } from "@/model/political/districts";
@@ -20,7 +17,7 @@ const EXPENSE_NEEDS: Record<Expense, [DemandCategory, number][]> = {
     ["food", 0.4]
   ]
 };
-const MIN_ORDER = 1; // money a seat gathers before it orders during the day, so it buys in lots rather than crumbs; the day's last orders take the rest
+const MIN_ORDER = 1; // money a seat gathers before it orders, so it buys in lots rather than crumbs
 
 type Seat = { burg: Burg; share: number; corruption: number; spent: number }; // corruption: its district's, before administration
 type StateRun = {
@@ -47,7 +44,7 @@ class StateOrdersModule {
     for (const [need] of Object.values(EXPENSE_NEEDS).flat())
       this.goodsFor.set(
         need,
-        pack.goods.filter(good => good.demandCoverage?.[need])
+        options.map.goods.filter(good => good.demandCoverage?.[need])
       );
 
     this.runs = [];
@@ -59,7 +56,7 @@ class StateOrdersModule {
         capital?.i && !capital.removed && Markets.ofBurg(capital)
           ? [{ burg: capital, share: 1, corruption: this.tendency(state, district), spent: 0 }]
           : [];
-      // each seat spends its district's share, as collection counts officials' cut; a seat with no market leaves its share unspent
+      // by district, as collection counts officials' cut; a seat with no market leaves its share unspent
       const atSeats = (): Seat[] =>
         Districts.get(state.i)
           .filter(d => d.seat && Markets.ofBurg(d.seat))
@@ -75,7 +72,7 @@ class StateOrdersModule {
     }
   }
 
-  /** A turn: each seat spends its expenses' share of what the state collected so far; the day's last spends the rest */
+  /** Each seat spends its expenses' share of the taxes so far; the last turn spends the rest */
   place(last = false): void {
     const ruralPollTax = last ? Trade.settleRuralPollTax() : [];
     const least = last ? 0.01 : MIN_ORDER;
@@ -101,7 +98,7 @@ class StateOrdersModule {
     return run.dawn + run.ruralPollTax + Trade.getTaxesSoFar(run.stateId);
   }
 
-  /** Ends the run: each state keeps what its expenses spent, and what it collected, so what reads it before collection sees this run's */
+  /** Ends the run: each state keeps what it spent and collected, for readers before collection */
   end(): void {
     for (const run of this.runs) {
       const spent = noExpenses();
@@ -113,7 +110,7 @@ class StateOrdersModule {
     this.goodsFor.clear();
   }
 
-  /** Spends on the goods covering the need, cheaper ones getting more, at the seat's market or the cheapest other. Returns what it spent */
+  /** Spends on the need's goods at the seat's market or the cheapest other; returns what it spent */
   private order(burg: Burg, need: DemandCategory, money: number, terms: TradeTerms, signal: boolean): number {
     const market = Markets.ofBurg(burg);
     if (!market) return 0;

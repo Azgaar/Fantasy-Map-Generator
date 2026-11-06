@@ -915,7 +915,7 @@ function getInitialMorale(): void {
   const b = battle!;
   const powerFee = (diff: number): number => minmax(100 - diff ** 1.5 * 10 + 10, 50, 100);
   const distanceFee = (dist: number[]): number => Math.min((mean(dist) ?? 0) / 50, 15);
-  // troops of a stable state fight with heart: from ×0.75 when it falls apart to ×1.25 when unshakable
+  // a stable state's troops fight with heart: ×0.75 when it falls apart to ×1.25 when unshakable
   const stabilityFactor = (regiments: Regiment[]): number => {
     const troops = sum(regiments, regiment => regiment.a);
     const stability = troops

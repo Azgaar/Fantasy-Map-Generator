@@ -50,14 +50,14 @@ beforeEach(() => {
         [550, 60]
       ]
     },
-    goods: [
-      { i: 1, name: "Grain", color: "#ff0000", icon: "goods-grain", value: 1, visible: true },
-      { i: 2, name: "Iron", color: "#00ff00", icon: "goods-iron", value: 1, visible: true }
-    ],
     burgs: [{}, { i: 1, x: 50, y: 60, production: {} }, { i: 2, x: 550, y: 60, production: {} }]
   } as never;
+  options.map.goods = [
+    { i: 1, name: "Grain", color: "#ff0000", icon: "goods-grain", value: 1, visible: true },
+    { i: 2, name: "Iron", color: "#00ff00", icon: "goods-iron", value: 1, visible: true }
+  ] as never;
   Object.assign(Goods, {
-    get: (id: number) => pack.goods.find(good => good.i === id),
+    get: (id: number) => options.map.goods.find(good => good.i === id),
     getStroke: () => "#333"
   });
   Object.assign(Production, { getRuralOutput: () => Array.from(pack.cells.i, cellOutput), getBurgProduction });
@@ -129,7 +129,7 @@ test("icon lines follow the style at the marker's proportions", async () => {
 });
 
 test("hidden goods drop out of every sublayer, burg pies included", async () => {
-  pack.goods[0].visible = false;
+  options.map.goods[0].visible = false;
   await drawGoods();
   expect(document.querySelectorAll("#goodsIcons > g")).toHaveLength(0); // cell 0's good is hidden
   expect(document.querySelectorAll("#goodsCells polygon")).toHaveLength(0);
@@ -159,8 +159,8 @@ test("each sublayer can be switched off in the style", async () => {
 });
 
 test("with no good selected, cells show their output value in their most valuable good's color, with every icon and burg", async () => {
-  for (const good of pack.goods) good.visible = false;
-  pack.goods[1].value = 10; // one iron is worth ten grain
+  for (const good of options.map.goods) good.visible = false;
+  options.map.goods[1].value = 10; // one iron is worth ten grain
   cellOutput.mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 1: 20, 2: 8 }) as Output);
   setViewportTransform(0.1, 0, 0);
   await drawGoods();
@@ -186,14 +186,14 @@ test("with no good selected, cells show their output value in their most valuabl
 });
 
 test("a burg pie shows its five most valuable goods and the rest as one sector", async () => {
-  pack.goods = Array.from({ length: 7 }, (_, index) => ({
+  options.map.goods = Array.from({ length: 7 }, (_, index) => ({
     i: index + 1,
     name: `Good ${index + 1}`,
     color: `#00000${index + 1}`,
     icon: "",
     value: index + 1
   })) as never;
-  getBurgProduction.mockImplementation(() => Object.fromEntries(pack.goods.map(good => [good.i, 1])));
+  getBurgProduction.mockImplementation(() => Object.fromEntries(options.map.goods.map(good => [good.i, 1])));
   await drawGoods();
 
   const goods = [...document.querySelectorAll<SVGPathElement>('#goodsBurgs > g[data-id="1"] path')].map(
@@ -228,7 +228,8 @@ test("full-map export renders every good at once, leaving the live map culled", 
 
 test("a replacement map invalidates the cached production", async () => {
   await drawGoods();
-  globalThis.pack = { ...pack, goods: [{ ...pack.goods[0], color: "#0000ff" }] } as never;
+  globalThis.pack = { ...pack } as never;
+  options.map.goods = [{ ...options.map.goods[0], color: "#0000ff" }] as never;
   ViewportLayers.renderNow();
   expect(document.querySelector("#goodsCells polygon")?.getAttribute("fill")).toBe("#0000ff");
   expect(cellOutput).toHaveBeenCalledTimes(4);

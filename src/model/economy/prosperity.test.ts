@@ -46,13 +46,13 @@ beforeEach(() => {
   burg = { i: 1, cell: 0, population: 10, state: 1 } as Burg;
   market = { i: 1, centerBurgId: 1, color: "#fff", goods: {} };
   globalThis.pack = {
-    goods: catalogue,
     cells: { i: [0, 1], pop: [0, 20], market: [1, 1], state: [1, 1] },
     burgs: [{ i: 0 }, burg],
     states: [{ i: 0 }, { i: 1 }],
     markets: [market],
     deals: []
   } as unknown as typeof pack;
+  options.map.goods = catalogue;
   Goods.sync();
   Markets.sync();
 });

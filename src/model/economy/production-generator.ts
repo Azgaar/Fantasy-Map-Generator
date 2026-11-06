@@ -36,18 +36,18 @@ import {
 } from "./trade";
 
 const RURAL_OUTPUT_FACTOR = 0.9;
-export const DEPOSIT_RICHNESS = 2.2; // units a deposit yields a day per population point of its cell, on a map of DEPOSIT_MAP_CELLS
-const DEPOSIT_MAP_CELLS = 5000; // deposit counts are per map: their yield grows with the map's cells
+export const DEPOSIT_RICHNESS = 2.2; // units a day per population point of its cell, on a map of DEPOSIT_MAP_CELLS
+const DEPOSIT_MAP_CELLS = 5000; // deposit counts are per map, so their yield grows with the map's cells
 const DEPOSIT_MAX_POPULATION = 10; // a deposit's yield stops growing past this population
-export const MAX_DEPOSIT_VALUE = 200; // worth at base value a burg's deposit yields a day at most, so a large burg cannot grind it, nor a gemstone mine flood its treasury
-export const DEPOSIT_OUTPUT = 2; // units a worker gets from the burg's own deposit a day, before multipliers: a unit of a made good takes a day's work
+export const MAX_DEPOSIT_VALUE = 200; // most base value a burg's deposit yields a day, so a large burg cannot grind a gemstone mine
+export const DEPOSIT_OUTPUT = 2; // units a worker gets a day from the burg's own deposit, before multipliers
 const MAX_WORKERS = 300;
 export const WORKFORCE_SHARE = 0.32; // townspeople working in trades; the rest serve, build, farm or are too young or old
 const WORKERS_PER_TURN = 5;
-const LOT_DEPTH_SHARE = 0.5; // a step sells at most this share of a day's sales where it sells, so a thin market gets what pays and no more
-const PRODUCTIVITY_START = 30; // development past the High Middle Ages makes more of every good: ×1.5 at 45, ×2 at 60
-const MIN_STEP = 0.5; // the fewest workers a step takes, so a thin market does not take endless decisions
-const MIN_PURCHASE = 1; // the fewest coins a burg spends on a good for a need or want, so it buys fewer goods in bigger lots
+const LOT_DEPTH_SHARE = 0.5; // a step sells at most this share of a day's sales where it sells
+const PRODUCTIVITY_START = 30; // development past this makes more of every good
+const MIN_STEP = 0.5; // fewest workers in a step, so a thin market does not take endless decisions
+const MIN_PURCHASE = 1; // fewest coins a burg spends on a good, so it buys fewer goods in bigger lots
 const MIN_SMALL_PURCHASE = 0.25; // the same when all it has for the need or want is less than MIN_PURCHASE
 export const BURG_SPECIALIZATION = 1.89;
 export const MARKET_SPECIALIZATION = 0.6;
@@ -64,7 +64,7 @@ export class ProductionModule {
     States.collectTaxes();
   }
 
-  /** Forgets the run when what it names is gone: nothing is made or traded until production is regenerated. Adjustments stay */
+  /** Forgets the run when what it names is gone; adjustments stay */
   clear(): void {
     pack.deals = [];
     for (const market of pack.markets) {
@@ -86,12 +86,12 @@ export class ProductionModule {
 
   produce() {
     this.zoneCellSets = null; // rebuild lookup to reflect any in-place zone edits
-    // a market's center pays its license out of the market's margin as it comes in. Set first: the margin rate follows it
+    // licenses first: the margin rate follows them
     for (const market of pack.markets) {
       const center = pack.burgs[market.centerBurgId];
       market.feePaid = center?.i && !center.removed ? States.getMarketFee(center.state || 0) : 0;
     }
-    Trade.owesLicenses();
+    Trade.billLicenses();
 
     const rural = this.getRuralOutput();
     Trade.collectRuralProduction(rural);
@@ -99,15 +99,14 @@ export class ProductionModule {
     Trade.measureRoutes();
     const recording = EconomyDebug.start();
 
-    const index = this.buildProductionIndex(pack.goods);
+    const index = this.buildProductionIndex(options.map.goods);
     const sortedBurgs = this.getTurnOrder(pack.burgs.filter(burg => burg.i && !burg.removed));
 
     const states: BurgProductionState[] = [];
     for (const burg of sortedBurgs) {
       const market = Markets.ofBurg(burg);
-      // the poll tax is the day's first claim: the burg starts owing it and pays it from its first sales
       burg.pollTaxPaid = market ? rn(States.getPollTaxDue(burg.state || 0, burg.population || 0), 2) : 0;
-      burg.treasury = sum(burg.adjustments ?? [], line => line.value) - burg.pollTaxPaid; // adjustments come at dawn too
+      burg.treasury = sum(burg.adjustments ?? [], line => line.value) - burg.pollTaxPaid;
       if (market) states.push(this.createBurgProductionState(index, burg, market, recording));
       else {
         burg.product = 0; // out of every market: nothing made
@@ -120,9 +119,7 @@ export class ProductionModule {
       index.worldPopulation += population;
     }
 
-    // burgs take turns by √population × development, up to 5 workers each, so the first in line cannot drain a market alone; each turn a burg works, sells,
-    // buys its needs in step with the work done, then spends what it can spare; rural people spend what their produce earned,
-    // states what their taxes brought in
+    // a few workers a turn, so the first in line cannot drain a market alone
     let working = states;
     while (working.length) {
       let worked = false;
@@ -136,15 +133,15 @@ export class ProductionModule {
         this.fillDemand(index, state, hasWork && state.population ? state.workersUsed / state.population : 1);
         this.spendOnWants(index, state);
         state.settled = state.burg.treasury || 0;
-        // a burg with idle workers tries again next round: buyers between rounds move the prices that idled it
+        // a burg with idle workers tries again next round: buyers in between move the prices that idled it
         return hasWork || state.workersUsed < state.population - 0.001;
       });
       for (const market of pack.markets) Trade.spendRural(market);
       StateOrders.place();
-      if (!worked) break; // a whole round found nothing worth making
+      if (!worked) break;
     }
-    Trade.settleLicenses(); // what the margin did not pay of a license is paid now: a quiet market ends the day in debt
-    // money that came after a burg's last turn, as a market center's margin, buys its people's day too
+    Trade.settleLicenses();
+    // money after a burg's last turn, as a center's margin, is spent too
     for (const state of states) {
       if ((state.burg.treasury || 0) <= state.settled + 0.01) continue;
       this.fillDemand(index, state);
@@ -156,16 +153,15 @@ export class ProductionModule {
     pack.deals = pack.deals.filter(deal => deal[4] > 0); // sales kept back whole
     pack.cells.prosperity = Prosperity.getCellsProsperity(rural);
 
-    // unrounded during the run, so sub-cent margins add up; a center outside every market has them too; no -0
+    // unrounded mid-run so sub-cent margins add up; a center with no market has them too; no -0
     for (const burg of sortedBurgs) burg.treasury = rn(burg.treasury || 0, 2) || 0;
     for (const { burg, produced, revenue, ingredientCosts, log } of states) {
-      burg.product = rn(revenue - ingredientCosts, 2); // a burg whose inputs cost more than its sales made a loss
+      burg.product = rn(revenue - ingredientCosts, 2);
       burg.production = produced.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)]] : []));
       if (log) EconomyDebug.set(burg.i!, log);
     }
   }
 
-  /** Burgs go by √population × development, so the advanced take the best trades first and size counts less than it */
   private getTurnOrder(burgs: Burg[]): Burg[] {
     const development = pack.cells.development;
     const weight = (burg: Burg) => Math.sqrt(burg.population || 0) * development[burg.cell];
@@ -194,7 +190,6 @@ export class ProductionModule {
     };
   }
 
-  /** The burg's workforce: its share of the population working in trades, capped */
   getWorkers(burg: Burg): number {
     return Math.min(rn((burg.population || 0) * WORKFORCE_SHARE, 2), MAX_WORKERS);
   }
@@ -237,7 +232,7 @@ export class ProductionModule {
     };
   }
 
-  /** Spends up to `workers` of the burg's remaining workers; false once none are left or nothing is worth making */
+  /** Spends up to `workers` of its remaining workers; false once none are left or nothing pays */
   private runWorkerLoop(index: ProductionIndex, state: BurgProductionState, workers = state.population): boolean {
     let used = 0;
     state.sources.turn++; // other burgs traded since the last turn
@@ -260,7 +255,7 @@ export class ProductionModule {
       const spent = this.executeManufacture(index, state, decision, workerFraction);
       used += spent;
       state.workersUsed += spent;
-      // a finished good is sold at once, so the next worker sees the price it moved; a chain's inputs wait for their step
+      // sold at once, so the next worker sees the moved price; a chain's inputs wait for their step
       if (decision.action.good.i === decision.goalGoodId)
         this.sellInventoryToMarket(index, state, goodId => goodId === decision.goalGoodId);
     }
@@ -284,7 +279,6 @@ export class ProductionModule {
     const produced = rn(actualYield * output, 2);
     if (!produced) return workerFraction;
 
-    // buy what the inventory lacks; inputs bought before a failed purchase stay in the inventory
     for (const ingredient of ingredients) {
       const ingredientId = ingredient.goodId;
       const amount = actualYield * ingredient.amount;
@@ -338,7 +332,7 @@ export class ProductionModule {
     return actualYield; // a chain's step takes only the workers it needs, the rest go on to the next step
   }
 
-  /** Buys from the burg's market while it stocks enough of the good, otherwise from the turn's cheapest other market, or what its own has left */
+  /** Buys at its own market while stocked enough, else the cheapest other, else what its own has */
   private acquire(
     index: ProductionIndex,
     state: BurgProductionState,
@@ -359,7 +353,7 @@ export class ProductionModule {
     return trade;
   }
 
-  /** The local quote while the burg's market stocks enough of the good, otherwise the turn's cheapest other market, or what its own has left */
+  /** The quote `acquire` would buy at */
   private quote(index: ProductionIndex, state: BurgProductionState, goodId: number): MarketQuote {
     const local = Trade.quoteMarket(state.market, goodId, state.burg);
     const good = Goods.get(goodId);
@@ -380,7 +374,6 @@ export class ProductionModule {
     };
   }
 
-  /** Where the burg buys the good this turn */
   private getSupplier(index: ProductionIndex, state: BurgProductionState, good: Good): Market | null {
     return Trade.getSupplier(state.market, good, () => this.getSource(index, state, good)?.source);
   }
@@ -390,12 +383,12 @@ export class ProductionModule {
     return this.cached(state.sources, good, () => Trade.quoteSource(state.burg, good, index.tradeTerms));
   }
 
-  /** The market paying the most at the burg's door for a unit of the good; the burg's own trades in the good drop it */
+  /** The market paying the most at the burg's door; the burg's own trades in the good drop it */
   private getOutlet(index: ProductionIndex, state: BurgProductionState, good: Good): Outlet | null {
     return this.cached(state.outlets, good, () => Trade.getOutlet(state.burg, good, index.tradeTerms));
   }
 
-  /** The turn's quote of the good: one made this turn, or earlier while the good's rows are as they were, is what a new one would be */
+  /** The turn's quote; an earlier one stands while the good's market rows are unchanged */
   private cached<T>(cache: QuoteCache<T>, good: Good, quote: () => T): T {
     const revision = Trade.getRevision(good);
     const entry = cache.quotes[good.i];
@@ -408,7 +401,6 @@ export class ProductionModule {
     return value;
   }
 
-  /** The source quoted this turn, if any */
   private quotedSource(state: BurgProductionState, goodId: number): SourceQuote | null | undefined {
     const entry = state.sources.quotes[goodId];
     return entry?.turn === state.sources.turn ? entry.value : undefined;
@@ -419,7 +411,7 @@ export class ProductionModule {
     return state.produced[good.i] ? Trade.quoteKeep(state.burg, good) : null;
   }
 
-  /** The category's shortage and every good that could cover it, cheapest coverage first, as the burg saw them */
+  /** Logs the category's shortage and the goods that could cover it, cheapest coverage first */
   private logDemand(
     state: BurgProductionState,
     category: number,
@@ -441,7 +433,7 @@ export class ProductionModule {
     state.log!.push({ category, shortage: rn(shortage, 2), options });
   }
 
-  /** Sells the goods of the burg's inventory it chooses, all by default, where each fetches the most; what fetches nothing there waits for its next turn */
+  /** Sells the chosen inventory goods, all by default, where each fetches most; unsold ones wait */
   private sellInventoryToMarket(
     index: ProductionIndex,
     state: BurgProductionState,
@@ -455,7 +447,7 @@ export class ProductionModule {
       if (!units || units <= 0 || !sells(goodId)) continue;
 
       const good = Goods.get(goodId)!;
-      const market = this.getOutlet(index, state, good)?.market ?? state.market; // where it fetches the most
+      const market = this.getOutlet(index, state, good)?.market ?? state.market;
       const trade = Trade.sell({ burg: state.burg, good, units, taxRate, market, terms: index.tradeTerms });
       if (!trade) continue;
       const left = units - trade.units;
@@ -472,7 +464,6 @@ export class ProductionModule {
     state.burg.treasury = (state.burg.treasury || 0) + phaseRevenue;
   }
 
-  /** Every good the good's recipes take, down its whole production chain */
   private getChainInputs(index: ProductionIndex, goodId: number | null): Set<number> {
     const inputs = new Set<number>();
     if (goodId === null) return inputs;
@@ -539,7 +530,7 @@ export class ProductionModule {
     return demandGoodsByCategory;
   }
 
-  /** Buys the share of the burg's daily needs due so far, cheaper goods getting more, a poor burg only the cheapest; what it could not get waits for its next turn */
+  /** Buys the share of its needs due so far, a poor burg only the cheapest; the rest waits a turn */
   private fillDemand(index: ProductionIndex, state: BurgProductionState, share = 1): void {
     const { burg, demandCoverage } = state;
     const demandTargets = getDemandTargets(burg.population || 0).map(target => target * share);
@@ -575,7 +566,7 @@ export class ProductionModule {
         this.consume(index, state, candidate.goodId, trade);
         shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
       };
-      // what the burg sold to its own market is kept back first when that is cheaper than buying it
+      // what the burg sold to its own market is kept back first when cheaper than buying it
       const buy = (candidate: DemandGoodCandidate, coverageWanted: number) => {
         const budget = burg.treasury || 0;
         if (budget <= 0.01 || coverageWanted <= 0.001) return;
@@ -595,7 +586,7 @@ export class ProductionModule {
         cover(candidate, this.acquire(index, state, candidate.good, units, DEAL_KINDS.demand, burg.treasury || 0));
       };
 
-      // every good covering the need gets its share; a good nobody stocks turns its buyers away, which is demand too
+      // a good nobody stocks turns its buyers away, which is demand too
       if (!poor) {
         const options = [...sortedCandidates, ...missing];
         const wanted = shortage;
@@ -618,14 +609,13 @@ export class ProductionModule {
     }
   }
 
-  /** How many days of its needs a person of the burg earns so far */
   private getAffluence(index: ProductionIndex, state: BurgProductionState): number {
     const income = (state.burg.treasury || 0) + state.spent;
     const perPerson = state.burg.population ? income / state.burg.population : 0;
     return index.needsCost ? perPerson / index.needsCost : 1;
   }
 
-  /** Shares of the need's spending by price per coverage; the richer the burg, the more it pays for goods it has had little of */
+  /** Shares of a need's spending by price per coverage; richer burgs pay more for goods they lack */
   private getShares(
     index: ProductionIndex,
     state: BurgProductionState,
@@ -644,10 +634,7 @@ export class ProductionModule {
     );
   }
 
-  /**
-   * The shares of a need's or want's spending with those buying too little dropped and their money going to the rest, so a burg buys fewer goods in bigger lots.
-   * `buyable` are the options that can be bought, the rest keep their shares; `cost` is what an option's whole need would cost; `budget` is what the burg has for it
-   */
+  /** Drops `buyable` options with too small a lot, their money going to the rest */
   private getLotShares(
     shares: number[],
     buyable: (k: number) => boolean,
@@ -678,7 +665,7 @@ export class ProductionModule {
     return shares.map((share, k) => (buyable(k) ? (kept.includes(k) ? share * raised : 0) : share));
   }
 
-  /** Spends what the burg can spare beyond its needs, up to (1 - savings) of its income, spread over the goods of every category as its needs are */
+  /** Spends what the burg can spare beyond its needs, up to (1 - savings) of its income */
   private spendOnWants(index: ProductionIndex, state: BurgProductionState): void {
     const { burg } = state;
     const income = (burg.treasury || 0) + state.spent;
@@ -689,11 +676,11 @@ export class ProductionModule {
     const affluence = Math.max(1, this.getAffluence(index, state));
     let left = budget;
     DEMAND_PRIORITY.forEach((category, categoryIndex) => {
-      // what the capped wants leave goes to those that grow with affluence: the rich spend on luxury, not on more bread
+      // wealth wants take what the capped wants leave
       let money = WEALTH_WANTS.includes(category) ? left : budget * WANT_SHARES[category];
       const limit = WANT_LIMITS[category] * (WEALTH_WANTS.includes(category) ? Math.sqrt(affluence) : 1);
       const cap = () => targets[categoryIndex] * (1 + limit) - state.demandCoverage[categoryIndex];
-      if (money <= 0.01 || cap() <= 0.001) return; // nothing to spend or nothing more wanted
+      if (money <= 0.01 || cap() <= 0.001) return;
       const options = index.demandGoodsByCategory[categoryIndex]
         .map(candidate => {
           const quote = this.quote(index, state, candidate.goodId);
@@ -739,7 +726,7 @@ export class ProductionModule {
     });
   }
 
-  /** Pays for what the burg bought for its own use and counts the needs it covers; returns the cost */
+  /** Pays for what the burg bought for itself and counts the needs covered; returns the cost */
   private consume(index: ProductionIndex, state: BurgProductionState, goodId: number, trade: Transaction): number {
     const cost = trade.units * trade.price;
     state.burg.treasury = (state.burg.treasury || 0) - cost;
@@ -750,7 +737,6 @@ export class ProductionModule {
     return cost;
   }
 
-  /** Units of the good a worker makes a day here */
   private getWorkerOutput(index: ProductionIndex, state: BurgProductionState, good: Good): number {
     return this.getBurgModifiers(state, good) * this.getSpecialization(index, state, good.i);
   }
@@ -759,18 +745,17 @@ export class ProductionModule {
     return good === state.deposit && state.depositLeft >= 0.01;
   }
 
-  /** The burg's modifiers for the good, fixed for the run; its deposit gives a worker more while it lasts */
+  /** The good's modifiers at the burg, fixed for the run; a deposit gives more while it lasts */
   private getBurgModifiers(state: BurgProductionState, good: Good): number {
     state.modifiers[good.i] ??= this.getModifiers(good, state.burg.cell);
     return state.modifiers[good.i] * (this.isWorkingDeposit(state, good) ? DEPOSIT_OUTPUT : 1);
   }
 
-  /** How the burg can make the good: by working its deposit of it while that lasts, otherwise by its recipes */
+  /** Working its deposit of the good while that lasts, otherwise the good's recipes */
   private getRecipes(index: ProductionIndex, state: BurgProductionState, good: Good): Recipe[] | undefined {
     return this.isWorkingDeposit(state, good) ? [{ good, ingredients: [] }] : index.recipesByOutput[good.i];
   }
 
-  /** Division of labor: the more of the burg's workers make a good, and the more its market makes of it than the world, the more each makes */
   private getSpecialization(index: ProductionIndex, state: BurgProductionState, goodId: number): number {
     const own = state.population ? (state.workersByGood[goodId] || 0) / state.population : 0;
     const marketPopulation = index.marketPopulation[state.market.i];
@@ -780,7 +765,7 @@ export class ProductionModule {
     return 1 + BURG_SPECIALIZATION * Math.min(own, 1) + MARKET_SPECIALIZATION * excess;
   }
 
-  /** What the workers' output brings the burg per worker: the price its lot fetches where it fetches most, less its own sales tax, as its inputs' prices hold theirs */
+  /** Output value per worker: the lot's best price less sales tax, as input prices include theirs */
   private getSaleValue(
     index: ProductionIndex,
     state: BurgProductionState,
@@ -798,7 +783,7 @@ export class ProductionModule {
     return Math.max(price, 0) * modifier * (1 - state.taxRate);
   }
 
-  /** What buying the units costs at the burg's door where it buys them: the lot moves the price */
+  /** Cost of the units at the burg's door: the lot moves the price */
   private getLotCost(quote: MarketQuote, goodId: number, units: number): number {
     if (units <= 0) return 0;
     return units * Trade.atLot(quote.buyPrice, quote.sourceCarriage, quote.source, Goods.get(goodId)!, units);
@@ -900,7 +885,7 @@ export class ProductionModule {
     return { reserved, missing, marketCost };
   }
 
-  /** The stocks to plan a recipe from: as they are, and, when it takes the burg's deposit good and its market has some, with that stock left alone, so working the deposit is weighed against buying */
+  /** Plans from stocks as they are and without the deposit good's, to weigh working against buying */
   private getRecipeStocks(
     index: ProductionIndex,
     state: BurgProductionState,
@@ -1100,13 +1085,13 @@ export class ProductionModule {
     if (activeGoal && chosenGoal && activeGoal.normalizedGain >= chosenGoal.normalizedGain) chosenGoal = activeGoal;
     if (!chosenGoal) return null;
 
-    // what the best other goal could gain: what it was planned to, or at most the first unplanned one's bound
+    // what the best other goal could gain: as planned, or at most the first unplanned one's bound
     let runnerUp = unplanned;
     for (const plan of plans) if (plan !== chosenGoal) runnerUp = Math.max(runnerUp, plan.normalizedGain);
     return { action: chosenGoal.action, candidates, goalGoodId: chosenGoal.goalGoodId, runnerUp };
   }
 
-  /** The goal under way again, with no new decision, while it still beats the best other goal of the last one: the burg's own trades only make the others' inputs dearer */
+  /** Keeps the goal while it beats the last runner-up: own trades only make others' inputs dearer */
   private continueGoal(
     index: ProductionIndex,
     state: BurgProductionState,
@@ -1125,7 +1110,7 @@ export class ProductionModule {
     return { action: plan.action, candidates: state.log ? [plan.candidate] : [], goalGoodId: good.i, runnerUp };
   }
 
-  /** Goals that can pay with the workers a step of each takes, the active one first, then best paying first: a goal gains at most its sale value a worker */
+  /** Goals that can pay, the active first, then best paying: a goal gains at most its sale value */
   private rankGoals(
     index: ProductionIndex,
     state: BurgProductionState,
@@ -1143,7 +1128,7 @@ export class ProductionModule {
     return goals.sort((a, b) => b.bound - a.bound);
   }
 
-  /** Workers a step of the good takes: what sells a share of a day's sales where it sells, so the burg stops where the price stops paying */
+  /** Workers to sell a share of a day's sales, so the burg stops where the price stops paying */
   private getStep(index: ProductionIndex, state: BurgProductionState, good: Good, modifier: number, fraction: number) {
     const market = this.getOutlet(index, state, good)?.market ?? state.market;
     const workers = (LOT_DEPTH_SHARE * Trade.getDepth(market, good)) / modifier;
@@ -1177,7 +1162,7 @@ export class ProductionModule {
     return Array.from(pack.cells.i, cellId => this.getCellOutput(cellId, biomes));
   }
 
-  /** The land cell whose people work a cell's output: its own, or for water a shore cell of the same market */
+  /** The land cell whose people work a cell's output: its own, or a shore cell of the same market */
   getWorkingCell(cellId: number): number {
     const { c, h, market } = pack.cells;
     if (h[cellId] >= 20) return cellId;
@@ -1185,7 +1170,6 @@ export class ProductionModule {
     return shore.find(neighbor => market[neighbor] === market[cellId]) ?? shore[0] ?? cellId;
   }
 
-  /** A cell's rural output a day, units by good id */
   getCellProduction(cellId: number): Record<number, number> {
     return this.getCellOutput(cellId, Goods.getBiomesProduction());
   }
@@ -1212,7 +1196,7 @@ export class ProductionModule {
     return produced;
   }
 
-  /** Units a deposit of the good on the cell yields a day: the more people work it, the more, up to a cap; more on bigger maps, as their deposits are as few */
+  /** Units a day, capped by people; more on bigger maps, as their deposits are as few */
   getDepositOutput(good: Good, cellId: number): number {
     const pop = Math.min(this.getCellPopulation(cellId), DEPOSIT_MAX_POPULATION);
     const mapScale = pack.cells.i.length / DEPOSIT_MAP_CELLS;
@@ -1327,7 +1311,7 @@ type BurgProductionState = {
   modifiers: number[]; // by good: getModifiers at the burg's cell
 };
 
-/** A burg's quotes by good for the turn; one from an earlier turn holds while no market's row of its good has changed since */
+/** Quotes by good; an earlier turn's holds while no market's row of the good has changed */
 type QuoteCache<T> = { turn: number; quotes: ({ value: T; turn: number; revision: number } | undefined)[] };
 
 type DemandGoodCandidate = { good: Good; goodId: number; coverageWeight: number };
@@ -1365,7 +1349,7 @@ type GoalActionPlan = {
 
 type ProductionRecipeEntry = { goodId: number; units: number };
 
-/** Units of each good a burg made in the last production run, what its deposit yielded included */
+/** Units of each good a burg made in the last run, deposit output included */
 export type BurgProduction = [good: number, units: number][];
 
 type ManufacturingEntry = {
@@ -1380,7 +1364,7 @@ type ManufacturingEntry = {
 
 type TradeEntry = { goodId: number; market: number; kind: DealKind; sources?: SourceOption[] } & Transaction;
 
-/** A demand category's shortage when the burg came to fill it, and the goods it could use, cheapest coverage first */
+/** A demand category's shortage when the burg came to fill it, and its goods, cheapest first */
 type DemandEntry = {
   category: number; // index in DEMAND_PRIORITY
   shortage: number;

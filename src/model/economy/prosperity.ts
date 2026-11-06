@@ -3,7 +3,7 @@ import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, type Good, Goods, getNeedsCost 
 import { Production } from "./production-generator";
 import { DEAL_KINDS } from "./trade";
 
-const NEEDS_SHARE = 0.2; // what needs met alone are worth, living on bare needs: the rest comes from comfort and variety
+const NEEDS_SHARE = 0.2; // what needs met alone are worth: the rest comes from comfort and variety
 const COMFORT_SHARE = 0.4;
 const VARIETY_SHARE = 0.4;
 const COMFORT_TOP = 15; // consuming this many times bare needs at the cheapest is full comfort
@@ -26,7 +26,7 @@ export const PROSPERITY_LEVELS = [
 ] as const;
 export type ProsperityLevel = (typeof PROSPERITY_LEVELS)[number];
 
-/** A people's living: needs met (0–1), consumption at base prices in days of bare needs, the effective number of goods, their district's infrastructure (0–1), and prosperity (0–1) */
+/** needs, infrastructure, prosperity: 0–1; comfort: days of bare needs; variety: effective goods */
 export type Living = { needs: number; comfort: number; variety: number; infrastructure: number; prosperity: number };
 type Consumption = {
   people: number;
@@ -38,7 +38,7 @@ type Consumption = {
   varietyTop?: number;
 };
 const isNeeded = (good?: Good) => Object.values(good?.demandCoverage ?? {}).some(Boolean);
-/** A cell's rural people: their living, their share of their market's rural earnings and purchases, and what they live on, units by good id: those purchases and their own unsold produce */
+/** A cell's rural people: share of rural earnings and purchases, units lived on by good id */
 type RuralCell = { people: number; earned: number; bought: number[]; goods: number[]; living: Living };
 
 class ProsperityModule {
@@ -48,7 +48,7 @@ class ProsperityModule {
   private cellsSource: unknown = null;
   private rural = new Map<number, RuralCell>(); // by cell id
 
-  /** Units of each good the burg's people bought or kept for themselves in the last run, by good id */
+  /** Units of each good the burg's people bought or kept in the last run, by good id */
   getConsumption(burgId: number): number[] {
     this.index();
     return this.consumed.get(burgId) ?? [];
@@ -59,13 +59,12 @@ class ProsperityModule {
     return this.burgs.get(burgId) ?? null;
   }
 
-  /** A cell's rural people in the last run: their needs come from their fields; they buy their wants with what their produce earned */
   getRuralCell(cellId: number): RuralCell | null {
     this.indexRural();
     return this.rural.get(cellId) ?? null;
   }
 
-  /** Each cell's rural prosperity as a percent, 0 where no one lives or the economy has not run, to keep in the cells */
+  /** Each cell's rural prosperity percent, 0 where no one lives or before the economy has run */
   getCellsProsperity(output: Record<number, number>[]): Uint8Array {
     this.indexRural(output);
     const prosperity = new Uint8Array(pack.cells.i.length);
@@ -84,7 +83,7 @@ class ProsperityModule {
     this.burgs.clear();
     this.consumed.clear();
     if (!pack.deals?.length) return; // no economy run: nothing to measure
-    const needsCost = getNeedsCost(pack.goods);
+    const needsCost = getNeedsCost(options.map.goods);
     const infrastructure = this.getInfrastructure();
     for (const [burgId, , goodId, kind, units] of pack.deals) {
       if (kind !== DEAL_KINDS.demand && kind !== DEAL_KINDS.kept) continue;
@@ -107,13 +106,13 @@ class ProsperityModule {
     }
   }
 
-  /** A market's rural earnings and purchases go to its peopled cells by the value of their produce, or by their people where none */
+  /** Rural earnings and purchases go to cells by produce value, or by people where none */
   private indexRural(output?: Record<number, number>[]): void {
     if (!output && this.cellsSource === pack.deals) return;
     this.cellsSource = pack.deals;
     this.rural.clear();
     if (!pack.deals?.length) return;
-    const needsCost = getNeedsCost(pack.goods);
+    const needsCost = getNeedsCost(options.map.goods);
     const infrastructure = this.getInfrastructure();
     output ??= Production.getRuralOutput();
     const byMarket = new Map<number, { cellId: number; people: number; produce: number }[]>();

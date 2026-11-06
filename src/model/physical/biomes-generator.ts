@@ -9,7 +9,7 @@ export interface Biome {
   name: string;
   color: string;
   habitability: number;
-  development: number; // how the land adds to its people's technological development, in points: harsh lands hold them back
+  development: number; // what the land adds to its people's development, in points: harsh lands hold them back
   iconsDensity: number;
   icons: ReliefPool;
   cost: number;
@@ -209,7 +209,7 @@ class BiomesGenerator {
     this.living(biomeId).habitability = percent;
   }
 
-  /** Set what a biome adds to its people's development, a whole number of points from -50 to 50, negative for harsh lands; it takes effect when development is regenerated */
+  /** Set what a biome adds to its people's development, a whole number of points from -50 to 50, negative for harsh lands; takes effect when development is regenerated */
   setDevelopment(biomeId: number, development: number): void {
     if (!Number.isInteger(development) || development < -50 || development > 50)
       throw new Error("The development must be a whole number from -50 to 50");

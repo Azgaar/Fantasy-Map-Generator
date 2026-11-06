@@ -45,7 +45,7 @@ import { errorText, parseTransform } from "@/utils/string-utils";
 
 const dialogId = "culturesEditor" as const;
 
-/** The culture's own development to edit, the wildlands' people's average; the heartland and the average in the tip */
+/** The culture's own level to edit, the wildlands' average; heartland and average in the tip */
 function renderDevelopmentCell(culture: Culture): string {
   const average = development[culture.i];
   const heartland = Development.ofCulture(culture);
@@ -62,7 +62,7 @@ function renderDevelopmentCell(culture: Culture): string {
   const tip = sentences(
     t("Development at the culture's center, 1–100"),
     ...tips,
-    t("Regenerate development in the Development Overview to apply")
+    t("Regenerate development in the Development Editor to apply")
   );
   return `<div data-col="development">
     <input data-tip="${tip}" class="cultureDevelopment" type="number" min="1" max="100" step="1" value="${culture.development ?? DEFAULT_DEVELOPMENT}" />

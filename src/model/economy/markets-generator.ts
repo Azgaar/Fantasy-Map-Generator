@@ -1,5 +1,3 @@
-// Markets: where they stand, the land each serves, and their names and colors
-
 import Alea from "alea";
 import { quadtree } from "d3-quadtree";
 import type { Burg } from "@/model/political/burgs-generator";
@@ -11,7 +9,7 @@ import { notify } from "@/utils/notices";
 import { minmax } from "@/utils/number-utils";
 
 const OTHER_LANDMASS_SPACING = 0.5; // share of the market spacing a market on another landmass keeps clear
-export const MARKET_FEE_DETERRENCE = 35; // a state's market fee a day that halves a burg's chance to be a market center and doubles the area each market needs
+export const MARKET_FEE_DETERRENCE = 35; // market fee a day that halves a burg's chance to be a center and doubles each market's area
 const CROSSROADS_BONUS = 0.25; // score a burg gains for each route beyond a road through it, up to 4 more
 const SPACING_RANGE = [0.5, 2.5]; // the spacing a burg needs, as a share of the base, from the busiest land to the emptiest
 const DENSITY_PULL = 0.6; // how far markets follow burgs: 1 gives every market about as many burgs, 0 spaces them evenly
@@ -29,7 +27,7 @@ export type Market = {
   note?: string;
 };
 
-/** A market's rural people's day: what their produce earned, what they bought with it, the produce no one bought, and the poll tax they owed and paid by state */
+/** A market's rural day: earnings, purchases, unsold produce, poll tax owed and paid by state */
 type RuralDay = {
   earned: number;
   spent: number;
@@ -61,7 +59,7 @@ export class MarketsModule {
     return markets;
   }
 
-  /** Burgs by their claim to a market, best first: population, capitals, ports and crossroads weighted higher, a dear market license lower */
+  /** Burgs by their claim to a market, best first */
   private scoreBurgs(): ScoredBurg[] {
     return pack.burgs
       .map(burg => {
@@ -132,7 +130,7 @@ export class MarketsModule {
     return 1 + States.getMarketFee(burg.state || 0) / MARKET_FEE_DETERRENCE;
   }
 
-  /** Moves each market to the best burg it serves on its center's landmass: spacing alone can seat a hamlet beside a blocked city */
+  /** Moves each market to the best burg it serves: spacing can seat a hamlet beside a blocked city */
   private recenter(markets: Market[], scored: ScoredBurg[], cellMarket: Uint16Array): void {
     const best = new Map<number, number>();
     for (const { burg } of scored) {
@@ -143,7 +141,7 @@ export class MarketsModule {
     for (const market of markets) market.centerBurgId = best.get(market.i) ?? market.centerBurgId;
   }
 
-  /** How far a burg must be from other market centers to become one: closer where burgs crowd and licenses are cheap */
+  /** How far a burg must be from other market centers to become one */
   private getSpacing(burgs: Burg[], feeFactor: (burg: Burg) => number): Map<number, number> {
     const base = ((options.map.graph.width + options.map.graph.height) * 2.5) / pack.burgs.length ** 0.6;
     const tree = quadtree<Burg>(
@@ -184,7 +182,7 @@ export class MarketsModule {
     return cellMarket;
   }
 
-  /** A water cell is in a market only for its deposit, and deposits move: the flood finds markets for the new ones. Land stays, as it may be hand-painted */
+  /** Water cells join a market only for a deposit, and deposits move. Land stays: may be painted */
   claimWaterDeposits(): void {
     const { cells } = pack;
     const claimed = cells.market;
@@ -260,7 +258,6 @@ export class MarketsModule {
     return cellMarket;
   }
 
-  /** Market centers get a plaza */
   private markPlazas(markets: Market[]): void {
     for (const { centerBurgId } of markets) {
       const burg = pack.burgs[centerBurgId];
@@ -273,7 +270,6 @@ export class MarketsModule {
     return this.marketById[marketId];
   }
 
-  /** The market of the burg's cell */
   ofBurg(burg: Burg): Market | undefined {
     return this.get(pack.cells.market?.[burg.cell]);
   }
@@ -362,7 +358,6 @@ export class MarketsModule {
     this.sync();
   }
 
-  /** A market's state is its center burg's */
   getState(market: Market | undefined): number {
     return market ? pack.burgs[market.centerBurgId]?.state || 0 : 0;
   }

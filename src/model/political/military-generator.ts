@@ -464,7 +464,7 @@ class MilitaryModule {
     this.deployToFronts(valid);
   }
 
-  /** Move regiments of states at war from their bases to the front: fleets to water by its border, then land regiments to own land cells bordering an enemy; each, largest first, to the nearest free cell of the foremost line on its landmass or water body */
+  /** Moves regiments of states at war, largest first, to the foremost line's nearest free cell */
   private deployToFronts(states: State[]) {
     const { cells } = pack;
     const { p } = cells;
@@ -629,7 +629,7 @@ class MilitaryModule {
     return `${number}${proper ? ` (${proper}) ` : ` `}${form}`;
   }
 
-  /** Share of each unit's conscripts the state can equip from a year of the goods it consumes; 1 needing no goods or before the economy ran */
+  /** Share of each unit's conscripts a year of its goods equips; 1 with no goods or before the run */
   getEquipped(stateId: number, demand: Record<string, number>): Record<string, number> {
     const units = options.map.military.units;
     const consumed = StateEconomy.getConsumption(stateId);
@@ -653,7 +653,7 @@ class MilitaryModule {
     return equipped;
   }
 
-  /** How well a state's military spending keeps its forces, from 0 (powerless) to 1 (fully kept); 1 until the economy has run, and for a state that levies nothing, whose fighters keep themselves */
+  /** A state's upkeep, 0 (powerless) to 1 (fully kept); 1 before the run or levying nothing */
   getUpkeep(stateId: number): number {
     const state = pack.states[stateId];
     if (!state || !levies(state) || !pack.deals?.length) return 1;
@@ -671,12 +671,12 @@ class MilitaryModule {
     return Math.max(MIN_UPKEEP, this.getUpkeep(stateId));
   }
 
-  /** The power a state's forces bring to battle: troops times their unit's power, times their battle upkeep */
+  /** The state's forces' battle power: troops × unit power × battle upkeep */
   getPower(stateId: number): number {
     return this.getNominalPower(stateId) * this.getBattleUpkeep(stateId);
   }
 
-  /** The power a regiment brings to battle: its troops times their unit's power, times its state's battle upkeep */
+  /** A regiment's battle power: troops × unit power × its state's battle upkeep */
   getRegimentPower(regiment: Regiment): number {
     return this.getTroopsPower(regiment) * this.getBattleUpkeep(regiment.state);
   }

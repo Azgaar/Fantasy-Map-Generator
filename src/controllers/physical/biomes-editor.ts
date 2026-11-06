@@ -281,7 +281,7 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
           <input data-tip="${sentences(t("Biome habitability percent"), t("Click and type to change"))}" type="number" min="0" max="9999" class="biomeHabitability" value=${habitability} />
         </div>
         <div data-col="development" class="hide">
-          <input data-tip="${sentences(t("What the biome adds to its people's development, in points, negative for harsh lands"), t("Regenerate development in the Development Overview to apply"))}" type="number" min="-50" max="50" step="1" class="biomeDevelopment" value=${biome.development ?? 0} />
+          <input data-tip="${sentences(t("What the biome adds to its people's development, in points, negative for harsh lands"), t("Regenerate development in the Development Editor to apply"))}" type="number" min="-50" max="50" step="1" class="biomeDevelopment" value=${biome.development ?? 0} />
         </div>
         <div data-col="relief" class="hide">${reliefPoolHtml(biome)}</div>
         <div data-col="cells" class="hide"><span data-tip="${t("Number of cells")}" class="icon-check-empty"></span><span data-tip="${t("Number of cells")}" class="biomeCells">${cells}</span></div>

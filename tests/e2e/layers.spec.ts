@@ -256,7 +256,7 @@ test.describe("map layers", () => {
     // four sub-groups (markets, heatmap cells, icons, burg panels) render
     await sharedPage.evaluate(() => {
       // only the first good is visible by default; make all of them visible for this test
-      (window as any).pack.goods.forEach((good: any) => (good.visible = true));
+      (window as any).options.map.goods.forEach((good: any) => (good.visible = true));
       (window as any).FMG.Layers.toggle("goods");
       // markets render in a standalone layer, toggled independently
       (window as any).FMG.Layers.toggle("markets");

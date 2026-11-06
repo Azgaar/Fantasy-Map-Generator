@@ -12,16 +12,19 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
-**[1.157.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.157.0) - 2026-11-12**:
+**[1.157.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.157.0) - 2026-11-07**:
 
 - Development: technology level of every cell
+- Zones and markers driven by the economy
 - Economy: prices follow demand and supply
 - Economy: most developed burgs trade first
 - Economy: prosperity of burgs, provinces and states
 - Economy: state budgets, corruption and stability
 - Economy: state and province overview
 - Economy: army strength depends on upkeep
+- Goods: your goods carry over to new maps
 - Trade: traffic sublayer
+- Military: regiments moved to frontlines
 - Rivers: tributaries bend gently into the downstream flow
 - River style groups: regular, frozen, dry, lava and custom
 - Emblems: Armoria pictures in older maps become COAs where possible

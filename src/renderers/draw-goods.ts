@@ -28,12 +28,11 @@ let trafficShown: Set<number> | null = null; // the goods the traffic was built 
 const ICON_FRAME = 100; // every goods icon is drawn in a 0 0 100 100 frame
 const OVERVIEW_SATURATION = 0.95; // percentile from which cells get the darkest color and burgs the biggest circle
 const PIE_GOODS = 5; // a burg pie shows its most valuable goods, the rest in one sector
-const MIN_SECTOR = 0.04; // a sector thinner than this (about 14°) is a sliver under its outline: such goods join the rest, drawn at least this wide
+const MIN_SECTOR = 0.04; // a sector thinner than this (about 14°) is a sliver: such goods join the rest, drawn this wide
 const OTHER_FILL = "#9e9e9e";
 const LINEWORK = 0.4; // icon lines are this share of the circle outline
 
-/** A goods icon's `<use>` lines: the goods icons style, its width carried into the icon frame at the marker's
- * proportions, so the interface draws the icon as the marker does */
+/** A goods icon's `<use>` lines, width carried into the frame, to match the marker's drawing */
 export function goodIconLines(): string {
   const { attrs, options } = styles.goods.groups.goodsIcons;
   const width = ((attrs["stroke-width"] ?? 1) * LINEWORK * ICON_FRAME) / options.size;
@@ -62,7 +61,7 @@ interface ResourceIcon {
   icon: string;
 }
 
-/** a burg's output of the shown goods: a pie of them by value, its area grows with the total, its size follows the style */
+/** a burg's output of the shown goods: a pie by value, its area grows with the total */
 interface BurgCircle {
   burgId: number;
   x: number;
@@ -85,10 +84,10 @@ export async function drawGoods(): Promise<void> {
   log.timeEnd("drawGoods");
 }
 
-/** Selected goods in detail, or with none selected an overview of every good: cells by their output value */
+/** Selected goods in detail, or with none selected an overview of every good by output value */
 function buildScene(): void {
-  const selected = new Set(pack.goods.filter(good => good.visible).map(good => good.i));
-  const shown = selected.size ? selected : new Set(pack.goods.map(good => good.i));
+  const selected = new Set(options.map.goods.filter(good => good.visible).map(good => good.i));
+  const shown = selected.size ? selected : new Set(options.map.goods.map(good => good.i));
   if (selected.size) buildCellProduction(selected);
   else buildCellOverview();
   buildResourceIcons(shown);
@@ -175,12 +174,12 @@ function buildCellProduction(displayedGoods: Set<number>): void {
   }
 }
 
-/** A high percentile of the values: a few outliers would leave everything else pale and small against the maximum */
+/** A high percentile: a few outliers would leave the rest pale and small against the maximum */
 function getSaturation(values: number[]): number {
   return getPercentile(values, OVERVIEW_SATURATION) || 1;
 }
 
-/** Every producing cell in its most valuable good's color, its opacity following its output value */
+/** Every producing cell in its most valuable good's color, opacity by its output value */
 function buildCellOverview(): void {
   cellProduction = [];
   const rural = Production.getRuralOutput();
@@ -244,7 +243,7 @@ function buildBurgCircles(shown: Set<number>): void {
   }));
 }
 
-/** Deposit cells, an icon at each cell's center, or at its burg's, in the middle of the burg's pie */
+/** Deposit cells, an icon at each cell's center, or at its burg's, in the middle of its pie */
 function buildResourceIcons(shown: Set<number>): void {
   resourceIcons = [];
   if (!pack.cells.good) return;

@@ -10,8 +10,8 @@ interface Crossing {
   neighbors: string[];
 }
 
-/** A contour elevation: the generator height it is traced at and the round value in user units it shows */
-export interface ContourLevel {
+/** A contour elevation: the generator height it is traced at and the round value it shows */
+interface ContourLevel {
   height: number;
   value: number;
   major: boolean;
@@ -37,10 +37,7 @@ export interface ContourLabel {
   width: number;
 }
 
-/**
- * Levels every `step` user units from sea level up to the extreme value, a height or a depth
- * @param toHeight - generator height of a value in the user unit, a height for land or a depth for water
- */
+/** Levels every `step` user units from sea level to the extreme; `toHeight` gives their height */
 export function getContourLevels(step: number, extreme: number, toHeight: (value: number) => number): ContourLevel[] {
   const direction = Math.sign(toHeight(extreme) - SEA_LEVEL);
   const levels: ContourLevel[] = [];
@@ -91,10 +88,7 @@ interface LabelOptions {
   probe: number; // how far across the line the elevation is compared
 }
 
-/**
- * Labels along the major contours, as on a topographic map: the text follows a straight stretch of
- * the line, its top facing uphill, and keeps clear of the labels already placed
- */
+/** Labels along major contours: on straight stretches, top uphill, clear of placed labels */
 export function getContourLabels(
   chains: HeightContourChain[],
   levels: ContourLevel[],

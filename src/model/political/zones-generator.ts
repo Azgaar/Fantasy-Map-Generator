@@ -227,7 +227,7 @@ class ZonesModule {
   private addRebels(usedCells: Uint8Array) {
     const { cells, states } = pack;
 
-    // unstable states rise more often, in their least stable district; all alike before the economy has run
+    // unstable states rise more often, in their least stable district; all alike before the run
     const instability = (stability = 0.5) => (1 - stability) ** 2;
     const candidates = states.filter(s => s.i && !s.removed && s.neighbors?.some(Boolean));
     const state = pickWeighted(
@@ -254,7 +254,7 @@ class ZonesModule {
     const cellsArray: number[] = [];
     const queue: number[] = [];
     const borderCellId = cells.i.find(i => inside(i) && atBorder(i));
-    // a district away from the neighbor rises around its seat, or anywhere in it when the seat lies outside, as the capital may for the crown lands
+    // away from the neighbor, it rises around its seat, or anywhere when the seat lies outside it
     const seat = district?.seat?.cell;
     const start = borderCellId ?? (district && (seat !== undefined && inside(seat) ? seat : cells.i.find(inside)));
     if (start !== undefined) queue.push(start);
@@ -275,7 +275,7 @@ class ZonesModule {
     }
 
     const parts = districtStability?.parts;
-    const TAX_REVOLT_BURDEN = 0.1; // stability the tax burden takes from a district, its largest loss, for its rebels to be a tax revolt
+    const TAX_REVOLT_BURDEN = 0.1; // stability the tax burden takes, its largest loss, for a district's rebels to be a tax revolt
     const isTaxRevolt =
       !!parts && parts.burden <= -TAX_REVOLT_BURDEN && Object.values(parts).every(part => part >= parts.burden);
     const rebels = isTaxRevolt

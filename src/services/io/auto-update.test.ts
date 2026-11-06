@@ -645,9 +645,9 @@ describe("v1.152.0 notes moved onto entities", () => {
       addedLabels: [],
       cultures: [],
       religions: [],
-      biomes: [],
-      goods: []
+      biomes: []
     } as unknown as typeof pack;
+    options.map.goods = [];
   });
 
   it("attaches a note to its entity and empties the legacy slot", async () => {
@@ -895,11 +895,16 @@ describe("v1.154 relief descriptors", () => {
     const data: string[] = [];
     data[48] = stylesPayload("colored");
     globalThis.pack = {
-      relief: [],
-      goods: [{ icon: "good-wood" }, { icon: "good-salted-fish" }, { icon: "good-custom-ab12" }, { icon: "goods-tea" }]
+      relief: []
     } as unknown as typeof pack;
+    options.map.goods = [
+      { icon: "good-wood" },
+      { icon: "good-salted-fish" },
+      { icon: "good-custom-ab12" },
+      { icon: "goods-tea" }
+    ] as never;
     await runMigration("1.153.1", data, ["1.154.0"]);
-    expect(pack.goods.map(good => good.icon)).toEqual([
+    expect(options.map.goods.map(good => good.icon)).toEqual([
       "goods-wood",
       "goods-salted-fish",
       "custom-goods-ab12",
@@ -920,10 +925,10 @@ describe("v1.154 relief descriptors", () => {
     options.map.military.units = [{ ...options.map.military.units[0], icon: "⚔️" }];
     globalThis.pack = {
       relief: [],
-      goods: [{ icon: "good-custom-ab12" }, { icon: "custom-goods-img" }],
       markers: [{ icon: "https://a.b/c.png" }, { icon: "https://a.b/c.png" }, { icon: "🌋" }, { icon: "hq-2" }],
       states: [{ i: 0 }, { i: 1, military: [{ icon: "XIV" }] }]
     } as unknown as typeof pack;
+    options.map.goods = [{ icon: "good-custom-ab12" }, { icon: "custom-goods-img" }] as never;
     await runMigration("1.153.1", data, ["1.154.0"]);
 
     expect(options.map.customIcons.map(icon => [icon.id, icon.kind])).toEqual([
@@ -937,7 +942,7 @@ describe("v1.154 relief descriptors", () => {
     expect(vector.content).toContain('id="custom-goods-ab12-leaf"');
     expect(vector.content).not.toContain("script");
     expect(raster).toMatchObject({ content: "data:image/png;base64,AA", viewBox: "0 0 100 100" });
-    expect(pack.goods.map(good => good.icon)).toEqual(["custom-goods-ab12", "custom-goods-img"]);
+    expect(options.map.goods.map(good => good.icon)).toEqual(["custom-goods-ab12", "custom-goods-img"]);
     expect(pack.markers[1].icon).toBe(pack.markers[0].icon);
     expect(pack.markers[2].icon).toBe("glyph-1f30b");
     expect(pack.markers[3].icon).toBe("glyph-68-71-2d-32"); // looks like an id, but no icon set owns it
@@ -1186,10 +1191,10 @@ describe("v1.157.0 economy", () => {
         { i: 0, name: "Neutrals" },
         { i: 1, capital: 1, form: "Monarchy", salesTax: 0.15, pollTax: 0.2, treasury: 40, tariffs: [] }
       ],
-      goods: [{ i: 1, name: "Wood", value: 1, carriage: 0.5 }],
       markets: [{ i: 1, centerBurgId: 1, color: "#fff", goods: {} }],
       deals: []
     } as unknown as typeof pack;
+    options.map.goods = [{ i: 1, name: "Wood", value: 1, carriage: 0.5 }] as never;
 
     await resolveVersionConflicts("1.156.0", []);
 
@@ -1223,10 +1228,6 @@ describe("v1.157.0 economy", () => {
     globalThis.pack = {
       features: [],
       burgs: [0, { i: 1 }, { i: 2, removed: true }],
-      goods: [
-        { i: 1, name: "Wood", value: 1, carriage: 0.5 },
-        { i: 2, name: "Iron", value: 2, carriage: 0.5 }
-      ],
       markets: [{ i: 1, centerBurgId: 1, color: "#fff", goods: {} }],
       deals: [
         deal(1, "market", 1, "burg", 1, { units: 1, price: 2, tax: 0 }), // an input, bought in its turn
@@ -1238,6 +1239,10 @@ describe("v1.157.0 economy", () => {
         deal(1, "market", 1, "burg", 1, { units: 2, price: 3, tax: 0 }) // a need, bought once all had sold
       ]
     } as unknown as typeof pack;
+    options.map.goods = [
+      { i: 1, name: "Wood", value: 1, carriage: 0.5 },
+      { i: 2, name: "Iron", value: 2, carriage: 0.5 }
+    ] as never;
 
     await resolveVersionConflicts("1.156.0", []);
 
@@ -1251,10 +1256,6 @@ describe("v1.157.0 economy", () => {
   it("sums a burg's old production records by good", async () => {
     globalThis.pack = {
       features: [],
-      goods: [
-        { i: 1, name: "Wood", value: 1, carriage: 0.5 },
-        { i: 2, name: "Iron", value: 2, carriage: 0.5 }
-      ],
       markets: [],
       burgs: [
         { i: 0 },
@@ -1272,6 +1273,10 @@ describe("v1.157.0 economy", () => {
         }
       ]
     } as unknown as typeof pack;
+    options.map.goods = [
+      { i: 1, name: "Wood", value: 1, carriage: 0.5 },
+      { i: 2, name: "Iron", value: 2, carriage: 0.5 }
+    ] as never;
 
     await resolveVersionConflicts("1.156.0", []);
 
@@ -1291,7 +1296,6 @@ describe("v1.157.0 armies", () => {
       cultures: [{ i: 0 }, { i: 1, type: "Generic" }],
       religions: [{ i: 0 }, { i: 1, type: "Folk" }],
       burgs: [{ i: 0 }, { i: 1, cell: 0, state: 1 }],
-      goods: [{ i: 1, name: "Wood", value: 1, carriage: 0.5 }],
       markets: [{ i: 1, centerBurgId: 1, color: "#fff", goods: {} }],
       states: [
         { i: 0, name: "Neutrals" },
@@ -1299,6 +1303,7 @@ describe("v1.157.0 armies", () => {
       ],
       deals: [{ seller: 1, sellerType: "burg", buyer: 1, buyerType: "market", good: 1, units: 1, price: 1 }]
     } as unknown as typeof pack;
+    options.map.goods = [{ i: 1, name: "Wood", value: 1, carriage: 0.5 }] as never;
 
     await resolveVersionConflicts("1.156.0", []);
 
@@ -1311,32 +1316,32 @@ describe("v1.157.0 armies", () => {
 describe("v1.157.0 carriage per good", () => {
   it("gives goods saved without a carriage price the default by name, or a tenth of their value", async () => {
     globalThis.pack = {
-      features: [],
-      goods: [
-        { i: 1, name: "Wood", value: 1 },
-        { i: 2, name: "Dragon scales", value: 30 },
-        { i: 3, name: "Gold", value: 15, carriage: 2 }
-      ]
+      features: []
     } as unknown as typeof pack;
+    options.map.goods = [
+      { i: 1, name: "Wood", value: 1 },
+      { i: 2, name: "Dragon scales", value: 30 },
+      { i: 3, name: "Gold", value: 15, carriage: 2 }
+    ] as never;
 
     await resolveVersionConflicts("1.156.0", []);
 
-    expect(pack.goods.map(good => good.carriage)).toEqual([0.5, 3, 2]);
+    expect(options.map.goods.map(good => good.carriage)).toEqual([0.5, 3, 2]);
   });
 
   it("gives default goods their development tier by name", async () => {
     globalThis.pack = {
-      features: [],
-      goods: [
-        { i: 1, name: "Tools", value: 16 },
-        { i: 2, name: "Wood", value: 1 },
-        { i: 3, name: "Dragon scales", value: 30 }
-      ]
+      features: []
     } as unknown as typeof pack;
+    options.map.goods = [
+      { i: 1, name: "Tools", value: 16 },
+      { i: 2, name: "Wood", value: 1 },
+      { i: 3, name: "Dragon scales", value: 30 }
+    ] as never;
 
     await resolveVersionConflicts("1.156.0", []);
 
-    expect(pack.goods.map(good => good.development)).toEqual([15, undefined, undefined]);
+    expect(options.map.goods.map(good => good.development)).toEqual([15, undefined, undefined]);
   });
 });
 
@@ -1346,22 +1351,24 @@ describe("v1.157.0 deposit counts", () => {
     const deposits = Uint16Array.from(cells, i => (i < 400 ? 1 : i < 800 ? 2 : i < 850 ? 4 : 0));
     globalThis.pack = {
       features: [],
-      cells: { i: cells, good: deposits.slice() },
-      goods: [
-        { i: 1, name: "Rare ore", value: 5, carriage: 1, chance: 3, distribution: "true" },
-        { i: 2, name: "Common clay", value: 1, carriage: 1, chance: 18, distribution: "true" },
-        { i: 3, name: "Gold", value: 15, carriage: 2, chance: 2, distribution: "true" }, // none on the map
-        { i: 4, name: "Painted", value: 1, carriage: 1, chance: null } // placed by hand only
-      ]
+      cells: { i: cells, good: deposits.slice() }
     } as unknown as typeof pack;
+    options.map.goods = [
+      { i: 1, name: "Rare ore", value: 5, carriage: 1, chance: 3, distribution: "true" },
+      { i: 2, name: "Common clay", value: 1, carriage: 1, chance: 18, distribution: "true" },
+      { i: 3, name: "Gold", value: 15, carriage: 2, chance: 2, distribution: "true" }, // none on the map
+      { i: 4, name: "Painted", value: 1, carriage: 1, chance: null }, // placed by hand only
+      { i: 5, name: "Custom", value: 1, carriage: 1, chance: 1, distribution: "true" } // none on the map
+    ] as never;
 
     await resolveVersionConflicts("1.156.0", []);
 
     expect(pack.cells.good).toEqual(deposits);
-    expect(pack.goods[0].deposits).toEqual([300, 500]);
-    expect(pack.goods[1].deposits).toEqual([300, 500]);
-    expect(pack.goods[2].deposits).toEqual(Goods.getDefaultDeposits("Gold"));
-    expect(pack.goods[3].deposits).toBeUndefined();
-    expect(pack.goods.some(good => "chance" in good)).toBe(false);
+    expect(options.map.goods[0].deposits).toEqual([300, 500]);
+    expect(options.map.goods[1].deposits).toEqual([300, 500]);
+    expect(options.map.goods[2].deposits).toEqual(Goods.getDefaultDeposits("Gold"));
+    expect(options.map.goods[3].deposits).toBeUndefined();
+    expect(options.map.goods[4].deposits).toEqual([1, 2]);
+    expect(options.map.goods.some(good => "chance" in good)).toBe(false);
   });
 });

@@ -25,13 +25,13 @@ test.describe("controller launchers", () => {
     await page.evaluate(() => {
       const { pack, FMG } = window as any;
       const { Goods } = FMG;
-      const good = structuredClone(pack.goods[0]);
-      good.i = Math.max(...pack.goods.map(({i}: {i: number}) => i)) + 1;
+      const good = structuredClone(options.map.goods[0]);
+      good.i = Math.max(...options.map.goods.map(({i}: {i: number}) => i)) + 1;
       good.name = "No Production";
       good.visible = false;
       delete good.distribution;
       delete good.recipes;
-      pack.goods.push(good);
+      options.map.goods.push(good);
       Goods.sync();
     });
 

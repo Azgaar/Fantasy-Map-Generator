@@ -161,7 +161,7 @@ const STRANDED_OPACITY_LAYERS = [
   "anchors"
 ] as const;
 
-// until v1.157 the layer registry declared the stock lake and route groups, so saved maps carry them as ids
+// until v1.157 the layer registry declared stock lake and route groups: saved maps carry their ids
 export const LEGACY_LAYER_CHILDREN: Record<string, string[]> = {
   lakes: ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"],
   routes: ["trails", "roads", "searoutes"]
@@ -706,7 +706,7 @@ function upgradeShape(record: unknown): void {
   groupRiverStyles(root);
 }
 
-/** v1.157.0 split the one rivers style into groups: the old style becomes the default group's, the stock groups join */
+/** v1.157.0 split the rivers style into groups: the old style is the default group's */
 export function groupRiverStyles(record: unknown): void {
   const rivers = asNode(asNode(record)?.rivers);
   if (!rivers?.attrs || rivers.groups) return;

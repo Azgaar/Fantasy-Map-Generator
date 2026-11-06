@@ -49,7 +49,7 @@ export const CULTURE_TYPES = ["Generic", "Hunting", "Highland", "River", "Lake",
 export type CultureType = (typeof CULTURE_TYPES)[number];
 export const DEFAULT_CULTURE_TYPE: CultureType = "Generic";
 
-/** A random culture's development, 15–42, the same for the same name: drawing a number would shift the map's random sequence */
+/** A random culture's level by name, 15–42: drawing a number would shift the random sequence */
 function getNameDevelopment(name: string): number {
   let hash = 2166136261;
   for (let i = 0; i < name.length; i++) hash = Math.imul(hash ^ name.charCodeAt(i), 16777619);
@@ -65,7 +65,7 @@ class CulturesGenerator {
     return rw(Emblems.shields[type]);
   }
 
-  /** A predefined culture's development by its name, for maps made before cultures had one; sets naming at random are skipped */
+  /** A predefined culture's development by name, for older maps; sets naming at random are skipped */
   getDefaultDevelopment(name: string): number | undefined {
     if (!this.developmentByName) {
       this.developmentByName = new Map();
@@ -79,7 +79,7 @@ class CulturesGenerator {
   }
 
   getDefault(count: number = 0, set = options.map.cultures.set): Omit<Culture, "i" | "type">[] {
-    // generic sorting functions; they read the map only when called, so the list's data can be read without one
+    // sorting functions; they read the map only when called, so the list's data can be read without one
     const cells = pack.cells,
       s = cells.s,
       t = cells.t,
@@ -1580,7 +1580,7 @@ class CulturesGenerator {
     this.living(cultureId).expansionism = expansionism;
   }
 
-  /** Set a culture's development at its center, a whole number from 1 to 100; it takes effect when development is regenerated */
+  /** Set a culture's development at its center, a whole number from 1 to 100; takes effect when development is regenerated */
   setDevelopment(cultureId: number, development: number): void {
     if (!Number.isInteger(development) || development < 1 || development > 100)
       throw new Error("The development must be a whole number from 1 to 100");

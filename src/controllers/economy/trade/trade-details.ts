@@ -35,7 +35,7 @@ import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
 
-/** A burg's trades with one market in one direction: it sells to its market, or buys from a market */
+/** A burg's trades with one market in one direction: selling to it, or buying from it */
 type Flow = { deals: Deal[]; burgId: number; marketId: number; isSale: boolean };
 let activeFlow: Flow | null = null;
 let activePoints: Point[] = [];

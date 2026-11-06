@@ -47,7 +47,7 @@ const LINKS = /* html */ `<nav class="releaseNotesLinks">
   <a href="${PATREON}" target="_blank">Patreon</a>
 </nav>`;
 
-/** `afterUpdate` adds the F1 hint: the window opens on its own once, so the user needs to know how to get it back */
+/** `afterUpdate` adds the F1 hint: the window opens on its own once, so say how to reopen it */
 function open({ afterUpdate = false } = {}): void {
   const content = document.createElement("div");
   content.className = "releaseNotes";

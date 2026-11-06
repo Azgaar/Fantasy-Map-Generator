@@ -183,7 +183,7 @@ function economyNotes(stateId: number, accounts: StateAccounts, world: StateAcco
   return notes;
 }
 
-/** The good weighing most in the state's exports, more the rarer it is in the world's: its share² ÷ its world share */
+/** The good weighing most in its exports: its share² ÷ its world share */
 function knownFor(stateId: number): string | null {
   const { exported, exports } = StateEconomy.getTrade(stateId);
   if (!exports) return null;
@@ -239,7 +239,7 @@ function renderRevenue(stateId: number, accounts: StateAccounts): string {
   </div>`;
 }
 
-/** Where the taxes went: each expense's share with the part officials pocket grayed, then the treasury's */
+/** Each expense's share with officials' part grayed, then the treasury's */
 function renderExpenses(stateId: number): string {
   const { economy } = pack.states[stateId];
   const { budget } = economy;

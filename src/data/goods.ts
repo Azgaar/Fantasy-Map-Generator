@@ -1,6 +1,6 @@
 import type { Good } from "@/model/economy/goods-generator";
 
-export type GoodData = Omit<Good, "i"> & { recipes?: Record<string, number>[] };
+type GoodData = Omit<Good, "i"> & { recipes?: Record<string, number>[] };
 export const GOODS_DATA: GoodData[] = [
   {
     name: "Wood",

@@ -182,7 +182,7 @@ function downloadCsv(): void {
 function rebuildGoodSelect(): void {
   const select = ensureEl<HTMLSelectElement>("marketsGoodCompareSelect");
   const prev = activeGoodId >= 0 ? activeGoodId : +select.value;
-  const sortedGoods = [...pack.goods].sort((a, b) => a.name.localeCompare(b.name));
+  const sortedGoods = [...options.map.goods].sort((a, b) => a.name.localeCompare(b.name));
   select.innerHTML = sortedGoods
     .map(g => `<option value="${g.i}" ${g.i === prev ? "selected" : ""}>${escapeHtml(g.name)}</option>`)
     .join("");

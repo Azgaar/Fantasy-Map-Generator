@@ -1,4 +1,4 @@
-// Releases read from the wiki changelog, docs/wiki/Changelog.md: a bold linked version header, then one-line changes
+// Releases from docs/wiki/Changelog.md: a bold linked version header, then one-line changes
 
 import { renderMarkdown } from "@/utils/markdown";
 
@@ -6,7 +6,7 @@ export type Release = { version: string; date?: string; changes: string[] };
 
 const HEADER = /^\*\*\[(\d+\.\d+(?:\.\d+)?)\]\([^)]*\)(?:\s*-\s*(\d{4}-\d{2}-\d{2}))?\*\*/;
 
-/** Releases in the changelog's order, newest first. Old two-part versions (1.140) get a zero patch */
+/** Releases in changelog order, newest first. Old two-part versions (1.140) get a zero patch */
 export function parseChangelog(markdown: string): Release[] {
   const releases: Release[] = [];
   for (const line of markdown.split("\n")) {
@@ -17,7 +17,7 @@ export function parseChangelog(markdown: string): Release[] {
   return releases;
 }
 
-/** Changes as a list; the changelog's `_italic_` credits become `*italic*`, which the renderer knows */
+/** Changes as a list; the changelog's `_italic_` credits become `*italic*` for the renderer */
 export function renderChanges(changes: string[]): string {
   return renderMarkdown(changes.map(change => `- ${underscoresToAsterisks(change)}`).join("\n"));
 }

@@ -1,8 +1,7 @@
-// How much trade each route link carries in the last run, for the traffic overlay; worked out on demand, nothing saved
 import { DEAL_KINDS } from "./trade";
 import { TradeRoutes } from "./trade-routes";
 
-/** A route link's traffic: the units of each good carried over it either way in a day, by good id */
+/** A route link's traffic: units of each good carried over it either way a day, by good id */
 export type TrafficLink = { cells: [number, number]; goods: Map<number, number>; water: boolean };
 
 export class TradeTrafficModule {
@@ -28,7 +27,7 @@ export class TradeTrafficModule {
     return a < b ? a * count + b : b * count + a;
   }
 
-  /** Each deal's goods follow the cheapest route between the burg and its market's center, as their carriage was priced */
+  /** Each deal's goods follow the cheapest route, as their carriage was priced */
   private index(): void {
     const { cells, routes } = pack;
     if (this.source === pack.deals && this.network === cells.routes && this.routeCount === routes.length) return;

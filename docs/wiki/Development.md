@@ -34,22 +34,11 @@ The scale runs from hunter-gatherers to a post-human civilization: a custom hist
 
 ## Cultures
 
-Each culture has its own level, the development of its lands. The [culture set](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-sets) you pick decides your world's era:
-
-| Culture set  | Typical level | Leaders                                                | Laggards                                         |
-| ------------ | ------------- | ------------------------------------------------------ | ------------------------------------------------ |
-| All-world    | 35, medieval  | Tallian and Hantzu 42, Luari and Eurabic 40            | Inuk 6, Maui 12, Nawatli 18, Inqan 20            |
-| European     | 36, medieval  | Tallian 42, Luari 40                                   | Soumi 28                                         |
-| Oriental     | 35, medieval  | Hantzu 42, Eurabic 40                                  | Maui 12, Ulus 26                                 |
-| English      | 36, medieval  | none: all alike                                        | none                                             |
-| Antique      | 21, classical | Roman 24, Hellenic 23                                  | Estian 12, Scythian 15                           |
-| High Fantasy | 32, medieval  | Khazadur dwarves 53, Dunirr dwarves 50, Eldar elves 46 | Yotunn giants 8, Arago 12, orcs 15–18            |
-| Dark Fantasy | 35, medieval  | Durinn dwarves 53, Eldar elves 46, Hetallian 42        | Yotunn giants 8, Rakhnid 12, orcs and kobolds 18 |
-| Random       | —             | each culture gets 15–42                                |                                                  |
+Each culture has its own level, the development of its lands. The [culture set](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-sets) you pick decides your world's era.
 
 Most maps get a medieval world with a few leaders that field artillery and print books and a few peoples left behind. The Antique set gives a classical world without artillery and with hardly any gunpowder.
 
-A culture's [type](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types) moves its level a little: naval peoples are three points ahead, river peoples two and lake peoples one; highlanders are two behind, nomads three and hunters four. Unclaimed wildlands stand at 3, foragers.
+A culture's [type](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types) moves its level a little: naval peoples are 3 points ahead, river peoples 2 and lake peoples 1; highlanders are 2 behind, nomads 3 and hunters 4. Unclaimed wildlands stand at 3 as foragers.
 
 ## Across the land
 
@@ -94,15 +83,16 @@ The [economy](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Economy) play
 
 # Seeing and changing it
 
-Development is set when the map is generated, and saved with it. Open **Tools → Development** (<kbd>Shift</kbd> + <kbd>X</kbd>) for the Development Overview:
+Development is set when the map is generated, and saved with it. Open **Tools → Development** (<kbd>Shift</kbd> + <kbd>X</kbd>) for the Development Editor:
 
 - **The map** shows development while the overview is open: every peopled cell in its era's color, from the dark stone ages through the greens of antiquity and the yellows of the Middle Ages to the reds of the modern eras. Hover a cell for its level and era. The eye button hides or shows it, and the choice is kept the next time the overview opens. Closing the overview hides it; there is no separate layer.
 - **The table** lists the eras on the map, with their levels, cells, area, people and burgs; the percent button shows each era's share of the totals instead. Hover a row to highlight its land; hover the map to find a cell's row. The bottom line shows the people's average development and the land's lowest and highest.
 - **The brush** paints development by era: pick an era, drag over the land, and apply. Only cells where people live are painted. A painted cell takes the level its era begins at; a cell already in that era keeps its own. **No development**, first in the list, clears the cells to 0, as if nothing were known of their people. Undo steps back, cancel discards the strokes.
 - **Regenerate** makes development again from the cultures and land, discarding painted changes. Do it after editing cultures, their levels or types, or biomes, which do not change development by themselves.
 - **Legend** adds the eras to the map's legend, and **Export** saves the table as a CSV file.
+- **Rename** opens the Eras editor, listing every era, on the map or not. The names are yours to change: type your own, and they show across the Generator, are saved with the map and carry over to new maps. Levels and colors stay. The restore button brings the default names back.
 
-Development also shows across the editors: the **States**, **Provinces** and **Cultures** editors and the **Burgs Overview** have a Development column, hidden by default and turned on from the column menu. It shows the people's average, with its era in the tip, and a burg's own level in the Burgs Overview. In the **Cultures** editor the column sets the culture's own level, 1 to 100, with its heartland and the people's average in the tip; in the **Biomes** editor it sets what a biome adds or takes away, in points. Change them, then press Regenerate in the Development Overview to apply. The **Burg Editor** and **Burg Economy** show the burg's development and era. The **Goods Editor** lists each good's development, and **Edit good** sets it. A generated burg stands at 5 or more, a town being past the foragers' era; the brush can still set it lower.
+Development also shows across the editors: the **States**, **Provinces** and **Cultures** editors and the **Burgs Overview** have a Development column, hidden by default and turned on from the column menu. It shows the people's average, with its era in the tip, and a burg's own level in the Burgs Overview. In the **Cultures** editor the column sets the culture's own level, 1 to 100, with its heartland and the people's average in the tip; in the **Biomes** editor it sets what a biome adds or takes away, in points. Change them, then press Regenerate in the Development Editor to apply. The **Burg Editor** and **Burg Economy** show the burg's development and era. The **Goods Editor** lists each good's development, and **Edit good** sets it. A generated burg stands at 5 or more, a town being past the foragers' era; the brush can still set it lower.
 
 Painted development applies to production the next time the economy is regenerated. It stays with the land through resampling, submaps and heightmap edits; regenerating population gives newly settled land the level around it. For a more or less developed world as a whole, pick another culture set and regenerate the map.
 
@@ -112,7 +102,7 @@ Painted development applies to production the next time the economy is regenerat
 Gunpowder needs development 30 and artillery 36, which only the leading cultures of a medieval world reach. The Antique set's cultures stand at 12–24: only a few cells reach 30, so a classical world makes a little gunpowder and no artillery.
 
 **How do I make a people more advanced?**
-Set its level in the Development column of the Cultures editor, then press Regenerate in the Development Overview. To change a few places only, paint them with the brush.
+Set its level in the Development column of the Cultures editor, then press Regenerate in the Development Editor. To change a few places only, paint them with the brush.
 
 **Why is my state called a Tribe or a Shamanate?**
 Its capital stands before the Bronze Age, under 12, so its people know no kingdoms: monarchies become Tribes, Chiefdoms or Hordes, republics Tribal Councils, unions Clans Unions and theocracies Shamanates. Rename its form in the States editor if you want another.

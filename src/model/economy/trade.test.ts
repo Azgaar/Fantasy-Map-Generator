@@ -32,26 +32,26 @@ describe("TradeModule", () => {
       });
       // Minimal valid Good
       globalThis.pack = {
-        goods: [
-          {
-            i: 0,
-            name: "Wheat",
-            value: 10,
-            carriage: 1,
-            tags: ["food"],
-            unit: "unit",
-            icon: "icon",
-            color: "#fff",
-            distribution: "1",
-            recipes: [],
-            demandCoverage: { food: 1 }
-          }
-        ],
         cells: { market: [0, 1, 2, 3] }, // cell k lies in market k
         markets: [],
         burgs: [],
         deals: []
       } as any;
+      options.map.goods = [
+        {
+          i: 0,
+          name: "Wheat",
+          value: 10,
+          carriage: 1,
+          tags: ["food"],
+          unit: "unit",
+          icon: "icon",
+          color: "#fff",
+          distribution: "1",
+          recipes: [],
+          demandCoverage: { food: 1 }
+        }
+      ];
     });
 
     it("buy() should floor units, enforce min unit, and keep cost within budget", () => {
@@ -68,7 +68,7 @@ describe("TradeModule", () => {
       globalThis.pack.burgs = [{ i: 0 } as any, burg];
       const deal = tradeModule.buy({
         burg,
-        good: globalThis.pack.goods[0],
+        good: globalThis.options.map.goods[0],
         units: 5,
         kind: DEAL_KINDS.demand,
         budget: 15
@@ -96,7 +96,7 @@ describe("TradeModule", () => {
       globalThis.pack.burgs = [{ i: 0 } as any, burg];
       const deal = tradeModule.buy({
         burg,
-        good: globalThis.pack.goods[0],
+        good: globalThis.options.map.goods[0],
         units: 5,
         kind: DEAL_KINDS.demand,
         budget: 0.05
@@ -111,7 +111,7 @@ describe("TradeModule", () => {
       globalThis.pack.markets = [market];
       const center: Burg = { i: 1, cell: 1, treasury: 0 } as any;
       globalThis.pack.burgs = [{ i: 0 } as any, center];
-      const good = globalThis.pack.goods[0];
+      const good = globalThis.options.map.goods[0];
 
       tradeModule.buy({ burg: center, good, units: 2, kind: DEAL_KINDS.demand });
       expect(center.treasury).toBeCloseTo(2 * 10 * MARGIN, 5);
@@ -129,11 +129,11 @@ describe("TradeModule", () => {
       globalThis.pack.markets = [market];
       const center: Burg = { i: 1, cell: 1, treasury: 0 } as any;
       globalThis.pack.burgs = [{ i: 0 } as any, center];
-      const good = globalThis.pack.goods[0];
+      const good = globalThis.options.map.goods[0];
       const margin = (units: number) => units * 10 * tradeModule.getMarginRate(market);
 
       market.feePaid = 1;
-      tradeModule.owesLicenses();
+      tradeModule.billLicenses();
       tradeModule.buy({ burg: center, good, units: 2, kind: DEAL_KINDS.demand });
       expect(center.treasury).toBe(0); // all of it went to the license
       tradeModule.buy({ burg: center, good, units: 2, kind: DEAL_KINDS.demand });
@@ -143,7 +143,7 @@ describe("TradeModule", () => {
 
       market.feePaid = 5; // a quiet market
       center.treasury = 0;
-      tradeModule.owesLicenses();
+      tradeModule.billLicenses();
       tradeModule.buy({ burg: center, good, units: 2, kind: DEAL_KINDS.demand });
       expect(center.treasury).toBe(0);
       tradeModule.settleLicenses();
@@ -159,7 +159,12 @@ describe("TradeModule", () => {
       globalThis.pack.burgs = [{ i: 0 } as any, burg];
       globalThis.pack.states = withFinance([{ i: 0 }, { i: 1, economy: { salesTax: 0.2 } }]);
 
-      const trade = tradeModule.buy({ burg, good: globalThis.pack.goods[0], units: 2, kind: DEAL_KINDS.demand })!;
+      const trade = tradeModule.buy({
+        burg,
+        good: globalThis.options.map.goods[0],
+        units: 2,
+        kind: DEAL_KINDS.demand
+      })!;
       expect(trade.price).toBeCloseTo(10 * (1 + MARGIN) + 0.2 * 10, 2);
       expect(trade.tax).toBeCloseTo(0.2 * 10 * 2, 2);
       expect(tradeModule.getTaxStates(globalThis.pack.deals[0]).taxState).toBe(1);
@@ -175,7 +180,7 @@ describe("TradeModule", () => {
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
       Markets["marketById"] = [exporter, exporter, importer];
       setRoutes({ 1: 100 });
-      const good = globalThis.pack.goods[0];
+      const good = globalThis.options.map.goods[0];
       const terms = tradeModule.getTradeTerms();
       const importGood = (units = 10, budget?: number) =>
         tradeModule.buy({ burg, source: exporter, good, units, kind: DEAL_KINDS.input, terms, budget });
@@ -359,7 +364,7 @@ describe("TradeModule", () => {
 
     it("counts what the countryside brings as the day's first supply", () => {
       const { importer, good } = setupImport();
-      globalThis.pack.goods = [{ ...good, demandCoverage: { food: 1 } }];
+      globalThis.options.map.goods = [{ ...good, demandCoverage: { food: 1 } }];
       globalThis.pack.cells = { routes: {}, market: [], burg: [] } as never;
       const day = { depth: [], listPrice: [], demand: [], supply: [], rural: [], ruralPeople: 40, pollTaxDue: [] };
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
@@ -826,7 +831,7 @@ describe("TradeModule", () => {
         pop: [1, 1, 1]
       } as any;
 
-      const good = globalThis.pack.goods[0];
+      const good = globalThis.options.map.goods[0];
       Object.assign(Goods, { get: (id: number) => (id === good.i ? good : undefined) });
 
       tradeModule.collectRuralProduction([{ [good.i]: 5 }, { [good.i]: 5 }, { [good.i]: 5 }]); // each cell yields 5
@@ -849,7 +854,7 @@ describe("TradeModule", () => {
       globalThis.pack.burgs = [{ i: 0 } as any, burg];
       globalThis.pack.states = withFinance([{ i: 0 }, { i: 1, economy: { salesTax: 0.2 } }]);
       const taxRate = States.getSalesTax(burg);
-      const deal = tradeModule.sell({ burg, good: globalThis.pack.goods[0], units: 5, taxRate });
+      const deal = tradeModule.sell({ burg, good: globalThis.options.map.goods[0], units: 5, taxRate });
       expect(deal).not.toBeNull();
       expect(deal!.tax).toBeGreaterThan(0);
       expect(deal!.tax).toBeCloseTo(deal!.units * deal!.price * 0.2, 2);
@@ -863,7 +868,7 @@ describe("TradeModule", () => {
       globalThis.pack.markets = [market1];
       const burg: Burg = { i: 1, cell: 1, treasury: 1000 } as any;
       globalThis.pack.burgs = [{ i: 0 } as any, burg];
-      const good = globalThis.pack.goods[0];
+      const good = globalThis.options.map.goods[0];
 
       const first = tradeModule.buy({ burg, good, units: 2, kind: DEAL_KINDS.input })!;
       const second = tradeModule.buy({ burg, good, units: 4, kind: DEAL_KINDS.input })!;

@@ -492,7 +492,7 @@ export const meander = (cells: number[], cellPositions: Point[], options: Meande
   return { points, anchorIndices };
 };
 
-// Gently bend the end toward the flow it joins, leaving the course before the last meander point as is
+// Gently bend the end toward the flow it joins, leaving the course before the last meander point
 function alignJoin(points: Point[], anchorIndices: number[], [dx, dy]: Point): void {
   const last = points.length - 1;
   if (anchorIndices.at(-1) !== last) return;
@@ -655,7 +655,6 @@ export function curveLength(points: [number, number][], curve: CurveFactory): nu
   return length;
 }
 
-/** The smallest box around the points */
 export function getBoundingBox(points: Iterable<ArrayLike<number>>): {
   x0: number;
   y0: number;

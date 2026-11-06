@@ -45,6 +45,12 @@ it("names the era a level falls in", () => {
   expect(Development.getEra(100)).toBe("Post-human");
 });
 
+it("names eras by the map's set", () => {
+  options.map.eras[0].name = "Age of Ash";
+  expect(Development.getEra(2)).toBe("Age of Ash");
+  expect(Development.getDefaultEras()[0].name).toBe("Paleolithic");
+});
+
 it("sets painted land cells and leaves water undeveloped", () => {
   stubMap();
   Development.generate();

@@ -1588,7 +1588,7 @@ function openImageConverter(): void {
   updateHistory();
 }
 
-/** The edit tools redraw the heights the converter paints its colors on, so they wait until the conversion ends */
+/** Edit tools redraw the heights the converter paints on, so they wait until the conversion ends */
 function lockEditTools(locked: boolean): void {
   for (const id of ["customizeTools", "customizeOptions"]) {
     const tools = ensureEl(id);

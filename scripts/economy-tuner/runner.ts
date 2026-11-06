@@ -36,7 +36,7 @@ export function loadMap(file: string): { seed: string; snapshot: Snapshot } {
   return JSON.parse(readFileSync(file, "utf8"), revive);
 }
 
-const MUTABLE = ["burgs", "markets", "states", "goods", "deals", "routes"];
+const MUTABLE = ["burgs", "markets", "states", "deals", "routes"];
 const TIERS = new Map(GOODS_DATA.map(good => [good.name, good.development])); // maps exported before goods had tiers
 
 /** One day on a fresh copy of the map's mutable state */
@@ -48,13 +48,15 @@ export function runEconomy(snap: Snapshot, over: Overrides = {}) {
       delete burg.production;
       delete burg.product;
     }
-  for (const good of pack.goods) {
+  const goods = structuredClone(snap.options.map.goods ?? snap.pack.goods); // snapshots before goods moved to options
+  for (const good of goods) {
     good.development ??= TIERS.get(good.name);
     if (over.value?.[good.name] !== undefined) good.value = over.value[good.name];
     if (over.coverage?.[good.name]) good.demandCoverage = { ...over.coverage[good.name] };
   }
   setTunables(over.params);
-  Object.assign(globalThis, { pack, grid: snap.grid, options: snap.options });
+  const options = { ...snap.options, map: { ...snap.options.map, goods } };
+  Object.assign(globalThis, { pack, grid: snap.grid, options });
   Goods.sync(); // the indexes the loader rebuilds, as services/io/load.ts does
   Markets.sync();
   if (!pack.cells.development) {

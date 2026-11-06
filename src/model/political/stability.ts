@@ -1,7 +1,3 @@
-// Stability after the last economy run, district by district: how well its people live, the state's court and clergy and
-// a kept army hold it together against remoteness from the capital, minorities, corruption and the tax burden.
-// A state's parts are its districts' by their people. Worked out on demand, nothing saved
-
 import { Prosperity } from "@/model/economy/prosperity";
 import { StateEconomy } from "@/model/economy/state-economy";
 import { minmax } from "@/utils/number-utils";
@@ -40,7 +36,7 @@ class StabilityModule {
   private sources: unknown[] = []; // what the districts are indexed on: their objects key the cache
   private prosperity = new Map<District, number>(); // its people's, by their numbers
 
-  /** A state's, from 0 (falling apart) to 1 (unshakable): its districts' parts by their people, summed; null for the neutral lands and before the economy has run */
+  /** A state's, from 0 (falling apart) to 1 (unshakable); null for neutrals and before the run */
   get(stateId: number): StateStability | null {
     const districts = this.getDistricts(stateId);
     if (!districts.length) return null;

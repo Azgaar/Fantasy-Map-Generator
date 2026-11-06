@@ -1,6 +1,3 @@
-// A state's economy from the last run: what its people make and how well they live, its budget and its trade.
-// Worked out from burgs, deals and markets on demand, so it needs nothing saved of its own
-
 import { sum } from "d3";
 import { States } from "@/model/political/states-generator";
 import { Goods } from "./goods-generator";
@@ -103,7 +100,6 @@ class StateEconomyModule {
       const burgState = pack.burgs[burgId]?.state || 0;
       const market = Markets.getState(Markets.get(marketId));
       if (burgState === market || (burgState !== stateId && market !== stateId)) continue;
-      // a burg selling abroad or a foreign burg buying here is an export; a burg buying abroad, an import
       const isExport = kind === DEAL_KINDS.sale ? burgState === stateId : market === stateId;
       const partner = burgState === stateId ? market : burgState;
       const value = goodsValue(deal);
@@ -124,7 +120,7 @@ class StateEconomyModule {
     return trade;
   }
 
-  /** Sales tax, tariffs, poll tax and market fees the state collected in the last run, the poll tax it was owed, and what its officials pocketed of it all */
+  /** Last run's taxes and fees collected, poll tax owed, and what officials pocketed */
   getBudget(stateId: number): {
     salesTax: number;
     tariffs: number;
@@ -155,13 +151,12 @@ class StateEconomyModule {
     return this.outputs.get(stateId) ?? [];
   }
 
-  /** The world's output, by good id */
   getWorldOutput(): number[] {
     this.indexOutputs();
     return this.worldOutput;
   }
 
-  /** Units of each good the state's people and the state itself bought a day, burgs' own output kept back included, by good id; rural people's unsold produce is not the state's to equip with */
+  /** Units per good its people and the state bought a day, kept output in, unsold produce out */
   getConsumption(stateId: number): number[] {
     this.indexConsumption();
     return this.consumption.get(stateId) ?? [];

@@ -2,13 +2,14 @@ import { Controllers } from "@/controllers";
 import { CULTURE_TYPE_LABELS, DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
 import type { DemandCategory, Good } from "@/model/economy/goods-generator";
 import { DEFAULT_CARRIAGE, DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, Goods } from "@/model/economy/goods-generator";
-import { Production } from "@/model/economy/production-generator";
 import { Icons } from "@/model/icons";
+import { Options } from "@/model/options/options-model";
 import { CULTURE_TYPES } from "@/model/society/cultures-generator";
 import { Tags } from "@/model/tags";
 import { getDecima, getDistance, getMoneyUnit } from "@/model/units";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
+import { App } from "@/ui/app-commands";
 import { eraLabel } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import { refreshEditors } from "@/ui/dialog/dialog-helpers";
@@ -70,15 +71,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
   Dialog.open("goodEditor", {
     width: "36em",
     title: editedGood ? t("Edit good") : t("Add"),
-    // only edits can recompute production
-    footer:
-      economyWikiButton("goodEditorWiki") +
-      (editedGood
-        ? /*html*/ `<div>
-          <input id="goodRegenerateProduction" class="checkbox" type="checkbox" checked />
-          <label for="goodRegenerateProduction" class="checkbox-label"><i>${t("regenerate production on apply")}</i></label>
-        </div>`
-        : ""),
+    footer: economyWikiButton("goodEditorWiki"),
     buttons: [
       {
         label: t("Cancel"),
@@ -180,12 +173,11 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
             Goods.sync();
             if (placementChanged) Goods.regeneratePlacement(editedGood.i);
-            if (ensureEl<HTMLInputElement>("goodRegenerateProduction").checked) Production.regenerate();
             Layers.draw("markets", "goods", "trade");
             refreshEditors();
           } else {
             const getNextId = () => {
-              let nextId = pack.goods?.at(-1)?.i ?? 1;
+              let nextId = options.map.goods.at(-1)?.i ?? 1;
               while (Goods.get(nextId)) nextId++;
               return nextId;
             };
@@ -207,13 +199,14 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
               biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : undefined,
               recipes: recipes.length ? recipes : undefined
             };
-            pack.goods.push(good);
+            Options.set(({ map }) => map.goods.push(good));
             Goods.regeneratePlacement(good.i);
           }
 
           tip(editedGood ? t("Good is updated") : t("Good is added"), false, "success", 5000);
           onUpdate?.();
           Dialog.close("goodEditor");
+          if (editedGood) App.openEconomyRegeneration(["production"]);
         }
       }
     ]
@@ -281,7 +274,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           <span></span>
 
           <label for="newGoodDevelopment" data-tip="${t("The least development, 0–100, a land needs to produce the good; 0 for none")}">${t("Development")}</label>
-          <span class="ge-inline"><input id="newGoodDevelopment" class="ge-num" type="number" min="0" max="100" step="1" value="${editedGood?.development ?? 0}" /> <span id="newGoodEra">${eraLabel(editedGood?.development ?? 0)}</span></span>
+          <span class="ge-inline"><input id="newGoodDevelopment" class="ge-num" type="number" min="0" max="100" step="1" value="${editedGood?.development ?? 0}" /> <span id="newGoodEra">${escapeHtml(eraLabel(editedGood?.development ?? 0))}</span></span>
           <span></span>
 
           <label for="newGoodUnit">${t("Unit")}</label>
@@ -348,8 +341,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
     const recipeList = ensureEl("newGoodRecipeList");
 
-    const defaultGoodId = pack.goods[0]?.i ?? 0;
-    const sortedGoods = [...pack.goods].sort((a, b) => a.name.localeCompare(b.name));
+    const defaultGoodId = options.map.goods[0]?.i ?? 0;
+    const sortedGoods = [...options.map.goods].sort((a, b) => a.name.localeCompare(b.name));
 
     const isRawProductionEmpty = () =>
       !Object.values(biomeOutputState).some(v => (v ?? 0) > 0) && !findEl("newGoodDistribution")?.textContent?.trim();

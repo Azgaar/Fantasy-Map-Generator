@@ -30,8 +30,7 @@ function fromSvg(svg: Element): IconPicture {
   return { kind: "svg", content: `<g${paint}>${svg.innerHTML}</g>`, viewBox: Icons.formatFrame(frame) };
 }
 
-/** An uploaded svg or raster image as the picture of icon `id`, whose ids and classes it is scoped to.
- * An emblem keeps the COA an image downloaded from Armoria carries */
+/** An uploaded svg or raster as icon `id`'s picture, scoped to it; an emblem keeps Armoria's COA */
 async function fromFile(file: File, id: string, profile: PictureProfile = "icon"): Promise<IconPicture> {
   const picture = await readPicture(file, id, LIMITS[profile]);
   const coa = profile === "emblem" ? await Armoria.fileCoa(file) : null;

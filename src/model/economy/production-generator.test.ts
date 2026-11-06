@@ -56,12 +56,12 @@ beforeEach(() => {
   };
   burg = { i: 1, cell: 0, population: 100 } as Burg;
   globalThis.pack = {
-    goods: catalogue,
     cells: { good: [0], market: [1, 2], h: [30, 30], development: [1, 1] },
     burgs: [{ i: 0 }, burg],
     markets: [market],
     deals: []
   } as unknown as typeof pack;
+  options.map.goods = catalogue;
   Goods.sync();
 
   Markets.sync();
@@ -780,7 +780,7 @@ describe("the run's rounds", () => {
 
   it("go on after a round in which burgs put only their last workers to work, so idle burgs try again", () => {
     globalThis.pack.burgs.push({ i: 2, cell: 0, population: 50 } as Burg);
-    for (const method of ["collectRuralProduction", "initializeMarketPrices", "measureRoutes", "owesLicenses"] as const)
+    for (const method of ["collectRuralProduction", "initializeMarketPrices", "measureRoutes", "billLicenses"] as const)
       vi.spyOn(Trade, method).mockImplementation(() => {});
     for (const method of ["spendRural", "settleLicenses", "endRun"] as const)
       vi.spyOn(Trade, method).mockImplementation(() => {});

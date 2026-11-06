@@ -1,6 +1,4 @@
-// The Development Overview's overlay: peopled cells filled by the era of their development, shown while it is open
 import { interpolateTurbo } from "d3";
-import { DEVELOPMENT_ERAS } from "@/data/development";
 import { Development } from "@/model/society/development-generator";
 import { findEl } from "@/utils/node-utils";
 import { getIsolines } from "@/utils/path-utils";
@@ -8,9 +6,9 @@ import { buildFillPaths } from "../isoline-fills";
 
 const overlayId = "developmentOverlay";
 
-/** An era's color: from the dark of the stone ages through the greens and yellows of the medieval eras to the reds of the modern ones */
+/** From the dark stone ages through medieval greens and yellows to the reds of modern eras */
 export function getEraColor(index: number): string {
-  return interpolateTurbo(0.05 + (0.9 * index) / (DEVELOPMENT_ERAS.length - 1));
+  return interpolateTurbo(0.05 + (0.9 * index) / (Development.eras.length - 1));
 }
 
 export function drawDevelopmentOverlay(): void {

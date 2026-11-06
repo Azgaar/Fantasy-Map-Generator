@@ -70,7 +70,7 @@ export function score(pack, { Goods, Production, Prosperity, StateEconomy }) {
       const v = mix.get(pack.cells.market[b.cell]);
       if (v) v[gid] = (v[gid] || 0) + u * value(gid);
     }
-  const goods = pack.goods;
+  const goods = options.map.goods;
   const produced = goods.filter(g => (units[g.i] || 0) >= 0.5).length / goods.length;
   const madeGoods = goods.filter(g => g.recipes?.length);
   const people = m =>

@@ -1,10 +1,7 @@
-// Route, lake and river groups are open-ended: the style store is their only record, so their elements are made from it
+// Route, lake and river groups are open-ended: the style store is their only record
 type StyleGroups = Record<string, { attrs: Record<string, string | number | null | undefined> }>;
 
-/**
- * Match the layer's group elements to the store groups, in the store order: create the missing ones, drop the removed.
- * Groups are user-named, so they carry no id: they are addressed by data-group
- */
+/** Match the layer's groups to the store, in order. User-named: addressed by data-group, not id */
 export function syncStyleGroups(layer: Element, groups: StyleGroups): void {
   const elements = new Map<string, SVGGElement>();
   for (const el of Array.from(layer.querySelectorAll<SVGGElement>(":scope > g"))) {

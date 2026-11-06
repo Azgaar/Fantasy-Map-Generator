@@ -18,6 +18,7 @@ import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
+import { Options } from "@/model/options/options-model";
 import { Ice } from "@/model/physical/ice-generator";
 import { Relief } from "@/model/physical/relief-generator";
 import { Rivers } from "@/model/physical/river-generator";
@@ -299,11 +300,18 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.GoodsEditor.open()
   },
   {
-    id: "overviewDevelopmentButton",
-    name: t("Development Overview"),
+    id: "editDevelopmentButton",
+    name: t("Development Editor"),
     link: true,
     aliases: "technology tech level era civilization progress",
-    run: () => Controllers.DevelopmentOverview.open()
+    run: () => Controllers.DevelopmentEditor.open()
+  },
+  {
+    id: "eras",
+    name: t("Eras"),
+    link: true,
+    aliases: "development technology rename",
+    run: () => Controllers.ErasEditor.open()
   },
   {
     id: "overviewMarketsButton",
@@ -943,8 +951,9 @@ function regenerateBurgs(): void {
 function regenerateEconomy(parts: Set<EconomyPart>): void {
   const restore = parts.has("restore");
   if (restore) {
-    const previousIds = pack.goods.map(good => good.i);
+    const previousIds = options.map.goods.map(good => good.i);
     Goods.restoreDefaults();
+    Options.save();
     States.pruneTariffs({ goods: previousIds.filter(id => !Goods.get(id)) }); // a later good could reuse the id
     Goods.generate();
   } else if (parts.has("deposits")) Goods.regenerate();

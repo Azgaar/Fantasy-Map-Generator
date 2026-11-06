@@ -459,8 +459,8 @@ class EntityLookup {
       scale: 6,
       layers: ["goods"],
       collection: { field: "goods", indexed: false },
-      name: id => this.byId(pack.goods, id)?.name || "",
-      refs: () => this.refsOf("good", pack.goods, true),
+      name: id => this.byId(options.map.goods, id)?.name || "",
+      refs: () => this.refsOf("good", options.map.goods, true),
       isAt: (ref, cell) =>
         pack.cells.good?.[cell] === ref.id || this.produces(this.byId(pack.burgs, pack.cells.burg?.[cell]), ref.id),
       position: id => {
@@ -468,7 +468,7 @@ class EntityLookup {
         return points[Math.floor(points.length / 2)];
       },
       points: ref => this.goodPoints(ref.id),
-      context: ref => this.byId(pack.goods, ref.id)?.tags?.join(", ") || "",
+      context: ref => this.byId(options.map.goods, ref.id)?.tags?.join(", ") || "",
       editor: "GoodsEditor"
     },
     cell: {
@@ -540,7 +540,7 @@ class EntityLookup {
       entity: id => (pack.deals?.[id] ? { i: id } : undefined),
       name: id => {
         const deal = pack.deals?.[id];
-        return deal ? `${this.byId(pack.goods, deal[2])?.name || "Goods"} deal` : "";
+        return deal ? `${this.byId(options.map.goods, deal[2])?.name || "Goods"} deal` : "";
       },
       refs: () => (pack.deals ?? []).map((_, id) => ({ type: "deal" as const, id })),
       points: ref => {
@@ -588,7 +588,7 @@ class EntityLookup {
     return entity && !entity.removed ? entity : undefined;
   }
 
-  /** The types kept in a `pack` list, with that list */
+  /** The types kept in a list, with that list */
   collections(): ({ type: EntityType } & EntityCollection)[] {
     return Object.entries(this.types).flatMap(([type, { collection }]) =>
       collection ? [{ type: type as EntityType, ...collection }] : []
@@ -602,6 +602,7 @@ class EntityLookup {
 
   /** A `pack` list by its field, of the live map or another one such as a proposal's draft */
   list(field: string, map = pack): MapEntity[] | undefined {
+    if (field === "goods") return options.map.goods;
     return (map as unknown as Record<string, MapEntity[] | undefined>)[field];
   }
 

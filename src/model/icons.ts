@@ -19,7 +19,7 @@ type IconOwner = { icon?: string };
 
 /** the slots that reference icons, as `Icons.uses` counts them: their name and their owners */
 const SLOTS = {
-  good: { label: t("goods"), owners: () => pack.goods ?? [] },
+  good: { label: t("goods"), owners: () => options.map.goods },
   marker: { label: t("markers"), owners: () => pack.markers ?? [] },
   regiment: {
     label: t("regiments"),

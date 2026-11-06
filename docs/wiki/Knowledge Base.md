@@ -932,6 +932,10 @@ Tools -> Regenerate -> Economy, and the regenerate button in the Goods Editor an
 
 Burgs make what pays best for their workers, so an expensive product with a long chain, dear inputs or high taxes can lose to a simpler one. On maps made before 1.153.0, run Tools -> Regenerate -> Production to use the corrected planner
 
+### Are my custom goods kept on a new map?
+
+Yes. Your goods carry over to new maps and survive a page reload. Only multipliers set for specific cultures, states, religions or zones stay behind, because those belong to one map. Opening a `.map` file replaces your goods with that map's. To start over, use Restore default goods in Tools -> Regenerate -> Economy.
+
 ### Can I place a resource where I want? How to assign goods to cells manually?
 
 Yes. Open Tools -> Goods, click the brush button and paint the good on the map; each cell holds one good. To change where a good appears on generation, edit its spread function: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions

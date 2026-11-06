@@ -10,8 +10,7 @@ import { round } from "@/utils/string-utils";
 const openCurveGen = line<Point>().curve(curveCatmullRom.alpha(0.5));
 const closedCurveGen = line<Point>().curve(curveCatmullRomClosed.alpha(0.5));
 
-// the layer's stroke, baked into each measurer's parts; the font sizes by inheritance.
-// Widths and labels in screen pixels, dashes in map units so the stripes zoom with the map
+// the layer's stroke, baked into each part; dashes in map units so the stripes zoom with the map
 type MeasurerStyle = { strokeWidth: string; dasharray: string };
 
 const toScreen = (value: number) => `calc(${value} * var(--px))`;

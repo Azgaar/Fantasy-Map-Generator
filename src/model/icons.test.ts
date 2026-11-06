@@ -115,7 +115,6 @@ test("every slot kind's uses of an icon are counted", () => {
     { ...options.map.relief.rules[0], icons: { mount: { weight: 1 }, "custom-a": { weight: 1 } } }
   ];
   globalThis.pack = {
-    goods: [{ icon: "goods-wood" }],
     markers: [{ icon: "custom-a" }, { icon: "custom-a" }],
     states: [{ i: 0 }, { i: 1, military: [{ icon: "custom-a" }], coa: { icon: "custom-a" } }],
     provinces: [{ i: 0 }, { i: 1, coa: { icon: "custom-a" } }],
@@ -134,6 +133,7 @@ test("every slot kind's uses of an icon are counted", () => {
       { icons: { "custom-a": { weight: 2 }, "custom-b": { weight: 1 } } }
     ]
   } as unknown as typeof pack;
+  options.map.goods = [{ icon: "goods-wood" }] as never;
 
   expect(Icons.uses("custom-a")).toEqual({
     marker: 2,

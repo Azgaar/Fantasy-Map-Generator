@@ -93,7 +93,7 @@ export function clearMainTip(): void {
   tooltip.innerHTML = "";
 }
 
-/** Show the data-tip of the hovered element, led by its full text if it is cut, with its shortcut on desktop */
+/** Show the hovered element's data-tip, led by its full text if cut, with its desktop shortcut */
 export function showDataTip(event: Event): void {
   const target = event.target as HTMLElement | null;
   if (!target) return;

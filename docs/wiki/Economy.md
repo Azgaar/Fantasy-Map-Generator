@@ -43,7 +43,9 @@ Click a good in the editor to change it:
 | **Multipliers**                   | Production bonuses or penalties by culture type, culture, state, religion, biome or zone. Make one culture famous for its wine, or one zone a mining district                                                                                                                                                                                                                                                                   |
 | **Distribution** and **Deposits** | Where deposits can appear, and how many the map gets, whatever its size. The Goods Editor can show how many are placed in its Deposits column, hidden by default and turned on from the column menu. Click a good's Produced value to see which states and provinces make it in their cells, and which burgs make it. See [Goods spread functions](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions) |
 
-When you apply changes to a good, its deposits are re-placed if their distribution or count changed, and the dialog can recalculate the day right away (_regenerate production on apply_); uncheck it to edit without disturbing the current numbers. You can also add your own goods, change icons, paint deposits onto cells with the brush, open the **production chains** view to see how goods depend on each other, and show a **legend box** of the selected goods, or of all goods.
+Your goods are saved with the map and in the browser, and a new map starts from them. Only multipliers set for one map's cultures, states, religions or zones are left behind. Opening a `.map` replaces your goods with that map's, and _Restore default goods_ in the **Economy Regeneration** dialog starts over, also bringing in changes to the default goods from newer versions. Changed goods affect where people settle, so the same seed gives a different map than with the default goods.
+
+When you apply changes to a good, its deposits are re-placed if their distribution or count changed, and the **Economy Regeneration** dialog offers to recalculate the day right away; cancel it to edit without disturbing the current numbers. You can also add your own goods, change icons, paint deposits onto cells with the brush, open the **production chains** view to see how goods depend on each other, and show a **legend box** of the selected goods, or of all goods.
 
 # Markets
 
@@ -222,4 +224,4 @@ Tick any combination; they always run in this order. Leaving production out keep
 
 **Why do state treasuries change when I only edit a burg?** They do not until you regenerate production; then all deals and taxes are recalculated.
 
-**Why did nothing change when I added an adjustment to a burg?** Adjustments, like most edits to routes and burgs, take effect when you regenerate Production or Economy. Apply in a state's taxes dialog or in the good editor recalculates the day at once while its _regenerate_ checkbox is ticked.
+**Why did nothing change when I added an adjustment to a burg?** Adjustments, like most edits to routes and burgs, take effect when you regenerate Production or Economy. Apply in a state's taxes dialog or in the good editor offers to recalculate the day right away.

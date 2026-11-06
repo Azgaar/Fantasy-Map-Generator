@@ -2,6 +2,7 @@ import Alea from "alea";
 import { color, shuffler } from "d3";
 import { GOODS_DATA } from "@/data/goods";
 import { Icons } from "@/model/icons";
+import { Options } from "@/model/options/options-model";
 import { CULTURE_TYPES, type CultureType } from "@/model/society/cultures-generator";
 import { Tags } from "@/model/tags";
 import type { IconSet } from "@/types/icons";
@@ -57,8 +58,10 @@ type ProductionRules = Partial<{
 
 export const DEFAULT_CARRIAGE = 0.5; // carriage price of a new good
 const DEPOSIT_CLUSTERING = 0.5; // chance a deposit lands beside the previous one of its good
+
 export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
 export type DemandCategory = (typeof DEMAND_PRIORITY)[number];
+
 export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
   food: 0.2,
   utilities: 0.15,
@@ -66,6 +69,7 @@ export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
   military: 0.08,
   luxury: 0.07
 };
+
 export const DEMAND_CATEGORY_ICONS: Record<DemandCategory, string> = {
   food: "🍖",
   utilities: "🛠️",
@@ -81,64 +85,45 @@ export const WANT_SHARES: Record<DemandCategory, number> = {
   military: 0.1,
   luxury: 0.3
 }; // how spare money is split once needs are met
+
 export const WANT_LIMITS: Record<DemandCategory, number> = {
   food: 1,
   utilities: 1,
   construction: 1,
   military: 1,
   luxury: 4
-}; // the most a person buys beyond their needs, in days of need: richer people eat only so much more
+}; // the most a person buys beyond needs, in days of need: richer people eat only so much more
+
+export const WEALTH_WANTS: readonly DemandCategory[] = ["luxury"]; // wants that grow with affluence; staples stay capped, or the first in line buy them out
 
 export const SAVINGS_RATE = 0.32; // share of a day's income households keep
-export const VARIETY = 2.8; // buyers spread their spending over the goods covering a need, by (price per coverage)^-VARIETY: higher buys only the cheapest
+export const VARIETY = 2.8; // spending over a need's goods goes by (price per coverage)^-VARIETY: higher buys only the cheapest
 export const NOVELTY = 5.3; // how much more a buyer pays per tenfold of affluence for a good it has had none of yet
-export const WEALTH_WANTS: readonly DemandCategory[] = ["luxury"]; // wants that grow with affluence: the rich display; staples stay capped, or the first in line buy them out
 
-/** Shares of spending each option gets: cheaper coverage gets more, but every option gets some */
-export function getVarietyShares(costs: number[], variety = VARIETY): number[] {
-  const cheapest = Math.min(...costs.filter(cost => cost > 0));
-  const weights = costs.map(cost => (cost > 0 ? (cost / cheapest) ** -variety : 0));
-  const total = weights.reduce((sum, weight) => sum + weight, 0) || 1;
-  return weights.map(weight => weight / total);
-}
-
-/** A person's daily needs at base prices, each covered the cheapest way */
-export function getNeedsCost(goods: Good[]): number {
-  return DEMAND_PRIORITY.reduce((sum, category) => {
-    const costs = goods.flatMap(good =>
-      good.demandCoverage?.[category] ? [good.value / good.demandCoverage[category]!] : []
-    );
-    return sum + (costs.length ? DEMAND_TARGET_FACTORS[category] * Math.min(...costs) : 0);
-  }, 0);
-}
-
-export function getDemandTargets(population: number): number[] {
-  return DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
-}
+const ENTITY_MULTIPLIERS = ["culture", "state", "religion", "zone"] as const;
 
 export class GoodsModule {
   readonly iconSet = {
     id: "goods",
     group: "Goods",
-    paint: { stroke: "#000000", strokeWidth: 2 } // the linework of the default goods style
+    paint: { stroke: "#000000", strokeWidth: 2 }
   } as const satisfies IconSet;
 
   private goodById: Good[] = [];
 
-  regenerate(): void {
-    this.generate({ randomSeed: Math.random() });
-  }
-
-  // Place every good's deposits, as many as its range gives
   generate(config: { randomSeed?: number } = {}) {
     Math.random = Alea(config.randomSeed ?? options.map.seed);
-    if (!pack.goods?.length) this.restoreDefaults();
+    if (!options.map.goods.length) this.restoreDefaults();
 
     pack.cells.good = new Uint16Array(pack.cells.i.length);
-    for (const good of shuffler(() => Math.random())([...pack.goods])) {
+    for (const good of shuffler(() => Math.random())([...options.map.goods])) {
       this.placeDeposits(good, this.getDepositCount(good));
     }
     this.sync();
+  }
+
+  regenerate(): void {
+    this.generate({ randomSeed: Math.random() });
   }
 
   regeneratePlacement(goodId: number) {
@@ -157,7 +142,6 @@ export class GoodsModule {
     return min + Math.floor(Math.random() * (max - min + 1));
   }
 
-  /** Deposits form loose clusters: each next one lands beside the previous one by chance, or anywhere the good fits */
   private placeDeposits(good: Good, count: number) {
     if (!good.distribution) return;
     const { cells } = pack;
@@ -203,19 +187,22 @@ export class GoodsModule {
     }
   }
 
-  /** The default deposit range of a good by its name, if it is one of the defaults */
   getDefaultDeposits(name: string): [number, number] | undefined {
     return this.defaultGoods.find(good => good.name === name)?.deposits;
   }
 
-  /** The default development tier of a good by its name, if it is one of the defaults and has one */
   getDefaultDevelopment(name: string): number | undefined {
     return this.defaultGoods.find(good => good.name === name)?.development;
   }
 
   restoreDefaults() {
-    pack.goods = structuredClone(this.defaultGoods);
+    options.map.goods = structuredClone(this.defaultGoods);
     this.sync();
+  }
+
+  /** Multipliers keyed by one map's entities mean nothing on the next map */
+  clearEntityMultipliers(goods: Good[]): void {
+    for (const good of goods) for (const dimension of ENTITY_MULTIPLIERS) delete good.multipliers?.[dimension];
   }
 
   getMethods(cellId = 0) {
@@ -240,7 +227,7 @@ export class GoodsModule {
   }
 
   getBiomesProduction(): Record<number, { goodId: number; production: number }[]> {
-    return pack.goods.reduce(
+    return options.map.goods.reduce(
       (acc, good) => {
         if (!good.biomeOutput) return acc;
         for (const [biomeIdStr, production] of Object.entries(good.biomeOutput)) {
@@ -262,7 +249,7 @@ export class GoodsModule {
 
   /** Shown on the Goods layer: a selected good, or every good while none is selected */
   isDisplayed(good: Good | undefined): boolean {
-    return Boolean(good && (good.visible || !pack.goods.some(g => g.visible)));
+    return Boolean(good && (good.visible || !options.map.goods.some(g => g.visible)));
   }
 
   get(i: number): Good | undefined {
@@ -271,38 +258,38 @@ export class GoodsModule {
 
   /** Rename a good */
   rename(goodId: number, name: string): void {
-    this.living(goodId).name = requireName(name);
+    this.edit(goodId).name = requireName(name);
   }
 
   /** Set a good's icon: an emoji or an icon id */
   setIcon(goodId: number, icon: string): void {
-    this.living(goodId).icon = Icons.reference(icon);
+    this.edit(goodId).icon = Icons.reference(icon);
   }
 
   /** Set a good's color on the Goods layer */
   recolor(goodId: number, color: string): void {
-    this.living(goodId).color = requireColor(color);
+    this.edit(goodId).color = requireColor(color);
   }
 
   /** Set a good's base value per unit, in the map's currency; markets price it from this on the next economy run */
   setPrice(goodId: number, value: number): void {
     if (typeof value !== "number" || !(value >= 0 && Number.isFinite(value)))
       throw new Error("The value must be a non-negative number");
-    this.living(goodId).value = value;
+    this.edit(goodId).value = value;
   }
 
-  /** Set the price of carrying one unit of a good over a decima, a tenth of the map's diagonal, in the map's currency; takes effect on the next economy run */
+  /** Set the price of carrying one unit over a decima, a tenth of the map's diagonal, in the map's currency; takes effect on the next economy run */
   setCarriage(goodId: number, carriage: number): void {
     if (typeof carriage !== "number" || !(carriage >= 0 && Number.isFinite(carriage)))
       throw new Error("The carriage price must be a non-negative number");
-    this.living(goodId).carriage = carriage;
+    this.edit(goodId).carriage = carriage;
   }
 
   /** Set the least development, 0–100, a cell needs to produce a good; 0 for none. Takes effect on the next economy run */
   setDevelopment(goodId: number, development: number): void {
     if (!Number.isInteger(development) || development < 0 || development > 100)
       throw new Error("The development must be a whole number from 0 to 100");
-    this.living(goodId).development = development || undefined;
+    this.edit(goodId).development = development || undefined;
   }
 
   /** The default good's carriage price by name, otherwise a tenth of the good's value */
@@ -313,18 +300,17 @@ export class GoodsModule {
   /** Set the unit a good is counted in, such as "barrel"; empty for none */
   setUnit(goodId: number, unit: string): void {
     if (typeof unit !== "string") throw new Error("The unit must be text");
-    this.living(goodId).unit = unit.trim();
+    this.edit(goodId).unit = unit.trim();
   }
 
   /** Set a good's tags, such as "food, luxury" */
   setTags(goodId: number, tags: string[]): void {
     if (!Array.isArray(tags) || tags.some(tag => typeof tag !== "string")) throw new Error("Tags are a list of words");
-    Tags.set(this.living(goodId), tags);
+    Tags.set(this.edit(goodId), tags);
   }
 
   /** Set how a good is produced: deposits ([min, max] on the map), recipes ([{ goodId: amount }]), biomeOutput ({ biomeId: amount }), multipliers ({ cultureType | culture | state | religion | biome | zone: { key: factor } }), demandCoverage ({ category: share }). A key set to null clears it. Takes effect on the next economy run */
   setProduction(goodId: number, rules: ProductionRules): void {
-    const good = this.living(goodId);
     if (typeof rules !== "object" || rules === null) throw new Error("The production rules must be an object");
     const nonNegative = (value: unknown, label: string) => {
       if (typeof value !== "number" || !(value >= 0 && Number.isFinite(value)))
@@ -381,6 +367,7 @@ export class GoodsModule {
         );
       next[key as keyof ProductionRules] = structuredClone(value) as never;
     }
+    const good = this.edit(goodId);
     for (const [key, value] of Object.entries(next)) {
       if (value === undefined) delete good[key as keyof ProductionRules];
       else Object.assign(good, { [key]: value });
@@ -388,21 +375,23 @@ export class GoodsModule {
   }
 
   private findGood(goodId: number): Good | undefined {
-    return pack.goods?.find(good => good.i === goodId);
+    return options.map.goods.find(good => good.i === goodId);
   }
 
-  private living(goodId: number): Good {
+  /** The good about to change: the options remember it */
+  private edit(goodId: number): Good {
     const good = this.findGood(goodId);
     if (!good) throw new Error(`Good ${goodId} does not exist`);
+    Options.save();
     return good;
   }
 
-  /** Removes the good and what names it on this map: its deposits, the recipes taking it and its share of the run. The roster outlives the map, and units ignore a good it lacks */
+  /** Removes the good, its deposits, recipes taking it and its share of the run; units ignore it */
   remove(goodId: number): void {
     const { cells } = pack;
     for (const cell of cells.i) if (cells.good[cell] === goodId) cells.good[cell] = 0;
-    pack.goods = pack.goods.filter(good => good.i !== goodId);
-    for (const good of pack.goods) {
+    options.map.goods = options.map.goods.filter(good => good.i !== goodId);
+    for (const good of options.map.goods) {
       if (!good.recipes) continue;
       good.recipes = good.recipes.filter(recipe => !(goodId in recipe));
       if (!good.recipes.length) delete good.recipes;
@@ -416,12 +405,13 @@ export class GoodsModule {
       market.rural.bought = market.rural.bought.filter(others);
       market.rural.kept &&= market.rural.kept.filter(others);
     }
+    Options.save();
     this.sync();
   }
 
   sync() {
     this.goodById = [];
-    for (const good of pack.goods) this.goodById[good.i] = good;
+    for (const good of options.map.goods) this.goodById[good.i] = good;
   }
 
   private readonly defaultGoods = GOODS_DATA.map((good, index): Good => {
@@ -442,3 +432,25 @@ export class GoodsModule {
 }
 
 export const Goods = new GoodsModule();
+
+/** Spending shares: cheaper coverage gets more, every option gets some */
+export function getVarietyShares(costs: number[], variety = VARIETY): number[] {
+  const cheapest = Math.min(...costs.filter(cost => cost > 0));
+  const weights = costs.map(cost => (cost > 0 ? (cost / cheapest) ** -variety : 0));
+  const total = weights.reduce((sum, weight) => sum + weight, 0) || 1;
+  return weights.map(weight => weight / total);
+}
+
+/** A person's daily needs at base prices, each covered the cheapest way */
+export function getNeedsCost(goods: Good[]): number {
+  return DEMAND_PRIORITY.reduce((sum, category) => {
+    const costs = goods.flatMap(good =>
+      good.demandCoverage?.[category] ? [good.value / good.demandCoverage[category]!] : []
+    );
+    return sum + (costs.length ? DEMAND_TARGET_FACTORS[category] * Math.min(...costs) : 0);
+  }, 0);
+}
+
+export function getDemandTargets(population: number): number[] {
+  return DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
+}

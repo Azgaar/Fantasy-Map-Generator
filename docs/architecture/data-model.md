@@ -472,7 +472,7 @@ Measurers (rulers and other measuring tools drawn on top of the map) are stored 
 
 ## Goods
 
-Goods (tradable resources and products) are stored in `pack.goods: Good[]`. Good `i` starts at `1` and is **not** the array index — use `Goods.get(i)` (backed by a sparse `goodById`) for lookups. The default catalogue is built from `GOODS_DATA` (`src/data/goods.ts`). Stored in .map file. A good is _raw_ if it has a `distribution`, _manufactured_ if it has `recipes`, or _hybrid_ if it has both. Object structure:
+Goods (tradable resources and products) are stored in `options.map.goods: Good[]`, a [definition set](./configuration.md#the-definition-sets). Good `i` starts at `1` and is **not** the array index — use `Goods.get(i)` (backed by a sparse `goodById`) for lookups. The default catalogue is built from `GOODS_DATA` (`src/data/goods.ts`). Stored in .map file. A good is _raw_ if it has a `distribution`, _manufactured_ if it has `recipes`, or _hybrid_ if it has both. Object structure:
 
 - `i`: `number` - good id (starts at 1, not the array index)
 - `name`: `string` - good name
@@ -579,6 +579,13 @@ Transport types are configuration, not map state: they live in `options.map.tran
 - `speed`: `number` - travel speed in km/h
 - `domain`: `"land" | "water" | "air" | "stay"` - decides both the pathfinding strategy and which endpoints are valid. `stay` means no movement at all
 - `hoursPerDay`: `number` - optional. Hours of travel a day sustains with this transport, used to convert travel hours into days. Absent in maps saved before it became configurable, which fall back to a per-domain default
+
+## Eras
+
+Development eras are configuration, not map state: they live in `options.map.eras: Era[]`, ordered by level. Object structure:
+
+- `level`: `number` - the development level the era begins at, from 1 to 100
+- `name`: `string` - era name, for display only
 
 ## Name bases
 

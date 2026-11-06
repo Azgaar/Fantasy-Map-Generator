@@ -1,5 +1,3 @@
-// The State Economy Overview's full tables: goods, trading partners and prosperity, as sortable editor tables
-
 import { Goods } from "@/model/economy/goods-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import { StateEconomy } from "@/model/economy/state-economy";

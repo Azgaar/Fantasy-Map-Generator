@@ -6,6 +6,7 @@ import { heightmapTemplates } from "@/data/heightmap-templates";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import { DEFAULT_THREE_D } from "@/data/view-3d-options";
 import { Labels } from "@/model/annotations/labels-generator";
+import { Goods } from "@/model/economy/goods-generator";
 import { DEFAULT_JITTER } from "@/model/graph/lattice";
 import { adoptLegacyOptions } from "@/model/options/options-legacy";
 import {
@@ -22,6 +23,7 @@ import { Coordinates } from "@/model/physical/coordinates";
 import { Relief } from "@/model/physical/relief-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Military } from "@/model/political/military-generator";
+import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
 import { LocalDB } from "@/services/local-db";
@@ -86,7 +88,9 @@ class OptionsModel {
         labels: { groups: Labels.getDefaultGroups() },
         military: { units: Military.getDefaultOptions() },
         transports: Transports.getDefaults(),
+        eras: Development.getDefaultEras(),
         customIcons: [],
+        goods: [],
         coastline: Coastline.getDefaultSettings(),
         relief: { rules: Relief.getDefaultRules() }
       },
@@ -273,9 +277,12 @@ class OptionsModel {
     map.labels.groups = previous.labels.groups;
     map.military.units = previous.military.units;
     map.transports = previous.transports;
+    map.eras = previous.eras;
     map.customIcons = previous.customIcons;
     map.coastline = previous.coastline;
     map.relief = previous.relief;
+    map.goods = previous.goods;
+    Goods.clearEntityMultipliers(map.goods);
 
     // and the requests it consumes
     const { width, height, density, sampling, jitter } = graph;
@@ -359,6 +366,7 @@ class OptionsModel {
     if (!map.labels.groups.length) map.labels.groups = defaults.labels.groups;
     if (!map.military.units.length) map.military.units = defaults.military.units;
     if (!map.transports.length) map.transports = defaults.transports;
+    if (!map.eras.length) map.eras = defaults.eras;
 
     Burgs.ensureDefaultGroup(map.burgs.groups);
     Labels.restoreMissingTypes(map.labels.groups);

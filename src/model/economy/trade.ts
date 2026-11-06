@@ -1,5 +1,3 @@
-// The economy's trading: market prices, burgs buying and selling, carriage, taxes, tariffs and margins, summed in deals
-
 import type { Burg } from "@/model/political/burgs-generator";
 import { States } from "@/model/political/states-generator";
 import { getDecima } from "@/model/units";
@@ -20,13 +18,13 @@ import { TradeRoutes } from "./trade-routes";
 
 const PRICE_FLOOR_FACTOR = 0.02;
 const PRICE_CEILING_FACTOR = 5.0;
-export const PRICE_CURVE = 2; // a price follows the ratio of demand to supply, expected sales counted in both, to this power
+export const PRICE_CURVE = 2; // exponent of the demand to supply ratio in a price
 const WANTS_ESTIMATE = 0.93; // expected sales: what people buy beyond their needs, as a multiple of them
 const OPENING_ELASTICITY = 0.21; // how far below its value an ingredient opens where its trades need less than a unit a day
 export const MARKET_MARGIN = 0.035; // a market's margin before its license fee raises it
 const MAX_MARKET_MARGIN = 0.5; // however dear the license: past 1 a market would sell for less than nothing
 const MAX_DECIMAS = 10; // the map's diagonal: the most carriage, paid with no route to the burg's own market
-export const MIN_LOCAL_STOCK = 1; // a buyer buys at its own market while it stocks this much, otherwise from the cheapest market
+export const MIN_LOCAL_STOCK = 1; // a buyer stays at its own market while it stocks this much
 export const IMPORT_CARRIAGE_FACTOR = 2; // carriage from another state's market: borders, tolls, longer hauls
 
 type Carriage = {
@@ -54,7 +52,7 @@ type GoodBook = {
 type RunIndex = { books: GoodBook[]; positions: number[] }; // books by good id, positions by market id
 const MIN_STOCK = 0.01; // less is no stock to buy from
 
-/** Moves a position to its place in an order after its price moved, a step at a time: prices move little in a trade */
+/** Moves a position to its place after its price moved, stepwise: a trade moves prices little */
 const reorder = (order: Int32Array, ranks: Int32Array, prices: Float64Array, at: number, descending: boolean) => {
   const sign = descending ? -1 : 1;
   const key = prices[at] * sign;
@@ -73,10 +71,10 @@ const reorder = (order: Int32Array, ranks: Int32Array, prices: Float64Array, at:
 const dealKey = (burg: number, market: number, good: number, kind: number) =>
   burg * 2 ** 35 + market * 2 ** 19 + good * 8 + kind;
 
-/** Trade between two different states; neutral lands are no state, so trade with them is never an import: no tariff, embargo or import carriage */
+/** Trade between two states; neutral lands are no state: no tariff, embargo or import carriage */
 const isForeign = (stateA: number, stateB: number) => Boolean(stateA && stateB && stateA !== stateB);
 
-/** Units the budget pays for at the price, rounded down to the hundredth so the cost stays within it */
+/** Units the budget pays for, rounded down to the hundredth so the cost stays within it */
 const affordable = (budget: number, price: number) => Math.floor((budget / price) * 100 + 1e-6) / 100;
 
 /** The average over t from 0 to x of (1 + t)^power */
@@ -85,7 +83,7 @@ const averageGrowth = (x: number, power: number) => {
   return raised ? Math.expm1(raised * Math.log1p(x)) / (raised * x) : Math.log1p(x) / x;
 };
 
-/** A market's day: each good's list price, how much of it the market expects to sell, the demand and supply so far, how much of its stock is rural produce, and its rural people's money */
+/** A market's day: list prices, depth, demand and supply so far, rural stock share, rural money */
 type MarketDay = {
   listPrice: number[];
   depth: number[];
@@ -106,7 +104,7 @@ type MarketDay = {
 export const DEAL_KINDS = { sale: 0, input: 1, demand: 2, kept: 3, order: 4 } as const; // an order is a state's purchase, the burg its seat
 export type DealKind = (typeof DEAL_KINDS)[keyof typeof DEAL_KINDS];
 
-/** A burg's trade with a market in one good and kind, summed over the run; its id is its index in pack.deals */
+/** A burg's trade with a market in one good and kind, summed over the run; id: pack.deals index */
 export type Deal = [
   burg: number,
   market: number,
@@ -116,7 +114,7 @@ export type Deal = [
   price: number, // average per unit
   tax: number, // sales tax: the burg's on a sale, the selling market's on a purchase
   tariff: number, // the importer's, on an import
-  carriage: number // average per unit: cost of carrying the goods between the market's center and the burg, in the price
+  carriage: number // average per unit, between the market's center and the burg, in the price
 ];
 
 /** One trade's amounts: price and carriage per unit, tax and tariff in total */
@@ -159,7 +157,6 @@ export class TradeModule {
   private marginRates = new Map<number, number>(); // by license fee paid
   private licenseDue: number[] = []; // by market: what of its license its center has still to pay in the economy run
 
-  /** The countryside brings its produce to its market; it is paid as the produce is bought */
   collectRuralProduction(output = Production.getRuralOutput()): void {
     this.days = [];
     this.taxes = [];
@@ -208,16 +205,15 @@ export class TradeModule {
     return initial;
   }
 
-  /** Each market expects to sell a day's demand of its people and trades, and the countryside's produce is its first supply; an ingredient its trades need less than a unit of a day lists below its value */
   initializeMarketPrices(): void {
-    const demandFactors = this.collectDemand(pack.goods);
+    const demandFactors = this.collectDemand(options.map.goods);
     const populationByMarket = this.calculatePopulationByMarket();
 
     for (const market of pack.markets) {
       const day = this.days[market.i];
       if (!day) continue;
       const people = (populationByMarket[market.i] || 0) + day.ruralPeople;
-      for (const good of pack.goods) {
+      for (const good of options.map.goods) {
         const expected = people * (demandFactors[good.i] || 0);
         day.depth[good.i] = Math.max(1, expected);
         day.supply[good.i] = day.rural[good.i] || 0;
@@ -232,7 +228,7 @@ export class TradeModule {
     pack.markets.forEach((market, at) => {
       run.positions[market.i] = at;
     });
-    for (const good of pack.goods) run.books[good.i] = this.buildBook(good);
+    for (const good of options.map.goods) run.books[good.i] = this.buildBook(good);
     this.run = run;
   }
 
@@ -261,7 +257,7 @@ export class TradeModule {
     return { rows, stocked, stockedCount, sellPrices, buyPrices, bySell, byBuy, sellRanks, buyRanks, revision: 0 };
   }
 
-  /** Changes on every change to a market's row of the good in the economy run, so a quote can tell it is stale; NaN outside a run */
+  /** Changes with the good's market rows, so a quote can tell it is stale; NaN outside a run */
   getRevision(good: Good): number {
     return this.run?.books[good.i].revision ?? NaN;
   }
@@ -292,7 +288,6 @@ export class TradeModule {
     reorder(book.byBuy, book.buyRanks, book.buyPrices, at, false);
   }
 
-  /** The price is a pure function of the day's demand and supply at the market: its list price where they balance, below it in a surplus, above it in a shortage. Unrounded until the run ends, so small trades add up */
   private getBalancePrice(day: MarketDay, good: Good): number {
     const depth = day.depth[good.i];
     const ratio = (depth + (day.demand[good.i] || 0)) / (depth + (day.supply[good.i] || 0));
@@ -326,7 +321,7 @@ export class TradeModule {
     this.touch(market, good, marketGood);
   }
 
-  /** An import is demand the markets nearer the buyer than its source could not meet: they share it, the nearest the most, so it counts once however many they are; a share under a hundredth of a unit is none */
+  /** Nearer markets share the import's demand, the nearest most, so it counts once */
   private addNearerDemand(burg: Burg, source: Market, good: Good, units: number) {
     const at = this.run?.positions[source.i];
     if (at === undefined) return;
@@ -347,7 +342,7 @@ export class TradeModule {
     }
   }
 
-  /** The market's average price over a lot as the lot moves it, units negative on selling: a big lot pays its own price impact */
+  /** Average price over a lot as it moves the price, units negative on selling */
   private getLotPrice(market: Market, good: Good, units: number): number {
     return this.lotPrice(this.getMarketGood(market, good).price, market, good, units);
   }
@@ -363,17 +358,16 @@ export class TradeModule {
     return minmax(price * growth, good.value * PRICE_FLOOR_FACTOR, good.value * PRICE_CEILING_FACTOR);
   }
 
-  /** Units of the good the market expects to sell a day in the economy run; unlimited outside it */
+  /** Units the market expects to sell a day in a run; unlimited outside it */
   getDepth(market: Market, good: Good): number {
     return this.days[market.i]?.depth[good.i] ?? Infinity;
   }
 
-  /** Buyers turned away for lack of stock are demand as those who buy are */
   signalShortage(market: Market, good: Good, units: number) {
     if (units > 0.01) this.addDemand(market, good, units);
   }
 
-  /** Units taken from the market's stock at the lot's price: the share that is rural produce pays the market's rural people, less the margin its center takes */
+  /** Takes units at the lot's price; the rural share pays rural people, less the center's margin */
   private takeStock(market: Market, good: Good, units: number, price: number) {
     const marketGood = this.getMarketGood(market, good);
     const day = this.days[market.i];
@@ -392,7 +386,7 @@ export class TradeModule {
     this.trade(market, good, rn(Math.max(0, marketGood.stock - units), 2), units, 0);
   }
 
-  /** The market's rural people spend what they earned, less savings and their poll tax, on goods at their market up to their wants */
+  /** Rural people spend earnings, less savings and poll tax, at their market up to their wants */
   spendRural(market: Market) {
     const day = this.days[market.i];
     if (!day) return;
@@ -405,7 +399,7 @@ export class TradeModule {
         (day.ruralPeople * DEMAND_TARGET_FACTORS[category] * WANT_LIMITS[category] -
           (day.covered[categoryIndex] || 0)) /
         good.demandCoverage![category]!;
-      const options = pack.goods
+      const offers = options.map.goods
         .filter(good => good.demandCoverage?.[category])
         .map(good => ({
           good,
@@ -414,7 +408,7 @@ export class TradeModule {
       const purchase = (good: Good, spend: number) => {
         const wanted = Math.min(market.goods[good.i].stock, room(good));
         const atOpen = Math.min(wanted, spend / this.customerBuyPrice(market, market.goods[good.i].price));
-        // what the spend buys once the lot pays its own impact; the smaller lot moves the price less, so it stays within the spend
+        // the smaller lot moves the price less, so it stays within the spend
         const units = Math.min(atOpen, spend / this.customerBuyPrice(market, this.getLotPrice(market, good, atOpen)));
         if (spend <= 0.01 || units < 0.01) return;
         const lot = this.getLotPrice(market, good, units);
@@ -432,15 +426,15 @@ export class TradeModule {
         day.margin += margin;
         this.takeStock(market, good, units, lot);
       };
-      // spread over every good covering the need, cheaper ones getting more; goods out of stock turn them away, which is demand too
-      const shares = getVarietyShares(options.map(({ good, price }) => price / good.demandCoverage![category]!));
+      // goods out of stock turn them away, which is demand too
+      const shares = getVarietyShares(offers.map(({ good, price }) => price / good.demandCoverage![category]!));
       const total = money;
-      options.forEach(({ good, price }, k) => {
+      offers.forEach(({ good, price }, k) => {
         const spend = Math.min(money, total * shares[k]);
         if (market.goods[good.i].stock > 0.01) purchase(good, spend);
         else this.signalShortage(market, good, Math.min(spend / price, room(good)));
       });
-      const stocked = options
+      const stocked = offers
         .filter(({ good }) => market.goods[good.i].stock > 0.01)
         .sort((a, b) => a.price / a.good.demandCoverage![category]! - b.price / b.good.demandCoverage![category]!);
       for (const { good } of stocked) {
@@ -456,7 +450,7 @@ export class TradeModule {
     return due > 0 ? Math.min(1, Math.max(0, day.cash) / due) : 0;
   }
 
-  /** Rural people pay their poll tax from what they kept before the day's last orders, so the states spend what they get; returns it by state */
+  /** Rural poll tax, paid before the last orders so the states can spend it; returns it by state */
   settleRuralPollTax(): number[] {
     const paid: number[] = [];
     for (const market of pack.markets) {
@@ -471,7 +465,7 @@ export class TradeModule {
     return paid;
   }
 
-  /** The market where a unit of the good sells for the most at the burg's door, after carriage and the importer's tariff; none under an embargo */
+  /** The best market to sell at, after carriage and the importer's tariff; none under an embargo */
   getOutlet(burg: Burg, good: Good, terms = this.getTradeTerms()): Outlet | null {
     const { atDecimas, atFactors, ownAt, nearestOther } = this.getCarriage(burg);
     const own = Markets.ofBurg(burg);
@@ -504,13 +498,13 @@ export class TradeModule {
     return best && { market: best, price: bestPrice, carriage: bestCarriage };
   }
 
-  /** Per-unit tariff another state's market levies on a burg's sale, as on goods from the burg's own market; null under an embargo */
+  /** Per-unit tariff another state's market levies on goods from the burg's; null under an embargo */
   private getSaleTariff(own: Market | undefined, market: Market, good: Good, price: number, terms: TradeTerms) {
     if (!own || own === market) return 0;
     return terms(own, market, good, price)?.tariffPerUnit ?? null;
   }
 
-  /** Prices at the burg's door: buying adds the market's sales tax and the carriage, selling pays the carriage */
+  /** Prices at the burg's door: buying adds sales tax and carriage, selling pays carriage */
   quoteMarket(
     market: Market,
     goodId: number,
@@ -543,7 +537,7 @@ export class TradeModule {
     return { sellPrice, carriage };
   }
 
-  /** A unit's price at the burg's door as a lot's, units negative on selling: the market's part moves with the lot as a trade moves it, the carriage stays */
+  /** A door price as a lot's, units negative on selling: the market's part moves, carriage stays */
   atLot(doorPrice: number, carriage: number, market: Market, good: Good, units: number): number {
     const price = market.goods[good.i]?.price;
     if (!price) return doorPrice;
@@ -552,12 +546,10 @@ export class TradeModule {
     return (doorPrice - fixed) * factor + fixed;
   }
 
-  /** What a unit costs the burg at its door: the price with the margin, the taxes and the carriage */
   private priceAtDoor(withMargin: number, tax: number, tariff: number, carriage: number): number {
     return rn(withMargin + tax + tariff + carriage, 2);
   }
 
-  /** Measures the route network from every market's center, for the economy run to price carriage */
   measureRoutes(): void {
     this.routeCosts = null;
     this.getRouteCosts();
@@ -576,7 +568,7 @@ export class TradeModule {
     return this.routeCosts;
   }
 
-  /** Ends the run: prices are rounded, each market keeps its rural day, with the poll tax its people paid, for the views */
+  /** Ends the run: rounds prices; each market keeps its rural day and the poll tax its people paid */
   endRun(): void {
     // average prices keep 4 decimals, so units × price gives back what was paid to the cent
     for (const deal of pack.deals) {
@@ -591,7 +583,7 @@ export class TradeModule {
       const day = this.days[market.i];
       if (!day) continue;
       const bought = day.bought.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)] as [number, number]] : []));
-      // every purchase took the rural share of the stock from their produce, so what of it is left is theirs
+      // every purchase took the rural share of the stock, so what is left of it is theirs
       const kept = day.rural.flatMap((units, goodId) => {
         const left = Math.min(units, market.goods[goodId]?.stock || 0);
         return left >= 0.01 ? [[goodId, rn(left, 2)] as [number, number]] : [];
@@ -613,7 +605,7 @@ export class TradeModule {
     this.run = null;
   }
 
-  /** Decimas a good is carried between the market's center and the burg along routes; Infinity with no route to another market */
+  /** Decimas between the market's center and the burg; Infinity with no route to another market */
   getDecimas(market: Market, burg: Burg): number {
     if (burg.i === market.centerBurgId) return 0;
     const distance = this.getRouteCosts()[market.i]?.[burg.i!] ?? Infinity;
@@ -621,7 +613,7 @@ export class TradeModule {
     return Math.min(distance / this.decima, MAX_DECIMAS);
   }
 
-  /** Per-unit cost of carrying a good between the market's center and the burg, dearer from another state's market; Infinity with no route to another market */
+  /** Per-unit carriage, dearer from another state; Infinity with no route to another market */
   getTransport(market: Market, burg: Burg, good: Good): number {
     return this.carry(this.getCarriage(burg), market, good);
   }
@@ -631,7 +623,7 @@ export class TradeModule {
     return distance === Infinity ? Infinity : distance * good.carriage * factors[market.i];
   }
 
-  /** Decimas and carriage factors from every market to the burg, kept for the rest of an economy run */
+  /** Decimas and carriage factors from every market to the burg, kept for the run */
   private getCarriage(burg: Burg): Carriage {
     const cached = this.carriage?.[burg.i!];
     if (cached) return cached;
@@ -660,7 +652,6 @@ export class TradeModule {
     return carriage;
   }
 
-  /** Carriage from another state's market costs more */
   getCarriageFactor(market: Market, burg: Burg): number {
     return this.isImportFor(market, burg) ? IMPORT_CARRIAGE_FACTOR : 1;
   }
@@ -670,7 +661,7 @@ export class TradeModule {
     return Boolean(own && own !== market && isForeign(Markets.getState(market), Markets.getState(own)));
   }
 
-  /** The burg buys a good from a market, its own unless a source is given, paying the margin, the source's sales tax, the tariff and the carriage */
+  /** Buys from a market, its own unless a source is given, paying margin, taxes and carriage */
   buy({
     burg,
     good,
@@ -705,7 +696,7 @@ export class TradeModule {
     };
     const opening = quote(row.price);
     if (!opening) return null;
-    // the lot pays its own impact; the smaller lot the budget then buys moves the price less, so it stays within the budget
+    // the smaller lot the budget then buys moves the price less, so it stays within the budget
     const atOpen = Math.min(units, row.stock, affordable(budget, opening.price));
     const actualUnits = rn(
       Math.min(atOpen, affordable(budget, quote(this.getLotPrice(source, good, atOpen))!.price)),
@@ -730,19 +721,18 @@ export class TradeModule {
     return trade;
   }
 
-  /** Where a buyer buys a good: its own market while it stocks enough, otherwise the cheapest other one finds, or what its own has left; null when none has any */
+  /** Own market while it stocks enough, else `cheapest`, else what its own has left; null if none */
   getSupplier(own: Market, good: Good, cheapest: () => Market | undefined): Market | null {
     const local = own.goods[good.i]?.stock || 0;
     if (local >= MIN_LOCAL_STOCK) return own;
     return cheapest() ?? (local > 0.01 ? own : null);
   }
 
-  /** Sales tax the market's state levies per unit sold at the price */
   private getSalesTaxPerUnit(market: Market, price: number): number {
     return States.getSalesTax(pack.burgs[market.centerBurgId]) * price;
   }
 
-  /** Units the burg sold to its own market this run and can still take back, at what the sale earned it per unit; the rural produce in stock is not its own */
+  /** Units sold to its own market it can take back, at what each earned; rural stock is not its */
   quoteKeep(burg: Burg, good: Good): { units: number; price: number } | null {
     const market = Markets.ofBurg(burg);
     const sale = market && this.findDeal(burg.i!, market.i, good.i, DEAL_KINDS.sale);
@@ -754,7 +744,7 @@ export class TradeModule {
     return { units, price: sale[5] - sale[6] / sale[4] };
   }
 
-  /** The burg takes back goods it sold to its own market to cover its demand, as if it never sold them: the sale and its tax shrink, the burg pays back what they earned */
+  /** Takes back own sales to cover demand, as if never sold: the sale and its tax shrink */
   keep({
     burg,
     good,
@@ -786,7 +776,7 @@ export class TradeModule {
     return { units: kept, price: rn(quote.price, 2), tax: 0 };
   }
 
-  /** Units the market takes before the next one fetches less than a cent at the burg's door: each unit sold lowers the price */
+  /** Units the market takes before the next fetches under a cent at the burg's door */
   private getSellable(market: Market, good: Good, carriage: number, tariffRate: number): number {
     const kept = 1 - this.getMarginRate(market) - tariffRate; // of the market's price, what reaches the burg before carriage
     const price = this.getMarketGood(market, good).price;
@@ -797,7 +787,7 @@ export class TradeModule {
     return (depth + (this.days[market.i].supply[good.i] || 0)) * ((price / least) ** (1 / PRICE_CURVE) - 1);
   }
 
-  /** The burg sells to a market, its own by default, as many units as fetch something at its door. Null under an embargo or when none would */
+  /** Sells to a market, its own by default, units that fetch something; null if none or embargoed */
   sell({
     burg,
     good,
@@ -833,7 +823,6 @@ export class TradeModule {
     return trade;
   }
 
-  /** Adds a trade to the burg's deal with the market in the good and kind */
   recordDeal(burgId: number, marketId: number, goodId: number, kind: DealKind, trade: Transaction) {
     const { tariff = 0, carriage = 0 } = trade;
     const deal = this.findDeal(burgId, marketId, goodId, kind);
@@ -862,7 +851,6 @@ export class TradeModule {
     if (tariff) this.taxes[tariffState] = (this.taxes[tariffState] || 0) + tariff;
   }
 
-  /** Sales tax and tariffs the state collected so far in the economy run */
   getTaxesSoFar(stateId: number): number {
     return this.taxes[stateId] || 0;
   }
@@ -876,10 +864,7 @@ export class TradeModule {
     return id === undefined ? undefined : pack.deals[id];
   }
 
-  /**
-   * The deal's money to its market: what a burg pays for goods, carriage included, less the taxes and tariff the
-   * market passes to the states; minus what the market pays a burg for its goods. Goods a burg kept never reach it
-   */
+  /** Money to the market: a burg's payment with carriage, less taxes, minus what it pays a burg */
   getMarketIncome(deal: Deal): number {
     const [, , , kind, units, price, tax, tariff] = deal;
     if (kind === DEAL_KINDS.kept) return 0;
@@ -888,12 +873,11 @@ export class TradeModule {
     return units * price - tax - tariff - margin;
   }
 
-  /** The market margin on the deal, earned by the center burg of the deal's market */
   getMargin([, marketId, , kind, units, price, tax, tariff, carriage]: Deal): number {
     return this.marginOf(Markets.get(marketId), kind, { units, price, tax, tariff, carriage });
   }
 
-  /** The share a market buys below and sells above its price, in whole percents: the base margin, raised by the license fee its center paid */
+  /** Share a market buys below and sells above its price, whole percents, raised by the license */
   getMarginRate(market?: Market): number {
     const fee = market?.feePaid || 0;
     let rate = this.marginRates.get(fee);
@@ -907,7 +891,7 @@ export class TradeModule {
     return rate;
   }
 
-  /** The margin in a trade: the market's spread between its own price and the price it buys or sells at, before taxes and carriage */
+  /** The market's spread on a trade, before taxes and carriage */
   private marginOf(
     market: Market | undefined,
     kind: DealKind,
@@ -920,12 +904,12 @@ export class TradeModule {
     return (units * marketPrice * rate) / (1 + rate);
   }
 
-  /** The center burg's merchants take the margin as the trade happens, so the hub can spend it the same day */
+  /** Paid as the trade happens, so the center can spend it the same day */
   private payMargin(market: Market, kind: DealKind, trade: Transaction): void {
     this.payMarginAmount(market, this.marginOf(market, kind, trade));
   }
 
-  /** The margin goes to its market's center, first to the license it still owes */
+  /** To the market's center, first to the license it still owes */
   private payMarginAmount(market: Market, amount: number): void {
     const center = pack.burgs[market.centerBurgId];
     if (!center?.i || center.removed) return;
@@ -935,13 +919,12 @@ export class TradeModule {
     center.treasury = (center.treasury || 0) + amount - toLicense;
   }
 
-  /** Each market's center owes its license for the day, paid out of the margin as it comes in */
-  owesLicenses(): void {
+  /** Bills each market's center its license for the day, paid out of the margin as it comes in */
+  billLicenses(): void {
     this.licenseDue = [];
     for (const market of pack.markets) if (market.feePaid) this.licenseDue[market.i] = market.feePaid;
   }
 
-  /** What the margin has not paid of each license, its center pays at the day's end */
   settleLicenses(): void {
     for (const market of pack.markets) {
       const due = this.licenseDue[market.i];
@@ -951,19 +934,17 @@ export class TradeModule {
     this.licenseDue = [];
   }
 
-  /** An import is trade between the burg's own market and a market of another state, either way: only an import may pay a tariff */
+  /** Only an import may pay a tariff */
   isImport(deal: Deal): boolean {
     const { own, market } = this.getMarketStates(deal);
     return isForeign(own, market);
   }
 
-  /** The states of the burg's own market and of the deal's market */
   private getMarketStates([burgId, marketId]: Deal): { own: number; market: number } {
     const burg = pack.burgs[burgId];
     return { own: Markets.getState(burg && Markets.ofBurg(burg)), market: Markets.getState(Markets.get(marketId)) };
   }
 
-  /** States the deal's sales tax and tariff go to: the seller's, and the importer's: the deal's market on a sale, the burg's own market on a purchase */
   getTaxStates(deal: Deal): { taxState: number; tariffState: number } {
     const kind = deal[3];
     const { own, market } = this.getMarketStates(deal);
@@ -980,7 +961,6 @@ export class TradeModule {
       : this.getTariffRate(own, market, deal[2]);
   }
 
-  /** Sales tax and tariffs of the run's deals, by the state collecting them */
   getTaxesByState(): { salesTax: number[]; tariffs: number[] } {
     const salesTax: number[] = [];
     const tariffs: number[] = [];
@@ -992,13 +972,13 @@ export class TradeModule {
     return { salesTax, tariffs };
   }
 
-  /** The tariff rate the importer state levies on the good from the exporter state, 0 under an embargo */
+  /** The importer state's rate on the good from the exporter state, 0 under an embargo */
   getTariffRate(importerStateId: number, exporterStateId: number, goodId: number): number {
     const rate = this.findTariff(importerStateId, exporterStateId, goodId);
     return rate === "embargo" ? 0 : rate;
   }
 
-  /** The importer's most specific rule for the good from the exporter: state and good, state, good, then all; an embargo wins a tie */
+  /** The importer's most specific rule: state and good, state, good, all; an embargo wins a tie */
   private findTariff(importerStateId: number, exporterStateId: number, goodId: number): TariffRate {
     const importer = pack.states[importerStateId];
     if (!isForeign(importerStateId, exporterStateId) || !importer || importer.removed) return 0;
@@ -1015,7 +995,7 @@ export class TradeModule {
     return rate;
   }
 
-  /** Per-unit taxes on a good bought from a source market for a burg of another market: the source's sales tax and, from another state, the importer's tariff. Null under an embargo */
+  /** Per-unit sales tax and any tariff from a source market to another's burg; null if embargoed */
   getTradeTerms(): TradeTerms {
     const pairs: (TradePair | null)[][] = []; // by source then buyer's market id, filled on first use
 
@@ -1058,7 +1038,7 @@ export class TradeModule {
     };
   }
 
-  /** Every market as a source of the good for the burg, cheapest first, then those that cannot sell it. Debug only: it prunes nothing */
+  /** Every market as a source, cheapest first, then the rest. Debug only: it prunes nothing */
   listSources(burg: Burg, good: Good, terms: TradeTerms): SourceOption[] {
     const own = Markets.ofBurg(burg);
     if (!own) return [];
@@ -1131,7 +1111,7 @@ export class TradeModule {
     return rn(midPrice * (1 - this.getMarginRate(market)), 2);
   }
 
-  /** Units a person buys of each good a day: as buyers spread each need at base prices, plus what the trades making its products need */
+  /** Units a person buys of each good a day, plus what the trades making its products need */
   private collectDemand(goods: Good[]): number[] {
     const consumer: number[] = [];
     for (const category of DEMAND_PRIORITY) {

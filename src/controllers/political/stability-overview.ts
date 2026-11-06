@@ -49,7 +49,7 @@ function open(stateId: number): void {
   });
 }
 
-/** Each part of the state's stability, supporting or undermining it; the base is the same for all */
+/** Each part of the state's stability, for or against; the base is the same for all */
 function renderParts(stateId: number): string {
   const stability = Stability.get(stateId)!;
   const labels: Record<StabilityPart, string> = {
@@ -76,7 +76,7 @@ function renderParts(stateId: number): string {
   return `<div><h4>${t("Stability")}</h4>${rows}${total}</div>`;
 }
 
-/** Each province governed through its own seat, and the crown lands the capital governs, least stable first */
+/** Each province with its own seat, and the crown lands, least stable first */
 function renderDistricts(stateId: number): string {
   const state = pack.states[stateId];
   const districts = Stability.getDistricts(stateId);

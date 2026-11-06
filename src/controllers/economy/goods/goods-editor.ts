@@ -160,7 +160,7 @@ function open(goodId?: number): void {
   Dialog.closeAll("#goodsEditor, .stable");
 
   if (goodId !== undefined) {
-    for (const good of pack.goods) good.visible = good.i === goodId;
+    for (const good of options.map.goods) good.visible = good.i === goodId;
     if (filterState.search) {
       filterState = { search: "" };
       dialogState.set(dialogId, "filters", filterState);
@@ -186,15 +186,15 @@ function renderCoverage(good: Good): string {
   }).join(" ");
 }
 
-function getVisibleCount(goods = pack.goods): number {
+function getVisibleCount(goods = options.map.goods): number {
   return goods.reduce((count, good) => count + (good.visible ? 1 : 0), 0);
 }
 
 /** The goods selected for the Goods layer, or with none selected all goods */
 function toggleLegend(): void {
   const getItems = () => {
-    const selected = pack.goods.filter(good => good.visible);
-    return (selected.length ? selected : [...pack.goods])
+    const selected = options.map.goods.filter(good => good.visible);
+    return (selected.length ? selected : [...options.map.goods])
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((good): LegendItem => [good.i, good.color, good.name]);
   };
@@ -278,7 +278,7 @@ function renderDialog(): void {
 function getGoodsData(): Good[] {
   production = getProduction();
   stockData = getAllStockData();
-  const goods = pack.goods.filter(good => Tags.matches(filterState.search, good.name, good.tags));
+  const goods = options.map.goods.filter(good => Tags.matches(filterState.search, good.name, good.tags));
   return sortDataByColumns(dialogId, goods, columns);
 }
 
@@ -347,7 +347,7 @@ function renderGoodsPage(view: TableView<Good>) {
     .join("");
   body.innerHTML = lines || t("No goods available");
 
-  ensureEl("goodsNumber").innerHTML = String(pack.goods.length);
+  ensureEl("goodsNumber").innerHTML = String(options.map.goods.length);
   ensureEl("goodsProduced").innerHTML = String(rn(totalProduced));
   ensureEl("goodsStock").innerHTML = String(rn(totalStock));
   renderEditorPagination(ensureEl("goodsFooter"), view, goodsTable.goto);
@@ -460,7 +460,7 @@ type StockSource = { name: string; x: number; y: number; stock: number };
 /** Each good's stock left in the markets after the last run */
 function getAllStockData(): Record<number, { total: number; sources: StockSource[] }> {
   const result: Record<number, { total: number; sources: StockSource[] }> = {};
-  for (const good of pack.goods) result[good.i] = { total: 0, sources: [] };
+  for (const good of options.map.goods) result[good.i] = { total: 0, sources: [] };
 
   for (const market of pack.markets || []) {
     const center = pack.burgs[market.centerBurgId];
@@ -472,7 +472,7 @@ function getAllStockData(): Record<number, { total: number; sources: StockSource
     }
   }
 
-  for (const good of pack.goods) result[good.i].total = rn(result[good.i].total, 2);
+  for (const good of options.map.goods) result[good.i].total = rn(result[good.i].total, 2);
   return result;
 }
 
@@ -639,7 +639,7 @@ function downloadGoodsData() {
   const production = getProduction();
   const stock = getAllStockData();
 
-  const rows = pack.goods.map(good => {
+  const rows = options.map.goods.map(good => {
     const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean).join(";");
     const demandCoverage = formatDemandCoverage(good);
     const goodProduction = production[good.i] || { burg: 0, cell: 0 };
@@ -664,9 +664,9 @@ function downloadGoodsData() {
   Csv.download("Goods", CSV_COLUMNS, rows);
 }
 
-/** Update existing goods from a CSV in the export format; derived columns and the Model code are skipped */
+/** Update goods from a CSV in the export format; derived columns and the Model code are skipped */
 async function uploadGoodsCsv(text: string): Promise<void> {
-  const find = (id: number) => pack.goods.find(good => good.i === id);
+  const find = (id: number) => options.map.goods.find(good => good.i === id);
   const list = (cell: string) =>
     cell
       .split(";")
@@ -713,7 +713,7 @@ const formatDemandCoverage = (good: Good) =>
     .map(([category, share]) => `${category}:${share}`)
     .join(";");
 
-/** "food:1;luxury:0.5" as the demand coverage record; Goods.setProduction checks the categories and shares */
+/** "food:1;luxury:0.5" as the demand coverage record; Goods.setProduction checks it */
 function parseDemandCoverage(cell: string): Record<string, number> {
   const entries = cell
     .split(";")

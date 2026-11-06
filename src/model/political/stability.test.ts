@@ -93,7 +93,7 @@ describe("Military.getEquipped", () => {
       { name: "knights", type: "mounted", goods: [2] },
       { name: "fleet", type: "naval", goods: [4] }
     ] as any;
-    pack.goods = [
+    options.map.goods = [
       { i: 1, name: "Arms" },
       { i: 2, name: "Horses", demandCoverage: { military: 0.5 } },
       { i: 3, name: "Camels", demandCoverage: { utilities: 1 } }, // no military coverage: a unit each

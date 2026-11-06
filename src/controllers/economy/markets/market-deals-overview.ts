@@ -183,6 +183,7 @@ function renderDialog(): void {
 }
 
 function closeMarketDeals(): void {
+  activeMarketId = 0;
   Dialog.destroy(dialogId);
 }
 
@@ -200,12 +201,11 @@ export function getMarketDeals(deals: readonly Deal[], marketId: number): Deal[]
   return deals.filter(([, dealMarket, , kind]) => dealMarket === marketId && kind !== DEAL_KINDS.kept);
 }
 
-/** The market buys what a burg sells and sells what a burg buys */
 export function getMarketSide([, , , kind]: Deal): "buy" | "sell" {
   return kind === DEAL_KINDS.sale ? "buy" : "sell";
 }
 
-/** The market's income from the deal: what the burg paid less the taxes passed on, or minus what it paid the burg */
+/** The market's income: what the burg paid less taxes passed on, or minus what it got */
 export function getDealNet(deal: Deal): number {
   return rn(Trade.getMarketIncome(deal), 2);
 }
@@ -233,7 +233,7 @@ function getMarketDealRow(deal: Deal): MarketDealRow | null {
   };
 }
 
-/** price × units, less the sales tax and tariff a sale passes to the states and the center burg's margin: what the market keeps */
+/** price × units, less the sales tax and tariff passed to states and the center's margin */
 function getIncomeFormula(deal: Deal, income: number): string {
   const [, , , kind, units, price, tax, tariff] = deal;
   const margin = Trade.getMargin(deal);

@@ -1,6 +1,5 @@
 import type { AddedLabel } from "@/model/annotations/added-labels";
 import type { Measurer } from "@/model/annotations/measurers-generator";
-import type { Good } from "@/model/economy/goods-generator";
 import type { Market } from "@/model/economy/markets-generator";
 import type { Route } from "@/model/economy/routes-generator";
 import type { Deal } from "@/model/economy/trade";
@@ -73,7 +72,6 @@ export interface PackedGraph {
   markers: Marker[];
   ice: Ice[];
   provinces: Province[];
-  goods: Good[];
   markets: Market[];
   deals: Deal[];
   measurers: Measurer[];

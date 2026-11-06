@@ -133,7 +133,6 @@ function prepareMapData(viewOnly = false): string {
   const routes = JSON.stringify(pack.routes);
   const zones = JSON.stringify(pack.zones);
   const ice = JSON.stringify(pack.ice);
-  const goods = JSON.stringify(pack.goods);
   const markets = JSON.stringify(pack.markets || []);
   const deals = JSON.stringify(pack.deals || []);
   const labels = JSON.stringify(pack.addedLabels || []);
@@ -194,7 +193,7 @@ function prepareMapData(viewOnly = false): string {
     zones,
     ice,
     pack.cells.good,
-    goods,
+    "", // deprecated goods, now options.map.goods
     markets,
     deals,
     pack.cells.market,

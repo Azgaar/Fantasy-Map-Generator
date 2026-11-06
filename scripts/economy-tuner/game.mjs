@@ -71,7 +71,7 @@ export function checkOverrides(page, over) {
       const { Production } = await import(find("model/economy/production-generator.ts"));
       const { Prosperity } = await import(find("model/economy/prosperity.ts"));
       const { StateEconomy } = await import(find("model/economy/state-economy.ts"));
-      for (const g of pack.goods) {
+      for (const g of options.map.goods) {
         if (over.value?.[g.name] !== undefined) g.value = over.value[g.name];
         if (over.coverage?.[g.name]) g.demandCoverage = { ...over.coverage[g.name] };
       }

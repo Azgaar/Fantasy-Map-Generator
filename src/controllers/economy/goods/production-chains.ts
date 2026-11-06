@@ -123,7 +123,7 @@ const FLOW_OPACITY_MAX = 0.92;
 
 function open(): void {
   void Icons.retry("goods");
-  const goods = [...(pack.goods as Good[])];
+  const goods = [...(options.map.goods as Good[])];
   if (!goods.length) {
     tip(t("No goods available"), true, "warn");
     return;

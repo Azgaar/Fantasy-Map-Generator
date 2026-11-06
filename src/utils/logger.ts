@@ -1,6 +1,6 @@
 // Console output by level. Switch a level off from the console: `FMG.log.enabled.time = false`
 
-/** Diagnostics a user can turn on in the Advanced options. They may draw or record more, never change the map */
+/** Diagnostics from Advanced options: they may draw or record more, never change the map */
 export const DEBUG_MODES = ["economy", "temperature", "cloud"] as const;
 export type DebugMode = (typeof DEBUG_MODES)[number];
 

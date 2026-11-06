@@ -976,7 +976,7 @@ function goodNameGetter(i: string | number): string {
 }
 
 function goodColorsGetter(): Record<string, string> {
-  return Object.fromEntries((pack.goods || []).map(g => [g.name || EMPTY_NAME, g.color || NEUTRAL_COLOR]));
+  return Object.fromEntries(options.map.goods.map(g => [g.name || EMPTY_NAME, g.color || NEUTRAL_COLOR]));
 }
 
 function getCellProductionByGood(cellId: number, rural: Record<number, number>[]): Record<number, number> {

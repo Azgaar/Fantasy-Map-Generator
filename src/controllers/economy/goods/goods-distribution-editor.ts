@@ -762,7 +762,7 @@ function parseConditionStr(s: string): DistCondition | null {
   return cond;
 }
 
-/** The expression as an OR of ANDs, as the builder shows it: a nested OR multiplies out. Null if it holds anything else */
+/** The expression as the builder's OR of ANDs; a nested OR multiplies out. Null if anything else */
 export function parseExpression(expr: string): DistCondition[][] | null {
   if (!expr) return null;
 

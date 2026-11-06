@@ -1,5 +1,3 @@
-// What the economy dialogs and the economy columns of the political editors share
-
 import { sum } from "d3";
 import { PROSPERITY_LEVEL_LABELS } from "@/data/id-labels";
 import type { Good } from "@/model/economy/goods-generator";
@@ -13,8 +11,6 @@ import { Catalog, sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
-
-// Colors and tones
 
 export const ECONOMY_COLORS = {
   positive: "#1b7a43", // money gained: income, surpluses, exports; the .positive class in index.css
@@ -34,10 +30,9 @@ export const BADGE_COLORS = {
   need: ["#e4e4e4", "#555"]
 } as const;
 
-/** The tone class of an amount: positive for a gain, negative for a loss */
 export const tone = (value: number) => (value >= 0 ? "positive" : "negative");
 
-/** CSS background for a share of the taxes on a 0–100% track: the part spent, the part officials pocket grayed, the rest empty */
+/** CSS background on a 0–100% track: the part spent, officials' part grayed, the rest empty */
 export function budgetBackground(share: number, corruption: number, color = ECONOMY_COLORS.spent): string {
   const kept = (share * (100 - corruption)) / 100;
   const { pocketed, empty } = ECONOMY_COLORS;
@@ -74,15 +69,11 @@ export const EconomyTerms = {
     t("{{share}}% of {{owed}} collected", { share: rn((paid / owed) * 100), owed: formatPrice(owed) })
 };
 
-// The Economy wiki page, opened from the bottom of every economy dialog
-
 export const economyWikiButton = (id: string) =>
   /* html */ `<button id="${id}" type="button" data-tip="${t("Open the Economy wiki page")}" class="icon-info"></button>`;
 
 /** Call once the button is in the page */
 export const bindEconomyWiki = (id: string) => ensureEl(id).addEventListener("click", () => wiki("Economy"));
-
-// Prosperity as text, and its colors for charts of people by level
 
 const PROSPERITY_COLORS: Record<ProsperityLevel, string> = {
   Desolate: "#8a1f1f",
@@ -120,12 +111,7 @@ export function prosperityTip(prosperity: number): string {
   return t("Prosperity: {{level}}", { level: prosperityLevel(prosperity) });
 }
 
-// A deal's price broken down for the trade tables
-
-/**
- * A trade's price split per unit: goods' price, carriage, sales tax and tariff, with the trade's total value. The recorded price already holds carriage and, on an import, the taxes:
- * the goods' own price is what is left, and the formula adds them back up to the burg's income from the trade
- */
+/** A trade's price split per unit; the recorded price holds carriage and, on imports, the taxes */
 export function splitDealPrice({ units, price, tax, tariff = 0, carriage = 0 }: Transaction, isSale: boolean) {
   const perUnit = (total: number) => (units ? total / units : 0);
   const unitTax = perUnit(tax);
@@ -158,17 +144,16 @@ export const carriageDistance = (decimas: number) =>
     distance: getDistance(decimas * getDecima())
   });
 
-/** A tariff per unit: shown even when nothing is charged on an import, a dash where no tariff applies */
+/** Per-unit tariff: shown even at zero on an import, a dash where none applies */
 export const tariffCell = (tariff: number, isImport: boolean) =>
   isImport ? money(tariff, false) || formatPrice(0) : "—";
 
-/** A per-unit amount in the positive tone when it adds to the burg's money, the negative when it takes from it; blank when zero */
+/** A per-unit amount toned by whether it adds to the burg's money; blank when zero */
 export function money(amount: number, adds: boolean): string {
   if (!rn(amount, 2)) return "";
   return `<span class="${adds ? "positive" : "negative"}">${formatPrice(rn(amount, 2))}</span>`;
 }
 
-/** Short tips for the trade columns of the Economy Overview and Trade Details */
 export const tradeColumnTips = () => ({
   units: t("Units traded"),
   net: sentences(t("Net unit price"), t("Market price before carriage and taxes")),
@@ -178,7 +163,7 @@ export const tradeColumnTips = () => ({
   income: sentences(t("Burg total revenue"), t("Positive on a sale, negative on a purchase"))
 });
 
-/** Where a burg's trade with a market stands: the route it is carried along, whether it is an import, and the states its taxes go to */
+/** A burg's trade with a market: its route, whether it is an import, the states its taxes go to */
 export function getTradeContext(burgId: number, marketId: number, goodId: number, kind: DealKind) {
   const burg = pack.burgs[burgId];
   const market = Markets.get(marketId);
@@ -204,7 +189,6 @@ type TradeCell = ReturnType<typeof getTradeContext> & {
   formula: string;
 };
 
-/** A trade row's cell tips: the row's own figures with what they mean */
 export function tradeCellTips(cell: TradeCell) {
   const {
     good,
@@ -258,7 +242,7 @@ export function tradeCellTips(cell: TradeCell) {
   };
 }
 
-/** The good's unit for a count; unit names are English data, so only an English interface pluralizes them */
+/** The good's unit for a count; unit names are English data, so only English pluralizes them */
 export function unitFor(count: number, unit: string): string {
   if (!unit || count === 1 || Catalog.language !== "en") return unit;
   return `${unit}${/(s|x|z|ch|sh)$/.test(unit) ? "es" : "s"}`;
@@ -269,7 +253,7 @@ function countUnits(units: number, unit: string): string {
   return unit ? `${count} ${unitFor(count, unit)}` : String(count);
 }
 
-// Adjustments, a state's or burg's own income or costs a day: one collapsible row with their total, the lines beneath
+// Adjustments: one collapsible row with their total, the lines beneath
 
 type Adjustment = { name: string; value: number };
 
@@ -282,7 +266,7 @@ const ADJUSTMENTS_STYLE = /* css */ `<style>
 
 let expanded = false; // the last choice, kept for the next row shown
 
-/** Fills the container with the collapsible row; onChange gets the lines after every edit, a value being typed counting as 0 */
+/** Fills the container; onChange gets the lines after every edit, a value being typed as 0 */
 export function mountAdjustments(
   container: HTMLElement,
   initial: Adjustment[],

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { CULTURE_SETS } from "@/data/culture-sets";
 import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
 import { LANGUAGE_CODES } from "@/data/languages";
+import type { Good } from "@/model/economy/goods-generator";
 import { MAX_JITTER, SAMPLINGS } from "@/model/graph/lattice";
 import { Icons } from "@/model/icons";
 import type { LayerId } from "@/renderers/layers";
@@ -107,6 +108,20 @@ const customIcons = z.preprocess(value => {
   return valid;
 }, z.array(customIcon));
 
+const good = z.custom<Good>(value => z.looseObject({ i: z.number().int(), name: z.string() }).safeParse(value).success);
+
+/** a broken good is dropped on its own; absent in older maps, which keep goods outside the settings */
+const goods = z.preprocess(
+  value => (Array.isArray(value) ? value.filter(item => good.safeParse(item).success) : []),
+  z.array(good)
+);
+
+/** absent in older maps, which take the defaults */
+const eras = z.preprocess(
+  value => value ?? [],
+  z.array(z.strictObject({ level: z.number().int().min(1).max(100), name: z.string().min(1) }))
+);
+
 /** read at render time to build every feature outline */
 const coastlineSettings = z.strictObject({
   enabled: z.boolean(),
@@ -191,7 +206,9 @@ export const mapSchema = z.strictObject({
   labels: z.strictObject({ groups: z.array(labelGroup) }),
   military: z.strictObject({ units: z.array(militaryUnit) }),
   transports: z.array(transport),
+  eras,
   customIcons,
+  goods,
   coastline: coastlineSettings,
   relief: z.strictObject({ rules: z.array(reliefRule) }),
   viewOnly: z.boolean().optional()

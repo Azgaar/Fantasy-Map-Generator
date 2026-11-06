@@ -202,7 +202,7 @@ class MapRestorationModule {
     return x >= 0 && x <= options.map.graph.width && y >= 0 && y <= options.map.graph.height;
   }
 
-  /** the map plus a cell spacing around it: a route, and a journey along it, can end at a port just off the edge */
+  /** the map plus a cell spacing around it: a route can end at a port just off the edge */
   private routeBox(): [number, number, number, number] {
     const margin = grid.spacing;
     const { width, height } = options.map.graph;
@@ -965,7 +965,7 @@ class MapRestorationModule {
     });
   }
 
-  /** development follows its peopled cells, painted levels included; land the snapshot had no people on is generated, and a burg moved to empty land settles it */
+  /** Carries over peopled cells' levels; land once empty is generated, moved burgs settle */
   private restoreDevelopment(parent: PackedGraph, links: CellLinks) {
     Development.generate(); // of the restored cultures and land
     const from = parent.cells.development;
@@ -979,15 +979,14 @@ class MapRestorationModule {
     }
   }
 
-  /** goods and market anchors are kept, everything cell-bound in the economy is rebuilt */
+  /** market anchors are kept, everything cell-bound in the economy is rebuilt */
   private restoreEconomy(parent: PackedGraph) {
-    pack.goods = parent.goods;
     pack.markets = (parent.markets ?? []).filter(market => {
       const burg = pack.burgs[market.centerBurgId];
       return Boolean(burg?.i && !burg.removed);
     });
 
-    if (!pack.goods?.length) {
+    if (!options.map.goods.length) {
       Goods.generate();
       Markets.generate();
       Production.produce();

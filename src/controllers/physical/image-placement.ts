@@ -1,4 +1,4 @@
-// The Image Converter's placement step: fit, zoom and pan an uploaded image onto the map before converting it
+// The Image Converter's placement step: fit, zoom and pan the upload onto the map
 
 import { Dialog } from "@/ui/dialog/dialog";
 import { t } from "@/utils/i18n";

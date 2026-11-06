@@ -39,7 +39,7 @@
 
 # Coding Conventions
 
-- **Language**: TypeScript is mandatory for all code files.
+- **Language**: TypeScript is mandatory in `src/`; `scripts/` may use JavaScript.
 - **Typing**: Explicit TypeScript interfaces for all shared domain objects, `any` is prohibited.
 - **Linting and formatting**: Enforced via Biome (`biome.json`).
 - **Style**: Double quotes, no trailing commas, 120 line width, semicolons required.

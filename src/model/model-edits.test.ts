@@ -1126,11 +1126,11 @@ describe("Journeys", () => {
 
 describe("Goods and Markets", () => {
   beforeEach(() => {
+    options.map.goods = [
+      { i: 1, name: "Salt", tags: [], value: 2, unit: "", icon: "🧂", color: "#ffffff" },
+      { i: 2, name: "Fish", tags: [], value: 1, unit: "", icon: "🐟", color: "#0000ff" }
+    ] as never;
     vi.stubGlobal("pack", {
-      goods: [
-        { i: 1, name: "Salt", tags: [], value: 2, unit: "", icon: "🧂", color: "#ffffff" },
-        { i: 2, name: "Fish", tags: [], value: 1, unit: "", icon: "🐟", color: "#0000ff" }
-      ],
       markets: [{ i: 1, centerBurgId: 1, color: "#000000", goods: {} }]
     });
   });
@@ -1141,7 +1141,7 @@ describe("Goods and Markets", () => {
     Goods.setCarriage(1, 0.3);
     Goods.setTags(1, ["Food", " food", "trade"]);
     Goods.setProduction(1, { deposits: [1, 2.5], recipes: [{ 2: 1 }], multipliers: { cultureType: { Naval: 2 } } });
-    expect(pack.goods[0]).toMatchObject({
+    expect(options.map.goods[0]).toMatchObject({
       name: "Rock salt",
       value: 3,
       carriage: 0.3,
@@ -1157,12 +1157,12 @@ describe("Goods and Markets", () => {
     expect(() => Goods.setProduction(1, { deposits: [3, 1] })).toThrow("must not exceed");
     expect(() => Goods.setCarriage(1, -1)).toThrow("non-negative");
     Goods.setDevelopment(1, 18);
-    expect(pack.goods[0].development).toBe(18);
+    expect(options.map.goods[0].development).toBe(18);
     Goods.setDevelopment(1, 0);
-    expect("development" in pack.goods[0] && pack.goods[0].development !== undefined).toBe(false);
+    expect("development" in options.map.goods[0] && options.map.goods[0].development !== undefined).toBe(false);
     expect(() => Goods.setDevelopment(1, 101)).toThrow("0 to 100");
     Goods.setProduction(1, { recipes: null });
-    expect("recipes" in pack.goods[0]).toBe(false);
+    expect("recipes" in options.map.goods[0]).toBe(false);
   });
 
   it("renames markets, empty taking the burg's name again", () => {

@@ -1,5 +1,3 @@
-// Parts the state and province economy overviews share: their style, cards, sectors, living and goods lists
-
 import { Goods } from "@/model/economy/goods-generator";
 import { PROSPERITY_LEVELS } from "@/model/economy/prosperity";
 import type { GroupLiving } from "@/model/economy/state-economy";

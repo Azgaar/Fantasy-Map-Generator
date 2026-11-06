@@ -550,7 +550,7 @@ function militaryCustomize(): void {
   }
 
   function getGoodsTitle(goods?: number[]): string {
-    return goods?.length ? limitationTip(goods, pack.goods) : t("none");
+    return goods?.length ? limitationTip(goods, options.map.goods) : t("none");
   }
 
   function getGoodsBadges(goods?: number[]): string {
@@ -564,7 +564,7 @@ function militaryCustomize(): void {
     pickLimitation({
       title: t("Unit goods"),
       heading: t("Goods that equip the unit"),
-      items: pack.goods,
+      items: options.map.goods,
       allowed: el.dataset.value ? el.dataset.value.split(",").map(Number) : [],
       exact: true,
       badge: item =>

@@ -1,4 +1,4 @@
-// Armoria's COA format as FMG reads it: from pasted links and strings, Armoria pictures and downloaded files
+// Armoria's COA as FMG reads it: from pasted links and strings, pictures and downloaded files
 import { z } from "zod";
 import type { CustomIcon } from "@/model/icons";
 import type { HeraldicEmblem } from "@/types/emblems";
@@ -22,7 +22,7 @@ const schema = z.looseObject({
   inscriptions: z.array(z.looseObject({ text: z.string(), path: z.string() })).optional()
 });
 
-/** the COA of an Armoria edit link, API link or COA string; throws a message meant for the author */
+/** the COA of an Armoria edit link, API link or COA string; throws a message for the author */
 function parse(input: string): HeraldicEmblem {
   const text = migrateLink(input.trim());
   if (!/^https?:\/\//i.test(text)) return parseCoa(text);
@@ -55,7 +55,7 @@ function migrateLink(link: string): string {
   return link.replace(LEGACY_API, (_, query) => (query ? `${API}?` : `${API}/`));
 }
 
-/** the COA an Armoria picture renders: kept with it, or named by its API link; null for any other picture */
+/** the COA an Armoria picture renders: kept with it, or named by its API link; null for others */
 function pictureCoa(icon: CustomIcon | undefined): HeraldicEmblem | null {
   if (!icon) return null;
   if (icon.coa) return icon.coa;
@@ -68,7 +68,7 @@ function pictureCoa(icon: CustomIcon | undefined): HeraldicEmblem | null {
   }
 }
 
-/** the COA a file downloaded from Armoria keeps inside: SVG metadata, a PNG text chunk or a JPEG comment */
+/** the COA inside a file from Armoria: SVG metadata, a PNG text chunk or a JPEG comment */
 async function fileCoa(file: Blob): Promise<HeraldicEmblem | null> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   const text = isPng(bytes) ? pngText(bytes) : isJpeg(bytes) ? jpegComment(bytes) : svgMetadata(bytes);
@@ -92,7 +92,7 @@ function svgMetadata(bytes: Uint8Array): string | null {
   return svg.querySelector(`metadata.${FILE_KEYWORD}`)?.textContent ?? null;
 }
 
-// an uncompressed iTXt chunk: keyword, compression flag and method, language and translated keyword, text
+// an uncompressed iTXt chunk: keyword, compression flag and method, language, translation, text
 function pngText(bytes: Uint8Array): string | null {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   for (let at = 8; at + 12 <= bytes.length; ) {

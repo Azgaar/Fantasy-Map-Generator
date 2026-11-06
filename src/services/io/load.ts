@@ -363,7 +363,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
     pack.ice = data[39] ? JSON.parse(data[39]) : [];
     pack.cells.good = data[40] ? Uint16Array.from(data[40].split(","), Number) : new Uint16Array(pack.cells.i.length);
-    pack.goods = data[41] ? JSON.parse(data[41]) : [];
+    if (data[41]) options.map.goods = JSON.parse(data[41]); // older maps keep goods outside the settings
     pack.markets = data[42] ? JSON.parse(data[42]) : [];
     pack.deals = data[43] ? JSON.parse(data[43]) : [];
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);

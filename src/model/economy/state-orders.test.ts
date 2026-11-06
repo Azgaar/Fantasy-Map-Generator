@@ -42,7 +42,6 @@ beforeEach(() => {
     }
   } as State;
   globalThis.pack = {
-    goods: catalogue,
     cells: { i: [0], state: [1], pop: [0], burg: [1], province: [0], market: [1, 1] },
     burgs: [{ i: 0 }, capital],
     states: [{ i: 0, economy: noFinance() }, state],
@@ -50,6 +49,7 @@ beforeEach(() => {
     markets: [market],
     deals: []
   } as unknown as typeof pack;
+  options.map.goods = catalogue;
   Goods.sync();
   Markets.sync();
   // biome-ignore lint/complexity/useLiteralKeys: a new run's taxes

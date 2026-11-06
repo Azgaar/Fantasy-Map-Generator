@@ -285,7 +285,7 @@ migrates old relief ids (`relief-mount-3-bw`) into descriptors after the style m
 against the incoming map's styles, and renames `#icon-<name>` to `#burgs-atlas-<name>` (or `#burgs-<name>`
 for names that already carried their style) / `#ports-<name>` in
 style records (`styles-legacy.ts`, so presets are covered too), `good-<name>` to `goods-<name>` and
-`good-custom-<id>` to `custom-goods-<id>` in `pack.goods` and field 45.
+`good-custom-<id>` to `custom-goods-<id>` in the goods and field 45.
 
 Version 1.154.0 made every slot a bare icon reference. The 1.154.0 auto-update step migrates an older map,
 and startup (`adoptLegacyIconSlots` after restoring the options) migrates the unit types a browser keeps between maps:

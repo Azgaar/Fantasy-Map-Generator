@@ -8,7 +8,7 @@ The FMG economy is **one frozen cycle: a typical day**, not a simulation over ti
 
 | Element                                                           | Model                                                                                     | Persisted state                                    |
 | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| Goods: the catalogue and deposits on cells                        | `Goods` ([goods-generator.ts](../../src/model/economy/goods-generator.ts))                | `pack.goods`, `pack.cells.good`                    |
+| Goods: the catalogue and deposits on cells                        | `Goods` ([goods-generator.ts](../../src/model/economy/goods-generator.ts))                | `options.map.goods`, `pack.cells.good`             |
 | Markets: regions and their centers                                | `Markets` ([markets-generator.ts](../../src/model/economy/markets-generator.ts))          | `pack.markets`, `pack.cells.market`                |
 | Trading: prices, stock, carriage, taxes, margins and the deal log | `Trade` ([trade.ts](../../src/model/economy/trade.ts))                                    | `market.goods`, `market.rural`, `pack.deals`       |
 | Production, buying and the run                                    | `Production` ([production-generator.ts](../../src/model/economy/production-generator.ts)) | `burg.production`, `burg.product`, `burg.treasury` |
@@ -38,7 +38,7 @@ Generation runs `Goods.generate()` early, before population ranking, which reads
 - **Water deposits** join a market when production runs (`Markets.claimWaterDeposits`), as the flood skips water without goods. It keeps the land, so hand-painted cells survive.
 - **Removing** a good, a burg or a market prunes what names it from the run and reruns nothing, so the rest stays until the next run. The military roster outlives the map, so it keeps a removed good's id and units ignore it while the map lacks that good.
 - **Painting deposits** by hand only changes the cells.
-- **Apply** in the good editor and the State budget dialog reruns only with its footer checkbox ticked, on by default. The good editor re-places a good whose distribution or deposit count changed either way.
+- **Apply** in the good editor and the State budget dialog sets the changes, then opens the same dialog with Production ticked; cancelling leaves them for the next run. The good editor re-places a good whose distribution or deposit count changed either way.
 - **Locks** protect a state or burg, not its numbers: its production, prices and treasury are recomputed. A locked state keeps its taxes, license fee, budget, adjustments and tariffs, with rules on dropped states gone, and a locked burg its adjustments. Diplomacy is rebuilt for every state, so a locked state's tariffs may no longer match its relations.
 
 Loading a map does not rerun the economy, and a map saved before v1.157.0 counts its armies as fully kept until its next run (`migrateEconomyRun`). A submap or resample reruns it for the new land (`map-restoration.ts`): those burgs and markets are gone, and the user asked for a new map.
@@ -55,7 +55,7 @@ Each land cell has a technological **development** (`pack.cells.development`, se
 | Manufactured | no             | yes       | burg workers             |
 | Hybrid       | yes            | yes       | both                     |
 
-The catalogue (`GOODS_DATA`, [data/goods.ts](../../src/data/goods.ts)) is map data: users add, remove and edit goods per map. The fields that drive the economy:
+The catalogue (`GOODS_DATA`, [data/goods.ts](../../src/data/goods.ts)) is map data: users add, remove and edit goods. The `.map` and the browser keep them, and the next map starts from them (see [configuration](../architecture/configuration.md#the-definition-sets)). The fields that drive the economy:
 
 - **`value`**: the base price. Prices move within 0.02–5× of it. Values feed cell suitability, so **changing default values changes generated maps**.
 - **`biomeOutput`**: units per rural population point, by biome.
@@ -388,7 +388,7 @@ A constant at the edge of its range is a sign the range is too narrow.
 - **The surplus is real.** Markets buy every unit offered at a falling price, so much of what is made stays unsold. Spending, not supply, limits goods sold.
 - **No route, no trade.** The Routes layer explains most odd trade patterns.
 - **Economy regeneration redraws territories**, discarding hand-painted market cells; Production keeps them.
-- **Most edits apply on the next run.** Only the ticked checkbox in the State budget dialog and the good editor reruns at once.
+- **Most edits apply on the next run.** Apply in the State budget dialog and the good editor offers that run at once.
 - **A state's last orders can miss late taxes.** Taxes other states' final orders pay it after its turn count in what it collected, but stay in its treasury that day.
 - **Good values and deposits shape the map**, so retuning defaults can break seed-pinned tests.
 

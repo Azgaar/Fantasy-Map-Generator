@@ -266,7 +266,7 @@ function listGoods(produced: Iterable<[number | string, number]>, format = (_goo
     }));
 }
 
-/** The displayed goods the line's link at the hovered cell carries in a day, the most valuable first */
+/** The displayed goods the line's link at the cell carries a day, the most valuable first */
 function getTrafficTip(target: SVGElement, cellId: number): string | undefined {
   const cells = target.dataset.cells?.split(",").map(Number) ?? [];
   const at = Math.min(Math.max(0, cells.indexOf(cellId)), cells.length - 2);

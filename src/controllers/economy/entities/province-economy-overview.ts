@@ -177,7 +177,7 @@ function renderCards(provinceId: number, accounts: ProvinceAccounts): string {
   </div>`;
 }
 
-/** The province and its state: the taxes its people and foreigners at its markets paid, and the state orders its burgs received */
+/** Taxes paid by its people and by foreigners at its markets, and the state orders its burgs got */
 function renderState(provinceId: number, accounts: ProvinceAccounts): string {
   const { taxes, spent, pocketed } = accounts;
   const total = taxesOf(accounts);

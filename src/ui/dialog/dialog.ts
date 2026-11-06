@@ -149,7 +149,7 @@ class DialogManager {
     if (!options.persistent) element.remove();
   }
 
-  /** Close every open dialog whose content does not match `except`; minimized ones stay unless the map they describe is going, and messages on request */
+  /** Close dialogs not matching `except`; minimized stay unless the map goes, messages if asked */
   closeAll(except?: string, { keepMessages = false, minimized = false } = {}): void {
     for (const [id, { content, window: element }] of this.#dialogs) {
       if (except && content.matches(except)) continue;

@@ -67,7 +67,7 @@ the pipeline, since it depends only on name bases and the seeded random source.
 | Repack                   | `regraph`, `markupPack`, `defaultRuler`         | `pack.cells.*` (**invalidates every earlier `pack` cell index**), default ruler |
 | Rivers & biomes          | `rivers`, `biomes`, `featureGroups`             | `pack.rivers`, `cells.r/fl/conf`, `pack.biomes`, `cells.biome`                  |
 | Climate art              | `ice`                                           | `pack.ice`                                                                      |
-| Goods catalogue          | `goods`                                         | `pack.goods` (map-independent), `cells.good`                                    |
+| Goods catalogue          | `goods`                                         | `options.map.goods`, `cells.good`                                    |
 | Ranking & cultures       | `rankCells`, `cultures`, `culturesExpand`       | `cells.s`, `cells.pop`, `pack.cultures`, `cells.culture`                        |
 | Settlement & politics    | `burgs`, `states`, `routes`                     | `pack.burgs`, `pack.states`, `pack.routes`                                      |
 | Development              | `development`                                   | `cells.development` (see [development](../domain/development.md))               |
@@ -82,7 +82,7 @@ the pipeline, since it depends only on name bases and the seeded random source.
 Two constraints are easy to break when replicating a slice of this:
 
 - **Goods depend on nothing pack-side** but must exist before `markets`. `Goods.generate()` keeps an
-  existing catalogue (it restores the defaults only when `pack.goods` is empty) and places deposits
+  existing catalogue (it restores the defaults only when `options.map.goods` is empty) and places deposits
   on the cells; `Goods.regenerate()` reshuffles that placement with a fresh random seed.
 - **Economy depends on the whole settlement chain.** Production reads `state.culture`,
   `state.provinces`, `cells.biome`, `cells.pop`, `cells.market` and `pack.routes`. Anything that
@@ -111,7 +111,7 @@ flowchart TD
     biomes["biomes<br/><i>writes: pack.cells.biome</i>"]
     fg["featureGroups"]
     ice["ice"]
-    goods["goods<br/><i>writes: pack.goods</i>"]
+    goods["goods<br/><i>writes: cells.good</i>"]
     rank["rankCells<br/><i>writes: cells.s, cells.pop</i>"]
     cult["cultures + culturesExpand<br/><i>writes: pack.cultures, cells.culture</i>"]
     burgs["burgs<br/><i>writes: pack.burgs</i>"]
@@ -149,7 +149,7 @@ flowchart TD
     burgs -. "pack.burgs" .-> econ
     states -. "pack.states" .-> prov
     states -. "pack.states" .-> econ
-    goods -. "pack.goods" .-> econ
+    goods -. "options.map.goods" .-> econ
     routes -. "pack.routes" .-> econ
 ```
 

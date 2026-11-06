@@ -1,4 +1,4 @@
-// The Goods layer's traffic: routes as wide as the square root of the units of the shown goods they carried
+// Routes as wide as the square root of the units of the shown goods they carried
 import { Goods } from "@/model/economy/goods-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { TradeTraffic, type TrafficLink } from "@/model/economy/trade-traffic";
@@ -15,7 +15,7 @@ type TrafficLine = Box & { d: string; share: number; cells: number[] }; // share
 let lines: TrafficLine[] = [];
 let color = ""; // of the one shown good, else the style's
 
-/** Each route stretch carrying the shown goods, a link apart; a link shared by routes is drawn once */
+/** Each route stretch carrying the shown goods, a link apart; a shared link is drawn once */
 export function buildTraffic(shown: Set<number>): void {
   const units = new Map<TrafficLink, number>();
   for (const link of TradeTraffic.getLinks()) {

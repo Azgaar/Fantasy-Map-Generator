@@ -52,6 +52,7 @@ describe("options schema", () => {
     const map = defaults();
     expect(map.military.units.length).toBeGreaterThan(0);
     expect(map.transports.length).toBeGreaterThan(0);
+    expect(map.eras.length).toBeGreaterThan(0);
     expect(map.burgs.groups.length).toBeGreaterThan(0);
     expect(map.labels.groups.length).toBeGreaterThan(0);
   });

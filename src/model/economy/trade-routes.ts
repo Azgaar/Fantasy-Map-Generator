@@ -8,7 +8,7 @@ const LANDING_SPACINGS = 40; // loading anywhere else a road meets a river route
 /** A search over the route network; states are `cell * 2`, plus 1 when arriving by water */
 type RouteSearch = { cost: Float64Array; prevCell: Int32Array; prevState: Int32Array };
 
-/** The route network as flat arrays: each cell's links from `offsets[cell]`, with their travel cost and mode */
+/** The network as flat arrays: each cell's links from `offsets[cell]`, with their cost and mode */
 type RouteGraph = {
   offsets: Int32Array;
   targets: Int32Array;
@@ -19,9 +19,9 @@ type RouteGraph = {
   landingCost: number;
 };
 
-/** Travel over the route network, shared by trade prices and the trade animation: goods pay for the path they are drawn along */
+/** Travel over routes, for prices and the animation: goods pay for the path they are drawn along */
 export class TradeRoutesModule {
-  /** Cheapest travel from a cell over routes; with an end cell, stops there and returns its state, otherwise -1 */
+  /** Cheapest travel from a cell; with an end cell, stops there and returns its state, else -1 */
   search(startCell: number, endCell = -1, graph = this.buildGraph(), search = this.createSearch()) {
     const { offsets, targets, costs, water, isPort, switchCost, landingCost } = graph;
     const { cost, prevCell, prevState } = search;
@@ -57,7 +57,7 @@ export class TradeRoutesModule {
     return { search, endState: -1 };
   }
 
-  /** Travel cost from each market's center to every burg, by market then burg id; Infinity with no route */
+  /** Cost from each market's center to every burg, by market then burg id; Infinity with no route */
   measure(): Float32Array[] {
     const graph = this.buildGraph();
     const search = this.createSearch();

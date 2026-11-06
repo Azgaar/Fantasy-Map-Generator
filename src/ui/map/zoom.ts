@@ -115,7 +115,7 @@ function applyZoomFontSize(): void {
 const CONTROL_CONTAINERS = "#ruler, #debug, #regimentBase, #journeyOverlay";
 let controlsRule: CSSStyleRule | null = null;
 
-/** Control handles keep their screen size: `--px` is a screen pixel in map units. A rule restyles only the controls */
+/** Handles keep screen size: `--px` is a screen pixel in map units; a rule restyles only them */
 function applyControlsScale(): void {
   if (!controlsRule) {
     const sheet = document.head.appendChild(document.createElement("style")).sheet!;

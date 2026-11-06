@@ -64,7 +64,7 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
   const radius = Math.max(rn(size + 1 / bounds.scale, 2), 2);
   const iconSize = Math.max(rn(baseSize + 1 / bounds.scale, 2), 2);
   const strokeWidth = rn(radius / 8, 2);
-  // a pin: an upside-down triangle with its tip on the center burg and the icon in its incircle of `radius`
+  // a pin: an upside-down triangle, tip on the center burg, the icon in its incircle of `radius`
   const halfWidth = radius * Math.sqrt(3);
   const pinHeight = radius * 3;
   const href = escapeHtml(Icons.href(icon));
