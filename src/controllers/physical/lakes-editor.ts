@@ -7,7 +7,6 @@ import { Styles } from "@/model/styles/styles";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit, getHeight } from "@/model/units";
 import { Layers } from "@/renderers/layers";
-import { isGroupNameFree } from "@/renderers/style-groups";
 import { speak } from "@/services/speech";
 import { Dialog } from "@/ui/dialog/dialog";
 import { noteButton } from "@/ui/dialog/dialog-helpers";
@@ -226,7 +225,7 @@ function createNewGroup(this: HTMLInputElement): void {
     .replace(/ /g, "_")
     .replace(/[^\w\s]/gi, "");
 
-  if (!isGroupNameFree(styles.lakes.groups, group)) {
+  if (Object.hasOwn(styles.lakes.groups, group)) {
     tip(t("Element with this name already exists. Provide a unique name"), false, "error");
     return;
   }

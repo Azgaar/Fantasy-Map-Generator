@@ -1,24 +1,14 @@
+import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import { Options } from "@/model/options/options-model";
 import { Layers } from "@/renderers/layers";
-import { TradeAnimation } from "@/renderers/trade-animation";
 import { Dialog } from "@/ui/dialog/dialog";
-
+import { bindEconomyWiki, economyWikiButton } from "@/ui/economy-view";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 
-const DEFAULTS = TradeAnimation.getDefaultOptions();
+const DEFAULTS = DEFAULT_TRADE_ANIMATION;
 const INPUTS = [
   {
-    type: "select",
-    id: "tradeAnimDisplayType",
-    label: t("Trade type"),
-    tip: t("Which trade types to display: local (burg-market), global (market-market), or both"),
-    key: "displayType",
-    default: DEFAULTS.displayType,
-    selectOptions: ["local", "global", "both"]
-  },
-  {
-    type: "slider",
     id: "tradeAnimConcurrent",
     label: t("Animations"),
     tip: t(
@@ -31,7 +21,6 @@ const INPUTS = [
     default: DEFAULTS.concurrent
   },
   {
-    type: "slider",
     id: "tradeAnimDuration",
     label: t("Travel duration"),
     tip: t("Milliseconds per map unit travelled. Lower = faster animations"),
@@ -42,7 +31,6 @@ const INPUTS = [
     default: DEFAULTS.duration
   },
   {
-    type: "slider",
     id: "tradeAnimLandDurationModifier",
     label: t("Land slowdown"),
     tip: t("Multiplier applied to travel duration on land segments. Higher = slower land animations"),
@@ -53,7 +41,6 @@ const INPUTS = [
     default: DEFAULTS.landDurationModifier
   },
   {
-    type: "slider",
     id: "tradeAnimSegmentChangePause",
     label: t("Segment pause"),
     tip: t("Pause between land and water legs of a trip, in milliseconds. Higher = longer pause"),
@@ -64,7 +51,6 @@ const INPUTS = [
     default: DEFAULTS.segmentChangePause
   },
   {
-    type: "slider",
     id: "tradeAnimMarkerSize",
     label: t("Marker size"),
     tip: t("Marker icon size in map units. Wagons render at half this size. Higher = bigger icons"),
@@ -83,8 +69,10 @@ function open(): void {
 
   Dialog.open("tradeAnimationEditor", {
     title: t("Trade Animation Editor"),
-    position: { my: "right top", at: "right-10 top+10", of: "svg" }
+    position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    footer: economyWikiButton("tradeAnimationWiki")
   });
+  bindEconomyWiki("tradeAnimationWiki");
 }
 
 function renderDialog(): void {
@@ -93,7 +81,7 @@ function renderDialog(): void {
 
   for (const def of INPUTS) {
     const key = def.key as keyof typeof options.app.trade.animation;
-    const input = ensureEl<HTMLInputElement | HTMLSelectElement>(def.id);
+    const input = ensureEl<HTMLInputElement>(def.id);
     const resetBtn = ensureEl(`${def.id}Reset`);
 
     const current = options.app.trade.animation[key] ?? def.default;
@@ -102,9 +90,7 @@ function renderDialog(): void {
     input.addEventListener("input", e => {
       // slider-input re-dispatches a bubbling event from its inner controls; ignore those duplicates
       if (e.target !== e.currentTarget) return;
-      const value =
-        def.type === "slider" ? (input as HTMLInputElement).valueAsNumber : (input as HTMLSelectElement).value;
-      Options.set(o => (o.app.trade.animation = { ...o.app.trade.animation, [key]: value }));
+      Options.set(o => (o.app.trade.animation = { ...o.app.trade.animation, [key]: input.valueAsNumber }));
       Layers.draw("trade");
     });
 
@@ -117,16 +103,12 @@ function renderDialog(): void {
 }
 
 function buildDialogHTML(): string {
-  const rows = INPUTS.map(({ id, label, type, selectOptions, tip, min, max, step, key, default: def }) => {
+  const rows = INPUTS.map(({ id, label, tip, min, max, step, key, default: def }) => {
     const current = options.app.trade.animation[key as keyof typeof options.app.trade.animation] ?? def;
-    const input =
-      type === "select" && selectOptions
-        ? `<select id="${id}" style="width: 100%; font-size: smaller;">${selectOptions.map((opt: string) => `<option value="${opt}" ${opt === current ? "selected" : ""}>${opt}</option>`).join("")}</select>`
-        : `<slider-input id="${id}" min="${min}" max="${max}" step="${step}" value="${current}"></slider-input>`;
     return /* html */ `
       <tr data-tip="${tip}">
         <td style="padding: 0">${label}</td>
-        <td style="padding: 0">${input}</td>
+        <td style="padding: 0"><slider-input id="${id}" min="${min}" max="${max}" step="${step}" value="${current}"></slider-input></td>
         <td style="padding: 0">
           <button id="${id}Reset" data-tip="${t("Reset to default")}"
             style="font-size:.85em; padding:1px 5px; margin-left: 0.3em">↺</button>

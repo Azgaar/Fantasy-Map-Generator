@@ -1,5 +1,7 @@
 import { STYLE_PRESET_LABELS } from "@/data/id-labels";
 import { Styles } from "@/model/styles/styles";
+import { getHeightUnitRatio, heightToMeters } from "@/model/units";
+import { getContourInterval } from "@/renderers/heightmap/heightmap-contours";
 import { isLegacyPreset, isStoreStyles, normalizeStyles, presetFromLegacy } from "@/services/io/styles-legacy";
 import { VERSION } from "@/services/versioning";
 import type { StylesData } from "@/types/styles";
@@ -48,6 +50,28 @@ function displayName(name: string): string {
 const isPreset = (json: unknown): boolean =>
   typeof json === "object" && json !== null && (isLegacyPreset(json) || isStoreStyles(json));
 
+/** Presets before v1.157.0, which have no river groups, space contours in generator heights */
+function upgradeContours<T>(preset: T): T {
+  type Bag = { options?: { contours?: { interval?: number } } };
+  const heightmap = (preset as { heightmap?: { groups?: Record<string, Bag> } }).heightmap?.groups;
+  const respace = (group: Bag | undefined, heights: number, deepest: number) => {
+    const contours = group?.options?.contours;
+    if (!contours?.interval || contours.interval > 20) return;
+    const count = Math.ceil(heights / contours.interval) - 1;
+    contours.interval = getContourInterval(count, Math.abs(heightToMeters(deepest)) * getHeightUnitRatio());
+  };
+  respace(heightmap?.landHeights, 80, 100);
+  respace(heightmap?.oceanHeights, 20, 0);
+  return preset;
+}
+
+/** Normalize a store-shaped preset, whichever release saved it */
+function upgradeStored<T>(preset: T): T {
+  const old = !(preset as { rivers?: { groups?: unknown } }).rivers?.groups;
+  const normalized = normalizeStyles(preset);
+  return old ? upgradeContours(normalized) : normalized;
+}
+
 /** A preset record in store shape, whichever format it was saved in; undefined for what is not a preset */
 function parse(json: unknown): StylesData | undefined {
   if (!isPreset(json)) return undefined;
@@ -55,7 +79,7 @@ function parse(json: unknown): StylesData | undefined {
     return presetFromLegacy(json as Record<string, Record<string, unknown>>, { onUnknown: "skip" });
   // a preset file saved before v1.154.0 is store-shaped but in an older layout; normalize a copy, the
   // default preset is the shared record
-  return Styles.parse(normalizeStyles(structuredClone(json)));
+  return Styles.parse(upgradeStored(structuredClone(json)));
 }
 
 async function fetchSystem(name: string): Promise<unknown> {
@@ -79,7 +103,7 @@ async function load(name: string): Promise<{ name: string; styles: unknown; erro
   }
 
   const stored = localStorage.getItem(name);
-  if (stored && isValidJSON(stored)) return { name, styles: normalizeStyles(JSON.parse(stored)) };
+  if (stored && isValidJSON(stored)) return { name, styles: upgradeStored(JSON.parse(stored)) };
 
   const error = stored
     ? t("Custom style {{- name}} stored in localStorage is not valid", { name })

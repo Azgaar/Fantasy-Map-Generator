@@ -4,6 +4,7 @@ import { ReliefPoolEditor } from "@/controllers/physical/relief/relief-pool-edit
 import { fitReliefArt, poolPreviewHtml } from "@/controllers/physical/relief/relief-previews";
 import type { Biome } from "@/model/physical/biomes-generator";
 import { Biomes } from "@/model/physical/biomes-generator";
+import { States } from "@/model/political/states-generator";
 import { Population } from "@/model/society/population-generator";
 import { getArea, getAreaUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
@@ -34,7 +35,7 @@ import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
 
 const dialogId = "biomesEditor" as const;
-const CSV_COLUMNS = ["Id", "Biome", "Color", "Habitability", "Cells", "Area", "Population"];
+const CSV_COLUMNS = ["Id", "Biome", "Color", "Habitability", "Development", "Cells", "Area", "Population"];
 const LEGEND_NAME = "Biomes"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let currentBiomeStatistics: BiomeStatistics[] = [];
@@ -52,6 +53,14 @@ const columns: EditorColumn<Biome>[] = [
     label: t("Habitability"),
     width: "6.5em",
     sortBy: biome => biome.habitability
+  },
+  {
+    key: "development",
+    label: t("Development"),
+    width: "7em",
+    hidden: true,
+    tip: t("What the biome adds to its people's development, in points"),
+    sortBy: biome => biome.development ?? 0
   },
   {
     key: "relief",
@@ -89,6 +98,7 @@ const columns: EditorColumn<Biome>[] = [
 ];
 
 const biomesTable = initEditorTable<Biome>({
+  dialogId,
   getData: () =>
     sortDataByColumns(
       dialogId,
@@ -196,6 +206,7 @@ function renderDialog(): void {
     const cl = el.classList;
     if (cl.contains("biomeName")) biomeChangeName(el);
     else if (cl.contains("biomeHabitability")) biomeChangeHabitability(el);
+    else if (cl.contains("biomeDevelopment")) biomeChangeDevelopment(el);
   });
 }
 
@@ -269,6 +280,9 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
         <div data-col="habitability" class="hide">
           <span data-tip="${t("Biome habitability percent")}">%</span>
           <input data-tip="${sentences(t("Biome habitability percent"), t("Click and type to change"))}" type="number" min="0" max="9999" class="biomeHabitability" value=${habitability} />
+        </div>
+        <div data-col="development" class="hide">
+          <input data-tip="${sentences(t("What the biome adds to its people's development, in points, negative for harsh lands"), t("Regenerate development in the Development Editor to apply"))}" type="number" min="-50" max="50" step="1" class="biomeDevelopment" value=${biome.development ?? 0} />
         </div>
         <div data-col="relief" class="hide">${reliefPoolHtml(biome)}</div>
         <div data-col="cells" class="hide"><span data-tip="${t("Number of cells")}" class="icon-check-empty"></span><span data-tip="${t("Number of cells")}" class="biomeCells">${cells}</span></div>
@@ -480,7 +494,16 @@ function downloadBiomesData(): void {
     .map(biome => {
       const { cells, area, rural, urban } = statistics[biome.i];
       const population = rn(rural * scale + urban * scale * urbanization.rate);
-      return [biome.i, biome.name, biome.color, `${biome.habitability}%`, cells, getArea(area), population];
+      return [
+        biome.i,
+        biome.name,
+        biome.color,
+        `${biome.habitability}%`,
+        biome.development ?? 0,
+        cells,
+        getArea(area),
+        population
+      ];
     });
   Csv.download(
     "Biomes",
@@ -520,12 +543,21 @@ function restoreInitialBiomes(): void {
 }
 
 function closeBiomesEditor(): void {
+  currentBiomeStatistics = [];
   Dialog.destroy("biomesEditor");
 }
 
 function regeneratePopulation(): void {
   Population.regenerate();
+  States.collectStatistics();
   Layers.draw("population", "goods");
+}
+
+function biomeChangeDevelopment(el: HTMLInputElement): void {
+  const biome = pack.biomes[+el.closest<HTMLElement>(".biomes")!.dataset.id!];
+  const points = Math.round(+el.value);
+  if (points >= -50 && points <= 50) Biomes.setDevelopment(biome.i, points);
+  el.value = String(biome.development ?? 0); // an invalid value goes back
 }
 
 /** Update existing biomes from a CSV in the export format */
@@ -544,6 +576,7 @@ async function uploadBiomesCsv(text: string): Promise<void> {
         value => Biomes.setHabitability(biome.i, Number.parseFloat(value)),
         `${biome.habitability}%`
       );
+      row.apply("Development", value => Biomes.setDevelopment(biome.i, +value), biome.development ?? 0);
     }
   );
   if (!updated) return;

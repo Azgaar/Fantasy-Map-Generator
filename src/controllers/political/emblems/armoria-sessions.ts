@@ -1,12 +1,12 @@
 import { z } from "zod";
+import { Armoria } from "@/model/political/armoria";
 import type { HeraldicEmblem } from "@/types/emblems";
-import { ARMORIA_GUI, coaSchema } from "./armoria";
 
 const updateSchema = z.object({
   type: z.literal("armoria:coa"),
   version: z.literal(1),
   session: z.string(),
-  coa: coaSchema,
+  coa: Armoria.schema,
   svg: z.string()
 });
 
@@ -20,7 +20,7 @@ interface ArmoriaUpdate<T> {
 export class ArmoriaSessions<T> {
   private sessions = new Map<string, { target: T; key: string; map: object; origin: string }>();
 
-  start(target: T, key: string, map: object, origin = new URL(ARMORIA_GUI).origin): string {
+  start(target: T, key: string, map: object, origin = new URL(Armoria.GUI).origin): string {
     for (const [token, live] of this.sessions) if (live.key === key) this.sessions.delete(token);
     const token = crypto.randomUUID();
     this.sessions.set(token, { target, key, map, origin });

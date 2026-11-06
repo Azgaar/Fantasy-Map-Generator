@@ -8,9 +8,11 @@ The expected way to edit an emblem is [Armoria](https://azgaar.github.io/Armoria
 
 ## Work with Armoria
 
-_Edit in Armoria_ opens the current COA in Armoria. A linked Armoria picture opens its original COA. When Armoria was opened from the Generator, every change you make there, including undo, redo and recoloured tinctures, shows on that emblem a moment later. If the art is not available in the Generator, Armoria's picture is stored as one Custom icon, so it still shows offline.
+_Edit in Armoria_ opens the current COA in Armoria. A linked Armoria picture opens its original COA. When Armoria was opened from the Generator, every change you make there, including undo, redo and recoloured tinctures, shows on that emblem a moment later. If the art is not available in the Generator, Armoria's picture is stored as one Custom icon, so it still shows offline; it keeps its COA, so _Edit in Armoria_ opens it again, and it is removed once no emblem shows it.
 
-The link button in the Emblems Editor opens a field holding the emblem's COA string. Edit it by hand, or replace it with an Armoria _Copy edit link_, _Copy API link_ or _Copy COA string_, and press _Apply_; the emblem keeps its size and place on the map. When the Generator knows all of its art, the COA stays heraldic and can be edited again. If it contains art the Generator lacks, it links Armoria's SVG render as a picture. The field takes only these Armoria formats; for any other image use the picture buttons.
+The link button in the Emblems Editor opens a field holding the emblem's COA string. Edit it by hand, or replace it with an Armoria _Copy edit link_, _Copy API link_ or _Copy COA string_, and press _Apply_; the emblem keeps its size and place on the map. When the Generator knows all of its art, the COA stays heraldic and can be edited again. If it contains art the Generator lacks, it is refused; use _Edit in Armoria_ to bring such art in as a picture. The field takes only these Armoria formats; for any other image use the picture buttons.
+
+An SVG, PNG or JPEG image downloaded from Armoria keeps its COA inside the file. Upload it with either picture button and the Generator draws the emblem from that COA instead of storing the image, so it stays small and editable. Images downloaded from Armoria before this, and its gallery downloads holding many emblems, carry no COA and are stored as pictures.
 
 ## Use a picture
 

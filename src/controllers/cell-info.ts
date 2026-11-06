@@ -111,10 +111,11 @@ function updateFields(point: Point, cellId: number, gridCellId: number): void {
   set("infoBurg", getNamedInfo(pack.burgs, cells.burg[cellId], "name"));
   set("infoFeature", featureId ? `${feature.subtype || feature.type} (${featureId})` : "n/a");
   set("infoBiome", pack.biomes[cells.biome[cellId]].name);
-  set("infoGood", getNamedInfo(pack.goods, cells.good[cellId], "name"));
+  const good = Goods.get(cells.good[cellId]);
+  set("infoGood", good ? `${good.name} (${good.i})` : "no");
   set("infoMarket", getMarketInfo(cells.market?.[cellId]));
 
-  set("infoCellProduction", listProduction(Production.getCellProduction(cellId, Goods.getBiomesProduction())));
+  set("infoCellProduction", listProduction(Production.getCellProduction(cellId)));
 
   const burgId = cells.burg[cellId];
   set("infoBurgProduction", burgId ? listProduction(Production.getBurgProduction(pack.burgs[burgId])) : "n/a");

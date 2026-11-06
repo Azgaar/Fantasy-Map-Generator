@@ -23,6 +23,7 @@ Terms every `de.json` string uses the same way. Rules for all catalogs are in
 | state                        | Staat                           |                                          |
 | province                     | Provinz                         |                                          |
 | culture                      | Kultur                          |                                          |
+| development / era            | Entwicklung / Epoche            | a people's technology level, 0–100       |
 | religion                     | Religion                        |                                          |
 | namesbase                    | Namensbasis (pl. Namensbasen)   |                                          |
 | heightmap                    | Höhenkarte                      |                                          |
@@ -78,6 +79,18 @@ Terms every `de.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                 | Geschäft / Handel               |
 | treasury                     | Staatskasse                     |
 | sales tax / poll tax         | Umsatzsteuer / Kopfsteuer       |
+| prosperity / living standards | Wohlergehen / Lebensstandard    |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | verelendet / mittellos / arm / bescheiden / auskömmlich / blühend / wohlhabend / prachtvoll / glanzvoll / unvergleichlich |
+| consumption / need / want    | Verbrauch / Bedürfnis (nie „Bedarf“) / Wunsch |
+| product (economy) / townspeople / rural people | Produkt / Städter / Landvolk    |
+| exports / imports / trade balance | Ausfuhr / Einfuhr / Handelsbilanz |
+| inequality / tax burden      | Ungleichheit / Steuerlast       |
+| sector: rural / manufacturing / trade | Land / Handwerk / Handel        |
+| economy type: agrarian / artisan / mercantile | agrarisch / handwerklich / merkantil |
+| tariff / embargo             | Zoll / Embargo                  |
+| carriage (freight) / decima  | Fracht / Dezima                 |
+| market license / margin      | Marktlizenz / Marktspanne       |
+| upkeep / corruption          | Unterhalt / Korruption          |
 
 ## Interface
 

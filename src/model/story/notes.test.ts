@@ -24,9 +24,9 @@ beforeEach(() => {
     markets: [],
     addedLabels: [],
     religions: [],
-    biomes: [],
-    goods: []
+    biomes: []
   } as unknown as typeof pack;
+  options.map.goods = [];
 });
 
 describe("note access", () => {

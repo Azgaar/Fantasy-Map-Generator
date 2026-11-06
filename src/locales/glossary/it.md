@@ -23,6 +23,7 @@ Terms every `it.json` string uses the same way. Rules for all catalogs are in
 | state                           | stato                          | capitalized “Stato” for the polity        |
 | province                        | provincia                      |                                           |
 | culture                         | cultura                        |                                           |
+| development / era               | sviluppo / epoca               | a people's technology level, 0–100        |
 | religion                        | religione                      |                                           |
 | namesbase                       | base di nomi (pl. basi di nomi) |                                          |
 | heightmap                       | mappa delle altezze            | the layer is “Altezze”                    |
@@ -75,6 +76,14 @@ Terms every `it.json` string uses the same way. Rules for all catalogs are in
 | iceberg / glacier        | iceberg / ghiacciaio        |                                   |
 | preset                   | preset                      | kept as the loanword              |
 | default                  | predefinito                 |                                   |
+| prosperity / living standards | prosperità / tenore di vita |                                   |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | misero / indigente / povero / modesto / benestante / prospero / agiato / opulento / splendido / impareggiabile |  |
+| consumption / need / want | consumo / bisogno / desiderio |                                   |
+| product (economy) / townspeople / rural people | prodotto / cittadini / contadini |                                   |
+| exports / imports / trade balance | esportazioni / importazioni / bilancia commerciale |                                   |
+| inequality / tax burden  | disuguaglianza / pressione fiscale |                                   |
+| sector: rural / manufacturing / trade | campagna / mestieri / commercio |                                   |
+| economy type: agrarian / artisan / mercantile | agraria / artigiana / mercantile |                                   |
 
 ## Interface
 

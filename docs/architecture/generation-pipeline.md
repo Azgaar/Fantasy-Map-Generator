@@ -9,12 +9,12 @@ on every earlier step that last wrote a global it reads.
 That order used to live as a hardcoded call list in `generate()`, retyped by hand at every site that
 rebuilds part of a map. It is now declared once, as data:
 
-| File                                                                                                          | Role                                                                                               |
-| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| [`src/model/pipeline.ts`](../../src/model/pipeline.ts)                                                        | The runner. Generic, knows nothing about generators, `pack` or `grid`                              |
-| [`src/model/graph/grid-generator.ts`](../../src/model/graph/grid-generator.ts)                                            | The `Grid` module and its siblings `Temperature`, `Precipitation` and `Pack` (see below)           |
-| [`src/model/generation-pipeline.ts`](../../src/model/generation-pipeline.ts)                                  | The configuration: `GenerationPipeline` and `ErasePipeline` step lists                             |
-| [`src/app/lifecycle.ts`](../../src/app/lifecycle.ts) → `generate()`                                           | Drives `GenerationPipeline` and owns everything around it (seed, sizing, statistics, error dialog) |
+| File                                                                                                                            | Role                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| [`src/model/pipeline.ts`](../../src/model/pipeline.ts)                                                                          | The runner. Generic, knows nothing about generators, `pack` or `grid`                              |
+| [`src/model/graph/grid-generator.ts`](../../src/model/graph/grid-generator.ts)                                                  | The `Grid` module and its siblings `Temperature`, `Precipitation` and `Pack` (see below)           |
+| [`src/model/generation-pipeline.ts`](../../src/model/generation-pipeline.ts)                                                    | The configuration: `GenerationPipeline` and `ErasePipeline` step lists                             |
+| [`src/app/lifecycle.ts`](../../src/app/lifecycle.ts) → `generate()`                                                             | Drives `GenerationPipeline` and owns everything around it (seed, sizing, statistics, error dialog) |
 | [`src/controllers/physical/heightmap-editor.ts`](../../src/controllers/physical/heightmap-editor.ts) → `regenerateErasedData()` | Drives `ErasePipeline`                                                                             |
 
 ## The runner
@@ -67,10 +67,12 @@ the pipeline, since it depends only on name bases and the seeded random source.
 | Repack                   | `regraph`, `markupPack`, `defaultRuler`         | `pack.cells.*` (**invalidates every earlier `pack` cell index**), default ruler |
 | Rivers & biomes          | `rivers`, `biomes`, `featureGroups`             | `pack.rivers`, `cells.r/fl/conf`, `pack.biomes`, `cells.biome`                  |
 | Climate art              | `ice`                                           | `pack.ice`                                                                      |
-| Goods catalogue          | `goods`                                         | `pack.goods` (map-independent), `cells.good`                                    |
+| Goods catalogue          | `goods`                                         | `options.map.goods`, `cells.good`                                    |
 | Ranking & cultures       | `rankCells`, `cultures`, `culturesExpand`       | `cells.s`, `cells.pop`, `pack.cultures`, `cells.culture`                        |
-| Settlement & politics    | `burgs`, `states`, `routes`, `religions`        | `pack.burgs`, `pack.states`, `pack.routes`, `pack.religions`                    |
-| Specification            | `burgsSpecify`, `stateStatistics`, `stateForms` | burg types, state stats and forms                                               |
+| Settlement & politics    | `burgs`, `states`, `routes`                     | `pack.burgs`, `pack.states`, `pack.routes`                                      |
+| Development              | `development`                                   | `cells.development` (see [development](../domain/development.md))               |
+| Religions                | `religions`                                     | `pack.religions`                                                                |
+| Specification            | `burgsSpecify`, `stateStatistics`, `stateForms` | burg types, state stats and forms (tribal titles read `cells.development`)      |
 | Provinces                | `provinces`, `provincePoles`                    | `pack.provinces`                                                                |
 | Naming polish            | `riversSpecify`, `featureNames`                 | river and feature (island, ocean, lake) names                                   |
 | Economy                  | `markets`, `production`, `taxes`                | `pack.markets`, `cells.market`, `pack.deals`, burg/state treasuries             |
@@ -80,13 +82,12 @@ the pipeline, since it depends only on name bases and the seeded random source.
 Two constraints are easy to break when replicating a slice of this:
 
 - **Goods depend on nothing pack-side** but must exist before `markets`. `Goods.generate()` keeps an
-  existing catalogue (it restores the defaults only when `pack.goods` is empty) and places bonus goods
+  existing catalogue (it restores the defaults only when `options.map.goods` is empty) and places deposits
   on the cells; `Goods.regenerate()` reshuffles that placement with a fresh random seed.
 - **Economy depends on the whole settlement chain.** Production reads `state.culture`,
   `state.provinces`, `cells.biome`, `cells.pop`, `cells.market` and `pack.routes`. Anything that
   rebuilds burgs, states or provinces must rebuild the economy too, or markets, deals and treasuries
-  reference stale or removed entities. See [`production_schema.md`](../domain/production_schema.md)
-  and [`trade_schema.md`](../domain/trade_schema.md).
+  reference stale or removed entities. See [`economy.md`](../domain/economy.md).
 
 ```mermaid
 flowchart TD
@@ -110,7 +111,7 @@ flowchart TD
     biomes["biomes<br/><i>writes: pack.cells.biome</i>"]
     fg["featureGroups"]
     ice["ice"]
-    goods["goods<br/><i>writes: pack.goods</i>"]
+    goods["goods<br/><i>writes: cells.good</i>"]
     rank["rankCells<br/><i>writes: cells.s, cells.pop</i>"]
     cult["cultures + culturesExpand<br/><i>writes: pack.cultures, cells.culture</i>"]
     burgs["burgs<br/><i>writes: pack.burgs</i>"]
@@ -120,11 +121,12 @@ flowchart TD
     spec["burgsSpecify + stateStatistics + stateForms"]
     prov["provinces + provincePoles<br/><i>writes: pack.provinces</i>"]
     names["riversSpecify + featureNames"]
+    dev["development<br/><i>writes: cells.development</i>"]
     econ["markets + production + taxes<br/><i>writes: pack.markets, deals, cells.market</i>"]
     mil["military + markers + zones + addedLabels"]
     journeys["journeys + legends"]
 
-    gg --> hm --> mg --> lakes --> coord --> temp --> prec --> repack --> ruler --> rivers --> biomes --> fg --> ice --> goods --> rank --> cult --> burgs --> states --> routes --> relig --> spec --> prov --> names --> econ --> mil --> journeys
+    gg --> hm --> mg --> lakes --> coord --> temp --> prec --> repack --> ruler --> rivers --> biomes --> fg --> ice --> goods --> rank --> cult --> burgs --> states --> routes --> dev --> relig --> spec --> prov --> names --> econ --> mil --> journeys
 
     %% cross-step (non-adjacent) global dependencies
     hm -. "grid.cells.h" .-> temp
@@ -147,7 +149,7 @@ flowchart TD
     burgs -. "pack.burgs" .-> econ
     states -. "pack.states" .-> prov
     states -. "pack.states" .-> econ
-    goods -. "pack.goods" .-> econ
+    goods -. "options.map.goods" .-> econ
     routes -. "pack.routes" .-> econ
 ```
 
@@ -177,16 +179,16 @@ Three other places rebuild a large slice of a map by hand. They are not (yet) ex
 and each one is a site that can silently fall behind when a generation step is added.
 
 | Concern                       | Full generate              | Erase                      | [Keep](../../src/controllers/physical/heightmap-editor.ts) | [Risk](../../src/controllers/physical/heightmap-editor.ts) | [Resample](../../src/model/resample.ts) |
-| ----------------------------- | -------------------------- | -------------------------- | ------------------------------------------------- | ------------------------------------------------- | --------------------------------------- |
-| Driver                        | `GenerationPipeline`       | `ErasePipeline`            | `restoreKeptData()`                               | `MapRestoration.applyHeights()`                   | `Resampler.process()`                   |
-| Grid rebuilt                  | ✅                         | ❌                         | ❌                                                | ❌                                                | ✅ (new dimensions)                     |
-| `markupGrid`                  | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                      |
-| `regraph` (pack rebuilt)      | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                      |
-| Rivers                        | generate                   | generate (parameterized)   | keep                                              | generate _or_ restore                             | restore                                 |
-| Biomes                        | `generate` (new catalogue) | `define` (reuse catalogue) | keep                                              | restore, compute where new                        | restore, compute where new              |
-| Cultures / burgs / states / … | generate                   | generate                   | keep                                              | restore                                           | restore                                 |
-| Economy                       | generate                   | generate                   | keep                                              | rebuild                                           | rebuild                                 |
-| Coastline can change          | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                      |
+| ----------------------------- | -------------------------- | -------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------- |
+| Driver                        | `GenerationPipeline`       | `ErasePipeline`            | `restoreKeptData()`                                        | `MapRestoration.applyHeights()`                            | `Resampler.process()`                   |
+| Grid rebuilt                  | ✅                         | ❌                         | ❌                                                         | ❌                                                         | ✅ (new dimensions)                     |
+| `markupGrid`                  | ✅                         | ✅                         | ❌                                                         | ✅                                                         | ✅                                      |
+| `regraph` (pack rebuilt)      | ✅                         | ✅                         | ❌                                                         | ✅                                                         | ✅                                      |
+| Rivers                        | generate                   | generate (parameterized)   | keep                                                       | generate _or_ restore                                      | restore                                 |
+| Biomes                        | `generate` (new catalogue) | `define` (reuse catalogue) | keep                                                       | restore, compute where new                                 | restore, compute where new              |
+| Cultures / burgs / states / … | generate                   | generate                   | keep                                                       | restore                                                    | restore                                 |
+| Economy                       | generate                   | generate                   | keep                                                       | rebuild                                                    | rebuild                                 |
+| Coastline can change          | ✅                         | ✅                         | ❌                                                         | ✅                                                         | ✅                                      |
 
 - **Keep** is the minimal path: it copies edited grid heights into the existing pack cells via
   `pack.cells.g` and touches nothing else, which is why the coastline cannot change.
@@ -251,7 +253,7 @@ reaches a phase you change.
 3. If the step's output is cell-indexed or stores a cell id, restore it in `MapRestoration.restore()`:
    per-cell arrays in `restoreCells`, entities in their own step, each id found again by position.
    Call the generator directly only when the output cannot be recovered from the snapshot, and prefer
-   a partial method (cf. `Markets.expandTerritories`) over a full regeneration.
+   a partial method (cf. `Markets.expand`) over a full regeneration.
 4. Teach [`MapIntegrity`](../../src/model/map-integrity.ts) the step's ids and run
    `map-restoration.scenarios.test.ts`, which restores real maps and fails on any id the restore breaks: a
    missed id does not throw, it silently points at an unrelated cell. See

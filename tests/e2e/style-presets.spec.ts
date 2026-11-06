@@ -206,7 +206,7 @@ test("a non-style JSON is rejected by the saver, not applied as defaults", async
   await page.goto("/?seed=test-seed&width=1280&height=720");
   await waitForMap(page);
 
-  const before = await page.evaluate(() => styles.rivers.attrs.fill);
+  const before = await page.evaluate(() => styles.rivers.groups.regular.attrs.fill);
   await page.evaluate(() => (window as any).FMG.Controllers.StylePresetsEditor.openSaver());
   await page.evaluate(() => {
     (document.getElementById("styleSaverJSON") as HTMLTextAreaElement).value =
@@ -217,7 +217,7 @@ test("a non-style JSON is rejected by the saver, not applied as defaults", async
 
   await expect(page.locator("#tooltip")).toContainText("not a style preset");
   const after = await page.evaluate(() => ({
-    fill: styles.rivers.attrs.fill,
+    fill: styles.rivers.groups.regular.attrs.fill,
     saved: localStorage.getItem("fmgStyle_bogus")
   }));
   expect(after.fill).toBe(before);

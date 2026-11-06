@@ -13,6 +13,7 @@ import { Provinces } from "@/model/political/provinces-generator";
 import { States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
+import { Development } from "@/model/society/development-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Lore } from "@/model/story/lore";
@@ -26,6 +27,7 @@ export const MODELS = {
   Biomes,
   Burgs,
   Cultures,
+  Development,
   Emblems,
   Features,
   Goods,
@@ -62,7 +64,7 @@ export const METHODS = {
     "move",
     "add",
     "remove",
-    "setTreasury",
+    "setAdjustments",
     "setLocked",
     "setLink"
   ],
@@ -80,7 +82,10 @@ export const METHODS = {
     "add",
     "remove",
     "setTaxes",
-    "setTreasury",
+    "setMarketFee",
+    "setCorruption",
+    "setBudget",
+    "setAdjustments",
     "setLocked",
     "setChronicleEntry",
     "setCells",
@@ -107,6 +112,7 @@ export const METHODS = {
     "setType",
     "setBase",
     "setExpansionism",
+    "setDevelopment",
     "recalculate",
     "add",
     "remove",
@@ -118,6 +124,7 @@ export const METHODS = {
     "setCells",
     "setPopulation"
   ],
+  Development: ["setCells", "generate"],
   Religions: [
     "rename",
     "recolor",
@@ -136,8 +143,8 @@ export const METHODS = {
     "setCells",
     "setPopulation"
   ],
-  Biomes: ["rename", "recolor", "setHabitability", "add", "remove", "setCells", "restore"],
-  Rivers: ["rename", "setType", "add", "remove", "setParent", "setWidth", "setLocked", "create"],
+  Biomes: ["rename", "recolor", "setHabitability", "setDevelopment", "add", "remove", "setCells", "restore"],
+  Rivers: ["rename", "setType", "setGroup", "add", "remove", "setParent", "setWidth", "setLocked", "create"],
   Routes: ["rename", "setGroup", "add", "remove", "setLocked", "create", "split", "join"],
   Features: ["rename", "setSubtype", "setGroup", "setCoastline"],
   Zones: ["rename", "recolor", "setType", "setHidden", "setCells", "add", "remove", "setPopulation"],
@@ -184,7 +191,17 @@ export const METHODS = {
     "setSegment",
     "resetSegment"
   ],
-  Goods: ["rename", "setIcon", "recolor", "setPrice", "setUnit", "setTags", "setProduction"],
+  Goods: [
+    "rename",
+    "setIcon",
+    "recolor",
+    "setPrice",
+    "setCarriage",
+    "setDevelopment",
+    "setUnit",
+    "setTags",
+    "setProduction"
+  ],
   Markets: ["rename", "recolor"],
   Lore: ["rename", "setYear", "setEra", "setDescription"],
   Notes: ["write"],

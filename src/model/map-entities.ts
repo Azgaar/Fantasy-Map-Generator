@@ -1,4 +1,5 @@
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
+import { DEAL_KINDS } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Regiment } from "@/model/political/military-generator";
@@ -458,8 +459,8 @@ class EntityLookup {
       scale: 6,
       layers: ["goods"],
       collection: { field: "goods", indexed: false },
-      name: id => this.byId(pack.goods, id)?.name || "",
-      refs: () => this.refsOf("good", pack.goods, true),
+      name: id => this.byId(options.map.goods, id)?.name || "",
+      refs: () => this.refsOf("good", options.map.goods, true),
       isAt: (ref, cell) =>
         pack.cells.good?.[cell] === ref.id || this.produces(this.byId(pack.burgs, pack.cells.burg?.[cell]), ref.id),
       position: id => {
@@ -467,7 +468,7 @@ class EntityLookup {
         return points[Math.floor(points.length / 2)];
       },
       points: ref => this.goodPoints(ref.id),
-      context: ref => this.byId(pack.goods, ref.id)?.tags?.join(", ") || "",
+      context: ref => this.byId(options.map.goods, ref.id)?.tags?.join(", ") || "",
       editor: "GoodsEditor"
     },
     cell: {
@@ -536,27 +537,20 @@ class EntityLookup {
       icon: "icon-exchange",
       scale: 6,
       layers: ["markets"],
-      entity: id => this.byId(pack.deals, id),
+      entity: id => (pack.deals?.[id] ? { i: id } : undefined),
       name: id => {
-        const deal = this.byId(pack.deals, id);
-        return deal ? `${this.byId(pack.goods, deal.good)?.name || "Goods"} deal` : "";
+        const deal = pack.deals?.[id];
+        return deal ? `${this.byId(options.map.goods, deal[2])?.name || "Goods"} deal` : "";
       },
-      refs: () => this.refsOf("deal", pack.deals),
+      refs: () => (pack.deals ?? []).map((_, id) => ({ type: "deal" as const, id })),
       points: ref => {
-        const deal = this.byId(pack.deals, ref.id);
-        if (!deal) return [];
-        const parties = [
-          this.getPosition({ type: deal.sellerType, id: deal.seller }),
-          this.getPosition({ type: deal.buyerType, id: deal.buyer })
-        ];
+        const parties = this.dealParties(ref.id).map(party => this.getPosition(party));
         return parties.filter((point): point is Point => Boolean(point));
       },
-      context: ref => {
-        const deal = this.byId(pack.deals, ref.id);
-        return deal
-          ? `${this.getName({ type: deal.sellerType, id: deal.seller })} → ${this.getName({ type: deal.buyerType, id: deal.buyer })}`
-          : "";
-      }
+      context: ref =>
+        this.dealParties(ref.id)
+          .map(party => this.getName(party))
+          .join(" → ")
     },
     transport: {
       label: t("Transports"),
@@ -594,7 +588,7 @@ class EntityLookup {
     return entity && !entity.removed ? entity : undefined;
   }
 
-  /** The types kept in a `pack` list, with that list */
+  /** The types kept in a list, with that list */
   collections(): ({ type: EntityType } & EntityCollection)[] {
     return Object.entries(this.types).flatMap(([type, { collection }]) =>
       collection ? [{ type: type as EntityType, ...collection }] : []
@@ -608,6 +602,7 @@ class EntityLookup {
 
   /** A `pack` list by its field, of the live map or another one such as a proposal's draft */
   list(field: string, map = pack): MapEntity[] | undefined {
+    if (field === "goods") return options.map.goods;
     return (map as unknown as Record<string, MapEntity[] | undefined>)[field];
   }
 
@@ -786,7 +781,17 @@ class EntityLookup {
   }
 
   private produces(burg: Burg | undefined, goodId: number): boolean {
-    return Boolean(burg?.i && !burg.removed && burg.production?.some(r => "goodId" in r && r.goodId === goodId));
+    return Boolean(burg?.i && !burg.removed && burg.production?.some(([id]) => id === goodId));
+  }
+
+  /** Seller then buyer of a deal */
+  private dealParties(id: number): EntityRef[] {
+    const deal = pack.deals?.[id];
+    if (!deal) return [];
+    const [burgId, marketId, , kind] = deal;
+    const burg: EntityRef = { type: "burg", id: burgId };
+    const market: EntityRef = { type: "market", id: marketId };
+    return kind === DEAL_KINDS.sale ? [burg, market] : [market, burg];
   }
 
   private regiment(stateId: number, regimentId?: number): Regiment | undefined {

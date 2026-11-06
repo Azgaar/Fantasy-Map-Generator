@@ -15,6 +15,8 @@ A culture set is the pool of cultures a map can draw from. It is picked in the _
 
 Every culture in a set has an _odd_ — a chance to be included at all — and a _sort_ function that scores cells to pick the culture center. That is why two maps with the same set rarely get the same cultures, and why e.g. Inuk tends to appear in cold regions and Maui on tropical islands.
 
+The culture set also sets the world's [development](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Development): every culture has its own level, the development of its land. Most sets give a medieval world (typical level 32–36) with a few leaders at 40–53, dwarves and elves the most advanced, and a few laggards; the Antique set gives a classical one (12–24), and the Random set gives each culture 15–42.
+
 ### All-world
 
 - Shwazen: It represents proto-Germanic and Germanic peoples of different times and places. Namesbase: German. [More info about Germanic culture](https://en.wikipedia.org/wiki/Germanic_culture).

@@ -101,6 +101,9 @@ describe("Dialog", () => {
 
     Dialog.closeAll(".stable");
     expect([Dialog.isOpen("editor"), Dialog.isOpen("minimized"), Dialog.isOpen("other")]).toEqual([true, true, false]);
+
+    Dialog.closeAll(".stable", { minimized: true });
+    expect([Dialog.isOpen("editor"), Dialog.isOpen("minimized")]).toEqual([true, false]);
   });
 
   it("minimizes to the titlebar, button pane included, and restores", () => {

@@ -79,6 +79,11 @@ function renderDialog(): void {
         <div class="label">${t("Type")}:</div>
         <input id="riverType" autocorrect="off" spellcheck="false" />
       </div>
+      <div data-tip="${sentences(t("Rendering group: the svg group the river is drawn in"), t("Does not affect generation"))}">
+        <div class="label">${t("Group")}:</div>
+        <select id="riverGroup"></select>
+        <span id="riverGroupEdit" data-tip="${t("Edit river groups")}" class="icon-pencil pointer"></span>
+      </div>
       <div data-tip="${t("River tags (comma-separated)")}">
         <div class="label">${t("Tags")}:</div>
         <input
@@ -138,6 +143,8 @@ function renderDialog(): void {
   ensureEl("riverName").addEventListener("input", changeName);
   ensureEl("riverNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("riverName").value));
   ensureEl("riverType").addEventListener("input", changeType);
+  ensureEl("riverGroup").addEventListener("change", changeGroup);
+  ensureEl("riverGroupEdit").addEventListener("click", () => void Controllers.RiverGroupsEditor.open());
   ensureEl("riverTags").addEventListener("change", changeTags);
   ensureEl("riverNameCulture").addEventListener("click", generateNameCulture);
   ensureEl("riverNameRandom").addEventListener("click", generateNameRandom);
@@ -151,7 +158,7 @@ function openRiverCreator(): void {
 }
 
 function openRiverStyle(): void {
-  void Controllers.StyleEditor.open("rivers");
+  void Controllers.StyleEditor.open("rivers", getRiver().group);
 }
 
 function getRiver(): River {
@@ -164,6 +171,11 @@ function updateRiverData(): void {
 
   ensureEl<HTMLInputElement>("riverName").value = r.name;
   ensureEl<HTMLInputElement>("riverType").value = r.type;
+  const groupSelect = ensureEl<HTMLSelectElement>("riverGroup");
+  groupSelect.options.length = 0;
+  for (const group of Object.keys(styles.rivers.groups)) {
+    groupSelect.options.add(new Option(group, group, false, group === r.group));
+  }
   ensureEl<HTMLInputElement>("riverTags").value = Tags.format(r.tags);
   updateLockIcon(r);
 
@@ -214,7 +226,6 @@ function drawControlPoints(points: Point[]): void {
     .join("circle")
     .attr("cx", (d: Point) => d[0])
     .attr("cy", (d: Point) => d[1])
-    .attr("r", 0.6)
     .call(drag<SVGCircleElement, Point>().on("start", dragControlPoint))
     .on("click", removeControlPoint);
 }
@@ -309,6 +320,12 @@ function changeType(this: HTMLInputElement): void {
   if (!this.value.trim()) return;
   Rivers.setType(getRiver().i, this.value);
   Layers.draw("labels");
+}
+
+function changeGroup(this: HTMLSelectElement): void {
+  const river = getRiver();
+  Rivers.setGroup(river.i, this.value);
+  redrawRiverShape(river); // the river's node moves to the new group with its editor handlers
 }
 
 function changeTags(this: HTMLInputElement): void {

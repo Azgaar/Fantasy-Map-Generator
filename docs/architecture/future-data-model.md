@@ -93,6 +93,8 @@ This document outlines the expected data structure. Current data model described
 
     "transports": [],
 
+    "eras": [],
+
     "coastline": {
       "enabled": true,
       "maxDepth": 4,

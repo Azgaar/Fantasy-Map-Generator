@@ -25,7 +25,8 @@ it("draws territory from cell ownership and merges the layers of a batch", () =>
     "labels",
     "military",
     "emblems",
-    "routes"
+    "routes",
+    "trade"
   ]);
 });
 

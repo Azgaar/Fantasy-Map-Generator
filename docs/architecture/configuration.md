@@ -109,6 +109,15 @@ One value lives here for the session only: `app.mode`, the edit mode the user is
 `"paint"`, `"addState"`…, or `null`). While it is set, other editors, saving, loading and regeneration
 stay off. It is never written to localStorage, so a reload always starts outside any mode.
 
+**Debugging** is a preference too: `app.debug` lists the diagnostics this browser has on (`DEBUG_MODES`
+in `utils/logger.ts`: `economy`, `temperature`, `cloud`), checked under Debugging in the Advanced options
+and handed to `log.setDebug` on boot and on every change; code asks `log.debug.<mode>`. A diagnostic may
+change the view and create data of its own (console output, an in-memory record such as `EconomyDebug`,
+extra rows in a dialog), but it must **never** change the `.map` file: not a value, not a key, not its
+structure. What it records lives outside `pack` and `options.map`, so a map saved with every diagnostic
+on is the same file as one saved with none, which makes turning one on always safe. A new diagnostic
+is a new entry in `DEBUG_MODES` with a label and tip in the Advanced options, under the same rule.
+
 The **viewport** is the clearest case of the last rule, and the one most often confused with the
 extent: the extent is the coordinate space the map's geometry lives in, fixed for the life of its
 graph and asked for before the map exists; the viewport is the screen window onto it.
@@ -126,16 +135,23 @@ value into the control still applies it, and it stands until the next fit re-der
 
 ### The definition sets
 
-Military unit types, transport types, burg groups, label groups, the custom icons and the coastline
-settings sit in `options.map` however much they look like user settings, because **entities point at
-them by name or id**: a set that travels separately from its entities opens a map with unresolved
-references.
+Military unit types, transport types, development eras, burg groups, label groups, goods, the custom icons
+and the coastline settings sit in `options.map` however much they look like user settings, because **entities
+point at them by name or id**: a set that travels separately from its entities opens a map with unresolved
+references. Eras are read by level rather than pointed at, and travel with the map so it shows the names it was
+made with.
 
 They are also the set the **next** map starts from: they survive a refresh because they are in
 `options`, and `Options.randomize()` carries them across explicitly while resetting everything else
 in `options.map`. A set is never empty — the boundary repairs one that arrives empty from the
 module that owns it, because a label type with no group draws no labels. The custom icons are the
 exception: a map may carry none.
+
+The next map keeps the goods whole, with one exception: `Goods.clearEntityMultipliers` drops multipliers keyed by
+one map's culture, state, religion or zone ids. Goods feed population, so a changed catalogue changes what a seed generates.
+They also keep old tuning across releases until the user restores the defaults. Files before v1.157.0 keep goods
+in record 41, which `load.ts` moves to `options.map.goods`. Goods may be empty until `Goods.generate` restores the
+defaults.
 
 ### Locks
 
@@ -260,6 +276,8 @@ These are the properties the design exists to guarantee, and the ones worth asse
   ran. Changing a request without generating changes no file.
 - **The app survives maps.** Loading any map leaves `options.app`, `options.generation` and the
   pins unchanged, save for the extent, which never overrides a pin.
+- **Diagnostics leave no trace.** Saving with any `app.debug` mode on writes the same file as saving with
+  none.
 - **The map survives a reload.** Anything needed to render or operate the map is in the file, so a
   fresh browser opens it identically.
 - **Derivation is idempotent.** Re-deriving a derived value from a saved file reproduces the saved

@@ -280,3 +280,63 @@ describe("locked rivers", () => {
     expect(() => Rivers.setLocked(9, true)).toThrow();
   });
 });
+
+describe("river groups", () => {
+  // cells 0-4 are land, cell 5 is the sea
+  function setCourse({ h = [30, 30, 30, 30, 30], temp = [10, 10, 10, 10, 10], prec = [20, 20, 20, 20, 20] }) {
+    globalThis.pack = { cells: { h: [...h, 5], g: [0, 1, 2, 3, 4, 5] } } as unknown as typeof pack;
+    globalThis.grid = { cells: { temp: [...temp, 30], prec: [...prec, 0] } } as unknown as typeof grid;
+  }
+  const course = [0, 1, 2, 3, 4, 5, -1]; // the sea mouth and off-canvas cells are not the course
+
+  it("is frozen only when the whole course freezes", () => {
+    setCourse({ temp: [-8, -4, -2, 0, 0] });
+    expect(Rivers.pickGroup(course)).toBe("frozen");
+    setCourse({ temp: [-8, -4, 1, -2, -6] });
+    expect(Rivers.pickGroup(course)).toBe("regular");
+  });
+
+  it("is lava when it rises high and never leaves the highlands", () => {
+    setCourse({ h: [65, 60, 55, 50, 45] });
+    expect(Rivers.pickGroup(course)).toBe("lava");
+    setCourse({ h: [65, 60, 55, 50, 44] });
+    expect(Rivers.pickGroup(course)).toBe("regular");
+  });
+
+  it("is dry only when the whole course is hot and arid", () => {
+    setCourse({ temp: [22, 25, 28, 30, 30], prec: [4, 3, 2, 2, 1] });
+    expect(Rivers.pickGroup(course)).toBe("dry");
+    setCourse({ temp: [22, 25, 28, 30, 30], prec: [9, 3, 2, 2, 1] });
+    expect(Rivers.pickGroup(course)).toBe("regular");
+    setCourse({ temp: [12, 25, 28, 30, 30], prec: [4, 3, 2, 2, 1] });
+    expect(Rivers.pickGroup(course)).toBe("regular");
+  });
+
+  describe("a tributary of another group", () => {
+    type River = import("./river-generator").River;
+    const unify = (tributaries: River[]) =>
+      (Rivers as unknown as { unifyGroups(rivers: River[]): void }).unifyGroups(tributaries);
+    const river = (i: number, parent: number, group: string, lock?: boolean) => ({ i, parent, group, lock }) as River;
+
+    it("turns its mainstem regular, and so on downstream", () => {
+      globalThis.pack = {
+        rivers: [river(1, 0, "frozen"), river(2, 1, "frozen"), river(3, 2, "regular"), river(4, 1, "frozen")]
+      } as unknown as typeof pack;
+      unify(pack.rivers);
+      expect(pack.rivers.map(r => r.group)).toEqual(["regular", "regular", "regular", "frozen"]);
+    });
+
+    it("leaves a system of one group and a locked mainstem as they are", () => {
+      globalThis.pack = {
+        rivers: [river(1, 0, "dry"), river(2, 1, "dry"), river(3, 0, "lava", true), river(4, 3, "regular")]
+      } as unknown as typeof pack;
+      unify(pack.rivers);
+      expect(pack.rivers.map(r => r.group)).toEqual(["dry", "dry", "lava", "regular"]);
+    });
+  });
+
+  it("is regular without a land course", () => {
+    setCourse({});
+    expect(Rivers.pickGroup([5, -1])).toBe("regular");
+  });
+});

@@ -2,9 +2,9 @@
 import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { LabelType } from "@/model/annotations/labels-generator";
+import type { Deal } from "@/model/economy/trade";
 import { dragLegendBox, legendBoxFromEvent } from "@/renderers/draw-legend";
 import { LegendBoxes } from "@/renderers/legend-boxes";
-import type { TradeBatch } from "@/renderers/trade-animation";
 import { tip } from "@/ui/tooltips";
 import { debounce } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
@@ -44,24 +44,25 @@ function hideLegendBox(event: MouseEvent): void {
 type Opener = (target: SVGElement, parent: SVGElement) => void;
 
 const PARENT_EDITORS: Record<string, Opener> = {
-  rivers: target => Controllers.RiverEditor.open(target.id),
   ice: target => Controllers.IceEditor.open(target),
   terrain: target => Controllers.ReliefEditor.open(target),
-  goodsCells: () => Controllers.GoodsEditor.open()
+  goodsCells: () => Controllers.GoodsEditor.open(),
+  goodsTraffic: () => Controllers.GoodsEditor.open()
 };
 
 const GRAND_EDITORS: Record<string, Opener> = {
   emblems: target => Controllers.EmblemsEditor.open(undefined, undefined, undefined, target),
   routes: target => Controllers.RouteEditor.open(target.id),
+  rivers: target => Controllers.RiverEditor.open(target.id),
   journeys: (_target, parent) => Controllers.JourneyEditor.open(Number(parent.id.replace("journey", ""))),
   markers: target => Controllers.MarkersEditor.open(undefined, target),
   ruler: () => Controllers.MeasurersEditor.open(),
   goodsIcons: () => Controllers.GoodsEditor.open(),
-  goodsBurgs: (_target, parent) => Controllers.ProductionOverview.open(Number(parent.dataset.id)),
+  goodsBurgs: (_target, parent) => Controllers.BurgEconomyOverview.open(Number(parent.dataset.id)),
   lakes: target => Controllers.LakesEditor.open(target),
-  tradeAnimation: (_target, parent) => Controllers.TradeDetails.open(select<SVGElement, TradeBatch>(parent).datum()),
+  tradeAnimation: (_target, parent) => Controllers.TradeDetails.open(select<SVGElement, Deal>(parent).datum()),
   markets: (target, parent) => {
-    if (target.tagName !== "path") Controllers.MarketOverview.open(Number(parent.dataset.id));
+    if (target.classList.contains("pin")) Controllers.MarketOverview.open(Number(parent.dataset.id));
   }
 };
 

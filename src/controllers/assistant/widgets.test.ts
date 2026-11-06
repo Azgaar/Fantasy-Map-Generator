@@ -80,12 +80,12 @@ beforeEach(() => {
       { i: 0, name: "No religion" },
       { i: 1, name: "Sun Cult" }
     ],
-    cells: { religion: [0, 1] },
-    goods: [{ i: 0, name: "Salt", color: "#fff", icon: "glyph-1f9c2" }]
+    cells: { religion: [0, 1] }
   } as unknown as typeof pack;
   pack.burgs[1] = { ...pack.burgs[1], cell: 1 } as (typeof pack.burgs)[number];
   globalThis.options = {
     map: {
+      goods: [{ i: 0, name: "Salt", color: "#fff", icon: "glyph-1f9c2" }],
       graph: { width: 1000, height: 500 },
       units: {
         population: { scale: 1000, urbanization: { rate: 1 } },

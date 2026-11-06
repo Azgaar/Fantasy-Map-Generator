@@ -1,16 +1,17 @@
 import { type HierarchyCircularNode, max, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
-import { CULTURE_TYPE_LABELS } from "@/data/id-labels";
-import { Goods } from "@/model/economy/goods-generator";
-import { Markets } from "@/model/economy/markets-generator";
+import { CULTURE_TYPE_LABELS, EXPENSE_LABELS } from "@/data/id-labels";
+import { StateEconomy } from "@/model/economy/state-economy";
 import { Pack } from "@/model/graph/pack-generator";
 import { Burgs } from "@/model/political/burgs-generator";
-import { STATE_FORMS, type State, States, type TariffRule } from "@/model/political/states-generator";
+import { Districts } from "@/model/political/districts";
+import { Stability } from "@/model/political/stability";
+import { EXPENSES, STATE_FORMS, type State, States } from "@/model/political/states-generator";
+import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
-import { formatPrice, getArea, getAreaUnit } from "@/model/units";
+import { getArea, getAreaUnit } from "@/model/units";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
-import { goodBadge } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
@@ -18,8 +19,9 @@ import { fog, unfog } from "@/renderers/overlays/fogging";
 import { Csv } from "@/services/io/csv";
 import { speak } from "@/services/speech";
 import type { LegendItem } from "@/types/legend";
+import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { noteIcon } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -31,6 +33,13 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import {
+  adjustmentsFromText,
+  adjustmentsToText,
+  EconomyTerms,
+  prosperityTip,
+  renderProsperityPercent
+} from "@/ui/economy-view";
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { createAnnexMode } from "@/ui/map/annex-mode";
 import { highlightElement, highlightOutline } from "@/ui/map/highlight";
@@ -50,6 +59,19 @@ const dialogId = "statesEditor" as const;
 const LEGEND_NAME = "States"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string };
+let development: (number | undefined)[] = []; // the people's average by state, as the table was last built
+
+/** The people's average development; a dash where nobody lives */
+const renderDevelopmentCell = (level: number | undefined): string =>
+  level === undefined
+    ? `<div class="placeholder" data-col="development"></div>`
+    : `<div data-tip="${developmentTip(level)}" data-col="development">${rn(level)}</div>`;
+
+/** Taxes as a percent of product; null for the neutral lands or before an economy run */
+const taxBurden = (s: State): number | null => {
+  const accounts = s.i ? StateEconomy.getAccounts(s.i) : null;
+  return accounts?.product ? (accounts.taxes / accounts.product) * 100 : null;
+};
 
 const columns: EditorColumn<State>[] = [
   { key: "color", width: "1.2em", permanent: true },
@@ -120,11 +142,84 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "treasury",
-    label: t("Treasury"),
+    label: t("Balance"),
+    width: "6em",
+    hidden: true,
+    mobileHidden: true,
+    tip: sentences(EconomyTerms.stateTreasury(), EconomyTerms.openValue()),
+    sortBy: s => s.economy.treasury || 0
+  },
+  {
+    key: "burden",
+    label: t("Tax burden"),
+    width: "6em",
+    hidden: true,
+    mobileHidden: true,
+    tip: sentences(t("Tax burden: the taxes' share of the product"), EconomyTerms.openValue()),
+    sortBy: s => taxBurden(s) ?? -1
+  },
+  {
+    key: "corruption",
+    label: t("Corruption"),
+    width: "6em",
+    hidden: true,
+    mobileHidden: true,
+    tip: sentences(EconomyTerms.corruption(), EconomyTerms.openValue()),
+    sortBy: s => (s.i ? Districts.getStateCorruption(s, s.economy.collected) : 0)
+  },
+  ...EXPENSES.map(
+    (expense): EditorColumn<State> => ({
+      key: expense,
+      label: EXPENSE_LABELS[expense],
+      width: "6em",
+      hidden: true,
+      mobileHidden: true,
+      tip: sentences(EconomyTerms.expenseTip(expense), EconomyTerms.openValue()),
+      sortBy: s => (s.i ? s.economy.budget[expense] : -1)
+    })
+  ),
+  {
+    key: "prosperity",
+    label: t("Prosperity"),
     width: "6em",
     mobileHidden: true,
-    tip: t("Click to sort by state treasury. Click on a value to view and edit taxes"),
-    sortBy: s => s.treasury || 0
+    tip: sentences(EconomyTerms.prosperity(), EconomyTerms.openValue()),
+    sortBy: s => StateEconomy.getAccounts(s.i)?.prosperity ?? -1
+  },
+  {
+    key: "stability",
+    label: t("Stability"),
+    width: "6em",
+    mobileHidden: true,
+    tip: sentences(EconomyTerms.stability(), t("Click a value to open the stability overview")),
+    sortBy: s => Stability.get(s.i)?.stability ?? -1
+  },
+  {
+    key: "product",
+    label: t("Product"),
+    width: "6em",
+    hidden: true,
+    mobileHidden: true,
+    tip: sentences(EconomyTerms.stateProduct(), EconomyTerms.openValue()),
+    sortBy: s => StateEconomy.getAccounts(s.i)?.product ?? 0
+  },
+  {
+    key: "wealth",
+    label: t("Wealth"),
+    width: "6em",
+    hidden: true,
+    mobileHidden: true,
+    tip: sentences(EconomyTerms.wealth(), EconomyTerms.openValue()),
+    sortBy: s => StateEconomy.getAccounts(s.i)?.wealth ?? 0
+  },
+  {
+    key: "development",
+    label: t("Development"),
+    width: "7.5em",
+    hidden: true,
+    mobileHidden: true,
+    tip: t("Development: the people's average technology, 0–100, and its era"),
+    sortBy: s => development[s.i] ?? -1
   },
   {
     key: "type",
@@ -176,19 +271,13 @@ const CSV_COLUMNS = [
   "Neighbors",
   "Sales Tax",
   "Poll Tax",
-  "Treasury",
-  "Tags"
-];
-const RULED_COLUMNS = [
-  "Full Name",
-  "Form",
-  "Color",
-  "Capital",
-  "Culture",
-  "Type",
-  "Expansionism",
-  "Sales Tax",
-  "Poll Tax",
+  "Market License",
+  "Adjustments",
+  "Court",
+  "Administration",
+  "Infrastructure",
+  "Military",
+  "Corruption",
   "Treasury",
   "Tags"
 ];
@@ -204,7 +293,11 @@ function getFilteredStates(): State[] {
 }
 
 const statesTable = initEditorTable<State>({
-  getData: () => sortDataByColumns(dialogId, getFilteredStates(), columns),
+  dialogId,
+  getData: () => {
+    development = Development.getAverages(pack.cells.state);
+    return sortDataByColumns(dialogId, getFilteredStates(), columns);
+  },
   onUpdate: renderStatesPage
 });
 
@@ -244,6 +337,8 @@ function renderDialog(): void {
       <div data-tip="${t("Number of burgs")}" style="margin-left: 12px" data-col="burgs">${t("Burgs")}:&nbsp;<span id="statesFooterBurgs">0</span></div>
       <div data-tip="${t("Total land area")}" style="margin-left: 12px" data-col="area">${t("Land area")}:&nbsp;<span id="statesFooterArea">0</span></div>
       <div data-tip="${t("Total population")}" style="margin-left: 12px" data-col="population">${t("Population")}:&nbsp;<span id="statesFooterPopulation">0</span></div>
+      <div data-tip="${EconomyTerms.stateTreasury()}" style="margin-left: 12px" data-col="treasury">${t("Avg balance")}:&nbsp;<span id="statesFooterTreasury">0</span></div>
+      <div data-tip="${EconomyTerms.prosperity()}" style="margin-left: 12px" data-col="prosperity">${t("Avg prosperity")}:&nbsp;<span id="statesFooterProsperity">—</span></div>
     </div>
 
     <div id="statesBottom" class="editorToolbar">
@@ -319,7 +414,8 @@ function renderDialog(): void {
     else if (classList.contains("icon-star-empty")) stateCapitalZoomIn(stateId);
     else if (classList.contains("icon-dot-circled")) Controllers.BurgsOverview.open({ stateId });
     else if (classList.contains("statePopulation")) changePopulation(stateId);
-    else if (classList.contains("stateTreasury")) openTreasuryDialog(stateId);
+    else if ($element.closest(".stateEconomy")) Controllers.StateEconomyOverview.open(stateId);
+    else if ($element.closest(".stateStability")) Controllers.StabilityOverview.open(stateId);
     else if (classList.contains("icon-book")) void Controllers.NotesEditor.open({ type: "state", id: stateId });
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
     else if (classList.contains("icon-target"))
@@ -362,14 +458,12 @@ function closeStatesEditor(): void {
   statesAnnex.exit();
   Controllers.ColorPicker.close();
   select("#debug").selectAll(".highlight").remove();
-  const view = statesTable.view();
-  view.rows = [];
-  view.all = [];
+  development = [];
 }
 
 function refreshStatesEditor(): void {
   States.collectStatistics();
-  statesTable.refresh();
+  if (Dialog.isOpen(dialogId)) statesTable.refresh();
 }
 
 function renderStatesPage(view: TableView<State>): void {
@@ -399,14 +493,19 @@ function renderStatesPage(view: TableView<State>): void {
       t("Click to edit")
     );
     const focused = select("#deftemp").select(`#fog #focusState${s.i}`).size();
-    const treasuryTip = t(
-      "Current treasury: 🟡 {{treasury}}. Sales Tax: {{salesTax}}%. Poll Tax: {{pollTax}}%. Click to view and edit taxes",
-      {
-        treasury: si(s.treasury),
-        salesTax: rn((s.salesTax || 0) * 100, 1),
-        pollTax: rn((s.pollTax || 0) * 100, 1)
-      }
+    const treasuryTip = sentences(
+      EconomyTerms.stateTreasury(),
+      t("Sales tax: {{rate}}%", { rate: rn((s.economy.salesTax || 0) * 100, 1) }),
+      t("Poll tax: {{rate}} a head", { rate: rn(s.economy.pollTax || 0, 2) }),
+      t("Market license: {{fee}}", { fee: rn(s.economy.marketFee || 0, 2) }),
+      t("Corruption: {{rate}}%", { rate: rn(Districts.getStateCorruption(s, s.economy.collected)) }),
+      EconomyTerms.open()
     );
+    const accounts = s.i ? StateEconomy.getAccounts(s.i) : null;
+    const stability = Stability.get(s.i);
+    const burden = taxBurden(s);
+    const expenses = s.economy.budget;
+    const neutrals = s.i ? null : StateEconomy.getAccounts(0);
 
     if (!s.i) {
       // Neutral line
@@ -419,6 +518,9 @@ function renderStatesPage(view: TableView<State>): void {
         data-population=${population}
         data-burgs=${s.burgs}
         data-treasury="0"
+        data-prosperity="${neutrals?.prosperity ?? ""}"
+        data-product="${neutrals?.product ?? ""}"
+        data-wealth="${neutrals?.wealth ?? ""}"
         data-color=""
         data-form=""
         data-capital=""
@@ -455,6 +557,21 @@ function renderStatesPage(view: TableView<State>): void {
           <div data-tip="${populationTip}" class="statePopulation pointer">${si(population)}</div>
         </div>
         <div data-tip="${t("Neutrals collect no taxes")}" class="stateTreasury placeholder" data-col="treasury"></div>
+        <div data-tip="${t("Neutrals collect no taxes")}" class="placeholder" data-col="burden"></div>
+        <div data-tip="${t("Neutrals collect no taxes")}" class="placeholder" data-col="corruption"></div>
+        ${EXPENSES.map(expense => `<div data-tip="${t("Neutrals collect no taxes")}" class="placeholder" data-col="${expense}"></div>`).join("")}
+        ${
+          s.cells || s.burgs
+            ? /* html */ `<div data-tip="${sentences(EconomyTerms.prosperity(), EconomyTerms.open())}" class="stateEconomy stateProsperity pointer" data-col="prosperity">${neutrals?.prosperity == null ? "—" : renderProsperityPercent(neutrals.prosperity)}</div>
+        <div data-tip="${t("Neutral lands have no government")}" class="placeholder" data-col="stability"></div>
+        <div data-tip="${sentences(EconomyTerms.stateProduct(), EconomyTerms.open())}" class="stateEconomy stateProduct pointer" data-col="product">🟡 ${si(neutrals?.product ?? 0)}</div>
+        <div data-tip="${sentences(EconomyTerms.wealth(), EconomyTerms.open())}" class="stateEconomy stateWealth pointer" data-col="wealth">🟡 ${rn(neutrals?.wealth ?? 0, 2)}</div>`
+            : `<div class="stateProsperity placeholder" data-col="prosperity"></div>
+        <div class="placeholder" data-col="stability"></div>
+        <div class="stateProduct placeholder" data-col="product"></div>
+        <div class="stateWealth placeholder" data-col="wealth"></div>`
+        }
+        ${renderDevelopmentCell(development[0])}
         <select class="cultureType placeholder" data-col="type">${getTypeOptions(0)}</select>
         <div data-col="expansionism">
           <span class="icon-resize-full placeholder"></span>
@@ -483,7 +600,10 @@ function renderStatesPage(view: TableView<State>): void {
       data-area=${area}
       data-population=${population}
       data-burgs=${s.burgs}
-      data-treasury="${s.treasury}"
+      data-treasury="${s.economy.treasury}"
+      data-prosperity="${accounts?.prosperity ?? ""}"
+      data-product="${accounts?.product ?? ""}"
+      data-wealth="${accounts?.wealth ?? ""}"
       data-culture=${pack.cultures[s.culture].name}
       data-type=${s.type}
       data-expansionism=${s.expansionism}
@@ -516,7 +636,15 @@ function renderStatesPage(view: TableView<State>): void {
         <span data-tip="${populationTip}" class="icon-male"></span>
         <div data-tip="${populationTip}" class="statePopulation pointer">${si(population)}</div>
       </div>
-      <div data-tip="${treasuryTip}" class="stateTreasury pointer" data-col="treasury">🟡 ${si(s.treasury)}</div>
+      <div data-tip="${treasuryTip}" class="stateTreasury stateEconomy pointer" data-col="treasury">🟡 ${si(s.economy.treasury)}</div>
+      <div data-tip="${sentences(t("Tax burden: the taxes' share of the product"), EconomyTerms.open())}" class="stateEconomy pointer" data-col="burden">${burden === null ? "—" : `${rn(burden, 1)}%`}</div>
+      <div data-tip="${sentences(EconomyTerms.corruption(), t("Before administration: {{rate}}%", { rate: rn(Districts.getStateTendency(s)) }), EconomyTerms.open())}" class="stateEconomy pointer" data-col="corruption">${rn(Districts.getStateCorruption(s, s.economy.collected))}%</div>
+      ${EXPENSES.map(expense => `<div data-tip="${sentences(EconomyTerms.expenseTip(expense), EconomyTerms.open())}" class="stateEconomy pointer" data-col="${expense}">${expenses[expense]}%</div>`).join("")}
+      <div data-tip="${accounts?.prosperity == null ? EconomyTerms.noData() : sentences(prosperityTip(accounts.prosperity), EconomyTerms.open())}" class="stateEconomy stateProsperity pointer" data-col="prosperity">${accounts?.prosperity == null ? "—" : renderProsperityPercent(accounts.prosperity)}</div>
+      <div data-tip="${stability ? sentences(EconomyTerms.stability(), t("Click to open the stability overview")) : EconomyTerms.noData()}" class="stateStability pointer" data-col="stability">${stability ? `${rn(stability.stability * 100)}%` : "—"}</div>
+      <div data-tip="${sentences(EconomyTerms.stateProduct(), EconomyTerms.open())}" class="stateEconomy stateProduct pointer" data-col="product">🟡 ${si(accounts?.product ?? 0)}</div>
+      <div data-tip="${sentences(EconomyTerms.wealth(), EconomyTerms.open())}" class="stateEconomy stateWealth pointer" data-col="wealth">🟡 ${rn(accounts?.wealth ?? 0, 2)}</div>
+      ${renderDevelopmentCell(development[s.i])}
       <select data-tip="${sentences(t("State type"), t("Defines growth model"), t("Click to change"))}" class="cultureType" data-col="type">${getTypeOptions(
         s.type
       )}</select>
@@ -553,6 +681,18 @@ function renderStatesPage(view: TableView<State>): void {
   ensureEl("statesFooterArea").dataset.area = String(totalArea);
   ensureEl("statesFooterPopulation").innerHTML = si(totalPopulation);
   ensureEl("statesFooterPopulation").dataset.population = String(totalPopulation);
+  const shown = view.all.filter(s => s.i && !s.removed);
+  const treasury = shown.reduce((sum, s) => sum + (s.economy.treasury || 0), 0);
+  ensureEl("statesFooterTreasury").innerHTML = `🟡 ${si(shown.length ? treasury / shown.length : 0)}`;
+  // by people, as a state's own prosperity is
+  const lived = shown.flatMap(s => {
+    const accounts = StateEconomy.getAccounts(s.i);
+    return accounts?.prosperity == null ? [] : [{ people: accounts.people, prosperity: accounts.prosperity }];
+  });
+  const people = lived.reduce((sum, row) => sum + row.people, 0);
+  ensureEl("statesFooterProsperity").innerHTML = people
+    ? renderProsperityPercent(lived.reduce((sum, row) => sum + row.people * row.prosperity, 0) / people)
+    : "—";
 
   renderEditorPagination(ensureEl("statesFooter"), view, statesTable.goto);
 
@@ -856,323 +996,6 @@ function changePopulation(stateId: number): void {
   }
 }
 
-function openTreasuryDialog(stateId: number): void {
-  const state = pack.states[stateId];
-  if (!stateId || !state || state.removed) return;
-
-  const pollTaxRevenue = rn((state.pollTax || 0) * ((state.rural || 0) + (state.urban || 0)), 2);
-  let salesTaxRevenue = 0;
-  let tariffRevenue = 0;
-  for (const deal of pack.deals ?? []) {
-    if (deal.tax) {
-      let sellerStateId = 0;
-      if (deal.sellerType === "burg") {
-        sellerStateId = pack.burgs[deal.seller]?.state || 0;
-      } else if (deal.sellerType === "market") {
-        const market = Markets.get(deal.seller);
-        const centerBurgId = market?.centerBurgId;
-        sellerStateId = centerBurgId ? pack.burgs[centerBurgId]?.state || 0 : 0;
-      }
-      if (sellerStateId === stateId) salesTaxRevenue += deal.tax;
-    }
-    if (deal.tariff && deal.buyerType === "market") {
-      const market = Markets.get(deal.buyer);
-      const centerBurgId = market?.centerBurgId;
-      const buyerStateId = centerBurgId ? pack.burgs[centerBurgId]?.state || 0 : 0;
-      if (buyerStateId === stateId) tariffRevenue += deal.tariff;
-    }
-  }
-
-  let draftRules: TariffRule[] = (state.tariffs ?? []).map(rule => ({
-    states: Array.isArray(rule.states) ? [...rule.states] : "all",
-    goods: Array.isArray(rule.goods) ? [...rule.goods] : "all",
-    rate: rule.rate
-  }));
-
-  const formatStatesLabel = (states: number[] | "all"): { label: string; tip: string } => {
-    if (!Array.isArray(states))
-      return { label: t("All states"), tip: sentences(t("All foreign states"), t("Click to select")) };
-    const names = states.map(id => pack.states[id]?.name || String(id));
-    const label = names.length <= 2 ? names.join(", ") : `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
-    return { label: label || t("None"), tip: sentences(names.join(", ") || t("None"), t("Click to select")) };
-  };
-
-  const formatGoodsLabel = (goods: number[] | "all"): { label: string; tip: string } => {
-    if (!Array.isArray(goods)) return { label: t("All goods"), tip: sentences(t("All goods"), t("Click to select")) };
-    const names = goods.map(id => Goods.get(id)?.name || String(id));
-    const label = names.length <= 2 ? names.join(", ") : `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
-    return { label: label || t("None"), tip: sentences(names.join(", ") || t("None"), t("Click to select")) };
-  };
-
-  Dialog.message({
-    message: /* html */ `<div data-tip="${t("Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tariffs are applied to foreign goods imported into the state's markets. Tax changes take effect on Production regeneration")}" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
-      <label for="stateSalesTaxInput">${t("Sales Tax")}:</label>
-      <input id="stateSalesTaxInput" type="number" min="0" max="1" step="0.01" value="${state.salesTax}" style="width: 6em"/> = ${formatPrice(salesTaxRevenue)}
-      <label for="statePollTaxInput">${t("Poll Tax")}:</label>
-      <input id="statePollTaxInput" type="number" min="0" max="10" step="0.01" value="${state.pollTax}" style="width: 6em"/> = ${formatPrice(pollTaxRevenue)}
-      <label>${t("Tariffs")}:</label>
-      <span></span> = ${formatPrice(tariffRevenue)}
-      <label for="stateTreasuryInput">${t("Treasury")}:</label>
-      <input id="stateTreasuryInput" type="number" step="1" value="${state.treasury}" style="width: 6em" />
-    </div>
-    <hr />
-    <div style="display: flex; justify-content: space-between; align-items: center; margin: 0.4em 0;">
-      <b data-tip="${t("More specific rules override general rules. Embargoes block trade in both directions")}">${t("Tariffs and Embargoes")}</b>
-      <div style="display: flex; gap: 0.3em;">
-        <button id="stateTariffReset" type="button" class="icon-arrows-cw" data-tip="${t("Reset tariffs based on current diplomatic relations")}"> ${t("Reset")}</button>
-        <button id="stateTariffAdd" type="button" class="icon-plus" data-tip="${t("Add tariff or embargo rule")}"> ${t("Add")}</button>
-      </div>
-    </div>
-    <div id="stateTariffsList" style="max-height: 15em; overflow-y: auto; display: flex; flex-direction: column; row-gap: 0.25em;"></div>`,
-    title: t("Taxes and Treasury: {{- state}}", { state: state.name }),
-    width: "32em",
-    buttons: [
-      {
-        label: t("Apply"),
-        onClick: () => {
-          const salesInput = ensureEl<HTMLInputElement>("stateSalesTaxInput");
-          const pollInput = ensureEl<HTMLInputElement>("statePollTaxInput");
-          const treasuryInput = ensureEl<HTMLInputElement>("stateTreasuryInput");
-          const newSales = Math.max(0, Math.min(1, +salesInput.value));
-          const newPoll = Math.max(0, +pollInput.value);
-          const newTreasury = +treasuryInput.value;
-          States.setTaxes(
-            stateId,
-            Number.isFinite(newSales) ? newSales : state.salesTax,
-            Number.isFinite(newPoll) ? newPoll : state.pollTax
-          );
-          States.setTariffs(stateId, draftRules);
-          if (Number.isFinite(newTreasury)) States.setTreasury(stateId, newTreasury);
-          refreshStatesEditor();
-        }
-      },
-      { label: t("Cancel") }
-    ]
-  });
-
-  const listEl = ensureEl("stateTariffsList");
-
-  const renderRules = (): void => {
-    if (!draftRules.length) {
-      listEl.innerHTML = `<div style="color: #666; font-style: italic; padding: 0.3em 0;">${t("No tariff or embargo rules")}</div>`;
-      return;
-    }
-    listEl.innerHTML = draftRules
-      .map((rule, index) => {
-        const statesInfo = formatStatesLabel(rule.states);
-        const goodsInfo = formatGoodsLabel(rule.goods);
-        const isEmbargo = rule.rate === "embargo";
-        const rateValue = isEmbargo ? 0.1 : rule.rate;
-        return /* html */ `<div class="tariffRuleRow" data-index="${index}" style="display: grid; grid-template-columns: 1fr 1fr 5.8em 4.5em 1.2em; column-gap: 0.3em; align-items: center;">
-          <button type="button" class="tariffStatesBtn" data-tip="${statesInfo.tip}" style="text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${statesInfo.label}</button>
-          <button type="button" class="tariffGoodsBtn" data-tip="${goodsInfo.tip}" style="text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${goodsInfo.label}</button>
-          <select class="tariffTypeSelect" data-tip="${t("Rule policy: tariff rate or complete trade embargo")}">
-            <option value="tariff" ${!isEmbargo ? "selected" : ""}>${t("Tariff")}</option>
-            <option value="embargo" ${isEmbargo ? "selected" : ""}>${t("Embargo")}</option>
-          </select>
-          <input class="tariffRateInput" type="number" min="0" max="10" step="0.01" value="${rateValue}" data-tip="${t("Import tariff rate")}" style="width: 4.2em; ${isEmbargo ? "visibility: hidden;" : ""}" />
-          <span class="icon-trash-empty pointer tariffRemoveBtn" data-tip="${t("Remove rule")}"></span>
-        </div>`;
-      })
-      .join("");
-  };
-
-  renderRules();
-
-  ensureEl("stateTariffReset").addEventListener("click", () => {
-    draftRules = States.defineTariffs(state).map(rule => ({
-      states: Array.isArray(rule.states) ? [...rule.states] : "all",
-      goods: Array.isArray(rule.goods) ? [...rule.goods] : "all",
-      rate: rule.rate
-    }));
-    renderRules();
-  });
-
-  ensureEl("stateTariffAdd").addEventListener("click", () => {
-    draftRules.push({ states: "all", goods: "all", rate: 0.1 });
-    renderRules();
-  });
-
-  listEl.addEventListener("click", event => {
-    const target = event.target as HTMLElement;
-    const row = target.closest<HTMLElement>(".tariffRuleRow");
-    if (!row) return;
-    const index = +row.dataset.index!;
-    const rule = draftRules[index];
-    if (!rule) return;
-
-    if (target.classList.contains("tariffRemoveBtn")) {
-      draftRules.splice(index, 1);
-      renderRules();
-    } else if (target.classList.contains("tariffStatesBtn")) {
-      openTariffStatesSelector(stateId, rule, renderRules);
-    } else if (target.classList.contains("tariffGoodsBtn")) {
-      openTariffGoodsSelector(rule, renderRules);
-    }
-  });
-
-  listEl.addEventListener("change", event => {
-    const target = event.target as HTMLInputElement | HTMLSelectElement;
-    const row = target.closest<HTMLElement>(".tariffRuleRow");
-    if (!row) return;
-    const index = +row.dataset.index!;
-    const rule = draftRules[index];
-    if (!rule) return;
-
-    if (target.classList.contains("tariffTypeSelect")) {
-      const rateInput = row.querySelector<HTMLInputElement>(".tariffRateInput");
-      if (target.value === "embargo") {
-        rule.rate = "embargo";
-        if (rateInput) rateInput.style.visibility = "hidden";
-      } else {
-        const val = rateInput ? Math.max(0, Math.min(10, +rateInput.value)) : 0.1;
-        rule.rate = Number.isFinite(val) ? rn(val, 4) : 0.1;
-        if (rateInput) rateInput.style.visibility = "";
-      }
-    } else if (target.classList.contains("tariffRateInput")) {
-      const val = Math.max(0, Math.min(10, +target.value));
-      if (rule.rate !== "embargo") rule.rate = Number.isFinite(val) ? rn(val, 4) : 0;
-    }
-  });
-
-  listEl.addEventListener("input", event => {
-    const target = event.target as HTMLInputElement;
-    if (!target.classList.contains("tariffRateInput")) return;
-    const row = target.closest<HTMLElement>(".tariffRuleRow");
-    if (!row) return;
-    const index = +row.dataset.index!;
-    const rule = draftRules[index];
-    if (!rule || rule.rate === "embargo") return;
-    const val = Math.max(0, Math.min(10, +target.value));
-    rule.rate = Number.isFinite(val) ? rn(val, 4) : 0;
-  });
-}
-
-function openTariffStatesSelector(stateId: number, rule: TariffRule, onApply: () => void): void {
-  const foreignStates = pack.states.filter(s => s.i && !s.removed && s.i !== stateId);
-  const isAll = rule.states === "all";
-  const selected = new Set(Array.isArray(rule.states) ? rule.states : foreignStates.map(s => s.i));
-
-  openTariffChecklistDialog({
-    title: t("Select States"),
-    allLabel: t("All states"),
-    isAll,
-    items: foreignStates.map(s => ({
-      id: s.i,
-      name: s.name,
-      badgeHtml: `<fill-box fill="${s.color || "#ccc"}" size=".8em" disabled></fill-box>`,
-      checked: isAll || selected.has(s.i)
-    })),
-    emptyWarning: t("Select at least one state"),
-    onSave: result => {
-      rule.states = result;
-      onApply();
-    }
-  });
-}
-
-function openTariffGoodsSelector(rule: TariffRule, onApply: () => void): void {
-  const goods = pack.goods ?? [];
-  const isAll = rule.goods === "all";
-  const selected = new Set(Array.isArray(rule.goods) ? rule.goods : goods.map(g => g.i));
-
-  openTariffChecklistDialog({
-    title: t("Select Goods"),
-    allLabel: t("All goods"),
-    isAll,
-    items: goods.map(g => ({
-      id: g.i,
-      name: g.name,
-      badgeHtml: g.icon
-        ? `<svg width="1.2em" height="1.2em" class="goodIcon" style="min-width: 1.2em; min-height: 1.2em; flex-shrink: 0;">${goodBadge(g)}</svg>`
-        : `<fill-box fill="${g.color || "#ccc"}" size=".8em" disabled></fill-box>`,
-      checked: isAll || selected.has(g.i)
-    })),
-    emptyWarning: t("Select at least one good"),
-    onSave: result => {
-      rule.goods = result;
-      onApply();
-    }
-  });
-}
-
-function openTariffChecklistDialog({
-  title,
-  allLabel,
-  isAll,
-  items,
-  emptyWarning,
-  onSave
-}: {
-  title: string;
-  allLabel: string;
-  isAll: boolean;
-  items: { id: number; name: string; badgeHtml?: string; checked: boolean }[];
-  emptyWarning: string;
-  onSave: (value: number[] | "all") => void;
-}): void {
-  Dialog.destroy("tariffSelectorDialog");
-  const dialogEl = document.createElement("div");
-  dialogEl.id = "tariffSelectorDialog";
-  dialogEl.className = "dialog";
-  document.body.appendChild(dialogEl);
-
-  const itemsHtml = items
-    .map(
-      item =>
-        `<label style="display: flex; align-items: center; column-gap: 0.35em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><input type="checkbox" class="native tariffItemCheck" value="${item.id}" ${item.checked ? "checked" : ""} />${item.badgeHtml ?? ""}<span>${item.name}</span></label>`
-    )
-    .join("");
-
-  dialogEl.innerHTML = /* html */ `
-    <div style="margin-bottom: 0.4em; padding-bottom: 0.3em; border-bottom: 1px solid #ccc;">
-      <label style="display: flex; align-items: center; column-gap: 0.3em;">
-        <input id="tariffAllCheck" type="checkbox" class="native" ${isAll ? "checked" : ""} />
-        <b>${allLabel}</b>
-      </label>
-    </div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.25em 0.5em; max-height: 16em; overflow-y: auto;">
-      ${itemsHtml}
-    </div>
-  `;
-
-  const allCheck = ensureEl<HTMLInputElement>("tariffAllCheck");
-  const itemChecks = Array.from(dialogEl.querySelectorAll<HTMLInputElement>(".tariffItemCheck"));
-
-  allCheck.addEventListener("change", () => {
-    for (const check of itemChecks) check.checked = allCheck.checked;
-  });
-
-  dialogEl.addEventListener("change", event => {
-    const target = event.target as HTMLInputElement;
-    if (!target.classList.contains("tariffItemCheck")) return;
-    allCheck.checked = itemChecks.length > 0 && itemChecks.every(c => c.checked);
-  });
-
-  const close = () => Dialog.close("tariffSelectorDialog");
-  Dialog.open("tariffSelectorDialog", {
-    resizable: false,
-    title,
-    width: "24em",
-    buttons: [
-      {
-        label: t("Apply"),
-        onClick: () => {
-          if (allCheck.checked) {
-            onSave("all");
-            return close();
-          }
-          const checkedIds = itemChecks.filter(c => c.checked).map(c => +c.value);
-          if (!checkedIds.length) return tip(emptyWarning, false, "error");
-          onSave(checkedIds.length === itemChecks.length ? "all" : checkedIds);
-          close();
-        }
-      },
-      { label: t("Cancel"), onClick: close }
-    ]
-  });
-}
-
 function stateCapitalZoomIn(state: number): void {
   const capital = pack.states[state].capital;
   const { x, y } = pack.burgs[capital];
@@ -1222,6 +1045,7 @@ function stateRemove(stateId: number): void {
   removeEmblem("state", stateId);
   for (const province of pack.states[stateId].provinces || []) removeEmblem("province", province);
   States.remove(stateId);
+  closeEntityDialogs();
   select("#debug").selectAll(".highlight").remove();
 
   Layers.draw("burgIcons", "labels", "military", "borders", "provinces", "states");
@@ -1243,7 +1067,12 @@ function togglePercentageMode(): void {
     const totalBurgs = +ensureEl("statesFooterBurgs").textContent;
     const totalArea = +ensureEl("statesFooterArea").dataset.area!;
     const totalPopulation = +ensureEl("statesFooterPopulation").dataset.population!;
-    const totalTreasury = pack.states.reduce((sum, s) => sum + (s.treasury || 0), 0);
+    // balances are signed: a share of their total size keeps each one's sign, and the total can be 0
+    const totalTreasury = pack.states.reduce(
+      (sum, s) => sum + (s.i && !s.removed ? Math.abs(s.economy.treasury || 0) : 0),
+      0
+    );
+    const world = StateEconomy.getWorld();
     const totalCells = pack.states.reduce((sum, s) => sum + (s.i && !s.removed ? s.cells || 0 : 0), 0);
 
     ensureEl("statesBodySection")
@@ -1255,7 +1084,16 @@ function togglePercentageMode(): void {
         el.querySelector<HTMLElement>(".stateArea")!.textContent = `${rn((+area! / totalArea) * 100)}%`;
         el.querySelector<HTMLElement>(".statePopulation")!.textContent =
           `${rn((+population! / totalPopulation) * 100)}%`;
-        el.querySelector<HTMLElement>(".stateTreasury")!.textContent = `${rn((+treasury! / totalTreasury) * 100, 2)}%`;
+        el.querySelector<HTMLElement>(".stateTreasury")!.textContent =
+          `${rn((+treasury! / (totalTreasury || 1)) * 100, 2)}%`;
+        // product is a share of the world's; wealth and prosperity are against the world's average
+        const { prosperity, product, wealth } = el.dataset;
+        const share = (value: string | undefined, total: number | null | undefined) =>
+          value && total ? `${rn((+value / total) * 100, 1)}%` : "—";
+        const cell = (name: string) => el.querySelector<HTMLElement>(name);
+        if (cell(".stateProduct")) cell(".stateProduct")!.textContent = share(product, world?.product);
+        if (cell(".stateWealth")) cell(".stateWealth")!.textContent = share(wealth, world?.wealth);
+        if (cell(".stateProsperity")) cell(".stateProsperity")!.textContent = share(prosperity, world?.prosperity);
       });
   } else {
     ensureEl("statesBodySection").dataset.type = "absolute";
@@ -1439,9 +1277,11 @@ function randomizeStatesExpansion(): void {
     if (!s.i || s.removed) return;
     const expansionism = rn(Math.random() * 4 + 1, 1);
     s.expansionism = expansionism;
-    (
-      ensureEl("statesBodySection").querySelector(`div.states[data-id='${s.i}'] input.statePower`) as HTMLInputElement
-    ).value = String(expansionism);
+    // a filtered or paged list does not show every state
+    const row = ensureEl("statesBodySection").querySelector<HTMLInputElement>(
+      `div.states[data-id='${s.i}'] input.statePower`
+    );
+    if (row) row.value = String(expansionism);
   });
   recalculateStates(true);
 }
@@ -1546,7 +1386,7 @@ function openStateMergeDialog(): void {
   const statesSelector = validStates
     .map(
       s => /* html */ `
-      <div data-id="${s.i}" data-tip="${s.fullName}" style="cursor:default">
+      <div data-id="${s.i}" style="cursor:default">
         <input type="radio" name="rulingState" value="${s.i}" />
         <input id="selectState${s.i}" class="checkbox" type="checkbox" name="statesToMerge" value="${s.i}" />
         <label for="selectState${s.i}" class="checkbox-label"><fill-box fill="${s.color}" disabled></fill-box>${stateEmblem(s.i)}${s.fullName}</label>
@@ -1662,6 +1502,7 @@ const statesAnnex = createAnnexMode({
 function mergeStates(statesToMerge: number[], rulingStateId: number, asProvinces = false): void {
   for (const stateId of statesToMerge) removeEmblem("state", stateId);
   States.merge(rulingStateId, statesToMerge, asProvinces);
+  closeEntityDialogs();
 
   unfog();
   select("#debug").selectAll(".highlight").remove();
@@ -1695,9 +1536,13 @@ function downloadStatesCsv(): void {
       urban,
       s.i ? (s.provinces || []).filter(p => !pack.provinces[p]?.removed).length : "",
       s.i ? neighbors.map(n => pack.states[n].name).join(";") : "",
-      s.i ? s.salesTax || 0 : "",
-      s.i ? s.pollTax || 0 : "",
-      s.i ? s.treasury || 0 : "",
+      s.i ? s.economy.salesTax || 0 : "",
+      s.i ? s.economy.pollTax || 0 : "",
+      s.i ? s.economy.marketFee || 0 : "",
+      s.i ? adjustmentsToText(s.economy.adjustments) : "",
+      ...EXPENSES.map(expense => (s.i ? s.economy.budget[expense] : "")),
+      s.i ? s.economy.budget.corruption || 0 : "",
+      s.i ? s.economy.treasury || 0 : "",
       s.i ? (s.tags || []).join(";") : ""
     ];
   });
@@ -1733,12 +1578,55 @@ async function uploadStatesCsv(text: string): Promise<void> {
         );
         row.apply("Type", type => States.setType(id, type), state.type);
         row.apply("Expansionism", value => States.setExpansionism(id, +value), state.expansionism);
-        row.apply("Sales Tax", value => States.setTaxes(id, +value, state.pollTax || 0), state.salesTax || 0);
-        row.apply("Poll Tax", value => States.setTaxes(id, state.salesTax || 0, +value), state.pollTax || 0);
-        row.apply("Treasury", value => States.setTreasury(id, +value), state.treasury || 0);
+        row.apply(
+          "Sales Tax",
+          value => States.setTaxes(id, +value, state.economy.pollTax || 0),
+          state.economy.salesTax || 0
+        );
+        row.apply(
+          "Poll Tax",
+          value => States.setTaxes(id, state.economy.salesTax || 0, +value),
+          state.economy.pollTax || 0
+        );
+        row.apply("Market License", value => States.setMarketFee(id, +value), state.economy.marketFee || 0);
+        const expenses = state.economy.budget;
+
+        const CSV_EXPENSES = {
+          court: "Court",
+          administration: "Administration",
+          infrastructure: "Infrastructure",
+          military: "Military"
+        };
+        for (const expense of EXPENSES) {
+          row.apply(CSV_EXPENSES[expense], value => States.setBudget(id, { [expense]: +value }), expenses[expense]);
+        }
+        row.apply("Corruption", value => States.setCorruption(id, +value), state.economy.budget.corruption || 0);
+        row.assign(
+          "Adjustments",
+          text => States.setAdjustments(id, adjustmentsFromText(text)),
+          adjustmentsToText(state.economy.adjustments)
+        );
         row.assign("Tags", tags => States.setTags(id, tags), (state.tags ?? []).join(";"));
       } else {
-        for (const column of RULED_COLUMNS)
+        for (const column of [
+          "Full Name",
+          "Form",
+          "Color",
+          "Capital",
+          "Culture",
+          "Type",
+          "Expansionism",
+          "Sales Tax",
+          "Poll Tax",
+          "Market License",
+          "Adjustments",
+          "Court",
+          "Administration",
+          "Infrastructure",
+          "Military",
+          "Corruption",
+          "Tags"
+        ])
           row.apply(column, () => {
             throw new Error(t("Neutral lands have no government"));
           });
@@ -1762,4 +1650,4 @@ function updateLockStatus(stateId: number, classList: DOMTokenList): void {
   classList.toggle("icon-lock");
 }
 
-export const StatesEditor = { open, showChart: showStatesChart };
+export const StatesEditor = { open, showChart: showStatesChart, refresh: refreshStatesEditor };

@@ -274,7 +274,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
   try {
     const { migrateLegacySettings, resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
 
-    Dialog.closeAll();
+    Dialog.closeAll(undefined, { minimized: true });
 
     migrateLegacySettings(mapVersion!, data);
     const settings = data[1] ? safeParseJSON(data[1]) : null;
@@ -344,13 +344,13 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.zones = data[38] ? JSON.parse(data[38]) : [];
     pack.cells.biome = Uint8Array.from(data[16].split(","), Number);
     pack.cells.burg = Uint16Array.from(data[17].split(","), Number);
-    pack.cells.conf = Uint8Array.from(data[18].split(","), Number);
+    pack.cells.conf = Uint16Array.from(data[18].split(","), Number);
     pack.cells.culture = Uint16Array.from(data[19].split(","), Number);
     pack.cells.fl = Uint16Array.from(data[20].split(","), Number);
     pack.cells.pop = Float32Array.from(data[21].split(","), Number);
     pack.cells.r = Uint16Array.from(data[22].split(","), Number);
     // data[23] had deprecated cells.road
-    pack.cells.s = Uint16Array.from(data[24].split(","), Number);
+    pack.cells.s = Int16Array.from(data[24].split(","), Number); // old files hold wrapped negatives, which wrap back
     pack.cells.state = Uint16Array.from(data[25].split(","), Number);
     pack.cells.religion = data[26]
       ? Uint16Array.from(data[26].split(","), Number)
@@ -363,10 +363,12 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.cells.routes = data[36] ? JSON.parse(data[36]) : {};
     pack.ice = data[39] ? JSON.parse(data[39]) : [];
     pack.cells.good = data[40] ? Uint16Array.from(data[40].split(","), Number) : new Uint16Array(pack.cells.i.length);
-    pack.goods = data[41] ? JSON.parse(data[41]) : [];
+    if (data[41]) options.map.goods = JSON.parse(data[41]); // older maps keep goods outside the settings
     pack.markets = data[42] ? JSON.parse(data[42]) : [];
     pack.deals = data[43] ? JSON.parse(data[43]) : [];
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
+    if (data[54]) pack.cells.prosperity = Uint8Array.from(data[54].split(","), Number); // auto-update adds it to older maps
+    if (data[55]) pack.cells.development = Uint8Array.from(data[55].split(","), Number); // auto-update adds it to older maps
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
     pack.relief = data[49] ? JSON.parse(data[49]) : [];

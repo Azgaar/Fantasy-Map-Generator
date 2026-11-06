@@ -1,17 +1,19 @@
 // Update an old map file to the current version
 
-import { min, select } from "d3";
+import { extent, min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
+import { isDrawable } from "@/controllers/political/emblems/drawability";
+import { DEFAULT_DEVELOPMENT } from "@/data/development";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
-import { Goods } from "@/model/economy/goods-generator";
+import { type Good, Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
-import { Production } from "@/model/economy/production-generator";
+import { DEAL_KINDS, type Deal } from "@/model/economy/trade";
 import type { GraphOverrides } from "@/model/graph/graph-override";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
-import { CustomIcons, IMAGE_FRAME } from "@/model/icons";
+import { CustomIcons, Icons, IMAGE_FRAME } from "@/model/icons";
 import { type EntityRef, MapEntities } from "@/model/map-entities";
 import { normalizeLegacyBurgGroupFilters } from "@/model/options/options-legacy";
 import type { MapData } from "@/model/options/options-schema";
@@ -20,22 +22,28 @@ import { type Feature, Features, LAKE_SUBTYPES, OCEAN_SUBTYPES } from "@/model/p
 import { Lakes } from "@/model/physical/lakes";
 import { Relief, type ReliefIcon, type ReliefIconType, type ReliefSet } from "@/model/physical/relief-generator";
 import { Rivers } from "@/model/physical/river-generator";
+import { Armoria } from "@/model/political/armoria";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { Military } from "@/model/political/military-generator";
 import { Provinces } from "@/model/political/provinces-generator";
-import { States } from "@/model/political/states-generator";
+import { noFinance, type State, type StateFinance, States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
+import { Development } from "@/model/society/development-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { getDefaultMarkerName, type Marker, Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
 import { Styles } from "@/model/styles/styles";
+import { getHeightUnitRatio, heightToMeters } from "@/model/units";
 import { Hatches } from "@/renderers/hatches";
+import { getContourInterval } from "@/renderers/heightmap/heightmap-contours";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { type LayerId, Layers, type LayersState } from "@/renderers/layers";
 import {
   adoptLegacyIconSlots,
+  groupRiverStyles,
+  LEGACY_LAYER_CHILDREN,
   type LegacySvg,
   labelGroupFromLegacy,
   lakeGroupFromSvg,
@@ -52,6 +60,7 @@ import type { StylesData } from "@/types/styles";
 import { Dialog } from "@/ui/dialog/dialog";
 import { unique } from "@/utils/array-utils";
 import { sanitizeSvgIcon, scopeSvgIcon } from "@/utils/file-utils";
+import { SEA_LEVEL } from "@/utils/height-utils";
 import { t } from "@/utils/i18n";
 import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
@@ -140,6 +149,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
         name,
         color: colors[i] || defaultBiome?.color || "#999999",
         habitability: habitability[i] ?? defaultBiome?.habitability ?? 50,
+        development: defaultBiome?.development ?? 0,
         iconsDensity: defaultBiome?.iconsDensity ?? 0,
         icons: defaultBiome?.icons ?? [],
         cost: defaultBiome?.cost ?? 50,
@@ -198,6 +208,9 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
     // v1.0 added state relations, provinces, forms and full names
     selectInSvg("#viewbox").insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
+    // these generators read state finances and development, which the v1.124.0 and v1.157.0 steps make
+    for (const state of pack.states) state.economy ??= noFinance();
+    pack.cells.development = new Uint8Array(0);
     States.collectStatistics();
     States.generateCampaigns();
     States.generateDiplomacy();
@@ -412,6 +425,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       .attr("box-size", 3)
       .attr("stroke", "#000")
       .attr("stroke-width", 0.3);
+    pack.deals = []; // no economy before v1.124.0, so nothing to equip from
     Military.generate();
   }
 
@@ -640,7 +654,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     }
   }
 
-  if (isOlderThan("1.652.0")) {
+  if (isOlderThan("1.65.2")) {
     // remove style to unhide layers
     selectInSvg("#rivers").attr("style", null);
     selectInSvg("#borders").attr("style", null);
@@ -1166,29 +1180,12 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
     for (const state of pack.states) {
       if (!state) continue;
-      if (!state.i || state.removed) {
-        if (state.i === 0) {
-          state.salesTax = 0;
-          state.pollTax = 0;
-          state.treasury = 0;
-        }
-        continue;
-      }
-      const taxes = States.defineTaxRates(state);
-      state.salesTax = taxes.salesTax;
-      state.pollTax = taxes.pollTax;
-      state.treasury = 0;
+      const rates = state.i && !state.removed ? States.defineTaxRates(state) : {};
+      state.economy = { ...noFinance(), ...rates };
     }
 
     Goods.generate();
     Markets.generate();
-    Production.produce();
-    States.collectTaxes();
-  }
-
-  if (isOlderThan("1.127.0")) {
-    // goods visibility moved onto the good itself; default to showing the first good
-    if (pack.goods?.length && !pack.goods.some(good => good.visible)) pack.goods[0].visible = true;
   }
 
   if (isOlderThan("1.138.0")) {
@@ -1606,6 +1603,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     for (const layer of Layers.all) {
       declared.add(layer.elementId);
       for (const child of layer.children) declared.add(child.id);
+      for (const id of LEGACY_LAYER_CHILDREN[layer.id] ?? []) declared.add(id);
     }
 
     const isEmpty = (group: SVGGElement) => group.childElementCount === 0;
@@ -1974,7 +1972,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     // v1.154.0 derives symbol ids from the icon set directories: good-<name> is goods-<name>, uploads are custom-goods-<id>
     const goodIconId = (icon: string): string =>
       icon.replace(/^good-custom-/, "custom-goods-").replace(/^good-/, `${Goods.iconSet.id}-`);
-    for (const good of pack.goods ?? []) if (good.icon) good.icon = goodIconId(good.icon);
+    for (const good of options.map.goods) if (good.icon) good.icon = goodIconId(good.icon);
 
     // merging states kept the merged regiments' old state and could repeat an id; regiments are addressed by
     // their state and id since v1.154.0
@@ -1994,7 +1992,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     const kept = new Set(CustomIcons.all.map(icon => icon.id));
     if (data[45]) adoptGoodsUploads(data[45]);
     adoptLegacyIconSlots([
-      ...(pack.goods ?? []),
+      ...options.map.goods,
       ...(pack.markers ?? []),
       ...(pack.states ?? []).flatMap(state => state?.military ?? []),
       ...options.map.military.units
@@ -2018,7 +2016,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
           const definition = findInSvg(`${type}COA${entity.i}`);
           // a removed entity is never drawn again, so its picture would only clutter the Custom icons
           const icon = entity.removed ? "" : legacyEmblemIcon(definition, pictures);
-          entity.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
+          entity.coa = { icon, ...Emblems.placement(coa) };
           if (icon) used.add(icon);
         }
       }
@@ -2094,23 +2092,28 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
   if (isOlderThan("1.155.0")) {
     // v1.155.0 added tags to every taggable entity
-    const { states, provinces, cultures, religions, burgs, markers, rivers, routes, zones, features, goods } = pack;
+    const { states, provinces, cultures, religions, burgs, markers, rivers, routes, zones, features } = pack;
     const regiments = (states ?? []).flatMap(state => state?.military ?? []);
-    const tagged = [states, provinces, cultures, religions, burgs, markers, rivers, routes, zones, features, goods];
+    const tagged = [
+      states,
+      provinces,
+      cultures,
+      religions,
+      burgs,
+      markers,
+      rivers,
+      routes,
+      zones,
+      features,
+      options.map.goods
+    ];
     for (const entity of [...tagged, regiments].flat() as { tags?: unknown }[]) {
       if (entity && typeof entity === "object" && !Array.isArray(entity.tags)) entity.tags = [];
     }
 
     // v1.155.0 added state.tariffs
     for (const state of pack.states ?? []) {
-      if (!state) continue;
-      if (!Array.isArray(state.tariffs)) {
-        if (!state.i || state.removed) {
-          state.tariffs = [];
-        } else {
-          state.tariffs = States.defineTariffs(state);
-        }
-      }
+      if (state) ((state.economy ?? state) as Partial<StateFinance>).tariffs = States.defineTariffs(state); // flat unless the 1.124 step ran
     }
 
     // journeys take plain colors only since v1.155.0: a hatching keeps its color
@@ -2149,6 +2152,157 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       name,
       items: (data || "").split("|").filter(Boolean).map(toItem)
     }));
+  }
+
+  if (isOlderThan("1.157.0")) {
+    // v1.157.0 spaces contours in height units, not generator heights: keep about as many lines
+    const record = data[48] ? safeParseJSON(data[48]) : undefined;
+    const land = record?.heightmap?.groups?.landHeights?.options?.contours;
+    const ocean = record?.heightmap?.groups?.oceanHeights?.options?.contours;
+    const isLegacy = (contours?: { interval?: number }) => Number(contours?.interval) >= 1 && contours!.interval! <= 20;
+    if (isLegacy(land) || isLegacy(ocean)) {
+      const [low = SEA_LEVEL, high = SEA_LEVEL] = extent(grid.cells.h);
+      const ratio = getHeightUnitRatio();
+      // the old levels ran from sea level in steps of the interval, up to 100 or down to 0
+      if (isLegacy(land)) {
+        const count = Math.ceil((Math.min(high, 100) - SEA_LEVEL) / land.interval) - 1;
+        land.interval = getContourInterval(count, heightToMeters(high) * ratio);
+      }
+      if (isLegacy(ocean)) {
+        const count = Math.ceil((SEA_LEVEL - Math.max(low, 0)) / ocean.interval) - 1;
+        ocean.interval = getContourInterval(count, -heightToMeters(low) * ratio);
+      }
+    }
+
+    // v1.157.0 draws rivers in style groups, as routes are: they all start in the default one
+    for (const river of pack.rivers ?? []) river.group ??= "regular";
+    if (record) {
+      groupRiverStyles(record);
+      data[48] = JSON.stringify(record);
+    }
+
+    // v1.157.0 draws Armoria API pictures as blazons where it can; the rest follow the API
+    const pictures = new Set<string>();
+    for (const entity of [...(pack.states ?? []), ...(pack.provinces ?? []), ...(pack.burgs ?? [])]) {
+      if (!entity?.coa || !("icon" in entity.coa)) continue;
+      const { icon } = entity.coa;
+      const blazon = Armoria.pictureCoa(CustomIcons.get(icon));
+      if (!blazon || !isDrawable(blazon)) continue;
+      entity.coa = { ...blazon, ...Emblems.placement(entity.coa) };
+      pictures.add(icon);
+    }
+    for (const icon of CustomIcons.all) {
+      if (icon.kind !== "image") continue;
+      const content = Armoria.migrateLink(icon.content);
+      if (pictures.has(icon.id) && !Object.keys(Icons.uses(icon.id)).length) CustomIcons.remove(icon.id);
+      else if (content !== icon.content) CustomIcons.update(icon.id, { content });
+    }
+
+    // v1.157.0 moves state finances to state.economy, with market fees, corruption and the budget
+    const FINANCE_KEYS = ["salesTax", "pollTax", "marketFee", "treasury", "tariffs"] as const;
+    for (const state of pack.states ?? []) {
+      if (!state) continue;
+      const legacy = state as State & Partial<StateFinance>;
+      const { salesTax = 0, pollTax = 0, tariffs = [], treasury = 0 } = legacy;
+      for (const key of FINANCE_KEYS) delete legacy[key];
+      // the v1.124.0 step sets it for older maps; the old treasury held one run's taxes
+      state.economy ??= { ...noFinance(), salesTax, pollTax, tariffs, collected: treasury, treasury };
+      state.economy.marketFee = States.defineMarketFee(state);
+      state.economy.budget = States.defineBudget(state, States.defineCorruption(state));
+      state.economy.adjustments ??= [];
+    }
+
+    // v1.157.0 charges carriage per good, adds development tiers and places deposits by count per good
+    for (const good of options.map.goods) {
+      good.carriage ??= Goods.getDefaultCarriage(good);
+      good.development ??= Goods.getDefaultDevelopment(good.name);
+    }
+    function migrateDeposits() {
+      const counts: number[] = [];
+      for (const goodId of pack.cells.good) counts[goodId] = (counts[goodId] || 0) + 1;
+      for (const good of options.map.goods as (Good & { chance?: number })[]) {
+        const count = counts[good.i] || 0;
+        if (good.chance && good.distribution)
+          good.deposits = count
+            ? [Math.max(1, Math.round(count * 0.75)), Math.max(1, Math.round(count * 1.25))]
+            : (Goods.getDefaultDeposits(good.name) ?? [1, 2]);
+        delete good.chance;
+      }
+    }
+    if (options.map.goods.some(good => "chance" in good)) migrateDeposits();
+
+    for (const burg of pack.burgs ?? []) delete (burg as { market?: number } | undefined)?.market;
+
+    /** v1.157.0 keeps each cell's technological development */
+    function addDevelopment() {
+      if (!pack.cells?.h || !pack.cultures || pack.cells.development?.length) return;
+      const biomes = Biomes.getDefault();
+      for (const biome of pack.biomes ?? []) if (biome) biome.development ??= biomes[biome.i]?.development ?? 0;
+      for (const culture of pack.cultures ?? [])
+        if (culture?.i && !culture.removed)
+          culture.development ??= Cultures.getDefaultDevelopment(culture.name) ?? DEFAULT_DEVELOPMENT;
+      Development.generate();
+    }
+    addDevelopment();
+
+    /** v1.157.0 sums a burg's trades by market, good and kind. Trade between markets has no burg */
+    function migrateEconomyRun() {
+      type LegacyDeal = {
+        seller: number;
+        sellerType: "burg" | "market";
+        buyer: number;
+        buyerType: "burg" | "market";
+        good: number;
+        units: number;
+        price: number;
+        tax?: number;
+        tariff?: number;
+      };
+      const goods = new Set(options.map.goods.map(good => good.i));
+      const markets = new Set(pack.markets?.map(market => market.i));
+      const isBurg = (id: number) => Boolean(pack.burgs?.[id]?.i && !pack.burgs[id].removed);
+
+      const legacy = (pack.deals ?? []) as unknown as LegacyDeal[];
+      const lastSale = legacy.findLastIndex(deal => deal.sellerType === "burg"); // burgs bought their needs after all had sold
+      const deals = new Map<string, Deal>();
+      legacy.forEach((deal, id) => {
+        if (deal.sellerType === deal.buyerType) return;
+        const selling = deal.sellerType === "burg";
+        const [burgId, marketId] = selling ? [deal.seller, deal.buyer] : [deal.buyer, deal.seller];
+        if (!isBurg(burgId) || !markets.has(marketId) || !goods.has(deal.good)) return;
+        const kind = selling ? DEAL_KINDS.sale : id < lastSale ? DEAL_KINDS.input : DEAL_KINDS.demand;
+        const key = `${burgId}-${marketId}-${deal.good}-${kind}`;
+        const summed = deals.get(key) ?? ([burgId, marketId, deal.good, kind, 0, 0, 0, 0, 0] as Deal);
+        const units = summed[4] + deal.units;
+        summed[5] = units ? (summed[4] * summed[5] + deal.units * deal.price) / units : 0;
+        summed[4] = units;
+        summed[6] += deal.tax || 0;
+        summed[7] += deal.tariff || 0;
+        deals.set(key, summed);
+      });
+      pack.deals = [...deals.values()];
+      for (const deal of pack.deals) {
+        deal[4] = rn(deal[4], 2);
+        deal[5] = rn(deal[5], 4);
+        deal[6] = rn(deal[6], 2);
+        deal[7] = rn(deal[7], 2);
+      }
+
+      for (const burg of pack.burgs ?? []) {
+        if (!burg?.i) continue;
+        const made: number[] = [];
+        for (const { goodId, units } of (burg.production ?? []) as unknown as { goodId?: number; units: number }[])
+          if (goodId !== undefined && goods.has(goodId)) made[goodId] = (made[goodId] || 0) + units;
+        burg.production = made.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)]] : []));
+      }
+
+      if (pack.cells?.i) pack.cells.prosperity ??= new Uint8Array(pack.cells.i.length); // rural days were not kept
+
+      // the old run kept no military spending: armies count as fully kept until the next run
+      for (const state of pack.states ?? [])
+        if (state?.i && !state.removed) state.economy.spent.military = Military.getUpkeepNeed(state.i);
+    }
+    migrateEconomyRun();
   }
 }
 

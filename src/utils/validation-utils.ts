@@ -7,6 +7,16 @@ export const requireName = (name: unknown): string => {
   return value;
 };
 
+/** Adjustments: { name, value } lines, names trimmed and values rounded to cents */
+export const requireAdjustments = (lines: unknown): { name: string; value: number }[] => {
+  if (!Array.isArray(lines)) throw new Error("Adjustments must be a list of { name, value } lines");
+  return lines.map(({ name, value } = {}) => {
+    if (typeof name !== "string") throw new Error("An adjustment's name must be text");
+    if (typeof value !== "number" || !Number.isFinite(value)) throw new Error("An adjustment's value must be a number");
+    return { name: name.trim(), value: Math.round(value * 100) / 100 };
+  });
+};
+
 /** One of the allowed values, or a readable error listing them */
 export const requireOneOf = <T extends string>(value: unknown, allowed: readonly T[], label: string): T => {
   if (!allowed.includes(value as T)) throw new Error(`${label} must be one of: ${allowed.join(", ")}`);

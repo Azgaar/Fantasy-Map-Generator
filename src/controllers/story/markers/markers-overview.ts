@@ -69,7 +69,7 @@ const columns: EditorColumn<Marker>[] = [
   { key: "locate", width: "1.4em" },
   { key: "remove", width: "1.4em", permanent: true }
 ];
-const markersTable = initEditorTable<Marker>({ getData: getFilteredMarkers, onUpdate: renderMarkersPage });
+const markersTable = initEditorTable<Marker>({ dialogId, getData: getFilteredMarkers, onUpdate: renderMarkersPage });
 
 function open(): void {
   if (options.app.mode) return;

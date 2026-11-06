@@ -1,4 +1,5 @@
 import { quadtree } from "d3";
+import { Goods } from "@/model/economy/goods-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { getMixedColor, getRandomColor, requireColor } from "@/utils/color-utils";
@@ -621,7 +622,9 @@ function getKinCultures(cultureId: number): Set<number> {
 
 class ReligionsModule {
   regenerate(): void {
+    const kept = pack.religions?.filter(religion => religion.i && religion.lock && !religion.removed) ?? [];
     this.generate();
+    Goods.remapEntityMultipliers("religion", new Map(kept.map(religion => [religion.i, religion.i]))); // they keep their ids
   }
 
   generate() {

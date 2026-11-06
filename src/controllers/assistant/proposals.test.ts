@@ -56,6 +56,18 @@ beforeEach(() => {
   } as unknown as typeof pack;
 });
 
+it("records development changes per cell, and undo restores them", async () => {
+  await import("@/model/society/development-generator");
+  const development = Uint8Array.from([10, 20]);
+  pack.cells = { i: [0, 1], h: [30, 30], pop: [1, 1], burg: [0, 0], development } as never;
+  const proposal = propose("Develop", [{ op: "Development.setCells", args: [50, [1]] }], 1, MAP) as Proposal;
+  expect(proposal.change).toEqual([expect.objectContaining({ field: "development", after: { 1: 50 } })]);
+  expect(apply(proposal, MAP)).toBeTruthy();
+  expect(Array.from(pack.cells.development!)).toEqual([10, 50]);
+  expect(undo(proposal, MAP)).toBeTruthy();
+  expect(Array.from(pack.cells.development!)).toEqual([10, 20]);
+});
+
 it("previews a batch with its side effects and leaves the map untouched", () => {
   const map = JSON.stringify(pack);
   const proposal = proposeOk([rename(1, "Saltmere"), rename(2, "Gull")]);
@@ -243,10 +255,12 @@ it.each([
   ["market", "markets", { i: 3, name: "Fair" }],
   ["good", "goods", { i: 5, name: "Salt" }]
 ] as const)("records a note on a %s and leaves the map untouched", (type, collection, entity) => {
-  (pack as unknown as Record<string, unknown[]>)[collection] = [{ ...entity }];
+  const list = [{ ...entity }] as unknown as { note?: string }[];
+  if (collection === "goods") options.map.goods = list as typeof options.map.goods;
+  else (pack as unknown as Record<string, unknown[]>)[collection] = list;
   const key = `${type}:${entity.i}`;
   const proposal = proposeOk([{ op: "Notes.write", args: [key, "<p>Lore</p>"] }]);
-  const item = () => (pack as unknown as Record<string, { note?: string }[]>)[collection][0];
+  const item = () => list[0];
   expect(item().note).toBeUndefined();
   expect(proposal.change.map(row => [row.key, row.field, row.after])).toEqual([[key, "note", "<p>Lore</p>"]]);
   expect(apply(proposal, MAP)).toBe(true);

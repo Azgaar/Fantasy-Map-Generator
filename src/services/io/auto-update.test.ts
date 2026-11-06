@@ -5,10 +5,12 @@ import "@/model/annotations/added-labels";
 import "@/model/physical/biomes-generator"; // the 1.139 step reads the default biomes
 import "@/model/physical/features-generator"; // migrations call the Features module through its global
 import "@/model/political/burgs-generator"; // the burg sets that tell style icon references from text
-import "@/model/economy/goods-generator"; // the goods icon namespace the 1.154 step migrates into
+import { Goods } from "@/model/economy/goods-generator"; // also the goods icon namespace the 1.154 step migrates into
+import { DEAL_KINDS } from "@/model/economy/trade";
 import "@/model/physical/relief-generator"; // the relief set namespace the 1.154 step migrates into
 import { Pack } from "@/model/graph/pack-generator";
 import { Options } from "@/model/options/options-model";
+import { Military } from "@/model/political/military-generator";
 import { Names } from "@/model/society/names-generator";
 import { Styles } from "@/model/styles/styles";
 import * as versioning from "@/services/versioning";
@@ -643,9 +645,9 @@ describe("v1.152.0 notes moved onto entities", () => {
       addedLabels: [],
       cultures: [],
       religions: [],
-      biomes: [],
-      goods: []
+      biomes: []
     } as unknown as typeof pack;
+    options.map.goods = [];
   });
 
   it("attaches a note to its entity and empties the legacy slot", async () => {
@@ -893,11 +895,16 @@ describe("v1.154 relief descriptors", () => {
     const data: string[] = [];
     data[48] = stylesPayload("colored");
     globalThis.pack = {
-      relief: [],
-      goods: [{ icon: "good-wood" }, { icon: "good-salted-fish" }, { icon: "good-custom-ab12" }, { icon: "goods-tea" }]
+      relief: []
     } as unknown as typeof pack;
+    options.map.goods = [
+      { icon: "good-wood" },
+      { icon: "good-salted-fish" },
+      { icon: "good-custom-ab12" },
+      { icon: "goods-tea" }
+    ] as never;
     await runMigration("1.153.1", data, ["1.154.0"]);
-    expect(pack.goods.map(good => good.icon)).toEqual([
+    expect(options.map.goods.map(good => good.icon)).toEqual([
       "goods-wood",
       "goods-salted-fish",
       "custom-goods-ab12",
@@ -918,10 +925,10 @@ describe("v1.154 relief descriptors", () => {
     options.map.military.units = [{ ...options.map.military.units[0], icon: "⚔️" }];
     globalThis.pack = {
       relief: [],
-      goods: [{ icon: "good-custom-ab12" }, { icon: "custom-goods-img" }],
       markers: [{ icon: "https://a.b/c.png" }, { icon: "https://a.b/c.png" }, { icon: "🌋" }, { icon: "hq-2" }],
       states: [{ i: 0 }, { i: 1, military: [{ icon: "XIV" }] }]
     } as unknown as typeof pack;
+    options.map.goods = [{ icon: "good-custom-ab12" }, { icon: "custom-goods-img" }] as never;
     await runMigration("1.153.1", data, ["1.154.0"]);
 
     expect(options.map.customIcons.map(icon => [icon.id, icon.kind])).toEqual([
@@ -935,7 +942,7 @@ describe("v1.154 relief descriptors", () => {
     expect(vector.content).toContain('id="custom-goods-ab12-leaf"');
     expect(vector.content).not.toContain("script");
     expect(raster).toMatchObject({ content: "data:image/png;base64,AA", viewBox: "0 0 100 100" });
-    expect(pack.goods.map(good => good.icon)).toEqual(["custom-goods-ab12", "custom-goods-img"]);
+    expect(options.map.goods.map(good => good.icon)).toEqual(["custom-goods-ab12", "custom-goods-img"]);
     expect(pack.markers[1].icon).toBe(pack.markers[0].icon);
     expect(pack.markers[2].icon).toBe("glyph-1f30b");
     expect(pack.markers[3].icon).toBe("glyph-68-71-2d-32"); // looks like an id, but no icon set owns it
@@ -1139,5 +1146,229 @@ describe("v1.109 burg groups", () => {
     expect(cities).toMatchObject({ name: "cities", features: { capital: true } });
     expect(towns).toMatchObject({ name: "towns", isDefault: true });
     expect(towns.features).toBeUndefined();
+  });
+});
+
+describe("v1.157.0 contour spacing in height units", () => {
+  function stylesRecord(land: number, ocean: number) {
+    const record = structuredClone(Styles.defaults) as any;
+    record.heightmap.groups.landHeights.options.contours.interval = land;
+    record.heightmap.groups.oceanHeights.options.contours.interval = ocean;
+    return record;
+  }
+  const intervals = (data: string[]) => {
+    const { landHeights, oceanHeights } = JSON.parse(data[48]).heightmap.groups;
+    return [landHeights.options.contours.interval, oceanHeights.options.contours.interval];
+  };
+
+  beforeEach(() => {
+    globalThis.grid = { cells: { h: Uint8Array.from([5, 20, 70]) } } as unknown as typeof globalThis.grid;
+    options.map.units.height = { unit: "m", exponent: 2 };
+  });
+
+  it("turns generator-height spacing into the round height that draws about as many lines", async () => {
+    const data: string[] = [];
+    data[48] = JSON.stringify(stylesRecord(5, 5)); // 9 land levels up to 2704 m, 2 ocean levels down to 150 m
+    await resolveVersionConflicts("1.156.0", data);
+    expect(intervals(data)).toEqual([200, 100]);
+  });
+
+  it("leaves current maps alone", async () => {
+    const data: string[] = [];
+    data[48] = JSON.stringify(stylesRecord(20, 10));
+    await resolveVersionConflicts(VERSION, data);
+    expect(intervals(data)).toEqual([20, 10]);
+  });
+});
+
+describe("v1.157.0 economy", () => {
+  it("moves state finances and drops burg markets, keeping the last run", async () => {
+    globalThis.pack = {
+      features: [],
+      cells: { i: [0], state: [1], culture: [1], religion: [1], pop: [1], burg: [1] },
+      burgs: [0, { i: 1, cell: 0, state: 1, population: 1, market: 1 }],
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, capital: 1, form: "Monarchy", salesTax: 0.15, pollTax: 0.2, treasury: 40, tariffs: [] }
+      ],
+      markets: [{ i: 1, centerBurgId: 1, color: "#fff", goods: {} }],
+      deals: []
+    } as unknown as typeof pack;
+    options.map.goods = [{ i: 1, name: "Wood", value: 1, carriage: 0.5 }] as never;
+
+    await resolveVersionConflicts("1.156.0", []);
+
+    expect(pack.burgs[1]).not.toHaveProperty("market");
+    expect(pack.states[1]).not.toHaveProperty("treasury");
+    expect(pack.states[1].economy).toMatchObject({
+      salesTax: 0.15,
+      pollTax: 0.2,
+      tariffs: [],
+      collected: 40,
+      treasury: 40
+    });
+  });
+
+  it("sums old deals by burg, market, good and kind, dropping what has no burg or good", async () => {
+    const deal = (
+      seller: number,
+      sellerType: string,
+      buyer: number,
+      buyerType: string,
+      good: number,
+      rest: object
+    ) => ({
+      seller,
+      sellerType,
+      buyer,
+      buyerType,
+      good,
+      ...rest
+    });
+    globalThis.pack = {
+      features: [],
+      burgs: [0, { i: 1 }, { i: 2, removed: true }],
+      markets: [{ i: 1, centerBurgId: 1, color: "#fff", goods: {} }],
+      deals: [
+        deal(1, "market", 1, "burg", 1, { units: 1, price: 2, tax: 0 }), // an input, bought in its turn
+        deal(1, "burg", 1, "market", 2, { units: 1, price: 2, tax: 0.1 }),
+        deal(1, "burg", 1, "market", 2, { units: 3, price: 4, tax: 0.3 }),
+        deal(2, "burg", 1, "market", 2, { units: 9, price: 9, tax: 9 }), // of a removed burg
+        deal(1, "burg", 1, "market", 9, { units: 9, price: 9, tax: 9 }), // of a removed good
+        deal(1, "market", 1, "market", 1, { units: 9, price: 9, tax: 9, tariff: 9 }), // between markets
+        deal(1, "market", 1, "burg", 1, { units: 2, price: 3, tax: 0 }) // a need, bought once all had sold
+      ]
+    } as unknown as typeof pack;
+    options.map.goods = [
+      { i: 1, name: "Wood", value: 1, carriage: 0.5 },
+      { i: 2, name: "Iron", value: 2, carriage: 0.5 }
+    ] as never;
+
+    await resolveVersionConflicts("1.156.0", []);
+
+    expect(pack.deals).toEqual([
+      [1, 1, 1, DEAL_KINDS.input, 1, 2, 0, 0, 0],
+      [1, 1, 2, DEAL_KINDS.sale, 4, 3.5, 0.4, 0, 0],
+      [1, 1, 1, DEAL_KINDS.demand, 2, 3, 0, 0, 0]
+    ]);
+  });
+
+  it("sums a burg's old production records by good", async () => {
+    globalThis.pack = {
+      features: [],
+      markets: [],
+      burgs: [
+        { i: 0 },
+        {
+          i: 1,
+          product: 7,
+          treasury: 12,
+          production: [
+            { goodId: 1, units: 2 }, // the deposit's
+            { dealId: 0 },
+            { goodId: 2, units: 1.5, recipe: [] },
+            { goodId: 1, units: 1, recipe: [] },
+            { goodId: 9, units: 1 } // a removed good's
+          ]
+        }
+      ]
+    } as unknown as typeof pack;
+    options.map.goods = [
+      { i: 1, name: "Wood", value: 1, carriage: 0.5 },
+      { i: 2, name: "Iron", value: 2, carriage: 0.5 }
+    ] as never;
+
+    await resolveVersionConflicts("1.156.0", []);
+
+    expect(pack.burgs[1].production).toEqual([
+      [1, 3],
+      [2, 1.5]
+    ]);
+    expect(pack.burgs[1]).toMatchObject({ product: 7, treasury: 12 });
+  });
+});
+
+describe("v1.157.0 armies", () => {
+  it("counts saved armies as fully kept until the next run, with no goods to equip them", async () => {
+    globalThis.pack = {
+      features: [],
+      cells: { i: [0], state: [1], culture: [1], religion: [1], pop: [1], burg: [1] },
+      cultures: [{ i: 0 }, { i: 1, type: "Generic" }],
+      religions: [{ i: 0 }, { i: 1, type: "Folk" }],
+      burgs: [{ i: 0 }, { i: 1, cell: 0, state: 1 }],
+      markets: [{ i: 1, centerBurgId: 1, color: "#fff", goods: {} }],
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, name: "Old", form: "Monarchy", capital: 1, salesTax: 0.1, military: [{ u: { infantry: 500 } }] }
+      ],
+      deals: [{ seller: 1, sellerType: "burg", buyer: 1, buyerType: "market", good: 1, units: 1, price: 1 }]
+    } as unknown as typeof pack;
+    options.map.goods = [{ i: 1, name: "Wood", value: 1, carriage: 0.5 }] as never;
+
+    await resolveVersionConflicts("1.156.0", []);
+
+    expect(pack.deals.length).toBe(1);
+    expect(Military.getUpkeepNeed(1)).toBeGreaterThan(0);
+    expect(Military.getUpkeep(1)).toBe(1);
+  });
+});
+
+describe("v1.157.0 carriage per good", () => {
+  it("gives goods saved without a carriage price the default by name, or a tenth of their value", async () => {
+    globalThis.pack = {
+      features: []
+    } as unknown as typeof pack;
+    options.map.goods = [
+      { i: 1, name: "Wood", value: 1 },
+      { i: 2, name: "Dragon scales", value: 30 },
+      { i: 3, name: "Gold", value: 15, carriage: 2 }
+    ] as never;
+
+    await resolveVersionConflicts("1.156.0", []);
+
+    expect(options.map.goods.map(good => good.carriage)).toEqual([0.5, 3, 2]);
+  });
+
+  it("gives default goods their development tier by name", async () => {
+    globalThis.pack = {
+      features: []
+    } as unknown as typeof pack;
+    options.map.goods = [
+      { i: 1, name: "Tools", value: 16 },
+      { i: 2, name: "Wood", value: 1 },
+      { i: 3, name: "Dragon scales", value: 30 }
+    ] as never;
+
+    await resolveVersionConflicts("1.156.0", []);
+
+    expect(options.map.goods.map(good => good.development)).toEqual([15, undefined, undefined]);
+  });
+});
+
+describe("v1.157.0 deposit counts", () => {
+  it("keeps every old deposit and reads the good's range off the map", async () => {
+    const cells = Array.from({ length: 900 }, (_, i) => i);
+    const deposits = Uint16Array.from(cells, i => (i < 400 ? 1 : i < 800 ? 2 : i < 850 ? 4 : 0));
+    globalThis.pack = {
+      features: [],
+      cells: { i: cells, good: deposits.slice() }
+    } as unknown as typeof pack;
+    options.map.goods = [
+      { i: 1, name: "Rare ore", value: 5, carriage: 1, chance: 3, distribution: "true" },
+      { i: 2, name: "Common clay", value: 1, carriage: 1, chance: 18, distribution: "true" },
+      { i: 3, name: "Gold", value: 15, carriage: 2, chance: 2, distribution: "true" }, // none on the map
+      { i: 4, name: "Painted", value: 1, carriage: 1, chance: null }, // placed by hand only
+      { i: 5, name: "Custom", value: 1, carriage: 1, chance: 1, distribution: "true" } // none on the map
+    ] as never;
+
+    await resolveVersionConflicts("1.156.0", []);
+
+    expect(pack.cells.good).toEqual(deposits);
+    expect(options.map.goods[0].deposits).toEqual([300, 500]);
+    expect(options.map.goods[1].deposits).toEqual([300, 500]);
+    expect(options.map.goods[2].deposits).toEqual(Goods.getDefaultDeposits("Gold"));
+    expect(options.map.goods[3].deposits).toBeUndefined();
+    expect(options.map.goods[4].deposits).toEqual([1, 2]);
+    expect(options.map.goods.some(good => "chance" in good)).toBe(false);
   });
 });

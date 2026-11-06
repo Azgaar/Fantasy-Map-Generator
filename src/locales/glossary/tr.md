@@ -24,6 +24,7 @@ Terms every `tr.json` string uses the same way. Rules for all catalogs are in
 | state                      | devlet                     |                                     |
 | province                   | eyalet                     |                                     |
 | culture                    | kültür                     |                                     |
+| development / era          | gelişmişlik / çağ          | a people's technology level, 0–100  |
 | religion                   | din                        |                                     |
 | namesbase                  | isim tabanı                |                                     |
 | heightmap                  | yükseklik haritası         | the layer is “Yükseklik”            |
@@ -88,6 +89,19 @@ Terms every `tr.json` string uses the same way. Rules for all catalogs are in
 | wealth / gross product       | zenginlik / gayrisafi hasıla |
 | treasury                     | hazine                   |
 | sales tax / poll tax         | satış vergisi / kafa vergisi |
+| prosperity / living standards | refah / yaşam düzeyi         |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | perişan / yoksul / fakir / mütevazı / rahat / bereketli / varlıklı / debdebeli / görkemli / eşsiz |
+| consumption / need / want    | tüketim / ihtiyaç / istek    |
+| product (economy) / townspeople / rural people | ürün / kasabalılar / köylüler |
+| exports / imports / trade balance | ihracat / ithalat / ticaret dengesi |
+| inequality / tax burden      | eşitsizlik / vergi yükü      |
+| sector: rural / manufacturing / trade | kırsal / zanaatlar / ticaret |
+| economy type: agrarian / artisan / mercantile | tarımsal / zanaatkâr / tüccar |
+| tariff / embargo             | tarife / ambargo         |
+| carriage / decima            | nakliye / desima         |
+| market license / margin      | pazar ruhsatı / marj     |
+| upkeep / corruption          | iaşe / yolsuzluk         |
+| crown lands                  | taç toprakları           |
 
 ## Interface
 

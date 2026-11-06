@@ -115,18 +115,18 @@ test.describe("style persistence round trips", () => {
 
     // pre-step-7 saves harvested the DOM, so this exact staleness class used to persist;
     // now the save serializes the store and the reload applies it back over the rogue value
-    const storeFill = await page.evaluate(() => styles.rivers.attrs.fill);
+    const storeFill = await page.evaluate(() => styles.rivers.groups.regular.attrs.fill);
     await page.evaluate(() => {
-      document.querySelector("#rivers")!.setAttribute("fill", "#ff0000");
+      document.querySelector('#rivers > [data-group="regular"]')!.setAttribute("fill", "#ff0000");
     });
-    expect(await page.locator("#rivers").getAttribute("fill")).toBe("#ff0000");
+    expect(await page.locator('#rivers > [data-group="regular"]').getAttribute("fill")).toBe("#ff0000");
 
     const buffer = await saveAsDownload(page);
     await reload(page, buffer, "style-persistence-editor-reloaded");
 
     const after = await page.evaluate(() => ({
-      store: styles.rivers.attrs.fill,
-      dom: document.getElementById("rivers")?.getAttribute("fill")
+      store: styles.rivers.groups.regular.attrs.fill,
+      dom: document.querySelector('#rivers > [data-group="regular"]')?.getAttribute("fill")
     }));
 
     expect(after.store).toBe(storeFill);
@@ -155,12 +155,12 @@ test.describe("style persistence round trips", () => {
     await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
     await waitForNextMap(page, mapsBefore);
 
-    // fixture carries fill="#6738bc" on #rivers and data-width="13" on #statesHalo - pin both
+    // fixture carries fill="#6738bc" on #rivers (now the regular group's) and data-width="13" on #statesHalo - pin both
     // against those known embedded values, not just against each other, so the assertion actually
     // proves the harvest ran rather than comparing two reads of the same post-load state
     const harvested = await page.evaluate(() => ({
-      riversStore: styles.rivers.attrs.fill,
-      riversDom: document.getElementById("rivers")?.getAttribute("fill"),
+      riversStore: styles.rivers.groups.regular.attrs.fill,
+      riversDom: document.querySelector('#rivers > [data-group="regular"]')?.getAttribute("fill"),
       statesHaloWidth: styles.states.groups.statesHalo.attrs["stroke-width"]
     }));
 
@@ -371,14 +371,14 @@ test.describe("style persistence round trips", () => {
 
     // diverge DOM and store: the store is the authority, the DOM write is rogue
     await page.evaluate(() => {
-      styles.rivers.attrs.fill = "#0000aa";
-      document.querySelector('[data-layer="rivers"]')!.setAttribute("fill", "#aa0000");
+      styles.rivers.groups.regular.attrs.fill = "#0000aa";
+      document.querySelector('[data-layer="rivers"] > [data-group="regular"]')!.setAttribute("fill", "#aa0000");
     });
 
     const buffer = await saveAsDownload(page);
     const lines = buffer.toString("utf8").split("\r\n");
     const record = JSON.parse(lines[48]);
-    expect(record.rivers.attrs.fill).toBe("#0000aa");
+    expect(record.rivers.groups.regular.attrs.fill).toBe("#0000aa");
   });
 
   test("relief attrs persistence: a store write survives a save and load", async ({ page }) => {

@@ -128,6 +128,7 @@ function closeRiverCreator(): void {
   if (isCellsLayerForced) Layers.hide("cells");
   isCellsLayerForced = false;
 
+  creatorCells = [];
   Dialog.destroy("riverCreator");
 }
 

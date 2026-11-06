@@ -37,7 +37,7 @@ const at = (path: string) => effectAt(path.split("."));
 
 describe("effectAt", () => {
   test("the store convention: attrs write, options draw", () => {
-    expect(at("rivers.attrs.fill")).toBe("write");
+    expect(at("landmass.attrs.fill")).toBe("write");
     expect(at("texture.options.x")).toBe("draw");
     expect(at("lakes.groups.freshwater.attrs.fill")).toBe("write");
     expect(at("emblems.groups.stateEmblems.options.size")).toBe("draw");
@@ -75,8 +75,8 @@ describe("runEffect", () => {
   });
 
   test("an attr writes its one attribute, no redraw", () => {
-    run("rivers.attrs.fill");
-    expect(Styles.writeAttr).toHaveBeenCalledWith(["rivers", "attrs", "fill"]);
+    run("landmass.attrs.fill");
+    expect(Styles.writeAttr).toHaveBeenCalledWith(["landmass", "attrs", "fill"]);
     expect(Layers.draw).not.toHaveBeenCalled();
   });
 

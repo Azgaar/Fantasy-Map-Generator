@@ -120,8 +120,7 @@ function drawRoute(points: number[][]): void {
     .data(points)
     .join("circle")
     .attr("cx", (d: number[]) => d[0])
-    .attr("cy", (d: number[]) => d[1])
-    .attr("r", 0.6);
+    .attr("cy", (d: number[]) => d[1]);
 
   const group = ensureEl<HTMLSelectElement>("routeCreatorGroupSelect").value;
   setTempRoute({ group, points });
@@ -138,7 +137,7 @@ function completeCreation(): void {
   const routeId = Routes.create(points, group);
 
   setTempRoute(null);
-  Layers.draw("routes");
+  Layers.draw("routes", "goods", "trade");
   void Controllers.RouteEditor.open(`route${routeId}`);
 }
 
@@ -153,6 +152,7 @@ function closeRouteCreator(): void {
   if (isCellsLayerForced) Layers.hide("cells");
   isCellsLayerForced = false;
 
+  creatorPoints = [];
   Dialog.destroy("routeCreator");
 }
 

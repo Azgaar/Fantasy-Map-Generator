@@ -29,7 +29,7 @@ afterEach(() => {
 describe("initEditorTable", () => {
   it("slices the first page and reports counts", () => {
     const onUpdate = vi.fn();
-    const table = initEditorTable({ getData: () => items(250), onUpdate, pageSize: 100 });
+    const table = initEditorTable({ dialogId: "editor", getData: () => items(250), onUpdate, pageSize: 100 });
     table.refresh();
     const view = onUpdate.mock.calls[0][0];
     expect(view.rows).toHaveLength(100);
@@ -40,7 +40,7 @@ describe("initEditorTable", () => {
 
   it("goto clamps to the valid page range", () => {
     const onUpdate = vi.fn();
-    const table = initEditorTable({ getData: () => items(250), onUpdate, pageSize: 100 });
+    const table = initEditorTable({ dialogId: "editor", getData: () => items(250), onUpdate, pageSize: 100 });
     table.goto(99);
     expect(table.view().page).toBe(3);
     expect(table.view().rows).toHaveLength(50);
@@ -48,9 +48,26 @@ describe("initEditorTable", () => {
     expect(table.view().page).toBe(1);
   });
 
+  it("forgets its data when its dialog closes, and remembers again when rendered anew", () => {
+    const dialog = new EventTarget();
+    vi.stubGlobal("document", { getElementById: () => dialog });
+    const table = initEditorTable({ dialogId: "editor", getData: () => items(3), onUpdate: () => {}, pageSize: 100 });
+    table.refresh();
+    expect(table.view().all).toHaveLength(3);
+
+    dialog.dispatchEvent(new CustomEvent("dialog:close"));
+    expect(table.view()).toMatchObject({ rows: [], all: [], total: 0 });
+
+    table.refresh();
+    expect(table.view().all).toHaveLength(3);
+    dialog.dispatchEvent(new CustomEvent("dialog:close"));
+    expect(table.view().all).toEqual([]);
+    vi.unstubAllGlobals();
+  });
+
   it("keeps the clamped page when the data shrinks on refresh", () => {
     let data = items(250);
-    const table = initEditorTable({ getData: () => data, onUpdate: () => {}, pageSize: 100 });
+    const table = initEditorTable({ dialogId: "editor", getData: () => data, onUpdate: () => {}, pageSize: 100 });
     table.goto(3);
     data = items(120);
     table.refresh();
@@ -58,14 +75,14 @@ describe("initEditorTable", () => {
   });
 
   it("reset returns to page 1", () => {
-    const table = initEditorTable({ getData: () => items(250), onUpdate: () => {}, pageSize: 100 });
+    const table = initEditorTable({ dialogId: "editor", getData: () => items(250), onUpdate: () => {}, pageSize: 100 });
     table.goto(3);
     table.reset();
     expect(table.view().page).toBe(1);
   });
 
   it("renders a single page for small datasets", () => {
-    const table = initEditorTable({ getData: () => items(5), onUpdate: () => {} });
+    const table = initEditorTable({ dialogId: "editor", getData: () => items(5), onUpdate: () => {} });
     table.refresh();
     expect(table.view()).toMatchObject({ page: 1, totalPages: 1, total: 5 });
   });
@@ -74,12 +91,12 @@ describe("initEditorTable", () => {
 describe("mobile defaults", () => {
   it("pages 250 items into 3 pages when not mobile, 13 pages of 20 when mobile", () => {
     device.isMobile = false;
-    const desktop = initEditorTable({ getData: () => items(250), onUpdate: () => {} });
+    const desktop = initEditorTable({ dialogId: "editor", getData: () => items(250), onUpdate: () => {} });
     desktop.refresh();
     expect(desktop.view().totalPages).toBe(3);
 
     device.isMobile = true;
-    const mobile = initEditorTable({ getData: () => items(250), onUpdate: () => {} });
+    const mobile = initEditorTable({ dialogId: "editor", getData: () => items(250), onUpdate: () => {} });
     mobile.refresh();
     expect(mobile.view().totalPages).toBe(13);
     expect(mobile.view().rows).toHaveLength(20);
@@ -268,6 +285,10 @@ describe("renderEditorHeader", () => {
     });
     expect(custom.includes('data-tip="Custom sorting help"')).toBe(true);
     expect(custom.includes("Click to sort by Value")).toBe(false);
+  });
+
+  it("wraps the label in a span so a long label can be cut", () => {
+    expect(html.includes("<span>Route</span>")).toBe(true);
   });
 
   it("leaves structural columns unsortable", () => {

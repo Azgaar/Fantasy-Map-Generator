@@ -117,7 +117,7 @@ function reconcileRoutes({ root, bounds }: ViewportRenderContext): void {
   if (tempRoute && root === document) show(tempRoute);
 
   for (const group of Array.from(container.querySelectorAll<SVGGElement>(":scope > g"))) {
-    const shapes = visibleByGroup.get(group.id) ?? [];
+    const shapes = visibleByGroup.get(group.dataset.group!) ?? [];
     const shapeIds = new Set(shapes.map(shape => shape.id));
 
     const elements = new Map<string, Element>();
