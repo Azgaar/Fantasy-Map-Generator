@@ -37,6 +37,8 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Trade animation follows edited and custom routes
 - Hovering a cut value shows its text in the tooltip
 - Editors: cut too long column names
+- Options: the interface size slider no longer jumps while dragged
+- Military units: the limit picker stays on screen with long lists
 
 # Releases
 

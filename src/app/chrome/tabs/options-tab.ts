@@ -55,6 +55,7 @@ interface OptionDefinition<T extends string | number> {
   parse: (value: string) => T;
   pin?: string;
   effect?: (value: T) => void;
+  event?: "change";
 }
 
 const OPTION_BINDINGS: Record<string, OptionBinding> = {
@@ -158,7 +159,8 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     read: o => o.app.ui.size,
     write: (o, value) => (o.app.ui.size = value),
     parse: Number,
-    effect: changeUiSize
+    effect: changeUiSize,
+    event: "change" // resizing the panel under the dragged thumb makes the value jump
   }),
   tooltipSize: option({
     read: o => o.app.ui.tooltipSize,
@@ -204,10 +206,11 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
 };
 
 function option<T extends string | number>(definition: OptionDefinition<T>): OptionBinding {
-  const { read, write, parse, pin, effect } = definition;
+  const { read, write, parse, pin, effect, event } = definition;
   return {
     read,
     pin,
+    event,
     update(raw) {
       const value = parse(raw);
       Options.set(o => write(o, value));
@@ -962,7 +965,7 @@ export function restoreUi(): void {
   Emblems.setShape(emblems.shape);
   changeTooltipSize(ui.tooltipSize);
 
-  optionInput("uiSize").max = String(maxUiSize());
+  optionInput("uiSize").setAttribute("max", String(maxUiSize()));
   changeUiSize(ui.size ?? defaultUiSize());
 
   changeDialogsTheme(ui.themeColor, ui.transparency);
