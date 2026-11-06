@@ -9,11 +9,13 @@ Terms every `id.json` string uses the same way. Rules for all catalogs are in
 - Buttons and menu items are short verbs: “Simpan”, “Hapus semua”, “Tambah permukiman”.
 - Tooltips start with an action verb: “Klik untuk mengubah penanda”, “Seret untuk memindahkan”.
 - Confirmations are questions: “Yakin ingin menghapus permukiman ini?”.
-- Dialog titles name the thing: “Editor Negara”, “Ikhtisar Sungai”. Inline actions use “Ubah”.
+- Dialog titles name the thing: “Editor Negara”, “Overview Sungai”. Inline actions use “Ubah”.
 - Use curly quotes “ ” for quoted names. Never straight `"`.
 - Keep key names as they are: Ctrl, Shift, Alt, Enter, Esc, Space.
 - Brand and product names stay Latin: Armoria, FMG, Dropbox, Discord, Google, Azgaar.
   The product is “Generator Peta Fantasi Azgaar”; the assistant is “Asisten Azgaar”.
+- Common software terms stay English: zoom, toggle, overview, API key, template. “Zoom In” / “Zoom Out” stay “Perbesar” / “Perkecil”.
+- Heightmap template and precreated heightmap names stay English: “Africa Centric”, “Shattered”, “World”.
 - Keep labels short; the tab menus are narrow.
 
 ## Map
@@ -31,7 +33,7 @@ Terms every `id.json` string uses the same way. Rules for all catalogs are in
 | religion                   | agama                  |                                            |
 | namesbase                  | basis nama             |                                            |
 | heightmap                  | peta ketinggian        | the layer is “Ketinggian”                  |
-| template                   | templat                |                                            |
+| template                   | template               | a heightmap template is “template peta”    |
 | cell                       | sel                    |                                            |
 | grid                       | kisi                   |                                            |
 | seed                       | seed                   |                                            |
@@ -105,13 +107,14 @@ Terms every `id.json` string uses the same way. Rules for all catalogs are in
 | -------------------------- | ----------------------------- |
 | layer                      | lapisan                       |
 | style / preset             | gaya / preset                 |
+| balance (money) / Balance preset | saldo / seimbang        |
 | options / settings         | opsi / pengaturan             |
-| tools / editor / overview  | alat / editor / ikhtisar      |
+| tools / editor / overview  | alat / editor / overview      |
 | chart / hierarchy          | bagan / hierarki              |
 | generate / regenerate      | buat / buat ulang             |
 | lock / unlock              | kunci / buka kunci            |
 | undo / redo                | urungkan / ulangi             |
-| toggle                     | alihkan                       |
+| toggle                     | toggle                        |
 | save / load                | simpan / muat                 |
 | download / upload          | unduh / unggah                |
 | export / import            | ekspor / impor                |
@@ -121,6 +124,6 @@ Terms every `id.json` string uses the same way. Rules for all catalogs are in
 | scale bar / compass rose   | skala batang / mawar angin    |
 | ruler                      | penggaris                     |
 | preview                    | pratinjau                     |
-| zoom / pan                 | zum / geser                   |
-| chat / provider / API key  | obrolan / penyedia / kunci API |
+| zoom / pan                 | zoom / geser                  |
+| chat / provider / API key  | obrolan / penyedia / API key  |
 | view-only                  | hanya lihat                   |

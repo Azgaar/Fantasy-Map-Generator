@@ -409,7 +409,7 @@ const TEMPLATE = /* html */ `
       <td>
         <select id="performancePreset" data-option="performancePreset">
           <option value="quality">${t("Quality")}</option>
-          <option value="balance" selected>${t("Balance")}</option>
+          <option value="balance" selected>${t("Balance", { context: "preset" })}</option>
           <option value="speed">${t("Speed")}</option>
           <option value="custom" disabled hidden>${t("Custom")}</option>
         </select>

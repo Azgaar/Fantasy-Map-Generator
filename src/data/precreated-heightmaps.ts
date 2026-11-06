@@ -29,7 +29,7 @@ export const precreatedHeightmaps: Record<string, PrecreatedHeightmap> = {
   "north-america": { id: 18, name: t("North America") },
   "us-centric": { id: 19, name: t("US-centric") },
   "us-mainland": { id: 20, name: t("US Mainland") },
-  world: { id: 21, name: t("World") },
+  world: { id: 21, name: t("World", { context: "heightmap" }) },
   "world-from-pacific": { id: 22, name: t("World from Pacific") }
 };
 
