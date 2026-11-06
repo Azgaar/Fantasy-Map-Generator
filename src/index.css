@@ -137,7 +137,7 @@ a {
   cursor: pointer;
 }
 
-#markets > g > path,
+#markets > g > path:not(.pin),
 #markets > g > use {
   user-select: none;
   pointer-events: none;
@@ -1093,8 +1093,8 @@ fieldset {
 }
 
 #battleBody > table .regiment {
-  width: 13em;
-  max-width: 13em;
+  width: 16em;
+  max-width: 16em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1261,7 +1261,7 @@ i.resetButton:active {
 }
 
 .table {
-  max-height: 75vh;
+  max-height: 65vh;
   max-width: 75vw;
   overflow-x: hidden;
   overflow-y: auto;
@@ -1391,6 +1391,11 @@ div.header {
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: normal;
+}
+
+.editorDialog .header > [data-col] > span[class*="icon-"] {
+  overflow: visible;
+  flex-shrink: 0;
 }
 
 /* cells size to their grid track, not their own content, so long values shrink instead of widening the row */
@@ -1570,7 +1575,7 @@ div.states span.inactive:hover {
 
 #burgBody div.label {
   display: inline-block;
-  width: 6em;
+  width: 6.5em;
 }
 
 #burgBody > div > div,
@@ -2138,12 +2143,6 @@ svg.button {
   user-select: none;
 }
 
-.dontAsk {
-  margin: 0.9em 0 0 0.6em;
-  display: inline-flex;
-  align-items: center;
-}
-
 #errorBox {
   font-size: 0.9em;
   font-family: var(--monospace);
@@ -2269,28 +2268,13 @@ svg.button {
   }
 }
 
-/* Market Deals */
-div.states > .marketDealUnits {
-  width: 4em;
-  text-align: right;
+/* Economy amounts: money gained and money paid out, as ECONOMY_COLORS */
+.dialog-window .positive {
+  color: #1b7a43;
 }
 
-div.states > .marketDealParty {
-  width: 8em;
-}
-
-div.states > .marketDealIncome {
-  width: 5em;
-  text-align: right;
-}
-
-div.states .marketBadge {
-  display: inline-block;
-  border-radius: 3px;
-  padding: 0 0.4em;
-  font-size: 0.8em;
-  font-weight: bold;
-  line-height: 1.35;
+.dialog-window .negative {
+  color: #a34a14;
 }
 
 .fmg-tour.driver-popover {

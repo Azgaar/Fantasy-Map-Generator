@@ -3,12 +3,13 @@
 import { extent, min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
 import { isDrawable } from "@/controllers/political/emblems/drawability";
+import { DEFAULT_DEVELOPMENT } from "@/data/development";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
-import { Goods } from "@/model/economy/goods-generator";
+import { type Good, Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
-import { Production } from "@/model/economy/production-generator";
+import { DEAL_KINDS, type Deal } from "@/model/economy/trade";
 import type { GraphOverrides } from "@/model/graph/graph-override";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
@@ -26,9 +27,10 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { Military } from "@/model/political/military-generator";
 import { Provinces } from "@/model/political/provinces-generator";
-import { States } from "@/model/political/states-generator";
+import { noFinance, type State, type StateFinance, States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
+import { Development } from "@/model/society/development-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { getDefaultMarkerName, type Marker, Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
@@ -147,6 +149,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
         name,
         color: colors[i] || defaultBiome?.color || "#999999",
         habitability: habitability[i] ?? defaultBiome?.habitability ?? 50,
+        development: defaultBiome?.development ?? 0,
         iconsDensity: defaultBiome?.iconsDensity ?? 0,
         icons: defaultBiome?.icons ?? [],
         cost: defaultBiome?.cost ?? 50,
@@ -205,6 +208,9 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
     // v1.0 added state relations, provinces, forms and full names
     selectInSvg("#viewbox").insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
+    // these generators keep state finances and read development, which the v1.124.0 and v1.157.0 steps make for this map
+    for (const state of pack.states) state.economy ??= noFinance();
+    pack.cells.development = new Uint8Array(0);
     States.collectStatistics();
     States.generateCampaigns();
     States.generateDiplomacy();
@@ -419,6 +425,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       .attr("box-size", 3)
       .attr("stroke", "#000")
       .attr("stroke-width", 0.3);
+    pack.deals = []; // no economy before v1.124.0, so nothing to equip from
     Military.generate();
   }
 
@@ -1173,29 +1180,12 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
     for (const state of pack.states) {
       if (!state) continue;
-      if (!state.i || state.removed) {
-        if (state.i === 0) {
-          state.salesTax = 0;
-          state.pollTax = 0;
-          state.treasury = 0;
-        }
-        continue;
-      }
-      const taxes = States.defineTaxRates(state);
-      state.salesTax = taxes.salesTax;
-      state.pollTax = taxes.pollTax;
-      state.treasury = 0;
+      const rates = state.i && !state.removed ? States.defineTaxRates(state) : {};
+      state.economy = { ...noFinance(), ...rates };
     }
 
     Goods.generate();
     Markets.generate();
-    Production.produce();
-    States.collectTaxes();
-  }
-
-  if (isOlderThan("1.127.0")) {
-    // goods visibility moved onto the good itself; default to showing the first good
-    if (pack.goods?.length && !pack.goods.some(good => good.visible)) pack.goods[0].visible = true;
   }
 
   if (isOlderThan("1.138.0")) {
@@ -2111,14 +2101,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
     // v1.155.0 added state.tariffs
     for (const state of pack.states ?? []) {
-      if (!state) continue;
-      if (!Array.isArray(state.tariffs)) {
-        if (!state.i || state.removed) {
-          state.tariffs = [];
-        } else {
-          state.tariffs = States.defineTariffs(state);
-        }
-      }
+      if (state) ((state.economy ?? state) as Partial<StateFinance>).tariffs = States.defineTariffs(state); // flat unless the 1.124 step ran
     }
 
     // journeys take plain colors only since v1.155.0: a hatching keeps its color
@@ -2202,6 +2185,112 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       if (pictures.has(icon.id) && !Object.keys(Icons.uses(icon.id)).length) CustomIcons.remove(icon.id);
       else if (content !== icon.content) CustomIcons.update(icon.id, { content });
     }
+
+    // v1.157.0 moves state finances to state.economy and adds market fees, corruption and the state budget
+    const FINANCE_KEYS = ["salesTax", "pollTax", "marketFee", "treasury", "tariffs"] as const;
+    for (const state of pack.states ?? []) {
+      if (!state) continue;
+      const legacy = state as State & Partial<StateFinance>;
+      const { salesTax = 0, pollTax = 0, tariffs = [], treasury = 0 } = legacy;
+      for (const key of FINANCE_KEYS) delete legacy[key];
+      // the v1.124.0 step sets it for older maps; the old treasury held one run's taxes
+      state.economy ??= { ...noFinance(), salesTax, pollTax, tariffs, collected: treasury, treasury };
+      state.economy.marketFee = States.defineMarketFee(state);
+      state.economy.budget = States.defineBudget(state, States.defineCorruption(state));
+      state.economy.adjustments ??= [];
+    }
+
+    // v1.157.0 charges carriage per good, gives goods development tiers and places a count of richer deposits per good instead of a chance per cell
+    for (const good of pack.goods ?? []) {
+      good.carriage ??= Goods.getDefaultCarriage(good);
+      good.development ??= Goods.getDefaultDevelopment(good.name);
+    }
+    function migrateDeposits() {
+      const counts: number[] = [];
+      for (const goodId of pack.cells.good) counts[goodId] = (counts[goodId] || 0) + 1;
+      for (const good of pack.goods as (Good & { chance?: number })[]) {
+        const count = counts[good.i] || 0;
+        if (good.chance && good.distribution)
+          good.deposits = count
+            ? [Math.max(1, Math.round(count * 0.75)), Math.max(1, Math.round(count * 1.25))]
+            : Goods.getDefaultDeposits(good.name);
+        delete good.chance;
+      }
+    }
+    if (pack.goods?.some(good => "chance" in good)) migrateDeposits();
+
+    for (const burg of pack.burgs ?? []) delete (burg as { market?: number } | undefined)?.market;
+
+    /** v1.157.0 keeps each cell's technological development */
+    function addDevelopment() {
+      if (!pack.cells?.h || !pack.cultures || pack.cells.development?.length) return;
+      const biomes = Biomes.getDefault();
+      for (const biome of pack.biomes ?? []) if (biome) biome.development ??= biomes[biome.i]?.development ?? 0;
+      for (const culture of pack.cultures ?? [])
+        if (culture?.i && !culture.removed)
+          culture.development ??= Cultures.getDefaultDevelopment(culture.name) ?? DEFAULT_DEVELOPMENT;
+      Development.generate();
+    }
+    addDevelopment();
+
+    /** v1.157.0 sums a burg's trades with a market by good and kind, and its output by good. Trade between markets has no burg to go to */
+    function migrateEconomyRun() {
+      type LegacyDeal = {
+        seller: number;
+        sellerType: "burg" | "market";
+        buyer: number;
+        buyerType: "burg" | "market";
+        good: number;
+        units: number;
+        price: number;
+        tax?: number;
+        tariff?: number;
+      };
+      const goods = new Set(pack.goods?.map(good => good.i));
+      const markets = new Set(pack.markets?.map(market => market.i));
+      const isBurg = (id: number) => Boolean(pack.burgs?.[id]?.i && !pack.burgs[id].removed);
+
+      const legacy = (pack.deals ?? []) as unknown as LegacyDeal[];
+      const lastSale = legacy.findLastIndex(deal => deal.sellerType === "burg"); // burgs bought their needs after all had sold
+      const deals = new Map<string, Deal>();
+      legacy.forEach((deal, id) => {
+        if (deal.sellerType === deal.buyerType) return;
+        const selling = deal.sellerType === "burg";
+        const [burgId, marketId] = selling ? [deal.seller, deal.buyer] : [deal.buyer, deal.seller];
+        if (!isBurg(burgId) || !markets.has(marketId) || !goods.has(deal.good)) return;
+        const kind = selling ? DEAL_KINDS.sale : id < lastSale ? DEAL_KINDS.input : DEAL_KINDS.demand;
+        const key = `${burgId}-${marketId}-${deal.good}-${kind}`;
+        const summed = deals.get(key) ?? ([burgId, marketId, deal.good, kind, 0, 0, 0, 0, 0] as Deal);
+        const units = summed[4] + deal.units;
+        summed[5] = units ? (summed[4] * summed[5] + deal.units * deal.price) / units : 0;
+        summed[4] = units;
+        summed[6] += deal.tax || 0;
+        summed[7] += deal.tariff || 0;
+        deals.set(key, summed);
+      });
+      pack.deals = [...deals.values()];
+      for (const deal of pack.deals) {
+        deal[4] = rn(deal[4], 2);
+        deal[5] = rn(deal[5], 4);
+        deal[6] = rn(deal[6], 2);
+        deal[7] = rn(deal[7], 2);
+      }
+
+      for (const burg of pack.burgs ?? []) {
+        if (!burg?.i) continue;
+        const made: number[] = [];
+        for (const { goodId, units } of (burg.production ?? []) as unknown as { goodId?: number; units: number }[])
+          if (goodId !== undefined && goods.has(goodId)) made[goodId] = (made[goodId] || 0) + units;
+        burg.production = made.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)]] : []));
+      }
+
+      if (pack.cells?.i) pack.cells.prosperity ??= new Uint8Array(pack.cells.i.length); // rural days were not kept
+
+      // the old run kept no military spending: the armies, saved as they were, count as fully kept until the next run
+      for (const state of pack.states ?? [])
+        if (state?.i && !state.removed) state.economy.spent.military = Military.getUpkeepNeed(state.i);
+    }
+    migrateEconomyRun();
   }
 }
 

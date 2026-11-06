@@ -24,6 +24,7 @@ import { Provinces } from "@/model/political/provinces-generator";
 import { States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
+import { Development } from "@/model/society/development-generator";
 import { Population } from "@/model/society/population-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
@@ -56,6 +57,7 @@ const generationPipelineSteps = [
   { id: "burgs", run: () => Burgs.generate() },
   { id: "states", run: () => States.generate() },
   { id: "routes", run: () => Routes.generate() },
+  { id: "development", run: () => Development.generate() },
   { id: "religions", run: () => Religions.generate() },
   { id: "burgsSpecify", run: () => Burgs.specify() },
   { id: "stateStatistics", run: () => States.collectStatistics() },
@@ -104,6 +106,7 @@ const erasePipelineSteps = [
   { id: "burgs", run: () => Burgs.generate() },
   { id: "states", run: () => States.generate() },
   { id: "routes", run: () => Routes.generate() },
+  { id: "development", run: () => Development.generate() },
   { id: "religions", run: () => Religions.generate() },
   { id: "burgsSpecify", run: () => Burgs.specify() },
   { id: "stateStatistics", run: () => States.collectStatistics() },

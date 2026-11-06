@@ -51,6 +51,7 @@
 - **Save space**: Prefer laconic but clear code. Save space, I like my code to be compact.
 - **Keep it simple**: Avoid over-engineering.
 - **Dependencies**: Don't introduce new production dependencies without explicit permission. Keep the bundle lightweight.
+- **Dialog memory**: A dialog keeps no map data after it closes: clear what it computed and any references to entities or elements on close. Editor tables do it themselves. User choices it should remember, such as filters and tool settings, stay.
 - **Export**: Export only what another module imports. Types, helpers and constants used within one module stay unexported.
 
 # Workflow Rules
@@ -73,7 +74,7 @@
 - **Drive the UI**: `await FMG.Controllers.BurgsOverview.open()`, `FMG.Layers.show("relief")`, `FMG.Layers.drawAll()`, `FMG.zoomTo(x, y, scale, 0)`, `FMG.Dialog.closeAll()`.
 - **Debug drawing**: `FMG.drawCellsValue(FMG.pack.cells.h)`, `FMG.drawPolygons(values)`, `FMG.drawPoint([x, y], {})` draw into the `#debug` layer.
 - **Anything not on FMG**: in dev, import the module by its served path, `await import("/Fantasy-Map-Generator/model/physical/coastline-generator.ts")` (the path under `src/`, without `src/`); it is the same instance the app uses.
-- **Logging**: `FMG.log.enabled.time = false` silences a level (`time`, `info`, `warn`, `error`); `localStorage.debug = '{"production":true}'` turns on a feature's diagnostics after a reload.
+- **Logging**: `FMG.log.enabled.time = false` silences a level (`time`, `info`, `warn`, `error`); the Debugging section of the Advanced options (`options.app.debug`) turns on a feature's diagnostics.
 - **Viewport**: a browser pane can open at zero width, and then the map fails to generate. Resize the window and reload before trusting a result.
 
 # Domain Knowledge
@@ -90,5 +91,6 @@
 
 - **Ambient state**: `pack`, `grid`, `options` and `styles` are still globals, read bare across the app; everything else is imported. Be cautious when turning them into explicit parameters.
 - **Edit mode**: `options.app.mode` names the edit mode the user is in (`"heightmap"`, `"paint"`, `"addState"`…) or is `null`. While it is set, other editors, saving, loading and regeneration stay off. It is never stored, so a reload starts outside any mode.
+- **Editor tables**: `initColumnVisibility` puts the column controls into the last visible header cell. End a table's `columns` with an empty `{ key: "actions", width: "1.4em", permanent: true }`, with no cell in the rows, so they sit there and the last data column keeps its header untrimmed.
 - **`index.html`**: The shared app-shell and map SVG template. It can easily break if structural tags are accidentally nested incorrectly.
 - **Playwright**: Never automatically run Playwright tests when developing, they are too slow and cause PC freezes.

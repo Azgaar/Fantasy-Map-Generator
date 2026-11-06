@@ -18,6 +18,7 @@ describe("GoodsModule", () => {
         r: Uint16Array.from([0, 0, 0, 0]),
         g: Uint16Array.from([0, 0, 0, 0]),
         f: Uint16Array.from([0, 0, 0, 0]),
+        c: [[1], [0, 2], [1, 3], [2]],
         good: Uint16Array.from([1, 2, 1, 2])
       },
       features: [{ type: "land" }],
@@ -30,7 +31,7 @@ describe("GoodsModule", () => {
           unit: "unit",
           icon: "icon-a",
           color: "#ffffff",
-          chance: 100,
+          deposits: [2, 2],
           distribution: "true"
         },
         {
@@ -41,7 +42,7 @@ describe("GoodsModule", () => {
           unit: "unit",
           icon: "icon-b",
           color: "#000000",
-          chance: 100,
+          deposits: [2, 2],
           distribution: "true"
         }
       ]
@@ -50,6 +51,57 @@ describe("GoodsModule", () => {
     const { GoodsModule } = await import("./goods-generator");
     goodsModule = new GoodsModule();
     Object.assign(Goods, goodsModule);
+  });
+
+  it("matches a feature by its type or its subtype", () => {
+    pack.features = [{ type: "ocean", subtype: "gulf" }] as never;
+    const { type } = Goods.getMethods(0);
+    expect(type("ocean")).toBe(true);
+    expect(type("gulf")).toBe(true);
+    expect(type("sea")).toBe(false);
+  });
+
+  it("removes a good with its deposits, the recipes taking it and its share of the run, keeping the roster for later maps", () => {
+    pack.deals = [[1, 1, 1, 0, 2, 3] as never, [1, 1, 2, 0, 2, 3] as never];
+    pack.burgs = [
+      {
+        production: [
+          [1, 2],
+          [2, 3]
+        ]
+      },
+      {}
+    ] as never;
+    pack.markets = [
+      {
+        goods: { 1: { stock: 1, price: 1 }, 2: { stock: 1, price: 1 } },
+        rural: {
+          bought: [[1, 1]],
+          kept: [
+            [1, 1],
+            [2, 1]
+          ]
+        }
+      }
+    ] as never;
+    pack.goods.push(
+      { i: 3, name: "Made", recipes: [{ 1: 1 }, { 2: 1 }] } as never,
+      { i: 4, name: "Only A", recipes: [{ 1: 1 }] } as never
+    );
+    const units = options.map.military.units;
+    options.map.military.units = [{ name: "Guard", goods: [1, 2] }] as never;
+    Goods.remove(1);
+    expect(options.map.military.units[0].goods).toEqual([1, 2]);
+    options.map.military.units = units;
+    expect(Goods.get(1)).toBeUndefined();
+    expect(Array.from(pack.cells.good)).toEqual([0, 2, 0, 2]);
+    expect(Goods.get(3)?.recipes).toEqual([{ 2: 1 }]);
+    expect(Goods.get(4)?.recipes).toBeUndefined();
+    expect(pack.deals.map(deal => deal[2])).toEqual([2]);
+    expect(pack.burgs[0].production).toEqual([[2, 3]]);
+    expect(pack.burgs[1].production).toBeUndefined();
+    expect(Object.keys(pack.markets[0].goods)).toEqual(["2"]);
+    expect(pack.markets[0].rural).toEqual({ bought: [], kept: [[2, 1]] });
   });
 
   it("keeps the current catalogue when rerolling placement", () => {
@@ -95,11 +147,53 @@ describe("GoodsModule", () => {
   });
 
   it("clears a single good when it is no longer placeable", () => {
-    globalThis.pack.goods[0].chance = 0;
+    globalThis.pack.goods[0].deposits = [0, 0];
     goodsModule.regeneratePlacement(1);
 
     const goodIds = Array.from(globalThis.pack.cells.good);
     expect(goodIds.some(id => id === 1)).toBe(false);
     expect(goodIds.filter(id => id === 2)).toHaveLength(2);
+  });
+
+  it("places as many deposits as the good's range gives", () => {
+    globalThis.pack.goods[1].deposits = [0, 0];
+    goodsModule.generate({ randomSeed: 1 });
+
+    expect(Array.from(globalThis.pack.cells.good).filter(id => id === 1)).toHaveLength(2);
+    expect(Array.from(globalThis.pack.cells.good)).not.toContain(2);
+  });
+
+  it("places deposits only where the distribution allows", () => {
+    globalThis.pack.cells.biome = Uint8Array.from([0, 1, 1, 0]);
+    globalThis.pack.goods[0].distribution = "biome(1)";
+    globalThis.pack.goods[1].deposits = [0, 0];
+    goodsModule.generate({ randomSeed: 2 });
+
+    expect(Array.from(globalThis.pack.cells.good)).toEqual([0, 1, 1, 0]);
+  });
+
+  it("picks a whole count within the range, rounding fractions up", () => {
+    globalThis.pack.goods[1].deposits = [0, 0];
+    const placed = (deposits: [number, number]) => {
+      globalThis.pack.goods[0].deposits = deposits;
+      return new Set(
+        Array.from({ length: 50 }, (_, seed) => {
+          goodsModule.generate({ randomSeed: seed });
+          return Array.from(globalThis.pack.cells.good).filter(id => id === 1).length;
+        })
+      );
+    };
+
+    expect(placed([1, 3])).toEqual(new Set([1, 2, 3]));
+    expect(placed([0.2, 0.4])).toEqual(new Set([1]));
+    expect(placed([0, 0])).toEqual(new Set([0]));
+  });
+
+  it("spreads spending over options by price per coverage, cheaper ones getting more", async () => {
+    const { getVarietyShares, VARIETY } = await import("./goods-generator");
+    const [cheap, dear, none] = getVarietyShares([1, 2, 0]);
+    expect(cheap / dear).toBeCloseTo(2 ** VARIETY, 5); // (2 / 1)^VARIETY
+    expect(cheap + dear).toBeCloseTo(1, 5);
+    expect(none).toBe(0);
   });
 });

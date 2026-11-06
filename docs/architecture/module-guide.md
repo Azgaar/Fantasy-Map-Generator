@@ -139,7 +139,9 @@ Reach for a `class` (exported as one singleton instance) if the subsystem owns m
 const MODULE_DATA = [{ name: "Cog", value: 1 } /* … */] as const;
 
 // src/data/<name>.ts once large, or once another layer needs it
-export const CULTURE_SETS = {/* … */};
+export const CULTURE_SETS = {
+  /* … */
+};
 ```
 
 No logic here — the data says _what_, the generator decides _how_. Static data that a schema or

@@ -30,6 +30,7 @@ interface CommonPaintEditorOptions {
   items: readonly PaintEditorItem[];
   dontOverrideControl?: boolean;
   landOnlyControl?: boolean;
+  keepOrder?: boolean; // list the items as given, not by name
 }
 
 export interface PaintEditorOptions extends CommonPaintEditorOptions {
@@ -84,7 +85,7 @@ function open(config: OpenPaintEditorOptions): void {
     onMove: showCellTip
   });
 
-  const items = sortItems(config.items);
+  const items = config.keepOrder ? [...config.items] : sortItems(config.items);
   state = {
     options: config,
     itemsById: new Map(items.map(item => [item.id, item])),

@@ -16,7 +16,7 @@ import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
-import { Transports } from "@/model/economy/transports-generator";
+import { Trade } from "@/model/economy/trade";
 import { ErasePipeline, GenerationPipeline } from "@/model/generation-pipeline";
 import { GraphOverride } from "@/model/graph/graph-override";
 import { Grid } from "@/model/graph/grid-generator";
@@ -53,6 +53,7 @@ import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
+import { Transports } from "@/model/story/journeys/transports-generator";
 import { Lore } from "@/model/story/lore";
 import { Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
@@ -177,6 +178,7 @@ const FMG = {
   Styles,
   Tags,
   Temperature,
+  Trade,
   Transports,
   Zones,
 

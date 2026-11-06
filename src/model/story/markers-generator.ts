@@ -1,7 +1,6 @@
 import { mean } from "d3";
 import {
   BRIDGE_ADJECTIVES,
-  BRIDGE_DECLINE_REASONS,
   BRIGAND_ANIMALS,
   BRIGAND_TYPES,
   CAVE_FORMATIONS,
@@ -43,10 +42,11 @@ import {
 import type { Good } from "@/model/economy/goods-generator";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
-import { isDealRecord, isMfgRecord } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
+import { DEAL_KINDS, Trade } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import type { Burg } from "@/model/political/burgs-generator";
 import { States } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names-generator";
 import { Notes } from "@/model/story/notes";
@@ -118,6 +118,7 @@ type MarkerConfig = {
   each: number;
   multiplier: number;
   list: (pack: PackedGraph) => number[];
+  weight?: (cell: number) => number;
   add: (marker: Marker, cell: number) => void;
 };
 
@@ -148,11 +149,23 @@ const APPEARANCE: Record<keyof MarkerAppearance, (value: unknown) => unknown> = 
   iconStroke: requireColor
 };
 
+/** The last economy run, summed for marker placement */
+type TradeIndex = {
+  volume: number[]; // by market: value of its trade
+  margin: number[]; // by market: what its center earned on it
+  goods: number[]; // by burg: goods it traded
+  burgTrade: number[]; // by burg: value of its trade
+  tariffs: Map<number, number>; // by state pair
+  guilds: Map<number, { good: Good; renown: number }>; // by burg: the made good it is famed for
+};
+
 class MarkersModule {
   // built on first use, never in the constructor: the module is instantiated at import time,
   // before model/options/options-model.ts has filled in the options it reads
   private configuration?: MarkerConfig[];
   private occupied: boolean[] = [];
+  private tradeIndex?: TradeIndex;
+  private tradeSource: unknown = null; // the deals the index sums: each economy run replaces them
 
   private get config(): MarkerConfig[] {
     this.configuration ??= this.getDefaultConfig();
@@ -352,15 +365,26 @@ class MarkersModule {
         list: this.listWaterSources.bind(this),
         add: this.addWaterSource.bind(this)
       },
+      // before mines: a guild town often mines what its guild works
+      {
+        type: "guild-halls",
+        icon: "🏛️",
+        min: 1,
+        each: 1,
+        multiplier: 1,
+        list: this.listGuildHalls.bind(this),
+        add: this.addGuildHall.bind(this)
+      },
       {
         type: "mines",
         icon: "⛏️",
         dx: 48,
         px: 13,
         min: 1,
-        each: 15,
+        each: 6,
         multiplier: 1,
         list: this.listMines.bind(this),
+        weight: this.weighMines.bind(this),
         add: this.addMine.bind(this)
       },
       {
@@ -371,7 +395,18 @@ class MarkersModule {
         each: 5,
         multiplier: 1,
         list: this.listBridges.bind(this),
+        weight: cell => Math.sqrt(this.trade.burgTrade[pack.cells.burg[cell]] || 0),
         add: this.addBridge.bind(this)
+      },
+      {
+        type: "merchant-houses",
+        icon: "⚖️",
+        min: 3,
+        each: 8,
+        multiplier: 1,
+        list: this.listMerchantHouses.bind(this),
+        weight: cell => Math.max(0, this.trade.margin[pack.cells.market?.[cell]] || 0),
+        add: this.addMerchantHouse.bind(this)
       },
       {
         type: "inns",
@@ -381,6 +416,7 @@ class MarkersModule {
         each: 10,
         multiplier: 1,
         list: this.listInns.bind(this),
+        weight: this.weighInns.bind(this),
         add: this.addInn.bind(this)
       },
       {
@@ -395,7 +431,7 @@ class MarkersModule {
       },
       {
         type: "waterfalls",
-        icon: "⟱",
+        icon: "💦",
         dy: 54,
         px: 16,
         min: 1,
@@ -502,6 +538,7 @@ class MarkersModule {
         each: 100,
         multiplier: 1,
         list: this.listBrigands.bind(this),
+        weight: this.weighBrigands.bind(this),
         add: this.addBrigands.bind(this)
       },
       {
@@ -509,9 +546,10 @@ class MarkersModule {
         icon: "🏴‍☠️",
         dx: 51,
         min: 40,
-        each: 300,
+        each: 400,
         multiplier: 1,
         list: this.listPirates.bind(this),
+        weight: this.weighPirates.bind(this),
         add: this.addPirates.bind(this)
       },
       {
@@ -567,7 +605,18 @@ class MarkersModule {
         each: 1000,
         multiplier: 1,
         list: this.listFairs.bind(this),
+        weight: this.weighFairs.bind(this),
         add: this.addFair.bind(this)
+      },
+      {
+        type: "customs-houses",
+        icon: "🛃",
+        min: 1,
+        each: 3,
+        multiplier: 1,
+        list: this.listCustomsHouses.bind(this),
+        weight: this.weighCustomsHouses.bind(this),
+        add: this.addCustomsHouse.bind(this)
       },
       {
         type: "canoes",
@@ -598,9 +647,9 @@ class MarkersModule {
       },
       {
         type: "mirage",
-        icon: "💦",
+        icon: "꩜",
         min: 10,
-        each: 400,
+        each: 600,
         multiplier: 1,
         list: this.listMirage.bind(this),
         add: this.addMirage.bind(this)
@@ -682,22 +731,25 @@ class MarkersModule {
   }
 
   private generateTypes() {
-    this.config.forEach(({ type, icon, dx, dy, px, size, pin, fill, stroke, min, each, multiplier, list, add }) => {
-      if (multiplier === 0) return;
+    this.config.forEach(
+      ({ type, icon, dx, dy, px, size, pin, fill, stroke, min, each, multiplier, list, weight, add }) => {
+        if (multiplier === 0) return;
 
-      const candidates = Array.from(list(pack));
-      let quantity = this.getQuantity(candidates, min, each, multiplier);
-      // uncomment for debugging:
-      // console.info(`${icon} ${type}: each ${each} of ${candidates.length}, min ${min} candidates. Got ${quantity}`);
+        const candidates = Array.from(list(pack));
+        const weights = weight && candidates.map(weight);
+        let quantity = this.getQuantity(candidates, min, each, multiplier);
+        // uncomment for debugging:
+        // console.info(`${icon} ${type}: each ${each} of ${candidates.length}, min ${min} candidates. Got ${quantity}`);
 
-      while (quantity && candidates.length) {
-        const [cell] = this.extractAnyElement(candidates);
-        const marker = this.addMarker({ icon, type, dx, dy, px, size, pin, fill, stroke }, { cell });
-        if (!marker) continue;
-        add(marker, cell);
-        quantity--;
+        while (quantity && candidates.length) {
+          const [cell] = weights ? this.extractWeighted(candidates, weights) : this.extractAnyElement(candidates);
+          const marker = this.addMarker({ icon, type, dx, dy, px, size, pin, fill, stroke }, { cell });
+          if (!marker) continue;
+          add(marker, cell);
+          quantity--;
+        }
       }
-    });
+    );
 
     this.occupied = [];
   }
@@ -711,6 +763,100 @@ class MarkersModule {
   private extractAnyElement<T>(array: T[]): T[] {
     const index = Math.floor(Math.random() * array.length);
     return array.splice(index, 1);
+  }
+
+  /** One draw over the weights, as extractAnyElement; uniform when no candidate weighs anything */
+  private extractWeighted<T>(array: T[], weights: number[]): T[] {
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+    const roll = Math.random();
+    let index = Math.floor(roll * array.length);
+    if (total) {
+      let rest = roll * total - weights[0];
+      index = 0;
+      while (rest >= 0 && index < weights.length - 1) rest -= weights[++index];
+    }
+    weights.splice(index, 1);
+    return array.splice(index, 1);
+  }
+
+  private get trade(): TradeIndex {
+    if (!this.tradeIndex || this.tradeSource !== pack.deals) {
+      this.tradeIndex = this.indexTrade();
+      this.tradeSource = pack.deals;
+    }
+    return this.tradeIndex;
+  }
+
+  private indexTrade(): TradeIndex {
+    const { burgs, markets } = pack;
+    const volume: number[] = [];
+    const margin: number[] = [];
+    const traded: Set<number>[] = [];
+    const burgTrade: number[] = [];
+    const tariffs = new Map<number, number>();
+    for (const deal of pack.deals ?? []) {
+      const [burgId, marketId, goodId, kind, units, price, , tariff] = deal;
+      if (kind === DEAL_KINDS.kept) continue;
+      volume[marketId] = (volume[marketId] || 0) + units * price;
+      burgTrade[burgId] = (burgTrade[burgId] || 0) + units * price;
+      margin[marketId] = (margin[marketId] || 0) + Trade.getMargin(deal);
+      traded[burgId] ??= new Set();
+      traded[burgId].add(goodId);
+      if (!tariff) continue;
+      const own = Markets.getState(Markets.ofBurg(burgs[burgId]));
+      const key = this.getStatePair(own, Markets.getState(Markets.get(marketId)));
+      tariffs.set(key, (tariffs.get(key) || 0) + tariff);
+    }
+    for (const { i, rural } of markets ?? []) {
+      if (!rural) continue;
+      volume[i] = (volume[i] || 0) + rural.earned + rural.spent;
+      margin[i] = (margin[i] || 0) + (rural.margin || 0);
+    }
+    return { volume, margin, goods: traded.map(goods => goods.size), burgTrade, tariffs, guilds: this.indexGuilds() };
+  }
+
+  /** Burgs famed for a made good: leaders among its many makers and in their state, where the good is a real part of their work */
+  private indexGuilds(): Map<number, { good: Good; renown: number }> {
+    const GUILD_RENOWN = 0.75; // world share × √makers × √state share a burg needs: a lead among many makers counts for more
+    const GUILD_FOCUS = 0.25; // share of the value a burg makes that the good must be
+    const GUILD_MIN_VALUE = 15; // value of the good a burg makes a day
+    const world: number[] = [];
+    const makers: number[] = [];
+    const inState = new Map<number, number>(); // by state and good
+    const worth: number[] = []; // by burg: the value of all it makes
+    const crafts: { burg: Burg; good: Good; units: number; stateKey: number }[] = [];
+    for (const burg of pack.burgs) {
+      if (!burg.i || burg.removed) continue;
+      for (const [goodId, units] of burg.production ?? []) {
+        const good = Goods.get(goodId);
+        if (!good?.recipes?.length) continue;
+        const stateKey = (burg.state || 0) * 65536 + goodId;
+        world[goodId] = (world[goodId] || 0) + units;
+        makers[goodId] = (makers[goodId] || 0) + 1;
+        inState.set(stateKey, (inState.get(stateKey) || 0) + units);
+        worth[burg.i] = (worth[burg.i] || 0) + units * good.value;
+        crafts.push({ burg, good, units, stateKey });
+      }
+    }
+
+    const guilds = new Map<number, { good: Good; renown: number }>();
+    for (const { burg, good, units, stateKey } of crafts) {
+      const value = units * good.value;
+      if (value < GUILD_MIN_VALUE || value / worth[burg.i!] < GUILD_FOCUS) continue;
+      const renown = (units / world[good.i]) * Math.sqrt(makers[good.i] * (units / inState.get(stateKey)!));
+      if (renown < GUILD_RENOWN || renown <= (guilds.get(burg.i!)?.renown ?? 0)) continue;
+      guilds.set(burg.i!, { good, renown }); // one hall a burg, for what it is most famed for
+    }
+    return guilds;
+  }
+
+  private getStatePair(a: number, b: number) {
+    return a < b ? a * 65536 + b : b * 65536 + a;
+  }
+
+  /** The cell's market's trade, square-rooted so the busiest markets don't take every marker */
+  private getMarketTrade(cell: number): number {
+    return Math.sqrt(this.trade.volume[pack.cells.market?.[cell]] || 0);
   }
 
   private addMarker(base: MarkerBase, draft: Partial<Marker>): Marker | undefined {
@@ -799,9 +945,7 @@ class MarkersModule {
     const good = Goods.get(pack.cells.good[cell]);
     if (!good?.tags.some(tag => tag === "ore" || tag === "mineral")) return;
     const burg = pack.burgs[pack.cells.burg[cell]];
-    const extracts = burg?.production?.some(
-      record => !isDealRecord(record) && !isMfgRecord(record) && record.goodId === good.i
-    );
+    const extracts = burg?.production?.some(([goodId]) => goodId === good.i); // a raw good comes from its workers on the deposit
     return extracts ? good : undefined;
   }
 
@@ -814,29 +958,47 @@ class MarkersModule {
     const goodIds = Object.keys(market.goods)
       .filter(id => market.goods[+id].stock > 0)
       .map(Number);
-    for (const { good, seller, sellerType, buyer, buyerType } of pack.deals ?? []) {
-      if ((sellerType === "market" && seller === marketId) || (buyerType === "market" && buyer === marketId))
-        goodIds.push(good);
+    for (const [, dealMarket, goodId] of pack.deals ?? []) {
+      if (dealMarket === marketId) goodIds.push(goodId);
     }
     return new Set(goodIds.map(id => Goods.get(id)?.name).filter(name => name !== undefined));
   }
 
+  /** The ore or mineral deposit under the cell's burg, mined or not */
+  private getDeposit(cell: number): Good | undefined {
+    const good = Goods.get(pack.cells.good[cell]);
+    if (!pack.cells.burg[cell] || !good?.tags.some(tag => tag === "ore" || tag === "mineral")) return;
+    return good;
+  }
+
   private listMines({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.burg[i] && this.getMinedGood(i));
+    return cells.i.filter(i => !this.occupied[i] && this.getDeposit(i));
+  }
+
+  /** Rich deposits draw miners: gold, silver and gemstones most */
+  private weighMines(cell: number) {
+    const deposit = this.getDeposit(cell);
+    if (!deposit) return 0;
+    return deposit.value ** 2 * (deposit.tags.includes("luxury") ? 4 : 1);
   }
 
   private addMine(marker: Marker, cell: number) {
     const { cells } = pack;
 
-    const resource = this.getMinedGood(cell)?.name.toLowerCase() ?? "ore";
+    const mined = this.getMinedGood(cell);
+    const resource = (mined ?? this.getDeposit(cell))?.name.toLowerCase() ?? "ore";
     const burg = pack.burgs[cells.burg[cell]];
-    const name = `${burg.name} — ${resource} mining town`;
+    if (!burg?.i) return;
+    if (!mined && pack.deals?.length) {
+      marker.name = `${burg.name} — old ${resource} mine`;
+      marker.note = `The ${resource} mine by ${burg.name} is played out. Its shafts stand empty, and the miners have long gone to work the fields.`;
+      return;
+    }
     const population = rn(
       burg.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
-    const legend = `${burg.name} is a mining town of ${population} people just nearby the ${resource} mine.`;
-    marker.name = name;
-    marker.note = legend;
+    marker.name = `${burg.name} — ${resource} mining town`;
+    marker.note = `${burg.name} is a mining town of ${population} people just nearby the ${resource} mine.`;
   }
 
   private listBridges({ cells, burgs }: PackedGraph) {
@@ -859,9 +1021,7 @@ class MarkersModule {
     const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
     const riverName = river ? `${river.name} ${river.type}` : "river";
     const name = river && P(0.2) ? `${river.name} Bridge` : `${burg.name} Bridge`;
-    const legend = P(0.7)
-      ? `A ${rw(BRIDGE_ADJECTIVES)} bridge spans over the ${riverName} near ${burg.name}.`
-      : `An old crossing of the ${riverName}, rarely used since ${ra(BRIDGE_DECLINE_REASONS)}.`;
+    const legend = `A ${rw(BRIDGE_ADJECTIVES)} bridge spans over the ${riverName} at ${burg.name}. Carts and pack trains cross it from dawn to dusk, bound for the market.`;
 
     marker.name = name;
     marker.note = legend;
@@ -869,6 +1029,10 @@ class MarkersModule {
 
   private listInns({ cells }: PackedGraph) {
     return cells.i.filter(i => !this.occupied[i] && cells.pop[i] > 5 && Routes.isCrossroad(i));
+  }
+
+  private weighInns(cell: number) {
+    return this.getMarketTrade(cell);
   }
 
   private addInn(marker: Marker, cell: number) {
@@ -1099,6 +1263,11 @@ class MarkersModule {
     return cells.i.filter(i => !this.occupied[i] && cells.culture[i] && Routes.hasRoad(i));
   }
 
+  /** Brigands prey on busy markets' roads where the land is poor */
+  private weighBrigands(cell: number) {
+    return this.getMarketTrade(cell) * (1.2 - (pack.cells.prosperity?.[cell] || 0) / 100);
+  }
+
   private addBrigands(marker: Marker, cell: number) {
     const { cells } = pack;
 
@@ -1124,6 +1293,18 @@ class MarkersModule {
   // Pirates spawn on sea routes
   private listPirates({ cells }: PackedGraph) {
     return cells.i.filter(i => !this.occupied[i] && cells.h[i] < 20 && Routes.isConnected(i));
+  }
+
+  /** Pirates prey on the sea routes between busy markets: the busiest route through the cell */
+  private weighPirates(cell: number) {
+    const { cells, routes } = pack;
+    let best = 0;
+    for (const routeId of new Set(Object.values(cells.routes[cell] ?? {}))) {
+      const points = routes.find(route => route.i === routeId)?.points;
+      if (!points?.length) continue;
+      best = Math.max(best, this.getMarketTrade(points[0][2]) + this.getMarketTrade(last(points)[2]));
+    }
+    return best;
   }
 
   private addPirates(marker: Marker, _cell: number) {
@@ -1222,6 +1403,10 @@ class MarkersModule {
     );
   }
 
+  private weighFairs(cell: number) {
+    return this.trade.goods[pack.cells.burg[cell]] || 0;
+  }
+
   private addFair(marker: Marker, cell: number) {
     const { cells, burgs } = pack;
     if (!cells.burg[cell]) return;
@@ -1231,9 +1416,8 @@ class MarkersModule {
     const type = "Fair";
 
     const made = (burg.production ?? [])
-      .flatMap(record => (isDealRecord(record) ? [] : [record]))
-      .sort((a, b) => b.units - a.units)
-      .map(record => Goods.get(record.goodId)?.name.toLowerCase())
+      .toSorted((a, b) => b[1] - a[1])
+      .map(([goodId]) => Goods.get(goodId)?.name.toLowerCase())
       .filter(name => name !== undefined);
     const wares = [...new Set(made)].slice(0, 3);
     const offer = wares.length
@@ -1244,6 +1428,84 @@ class MarkersModule {
     const legend = `A fair is being held in ${burgName}, ${offer}.`;
     marker.name = name;
     marker.note = legend;
+  }
+
+  /** The neighbor state a road leads to from the cell that it trades with under the most tariffs */
+  private getCustomsBorder(cell: number): { state: number; tariffs: number } | undefined {
+    const { cells, routes } = pack;
+    const own = cells.state[cell];
+    let border: { state: number; tariffs: number } | undefined;
+    for (const [neighbor, routeId] of Object.entries(cells.routes[cell] ?? {})) {
+      const state = cells.state[+neighbor];
+      if (!own || !state || state === own) continue;
+      if (routes.find(route => route.i === routeId)?.group !== "roads") continue;
+      const tariffs = this.trade.tariffs.get(this.getStatePair(own, state)) || 0;
+      if (tariffs > (border?.tariffs ?? 0)) border = { state, tariffs };
+    }
+    return border;
+  }
+
+  /** One road crossing for each pair of states that trade under tariffs */
+  private listCustomsHouses({ cells }: PackedGraph) {
+    const crossings = new Map<number, number>(); // by state pair
+    for (const i of cells.i) {
+      if (this.occupied[i] || !cells.routes[i]) continue;
+      const border = this.getCustomsBorder(i);
+      const pair = border && this.getStatePair(cells.state[i], border.state);
+      if (pair !== undefined && !crossings.has(pair)) crossings.set(pair, i);
+    }
+    return [...crossings.values()];
+  }
+
+  private weighCustomsHouses(cell: number) {
+    return this.getCustomsBorder(cell)?.tariffs ?? 0;
+  }
+
+  private addCustomsHouse(marker: Marker, cell: number) {
+    const { cells, states } = pack;
+    const state = states[cells.state[cell]];
+    const border = this.getCustomsBorder(cell);
+    const from = border ? ` from ${states[border.state].name}` : "";
+    const place = cells.burg[cell] ? pack.burgs[cells.burg[cell]].name! : Names.getCulture(cells.culture[cell]);
+    marker.name = `${place} Customs House`;
+    marker.note = `A customs house of ${state?.name || "the state"} on the road${from}. Carts queue at its barrier while the wardens weigh their loads and collect the tariffs.`;
+  }
+
+  private listGuildHalls({ cells }: PackedGraph) {
+    return cells.i.filter(i => !this.occupied[i] && this.trade.guilds.has(cells.burg[i]));
+  }
+
+  private addGuildHall(marker: Marker, cell: number) {
+    const burg = pack.burgs[pack.cells.burg[cell]];
+    const guild = burg && this.trade.guilds.get(burg.i);
+    if (!guild) {
+      marker.name = burg?.i ? `${burg.name} Guild Hall` : "Guild Hall";
+      marker.note = "The hall of a craft guild that keeps the secrets of its trade.";
+      return;
+    }
+    const good = guild.good.name.toLowerCase();
+    marker.name = `${burg.name} ${capitalize(good)} Guild`;
+    const mined = this.getMinedGood(cell);
+    const isWorked = mined && guild.good.recipes?.some(recipe => mined.i in recipe);
+    const source = isWorked ? `, worked from the ${mined.name.toLowerCase()} of its own mines` : "";
+    marker.note = `${burg.name} is famed for its ${good}${source}. The guild hall of its makers keeps the secrets of the craft, and its masters set the price far beyond the town.`;
+  }
+
+  private listMerchantHouses({ cells, burgs }: PackedGraph) {
+    return (pack.markets ?? [])
+      .map(market => burgs[market.centerBurgId]?.cell)
+      .filter((cell): cell is number => cell !== undefined && !this.occupied[cell] && cells.burg[cell] > 0);
+  }
+
+  private addMerchantHouse(marker: Marker, cell: number) {
+    const { cells, burgs } = pack;
+    const burg = burgs[cells.burg[cell]];
+    const marketId = cells.market?.[cell];
+    const margin = this.trade.margin[marketId] || 0;
+    const richer = (pack.markets ?? []).filter(({ i }) => (this.trade.margin[i] || 0) > margin).length;
+    const rank = richer ? "one of the richest" : "the richest";
+    marker.name = `House of ${Names.getCulture(cells.culture[cell])}`;
+    marker.note = `A merchant family of ${burg?.name || "the town"}, ${rank} in the land. Its factors buy and sell across the whole market, and a share of every deal ends in its coffers.`;
   }
 
   private listCanoes({ cells }: PackedGraph) {

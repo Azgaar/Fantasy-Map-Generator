@@ -28,6 +28,7 @@ Terms every `ru.json` string uses the same way. Rules for all catalogs are in
 | state                         | страна                             | never “государство”                                       |
 | province                      | провинция                          |                                                           |
 | culture                       | культура                           |                                                           |
+| development / era             | развитие / эпоха                   | a people's technology level, 0–100                        |
 | religion                      | религия                            |                                                           |
 | namesbase                     | база имён (pl. базы имён)          | the tab and the culture field are “Имена”                 |
 | heightmap                     | карта высот                        | the layer is “Высоты”                                     |
@@ -103,6 +104,14 @@ Terms every `ru.json` string uses the same way. Rules for all catalogs are in
 | wealth / gross product       | богатство / валовой продукт           |
 | treasury                     | казна                                 |
 | sales tax / poll tax         | налог с продаж / подушный налог       |
+| prosperity / living standards | благосостояние / уровень жизни        |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | разорение / нищета / бедность / скромный достаток / достаток / процветание / зажиточность / роскошь / великолепие / небывалое изобилие |
+| consumption / need / want    | потребление / потребность (метка «Нужда») / прихоть |
+| product (economy) / townspeople / rural people | продукт / горожане / сельские жители  |
+| exports / imports / trade balance | вывоз / ввоз / торговый баланс        |
+| inequality / tax burden      | неравенство / налоговое бремя         |
+| sector: rural / manufacturing / trade | деревня / ремёсла / торговля          |
+| economy type: agrarian / artisan / mercantile | аграрная / ремесленная / торговая     |
 
 ## Interface
 

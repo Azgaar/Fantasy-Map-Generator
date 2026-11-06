@@ -37,12 +37,12 @@ import { toggleSaveReminder } from "@/services/autosave";
 import { copyMapURL } from "@/services/url-params";
 import { confirmCleanupData } from "@/services/versioning";
 import { Dialog } from "@/ui/dialog/dialog";
-import { refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { changeMapZoom, resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { isCtrlClick } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
-import { findEl } from "@/utils/node-utils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 import { gauss } from "@/utils/probability-utils";
 
 export interface MapCommand {
@@ -299,6 +299,13 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.GoodsEditor.open()
   },
   {
+    id: "overviewDevelopmentButton",
+    name: t("Development Overview"),
+    link: true,
+    aliases: "technology tech level era civilization progress",
+    run: () => Controllers.DevelopmentOverview.open()
+  },
+  {
     id: "overviewMarketsButton",
     name: t("Markets Overview"),
     link: true,
@@ -495,7 +502,7 @@ export const MAP_COMMANDS: MapCommand[] = [
     id: "regenerateStates",
     name: `${t("Regenerate")}: ${t("States")}`,
     aliases: "generate countries kingdoms",
-    run: () => confirmRegeneration(regenerateStates)
+    run: () => confirmRegeneration("regenerateStates", regenerateStates)
   },
   {
     id: "regenerateProvinces",
@@ -508,49 +515,49 @@ export const MAP_COMMANDS: MapCommand[] = [
     id: "regenerateBurgs",
     name: `${t("Regenerate")}: ${t("Burgs")}`,
     aliases: "generate settlements cities towns",
-    run: () => confirmRegeneration(regenerateBurgs)
+    run: () => confirmRegeneration("regenerateBurgs", regenerateBurgs)
   },
   {
     id: "regenerateCultures",
     name: `${t("Regenerate")}: ${t("Cultures")}`,
     aliases: "generate people",
-    run: () => confirmRegeneration(regenerateCultures)
+    run: () => confirmRegeneration("regenerateCultures", regenerateCultures)
   },
   {
     id: "regenerateReligions",
     name: `${t("Regenerate")}: ${t("Religions")}`,
     aliases: "generate faith",
-    run: () => confirmRegeneration(regenerateReligions)
+    run: () => confirmRegeneration("regenerateReligions", regenerateReligions)
   },
   {
     id: "regenerateRivers",
     name: `${t("Regenerate")}: ${t("Rivers")}`,
     aliases: "generate waterways",
-    run: () => confirmRegeneration(regenerateRivers)
+    run: () => confirmRegeneration("regenerateRivers", regenerateRivers)
   },
   {
     id: "regenerateRoutes",
     name: `${t("Regenerate")}: ${t("Routes")}`,
     aliases: "generate roads",
-    run: () => confirmRegeneration(regenerateRoutes)
+    run: () => confirmRegeneration("regenerateRoutes", regenerateRoutes)
   },
   {
     id: "regenerateStateLabels",
     name: `${t("Regenerate")}: ${t("State Labels")}`,
     aliases: "generate text placement",
-    run: () => confirmRegeneration(regenerateStateLabels)
+    run: () => confirmRegeneration("regenerateStateLabels", regenerateStateLabels)
   },
   {
     id: "regenerateReliefIcons",
     name: `${t("Regenerate")}: ${t("Relief")}`,
     aliases: "generate mountains forests",
-    run: () => confirmRegeneration(regenerateReliefIcons)
+    run: () => confirmRegeneration("regenerateReliefIcons", regenerateReliefIcons)
   },
   {
     id: "regenerateEmblems",
     name: `${t("Regenerate")}: ${t("Emblems")}`,
     aliases: "generate heraldry",
-    run: () => confirmRegeneration(regenerateEmblems)
+    run: () => confirmRegeneration("regenerateEmblems", regenerateEmblems)
   },
   {
     id: "regenerateMarkers",
@@ -563,49 +570,31 @@ export const MAP_COMMANDS: MapCommand[] = [
     id: "regenerateZones",
     name: `${t("Regenerate")}: ${t("Zones")}`,
     aliases: "generate regions",
-    run: event => confirmRegeneration(() => regenerateZones(event))
+    run: event => confirmRegeneration("regenerateZones", () => regenerateZones(event))
   },
   {
     id: "regenerateMilitary",
     name: `${t("Regenerate")}: ${t("Military")}`,
     aliases: "generate armies regiments",
-    run: () => confirmRegeneration(regenerateMilitary)
+    run: () => confirmRegeneration("regenerateMilitary", regenerateMilitary)
   },
   {
     id: "regeneratePopulation",
     name: `${t("Regenerate")}: ${t("Population")}`,
     aliases: "generate people",
-    run: () => confirmRegeneration(regeneratePopulation)
-  },
-  {
-    id: "regenerateGoods",
-    name: `${t("Regenerate")}: ${t("Goods")}`,
-    aliases: "generate resources",
-    run: () => confirmRegeneration(regenerateGoods)
-  },
-  {
-    id: "regenerateMarkets",
-    name: `${t("Regenerate")}: ${t("Markets")}`,
-    aliases: "generate economy",
-    run: () => confirmRegeneration(regenerateMarkets)
-  },
-  {
-    id: "regenerateProduction",
-    name: `${t("Regenerate")}: ${t("Production")}`,
-    aliases: "generate trade economy",
-    run: () => confirmRegeneration(regenerateProduction)
+    run: () => confirmRegeneration("regeneratePopulation", regeneratePopulation)
   },
   {
     id: "regenerateEconomy",
     name: `${t("Regenerate")}: ${t("Economy")}`,
-    aliases: "generate trade",
-    run: () => confirmRegeneration(regenerateEconomy)
+    aliases: "generate goods resources deposits markets production trade",
+    run: () => openEconomyRegeneration(["production"])
   },
   {
     id: "regenerateIce",
     name: `${t("Regenerate")}: ${t("Ice")}`,
     aliases: "generate glaciers icebergs",
-    run: () => confirmRegeneration(regenerateIce)
+    run: () => confirmRegeneration("regenerateIce", regenerateIce)
   },
   { id: "zoomReset", name: t("Reset Zoom"), aliases: "fit view whole map", run: () => resetZoom(1000) },
   { id: "zoomIn", name: t("Zoom In"), aliases: "view closer", run: () => changeMapZoom(1.2) },
@@ -804,34 +793,93 @@ function isQuestion(text: string): boolean {
   return query.includes("?") || QUESTION_START.test(query);
 }
 
-function confirmRegeneration(action: () => void): void {
-  const apply = () => {
-    action();
-    refreshEditors();
-  };
-  if (sessionStorage.getItem("regenerateFeatureDontAsk")) {
-    apply();
-    return;
-  }
+function applyRegeneration(action: () => void): void {
+  action();
+  closeEntityDialogs();
+  refreshEditors();
+}
+
+const regenerationMessage = (
+  before = "",
+  after = ""
+) => /* html */ `<div style="display: flex; flex-direction: column; gap: 0.6em;">
+    <div>${t("Regeneration will remove all the custom changes for the element.")}</div>
+    ${before}
+    <div>${t("Are you sure you want to proceed?")}</div>
+    ${after}
+  </div>`;
+
+/** "Do not ask again" covers this regeneration alone, for the session */
+function confirmRegeneration(id: string, action: () => void): void {
+  const key = `regenerateDontAsk-${id}`;
+  if (sessionStorage.getItem(key)) return void applyRegeneration(action);
 
   const remember = () => {
-    if (findEl<HTMLInputElement>("regenerateDontAsk")?.checked)
-      sessionStorage.setItem("regenerateFeatureDontAsk", "true");
+    if (findEl<HTMLInputElement>("regenerateDontAsk")?.checked) sessionStorage.setItem(key, "true");
   };
+
   Dialog.confirm({
     title: t("Regenerate element"),
-    message: /* html */ `${t("Regeneration will remove all the custom changes for the element.")}<br><br>${t("Are you sure you want to proceed?")}
-      <div style="margin-top: 0.6em">
+    message: regenerationMessage(
+      "",
+      /* html */ `<div>
         <input id="regenerateDontAsk" class="checkbox" type="checkbox" />
         <label for="regenerateDontAsk" class="checkbox-label"><i>${t("Do not ask again")}</i></label>
-      </div>`,
+      </div>`
+    ),
     confirm: t("Proceed"),
     onConfirm: () => {
       remember();
-      apply();
+      applyRegeneration(action);
     },
     onCancel: remember
   });
+}
+
+const ECONOMY_PARTS = ["restore", "deposits", "markets", "territories", "production"] as const;
+type EconomyPart = (typeof ECONOMY_PARTS)[number];
+
+/** Asks what to regenerate, each time: choosing is the point of it */
+export function openEconomyRegeneration(preset: EconomyPart[]): void {
+  const labels: Record<EconomyPart, string> = {
+    restore: t("Restore default goods"),
+    deposits: t("Regenerate good deposits"),
+    markets: t("Regenerate markets"),
+    territories: t("Regenerate market areas"),
+    production: t("Regenerate production and trade deals")
+  };
+
+  const box = (part: EconomyPart) => ensureEl<HTMLInputElement>(`regeneratePart-${part}`);
+
+  Dialog.confirm({
+    title: t("Economy Regeneration"),
+    message: regenerationMessage(
+      /*html*/ `<div style="display: flex; flex-direction: column; gap: 0.3em;">${ECONOMY_PARTS.map(
+        part => /* html */ `<div>
+      <input id="regeneratePart-${part}" class="checkbox" type="checkbox" ${preset.includes(part) ? "checked" : ""} />
+      <label for="regeneratePart-${part}" class="checkbox-label">${labels[part]}</label>
+    </div>`
+      ).join("")}</div>`
+    ),
+    confirm: t("Proceed"),
+    onConfirm: () =>
+      applyRegeneration(() => regenerateEconomy(new Set(ECONOMY_PARTS.filter(part => box(part).checked))))
+  });
+
+  // a part that rebuilds another includes it, so that box is ticked and locked while it is
+  for (const [part, included] of [
+    ["restore", "deposits"],
+    ["markets", "territories"]
+  ] as const) {
+    const rebuilds = box(part);
+    const includes = box(included);
+    const sync = () => {
+      includes.checked = rebuilds.checked || preset.includes(included);
+      includes.disabled = rebuilds.checked;
+    };
+    rebuilds.addEventListener("change", sync);
+    sync();
+  }
 }
 
 function regenerateStateLabels(): void {
@@ -849,7 +897,7 @@ function regenerateReliefIcons(): void {
 
 function regenerateRoutes(): void {
   Routes.regenerate();
-  Layers.draw("routes", "trade");
+  Layers.draw("routes", "goods", "trade");
 }
 
 function regenerateRivers(): void {
@@ -868,33 +916,46 @@ function regenerateStates(): void {
   if (error) return void tip(error, false, "error");
   if (warning) tip(warning, false, "warn");
 
+  Production.regenerate(); // the new states tax the deals
+  Military.regenerate(); // after the economy, as armies are equipped from what their states consume
   unfog();
-  Layers.draw("states", "borders", "provinces", "labels", "burgIcons", "military", "goods", "emblems");
+  Layers.draw(
+    "states",
+    "borders",
+    "provinces",
+    "labels",
+    "burgIcons",
+    "military",
+    "markets",
+    "goods",
+    "trade",
+    "emblems"
+  );
 }
 
 function regenerateBurgs(): void {
   Burgs.regenerate();
-  Layers.draw("burgIcons", "labels", "routes", "population", "goods", "emblems");
-}
-
-function regenerateGoods(): void {
-  Goods.regenerate();
-  Layers.draw("goods");
-}
-
-function regenerateMarkets(): void {
-  Markets.regenerate();
-  Layers.draw("markets", "goods", "trade");
-}
-
-function regenerateEconomy(): void {
-  Production.regenerateEconomy();
-  Layers.draw("markets", "goods", "trade");
-}
-
-function regenerateProduction(): void {
+  Markets.regenerate(); // the market centers were burgs
   Production.regenerate();
-  Layers.draw("goods", "trade");
+  Layers.draw("burgIcons", "labels", "routes", "population", "markets", "goods", "trade", "emblems");
+}
+
+function regenerateEconomy(parts: Set<EconomyPart>): void {
+  const restore = parts.has("restore");
+  if (restore) {
+    const previousIds = pack.goods.map(good => good.i);
+    Goods.restoreDefaults();
+    States.pruneTariffs({ goods: previousIds.filter(id => !Goods.get(id)) }); // a later good could reuse the id
+    Goods.generate();
+  } else if (parts.has("deposits")) Goods.regenerate();
+
+  const markets = parts.has("markets");
+  if (markets) Markets.regenerate();
+  else if (parts.has("territories")) Markets.expand();
+
+  if (parts.has("production")) Production.regenerate();
+  else if (restore || markets) Production.clear(); // the deals and stocks named what was replaced
+  Layers.draw("markets", "goods", "trade");
 }
 
 function regenerateEmblems(): void {

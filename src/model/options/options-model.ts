@@ -6,7 +6,6 @@ import { heightmapTemplates } from "@/data/heightmap-templates";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import { DEFAULT_THREE_D } from "@/data/view-3d-options";
 import { Labels } from "@/model/annotations/labels-generator";
-import { Transports } from "@/model/economy/transports-generator";
 import { DEFAULT_JITTER } from "@/model/graph/lattice";
 import { adoptLegacyOptions } from "@/model/options/options-legacy";
 import {
@@ -24,6 +23,7 @@ import { Relief } from "@/model/physical/relief-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Military } from "@/model/political/military-generator";
 import { Names } from "@/model/society/names-generator";
+import { Transports } from "@/model/story/journeys/transports-generator";
 import { LocalDB } from "@/services/local-db";
 import { t } from "@/utils/i18n";
 import { log } from "@/utils/logger";
@@ -78,6 +78,7 @@ class OptionsModel {
           area: { unit: "square" },
           height: { unit: isImperial() ? "ft" : "m", exponent: 2 },
           temperature: { unit: locale() === "en-US" ? "°F" : "°C" },
+          money: { unit: "uncia" },
           population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
         },
         style: { preset: "default" },
@@ -109,6 +110,7 @@ class OptionsModel {
         heightmapEditor: { renderOcean: false, showDrainage: false, allowErosion: true },
         performance: { shapeRendering: "optimizeSpeed", stateHalos: false, viewportRedraw: "continuous" }, // "balance"
         onLoad: "random",
+        debug: [],
         language: "",
         zoomExtent: { min: 1, max: 20 },
         viewport: null,
@@ -193,6 +195,7 @@ class OptionsModel {
   /** Throw this browser's options away and start from the defaults: a reset, never a repair */
   reset(): void {
     options = this.getDefaultOptions();
+    log.setDebug(options.app.debug);
     this.persist();
   }
 
@@ -208,6 +211,7 @@ class OptionsModel {
     delete options.map.viewOnly; // kept by earlier versions
     this.repairSets();
     this.setGraphSize(Pins.valueOr("mapWidth", window.innerWidth), Pins.valueOr("mapHeight", window.innerHeight));
+    log.setDebug(options.app.debug);
     this.persist();
   }
 
@@ -312,6 +316,7 @@ class OptionsModel {
     units.height.unit = Pins.valueOr("heightUnit", units.height.unit);
     units.height.exponent = Pins.valueOr("heightExponent", units.height.exponent);
     units.temperature.unit = Pins.valueOr("temperatureScale", units.temperature.unit);
+    units.money.unit = Pins.valueOr("moneyUnit", units.money.unit);
     units.population.scale = Pins.valueOr("populationRate", units.population.scale);
     units.population.urbanization.rate = Pins.valueOr("urbanization", units.population.urbanization.rate);
     units.population.urbanization.density = Pins.valueOr("urbanDensity", units.population.urbanization.density);

@@ -3,8 +3,10 @@ import { mean, median, quadtree, sum } from "d3";
 import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
 import type { Label } from "@/model/annotations/labels-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { Trade } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Feature } from "@/model/physical/features-generator";
+import { Districts } from "@/model/political/districts";
 import { Emblems } from "@/model/political/emblems-generator";
 import { CULTURE_TYPES } from "@/model/society/cultures-generator";
 import { Names } from "@/model/society/names-generator";
@@ -19,10 +21,9 @@ import { minmax, rn } from "@/utils/number-utils";
 import { getPolesOfInaccessibility } from "@/utils/path-utils";
 import { each, gauss, generateSeed, P, ra, rand, rw } from "@/utils/probability-utils";
 import { escapeHtml } from "@/utils/string-utils";
-import { requireName, requireOneOf } from "@/utils/validation-utils";
+import { requireAdjustments, requireName, requireOneOf } from "@/utils/validation-utils";
 import { Burgs } from "./burgs-generator";
 import type { Regiment } from "./military-generator";
-import { Military } from "./military-generator";
 import type { Province } from "./provinces-generator";
 import { Provinces } from "./provinces-generator";
 
@@ -60,13 +61,55 @@ export interface State {
   military?: Regiment[];
   provinces?: number[];
   alert?: number;
-  salesTax: number;
-  pollTax: number;
-  treasury: number;
-  tariffs?: TariffRule[];
+  economy: StateFinance;
   label?: Label;
   note?: string;
 }
+
+/** What a state spends its taxes on, buying goods during the economy run */
+export const EXPENSES = ["court", "administration", "infrastructure", "military"] as const;
+export type Expense = (typeof EXPENSES)[number];
+
+/** Each expense in whole percents of the taxes the state collects, summing to more than 100 for a state that spends beyond them, and the percent of each that officials pocket */
+export type StateBudget = Record<Expense | "corruption", number>;
+
+/** A state's taxes, fees, tariffs, budget and treasury; all zero for the neutral lands */
+export interface StateFinance {
+  salesTax: number;
+  pollTax: number;
+  marketFee: number; // license fee a day from each market centered in the state
+  adjustments: { name: string; value: number }[]; // a day's income besides taxes, such as tribute or crown estates; negative for debts or tribute paid. The user's, kept on regeneration
+  budget: StateBudget;
+  collected: number; // all the taxes collected in the last run
+  spent: Record<Expense, number>; // what each expense bought in the last run
+  pocketed: number; // what officials pocketed in the last run
+  treasury: number;
+  tariffs: TariffRule[];
+}
+
+export const noExpenses = (): Record<Expense, number> => ({
+  court: 0,
+  administration: 0,
+  infrastructure: 0,
+  military: 0
+});
+
+/** Anarchies levy nothing, like the neutral lands */
+export const levies = (state: State) => Boolean(state.i && !state.removed && state.form !== "Anarchy");
+
+/** No taxes, fees, tariffs or money: a new state's until its form sets them, and the neutral lands' for good */
+export const noFinance = (): StateFinance => ({
+  salesTax: 0,
+  pollTax: 0,
+  marketFee: 0,
+  adjustments: [],
+  budget: { ...noExpenses(), corruption: 0 },
+  collected: 0,
+  spent: noExpenses(),
+  pocketed: 0,
+  treasury: 0,
+  tariffs: []
+});
 
 interface Campaign {
   attacker: number;
@@ -80,6 +123,7 @@ interface Campaign {
 export const STATE_FORMS = {
   Monarchy: [
     "Beylik",
+    "Chiefdom",
     "Despotate",
     "Dominion",
     "Duchy",
@@ -92,11 +136,13 @@ export const STATE_FORMS = {
     "Khanate",
     "Kingdom",
     "Marches",
+    "Paramount Chiefdom",
     "Principality",
     "Satrapy",
     "Shogunate",
     "Sultanate",
     "Tsardom",
+    "Tribe",
     "Ulus",
     "Viceroyalty"
   ],
@@ -113,9 +159,11 @@ export const STATE_FORMS = {
     "Republic",
     "Tetrarchy",
     "Trade Company",
+    "Tribal Council",
     "Triumvirate"
   ],
   Union: [
+    "Clans Union",
     "Confederacy",
     "Confederation",
     "Conglomerate",
@@ -145,28 +193,59 @@ export const STATE_FORMS = {
     "Imamah",
     "Patriarchate",
     "See",
+    "Shamanate",
     "Thearchy",
-    "Theocracy"
+    "Theocracy",
+    "Priesthood"
   ],
   Anarchy: ["Commune", "Community", "Council", "Free Territory", "Tribes"]
 } as const satisfies Record<string, readonly string[]>;
 type StateForm = keyof typeof STATE_FORMS;
 const FORMS = Object.keys(STATE_FORMS) as StateForm[];
+const TRIBAL_DEVELOPMENT = 12; // below the Bronze Age, a state's capital rules a tribe or chiefdom
 
 /** The form of government a listed form name belongs to */
 const getStateForm = (formName: string): StateForm | undefined =>
   FORMS.find(form => (STATE_FORMS[form] as readonly string[]).includes(formName));
 
-type TaxBases = { salesTax: number; pollTax: number };
+type TaxBases = { salesTax: number; pollTax: number; marketFee: number };
+const MAX_MARKET_FEE_FACTOR = 1.5; // the most a state's market fee lies above its form's base, however high its sales tax
 
 const DEFAULT_TAX_BY_FORM: Record<string, TaxBases> = {
-  Monarchy: { salesTax: 0.15, pollTax: 0.2 },
-  Theocracy: { salesTax: 0.25, pollTax: 0.1 },
-  Union: { salesTax: 0.07, pollTax: 0.13 },
-  Republic: { salesTax: 0.05, pollTax: 0.15 },
-  Anarchy: { salesTax: 0, pollTax: 0 }
+  Monarchy: { salesTax: 0.08, pollTax: 0.07, marketFee: 30 },
+  Theocracy: { salesTax: 0.05, pollTax: 0.07, marketFee: 50 },
+  Union: { salesTax: 0.1, pollTax: 0, marketFee: 0 },
+  Republic: { salesTax: 0.05, pollTax: 0.05, marketFee: 15 },
+  Anarchy: { salesTax: 0, pollTax: 0, marketFee: 0 }
 };
 const DEFAULT_TAX: TaxBases = DEFAULT_TAX_BY_FORM.Monarchy;
+
+const CORRUPTION_BY_FORM: Record<string, number> = {
+  Monarchy: 15,
+  Theocracy: 12,
+  Republic: 8,
+  Union: 4,
+  Anarchy: 0
+};
+const DESPOTIC_FORMS = ["Despotate", "Horde", "Junta", "Satrapy", "Shogunate"]; // double their form's corruption
+const SIZE_CORRUPTION = 15; // what the largest state's size adds; a city-state's adds nothing
+const DIVERSITY_CORRUPTION = 10; // what ruling no one of the state's culture and faith would add, half for each
+const ADMINISTRATION_NEED = 0.1; // administration's money a person a day that curbs corruption fully
+const ADMINISTRATION_CURB = 0.5; // the share of corruption a fully paid administration curbs
+export const PROVISION_NEED = { infrastructure: 0.05, court: 0.08 }; // spending a person a day that serves the state's people fully
+
+// percents of the taxes before corruption: the court's grows with the capital's share of the townspeople, administration with the burgs ruled, infrastructure with urbanization
+const EXPENSES_BY_FORM: Record<string, Record<"court" | "administration" | "infrastructure", number>> = {
+  Monarchy: { court: 20, administration: 10, infrastructure: 8 },
+  Theocracy: { court: 30, administration: 10, infrastructure: 8 },
+  Republic: { court: 5, administration: 20, infrastructure: 12 },
+  Union: { court: 5, administration: 20, infrastructure: 12 },
+  Anarchy: { court: 0, administration: 0, infrastructure: 0 }
+};
+const SIZE_ADMINISTRATION = 15; // what ruling the most burgs adds
+const URBAN_INFRASTRUCTURE = 20; // what an all-urban state adds
+const MILITARY_SPENDING = 25; // the military's base, the largest expense even in peace
+const ALERT_MILITARY = 20; // what war alert 1 adds, by its root: 31 at the calmest, 45 at alert 1, 70 at the most alert
 
 class StatesModule {
   regenerate(): { warning?: string; error?: string } {
@@ -184,7 +263,6 @@ class StatesModule {
     this.generateDiplomacy();
     this.defineStateForms();
     Provinces.regenerate(false);
-    Military.regenerate();
 
     return { warning, error };
   }
@@ -232,7 +310,7 @@ class StatesModule {
     let spacing = (options.map.graph.width + options.map.graph.height) / 2 / count;
     const capitalsTree = quadtree<[number, number]>();
     const newStates: State[] = [
-      { ...pack.states[0], i: 0, name: pack.states[0].name, tariffs: [], tags: pack.states[0]?.tags || [] }
+      { ...pack.states[0], i: 0, name: pack.states[0].name, economy: noFinance(), tags: pack.states[0]?.tags || [] }
     ];
 
     for (const state of lockedStates) {
@@ -244,6 +322,15 @@ class StatesModule {
       });
       state.i = newId;
       newStates.push(state);
+    }
+
+    // their tariff rules follow the kept states' new ids; a rule that named only dropped states goes
+    for (const { economy } of lockedStates) {
+      economy.tariffs = economy.tariffs.flatMap(rule => {
+        if (rule.states === "all") return [rule];
+        const states = rule.states.map(id => lockedStateIds.indexOf(id) + 1).filter(Boolean);
+        return states.length ? [{ ...rule, states }] : [];
+      });
     }
 
     for (const cellId of pack.cells.i) {
@@ -287,10 +374,7 @@ class StatesModule {
         culture,
         expansionism,
         coa,
-        salesTax: 0,
-        pollTax: 0,
-        treasury: 0,
-        tariffs: [],
+        economy: noFinance(),
         tags: []
       });
     }
@@ -299,9 +383,7 @@ class StatesModule {
   }
 
   private createStates() {
-    const states: State[] = [
-      { i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0, tariffs: [], tags: [] } as unknown as State
-    ];
+    const states: State[] = [{ i: 0, name: "Neutrals", economy: noFinance(), tags: [] } as unknown as State];
     const each5th = each(5);
     const sizeVariety = options.generation.states.sizeVariety;
 
@@ -323,10 +405,7 @@ class StatesModule {
         center: burg.cell,
         culture: burg.culture!,
         coa,
-        salesTax: 0,
-        pollTax: 0,
-        treasury: 0,
-        tariffs: [],
+        economy: noFinance(),
         tags: []
       });
     });
@@ -588,12 +667,10 @@ class StatesModule {
     const chronicle = this.getChronicle();
     const valid = states.filter(s => s.i && !s.removed); // will filter out neutral as i is 0 => false
 
-    // Pre-Calculate state area since collectStatistics() hasn't run yet.
-    const stateAreas = new Float32Array(states.length);
+    // state population approximates its power; burgs get theirs later, in Burgs.specify()
+    const statePops = new Float32Array(states.length);
     for (const i of cells.i) {
-      if (cells.h[i] >= 20 && cells.state[i]) {
-        stateAreas[cells.state[i]] += cells.area[i];
-      }
+      if (cells.h[i] >= 20 && cells.state[i]) statePops[cells.state[i]] += cells.pop[i];
     }
 
     const neibs = { Ally: 1, Friendly: 2, Neutral: 1, Suspicion: 10, Rival: 9 }; // relations to neighbors
@@ -601,17 +678,17 @@ class StatesModule {
     const far = { Friendly: 1, Neutral: 12, Suspicion: 2, Unknown: 6 }; // relations to other
     const navals = { Neutral: 1, Suspicion: 2, Rival: 1, Unknown: 1 }; // relations of naval powers
 
-    states[0].tariffs = [];
+    states[0].economy.tariffs = [];
     valid.forEach(s => {
       s.diplomacy = new Array(states.length).fill("x"); // clear all relationships
     });
     if (valid.length < 2) {
       valid.forEach(s => {
-        s.tariffs = this.defineTariffs(s);
+        if (!s.lock) s.economy.tariffs = this.defineTariffs(s);
       });
       return; // no states to generate relations with
     }
-    const areaMean: number = mean(valid.map(s => stateAreas[s.i])) as number; // average state area
+    const popMean: number = mean(valid.map(s => statePops[s.i])) as number; // average state population
 
     // generic relations
     for (let f = 1; f < states.length; f++) {
@@ -652,7 +729,7 @@ class StatesModule {
         let status = naval ? rw(navals) : neib ? rw(neibs) : neibOfNeib ? rw(neibsOfNeibs) : rw(far);
 
         // add Vassal
-        if (neib && P(0.8) && stateAreas[f] > areaMean && stateAreas[t] < areaMean && stateAreas[f] / stateAreas[t] > 2)
+        if (neib && P(0.8) && statePops[f] > popMean && statePops[t] < popMean && statePops[f] / statePops[t] > 2)
           status = "Vassal";
         states[f].diplomacy![t] = status === "Vassal" ? "Suzerain" : status;
         states[t].diplomacy![f] = status;
@@ -671,8 +748,8 @@ class StatesModule {
       const defender = ra(
         ad.map((r, d) => (r === "Rival" && !states[d].diplomacy!.includes("Vassal") ? d : 0)).filter(d => d)
       );
-      let ap = stateAreas[attacker] * states[attacker].expansionism;
-      let dp = stateAreas[defender] * states[defender].expansionism;
+      let ap = statePops[attacker] * states[attacker].expansionism;
+      let dp = statePops[defender] * states[defender].expansionism;
       if (ap < dp * gauss(1.6, 0.8, 0, 10, 2)) continue; // defender is too strong
 
       const an = states[attacker].name;
@@ -705,8 +782,8 @@ class StatesModule {
         }
       });
 
-      ap = sum(attackers.map(a => stateAreas[a] * states[a].expansionism)); // attackers joined power
-      dp = sum(defenders.map(d => stateAreas[d] * states[d].expansionism)); // defender joined power
+      ap = sum(attackers.map(a => statePops[a] * states[a].expansionism)); // attackers joined power
+      dp = sum(defenders.map(d => statePops[d] * states[d].expansionism)); // defender joined power
 
       // defender allies join
       dd.forEach((r, d) => {
@@ -718,7 +795,7 @@ class StatesModule {
           return;
         }
         defenders.push(d);
-        dp += stateAreas[d] * states[d].expansionism;
+        dp += statePops[d] * states[d].expansionism;
         war.push(`${dn}'s ally ${states[d].name} joined the war on defenders side`);
 
         // ally vassals join
@@ -727,7 +804,7 @@ class StatesModule {
           .filter(d => d)
           .forEach(v => {
             defenders.push(v);
-            dp += stateAreas[v] * states[v].expansionism;
+            dp += statePops[v] * states[v].expansionism;
             war.push(`${states[d].name}'s vassal ${states[v].name} joined the war on defenders side`);
           });
       });
@@ -747,7 +824,7 @@ class StatesModule {
         }
 
         attackers.push(d);
-        ap += stateAreas[d] * states[d].expansionism;
+        ap += statePops[d] * states[d].expansionism;
         war.push(`${an}'s ally ${name} joined the war on attackers side`);
 
         // ally vassals join
@@ -756,7 +833,7 @@ class StatesModule {
           .filter(d => d)
           .forEach(v => {
             attackers.push(v);
-            ap += stateAreas[v] * states[v].expansionism;
+            ap += statePops[v] * states[v].expansionism;
             war.push(`${states[d].name}'s vassal ${states[v].name} joined the war on attackers side`);
           });
       });
@@ -770,14 +847,14 @@ class StatesModule {
       chronicle.push(war); // add a record to diplomatical history
     }
     valid.forEach(s => {
-      s.tariffs = this.defineTariffs(s);
+      if (!s.lock) s.economy.tariffs = this.defineTariffs(s);
     });
     log.timeEnd("generateDiplomacy");
   }
 
   defineTariffs(state: State): TariffRule[] {
-    if (!state.i || state.removed) return [];
-    const rules: TariffRule[] = [{ states: "all", goods: "all", rate: 0 }];
+    if (!levies(state)) return [];
+    const rules: TariffRule[] = [{ states: "all", goods: "all", rate: 0.05 }];
     const diplomacy = state.diplomacy;
     if (!Array.isArray(diplomacy)) return rules;
 
@@ -854,7 +931,7 @@ class StatesModule {
       Heptarchy: 1
     }; // weighted random
     const theocracy = {
-      Theocracy: 20,
+      Theocracy: 15,
       Brotherhood: 1,
       Thearchy: 2,
       See: 1,
@@ -947,20 +1024,149 @@ class StatesModule {
         }
       };
 
-      s.formName = selectForm(s, tier);
+      s.formName = this.getTribalForm(s, tier, selectForm(s, tier)); // rolled first, so a tribe draws as a kingdom would
       s.fullName = this.getFullName(s);
 
       const taxes = this.defineTaxRates(s);
-      s.salesTax = taxes.salesTax;
-      s.pollTax = taxes.pollTax;
+      s.economy.salesTax = taxes.salesTax;
+      s.economy.pollTax = taxes.pollTax;
+      s.economy.marketFee = this.defineMarketFee(s);
+      s.economy.tariffs = this.defineTariffs(s);
+      s.alert = this.defineAlert(s);
+      s.economy.budget = this.defineBudget(s, this.defineCorruption(s));
     }
+  }
+
+  /** A title for a people before the Bronze Age, where kingdoms and republics are not yet known; others keep the form's */
+  private getTribalForm(state: State, tier: number, formName: string | undefined): string | undefined {
+    const capital = pack.burgs[state.capital];
+    const development = capital ? pack.cells.development[capital.cell] : undefined;
+    if (!development || development >= TRIBAL_DEVELOPMENT) return formName;
+    if (state.form === "Monarchy") {
+      if (state.type === "Nomadic") return "Horde";
+      return tier < 2 ? "Tribe" : tier < 4 ? "Chiefdom" : "Paramount Chiefdom";
+    }
+    if (state.form === "Republic") return "Tribal Council";
+    if (state.form === "Union") return "Clans Union";
+    if (state.form === "Theocracy") return "Shamanate";
+    return formName;
+  }
+
+  /** How ready for war the state is, from 0.1 to 5 */
+  defineAlert(state: State): number {
+    const valid = pack.states.filter(s => s.i && !s.removed);
+    const expansionism = sum(valid.map(s => s.expansionism));
+    const area = sum(valid.map(s => s.area || 0));
+    const relationRate: Record<string, number> = {
+      Ally: -0.2,
+      Friendly: -0.1,
+      Suspicion: 0.1,
+      Enemy: 1,
+      Rival: 0.5,
+      Vassal: 0.5,
+      Suzerain: -0.5
+    };
+
+    const relations = state.diplomacy ?? [];
+    const expansionRate = minmax(state.expansionism / expansionism / ((state.area || 0) / area), 0.25, 4);
+    const diplomacyRate = relations.includes("Enemy")
+      ? 1
+      : relations.includes("Rival")
+        ? 0.8
+        : relations.includes("Suspicion")
+          ? 0.5
+          : 0.1; // peacefulness
+    const neighborsRate = (state.neighbors ?? [])
+      .map(n => (n ? pack.states[n].diplomacy?.[state.i] : "Suspicion"))
+      .reduce((total, relation) => total + (relationRate[relation || ""] || 0), 0.5);
+    return minmax(rn(expansionRate * diplomacyRate * minmax(neighborsRate, 0.3, 3), 2), 0.1, 5);
+  }
+
+  /** The default budget: the default expenses and the corruption */
+  defineBudget(state: State, corruption: number): StateBudget {
+    return { ...this.defineExpenses(state), corruption };
+  }
+
+  /** The default expenses, in whole percents of the taxes */
+  defineExpenses(state: State): Record<Expense, number> {
+    if (!levies(state)) return noExpenses();
+    const base = EXPENSES_BY_FORM[state.form || ""] ?? EXPENSES_BY_FORM.Monarchy;
+    const urban = state.urban || 0;
+    const people = urban + (state.rural || 0);
+    const primacy = urban ? (pack.burgs[state.capital]?.population || 0) / urban : 1;
+    const mostBurgs = Math.max(1, ...pack.states.filter(s => s.i && !s.removed).map(s => s.burgs || 0));
+    return {
+      court: Math.round(base.court * (0.5 + Math.min(1, primacy))),
+      administration: Math.round(base.administration + SIZE_ADMINISTRATION * Math.sqrt((state.burgs || 0) / mostBurgs)),
+      infrastructure: Math.round(base.infrastructure + URBAN_INFRASTRUCTURE * (people ? urban / people : 0)),
+      military: Math.min(100, Math.round(MILITARY_SPENDING + ALERT_MILITARY * Math.sqrt(state.alert ?? 1)))
+    };
+  }
+
+  /** Percent of each expense officials pocket */
+  defineCorruption(state: State): number {
+    if (!levies(state)) return 0;
+    const form =
+      (CORRUPTION_BY_FORM[state.form || ""] ?? CORRUPTION_BY_FORM.Monarchy) *
+      (DESPOTIC_FORMS.includes(state.formName || "") ? 2 : 1);
+    return Math.round(form + SIZE_CORRUPTION * this.getSize(state) + DIVERSITY_CORRUPTION * this.getDiversity(state));
+  }
+
+  /** The state's size against the largest one's, by the root of their cells: 0 to 1, and 0 for a city-state with no other burgs */
+  getSize(state: State): number {
+    const largest = Math.max(0, ...pack.states.filter(s => s.i && !s.removed).map(s => s.cells || 0));
+    return (state.burgs || 0) > 1 && largest ? Math.sqrt((state.cells || 0) / largest) : 0;
+  }
+
+  /** The share of the state's people outside its culture and outside its capital's faith, each counting half: 0 to 1 */
+  getDiversity(state: State): number {
+    const { cells, burgs } = pack;
+    const religion = cells.religion?.[burgs[state.capital]?.cell ?? -1] || 0;
+    let people = 0;
+    let strangers = 0;
+    for (let i = 0; i < cells.i.length; i++) {
+      if (cells.state[i] !== state.i) continue;
+      const weight = (cells.pop[i] || 0) + (cells.burg[i] ? burgs[cells.burg[i]]?.population || 0 : 0);
+      people += weight;
+      if (cells.culture[i] !== state.culture) strangers += weight / 2;
+      if ((cells.religion?.[i] || 0) !== religion) strangers += weight / 2;
+    }
+    return people ? strangers / people : 0;
+  }
+
+  /** How fully the last run's spending on infrastructure or the court served the state's people, from 0 to 1 */
+  getProvision(state: State | undefined, expense: keyof typeof PROVISION_NEED): number {
+    if (!state?.i || state.removed) return 0;
+    const need = PROVISION_NEED[expense] * ((state.urban || 0) + (state.rural || 0));
+    return need ? Math.min(1, (state.economy.spent[expense] || 0) / need) : 0;
+  }
+
+  /** Percent officials pocket once the state has collected this much: the corruption, by default the state's, curbed as far as administration gets of what its people need */
+  getCorruption(state: State, collected: number, corruption = state.economy.budget.corruption): number {
+    const { administration } = state.economy.budget;
+    const need = ADMINISTRATION_NEED * ((state.urban || 0) + (state.rural || 0));
+    if (!corruption || !need || collected <= 0) return corruption;
+    // administration gets pay = allotted × (1 − graft), and graft = corruption × (1 − curb × pay ÷ need): solved for pay
+    const allotted = (collected * administration) / 100;
+    const graft = corruption / 100;
+    const rest = 1 - (allotted * graft * ADMINISTRATION_CURB) / need;
+    const pay = rest > 0 ? (allotted * (1 - graft)) / rest : Infinity;
+    return corruption * (1 - ADMINISTRATION_CURB * Math.min(1, pay / need));
+  }
+
+  /** The form's market fee, as far above or below its base as the state's sales tax is: no extra random roll, so generation after it is unchanged */
+  defineMarketFee(state: State): number {
+    if (!state.i || state.removed) return 0;
+    const { salesTax, marketFee } = DEFAULT_TAX_BY_FORM[state.form || ""] || DEFAULT_TAX;
+    if (!salesTax || !marketFee) return 0;
+    return Math.round(marketFee * minmax((state.economy.salesTax || 0) / salesTax, 0.25, MAX_MARKET_FEE_FACTOR));
   }
 
   defineTaxRates(state: State) {
     const { salesTax, pollTax } = DEFAULT_TAX_BY_FORM[state.form || ""] || DEFAULT_TAX;
     return {
-      salesTax: rn(gauss(salesTax, salesTax * 0.15, salesTax * 0.5, salesTax * 1.5, 4), 2),
-      pollTax: rn(gauss(pollTax, pollTax * 0.15, pollTax * 0.5, pollTax * 1.5, 4), 2)
+      salesTax: rn(gauss(salesTax, salesTax * 0.5, salesTax * 0.25, salesTax * 2, 4), 2),
+      pollTax: rn(gauss(pollTax, pollTax * 0.5, pollTax * 0.25, pollTax * 2, 4), 2)
     };
   }
 
@@ -1150,13 +1356,10 @@ class StatesModule {
       military: [],
       alert: 1,
       coa,
-      salesTax: 0,
-      pollTax: 0,
-      treasury: 0,
-      tariffs: [],
+      economy: noFinance(),
       tags: []
     });
-    states[i].tariffs = this.defineTariffs(states[i]);
+    states[i].economy.tariffs = this.defineTariffs(states[i]);
     this.getPoles();
     this.findNeighbors();
     this.collectStatistics();
@@ -1288,8 +1491,35 @@ class StatesModule {
       throw new Error("The sales tax must be a number from 0 to 1");
     if (typeof pollTax !== "number" || !(pollTax >= 0 && Number.isFinite(pollTax)))
       throw new Error("The poll tax must be a non-negative number");
-    state.salesTax = rn(salesTax, 4);
-    state.pollTax = rn(pollTax, 4);
+    state.economy.salesTax = rn(salesTax, 4);
+    state.economy.pollTax = rn(pollTax, 4);
+  }
+
+  /** Set the percent of each expense a state's officials pocket, from 0 to 100; it takes effect when production is regenerated */
+  setCorruption(stateId: number, percent: number): void {
+    const state = this.ruled(stateId);
+    if (typeof percent !== "number" || !(percent >= 0 && percent <= 100))
+      throw new Error("Corruption must be a number from 0 to 100");
+    state.economy.budget.corruption = Math.round(percent);
+  }
+
+  /** Set a state's expenses in whole percents of its taxes, from 0 to 100 each; together they may pass 100 and run the treasury into debt. It takes effect when production is regenerated */
+  setBudget(stateId: number, expenses: Partial<Record<Expense, number>>): void {
+    const { budget } = this.ruled(stateId).economy;
+    for (const [expense, percent] of Object.entries(expenses)) {
+      if (!EXPENSES.includes(expense as Expense)) throw new Error(`Unknown expense: ${expense}`);
+      if (typeof percent !== "number" || !(percent >= 0 && percent <= 100))
+        throw new Error("An expense must be a number from 0 to 100");
+    }
+    for (const [expense, percent] of Object.entries(expenses)) budget[expense as Expense] = Math.round(percent);
+  }
+
+  /** Set the license fee a state charges each market centered in it a day, in the map's currency; it takes effect when production is regenerated */
+  setMarketFee(stateId: number, fee: number): void {
+    const state = this.ruled(stateId);
+    if (typeof fee !== "number" || !(fee >= 0 && Number.isFinite(fee)))
+      throw new Error("The market fee must be a non-negative number");
+    state.economy.marketFee = Math.round(fee);
   }
 
   /** Set a state's import tariff and embargo rules; they take effect when trade is regenerated */
@@ -1336,7 +1566,7 @@ class StatesModule {
 
       normalized.push({ states: ruleStates, goods: ruleGoods, rate });
     }
-    state.tariffs = normalized;
+    state.economy.tariffs = normalized;
   }
 
   /** Remove deleted or merged states and deleted goods from all state tariff rules */
@@ -1352,8 +1582,8 @@ class StatesModule {
     if (!stateSet?.size && !goodSet?.size) return;
 
     for (const state of pack.states ?? []) {
-      if (!state?.i || state.removed || !Array.isArray(state.tariffs)) continue;
-      state.tariffs = state.tariffs.filter(rule => {
+      if (!state?.i || state.removed) continue;
+      state.economy.tariffs = state.economy.tariffs.filter(rule => {
         if (Array.isArray(rule.states)) {
           rule.states = rule.states.filter(id => id !== state.i && !stateSet?.has(id));
           if (!rule.states.length) return false;
@@ -1367,10 +1597,9 @@ class StatesModule {
     }
   }
 
-  /** Set a state's treasury, in the map's currency */
-  setTreasury(stateId: number, amount: number): void {
-    if (typeof amount !== "number" || !Number.isFinite(amount)) throw new Error("The treasury must be a number");
-    this.ruled(stateId).treasury = rn(amount, 2);
+  /** Set a state's adjustments: named amounts a day besides taxes in the map's currency, e.g. [{ name: "Tribute", value: 40 }], negative for debts or tribute paid. They replace its lines and take effect when production is regenerated */
+  setAdjustments(stateId: number, adjustments: { name: string; value: number }[]): void {
+    this.ruled(stateId).economy.adjustments = requireAdjustments(adjustments);
   }
 
   /** Lock a state so regeneration keeps it, or unlock it */
@@ -1539,47 +1768,74 @@ class StatesModule {
   }
 
   collectTaxes() {
-    const { states, burgs, deals } = pack;
+    const { states } = pack;
     if (!states?.length) return;
+    const { salesTax, tariffs } = Trade.getTaxesByState();
+
+    const pollTax = this.getPollTax().paid;
+    const marketFees = this.getMarketFees();
     for (const state of states) {
       if (!state.i || state.removed) continue;
-      state.treasury = 0;
+      const { budget, adjustments } = state.economy;
+      const collected = rn(
+        (salesTax[state.i] || 0) +
+          (tariffs[state.i] || 0) +
+          (pollTax[state.i] || 0) +
+          (marketFees[state.i] || 0) +
+          sum(adjustments, line => line.value),
+        2
+      );
+      const expenses = sum(EXPENSES.map(expense => budget[expense]));
+      const corruption = Districts.getStateCorruption(state, collected);
+      const pocketed = rn((Math.max(0, collected) * expenses * corruption) / 10000, 2); // officials' cut of each expense
+      state.economy.collected = collected;
+      state.economy.pocketed = pocketed;
+      state.economy.treasury = rn(collected - pocketed - sum(Object.values(state.economy.spent)), 2);
     }
+  }
 
-    for (const deal of deals ?? []) {
-      if (deal.tax) {
-        let sellerStateId = 0;
-        if (deal.sellerType === "burg") {
-          sellerStateId = burgs?.[deal.seller]?.state || 0;
-        } else if (deal.sellerType === "market") {
-          const market = Markets.get(deal.seller);
-          const centerBurgId = market?.centerBurgId;
-          sellerStateId = centerBurgId ? burgs?.[centerBurgId]?.state || 0 : 0;
-        }
-        const sellerState = sellerStateId ? states[sellerStateId] : undefined;
-        if (sellerState && !sellerState.removed) sellerState.treasury += deal.tax;
-      }
+  /** The market fee a market centered in the state owes a day; neutrals charge none */
+  getMarketFee(stateId: number): number {
+    const state = pack.states?.[stateId];
+    return stateId && state && !state.removed ? state.economy.marketFee || 0 : 0;
+  }
 
-      if (deal.tariff && deal.buyerType === "market") {
-        const market = Markets.get(deal.buyer);
-        const centerBurgId = market?.centerBurgId;
-        const buyerStateId = centerBurgId ? burgs?.[centerBurgId]?.state || 0 : 0;
-        const buyerState = buyerStateId ? states[buyerStateId] : undefined;
-        if (buyerState && !buyerState.removed) buyerState.treasury += deal.tariff;
-      }
+  /** Market fees paid in the last economy run, by the state of each market's center */
+  getMarketFees(): number[] {
+    const paid: number[] = [];
+    for (const market of pack.markets ?? []) {
+      if (!market?.feePaid) continue;
+      const stateId = Markets.getState(market);
+      paid[stateId] = (paid[stateId] || 0) + market.feePaid;
     }
+    return paid;
+  }
 
-    for (const state of states) {
-      if (!state.i || state.removed) continue;
-      const population = (state.rural || 0) + (state.urban || 0);
-      state.treasury = rn(state.treasury + (state.pollTax || 0) * population, 2);
-    }
+  /** The poll tax a state charges people at its rate; neutrals charge none */
+  getPollTaxDue(stateId: number, people: number): number {
+    const state = pack.states?.[stateId];
+    return stateId && state && !state.removed ? (state.economy.pollTax || 0) * people : 0;
+  }
+
+  /** Poll tax owed and paid in the last economy run, by state: burgs pay theirs in full, rural people as far as their money goes */
+  getPollTax(): { owed: number[]; paid: number[] } {
+    const owed: number[] = [];
+    const paid: number[] = [];
+    const add = (stateId: number, owes: number, pays: number) => {
+      owed[stateId] = (owed[stateId] || 0) + owes;
+      paid[stateId] = (paid[stateId] || 0) + pays;
+    };
+    for (const burg of pack.burgs ?? [])
+      if (burg?.i && !burg.removed && burg.pollTaxPaid) add(burg.state || 0, burg.pollTaxPaid, burg.pollTaxPaid);
+    for (const market of pack.markets ?? [])
+      for (const [stateId, owes, pays] of market?.rural?.pollTax ?? []) add(stateId, owes, pays);
+    return { owed, paid };
   }
 
   getSalesTax(burg?: { state?: number }): number {
     const stateId = burg?.state || 0;
     if (!stateId) return 0;
-    return pack.states?.[stateId]?.salesTax ?? 0;
+    return pack.states?.[stateId]?.economy.salesTax ?? 0;
   }
 }
 

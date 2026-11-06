@@ -8,7 +8,7 @@ import { MAX_JITTER, SAMPLINGS } from "@/model/graph/lattice";
 import { Icons } from "@/model/icons";
 import type { LayerId } from "@/renderers/layers";
 import type { HeraldicEmblem } from "@/types/emblems";
-import { log } from "@/utils/logger";
+import { DEBUG_MODES, log } from "@/utils/logger";
 import { count, degrees, hexColor, ids, nonNegative, percent, positive, ratio } from "@/utils/schema-utils";
 
 /** the map edit modes: while one is on, other editors, saving and regeneration stay off */
@@ -78,7 +78,8 @@ const militaryUnit = z.strictObject({
   biomes: ids,
   states: ids,
   cultures: ids,
-  religions: ids
+  religions: ids,
+  goods: ids
 });
 
 const transport = z.strictObject({
@@ -166,6 +167,7 @@ const units = z.strictObject({
   area: z.strictObject({ unit: z.string() }),
   height: z.strictObject({ unit: z.string(), exponent: positive }),
   temperature: z.strictObject({ unit: z.string() }),
+  money: z.strictObject({ unit: z.string() }),
   population: z.strictObject({
     scale: positive,
     urbanization: z.strictObject({ rate: nonNegative, density: positive })
@@ -242,6 +244,7 @@ export const optionsSchema = z.strictObject({
       viewportRedraw: z.enum(["continuous", "settled"])
     }),
     onLoad: z.enum(["random", "lastSaved"]), // what the app does with no map asked for
+    debug: z.array(z.enum(DEBUG_MODES)), // diagnostics on: they may draw or record more, never change the map file
     language: z.union([z.literal(""), z.enum(LANGUAGE_CODES)]), // the interface language, "" follows the browser
     zoomExtent: z.strictObject({ min: positive, max: positive }).refine(({ min, max }) => min <= max, {
       message: "zoomExtent.min must not exceed max"
@@ -263,7 +266,6 @@ export const optionsSchema = z.strictObject({
     }),
     trade: z.strictObject({
       animation: z.strictObject({
-        displayType: z.enum(["local", "global", "both"]),
         concurrent: count.positive(),
         duration: positive,
         landDurationModifier: nonNegative,
@@ -337,6 +339,7 @@ export const pinSchemas: Record<string, z.ZodType> = {
   heightUnit: units.shape.height.shape.unit,
   heightExponent: units.shape.height.shape.exponent,
   temperatureScale: units.shape.temperature.shape.unit,
+  moneyUnit: units.shape.money.shape.unit,
   populationRate: units.shape.population.shape.scale,
   urbanization: units.shape.population.shape.urbanization.shape.rate,
   urbanDensity: units.shape.population.shape.urbanization.shape.density

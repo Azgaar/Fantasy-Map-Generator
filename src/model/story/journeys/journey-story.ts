@@ -18,10 +18,10 @@ import {
   UNKNOWN_WILD,
   UPLAND_TERMS
 } from "@/data/journey-lore";
-import type { Transport, TransportDomain } from "@/model/economy/transports-generator";
-import { Transports } from "@/model/economy/transports-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Names } from "@/model/society/names-generator";
+import type { Transport, TransportDomain } from "@/model/story/journeys/transports-generator";
+import { Transports } from "@/model/story/journeys/transports-generator";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/journey";
 import { getAdjective } from "@/utils/language-utils";
 import { P, ra, rand, rw } from "@/utils/probability-utils";

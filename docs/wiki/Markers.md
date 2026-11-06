@@ -45,22 +45,22 @@ You can also make a clickable link with an image preview:
 Criteria and types of randomly added markers are defined in the generator and can change between versions. The current generator includes the following types:
 
 * Battlefields: These are areas within a state that have a noticeable population, found in mid-elevation regions.
-* Bridges: These are found in cities located near rivers, especially where the river is not close to the ocean and the water flow is significant.
-* Brigands: Roads with high activity, usually where there’s a strong cultural presence, may attract outlaws.
+* Bridges: These are found in cities located near rivers, especially where the river is not close to the ocean and the water flow is significant. The busier a city's trade, the likelier its bridge.
+* Brigands: Roads with high activity, usually where there’s a strong cultural presence, may attract outlaws. They favor roads of busy markets through poor land.
 * Canoes: These appear in regions with rivers, representing local watercraft.
 * Circuses: Found in cultural areas with developed roads, particularly near or around sea level.
 * Dances: These events take place in towns with a moderately sized population.
 * Dungeons: Isolated and sparsely populated regions often feature these hidden or abandoned places.
 * Hill Monsters: These creatures are found in highland areas where there is some population present.
 * Hot Springs: Located in elevated regions, these natural thermal baths are found in hilly or mountainous areas.
-* Inns: These rest stops appear along busy roads in well-populated areas.
+* Inns: These rest stops appear along busy roads in well-populated areas, more often in busy markets.
 * Jousts: Held in larger towns, especially in places with a robust population.
 * Lake Monsters: Found in freshwater lakes, representing mythical creatures.
 * Lighthouses: These are positioned along coastlines with good access to the sea and a large number of water routes.
 * Migrations: These occur in sparsely populated midland regions where people or animals move.
-* Mines: Found in towns located in higher elevations where valuable minerals may be extracted.
+* Mines: Found in towns on an ore or mineral deposit, far more often on valuable ones such as gold, silver or gemstones. A town that extracts nothing from its deposit has an old, played-out mine.
 * Mirage: Seen in hot desert regions, these are illusions caused by extreme heat and light conditions.
-* Pirates: Found on the open sea along major shipping routes, representing maritime outlaws.
+* Pirates: Found on the open sea along major shipping routes, representing maritime outlaws. They favor routes between busy markets.
 * Portals: These mystical gateways appear in the oldest towns.
 * Rifts: Occur in sparsely populated biomes that are still somewhat habitable, representing splits in the earth.
 * Ruins: Found in mid-elevation cultural areas, these represent remnants of past civilizations.
@@ -74,7 +74,10 @@ Criteria and types of randomly added markers are defined in the generator and ca
 * Waterfalls: Located in hilly or mountainous areas with rivers, especially where there’s a sharp drop in terrain nearby.
 * Water sources: cells above height 30 that have a river.
 * Libraries: burgs with a culture and a noticeable population.
-* Fairs: small burgs.
+* Fairs: small burgs, more often those trading many goods.
+* Customs houses: at most one where a road crosses into a state the other trades with under tariffs, more often on the borders with the most tariffs.
+* Guild halls: burgs famed for a manufactured good, placed before mines so a mining town can keep its guild. A burg is famed when it leads the good's makers across the world and in its state, and the good is a real part of its work.
+* Merchant houses: market centers, more often those whose market margin earns the most.
 * Caves: populated cells at height 50 and above.
 * Disturbed burials: populated land cells. Fantasy culture sets only.
 * Necropolises: land cells with almost no population.

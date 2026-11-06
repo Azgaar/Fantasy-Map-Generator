@@ -64,6 +64,7 @@ const spreadPreview: SpreadPreviewState = { phase: "idle", run: 0, snapshot: nul
 let totalLabels = 0;
 
 const labelsTable = initEditorTable<LabelData>({
+  dialogId,
   getData: getFilteredLabels,
   onUpdate: renderLabelsPage
 });
@@ -164,6 +165,7 @@ function renderDialog(): void {
 function close(): void {
   clearTimeout(searchTimeout);
   cancelSpread();
+  listedLabels.clear();
   Dialog.destroy(dialogId);
 }
 

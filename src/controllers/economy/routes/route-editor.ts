@@ -303,7 +303,8 @@ function openJoinRoutesDialog(): void {
 
 function joinRoutes(route: Route, joinedRoute: Route): void {
   Routes.join(route.i, joinedRoute.i);
-  Layers.draw("routes", "trade");
+  Layers.draw("routes", "goods", "trade");
+  findEl("routesOverviewRefresh")?.click();
   drawControlPoints(route.points);
   redrawRoute(route);
   drawCells(route.points);
@@ -321,7 +322,7 @@ function togglePressed(this: HTMLElement): void {
 // trade paths follow the cell links and the route geometry
 function updateLinks(): void {
   Routes.relink();
-  Layers.draw("trade");
+  Layers.draw("goods", "trade");
 }
 
 function changeName(this: HTMLInputElement): void {
@@ -398,7 +399,8 @@ function removeRoute(): void {
     onConfirm: () => {
       Routes.remove(getRoute().i);
       Dialog.close("routeEditor");
-      Layers.draw("routes", "labels", "trade");
+      Layers.draw("routes", "labels", "goods", "trade");
+      findEl("routesOverviewRefresh")?.click();
     }
   });
 }

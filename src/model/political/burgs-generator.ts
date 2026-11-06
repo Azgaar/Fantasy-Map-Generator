@@ -1,6 +1,6 @@
 import { quadtree } from "d3-quadtree";
 import type { Label } from "@/model/annotations/labels-generator";
-import type { ProductionRecord } from "@/model/economy/production-generator";
+import type { BurgProduction } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
@@ -10,6 +10,7 @@ import type { River } from "@/model/physical/river-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { CULTURE_TYPES, type CultureType, DEFAULT_CULTURE_TYPE } from "@/model/society/cultures-generator";
+import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import type { BurgGroup } from "@/types/burg-groups";
@@ -19,7 +20,7 @@ import { log } from "@/utils/logger";
 import { minmax, normalize, rn } from "@/utils/number-utils";
 import { each, gauss, P } from "@/utils/probability-utils";
 import { safeParseJSON } from "@/utils/string-utils";
-import { requireName, requireOneOf } from "@/utils/validation-utils";
+import { requireAdjustments, requireName, requireOneOf } from "@/utils/validation-utils";
 
 const BUILDINGS = ["citadel", "plaza", "shanty", "temple", "walls"] as const;
 
@@ -52,10 +53,11 @@ export interface Burg {
   group?: string;
   link?: string;
   MFCG?: string;
-  production?: ProductionRecord[]; // per-burg production/trade records from the last production run
+  production?: BurgProduction; // units of each good made in the last production run
   product?: number; // gross product from the last production run
-  treasury?: number; // accumulated cash balance
-  market?: number;
+  treasury?: number; // cash balance from the last economy run
+  adjustments?: { name: string; value: number }[]; // a day's income besides trade, such as rents or a patron's gifts; negative for debts or upkeep. The user's, kept on regeneration
+  pollTaxPaid?: number; // poll tax paid to its state in the last economy run
   label?: Label;
   note?: string;
   tags?: string[];
@@ -823,6 +825,7 @@ class BurgModule {
 
     pack.burgs.push(burg);
     cells.burg[cellId] = burgId;
+    Development.settle(cellId);
 
     Routes.connect(cellId);
     return burgId;
@@ -836,6 +839,7 @@ class BurgModule {
 
     const newBurgs: Burg[] = [0 as unknown as Burg];
     const burgsTree = quadtree<[number, number]>();
+    const oldCells = burgs.filter(burg => burg.i && !burg.removed).map(burg => burg.cell);
     cells.burg = new Uint16Array(cells.i.length);
     states
       .filter(state => state.i)
@@ -848,38 +852,17 @@ class BurgModule {
         province.burg = 0;
       });
 
-    const lockedBurgs = burgs.filter(burg => burg.i && !burg.removed && burg.lock);
-    for (const lockedBurg of lockedBurgs) {
+    // locked burgs stay, renumbered
+    for (const burg of burgs.filter(burg => burg.i && !burg.removed && burg.lock)) {
       const newId = newBurgs.length;
-      lockedBurg.i = newId;
-      newBurgs.push(lockedBurg);
-      burgsTree.add([lockedBurg.x, lockedBurg.y]);
-      cells.burg[lockedBurg.cell] = newId;
+      burg.i = newId;
+      newBurgs.push(burg);
+      burgsTree.add([burg.x, burg.y]);
+      cells.burg[burg.cell] = newId;
 
-      if (lockedBurg.capital && lockedBurg.state !== undefined) {
-        states[lockedBurg.state].capital = newId;
-        states[lockedBurg.state].center = lockedBurg.cell;
-      }
-    }
-
-    const marketCenterIds = new Set(pack.markets.map(market => market.centerBurgId));
-    const unlockedMarketCenters = burgs.filter(
-      burg => burg.i && !burg.removed && !burg.lock && marketCenterIds.has(burg.i)
-    );
-    for (const centerBurg of unlockedMarketCenters) {
-      const oldId = centerBurg.i;
-      const newId = newBurgs.length;
-      const market = pack.markets.find(market => market.centerBurgId === oldId);
-      if (market) market.centerBurgId = newId;
-
-      centerBurg.i = newId;
-      newBurgs.push(centerBurg);
-      burgsTree.add([centerBurg.x, centerBurg.y]);
-      cells.burg[centerBurg.cell] = newId;
-
-      if (centerBurg.capital && centerBurg.state !== undefined) {
-        states[centerBurg.state].capital = newId;
-        states[centerBurg.state].center = centerBurg.cell;
+      if (burg.capital && burg.state !== undefined) {
+        states[burg.state].capital = newId;
+        states[burg.state].center = burg.cell;
       }
     }
 
@@ -911,6 +894,7 @@ class BurgModule {
       newBurgs.push({ cell, x, y, state: stateId, i: id, culture, name, capital, feature: cells.f[cell] });
       burgsTree.add([x, y]);
       cells.burg[cell] = id;
+      Development.settle(cell);
     }
 
     pack.burgs = newBurgs;
@@ -929,6 +913,7 @@ class BurgModule {
         this.changeGroup(burg, null);
       });
 
+    for (const cell of oldCells) Development.vacate(cell); // land a dropped burg stood on alone
     this.specify();
     Routes.regenerate();
   }
@@ -1044,18 +1029,22 @@ class BurgModule {
       throw new Error(`Burg ${burgId} is the capital of province ${province.i} and cannot leave it`);
 
     cells.burg[burg.cell] = 0;
+    Development.vacate(burg.cell);
     cells.burg[cell] = burgId;
+    Development.settle(cell);
     Object.assign(burg, { cell, state, x: rn(x, 2), y: rn(y, 2), feature: cells.f[cell] });
     if (burg.capital) pack.states[state].center = cell;
     if (province) province.center = cell;
+    // a market center takes its market along, any other burg joins the market of its new cell
+    const centered = pack.markets?.find(market => market.centerBurgId === burgId);
+    if (centered) cells.market[cell] = centered.i;
     if (burg.port) burg.port = this.getPortWater(cell); // a port moved inland stops being one
     if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined }); // a custom path no longer fits
   }
 
-  /** Set a burg's treasury, in the map's currency */
-  setTreasury(burgId: number, amount: number): void {
-    if (typeof amount !== "number" || !Number.isFinite(amount)) throw new Error("The treasury must be a number");
-    this.living(burgId).treasury = rn(amount, 2);
+  /** Set a burg's adjustments: named amounts a day besides trade in the map's currency, e.g. [{ name: "Rents", value: 12 }], negative for debts or upkeep. They replace its lines and take effect when production is regenerated */
+  setAdjustments(burgId: number, adjustments: { name: string; value: number }[]): void {
+    this.living(burgId).adjustments = requireAdjustments(adjustments);
   }
 
   /** Lock a burg so regeneration keeps it, or unlock it */
@@ -1091,10 +1080,12 @@ class BurgModule {
       throw new Error(`Burg ${burgId} is a market center; remove the market first`);
 
     pack.cells.burg[burg.cell] = 0;
+    Development.vacate(burg.cell);
     burg.removed = true;
     delete burg.note;
     delete burg.coa;
     for (const province of pack.provinces ?? []) if (province.burg === burgId) province.burg = 0;
+    if (pack.deals) pack.deals = pack.deals.filter(([dealBurg]) => dealBurg !== burgId); // its trade is gone too
   }
 }
 

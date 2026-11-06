@@ -1,3 +1,5 @@
+// Markets: where they stand, the land each serves, and their names and colors
+
 import Alea from "alea";
 import { quadtree } from "d3-quadtree";
 import type { Burg } from "@/model/political/burgs-generator";
@@ -6,16 +8,15 @@ import { getColors, getRandomColor, requireFill } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { t } from "@/utils/i18n";
 import { notify } from "@/utils/notices";
-import { minmax, rn } from "@/utils/number-utils";
-import type { DemandCategory, Good } from "./goods-generator";
-import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "./goods-generator";
-import { Production } from "./production-generator";
+import { minmax } from "@/utils/number-utils";
 
-const PRICE_FLOOR_FACTOR = 0.1;
-const PRICE_CEILING_FACTOR = 5.0;
-const LAPLACE_PRICE_SMOOTHING = 5;
-const MARKET_PRESSURE_FACTOR = 0.01;
-const MARKET_MARGIN = 0.1;
+const OTHER_LANDMASS_SPACING = 0.5; // share of the market spacing a market on another landmass keeps clear
+export const MARKET_FEE_DETERRENCE = 35; // a state's market fee a day that halves a burg's chance to be a market center and doubles the area each market needs
+const CROSSROADS_BONUS = 0.25; // score a burg gains for each route beyond a road through it, up to 4 more
+const SPACING_RANGE = [0.5, 2.5]; // the spacing a burg needs, as a share of the base, from the busiest land to the emptiest
+const DENSITY_PULL = 0.6; // how far markets follow burgs: 1 gives every market about as many burgs, 0 spaces them evenly
+
+type ScoredBurg = { burg: Burg; score: number };
 
 export type Market = {
   i: number;
@@ -23,32 +24,24 @@ export type Market = {
   color: string;
   name?: string;
   goods: Record<number, { stock: number; price: number }>;
+  rural?: RuralDay; // its rural people's last day, kept from the economy run
+  feePaid?: number; // license fee its center burg paid its state in the last economy run
   note?: string;
 };
 
-export type Deal = {
-  i: number;
-  seller: number;
-  sellerType: "burg" | "market";
-  buyer: number;
-  buyerType: "burg" | "market";
-  good: number;
-  units: number;
-  price: number;
-  tax: number;
-  tariff?: number;
-};
-
-type TariffRate = number | "embargo";
-type CompiledStateTariffs = {
-  byStateAndGood: Map<number, Map<number, TariffRate>>;
-  byStateAllGoods: Map<number, TariffRate>;
-  allStatesByGood: Map<number, TariffRate>;
-  allStatesAllGoods: TariffRate | undefined;
+/** A market's rural people's day: what their produce earned, what they bought with it, the produce no one bought, and the poll tax they owed and paid by state */
+type RuralDay = {
+  earned: number;
+  spent: number;
+  bought: [goodId: number, units: number][];
+  kept?: [goodId: number, units: number][]; // their produce left unsold, which they keep; missing in maps saved before it
+  margin?: number; // what the market's center took on their produce sold and their purchases, in no deal
+  pollTax?: [stateId: number, owed: number, paid: number][];
 };
 
 export class MarketsModule {
   private marketById: Market[] = [];
+  revision = 0; // bumped when a market is added or moved without replacing pack.markets
 
   regenerate(): Market[] {
     return this.generate(true);
@@ -56,8 +49,11 @@ export class MarketsModule {
 
   generate(regenerate: boolean = false): Market[] {
     if (!regenerate) Math.random = Alea(options.map.seed);
-    const markets = this.createMarkets();
+    const scored = this.scoreBurgs();
+    const markets = this.createMarkets(scored);
+    this.recenter(markets, scored, this.expandMarkets(markets));
     this.expandMarkets(markets);
+    this.markPlazas(markets);
 
     pack.markets = markets;
     pack.deals = [];
@@ -65,41 +61,63 @@ export class MarketsModule {
     return markets;
   }
 
-  private createMarkets(): Market[] {
-    // Score each burg by population; capitals and ports are weighted higher
-    const scored = pack.burgs
+  /** Burgs by their claim to a market, best first: population, capitals, ports and crossroads weighted higher, a dear market license lower */
+  private scoreBurgs(): ScoredBurg[] {
+    return pack.burgs
       .map(burg => {
         let score = burg.population || 0;
         if (burg.capital) score *= 2.5;
         if (burg.port) score *= 1.2;
+        const roads = Object.keys(pack.cells.routes?.[burg.cell!] ?? {}).length;
+        score *= 1 + CROSSROADS_BONUS * minmax(roads - 2, 0, 4);
+        score /= this.feeFactor(burg);
         score *= Math.random() * 2 + 0.5; // add some noise
         return { burg, score };
       })
       .sort((a, b) => b.score - a.score);
+  }
 
-    // minSpacing scales with map size relative to burg count
-    let minSpacing = (((options.map.graph.width + options.map.graph.height) * 2) / pack.burgs.length ** 0.6) | 0;
-
-    const markets: Market[] = [];
-    const tree = quadtree<[number, number, number]>(
-      [],
-      d => d[0],
-      d => d[1]
+  private createMarkets(scored = this.scoreBurgs()): Market[] {
+    const spacing = this.getSpacing(
+      scored.map(({ burg }) => burg).filter(burg => burg.i && !burg.removed),
+      this.feeFactor
     );
 
-    for (const { burg } of scored) {
-      if (!burg.i || burg.removed) continue;
+    const markets: Market[] = [];
+    this.marketById = [];
+    const newTree = () =>
+      quadtree<[number, number, number]>(
+        [],
+        d => d[0],
+        d => d[1]
+      );
+    const tree = newTree();
+    const treeByLandmass = new Map<number, ReturnType<typeof newTree>>();
+    const place = (burg: Burg) => {
+      const marketId = markets.length + 1;
+      const market = { i: marketId, centerBurgId: burg.i!, color: "", goods: {} };
+      markets.push(market);
+      this.marketById[marketId] = market;
+      tree.add([burg.x, burg.y, marketId]);
+      if (!treeByLandmass.has(burg.feature!)) treeByLandmass.set(burg.feature!, newTree());
+      treeByLandmass.get(burg.feature!)!.add([burg.x, burg.y, marketId]);
+    };
+
+    const living = scored.filter(({ burg }) => burg.i && !burg.removed);
+    for (const { burg } of living) {
       const { x, y } = burg;
-      const nearest = tree.find(x, y, minSpacing);
-      if (!nearest) {
-        // Create a new market anchored at this burg
-        const marketId = markets.length + 1;
-        const market = { i: marketId, centerBurgId: burg.i, color: "", goods: {} };
-        markets.push(market);
-        this.marketById[marketId] = market;
-        tree.add([x, y, marketId]);
-        minSpacing += 1;
-      }
+      const minSpacing = spacing.get(burg.i!)!;
+      // a market across the water is a world apart: it blocks a new one only when much closer
+      const blocked =
+        treeByLandmass.get(burg.feature!)?.find(x, y, minSpacing) ||
+        tree.find(x, y, minSpacing * OTHER_LANDMASS_SPACING);
+      if (!blocked) place(burg);
+    }
+
+    // a landmass with burgs but no port has no sea routes to the rest: it trades within itself
+    const portLandmasses = new Set(living.filter(({ burg }) => burg.port).map(({ burg }) => burg.feature));
+    for (const { burg } of living) {
+      if (!portLandmasses.has(burg.feature) && !treeByLandmass.has(burg.feature!)) place(burg);
     }
 
     const colors = getColors(markets.length);
@@ -110,18 +128,76 @@ export class MarketsModule {
     return markets;
   }
 
-  expandTerritories(markets: Market[] = pack.markets): Uint16Array {
-    this.indexMarkets(markets);
-    return this.expandMarkets(markets);
+  private feeFactor(burg: Burg) {
+    return 1 + States.getMarketFee(burg.state || 0) / MARKET_FEE_DETERRENCE;
   }
 
-  private indexMarkets(markets: Market[] = pack.markets): void {
+  /** Moves each market to the best burg it serves on its center's landmass: spacing alone can seat a hamlet beside a blocked city */
+  private recenter(markets: Market[], scored: ScoredBurg[], cellMarket: Uint16Array): void {
+    const best = new Map<number, number>();
+    for (const { burg } of scored) {
+      const marketId = cellMarket[burg.cell];
+      if (!burg.i || burg.removed || !marketId || best.has(marketId)) continue;
+      if (burg.feature === pack.burgs[this.marketById[marketId].centerBurgId].feature) best.set(marketId, burg.i);
+    }
+    for (const market of markets) market.centerBurgId = best.get(market.i) ?? market.centerBurgId;
+  }
+
+  /** How far a burg must be from other market centers to become one: closer where burgs crowd and licenses are cheap */
+  private getSpacing(burgs: Burg[], feeFactor: (burg: Burg) => number): Map<number, number> {
+    const base = ((options.map.graph.width + options.map.graph.height) * 2.5) / pack.burgs.length ** 0.6;
+    const tree = quadtree<Burg>(
+      burgs,
+      burg => burg.x,
+      burg => burg.y
+    );
+    const neighbors = burgs.map(({ x, y }) => {
+      let count = 0;
+      tree.visit((node, x0, y0, x1, y1) => {
+        if (!node.length) {
+          for (let leaf: typeof node | undefined = node; leaf; leaf = leaf.next) {
+            const { data } = leaf as { data: Burg };
+            if ((data.x - x) ** 2 + (data.y - y) ** 2 < base ** 2) count++;
+          }
+        }
+        return x0 > x + base || x1 < x - base || y0 > y + base || y1 < y - base;
+      });
+      return count;
+    });
+    const fees = burgs.map(feeFactor);
+    const mean = (values: number[]) => values.reduce((total, value) => total + value, 0) / (values.length || 1);
+    const meanNeighbors = mean(neighbors);
+    const meanFee = mean(fees);
+    const [min, max] = SPACING_RANGE;
+    return new Map(
+      burgs.map((burg, index) => {
+        const area = (meanNeighbors / neighbors[index]) ** DENSITY_PULL * (fees[index] / meanFee);
+        return [burg.i!, base * minmax(Math.sqrt(area), min, max)];
+      })
+    );
+  }
+
+  expand(): Uint16Array {
+    this.sync();
+    const cellMarket = this.expandMarkets(pack.markets);
+    this.markPlazas(pack.markets);
+    return cellMarket;
+  }
+
+  /** A water cell is in a market only for its deposit, and deposits move: the flood finds markets for the new ones. Land stays, as it may be hand-painted */
+  claimWaterDeposits(): void {
+    const { cells } = pack;
+    const claimed = cells.market;
+    const isWater = (cell: number) => cells.h[cell] < 20;
+    const unclaimed = cells.i.some(cell => isWater(cell) && cells.good[cell] && !claimed[cell]);
+    const flood = unclaimed ? this.expandMarkets(pack.markets) : claimed;
+    cells.market = claimed;
+    for (const cell of cells.i) if (isWater(cell)) claimed[cell] = cells.good[cell] ? claimed[cell] || flood[cell] : 0;
+  }
+
+  sync(): void {
     this.marketById = [];
-    for (const market of markets) if (market) this.marketById[market.i] = market;
-  }
-
-  public sync(): void {
-    this.indexMarkets();
+    for (const market of pack.markets) if (market) this.marketById[market.i] = market;
   }
 
   private expandMarkets(markets: Market[]): Uint16Array {
@@ -132,16 +208,16 @@ export class MarketsModule {
 
     const MIN_COST = 1;
     const BASE_COST = 10;
-    const DIFFERENT_STATE_COST = 100;
+    const DIFFERENT_STATE_COST = 200;
     const WATER_COST = 50;
     const WATER_COST_FOR_NON_PORTS = 50;
     const ISLAND_CHANGE_COST = 100;
 
-    const tradeCenters = {} as Record<number, boolean>;
+    const nativeOwner = new Uint8Array(cells.i.length); // cell is owned by a market of its own state
+
     for (const market of markets) {
       const centerBurg = pack.burgs[market.centerBurgId];
       if (!centerBurg) continue;
-      tradeCenters[centerBurg.i] = true;
 
       const startCell = centerBurg.cell;
       cellMarket[startCell] = market.i;
@@ -155,17 +231,19 @@ export class MarketsModule {
 
       for (const neighborId of cells.c[cellId]) {
         const isWater = cells.h[neighborId] < 20;
+        const isNative = Boolean(cells.state[neighborId]) && burg.state === cells.state[neighborId];
         let cost = BASE_COST;
         if (isWater) {
           cost += WATER_COST;
           if (burg.port !== cells.f[neighborId]) cost += WATER_COST_FOR_NON_PORTS;
         } else {
           if (cells.f[burg.cell] !== cells.f[neighborId]) cost += ISLAND_CHANGE_COST;
-          if (cells.state[neighborId] && burg.state !== cells.state[neighborId]) cost += DIFFERENT_STATE_COST;
+          if (cells.state[neighborId] && !isNative) cost += DIFFERENT_STATE_COST;
         }
 
         const totalCost = priority + cost;
-        if (!costs[neighborId] || totalCost < costs[neighborId]) {
+        const nativeTie = totalCost === costs[neighborId] && isNative && !nativeOwner[neighborId];
+        if (!costs[neighborId] || totalCost < costs[neighborId] || nativeTie) {
           costs[neighborId] = totalCost;
           queue.push({ cellId: neighborId, marketId, burg, priority: totalCost }, totalCost);
 
@@ -173,94 +251,31 @@ export class MarketsModule {
           if (isWater && !hasGood) continue; // exclude water cells without goods
 
           cellMarket[neighborId] = marketId;
+          nativeOwner[neighborId] = isNative ? 1 : 0;
         }
       }
     }
 
     pack.cells.market = cellMarket;
-
-    for (const burg of pack.burgs) {
-      if (!burg.i || burg.removed) continue;
-      burg.market = cellMarket[burg.cell] || 0;
-      burg.plaza = burg.plaza || tradeCenters[burg.i] ? 1 : 0;
-    }
-
     return cellMarket;
   }
 
-  collectRuralProduction(): void {
-    const biomeProduction = Goods.getBiomesProduction();
-
-    for (const cellId of pack.cells.i) {
-      const market = this.marketById[pack.cells.market[cellId]];
-      if (!market) continue;
-
-      const produced = Production.getCellProduction(cellId, biomeProduction);
-      for (const [goodId, amount] of Object.entries(produced)) {
-        const good = Goods.get(+goodId);
-        if (!good) continue;
-        const marketGood = this.getMarketGood(market, good);
-        marketGood.stock = rn(marketGood.stock + amount, 2);
-      }
-    }
-  }
-
-  private getMarketGood(market: Market, good: Good) {
-    const existing = market.goods[good.i];
-    if (existing) return existing;
-
-    const initial = { stock: 0, price: good.value };
-    market.goods[good.i] = initial;
-    return initial;
-  }
-
-  initializeMarketPrices(): void {
-    const consumerDemandFactors = this.collectConsumerDemand(pack.goods);
-    const industrialDemandFactors = this.collectIndustrialDemand(pack.goods, consumerDemandFactors);
-    const avgIngredientsCostByGood = this.calculateAverageBaseCostByGood(pack.goods);
-    const populationByMarket = this.calculatePopulationByMarket();
-
-    for (const market of pack.markets) {
-      const population = populationByMarket[market.i] || 0;
-
-      // First pass: raw goods - price from demand/supply ratio
-      for (const good of pack.goods) {
-        if (!good.distribution) continue;
-        const marketGood = this.getMarketGood(market, good);
-        const consumerDemand = consumerDemandFactors[good.i] || 0;
-        const industrialDemand = industrialDemandFactors[good.i] || 0;
-        const demand = population * (consumerDemand + industrialDemand);
-        const ratio = (demand + LAPLACE_PRICE_SMOOTHING) / (marketGood.stock + LAPLACE_PRICE_SMOOTHING);
-        marketGood.price = rn(good.value * minmax(ratio, PRICE_FLOOR_FACTOR, PRICE_CEILING_FACTOR), 2);
-      }
-
-      // Second pass: manufactured goods - average local ingredient cost + base value-added
-      for (const good of pack.goods) {
-        if (!good.recipes?.length) continue;
-        const marketGood = this.getMarketGood(market, good);
-        let totalMarketCost = 0;
-        for (const recipe of good.recipes) {
-          for (const [ingIdStr, amount] of Object.entries(recipe)) {
-            const ingId = +ingIdStr;
-            const ing = Goods.get(ingId);
-            if (!ing) continue;
-            totalMarketCost += amount * this.getMarketGood(market, ing).price;
-          }
-        }
-        const avgMarketCost = totalMarketCost / good.recipes.length;
-        const avgBaseCost = avgIngredientsCostByGood[good.i] ?? 0;
-        const demandPrice = avgMarketCost + Math.max(0, good.value - avgBaseCost);
-        marketGood.price = rn(
-          minmax(demandPrice, good.value * PRICE_FLOOR_FACTOR, good.value * PRICE_CEILING_FACTOR),
-          2
-        );
-      }
+  /** Market centers get a plaza */
+  private markPlazas(markets: Market[]): void {
+    for (const { centerBurgId } of markets) {
+      const burg = pack.burgs[centerBurgId];
+      if (burg && !burg.removed) burg.plaza = 1;
     }
   }
 
   public get(marketId: number | undefined): Market | undefined {
     if (!marketId) return undefined;
     return this.marketById[marketId];
+  }
+
+  /** The market of the burg's cell */
+  ofBurg(burg: Burg): Market | undefined {
+    return this.get(pack.cells.market?.[burg.cell]);
   }
 
   /** Rename a market; empty takes its center burg's name again */
@@ -300,11 +315,10 @@ export class MarketsModule {
     const marketId = maxId + 1;
     const market: Market = { i: marketId, centerBurgId: burgId, color: getRandomColor(), goods: {} };
     pack.markets.push(market);
-    pack.deals = [];
 
-    this.indexMarkets();
+    this.sync();
+    this.revision++;
     pack.cells.market[burg.cell] = marketId;
-    burg.market = marketId;
     burg.plaza = 1;
 
     return market;
@@ -324,8 +338,8 @@ export class MarketsModule {
     if (oldCenter) oldCenter.plaza = 0;
 
     market.centerBurgId = newBurgId;
+    this.revision++;
     pack.cells.market[newCenter.cell] = marketId;
-    newCenter.market = marketId;
     newCenter.plaza = 1;
 
     return market;
@@ -338,386 +352,19 @@ export class MarketsModule {
     const centerBurg = pack.burgs[market.centerBurgId];
     if (centerBurg) centerBurg.plaza = 0;
 
-    // drop the deals tied to this market
-    pack.deals = pack.deals.filter(
-      deal =>
-        !(
-          (deal.sellerType === "market" && deal.seller === marketId) ||
-          (deal.buyerType === "market" && deal.buyer === marketId)
-        )
-    );
+    pack.deals = pack.deals.filter(([, dealMarket]) => dealMarket !== marketId);
 
     for (let i = 0; i < pack.cells.market.length; i++) {
       if (pack.cells.market[i] === marketId) pack.cells.market[i] = 0;
     }
 
-    for (const burg of pack.burgs) {
-      if (!burg.i || burg.removed) continue;
-      if (burg.market === marketId) burg.market = 0;
-    }
-
     pack.markets = pack.markets.filter(m => m.i !== marketId);
-    this.indexMarkets();
+    this.sync();
   }
 
-  quoteMarket(market: Market, goodId: number): { stock: number; buyPrice: number; sellPrice: number } {
-    const good = Goods.get(goodId);
-    if (!good) return { stock: 0, buyPrice: 0, sellPrice: 0 };
-    const row = this.getMarketGood(market, good);
-    return {
-      stock: row.stock,
-      buyPrice: this.customerBuyPrice(row.price),
-      sellPrice: this.customerSellPrice(row.price)
-    };
-  }
-
-  buy({
-    burg,
-    good,
-    units,
-    budget = Infinity
-  }: {
-    burg: Burg;
-    good: Good;
-    units: number;
-    budget?: number;
-  }): Deal | null {
-    const market = this.get(burg.market);
-    if (!market) return null;
-
-    const marketGood = this.getMarketGood(market, good);
-    const unitPrice = this.customerBuyPrice(marketGood.price);
-
-    const actualUnits = rn(Math.min(units, marketGood.stock, budget / unitPrice), 2);
-    if (actualUnits < 0.01) return null;
-
-    const deal: Deal = {
-      i: pack.deals.length,
-      seller: market.i,
-      sellerType: "market",
-      buyer: burg.i!,
-      buyerType: "burg",
-      good: good.i,
-      units: actualUnits,
-      price: unitPrice,
-      tax: 0
-    };
-    pack.deals.push(deal);
-
-    marketGood.stock = rn(Math.max(0, marketGood.stock - actualUnits), 2);
-    marketGood.price = rn(this.applyMarketPressure(good.value, marketGood.price, actualUnits), 2);
-    return deal;
-  }
-
-  sell({ burg, good, units, taxRate }: { burg: Burg; good: Good; units: number; taxRate: number }): Deal | null {
-    const market = this.get(burg.market);
-    if (!market || units <= 0) return null;
-
-    const marketGood = this.getMarketGood(market, good);
-    const price = this.customerSellPrice(marketGood.price);
-    const tax = rn(units * price * taxRate, 2);
-    marketGood.stock = rn(marketGood.stock + units, 2);
-
-    const deal: Deal = {
-      i: pack.deals.length,
-      seller: burg.i!,
-      sellerType: "burg",
-      buyer: market.i,
-      buyerType: "market",
-      good: good.i,
-      units: rn(units, 2),
-      price,
-      tax
-    };
-    pack.deals.push(deal);
-
-    marketGood.price = rn(this.applyMarketPressure(good.value, marketGood.price, -units), 2);
-    return deal;
-  }
-
-  private compileTariffs(): (ownerStateId: number, otherStateId: number, goodId: number) => TariffRate {
-    const compiled: Record<number, CompiledStateTariffs> = {};
-    const pickRate = (prev: TariffRate | undefined, next: TariffRate): TariffRate =>
-      prev === "embargo" ? "embargo" : next;
-
-    for (const state of pack.states ?? []) {
-      if (!state?.i || state.removed || !Array.isArray(state.tariffs) || !state.tariffs.length) continue;
-      const entry: CompiledStateTariffs = {
-        byStateAndGood: new Map(),
-        byStateAllGoods: new Map(),
-        allStatesByGood: new Map(),
-        allStatesAllGoods: undefined
-      };
-      for (const rule of state.tariffs) {
-        if (!rule) continue;
-        if (rule.states === "all" && rule.goods === "all") {
-          entry.allStatesAllGoods = pickRate(entry.allStatesAllGoods, rule.rate);
-        } else if (rule.states === "all" && Array.isArray(rule.goods)) {
-          for (const g of rule.goods) {
-            entry.allStatesByGood.set(g, pickRate(entry.allStatesByGood.get(g), rule.rate));
-          }
-        } else if (Array.isArray(rule.states) && rule.goods === "all") {
-          for (const s of rule.states) {
-            entry.byStateAllGoods.set(s, pickRate(entry.byStateAllGoods.get(s), rule.rate));
-          }
-        } else if (Array.isArray(rule.states) && Array.isArray(rule.goods)) {
-          for (const s of rule.states) {
-            let goodMap = entry.byStateAndGood.get(s);
-            if (!goodMap) {
-              goodMap = new Map();
-              entry.byStateAndGood.set(s, goodMap);
-            }
-            for (const g of rule.goods) {
-              goodMap.set(g, pickRate(goodMap.get(g), rule.rate));
-            }
-          }
-        }
-      }
-      compiled[state.i] = entry;
-    }
-
-    return (ownerStateId: number, otherStateId: number, goodId: number): TariffRate => {
-      if (!ownerStateId || ownerStateId === otherStateId) return 0;
-      const entry = compiled[ownerStateId];
-      if (!entry) return 0;
-      const tier1 = entry.byStateAndGood.get(otherStateId)?.get(goodId);
-      if (tier1 !== undefined) return tier1;
-      const tier2 = entry.byStateAllGoods.get(otherStateId);
-      if (tier2 !== undefined) return tier2;
-      const tier3 = entry.allStatesByGood.get(goodId);
-      if (tier3 !== undefined) return tier3;
-      if (entry.allStatesAllGoods !== undefined) return entry.allStatesAllGoods;
-      return 0;
-    };
-  }
-
-  runGlobalTrade(): void {
-    const consumerDemandFactors = this.collectConsumerDemand(pack.goods);
-    const industrialDemandFactors = this.collectIndustrialDemand(pack.goods, consumerDemandFactors);
-    const populationByMarket = this.calculatePopulationByMarket();
-    const resolveTariff = this.compileTariffs();
-
-    const mapDiagonal = Math.hypot(options.map.graph.width, options.map.graph.height) || 1;
-    const TRADE_RESERVE_FACTOR = 0.2;
-    const MIN_UNIT = 0.1;
-    const MIN_PROFIT = 1;
-    const DISTANCE_COST_FACTOR = 1;
-
-    const travelCost: Record<number, Record<number, number>> = {};
-    for (const m1 of pack.markets) {
-      travelCost[m1.i] = {};
-      const burg1 = pack.burgs[m1.centerBurgId];
-      if (!burg1) continue;
-
-      for (const m2 of pack.markets) {
-        const burg2 = pack.burgs[m2.centerBurgId];
-        if (!burg2) continue;
-
-        const dx = Math.abs(burg1.x - burg2.x);
-        const dy = Math.abs(burg1.y - burg2.y);
-        const distance = dx > dy ? dx + 0.414 * dy : dy + 0.414 * dx;
-        travelCost[m1.i][m2.i] = (distance / mapDiagonal) * DISTANCE_COST_FACTOR;
-      }
-    }
-
-    for (const good of pack.goods) {
-      if (!good.distribution && !good.recipes?.length) continue;
-
-      const safetyReserves: number[] = [];
-      const exporters: { market: Market; reserve: number }[] = [];
-      const importers: { market: Market; reserve: number }[] = [];
-
-      for (const market of pack.markets) {
-        const population = populationByMarket[market.i] || 0;
-        const demand = population * ((consumerDemandFactors[good.i] || 0) + (industrialDemandFactors[good.i] || 0));
-        const reserve = demand * (1 + TRADE_RESERVE_FACTOR);
-        safetyReserves[market.i] = reserve;
-
-        const marketGood = this.getMarketGood(market, good);
-        if (marketGood.stock > reserve) {
-          exporters.push({ market, reserve });
-        } else if (marketGood.stock < reserve) {
-          importers.push({ market, reserve });
-        }
-      }
-
-      if (!exporters.length || !importers.length) continue;
-
-      const opportunities: {
-        exporter: Market;
-        importer: Market;
-        reserveExporter: number;
-        reserveImporter: number;
-        transportCost: number;
-        exporterTaxPerUnit: number;
-        tariffPerUnit: number;
-        units: number;
-        unitProfit: number;
-        totalProfit: number;
-      }[] = [];
-
-      for (const exporter of exporters) {
-        const distances = travelCost[exporter.market.i];
-        if (!distances) continue;
-
-        const exporterGood = this.getMarketGood(exporter.market, good);
-        const available = Math.max(0, exporterGood.stock - exporter.reserve);
-        if (available < MIN_UNIT) continue;
-
-        const exporterCenter = pack.burgs[exporter.market.centerBurgId];
-        const exporterStateId = exporterCenter?.state || 0;
-        const exporterTaxPerUnit = States.getSalesTax(exporterCenter) * exporterGood.price;
-
-        for (const importer of importers) {
-          const importerCenter = pack.burgs[importer.market.centerBurgId];
-          const importerStateId = importerCenter?.state || 0;
-
-          let tariffRate = 0;
-          if (exporterStateId !== importerStateId) {
-            const importerPolicy = resolveTariff(importerStateId, exporterStateId, good.i);
-            const exporterPolicy = resolveTariff(exporterStateId, importerStateId, good.i);
-            if (importerPolicy === "embargo" || exporterPolicy === "embargo") continue;
-            tariffRate = importerPolicy;
-          }
-          const tariffPerUnit = tariffRate * exporterGood.price;
-
-          const importerGood = this.getMarketGood(importer.market, good);
-          const needed = Math.max(0, importer.reserve - importerGood.stock);
-          const units = Math.min(available, needed);
-          if (units < MIN_UNIT) continue;
-
-          const transportCost = distances[importer.market.i] * good.value;
-          const unitProfit =
-            importerGood.price - (exporterGood.price + transportCost + exporterTaxPerUnit + tariffPerUnit);
-          const totalProfit = unitProfit * units;
-          if (totalProfit < MIN_PROFIT) continue;
-
-          opportunities.push({
-            exporter: exporter.market,
-            importer: importer.market,
-            reserveExporter: exporter.reserve,
-            reserveImporter: importer.reserve,
-            transportCost,
-            exporterTaxPerUnit,
-            tariffPerUnit,
-            units,
-            unitProfit,
-            totalProfit
-          });
-        }
-      }
-
-      opportunities.sort((a, b) => b.totalProfit - a.totalProfit || b.units - a.units);
-      for (const opportunity of opportunities) {
-        const exporterGood = this.getMarketGood(opportunity.exporter, good);
-        const importerGood = this.getMarketGood(opportunity.importer, good);
-
-        const available = Math.max(0, exporterGood.stock - opportunity.reserveExporter);
-        const needed = Math.max(0, opportunity.reserveImporter - importerGood.stock);
-        const units = Math.min(available, needed);
-        if (units < MIN_UNIT) continue;
-
-        const landedCost =
-          exporterGood.price + opportunity.transportCost + opportunity.exporterTaxPerUnit + opportunity.tariffPerUnit;
-        const totalProfit = (importerGood.price - landedCost) * units;
-        if (totalProfit < MIN_PROFIT) continue;
-
-        const tariff = rn(opportunity.tariffPerUnit * units, 2);
-        const deal: Deal = {
-          i: pack.deals.length,
-          seller: opportunity.exporter.i,
-          sellerType: "market",
-          buyer: opportunity.importer.i,
-          buyerType: "market",
-          good: good.i,
-          units: rn(units, 2),
-          price: rn(landedCost, 2),
-          tax: rn(opportunity.exporterTaxPerUnit * units, 2),
-          ...(tariff ? { tariff } : {})
-        };
-        pack.deals.push(deal);
-
-        exporterGood.price = rn(this.applyMarketPressure(good.value, exporterGood.price, units), 2);
-        importerGood.price = rn(this.applyMarketPressure(good.value, importerGood.price, -units), 2);
-        exporterGood.stock = rn(exporterGood.stock - units, 2);
-        importerGood.stock = rn(importerGood.stock + units, 2);
-      }
-    }
-  }
-
-  customerBuyPrice(midPrice: number): number {
-    return rn(midPrice * (1 + MARKET_MARGIN), 2);
-  }
-
-  customerSellPrice(midPrice: number): number {
-    return rn(midPrice * (1 - MARKET_MARGIN), 2);
-  }
-
-  private applyMarketPressure(basePrice: number, currentPrice: number | undefined, units: number): number {
-    const price = currentPrice ?? basePrice;
-    const floor = basePrice * PRICE_FLOOR_FACTOR;
-    const ceiling = basePrice * PRICE_CEILING_FACTOR;
-    return minmax(floor, price + units * basePrice * MARKET_PRESSURE_FACTOR, ceiling);
-  }
-
-  private collectConsumerDemand(goods: Good[]): number[] {
-    const totalCoverageByCategory = Object.fromEntries(
-      DEMAND_PRIORITY.map(category => [
-        category,
-        goods.reduce((sum, g) => sum + (g?.demandCoverage?.[category] || 0), 0) || 1
-      ])
-    ) as Record<DemandCategory, number>;
-
-    const demandFactor: number[] = [];
-    for (const good of goods) {
-      demandFactor[good.i] = DEMAND_PRIORITY.reduce((sum, category) => {
-        const share = (good?.demandCoverage?.[category] || 0) / (totalCoverageByCategory[category] || 1);
-        return sum + share * DEMAND_TARGET_FACTORS[category];
-      }, 0);
-    }
-    return demandFactor;
-  }
-
-  private collectIndustrialDemand(goods: Good[], consumerDemandFactors: number[]): number[] {
-    // Per-capita demand for ingredients driven by consumer demand for their manufactured outputs.
-    const demandFactor: number[] = [];
-    for (const good of goods) {
-      if (!good.recipes?.length) continue;
-      const outputDemand = consumerDemandFactors[good.i] || 0;
-      for (const recipe of good.recipes) {
-        for (const [ingredientIdStr, amount] of Object.entries(recipe)) {
-          const ingredientId = +ingredientIdStr;
-          demandFactor[ingredientId] = (demandFactor[ingredientId] || 0) + amount * outputDemand;
-        }
-      }
-    }
-    return demandFactor;
-  }
-
-  private calculateAverageBaseCostByGood(goods: Good[]): number[] {
-    const avgBaseCostByGood = new Array(goods.length);
-    for (const good of goods) {
-      if (!good.recipes?.length) continue;
-      let totalBaseCost = 0;
-      for (const recipe of good.recipes) {
-        for (const [ingIdStr, amount] of Object.entries(recipe)) {
-          const ing = Goods.get(+ingIdStr);
-          if (ing) totalBaseCost += amount * ing.value;
-        }
-      }
-      avgBaseCostByGood[good.i] = totalBaseCost / good.recipes.length;
-    }
-    return avgBaseCostByGood;
-  }
-
-  private calculatePopulationByMarket(): number[] {
-    const populationByMarket: number[] = [];
-    for (const burg of pack.burgs) {
-      if (!burg.i || burg.removed || !burg.market || !burg.population) continue;
-      if (!populationByMarket[burg.market]) populationByMarket[burg.market] = 0;
-      populationByMarket[burg.market] += burg.population;
-    }
-    return populationByMarket;
+  /** A market's state is its center burg's */
+  getState(market: Market | undefined): number {
+    return market ? pack.burgs[market.centerBurgId]?.state || 0 : 0;
   }
 }
 

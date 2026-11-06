@@ -28,6 +28,7 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 | state                           | Estado                                | capitalized                            |
 | province                        | provincia                             |                                        |
 | culture                         | cultura                               |                                        |
+| development / era               | desarrollo / época                    | a people's technology level, 0–100     |
 | religion                        | religión                              |                                        |
 | namesbase                       | base de nombres (pl. bases de nombres) | the Tools button is “Nombres”         |
 | heightmap                       | mapa de alturas                       | the layer is “Alturas”                 |
@@ -85,6 +86,14 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                     | transacción / comercio                  |
 | treasury                         | tesoro                                  |
 | sales tax / poll tax             | impuesto sobre las ventas / capitación  |
+| prosperity / living standards    | prosperidad / nivel de vida             |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | mísero / indigente / pobre / modesto / holgado / próspero / acomodado / opulento / espléndido / sin par |
+| consumption / need / want        | consumo / necesidad / antojo            |
+| product (economy) / townspeople / rural people | producto / habitantes de los poblados / campesinos |
+| exports / imports / trade balance | exportaciones / importaciones / balanza comercial |
+| inequality / tax burden          | desigualdad / carga fiscal              |
+| sector: rural / manufacturing / trade | campo / oficios / comercio              |
+| economy type: agrarian / artisan / mercantile | agraria / artesana / mercantil          |
 
 ## Interface
 

@@ -49,6 +49,7 @@ const columns: EditorColumn<State>[] = [
 ];
 
 const diplomacyTable = initEditorTable<State>({
+  dialogId,
   getData: () =>
     sortDataByColumns(
       dialogId,

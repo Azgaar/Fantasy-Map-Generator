@@ -83,3 +83,6 @@ The cost depends on how far a cell is from the coastline:
 
 ### Total cost
 All the costs above are added together and divided by the culture expansionism to get the cost of entering the cell. Costs accumulate along the expansion path, and a culture stops spreading once the accumulated cost exceeds the budget of `cells count × 0.6 × growth rate`, where the growth rate is the _Growth rate_ option — lowering it leaves more land culture-less. Only populated cells get a culture assigned, so unpopulated cells stay culture-less regardless of the cost.
+
+## Development
+The type moves a culture's [development](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Development) a little: Naval cultures are three points ahead, River cultures two and Lake cultures one; Highland cultures are two behind, Nomadic three and Hunting four. Generic cultures keep their level.

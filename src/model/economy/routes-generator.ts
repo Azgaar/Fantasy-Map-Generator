@@ -12,7 +12,7 @@ import { isLand } from "@/utils/height-utils";
 import { getAdjective, replaceWholeWord } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { distanceSquared, rn } from "@/utils/number-utils";
-import { curveLength, findPath, meander } from "@/utils/path-utils";
+import { curveLength, findPath } from "@/utils/path-utils";
 import { ra, rw } from "@/utils/probability-utils";
 import { round } from "@/utils/string-utils";
 import { requireName, requireOneOf } from "@/utils/validation-utils";
@@ -562,14 +562,7 @@ class RoutesModule {
     const cached = this.riverGeometryCache.get(river.i);
     if (cached) return cached;
 
-    const { h, p } = pack.cells;
-    const geometry = meander(river.cells, p, {
-      anchors: river.points ?? undefined,
-      meandering: 0.5,
-      startStep: h[river.cells[0]] < 20 ? 1 : 10,
-      isWaterCell: river.cells.map(c => c !== -1 && h[c] < 20),
-      bounds: { width: options.map.graph.width, height: options.map.graph.height }
-    });
+    const geometry = Rivers.getCourse(river.cells, river.points);
 
     this.riverGeometryCache.set(river.i, geometry);
     return geometry;

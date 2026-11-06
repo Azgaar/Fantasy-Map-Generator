@@ -23,6 +23,7 @@ Terms every `nl.json` string uses the same way. Rules for all catalogs are in
 | state                           | staat                            |                                               |
 | province                        | provincie                        |                                               |
 | culture                         | cultuur                          |                                               |
+| development / era               | ontwikkeling / tijdperk          | a people's technology level, 0–100            |
 | religion                        | religie                          |                                               |
 | namesbase                       | naambasis (mv. naambases)        |                                               |
 | heightmap                       | hoogtekaart                      |                                               |
@@ -78,6 +79,14 @@ Terms every `nl.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                    | overeenkomst / handel            |
 | treasury                        | schatkist                        |
 | sales tax / poll tax            | omzetbelasting / hoofdelijke belasting |
+| prosperity / living standards   | voorspoed / levensstandaard            |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | berooid / behoeftig / arm / bescheiden / gerieflijk / bloeiend / welgesteld / weelderig / luisterrijk / weergaloos |
+| consumption / need / want       | verbruik / behoefte / wens             |
+| product (economy) / townspeople / rural people | product / stedelingen / plattelanders  |
+| exports / imports / trade balance | uitvoer / invoer / handelsbalans       |
+| inequality / tax burden         | ongelijkheid / belastingdruk           |
+| sector: rural / manufacturing / trade | platteland / ambachten / handel        |
+| economy type: agrarian / artisan / mercantile | agrarisch / ambachtelijk / mercantiel  |
 
 ## Interface
 

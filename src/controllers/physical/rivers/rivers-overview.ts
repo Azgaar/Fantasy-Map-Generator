@@ -115,6 +115,7 @@ function getFilteredRivers(riversById: Map<number, River>): River[] {
 }
 
 const riversTable = initEditorTable<River>({
+  dialogId,
   getData: () => {
     const riversById = getRiversById();
     const filtered = getFilteredRivers(riversById);
@@ -197,9 +198,6 @@ function renderDialog(): void {
 
 function closeRiversOverview(): void {
   Dialog.destroy("riversOverview");
-  const view = riversTable.view();
-  view.rows = [];
-  view.all = [];
 }
 
 function createNewRiver(): void {

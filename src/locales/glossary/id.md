@@ -27,6 +27,7 @@ Terms every `id.json` string uses the same way. Rules for all catalogs are in
 | state                      | negara                 |                                            |
 | province                   | provinsi               |                                            |
 | culture                    | budaya                 |                                            |
+| development / era          | perkembangan / zaman   | a people's technology level, 0–100         |
 | religion                   | agama                  |                                            |
 | namesbase                  | basis nama             |                                            |
 | heightmap                  | peta ketinggian        | the layer is “Ketinggian”                  |
@@ -89,6 +90,14 @@ Terms every `id.json` string uses the same way. Rules for all catalogs are in
 | wealth / gross product       | kekayaan / produk bruto    |
 | treasury                     | kas negara                 |
 | sales tax / poll tax         | pajak penjualan / pajak kepala |
+| prosperity / living standards | kemakmuran / taraf hidup       |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | sengsara / melarat / miskin / sederhana / nyaman / makmur / berada / mewah / megah / tiada tara |
+| consumption / need / want    | konsumsi / kebutuhan / keinginan |
+| product (economy) / townspeople / rural people | produk / warga kota / penduduk desa |
+| exports / imports / trade balance | ekspor / impor / neraca perdagangan |
+| inequality / tax burden      | ketimpangan / beban pajak      |
+| sector: rural / manufacturing / trade | pedesaan / kerajinan / perdagangan |
+| economy type: agrarian / artisan / mercantile | agraris / kerajinan / niaga    |
 
 ## Interface
 

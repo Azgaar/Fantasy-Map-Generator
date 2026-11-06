@@ -109,6 +109,15 @@ One value lives here for the session only: `app.mode`, the edit mode the user is
 `"paint"`, `"addState"`…, or `null`). While it is set, other editors, saving, loading and regeneration
 stay off. It is never written to localStorage, so a reload always starts outside any mode.
 
+**Debugging** is a preference too: `app.debug` lists the diagnostics this browser has on (`DEBUG_MODES`
+in `utils/logger.ts`: `economy`, `temperature`, `cloud`), checked under Debugging in the Advanced options
+and handed to `log.setDebug` on boot and on every change; code asks `log.debug.<mode>`. A diagnostic may
+change the view and create data of its own (console output, an in-memory record such as `EconomyDebug`,
+extra rows in a dialog), but it must **never** change the `.map` file: not a value, not a key, not its
+structure. What it records lives outside `pack` and `options.map`, so a map saved with every diagnostic
+on is the same file as one saved with none, which makes turning one on always safe. A new diagnostic
+is a new entry in `DEBUG_MODES` with a label and tip in the Advanced options, under the same rule.
+
 The **viewport** is the clearest case of the last rule, and the one most often confused with the
 extent: the extent is the coordinate space the map's geometry lives in, fixed for the life of its
 graph and asked for before the map exists; the viewport is the screen window onto it.
@@ -260,6 +269,8 @@ These are the properties the design exists to guarantee, and the ones worth asse
   ran. Changing a request without generating changes no file.
 - **The app survives maps.** Loading any map leaves `options.app`, `options.generation` and the
   pins unchanged, save for the extent, which never overrides a pin.
+- **Diagnostics leave no trace.** Saving with any `app.debug` mode on writes the same file as saving with
+  none.
 - **The map survives a reload.** Anything needed to render or operate the map is in the file, so a
   fresh browser opens it identically.
 - **Derivation is idempotent.** Re-deriving a derived value from a saved file reproduces the saved

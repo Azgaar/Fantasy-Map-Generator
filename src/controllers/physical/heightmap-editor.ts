@@ -507,6 +507,7 @@ async function finalizeHeightmap(): Promise<void> {
     const failed = t("Failed to apply the edited heightmap: {{error}}", { error: (error as Error).message });
     tip(mode === "risk" ? sentences(failed, t("The map is unchanged")) : failed, false, "error", 6000);
   }
+  riskBaseHeights = null;
 
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
   removeDrainage();

@@ -116,6 +116,7 @@ function getSettings() {
     heightUnit: options.map.units.height.unit,
     heightExponent: options.map.units.height.exponent,
     temperatureScale: options.map.units.temperature.unit,
+    moneyUnit: options.map.units.money.unit,
     populationRate: options.map.units.population.scale,
     urbanization: options.map.units.population.urbanization.rate,
     urbanDensity: options.map.units.population.urbanization.density,
@@ -148,7 +149,11 @@ function getPackCellsData() {
     routes: pack.cells.routes,
     state: Array.from(pack.cells.state),
     religion: Array.from(pack.cells.religion),
-    province: Array.from(pack.cells.province)
+    province: Array.from(pack.cells.province),
+    good: Array.from(pack.cells.good),
+    market: Array.from(pack.cells.market),
+    development: Array.from(pack.cells.development),
+    prosperity: Array.from(pack.cells.prosperity)
   };
 
   return {
@@ -175,7 +180,11 @@ function getPackCellsData() {
       routes: data.routes[cellId],
       state: data.state[cellId],
       religion: data.religion[cellId],
-      province: data.province[cellId]
+      province: data.province[cellId],
+      good: data.good[cellId],
+      market: data.market[cellId],
+      development: data.development[cellId],
+      prosperity: data.prosperity[cellId]
     })),
     vertices: Array.from(pack.vertices.p).map((_, vertexId) => ({
       i: vertexId,

@@ -77,10 +77,8 @@ interface ChartDatum {
   value: number;
 }
 
-type BiomeProduction = Record<number, { goodId: number; production: number }[]>;
-
 interface ProductionContext {
-  biomeProduction: BiomeProduction;
+  rural: Record<number, number>[]; // by cell
 }
 
 type NamedColored = { name?: string; color?: string };
@@ -310,9 +308,9 @@ const quantizationMap: Record<string, Metric> = {
     label: t("Production value"),
     hint: t("Worth of produced goods"),
     provides: ["good"],
-    prepare: () => ({ biomeProduction: Goods.getBiomesProduction() }),
-    getContributions: (cellId, { biomeProduction }) => {
-      const produced = getCellProductionByGood(cellId, biomeProduction);
+    prepare: () => ({ rural: Production.getRuralOutput() }),
+    getContributions: (cellId, { rural }) => {
+      const produced = getCellProductionByGood(cellId, rural);
       const contributions: Contribution[] = [];
       for (const [goodId, units] of Object.entries(produced)) {
         const good = Goods.get(+goodId);
@@ -330,9 +328,9 @@ const quantizationMap: Record<string, Metric> = {
     label: t("Production volume"),
     hint: t("Units of goods produced"),
     provides: ["good"],
-    prepare: () => ({ biomeProduction: Goods.getBiomesProduction() }),
-    getContributions: (cellId, { biomeProduction }) => {
-      const produced = getCellProductionByGood(cellId, biomeProduction);
+    prepare: () => ({ rural: Production.getRuralOutput() }),
+    getContributions: (cellId, { rural }) => {
+      const produced = getCellProductionByGood(cellId, rural);
       const contributions: Contribution[] = [];
       for (const [goodId, units] of Object.entries(produced)) contributions.push({ good: +goodId, value: units });
       return contributions;
@@ -981,8 +979,8 @@ function goodColorsGetter(): Record<string, string> {
   return Object.fromEntries((pack.goods || []).map(g => [g.name || EMPTY_NAME, g.color || NEUTRAL_COLOR]));
 }
 
-function getCellProductionByGood(cellId: number, biomeProduction: BiomeProduction): Record<number, number> {
-  const produced = Production.getCellProduction(cellId, biomeProduction);
+function getCellProductionByGood(cellId: number, rural: Record<number, number>[]): Record<number, number> {
+  const produced = { ...rural[cellId] };
   const burgId = pack.cells.burg[cellId];
   if (burgId) {
     const urban = Production.getBurgProduction(pack.burgs[burgId]);

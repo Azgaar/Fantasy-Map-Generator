@@ -11,4 +11,5 @@ export type MilitaryUnit = {
   states?: number[];
   cultures?: number[];
   religions?: number[];
+  goods?: number[]; // ids of the goods that equip it
 };

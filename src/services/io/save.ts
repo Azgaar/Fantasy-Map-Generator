@@ -206,7 +206,9 @@ function prepareMapData(viewOnly = false): string {
     layers,
     graphOverride,
     journeys,
-    legends
+    legends,
+    pack.cells.prosperity,
+    pack.cells.development
   ].join("\r\n");
   return mapData;
 }

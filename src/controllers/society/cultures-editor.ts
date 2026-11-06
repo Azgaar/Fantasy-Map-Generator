@@ -1,10 +1,12 @@
 import { type D3DragEvent, drag, easeSinIn, select, transition } from "d3";
 import { Controllers } from "@/controllers";
+import { DEFAULT_DEVELOPMENT } from "@/data/development";
 import { CULTURE_TYPE_LABELS, SHIELD_LABELS } from "@/data/id-labels";
 import { Pack } from "@/model/graph/pack-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { CULTURE_TYPES, type Culture, Cultures } from "@/model/society/cultures-generator";
+import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
@@ -14,6 +16,7 @@ import { LegendBoxes } from "@/renderers/legend-boxes";
 import { Csv } from "@/services/io/csv";
 import type { Emblem } from "@/types/emblems";
 import type { LegendItem } from "@/types/legend";
+import { eraLabel } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import { noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
@@ -41,9 +44,34 @@ import { rn, si } from "@/utils/number-utils";
 import { errorText, parseTransform } from "@/utils/string-utils";
 
 const dialogId = "culturesEditor" as const;
+
+/** The culture's own development to edit, the wildlands' people's average; the heartland and the average in the tip */
+function renderDevelopmentCell(culture: Culture): string {
+  const average = development[culture.i];
+  const heartland = Development.ofCulture(culture);
+  const tips = [
+    t("Heartland: {{level}}, {{era}}", { level: rn(heartland), era: eraLabel(heartland) }),
+    average === undefined
+      ? ""
+      : t("People's average: {{level}}, {{era}}", { level: rn(average), era: eraLabel(average) })
+  ];
+  if (!culture.i) {
+    if (average === undefined) return `<div class="placeholder" data-col="development"></div>`;
+    return `<div data-tip="${sentences(...tips)}" data-col="development">${rn(average)}</div>`;
+  }
+  const tip = sentences(
+    t("Development at the culture's center, 1–100"),
+    ...tips,
+    t("Regenerate development in the Development Overview to apply")
+  );
+  return `<div data-col="development">
+    <input data-tip="${tip}" class="cultureDevelopment" type="number" min="1" max="100" step="1" value="${culture.development ?? DEFAULT_DEVELOPMENT}" />
+  </div>`;
+}
 const LEGEND_NAME = "Cultures"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string };
+let development: (number | undefined)[] = []; // the people's average by culture, as the table was last built
 const CSV_COLUMNS = [
   "Id",
   "Name",
@@ -51,6 +79,7 @@ const CSV_COLUMNS = [
   "Color",
   "Cells",
   "Expansionism",
+  "Development",
   "Type",
   "Area",
   "Population",
@@ -125,6 +154,15 @@ const columns: EditorColumn<Culture>[] = [
       (culture.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
   },
   {
+    key: "development",
+    label: t("Development"),
+    width: "7.5em",
+    hidden: true,
+    mobileHidden: true,
+    tip: t("Development at the culture's center, 1–100; the heartland and the people's average in the tip"),
+    sortBy: culture => (culture.i ? (culture.development ?? DEFAULT_DEVELOPMENT) : (development[0] ?? -1))
+  },
+  {
     key: "emblems",
     label: t("Emblems"),
     width: "7em",
@@ -155,7 +193,11 @@ function getFilteredCultures(): Culture[] {
 }
 
 const culturesTable = initEditorTable<Culture>({
-  getData: () => sortDataByColumns(dialogId, getFilteredCultures(), columns),
+  dialogId,
+  getData: () => {
+    development = Development.getAverages(pack.cells.culture);
+    return sortDataByColumns(dialogId, getFilteredCultures(), columns);
+  },
   onUpdate: culturesEditorAddLines
 });
 
@@ -348,6 +390,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
             <span data-tip="${populationTip}" class="icon-male"></span>
             <div data-tip="${populationTip}" class="culturePopulation pointer">${si(population)}</div>
           </div>
+          ${renderDevelopmentCell(c)}
           <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
           <div data-col="tags"></div>
           <div data-col="note"></div>
@@ -413,6 +456,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
           <span data-tip="${populationTip}" class="icon-male"></span>
           <div data-tip="${populationTip}" class="culturePopulation pointer">${si(population)}</div>
         </div>
+        ${renderDevelopmentCell(c)}
         <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
         <div data-col="tags">
           <input data-tip="${sentences(t("Culture tags"), t("Click and type to change"))}" class="cultureTags"
@@ -464,6 +508,9 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
   ensureEl("culturesBody")
     .querySelectorAll("div > input.cultureExpan")
     .forEach($el => void $el.addEventListener("change", cultureChangeExpansionism));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > input.cultureDevelopment")
+    .forEach($el => void $el.addEventListener("change", cultureChangeDevelopment));
   ensureEl("culturesBody")
     .querySelectorAll("div > select.cultureType")
     .forEach($el => void $el.addEventListener("change", cultureChangeType));
@@ -653,6 +700,13 @@ function cultureChangeExpansionism(this: HTMLInputElement): void {
   if (!(+this.value >= 0 && +this.value <= 99)) return;
   Cultures.setExpansionism(culture, +this.value);
   recalculateCultures();
+}
+
+function cultureChangeDevelopment(this: HTMLInputElement): void {
+  const culture = pack.cultures[+(this.closest(".states") as HTMLElement).dataset.id!];
+  const level = Math.round(+this.value);
+  if (level >= 1 && level <= 100) Cultures.setDevelopment(culture.i, level);
+  this.value = String(culture.development ?? DEFAULT_DEVELOPMENT); // an invalid value goes back
 }
 
 function cultureChangeType(this: HTMLSelectElement): void {
@@ -1029,6 +1083,7 @@ function downloadCulturesCsv(): void {
       c.i ? c.color || "" : "",
       c.cells || 0,
       c.i ? c.expansionism || 0 : "",
+      c.i ? (c.development ?? DEFAULT_DEVELOPMENT) : "",
       c.i ? c.type : "",
       area,
       population,
@@ -1045,6 +1100,7 @@ function downloadCulturesCsv(): void {
 function closeCulturesEditor(): void {
   select("#debug #cultureCenters").remove();
   if (options.app.mode === "addCulture") exitAddCultureMode();
+  development = [];
   Dialog.destroy("culturesEditor");
 }
 
@@ -1073,6 +1129,7 @@ async function uploadCulturesCsv(text: string): Promise<void> {
       row.apply("Ancestry", ancestry => Cultures.setAncestry(id, ancestry), culture.ancestry);
       row.apply("Color", color => Cultures.recolor(id, color), culture.color);
       row.apply("Expansionism", value => Cultures.setExpansionism(id, +value), culture.expansionism);
+      row.apply("Development", value => Cultures.setDevelopment(id, +value), culture.development);
       row.apply("Type", type => Cultures.setType(id, type), culture.type);
       row.apply(
         "Namesbase",

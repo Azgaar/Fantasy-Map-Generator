@@ -1,4 +1,4 @@
-// The Units Editor: the distance, altitude, temperature and population scales a map is read in
+// The Units Editor: the distance, altitude, temperature, money and population scales a map is read in
 
 import { updateGridSizeReadout } from "@/controllers/style/controls";
 import { Options } from "@/model/options/options-model";
@@ -87,6 +87,22 @@ const TEMPLATE = /* html */ `
         </select>
       </div>
       <div class="unitsHeader">
+        <span class="icon-bank"></span>
+        <label>${t("Money")}:</label>
+      </div>
+      <div data-tip="${t("Select the name of the map's money or provide a custom one. One unit, shown as 🟡, is a gold coin of a troy ounce (31 g). The plural adds an “s”")}">
+        <label>${t("Money unit")}:</label>
+        <select id="moneyUnit">
+          <option value="uncia" selected>${t("Uncia")}</option>
+          <option value="mark">${t("Mark")}</option>
+          <option value="crown">${t("Crown")}</option>
+          <option value="sovereign">${t("Sovereign")}</option>
+          <option value="talent">${t("Talent")}</option>
+          <option value="florin">${t("Florin")}</option>
+          <option value="custom_name">${t("Custom name")}</option>
+        </select>
+      </div>
+      <div class="unitsHeader">
         <span class="icon-male"></span>
         <label>${t("Population")}:</label>
       </div>
@@ -149,6 +165,7 @@ const UNIT_KEYS = [
   "heightUnit",
   "heightExponent",
   "temperatureScale",
+  "moneyUnit",
   "populationRate",
   "urbanization",
   "urbanDensity"
@@ -156,21 +173,22 @@ const UNIT_KEYS = [
 
 /** The control each unit is shown in, and the value it holds now */
 function unitValue(key: string): string | number | undefined {
-  const { distance, area, height, temperature, population } = options.map.units;
+  const { distance, area, height, temperature, money, population } = options.map.units;
   if (key === "distanceUnit") return distance.unit;
   if (key === "distanceScale") return distance.scale;
   if (key === "areaUnit") return area.unit;
   if (key === "heightUnit") return height.unit;
   if (key === "heightExponent") return height.exponent;
   if (key === "temperatureScale") return temperature.unit;
+  if (key === "moneyUnit") return money.unit;
   if (key === "populationRate") return population.scale;
   if (key === "urbanization") return population.urbanization.rate;
   if (key === "urbanDensity") return population.urbanization.density;
   return undefined;
 }
 
-/** three controls are named after the setting itself, the rest carry the "Input" suffix */
-const BARE_IDS = ["areaUnit", "heightUnit", "temperatureScale"];
+/** four controls are named after the setting itself, the rest carry the "Input" suffix */
+const BARE_IDS = ["areaUnit", "heightUnit", "temperatureScale", "moneyUnit"];
 const inputFor = (key: string) => ensureEl<HTMLInputElement>(BARE_IDS.includes(key) ? key : `${key}Input`);
 
 /** The object is the source: push every unit it holds into the control that shows it */
@@ -178,6 +196,7 @@ function fillInputs(): void {
   // a unit the user named themselves is not among the options of its select until it is put back there
   applyOption(ensureEl("distanceUnitInput"), options.map.units.distance.unit);
   applyOption(ensureEl("heightUnit"), options.map.units.height.unit);
+  applyOption(ensureEl("moneyUnit"), options.map.units.money.unit);
 
   for (const key of UNIT_KEYS) inputFor(key).value = String(unitValue(key));
 }
@@ -244,6 +263,15 @@ function onUnitChange(event: Event): void {
       Layers.draw("temperature");
       break;
 
+    case "moneyUnit":
+      if (value === "custom_name") {
+        askForCustomUnit(input, "money");
+        return;
+      }
+      units.money.unit = value;
+      Pins.set("moneyUnit", value);
+      break;
+
     case "populationRateInput":
       units.population.scale = +value;
       Pins.set("populationRate", +value);
@@ -268,29 +296,33 @@ function onUnitChange(event: Event): void {
 }
 
 /** "custom_name" is not a unit: it asks for one, and puts the answer where the value belongs */
-function askForCustomUnit(select: HTMLInputElement, kind: "distance" | "height"): void {
+function askForCustomUnit(select: HTMLInputElement, kind: "distance" | "height" | "money"): void {
   fillInputs(); // the sentinel is not a unit, so the select goes back to the one in use right away
-  Dialog.prompt(
-    kind === "distance" ? t("Provide a custom name for a distance unit") : t("Provide a custom name for a height unit"),
-    { default: "" },
-    custom => {
-      const name = String(custom);
-      if (!name) return;
+  const prompts = {
+    distance: t("Provide a custom name for a distance unit"),
+    height: t("Provide a custom name for a height unit"),
+    money: t("Provide a custom name for the money, in the singular")
+  };
+  Dialog.prompt(prompts[kind], { default: "" }, custom => {
+    const name = String(custom).trim();
+    if (!name) return;
 
-      (select as unknown as HTMLSelectElement).options.add(new Option(name, name, false, true));
-      if (kind === "distance") {
-        options.map.units.distance.unit = name;
-        Pins.set("distanceUnit", name);
-        redrawDistances();
-      } else {
-        options.map.units.height.unit = name;
-        Pins.set("heightUnit", name);
-        Layers.draw("heightmap");
-        LegendBoxes.refreshAltitude();
-      }
-      Options.save();
+    (select as unknown as HTMLSelectElement).options.add(new Option(name, name, false, true));
+    if (kind === "money") {
+      options.map.units.money.unit = name;
+      Pins.set("moneyUnit", name);
+    } else if (kind === "distance") {
+      options.map.units.distance.unit = name;
+      Pins.set("distanceUnit", name);
+      redrawDistances();
+    } else {
+      options.map.units.height.unit = name;
+      Pins.set("heightUnit", name);
+      Layers.draw("heightmap");
+      LegendBoxes.refreshAltitude();
     }
-  );
+    Options.save();
+  });
 }
 
 /** Everything measured in distance units: the scale bar and the grid size the Style tab reports */

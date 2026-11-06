@@ -9,6 +9,7 @@ export interface Biome {
   name: string;
   color: string;
   habitability: number;
+  development: number; // how the land adds to its people's technological development, in points: harsh lands hold them back
   iconsDensity: number;
   icons: ReliefPool;
   cost: number;
@@ -16,69 +17,133 @@ export interface Biome {
   note?: string;
 }
 
+const pool = (weights: Record<string, number>): ReliefPool =>
+  Object.fromEntries(Object.entries(weights).map(([entry, weight]) => [entry, { weight }]));
+
 function getDefaultBiomes(): Biome[] {
-  const name = [
-    "Marine",
-    "Hot desert",
-    "Cold desert",
-    "Savanna",
-    "Grassland",
-    "Tropical seasonal forest",
-    "Temperate deciduous forest",
-    "Tropical rainforest",
-    "Temperate rainforest",
-    "Taiga",
-    "Tundra",
-    "Glacier",
-    "Wetland"
+  return [
+    { i: 0, name: "Marine", color: "#466eab", habitability: 0, development: 0, iconsDensity: 0, icons: {}, cost: 10 },
+    {
+      i: 1,
+      name: "Hot desert",
+      color: "#fbe79f",
+      habitability: 4,
+      development: -4,
+      iconsDensity: 27,
+      icons: pool({ dune: 3, cactus: 6, deadTree: 1 }),
+      cost: 200
+    },
+    {
+      i: 2,
+      name: "Cold desert",
+      color: "#b5b887",
+      habitability: 10,
+      development: -5,
+      iconsDensity: 20,
+      icons: pool({ dune: 9, deadTree: 1 }),
+      cost: 150
+    },
+    {
+      i: 3,
+      name: "Savanna",
+      color: "#d2d082",
+      habitability: 22,
+      development: -1,
+      iconsDensity: 120,
+      icons: pool({ acacia: 1, grass: 9 }),
+      cost: 60
+    },
+    {
+      i: 4,
+      name: "Grassland",
+      color: "#c8d68f",
+      habitability: 30,
+      development: 0,
+      iconsDensity: 120,
+      icons: pool({ grass: 1 }),
+      cost: 50
+    },
+    {
+      i: 5,
+      name: "Tropical seasonal forest",
+      color: "#b6d95d",
+      habitability: 50,
+      development: -1,
+      iconsDensity: 120,
+      icons: pool({ acacia: 8, palm: 1 }),
+      cost: 70
+    },
+    {
+      i: 6,
+      name: "Temperate deciduous forest",
+      color: "#29bc56",
+      habitability: 100,
+      development: 2,
+      iconsDensity: 120,
+      icons: pool({ deciduous: 2, conifer: 1 }),
+      cost: 70
+    },
+    {
+      i: 7,
+      name: "Tropical rainforest",
+      color: "#7dcb35",
+      habitability: 80,
+      development: -3,
+      iconsDensity: 150,
+      icons: pool({ acacia: 5, palm: 3, deciduous: 1, swamp: 1 }),
+      cost: 80
+    },
+    {
+      i: 8,
+      name: "Temperate rainforest",
+      color: "#409c43",
+      habitability: 90,
+      development: 0,
+      iconsDensity: 150,
+      icons: pool({ deciduous: 6, conifer: 1, swamp: 1 }),
+      cost: 90
+    },
+    {
+      i: 9,
+      name: "Taiga",
+      color: "#4b6b32",
+      habitability: 12,
+      development: -3,
+      iconsDensity: 100,
+      icons: pool({ coniferSnow: 1 }),
+      cost: 200
+    },
+    {
+      i: 10,
+      name: "Tundra",
+      color: "#96784b",
+      habitability: 4,
+      development: -5,
+      iconsDensity: 39,
+      icons: pool({ grass: 1 }),
+      cost: 1000
+    },
+    {
+      i: 11,
+      name: "Glacier",
+      color: "#d5e7eb",
+      habitability: 0,
+      development: -8,
+      iconsDensity: 0,
+      icons: {},
+      cost: 5000
+    },
+    {
+      i: 12,
+      name: "Wetland",
+      color: "#0b9131",
+      habitability: 12,
+      development: -2,
+      iconsDensity: 250,
+      icons: pool({ swamp: 1 }),
+      cost: 150
+    }
   ];
-
-  const color = [
-    "#466eab",
-    "#fbe79f",
-    "#b5b887",
-    "#d2d082",
-    "#c8d68f",
-    "#b6d95d",
-    "#29bc56",
-    "#7dcb35",
-    "#409c43",
-    "#4b6b32",
-    "#96784b",
-    "#d5e7eb",
-    "#0b9131"
-  ];
-  const habitability = [0, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12];
-  const iconsDensity = [0, 27, 20, 120, 120, 120, 120, 150, 150, 100, 39, 0, 250];
-  const weights: Record<string, number>[] = [
-    {},
-    { dune: 3, cactus: 6, deadTree: 1 },
-    { dune: 9, deadTree: 1 },
-    { acacia: 1, grass: 9 },
-    { grass: 1 },
-    { acacia: 8, palm: 1 },
-    { deciduous: 2, conifer: 1 },
-    { acacia: 5, palm: 3, deciduous: 1, swamp: 1 },
-    { deciduous: 6, conifer: 1, swamp: 1 },
-    { coniferSnow: 1 },
-    { grass: 1 },
-    {},
-    { swamp: 1 }
-  ];
-  const icons = weights.map(
-    (pool): ReliefPool => Object.fromEntries(Object.entries(pool).map(([entry, weight]) => [entry, { weight }]))
-  );
-  const cost = [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150];
-
-  return name.map((name, i) => ({
-    i,
-    name,
-    color: color[i],
-    habitability: habitability[i],
-    iconsDensity: iconsDensity[i],
-    icons: icons[i],
-    cost: cost[i]
-  }));
 }
 
 // hot ↔ cold [>19°C; <-4°C]; dry ↕ wet
@@ -144,6 +209,13 @@ class BiomesGenerator {
     this.living(biomeId).habitability = percent;
   }
 
+  /** Set what a biome adds to its people's development, a whole number of points from -50 to 50, negative for harsh lands; it takes effect when development is regenerated */
+  setDevelopment(biomeId: number, development: number): void {
+    if (!Number.isInteger(development) || development < -50 || development > 50)
+      throw new Error("The development must be a whole number from -50 to 50");
+    this.living(biomeId).development = development;
+  }
+
   /** Add a custom biome for painting; returns its id. There can be at most 255 biomes */
   add(name: string, color: string, habitability: number): number {
     const biomes = pack.biomes;
@@ -156,6 +228,7 @@ class BiomesGenerator {
       name: requireName(name),
       color: requireColor(color),
       habitability,
+      development: 0,
       iconsDensity: 0,
       icons: {},
       cost: 50

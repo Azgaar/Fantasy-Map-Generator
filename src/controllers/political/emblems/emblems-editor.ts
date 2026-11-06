@@ -943,6 +943,7 @@ function closeEmblemEditor(): void {
     .selectAll<SVGUseElement, unknown>("use")
     .on(".drag", null)
     .attr("class", null);
+  currentEl = null!;
   Dialog.destroy("emblemEditor");
 }
 

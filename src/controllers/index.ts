@@ -14,11 +14,12 @@ export const Controllers = createRegistry(
     ChartsOverview: () => import("@/controllers/charts-overview").then(m => m.ChartsOverview),
     CoastlineEditor: () => import("@/controllers/physical/coastline-editor").then(m => m.CoastlineEditor),
     ColorPicker: () => import("@/controllers/color-picker").then(m => m.ColorPicker),
-    ComparePrices: () => import("@/controllers/economy/trade/compare-prices").then(m => m.ComparePrices),
+    ComparePrices: () => import("@/controllers/economy/markets/compare-prices").then(m => m.ComparePrices),
     ContextMenu: () => import("@/controllers/context-menu").then(m => m.ContextMenu),
     CsvUpload: () => import("@/controllers/csv-upload").then(m => m.CsvUpload),
     CulturesEditor: () => import("@/controllers/society/cultures-editor").then(m => m.CulturesEditor),
     DiplomacyEditor: () => import("@/controllers/political/diplomacy-editor").then(m => m.DiplomacyEditor),
+    DevelopmentOverview: () => import("@/controllers/society/development-overview").then(m => m.DevelopmentOverview),
     DiplomacyOverview: () => import("@/controllers/political/diplomacy-overview").then(m => m.DiplomacyOverview),
     DistributionEditor: () =>
       import("@/controllers/economy/goods/goods-distribution-editor").then(m => m.DistributionEditor),
@@ -49,9 +50,9 @@ export const Controllers = createRegistry(
     MarkersInRadius: () => import("@/controllers/story/markers/markers-in-radius").then(m => m.MarkersInRadius),
     MarkersOverview: () => import("@/controllers/story/markers/markers-overview").then(m => m.MarkersOverview),
     MarketDealsOverview: () =>
-      import("@/controllers/economy/trade/market-deals-overview").then(m => m.MarketDealsOverview),
-    MarketOverview: () => import("@/controllers/economy/trade/market-overview").then(m => m.MarketOverview),
-    MarketsOverview: () => import("@/controllers/economy/trade/markets-overview").then(m => m.MarketsOverview),
+      import("@/controllers/economy/markets/market-deals-overview").then(m => m.MarketDealsOverview),
+    MarketOverview: () => import("@/controllers/economy/markets/market-overview").then(m => m.MarketOverview),
+    MarketsOverview: () => import("@/controllers/economy/markets/markets-overview").then(m => m.MarketsOverview),
     MeasurersEditor: () => import("@/controllers/annotations/measurers-editor").then(m => m.MeasurersEditor),
     MilitaryOverview: () => import("@/controllers/political/military/military-overview").then(m => m.MilitaryOverview),
     Minimap: () => import("@/controllers/minimap").then(m => m.Minimap),
@@ -59,8 +60,9 @@ export const Controllers = createRegistry(
     NotesEditor: () => import("@/controllers/story/notes-editor").then(m => m.NotesEditor),
     Omnibar: () => import("@/controllers/omnibar").then(m => m.Omnibar),
     PaintEditor: () => import("@/controllers/paint-editor").then(m => m.PaintEditor),
-    ProductionChains: () => import("@/controllers/economy/production-chains").then(m => m.ProductionChains),
-    ProductionOverview: () => import("@/controllers/economy/production-overview").then(m => m.ProductionOverview),
+    ProductionChains: () => import("@/controllers/economy/goods/production-chains").then(m => m.ProductionChains),
+    BurgEconomyOverview: () =>
+      import("@/controllers/economy/entities/burg-economy-overview").then(m => m.BurgEconomyOverview),
     ProvincesEditor: () => import("@/controllers/political/provinces-editor").then(m => m.ProvincesEditor),
     ProvincesRegeneration: () =>
       import("@/controllers/political/provinces-regeneration").then(m => m.ProvincesRegeneration),
@@ -71,6 +73,8 @@ export const Controllers = createRegistry(
     ReliefRulesEditor: () => import("@/controllers/physical/relief/relief-rules-editor").then(m => m.ReliefRulesEditor),
     ReligionsEditor: () => import("@/controllers/society/religions-editor").then(m => m.ReligionsEditor),
     RiverCreator: () => import("@/controllers/physical/rivers/river-creator").then(m => m.RiverCreator),
+    ProvinceEconomyOverview: () =>
+      import("@/controllers/economy/entities/province-economy-overview").then(m => m.ProvinceEconomyOverview),
     RiverAutoCreator: () => import("@/controllers/physical/rivers/river-auto-creator").then(m => m.RiverAutoCreator),
     RiverEditor: () => import("@/controllers/physical/rivers/river-editor").then(m => m.RiverEditor),
     RiverGroupsEditor: () => import("@/controllers/physical/rivers/river-groups-editor").then(m => m.RiverGroupsEditor),
@@ -79,6 +83,11 @@ export const Controllers = createRegistry(
     RouteEditor: () => import("@/controllers/economy/routes/route-editor").then(m => m.RouteEditor),
     RouteGroupsEditor: () => import("@/controllers/economy/routes/route-groups-editor").then(m => m.RouteGroupsEditor),
     RoutesOverview: () => import("@/controllers/economy/routes/routes-overview").then(m => m.RoutesOverview),
+    StabilityOverview: () => import("@/controllers/political/stability-overview").then(m => m.StabilityOverview),
+    StateBudgetEditor: () =>
+      import("@/controllers/economy/entities/state-budget-editor").then(m => m.StateBudgetEditor),
+    StateEconomyOverview: () =>
+      import("@/controllers/economy/entities/state-economy-overview").then(m => m.StateEconomyOverview),
     StatesEditor: () => import("@/controllers/political/states-editor").then(m => m.StatesEditor),
     StyleEditor: () => import("@/controllers/style").then(m => m.StyleEditor),
     StylePresetsEditor: () => import("@/controllers/style/style-preset").then(m => m.StylePreset),
@@ -89,7 +98,7 @@ export const Controllers = createRegistry(
     TradeDetails: () => import("@/controllers/economy/trade/trade-details").then(m => m.TradeDetails),
     WrapTool: () => import("@/controllers/graph/wrap-tool").then(m => m.WrapTool),
     TransformTool: () => import("@/controllers/graph/transform-tool").then(m => m.TransformTool),
-    TransportEditor: () => import("@/controllers/economy/transport-editor").then(m => m.TransportEditor),
+    TransportEditor: () => import("@/controllers/story/journeys/transport-editor").then(m => m.TransportEditor),
     UnitsEditor: () => import("@/controllers/units-editor").then(m => m.UnitsEditor),
     View3d: () => import("@/controllers/view-3d").then(m => m.View3d),
     WorldConfigurator: () => import("@/controllers/world-configurator").then(m => m.WorldConfigurator),

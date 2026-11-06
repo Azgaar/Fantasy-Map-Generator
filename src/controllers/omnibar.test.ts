@@ -36,7 +36,7 @@ vi.mock("@/ui/map/highlight", () => ({
 vi.mock("@/ui/map/zoom", () => ({ zoomTo: mocks.zoom }));
 vi.mock("@/renderers/viewport/viewport", () => ({ viewport: { width: 1000, height: 800, scale: 1 } }));
 vi.mock("@/renderers/labels/label-data", () => ({ getLabelsIndex: mocks.labels }));
-vi.mock("@/ui/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
+vi.mock("@/ui/dialog/dialog-helpers", () => ({ closeEntityDialogs: vi.fn(), refreshEditors: vi.fn() }));
 vi.mock("@/ui/tooltips", () => ({ tip: mocks.tip, loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/controllers", () => ({
   Controllers: new Proxy(
@@ -261,7 +261,7 @@ describe("Omnibar public behavior", () => {
     const action = vi.fn();
     Object.assign(Rivers, { regenerate: action });
     Object.assign(Routes, { sync: () => {} });
-    sessionStorage.setItem("regenerateFeatureDontAsk", "true");
+    sessionStorage.setItem("regenerateDontAsk-regenerateRivers", "true");
     document.getElementById("regenerateRivers")!.remove();
     Omnibar.open();
     search("> regenerate rivers");
