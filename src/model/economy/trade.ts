@@ -936,13 +936,19 @@ export class TradeModule {
 
   /** Only an import may pay a tariff */
   isImport(deal: Deal): boolean {
-    const { own, market } = this.getMarketStates(deal);
-    return isForeign(own, market);
+    const burg = pack.burgs[deal[0]];
+    const own = Markets.getState(burg && Markets.ofBurg(burg));
+    return deal[7] > 0 || isForeign(own, Markets.getState(Markets.get(deal[1])));
   }
 
+  /** A burg that lost its market since the run stays in its own state until the next one */
   private getMarketStates([burgId, marketId]: Deal): { own: number; market: number } {
     const burg = pack.burgs[burgId];
-    return { own: Markets.getState(burg && Markets.ofBurg(burg)), market: Markets.getState(Markets.get(marketId)) };
+    const own = burg && Markets.ofBurg(burg);
+    return {
+      own: own ? Markets.getState(own) : burg?.state || 0,
+      market: Markets.getState(Markets.get(marketId))
+    };
   }
 
   getTaxStates(deal: Deal): { taxState: number; tariffState: number } {

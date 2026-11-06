@@ -2,6 +2,7 @@ import Alea from "alea";
 import { mean, median, quadtree, sum } from "d3";
 import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
 import type { Label } from "@/model/annotations/labels-generator";
+import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Trade } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
@@ -249,9 +250,11 @@ const ALERT_MILITARY = 20; // what war alert 1 adds, by its root: 31 at the calm
 
 class StatesModule {
   regenerate(): { warning?: string; error?: string } {
+    const previous = pack.states.filter(state => state.i && !state.removed && state.lock).map(state => state.i);
     const { warning, error, states } = this.recreate();
     if (error || !states) return { warning, error };
 
+    Goods.remapEntityMultipliers("state", new Map(previous.map((id, index) => [id, index + 1])));
     pack.states = states;
     this.expandStates();
     this.normalize();

@@ -1,6 +1,7 @@
 import { max, quadtree, range } from "d3";
 import { CULTURE_SETS } from "@/data/culture-sets";
 import { DEFAULT_DEVELOPMENT } from "@/data/development";
+import { Goods } from "@/model/economy/goods-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import type { Emblem } from "@/types/emblems";
@@ -1688,8 +1689,11 @@ class CulturesGenerator {
   }
 
   regenerate(): void {
+    const kept = pack.cultures?.filter(culture => culture.i && culture.lock && !culture.removed) ?? [];
+    const previousIds = kept.map(culture => culture.i!);
     this.generate();
     this.expand();
+    Goods.remapEntityMultipliers("culture", new Map(kept.map((culture, at) => [previousIds[at], culture.i!])));
 
     pack.states = pack.states.map(state =>
       !state.i || state.removed ? state : { ...state, culture: pack.cells.culture[state.center] }

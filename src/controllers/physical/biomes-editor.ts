@@ -4,6 +4,7 @@ import { ReliefPoolEditor } from "@/controllers/physical/relief/relief-pool-edit
 import { fitReliefArt, poolPreviewHtml } from "@/controllers/physical/relief/relief-previews";
 import type { Biome } from "@/model/physical/biomes-generator";
 import { Biomes } from "@/model/physical/biomes-generator";
+import { States } from "@/model/political/states-generator";
 import { Population } from "@/model/society/population-generator";
 import { getArea, getAreaUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
@@ -548,6 +549,7 @@ function closeBiomesEditor(): void {
 
 function regeneratePopulation(): void {
   Population.regenerate();
+  States.collectStatistics();
   Layers.draw("population", "goods");
 }
 

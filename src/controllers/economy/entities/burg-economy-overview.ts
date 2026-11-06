@@ -4,7 +4,7 @@ import type { Good } from "@/model/economy/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import type { ProductionCandidate, ProductionLogEntry } from "@/model/economy/production-generator";
-import { isDemandEntry, isTradeEntry } from "@/model/economy/production-generator";
+import { isDemandEntry, isTradeEntry, Production } from "@/model/economy/production-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import {
   DEAL_KINDS,
@@ -397,6 +397,12 @@ const getNeedRow = ({ category, shortage, options }: DemandEntry): HistoryRow =>
   };
 };
 
+/** The debug log can name a market removed since the run */
+const loggedMarketName = (marketId: number): string => {
+  const market = Markets.get(marketId);
+  return market ? Markets.getName(market) : "—";
+};
+
 function renderDemandOptions(options: DemandEntry["options"]): string {
   if (!options.length) return `<i>${t("No good that covers it is for sale anywhere")}</i>`;
   const own = pack.cells.market[pack.burgs[activeBurgId]?.cell];
@@ -405,7 +411,7 @@ function renderDemandOptions(options: DemandEntry["options"]): string {
       ? t("kept from its own sales")
       : market === own
         ? t("from its own market")
-        : t("from {{- market}}", { market: Markets.getName(Markets.get(market)!) });
+        : t("from {{- market}}", { market: loggedMarketName(market) });
     const per = coverage === 1 ? "" : ` (${t("{{coverage}} per unit", { coverage: rn(coverage, 2) })})`;
     return `<li>${goodDot(goodId)}${escapeHtml(Goods.get(goodId)?.name ?? "")}: ${formatPrice(costPerCoverage)} ${t("per covered need")}${per}, ${where}</li>`;
   });
@@ -423,7 +429,7 @@ function renderSources(chosen: number, sources: SourceOption[]): string {
   if (picked && !shown.includes(picked)) shown.push(picked);
 
   const name = (market: number) => {
-    const label = escapeHtml(Markets.getName(Markets.get(market)!));
+    const label = escapeHtml(loggedMarketName(market));
     return market === own ? `${label} (${t("own")})` : label;
   };
   const rows = shown.map(
@@ -589,8 +595,8 @@ function renderMarket(row: HistoryRow): string {
   return `<span class="pointer" data-zoom-market="${marketId}" data-tip="${zoomTip}">${escapeHtml(name)}</span>`;
 }
 
-const getContext = ({ goodId, marketId = 0, kind = DEAL_KINDS.sale }: HistoryRow) =>
-  getTradeContext(activeBurgId, marketId, goodId, kind);
+const getContext = ({ goodId, marketId = 0, kind = DEAL_KINDS.sale, carriage }: HistoryRow) =>
+  getTradeContext(activeBurgId, marketId, goodId, kind, carriage);
 
 const getFigures = ({ units, price, carriage, tax, tariff, formula }: HistoryRow) => ({
   units,
@@ -603,7 +609,7 @@ const getFigures = ({ units, price, carriage, tax, tariff, formula }: HistoryRow
 
 function renderStats(burg: Burg): void {
   const population = burg.population || 0;
-  const burgs = pack.burgs.filter(b => b.i && !b.removed).sort((a, b) => (b.population || 0) - (a.population || 0));
+  const burgs = Production.getTurnOrder(pack.burgs.filter(b => b.i && !b.removed));
   const market = Markets.ofBurg(burg);
 
   const targets = DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);

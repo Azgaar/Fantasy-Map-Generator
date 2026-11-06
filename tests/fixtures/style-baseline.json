@@ -629,8 +629,6 @@
   },
   "#rivers > [data-group=\"lava\"]": {
     "opacity": "1",
-    "fill": "#f25a0c",
-    "stroke": "#90270d",
-    "stroke-width": "0.15"
+    "fill": "#f25a0c"
   }
 }

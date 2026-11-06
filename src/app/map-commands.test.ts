@@ -8,7 +8,9 @@ const mocks = vi.hoisted(() => ({
   produce: vi.fn(),
   clear: vi.fn(),
   applyPreset: vi.fn(),
-  save: vi.fn()
+  save: vi.fn(),
+  syncPorts: vi.fn(),
+  collectStatistics: vi.fn()
 }));
 vi.mock("@/renderers/layers", () => ({ Layers: { draw: mocks.draw, toggle: vi.fn() } }));
 vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
@@ -40,6 +42,7 @@ import { Routes } from "@/model/economy/routes-generator";
 import { Ice } from "@/model/physical/ice-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { Burgs } from "@/model/political/burgs-generator";
+import { States } from "@/model/political/states-generator";
 import { DIALOGS_MARKUP, dialogButton } from "@/ui/dialog/dialog-testing";
 import { isLinkable, MAP_COMMANDS, openEconomyRegeneration } from "./map-commands";
 
@@ -49,6 +52,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   Object.assign(Rivers, { regenerate: mocks.regenerate });
   Object.assign(Routes, { sync: () => {} });
+  Object.assign(Burgs, { syncPorts: mocks.syncPorts });
+  Object.assign(States, { collectStatistics: mocks.collectStatistics });
 });
 
 it("offers overwriting the saved file in command search without another save button", () => {
@@ -64,7 +69,8 @@ describe("shared regeneration commands", () => {
     expect(mocks.regenerate).not.toHaveBeenCalled();
     dialogButton("Proceed").click();
     expect(mocks.regenerate).toHaveBeenCalledOnce();
-    expect(mocks.draw).toHaveBeenCalledWith("rivers");
+    expect(mocks.syncPorts).toHaveBeenCalledOnce();
+    expect(mocks.draw).toHaveBeenCalledWith("rivers", "burgIcons");
     expect(mocks.refresh).toHaveBeenCalledOnce();
   });
 
@@ -73,6 +79,14 @@ describe("shared regeneration commands", () => {
     dialogButton("Cancel").click();
     expect(mocks.regenerate).not.toHaveBeenCalled();
     expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+
+  it("keeps asking after a cancel with Do not ask again ticked", () => {
+    MAP_COMMANDS.find(command => command.id === "regenerateRivers")!.run();
+    document.querySelector<HTMLInputElement>("#regenerateDontAsk")!.checked = true;
+    dialogButton("Cancel").click();
+    MAP_COMMANDS.find(command => command.id === "regenerateRivers")!.run();
+    expect(mocks.regenerate).not.toHaveBeenCalled();
   });
 
   it("skips only the regeneration Do not ask again was ticked on", () => {
@@ -173,14 +187,15 @@ describe("shared regeneration commands", () => {
     });
   });
 
-  it("regenerates burgs, then markets, then production", () => {
+  it("regenerates burgs, counts the states' people, then markets, then production", () => {
     const order: string[] = [];
     Object.assign(Burgs, { regenerate: () => order.push("burgs") });
+    Object.assign(States, { collectStatistics: () => order.push("statistics") });
     Object.assign(Markets, { regenerate: () => order.push("markets") });
     Object.assign(Production, { regenerate: () => order.push("production") });
     MAP_COMMANDS.find(command => command.id === "regenerateBurgs")!.run();
     dialogButton("Proceed").click();
-    expect(order).toEqual(["burgs", "markets", "production"]);
+    expect(order).toEqual(["burgs", "statistics", "markets", "production"]);
   });
 
   it("offers every built-in layers preset as a command", () => {

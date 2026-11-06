@@ -744,6 +744,14 @@ describe("TradeModule", () => {
       expect(tradeModule.isImport(remoteBuy)).toBe(false);
     });
 
+    it("a burg that lost its market keeps paying its tariffs to its own state", () => {
+      setupImport();
+      const paid: Deal = [2, 1, 0, DEAL_KINDS.input, 1, 1, 0, 0.5, 0];
+      globalThis.pack.cells.market[globalThis.pack.burgs[2].cell] = 0;
+      expect(tradeModule.getTaxStates(paid).tariffState).toBe(globalThis.pack.burgs[2].state);
+      expect(tradeModule.isImport(paid)).toBe(true);
+    });
+
     it("sell() to another state's market pays that state's tariff off the revenue: an import there", () => {
       const { exporter, burg, good } = setupImport([
         { i: 0 },

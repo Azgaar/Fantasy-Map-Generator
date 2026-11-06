@@ -654,7 +654,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     }
   }
 
-  if (isOlderThan("1.652.0")) {
+  if (isOlderThan("1.65.2")) {
     // remove style to unhide layers
     selectInSvg("#rivers").attr("style", null);
     selectInSvg("#borders").attr("style", null);

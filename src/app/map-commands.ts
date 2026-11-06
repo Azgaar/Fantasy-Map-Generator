@@ -839,8 +839,7 @@ function confirmRegeneration(id: string, action: () => void): void {
     onConfirm: () => {
       remember();
       applyRegeneration(action);
-    },
-    onCancel: remember
+    }
   });
 }
 
@@ -910,12 +909,14 @@ function regenerateRoutes(): void {
 
 function regenerateRivers(): void {
   Rivers.regenerate();
+  Burgs.syncPorts();
   Routes.sync(); // its river edges follow the rivers
-  Layers.draw("rivers");
+  Layers.draw("rivers", "burgIcons");
 }
 
 function regeneratePopulation(): void {
   Population.regenerate();
+  States.collectStatistics();
   Layers.draw("population", "goods");
 }
 
@@ -943,6 +944,7 @@ function regenerateStates(): void {
 
 function regenerateBurgs(): void {
   Burgs.regenerate();
+  States.collectStatistics(); // the run reads the states' people
   Markets.regenerate(); // the market centers were burgs
   Production.regenerate();
   Layers.draw("burgIcons", "labels", "routes", "population", "markets", "goods", "trade", "emblems");

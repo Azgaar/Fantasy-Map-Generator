@@ -344,13 +344,13 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.zones = data[38] ? JSON.parse(data[38]) : [];
     pack.cells.biome = Uint8Array.from(data[16].split(","), Number);
     pack.cells.burg = Uint16Array.from(data[17].split(","), Number);
-    pack.cells.conf = Uint8Array.from(data[18].split(","), Number);
+    pack.cells.conf = Uint16Array.from(data[18].split(","), Number);
     pack.cells.culture = Uint16Array.from(data[19].split(","), Number);
     pack.cells.fl = Uint16Array.from(data[20].split(","), Number);
     pack.cells.pop = Float32Array.from(data[21].split(","), Number);
     pack.cells.r = Uint16Array.from(data[22].split(","), Number);
     // data[23] had deprecated cells.road
-    pack.cells.s = Uint16Array.from(data[24].split(","), Number);
+    pack.cells.s = Int16Array.from(data[24].split(","), Number); // old files hold wrapped negatives, which wrap back
     pack.cells.state = Uint16Array.from(data[25].split(","), Number);
     pack.cells.religion = data[26]
       ? Uint16Array.from(data[26].split(","), Number)

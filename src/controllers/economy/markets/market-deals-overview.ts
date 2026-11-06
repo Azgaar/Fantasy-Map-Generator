@@ -256,7 +256,7 @@ function renderMarketDealsPage(view: TableView<MarketDealRow>): void {
 
 function renderDealLine(row: MarketDealRow): string {
   const { deal, good, side, burg, units, net, carriage, tax, tariff, income, formula } = row;
-  const context = getTradeContext(deal[0], deal[1], deal[2], deal[3]);
+  const context = getTradeContext(deal[0], deal[1], deal[2], deal[3], deal[8]);
   const { isImport } = context;
   const cellTips = tradeCellTips({ good, units, net, carriage, tax, tariff, formula, ...context });
   const isSale = side === "sell";

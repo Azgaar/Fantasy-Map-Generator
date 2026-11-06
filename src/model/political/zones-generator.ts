@@ -1,4 +1,5 @@
 import { mean } from "d3";
+import { Goods } from "@/model/economy/goods-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { DEAL_KINDS } from "@/model/economy/trade";
 import { Districts } from "@/model/political/districts";
@@ -138,6 +139,7 @@ class ZonesModule {
 
   regenerate(globalModifier = 1): void {
     this.generate(globalModifier);
+    Goods.remapEntityMultipliers("zone", new Map()); // zones are all new
   }
 
   generate(globalModifier = 1) {
@@ -151,7 +153,9 @@ class ZonesModule {
     });
 
     for (const zone of pack.zones) {
-      if (zone && !zone.tags) zone.tags = [];
+      if (!zone) continue;
+      zone.tags ??= [];
+      zone.cells = [...new Set(zone.cells)]; // a spreading zone can reach a cell twice
     }
   }
 

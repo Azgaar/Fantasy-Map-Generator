@@ -35,7 +35,7 @@ class DevelopmentGenerator {
       if (cells.h[cell] < 20) continue;
       const biome = biomes[cells.biome[cell]]?.development ?? 0;
       const water = (cells.r[cell] ? RIVER : 0) + (cells.harbor[cell] ? COAST : 0);
-      field[cell] = levels[cells.culture[cell]] + biome + water;
+      field[cell] = (levels[cells.culture[cell]] ?? levels[0]) + biome + water; // a damaged file's culture repairs to 0
     }
     const smooth = this.smooth(field);
 

@@ -163,7 +163,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             Goods.setDevelopment(id, development);
             Goods.setUnit(id, unit);
             Goods.setProduction(id, {
-              deposits,
+              deposits: distribution && deposits[1] ? deposits : null, // nothing to place otherwise
               demandCoverage: demandCoverageState,
               multipliers: buildFinalMultipliers() ?? null,
               biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : null,
@@ -191,7 +191,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
               value,
               carriage,
               development: development || undefined,
-              deposits,
+              deposits: distribution && deposits[1] ? deposits : undefined, // nothing to place otherwise
               unit,
               demandCoverage: demandCoverageState,
               multipliers: buildFinalMultipliers(),
@@ -300,9 +300,9 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
           <label data-tip="${t("Deposits placed on the map, minimum to maximum")}">${t("Deposits")}</label>
           <span class="ge-inline">
-            <input id="newGoodDepositsMin" class="ge-num" type="number" min="0" step="1" value="${editedGood?.deposits?.[0] ?? 1}" />
+            <input id="newGoodDepositsMin" class="ge-num" type="number" min="0" step="1" value="${editedGood ? (editedGood.deposits?.[0] ?? 0) : 1}" />
             –
-            <input id="newGoodDepositsMax" class="ge-num" type="number" min="0" step="1" value="${editedGood?.deposits?.[1] ?? 2}" />
+            <input id="newGoodDepositsMax" class="ge-num" type="number" min="0" step="1" value="${editedGood ? (editedGood.deposits?.[1] ?? 0) : 2}" />
             ${t("on the map")}
           </span>
           <span></span>

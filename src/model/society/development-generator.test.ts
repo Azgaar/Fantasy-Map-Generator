@@ -32,6 +32,13 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
+it("treats a culture missing from a damaged file as Wildlands, not as no development", () => {
+  stubMap();
+  pack.cells.culture[0] = 9;
+  Development.generate();
+  expect(Array.from(pack.cells.development!).slice(0, 2).every(Boolean)).toBe(true);
+});
+
 it("leaves water undeveloped", () => {
   stubMap();
   Development.generate();

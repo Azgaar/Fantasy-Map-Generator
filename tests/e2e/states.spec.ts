@@ -236,7 +236,8 @@ test.describe("Diplomacy", () => {
     ids = await page.evaluate(() => {
       const states = pack.states.filter(state => state.i && !state.removed);
       for (const a of states) for (const b of states) a.diplomacy![b.i] = a.i === b.i ? "x" : "Neutral";
-      const [a, b, c] = states;
+      // the largest, as the dialogs can cover a small state whole
+      const [a, b, c] = [...states].sort((x, y) => y.cells! - x.cells!);
       a.diplomacy![b.i] = b.diplomacy![a.i] = "Rival";
       b.diplomacy![c.i] = c.diplomacy![b.i] = "Ally";
       pack.states[0].diplomacy = [];

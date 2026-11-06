@@ -840,6 +840,8 @@ class BurgModule {
     const newBurgs: Burg[] = [0 as unknown as Burg];
     const burgsTree = quadtree<[number, number]>();
     const oldCells = burgs.filter(burg => burg.i && !burg.removed).map(burg => burg.cell);
+    const seatOf = new Map(provinces.filter(province => province.i && province.burg).map(p => [p.burg, p]));
+    const newIds = new Map<number, number>();
     cells.burg = new Uint16Array(cells.i.length);
     states
       .filter(state => state.i)
@@ -855,6 +857,9 @@ class BurgModule {
     // locked burgs stay, renumbered
     for (const burg of burgs.filter(burg => burg.i && !burg.removed && burg.lock)) {
       const newId = newBurgs.length;
+      newIds.set(burg.i!, newId);
+      const seat = seatOf.get(burg.i!);
+      if (seat) seat.burg = newId;
       burg.i = newId;
       newBurgs.push(burg);
       burgsTree.add([burg.x, burg.y]);
@@ -865,6 +870,8 @@ class BurgModule {
         states[burg.state].center = burg.cell;
       }
     }
+
+    for (const market of pack.markets ?? []) market.centerBurgId = newIds.get(market.centerBurgId) ?? 0;
 
     const score = new Int16Array(cells.s.map(value => value * Math.random()));
     const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]);
@@ -915,7 +922,34 @@ class BurgModule {
 
     for (const cell of oldCells) Development.vacate(cell); // land a dropped burg stood on alone
     this.specify();
+    this.seatProvinces();
     Routes.regenerate();
+  }
+
+  /** A province without a seat takes its capital, or else its biggest burg */
+  private seatProvinces(): void {
+    const { cells, provinces, burgs } = pack;
+    const seats: Burg[] = [];
+    for (const burg of burgs) {
+      if (!burg.i || burg.removed) continue;
+      const province = cells.province[burg.cell];
+      const seat = seats[province];
+      const rank = (Number(burg.capital) || 0) - (Number(seat?.capital) || 0);
+      if (!seat || rank > 0 || (!rank && burg.population! > seat.population!)) seats[province] = burg;
+    }
+    for (const province of provinces) {
+      const seat = seats[province.i];
+      if (!province.i || province.removed || province.burg || !seat) continue;
+      province.burg = seat.i!;
+      province.center = seat.cell;
+    }
+  }
+
+  /** Ports on water that is gone stop being ports, as when rivers change */
+  syncPorts(): void {
+    for (const burg of pack.burgs) {
+      if (burg.i && !burg.removed && burg.port) burg.port = this.getPortWater(burg.cell);
+    }
   }
 
   changeGroup(burg: Burg, group: string | null = null) {

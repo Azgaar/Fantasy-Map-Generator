@@ -5,6 +5,12 @@ import { Prosperity } from "./prosperity";
 import { StateEconomy } from "./state-economy";
 import { DEAL_KINDS } from "./trade";
 
+it("counts a state's markets when its fee is zero", () => {
+  globalThis.pack.markets = [{ i: 1, centerBurgId: 1, goods: {} }] as never;
+  globalThis.pack.states = [{ i: 0 }, { i: 1, economy: { adjustments: [], pocketed: 0 } }] as never;
+  expect(StateEconomy.getBudget(1).markets).toBe(1);
+});
+
 beforeEach(() => {
   globalThis.pack = {
     burgs: [{ i: 0 }, { i: 1, state: 1 }, { i: 2, state: 2 }],

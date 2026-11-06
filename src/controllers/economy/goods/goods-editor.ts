@@ -278,6 +278,7 @@ function renderDialog(): void {
 function getGoodsData(): Good[] {
   production = getProduction();
   stockData = getAllStockData();
+  depositsByGood = countDeposits(); // the Deposits column sorts by it
   const goods = options.map.goods.filter(good => Tags.matches(filterState.search, good.name, good.tags));
   return sortDataByColumns(dialogId, goods, columns);
 }
@@ -289,7 +290,6 @@ function onSearchInput(event: Event): void {
 }
 
 function renderGoodsPage(view: TableView<Good>) {
-  depositsByGood = countDeposits();
   const body = ensureEl("goodsBody");
   const percentage = body.dataset.type === "percentage";
   const totalProduced = Object.values(production).reduce((sum, value) => sum + value.burg + value.cell, 0);
@@ -387,11 +387,15 @@ function getProducers(goodId: number): Producer[] {
   const { cells, states, provinces, burgs } = pack;
   const byState: number[] = [];
   const byProvince: number[] = [];
+  let neutralCell = 0; // neutrals have no center of their own to zoom to
   Production.getRuralOutput().forEach((produced, cellId) => {
     const units = produced[goodId];
-    if (!units) return;
-    byState[cells.state[cellId]] = (byState[cells.state[cellId]] || 0) + units;
-    const provinceId = cells.province?.[cellId];
+    if (!units || !cells.market[cellId]) return;
+    const workingCell = Production.getWorkingCell(cellId);
+    const stateId = cells.state[workingCell];
+    byState[stateId] = (byState[stateId] || 0) + units;
+    if (!stateId) neutralCell ||= workingCell;
+    const provinceId = cells.province?.[workingCell];
     if (provinceId) byProvince[provinceId] = (byProvince[provinceId] || 0) + units;
   });
 
@@ -400,7 +404,7 @@ function getProducers(goodId: number): Producer[] {
     units.flatMap((amount, id) => {
       const region = list[id];
       if (!amount || !region || region.removed) return [];
-      const [x, y] = region.pole ?? cells.p[region.center ?? 0];
+      const [x, y] = region.pole ?? cells.p[region.center ?? neutralCell];
       return [{ type, name: region.name, units: amount, x, y }];
     });
   const burgProducers = burgs.flatMap(burg => {
@@ -521,8 +525,10 @@ function getProduction() {
     production[goodId][type] += amount;
   };
 
-  for (const produced of Production.getRuralOutput())
+  Production.getRuralOutput().forEach((produced, cellId) => {
+    if (!pack.cells.market[cellId]) return; // out of every market, it reaches no one
     for (const goodId in produced) addProduction(Number(goodId), produced[goodId] || 0, "cell");
+  });
 
   // burg production
   for (const burg of pack.burgs) {
@@ -764,6 +770,7 @@ function updateDisplayAllCheckbox() {
 function removeGood(good: Good) {
   const message = `${t("Are you sure you want to remove the resource?")}<br>${t("This action cannot be reverted")}`;
   const onConfirm = () => {
+    Dialog.close("goodEditor"); // it may be editing this good, or a recipe using it
     Goods.remove(good.i);
     States.pruneTariffs({ goods: [good.i] });
     Layers.draw("goods", "trade");

@@ -1,6 +1,6 @@
 import { sum } from "d3";
 import { PROSPERITY_LEVEL_LABELS } from "@/data/id-labels";
-import type { Good } from "@/model/economy/goods-generator";
+import { type Good, Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { type Living, Prosperity, type ProsperityLevel } from "@/model/economy/prosperity";
 import { type Deal, type DealKind, Trade, type Transaction } from "@/model/economy/trade";
@@ -164,14 +164,18 @@ export const tradeColumnTips = () => ({
 });
 
 /** A burg's trade with a market: its route, whether it is an import, the states its taxes go to */
-export function getTradeContext(burgId: number, marketId: number, goodId: number, kind: DealKind) {
+export function getTradeContext(burgId: number, marketId: number, goodId: number, kind: DealKind, carriage = 0) {
   const burg = pack.burgs[burgId];
   const market = Markets.get(marketId);
   const deal: Deal = [burgId, marketId, goodId, kind, 0, 0, 0, 0, 0];
   const { taxState, tariffState } = Trade.getTaxStates(deal);
+  const carriageFactor = market && burg ? Trade.getCarriageFactor(market, burg) : 1; // dearer from another state's market
+  const measured = market && burg ? Trade.getDecimas(market, burg) : 0; // carried between the market and the burg
+  // a route removed since the run: the distance the deal paid for
+  const paidFor = carriage / ((Goods.get(goodId)?.carriage || 0) * carriageFactor);
   return {
-    decimas: market && burg ? Trade.getDecimas(market, burg) : 0, // carried between the market and the burg
-    carriageFactor: market && burg ? Trade.getCarriageFactor(market, burg) : 1, // dearer from another state's market
+    decimas: Number.isFinite(measured) ? measured : Number.isFinite(paidFor) ? paidFor : 0,
+    carriageFactor,
     isImport: Trade.isImport(deal),
     tariffRate: Trade.getDealTariffRate(deal),
     taxStateId: taxState,

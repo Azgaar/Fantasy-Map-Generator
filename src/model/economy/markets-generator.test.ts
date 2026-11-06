@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Burg } from "@/model/political/burgs-generator";
 import { type Market, MarketsModule } from "./markets-generator";
 import { DEAL_KINDS } from "./trade";
@@ -44,6 +44,15 @@ describe("MarketsModule", () => {
 
       expect(marketsModule.addMarket(1)).toBeNull();
       expect(globalThis.pack.markets).toHaveLength(1);
+    });
+
+    it("regenerate() takes the plaza from a former center", () => {
+      const former = { i: 1, cell: 0, plaza: 1 } as Burg;
+      globalThis.pack.burgs = [{ i: 0 } as Burg, former];
+      globalThis.pack.markets = [{ i: 1, centerBurgId: 1, color: "#ff0000", goods: {} }];
+      vi.spyOn(marketsModule, "generate").mockReturnValue([]);
+      marketsModule.regenerate();
+      expect(former.plaza).toBe(0);
     });
 
     it("removeMarket() should drop only the removed market's deals, cells and burg link", () => {

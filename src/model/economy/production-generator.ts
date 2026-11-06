@@ -162,7 +162,7 @@ export class ProductionModule {
     }
   }
 
-  private getTurnOrder(burgs: Burg[]): Burg[] {
+  getTurnOrder(burgs: Burg[]): Burg[] {
     const development = pack.cells.development;
     const weight = (burg: Burg) => Math.sqrt(burg.population || 0) * development[burg.cell];
     return burgs.sort((a, b) => weight(b) - weight(a));

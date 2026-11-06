@@ -1067,7 +1067,11 @@ function togglePercentageMode(): void {
     const totalBurgs = +ensureEl("statesFooterBurgs").textContent;
     const totalArea = +ensureEl("statesFooterArea").dataset.area!;
     const totalPopulation = +ensureEl("statesFooterPopulation").dataset.population!;
-    const totalTreasury = pack.states.reduce((sum, s) => sum + (s.i && !s.removed ? s.economy.treasury || 0 : 0), 0);
+    // balances are signed: a share of their total size keeps each one's sign, and the total can be 0
+    const totalTreasury = pack.states.reduce(
+      (sum, s) => sum + (s.i && !s.removed ? Math.abs(s.economy.treasury || 0) : 0),
+      0
+    );
     const world = StateEconomy.getWorld();
     const totalCells = pack.states.reduce((sum, s) => sum + (s.i && !s.removed ? s.cells || 0 : 0), 0);
 
@@ -1080,7 +1084,8 @@ function togglePercentageMode(): void {
         el.querySelector<HTMLElement>(".stateArea")!.textContent = `${rn((+area! / totalArea) * 100)}%`;
         el.querySelector<HTMLElement>(".statePopulation")!.textContent =
           `${rn((+population! / totalPopulation) * 100)}%`;
-        el.querySelector<HTMLElement>(".stateTreasury")!.textContent = `${rn((+treasury! / totalTreasury) * 100, 2)}%`;
+        el.querySelector<HTMLElement>(".stateTreasury")!.textContent =
+          `${rn((+treasury! / (totalTreasury || 1)) * 100, 2)}%`;
         // product is a share of the world's; wealth and prosperity are against the world's average
         const { prosperity, product, wealth } = el.dataset;
         const share = (value: string | undefined, total: number | null | undefined) =>
@@ -1272,9 +1277,11 @@ function randomizeStatesExpansion(): void {
     if (!s.i || s.removed) return;
     const expansionism = rn(Math.random() * 4 + 1, 1);
     s.expansionism = expansionism;
-    (
-      ensureEl("statesBodySection").querySelector(`div.states[data-id='${s.i}'] input.statePower`) as HTMLInputElement
-    ).value = String(expansionism);
+    // a filtered or paged list does not show every state
+    const row = ensureEl("statesBodySection").querySelector<HTMLInputElement>(
+      `div.states[data-id='${s.i}'] input.statePower`
+    );
+    if (row) row.value = String(expansionism);
   });
   recalculateStates(true);
 }

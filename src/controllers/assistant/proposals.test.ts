@@ -56,6 +56,18 @@ beforeEach(() => {
   } as unknown as typeof pack;
 });
 
+it("records development changes per cell, and undo restores them", async () => {
+  await import("@/model/society/development-generator");
+  const development = Uint8Array.from([10, 20]);
+  pack.cells = { i: [0, 1], h: [30, 30], pop: [1, 1], burg: [0, 0], development } as never;
+  const proposal = propose("Develop", [{ op: "Development.setCells", args: [50, [1]] }], 1, MAP) as Proposal;
+  expect(proposal.change).toEqual([expect.objectContaining({ field: "development", after: { 1: 50 } })]);
+  expect(apply(proposal, MAP)).toBeTruthy();
+  expect(Array.from(pack.cells.development!)).toEqual([10, 50]);
+  expect(undo(proposal, MAP)).toBeTruthy();
+  expect(Array.from(pack.cells.development!)).toEqual([10, 20]);
+});
+
 it("previews a batch with its side effects and leaves the map untouched", () => {
   const map = JSON.stringify(pack);
   const proposal = proposeOk([rename(1, "Saltmere"), rename(2, "Gull")]);

@@ -1,6 +1,18 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { Goods } from "./goods-generator";
 
+describe("remapEntityMultipliers", () => {
+  it("moves a kept entity's multiplier to its new id and drops the rest", () => {
+    options.map.goods = [
+      { i: 1, multipliers: { state: { 2: 0, 5: 3 }, biome: { 1: 2 } } },
+      { i: 2, multipliers: { state: { 5: 3 } } }
+    ] as never;
+    Goods.remapEntityMultipliers("state", new Map([[2, 1]]));
+    expect(options.map.goods[0].multipliers).toEqual({ state: { 1: 0 }, biome: { 1: 2 } });
+    expect(options.map.goods[1].multipliers).toEqual({});
+  });
+});
+
 describe("GoodsModule", () => {
   let goodsModule: any;
 

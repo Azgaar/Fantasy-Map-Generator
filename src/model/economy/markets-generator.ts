@@ -42,6 +42,11 @@ export class MarketsModule {
   revision = 0; // bumped when a market is added or moved without replacing pack.markets
 
   regenerate(): Market[] {
+    // the old centers' plazas go with them
+    for (const { centerBurgId } of pack.markets ?? []) {
+      const center = pack.burgs[centerBurgId];
+      if (center) center.plaza = 0;
+    }
     return this.generate(true);
   }
 

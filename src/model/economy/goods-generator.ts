@@ -205,6 +205,19 @@ export class GoodsModule {
     for (const good of goods) for (const dimension of ENTITY_MULTIPLIERS) delete good.multipliers?.[dimension];
   }
 
+  /** Regeneration renumbers or drops entities: their multipliers follow the kept ones, the rest go */
+  remapEntityMultipliers(dimension: (typeof ENTITY_MULTIPLIERS)[number], newIds: Map<number, number>): void {
+    let changed = false;
+    for (const { multipliers } of options.map.goods) {
+      if (!multipliers?.[dimension]) continue;
+      const kept = Object.entries(multipliers[dimension]).filter(([id]) => newIds.has(+id));
+      multipliers[dimension] = Object.fromEntries(kept.map(([id, value]) => [newIds.get(+id), value]));
+      if (!kept.length) delete multipliers[dimension];
+      changed = true;
+    }
+    if (changed) Options.save();
+  }
+
   getMethods(cellId = 0) {
     return {
       random: (number: number) => number >= 100 || (number > 0 && number / 100 > Math.random()),

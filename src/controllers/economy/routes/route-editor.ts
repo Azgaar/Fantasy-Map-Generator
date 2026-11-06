@@ -235,7 +235,7 @@ function handleControlPointClick(this: SVGCircleElement): void {
     drawCells(route.points);
     redrawRoute(route);
     redrawRouteShape(pack.routes.find((r: Route) => r.i === newRouteId)!);
-    Layers.draw("trade");
+    Layers.draw("goods", "trade");
     ensureEl("routeSplit").classList.remove("pressed");
   }
 
