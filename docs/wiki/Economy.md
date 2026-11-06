@@ -18,7 +18,7 @@ The economy is a **snapshot of one typical day**, not a running simulation. Ever
 2. **Markets** colors the map by trade region. Click a market to see its stock and local prices.
 3. **Goods** colors the cells by what they produce, marks deposits with icons, and shows each burg as a pie of what it makes. Click a burg pie's ring to open its **Economy Overview**; its center is the burg icon, which opens the _Burg Editor_.
 4. **Trade** animates the day's trade: wagons on roads, ships at sea. Click a moving marker to see what the burg sells or buys there and how the price adds up.
-5. Open _Tools_ → _States_ and click a state's **Prosperity** to open its **Economy** dialog. Show the **Balance** column from the column menu to see which states got rich.
+5. Open _Tools_ → _States_ and click a state's **Prosperity** to open its **Economy** dialog.
 
 # Goods
 

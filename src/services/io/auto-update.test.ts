@@ -1341,27 +1341,27 @@ describe("v1.157.0 carriage per good", () => {
 });
 
 describe("v1.157.0 deposit counts", () => {
-  it("thins old deposits by their good's chance and reads the good's range off the map", async () => {
+  it("keeps every old deposit and reads the good's range off the map", async () => {
     const cells = Array.from({ length: 900 }, (_, i) => i);
+    const deposits = Uint16Array.from(cells, i => (i < 400 ? 1 : i < 800 ? 2 : i < 850 ? 4 : 0));
     globalThis.pack = {
       features: [],
-      cells: { i: cells, good: Uint16Array.from(cells, i => (i < 450 ? 1 : 2)) },
+      cells: { i: cells, good: deposits.slice() },
       goods: [
         { i: 1, name: "Rare ore", value: 5, carriage: 1, chance: 3, distribution: "true" },
         { i: 2, name: "Common clay", value: 1, carriage: 1, chance: 18, distribution: "true" },
-        { i: 3, name: "Gold", value: 15, carriage: 2, chance: 2, distribution: "true" } // none left on the map
+        { i: 3, name: "Gold", value: 15, carriage: 2, chance: 2, distribution: "true" }, // none on the map
+        { i: 4, name: "Painted", value: 1, carriage: 1, chance: null } // placed by hand only
       ]
     } as unknown as typeof pack;
 
     await resolveVersionConflicts("1.156.0", []);
 
-    const kept = (id: number) => Array.from(pack.cells.good).filter(good => good === id).length;
-    expect(kept(1)).toBeGreaterThan(50); // a sixth of 450
-    expect(kept(1)).toBeLessThan(100);
-    expect(kept(2)).toBe(450);
-    expect(pack.goods[0].deposits).toEqual([Math.round(kept(1) * 0.75), Math.round(kept(1) * 1.25)]);
-    expect(pack.goods[1].deposits).toEqual([338, 563]);
+    expect(pack.cells.good).toEqual(deposits);
+    expect(pack.goods[0].deposits).toEqual([300, 500]);
+    expect(pack.goods[1].deposits).toEqual([300, 500]);
     expect(pack.goods[2].deposits).toEqual(Goods.getDefaultDeposits("Gold"));
+    expect(pack.goods[3].deposits).toBeUndefined();
     expect(pack.goods.some(good => "chance" in good)).toBe(false);
   });
 });

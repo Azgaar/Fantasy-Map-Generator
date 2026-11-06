@@ -2206,17 +2206,9 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       good.development ??= Goods.getDefaultDevelopment(good.name);
     }
     function migrateDeposits() {
-      const { cells } = pack;
-      const goods = pack.goods as (Good & { chance?: number })[];
       const counts: number[] = [];
-      for (const cellId of cells.i) {
-        const good = goods.find(good => good.i === cells.good?.[cellId]);
-        if (!good) continue;
-        const keep = Math.min(1, (good.chance ?? 0) / 18); // about one in six: as sparse as new maps
-        if (((cellId * 2654435761) >>> 0) / 2 ** 32 < keep) counts[good.i] = (counts[good.i] || 0) + 1;
-        else cells.good[cellId] = 0;
-      }
-      for (const good of goods) {
+      for (const goodId of pack.cells.good) counts[goodId] = (counts[goodId] || 0) + 1;
+      for (const good of pack.goods as (Good & { chance?: number })[]) {
         const count = counts[good.i] || 0;
         if (good.chance && good.distribution)
           good.deposits = count
