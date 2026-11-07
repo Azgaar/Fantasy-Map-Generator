@@ -68,10 +68,9 @@ class StabilityModule {
     if (!stateId || !state || state.removed || accounts?.prosperity == null) return [];
     this.index();
 
-    const { scale, urbanization } = options.map.units.population;
-    const people = ((state.rural || 0) + (state.urban || 0) * urbanization.rate) * scale;
+    const points = (state.rural || 0) + (state.urban || 0) * options.map.units.population.urbanization.rate;
     const troops = (state.military ?? []).reduce((sum, regiment) => sum + (regiment.a || 0), 0);
-    const army = people ? Math.min(1, troops / people / ARMY_SHARE) : 0;
+    const army = points ? Math.min(1, troops / points / ARMY_SHARE) : 0;
     const shared = {
       base: BASE,
       court: COURT * States.getProvision(state, "court"),
@@ -96,6 +95,10 @@ class StabilityModule {
       );
       return { district, stability, parts };
     });
+  }
+
+  forget(): void {
+    this.sources = [];
   }
 
   /** Each district's prosperity: its townspeople's and rural people's by their numbers */

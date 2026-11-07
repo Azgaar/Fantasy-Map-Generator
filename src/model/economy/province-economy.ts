@@ -58,6 +58,10 @@ class ProvinceEconomyModule {
     return this.accounts.get(provinceId) ?? null;
   }
 
+  forget(): void {
+    this.sources = [];
+  }
+
   private index(): void {
     const sources = [pack.deals, pack.provinces];
     if (sources.every((source, k) => source === this.sources[k])) return;

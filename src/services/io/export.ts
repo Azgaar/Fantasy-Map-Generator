@@ -532,6 +532,14 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
       if (rose) cloneDefs.appendChild(rose.cloneNode(true));
     }
 
+    // add journey markers
+    if (cloneEl.getElementById("journeys")?.hasChildNodes()) {
+      for (const id of ["journey-start", "journey-arrow"]) {
+        const marker = svgDefs.getElementById(id);
+        if (marker) cloneDefs.appendChild(marker.cloneNode(true));
+      }
+    }
+
     // add grid pattern
     if (cloneEl.getElementById("gridOverlay")?.hasChildNodes()) {
       const type = styles.grid.options.type || "pointyHex";

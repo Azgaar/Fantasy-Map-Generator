@@ -159,6 +159,7 @@ class MapRestorationModule {
     const strayed = this.restoreBurgs(parent, projection, scale);
     this.restoreStates(parent, projection, strayed);
     this.restoreProvinces(parent, projection, strayed);
+    this.reconnectBurgs();
     States.findNeighbors();
     States.collectStatistics();
     this.restoreReligions(parent, projection);
@@ -174,6 +175,13 @@ class MapRestorationModule {
     Features.defineNames();
     this.restoreDevelopment(parent, links);
     this.restoreEconomy(parent);
+  }
+
+  /** A burg placed off the restored roads cannot trade: it takes a road to them */
+  private reconnectBurgs(): void {
+    for (const burg of pack.burgs) {
+      if (burg.i && !burg.removed && !Routes.isConnected(burg.cell)) Routes.connect(burg.cell);
+    }
   }
 
   private linkCells(parent: PackedGraph, inverse: Projection, radius: number): CellLinks {
@@ -733,6 +741,7 @@ class MapRestorationModule {
 
   private restoreStates(parent: PackedGraph, projection: Projection, strayed: Set<number>) {
     const { cells, burgs } = pack;
+    const nearestLand = createAvailableLandCellFinder({ h: cells.h, p: cells.p });
     for (const state of parent.states) {
       if (!state.i || state.removed) continue;
       const capital = burgs[state.capital];
@@ -784,7 +793,9 @@ class MapRestorationModule {
       const restoreRegiment = (regiment: Regiment): Regiment => {
         const [x, y] = projection(regiment.x, regiment.y);
         const home = this.projectPoint(parent, regiment.cell, projection);
-        const cell = home && this.isInMap(...home) ? this.findCell(...home) : this.findCell(x, y);
+        const kept = home && this.isInMap(...home) ? this.findCell(...home) : this.findCell(x, y);
+        // the land under a land regiment can have gone under the sea
+        const cell = !regiment.n && cells.h[kept] < 20 ? (nearestLand(x, y) ?? kept) : kept;
         const [baseX, baseY] = projection(regiment.bx, regiment.by);
         const [bx, by] = this.isInMap(baseX, baseY) ? [rn(baseX, 2), rn(baseY, 2)] : cells.p[cell];
         const children = regiment.children?.map(restoreRegiment);

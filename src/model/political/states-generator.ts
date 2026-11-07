@@ -4,6 +4,7 @@ import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
 import type { Label } from "@/model/annotations/labels-generator";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { StateEconomy } from "@/model/economy/state-economy";
 import { Trade } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Feature } from "@/model/physical/features-generator";
@@ -254,7 +255,10 @@ class StatesModule {
     const { warning, error, states } = this.recreate();
     if (error || !states) return { warning, error };
 
-    Goods.remapEntityMultipliers("state", new Map(previous.map((id, index) => [id, index + 1])));
+    Goods.remapEntityMultipliers(
+      "state",
+      new Map([[0, 0], ...previous.map((id, index): [number, number] => [id, index + 1])])
+    );
     pack.states = states;
     this.expandStates();
     this.normalize();
@@ -629,6 +633,7 @@ class StatesModule {
         states[s].burgs!++;
       }
     }
+    StateEconomy.forget();
   }
 
   generateCampaign(state: State): Campaign[] {
@@ -1340,6 +1345,8 @@ class StatesModule {
       cells.province[cell] = 0;
     }
     for (const burg of burgs) if (burg?.i && !burg.removed && owned.has(burg.cell)) burg.state = i;
+    for (const province of pack.provinces ?? [])
+      if (province.i && !province.removed && province.burg === capitalId) Burgs.seatProvince(province); // it left them
     capital.capital = 1;
     Burgs.changeGroup(capital, null);
 
@@ -1437,10 +1444,26 @@ class StatesModule {
       if (ids.has(owner)) pack.cells.state[cell] = rulingStateId;
     });
     this.pruneTariffs({ states: ids });
+    this.movePollTax(rulingStateId, ids);
     this.findNeighbors();
     this.collectStatistics();
     this.getPoles();
     if (asProvinces) Provinces.getPoles();
+  }
+
+  /** Last run's rural poll tax, kept per market by state, follows the lands to their new ruler */
+  private movePollTax(rulingStateId: number, stateIds: Set<number>): void {
+    for (const market of pack.markets ?? []) {
+      const rural = market?.rural;
+      if (!rural?.pollTax?.some(([stateId]) => stateIds.has(stateId))) continue;
+      const rows = new Map<number, [number, number, number]>();
+      for (const [id, owed, paid] of rural.pollTax) {
+        const stateId = stateIds.has(id) ? rulingStateId : id;
+        const row = rows.get(stateId) ?? [stateId, 0, 0];
+        rows.set(stateId, [stateId, row[1] + owed, row[2] + paid]);
+      }
+      rural.pollTax = [...rows.values()];
+    }
   }
 
   /** A state's lands become one new province of the ruling state; its own provinces are removed */

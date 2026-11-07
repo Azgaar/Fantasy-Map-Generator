@@ -1693,7 +1693,10 @@ class CulturesGenerator {
     const previousIds = kept.map(culture => culture.i!);
     this.generate();
     this.expand();
-    Goods.remapEntityMultipliers("culture", new Map(kept.map((culture, at) => [previousIds[at], culture.i!])));
+    Goods.remapEntityMultipliers(
+      "culture",
+      new Map([[0, 0], ...kept.map((culture, at): [number, number] => [previousIds[at], culture.i!])])
+    );
 
     pack.states = pack.states.map(state =>
       !state.i || state.removed ? state : { ...state, culture: pack.cells.culture[state.center] }

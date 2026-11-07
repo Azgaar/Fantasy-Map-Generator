@@ -245,10 +245,9 @@ function getMarketTip(target: SVGElement): string | undefined {
   if (!marketEl) return undefined;
 
   const market = Markets.get(Number(marketEl.dataset.id));
-  const centerBurg = market && pack.burgs[market.centerBurgId];
-  if (!centerBurg) return undefined;
+  if (!market) return undefined;
 
-  return withHint(t("{{burg}} market", { burg: centerBurg.name }), t("Click to view"));
+  return withHint(t("{{burg}} market", { burg: Markets.getName(market) }), t("Click to view"));
 }
 
 /** The displayed goods as badged amounts, the most valuable first, as the overview colors cells */

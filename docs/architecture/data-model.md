@@ -236,7 +236,7 @@ States (countries) data is stored as an array of objects with strict element ord
 - `state`: `number` - regiment state id
 - `name`: `string` - regiment name
 - `n`: `number` - `1` if regiment is a separate unit (like naval units), `0` is not
-- `u`: `Record<unitName, number>` - regiment content object
+- `u`: `Record<unitName, number>` - regiment content object, in population points like its total `a`; `Military.getTroops` shows them as troops
 - `note`: `string` - optional. The user's note (legend) about the regiment, as html. Removed with it
 
 ## Provinces

@@ -7,6 +7,7 @@ import { Temperature } from "@/model/physical/temperature-generator";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 
 import { bindPinIcons } from "@/ui/pin-icons";
 import { t } from "@/utils/i18n";
@@ -136,6 +137,7 @@ const TEMPLATE = /* html */ `
 `;
 
 function open(): void {
+  if (options.app.mode) return;
   Dialog.closeAll("#unitsEditor, .stable");
   renderDialog();
 
@@ -275,6 +277,8 @@ function onUnitChange(event: Event): void {
     case "populationRateInput":
       units.population.scale = +value;
       Pins.set("populationRate", +value);
+      Layers.draw("military"); // regiments show their points as troops
+      refreshEditors();
       break;
 
     case "urbanizationInput":

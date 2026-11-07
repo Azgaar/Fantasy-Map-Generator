@@ -325,8 +325,11 @@ describe("Burgs: capital, move, remove", () => {
   it("move takes a free land cell and keeps a capital in its state and province", () => {
     vi.spyOn(Pack, "requireCell").mockImplementation((x: unknown) => x as number);
     const portWater = vi.spyOn(Burgs, "getPortWater").mockReturnValue(0);
+    const connect = vi.spyOn(Routes, "connect").mockReturnValue(undefined);
+    pack.cells.routes = {};
     pack.burgs[2].port = 7;
     Burgs.move(2, 3, 5);
+    expect(connect).toHaveBeenCalledWith(3); // off the network it could not trade
     expect(pack.burgs[2]).toMatchObject({ cell: 3, state: 0, x: 3, y: 5, port: 0 });
     expect(pack.provinces[1].center).toBe(3);
     expect(portWater).toHaveBeenCalledWith(3);
@@ -996,6 +999,7 @@ describe("Military", () => {
     vi.stubGlobal("options", {
       map: {
         military: { units: [{ name: "infantry" }, { name: "archers" }] },
+        units: { population: { scale: 1 } },
         graph: { width: 100, height: 100 },
         lore: { calendar: { year: 1200, eraShort: "AE" } }
       }
@@ -1009,7 +1013,7 @@ describe("Military", () => {
     pack.states[1].alert = 2;
     Military.setAlert(1, 1);
     expect(pack.states[1].alert).toBe(1);
-    expect(pack.states[1].military![0]).toMatchObject({ u: { infantry: 3, archers: 2 }, a: 5 });
+    expect(pack.states[1].military![0]).toMatchObject({ u: { infantry: 2.5, archers: 1.5 }, a: 4 });
     expect(() => Military.setAlert(1, -1)).toThrow("non-negative");
     expect(() => Military.setAlert(0, 1)).toThrow("State 0 does not exist");
   });

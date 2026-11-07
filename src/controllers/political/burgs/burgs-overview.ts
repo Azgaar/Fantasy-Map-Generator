@@ -12,6 +12,7 @@ import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
 import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
+import { closeEntityDialogs } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -610,6 +611,7 @@ function triggerBurgRemove(this: HTMLElement): void {
     confirm: t("Remove"),
     onConfirm: () => {
       Burgs.remove(burgId);
+      closeEntityDialogs();
       removeEmblem("burg", burgId);
       burgsTable.refresh();
       Layers.draw("burgIcons", "labels", "goods", "trade");

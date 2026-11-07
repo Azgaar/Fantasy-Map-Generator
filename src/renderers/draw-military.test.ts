@@ -73,7 +73,7 @@ test("keeps regiment counter compact and places regiment name as label below uni
 
   // Counter remains compact: land unit width is size * 6 = 30
   expect(Number(baseRect.getAttribute("width"))).toBe(30);
-  expect(totalText.textContent).toBe("10");
+  expect(totalText.textContent).toBe("10000"); // 10 population points at the default rate
 
   // Name is placed below the counter
   expect(nameText.textContent).toBe("1st Royal Army");

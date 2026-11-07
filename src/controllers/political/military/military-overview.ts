@@ -255,10 +255,8 @@ function getMilitaryData(): MilitaryRow[] {
           (state.military || []).reduce((total, regiment) => total + (regiment.u[unit.name] || 0), 0)
         ])
       );
-      const population = rn(
-        ((state.rural || 0) + (state.urban || 0) * options.map.units.population.urbanization.rate) *
-          options.map.units.population.scale
-      );
+      const points = (state.rural || 0) + (state.urban || 0) * options.map.units.population.urbanization.rate;
+      const population = rn(points * options.map.units.population.scale);
       const total = options.map.military.units.reduce((sum, unit) => sum + (forces[unit.name] || 0) * unit.crew, 0);
       return {
         state,
@@ -266,7 +264,7 @@ function getMilitaryData(): MilitaryRow[] {
         total,
         power: Military.getPower(state.i),
         population,
-        rate: population ? (total / population) * 100 : 0,
+        rate: points ? (total / points) * 100 : 0,
         alert: state.alert ?? 0,
         upkeep: Military.getUpkeep(state.i)
       };
@@ -298,19 +296,19 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
       const unitCells = options.map.military.units
         .map(unit => {
           const value = row.forces[unit.name] || 0;
-          return `<div data-col="${`unit:${unit.name}`}" data-tip="${t("{{unit}} units number", { unit: unit.name })}">${percentage ? percent(value, totals.units[unit.name] || 0) : value}</div>`;
+          return `<div data-col="${`unit:${unit.name}`}" data-tip="${t("{{unit}} units number", { unit: unit.name })}">${percentage ? percent(value, totals.units[unit.name] || 0) : Military.getTroops(value)}</div>`;
         })
         .join("");
       return /* html */ `<div class="states" data-id="${row.state.i}">
         <fill-box data-col="color" data-tip="${row.state.fullName}" fill="${row.state.color}" disabled></fill-box>
         <input data-col="state" data-tip="${row.state.fullName}" value="${row.state.name}" readonly />
         ${unitCells}
-        <div data-col="total" data-tip="${t("Total military personnel (considering crew)")}" style="font-weight: bold">${percentage ? percent(row.total, totals.total) : si(row.total)}</div>
+        <div data-col="total" data-tip="${t("Total military personnel (considering crew)")}" style="font-weight: bold">${percentage ? percent(row.total, totals.total) : si(Military.getTroops(row.total))}</div>
         <div data-col="population" data-tip="${t("State population")}">${percentage ? percent(row.population, totals.population) : si(row.population)}</div>
         <div data-col="rate" data-tip="${sentences(t("Military personnel rate (% of state population)"), t("Depends on war alert"))}">${rn(row.rate, 2)}%</div>
         <input data-col="alert" data-tip="${sentences(t("War Alert"), t("Modifier to military forces number, depends on political situation"))}" type="number" min="0" step=".01" value="${rn(row.alert, 2)}" />
         <div data-col="upkeep" data-tip="${EconomyTerms.upkeep()}">${rn(row.upkeep * 100)}%</div>
-                <div data-col="power" data-tip="${t("Military power as the forces fight: units number multiplied by unit power and by upkeep")}">${percentage ? percent(row.power, totals.power) : si(rn(row.power))}</div>
+                <div data-col="power" data-tip="${t("Military power as the forces fight: units number multiplied by unit power and by upkeep")}">${percentage ? percent(row.power, totals.power) : si(Military.getTroops(row.power))}</div>
         <span data-col="regiments" data-tip="${t("Show regiments list")}" class="icon-list-bullet pointer"></span>
       </div>`;
     })
@@ -342,8 +340,8 @@ function updateFooter(view: TableView<MilitaryRow>): void {
   const statesNumber = view.all.length;
   const total = sum(view.all.map(row => row.total));
   ensureEl("militaryFooterStates").innerHTML = String(statesNumber);
-  ensureEl("militaryFooterForcesTotal").innerHTML = si(total);
-  ensureEl("militaryFooterForces").innerHTML = si(statesNumber ? total / statesNumber : 0);
+  ensureEl("militaryFooterForcesTotal").innerHTML = si(Military.getTroops(total));
+  ensureEl("militaryFooterForces").innerHTML = si(statesNumber ? Military.getTroops(total / statesNumber) : 0);
   ensureEl("militaryFooterRate").innerHTML =
     `${rn(statesNumber ? sum(view.all.map(row => row.rate)) / statesNumber : 0, 2)}%`;
   ensureEl("militaryFooterAlert").innerHTML = String(
@@ -728,9 +726,9 @@ function downloadMilitaryData(): void {
   const rows = getMilitaryData().map(row => [
     row.state.i,
     row.state.name,
-    ...units.map(unit => row.forces[unit] || 0),
-    row.total,
-    rn(row.power, 2),
+    ...units.map(unit => Military.getTroops(row.forces[unit])),
+    Military.getTroops(row.total),
+    Military.getTroops(row.power),
     row.population,
     `${rn(row.rate, 2)}%`,
     row.alert

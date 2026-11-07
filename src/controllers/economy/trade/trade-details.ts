@@ -231,7 +231,14 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
   const { burgId, marketId, isSale, deals } = activeFlow;
   const burg = pack.burgs[burgId];
   const market = Markets.get(marketId);
-  const context = getTradeContext(burgId, marketId, deals[0][2], deals[0][3], deals[0][8]);
+  const context = getTradeContext(
+    burgId,
+    marketId,
+    deals[0][2],
+    deals[0][3],
+    deals[0][8],
+    Math.max(...deals.map(deal => deal[7]))
+  );
   const { isImport } = context;
   const zoom = (target: string) =>
     `<span class="icon-dot-circled pointer" data-zoom="${target}" data-tip="${t("Click to zoom")}"></span>`;
@@ -249,7 +256,7 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
       tax,
       tariff,
       formula,
-      ...getTradeContext(burgId, marketId, goodId, deals[0][3], deals[0][8])
+      ...getTradeContext(burgId, marketId, goodId, deals[0][3], carriage, tariff)
     });
     return /* html */ `<div class="states tradeDeal" data-good="${escapeHtml(good.name)}" data-units="${rn(units, 2)}" data-income="${rn(income, 2)}">
     <svg data-col="icon" data-tip="${t("Good icon")}" width="2em" height="2em" class="goodIcon">

@@ -624,7 +624,10 @@ class ReligionsModule {
   regenerate(): void {
     const kept = pack.religions?.filter(religion => religion.i && religion.lock && !religion.removed) ?? [];
     this.generate();
-    Goods.remapEntityMultipliers("religion", new Map(kept.map(religion => [religion.i, religion.i]))); // they keep their ids
+    Goods.remapEntityMultipliers(
+      "religion",
+      new Map([[0, 0], ...kept.map((religion): [number, number] => [religion.i, religion.i])])
+    ); // they keep their ids
   }
 
   generate() {

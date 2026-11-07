@@ -367,6 +367,7 @@ const plotTypeMap: Record<
 let charts: ChartOptions[] = [];
 let chartedMap: number | undefined; // the map the charts were built for, by its creation stamp
 function open() {
+  if (options.app.mode) return;
   renderDialog();
   changeViewColumns();
   updateMetricInfo();

@@ -49,6 +49,7 @@ const SHARED_FIELDS: Record<string, readonly LayerId[]> = { label: ["labels"], c
 function rowLayers({ key, field }: Pick<ChangeRow, "key" | "field">): readonly LayerId[] {
   const type = key.split(":")[0];
   if (type === "cells") return CELL_FIELDS[field]?.layers ?? [];
+  if (type === "deals") return ["goods", "trade"];
   const rules = ENTITY_LAYERS[type];
   if (!rules) return [];
   const name = field.split(".")[0];

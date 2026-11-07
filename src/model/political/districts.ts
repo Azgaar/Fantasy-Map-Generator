@@ -20,70 +20,7 @@ const DIVERSITY_CORRUPTION = 1; // likewise a district of strangers only
 class DistrictsModule {
   private sources: unknown[] = []; // the deals, states and provinces the cache describes
   private byState: District[][] = [];
-  private ofCell: (District | undefined)[] = []; // as of indexing, so cells painted to another state since keep theirs
-
-  get(stateId: number): District[] {
-    this.index();
-    return this.byState[stateId] ?? [];
-  }
-
-  /** The district a cell's people belong to, if any */
-  at(cellId: number): District | undefined {
-    this.index();
-    return this.ofCell[cellId];
-  }
-
-  /** The district holding the capital, where the court and the army spend */
-  getCapital(state: State): District | undefined {
-    const capital = pack.burgs[state.capital];
-    return capital ? this.at(capital.cell) : undefined;
-  }
-
-  /** Before administration: the state's, higher where more remote or diverse than average */
-  getTendency(state: State, district: District): number {
-    return Math.min(100, state.economy.budget.corruption * district.graft);
-  }
-
-  /** Percent officials pocket of what is spent in the district, curbed by administration */
-  getCorruption(state: State, district: District, collected: number): number {
-    return States.getCorruption(state, collected, this.getTendency(state, district));
-  }
-
-  /** By where each expense is spent, or by people when it spends nothing */
-  getStateCorruption(state: State, collected: number): number {
-    return (
-      this.byExpenses(state, d => this.getCorruption(state, d, collected)) ?? States.getCorruption(state, collected)
-    );
-  }
-
-  /** Corruption before administration, weighed as getStateCorruption */
-  getStateTendency(state: State): number {
-    return this.byExpenses(state, d => this.getTendency(state, d)) ?? state.economy.budget.corruption;
-  }
-
-  /** Districts' rate for the state by expense or else by people; null without districts */
-  private byExpenses(state: State, rate: (district: District) => number): number | null {
-    const districts = this.get(state.i);
-    const capital = this.getCapital(state);
-    if (!districts.length || !capital) return null;
-    const atSeats = districts.reduce((sum, d) => sum + d.share * rate(d), 0);
-    const { court, military, administration, infrastructure } = state.economy.budget;
-    const total = court + military + administration + infrastructure;
-    if (!total) return atSeats;
-    return ((court + military) * rate(capital) + (administration + infrastructure) * atSeats) / total;
-  }
-
-  /** How fully last run's infrastructure spending served each district, 0 to 1, by district index */
-  getInfrastructure(state: State): number[] {
-    const districts = this.get(state.i);
-    if (!state.economy) return [];
-    const kept = districts.map(d => d.share * (1 - this.getCorruption(state, d, state.economy.collected) / 100));
-    const total = kept.reduce((sum, value) => sum + value, 0);
-    const spent = state.economy.spent.infrastructure || 0;
-    return districts.map((d, k) =>
-      d.people && total ? Math.min(1, (spent * kept[k]) / total / (PROVISION_NEED.infrastructure * d.people)) : 0
-    );
-  }
+  private ofCell: (District | undefined)[] = []; // as of indexing, which edits to cells and burgs renew
 
   private index(): void {
     const sources = [pack.deals, pack.states, pack.provinces, pack.cells?.i];
@@ -158,6 +95,73 @@ class DistrictsModule {
             DIVERSITY_CORRUPTION * (district.diversity - diversity)
         );
     });
+  }
+
+  get(stateId: number): District[] {
+    this.index();
+    return this.byState[stateId] ?? [];
+  }
+
+  /** The district a cell's people belong to, if any */
+  at(cellId: number): District | undefined {
+    this.index();
+    return this.ofCell[cellId];
+  }
+
+  /** The district holding the capital, where the court and the army spend */
+  getCapital(state: State): District | undefined {
+    const capital = pack.burgs[state.capital];
+    return capital ? this.at(capital.cell) : undefined;
+  }
+
+  /** Before administration: the state's, higher where more remote or diverse than average */
+  getTendency(state: State, district: District): number {
+    return Math.min(100, state.economy.budget.corruption * district.graft);
+  }
+
+  /** Percent officials pocket of what is spent in the district, curbed by administration */
+  getCorruption(state: State, district: District, collected: number): number {
+    return States.getCorruption(state, collected, this.getTendency(state, district));
+  }
+
+  /** By where each expense is spent, or by people when it spends nothing */
+  getStateCorruption(state: State, collected: number): number {
+    return (
+      this.byExpenses(state, d => this.getCorruption(state, d, collected)) ?? States.getCorruption(state, collected)
+    );
+  }
+
+  /** Corruption before administration, weighed as getStateCorruption */
+  getStateTendency(state: State): number {
+    return this.byExpenses(state, d => this.getTendency(state, d)) ?? state.economy.budget.corruption;
+  }
+
+  /** Districts' rate for the state by expense or else by people; null without districts */
+  private byExpenses(state: State, rate: (district: District) => number): number | null {
+    const districts = this.get(state.i);
+    const capital = this.getCapital(state);
+    if (!districts.length || !capital) return null;
+    const atSeats = districts.reduce((sum, d) => sum + d.share * rate(d), 0);
+    const { court, military, administration, infrastructure } = state.economy.budget;
+    const total = court + military + administration + infrastructure;
+    if (!total) return atSeats;
+    return ((court + military) * rate(capital) + (administration + infrastructure) * atSeats) / total;
+  }
+
+  /** How fully last run's infrastructure spending served each district, 0 to 1, by district index */
+  getInfrastructure(state: State): number[] {
+    const districts = this.get(state.i);
+    if (!state.economy) return [];
+    const kept = districts.map(d => d.share * (1 - this.getCorruption(state, d, state.economy.collected) / 100));
+    const total = kept.reduce((sum, value) => sum + value, 0);
+    const spent = state.economy.spent.infrastructure || 0;
+    return districts.map((d, k) =>
+      d.people && total ? Math.min(1, (spent * kept[k]) / total / (PROVISION_NEED.infrastructure * d.people)) : 0
+    );
+  }
+
+  forget(): void {
+    this.sources = [];
   }
 }
 

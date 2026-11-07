@@ -6,7 +6,8 @@ import { Military, UPKEEP_COST } from "./military-generator";
 import { Stability } from "./stability";
 import { noFinance } from "./states-generator";
 
-const army = (troops: number) => [{ a: troops, u: { infantry: troops } }];
+const points = (troops: number) => troops / 1000;
+const army = (troops: number) => [{ a: points(troops), u: { infantry: points(troops) } }];
 
 beforeEach(() => {
   options.map.units.population.scale = 1000;
@@ -42,15 +43,15 @@ describe("Military.getUpkeep", () => {
 
   it("scales the forces' power in battle, never below 0.05", () => {
     pack.states[1].military = army(2000) as any;
-    expect(Military.getPower(1)).toBe(1000); // 2000 troops of power 1, half kept
+    expect(Military.getPower(1)).toBe(1); // 2 points of troops of power 1, half kept
     pack.states[1].military = army(100000) as any;
     expect(Military.getBattleUpkeep(1)).toBe(0.05); // 1% kept
-    expect(Military.getPower(1)).toBe(5000);
+    expect(Military.getPower(1)).toBe(5);
   });
 
   it("gives a regiment's power with its state's battle upkeep", () => {
     pack.states[1].military = [...army(1500), ...army(500)].map(regiment => ({ ...regiment, state: 1 })) as any;
-    expect(Military.getRegimentPower(pack.states[1].military![1])).toBe(250); // 500 troops, the state's forces half kept
+    expect(Military.getRegimentPower(pack.states[1].military![1])).toBe(0.25); // half a point of troops, the state's forces half kept
   });
 
   it("is 1 before the economy has run, for the neutral lands and for anarchies", () => {
@@ -102,31 +103,31 @@ describe("Military.getEquipped", () => {
     Goods.sync();
   });
 
-  it("equips a unit with a year of its goods times their military coverage, shared goods split by troops", () => {
+  it("equips a unit by what the state consumes of its goods and their military coverage, shared goods split by troops", () => {
     vi.spyOn(StateEconomy, "getConsumption").mockReturnValue([0, 0, 2, 1, 0]);
-    // horses: 2 × 365 × 0.5 = 365 kits, 3/4 to cavalry; camels: 365 kits, all to cavalry
-    const equipped = Military.getEquipped(1, { infantry: 5000, cavalry: 900, knights: 300, fleet: 10 });
+    // horses: 2 × 0.365 × 0.5 = 0.365 points equipped, 3/4 to cavalry; camels: 0.365, all to cavalry
+    const equipped = Military.getEquipped(1, { infantry: 5, cavalry: 0.9, knights: 0.3, fleet: 0.01 });
     expect(equipped.infantry).toBe(1); // needs no goods
-    expect(equipped.cavalry).toBeCloseTo((365 * 0.75 + 365) / 900);
-    expect(equipped.knights).toBeCloseTo((365 * 0.25) / 300);
+    expect(equipped.cavalry).toBeCloseTo((0.365 * 0.75 + 0.365) / 0.9);
+    expect(equipped.knights).toBeCloseTo((0.365 * 0.25) / 0.3);
     expect(equipped.fleet).toBe(0);
   });
 
   it("needs no goods for a unit without the goods field, as in maps and rosters saved before it", () => {
     options.map.military.units = [{ name: "legion", type: "melee" }] as any;
     vi.spyOn(StateEconomy, "getConsumption").mockReturnValue([]);
-    expect(Military.getEquipped(1, { legion: 5000 })).toEqual({ legion: 1 });
+    expect(Military.getEquipped(1, { legion: 5 })).toEqual({ legion: 1 });
   });
 
   it("is full when goods suffice, and before the economy has run", () => {
     vi.spyOn(StateEconomy, "getConsumption").mockReturnValue([0, 0, 100, 0, 1]);
-    expect(Military.getEquipped(1, { cavalry: 100, knights: 100, fleet: 10 })).toEqual({
+    expect(Military.getEquipped(1, { cavalry: 0.1, knights: 0.1, fleet: 0.01 })).toEqual({
       infantry: 1,
       cavalry: 1,
       knights: 1,
       fleet: 1
     });
     pack.deals = [];
-    expect(Military.getEquipped(1, { cavalry: 100 }).cavalry).toBe(1);
+    expect(Military.getEquipped(1, { cavalry: 0.1 }).cavalry).toBe(1);
   });
 });

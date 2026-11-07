@@ -25,6 +25,7 @@ import { Rivers } from "@/model/physical/river-generator";
 import { Armoria } from "@/model/political/armoria";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
+import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
 import { Provinces } from "@/model/political/provinces-generator";
 import { noFinance, type State, type StateFinance, States } from "@/model/political/states-generator";
@@ -2173,6 +2174,15 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
         ocean.interval = getContourInterval(count, -heightToMeters(low) * ratio);
       }
     }
+
+    // v1.157.0 keeps regiments in population points, not people
+    const { scale } = options.map.units.population;
+    const toPoints = (regiment: Regiment) => {
+      regiment.a = (regiment.a || 0) / scale;
+      for (const unit of Object.keys(regiment.u ?? {})) regiment.u[unit] /= scale;
+      regiment.children?.forEach(toPoints);
+    };
+    for (const state of pack.states ?? []) state.military?.forEach(toPoints);
 
     // v1.157.0 draws rivers in style groups, as routes are: they all start in the default one
     for (const river of pack.rivers ?? []) river.group ??= "regular";

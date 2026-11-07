@@ -1,9 +1,12 @@
 import { sum } from "d3";
+import { Districts } from "@/model/political/districts";
+import { Stability } from "@/model/political/stability";
 import { States } from "@/model/political/states-generator";
 import { Goods } from "./goods-generator";
 import { Markets } from "./markets-generator";
 import { Production } from "./production-generator";
 import { type Living, PROSPERITY_LEVELS, Prosperity } from "./prosperity";
+import { ProvinceEconomy } from "./province-economy";
 import { DEAL_KINDS, type Deal, Trade } from "./trade";
 
 type Group = "towns" | "country";
@@ -94,6 +97,7 @@ class StateEconomyModule {
       exportedUnits: [],
       importedUnits: []
     };
+
     for (const deal of pack.deals) {
       const [burgId, marketId, goodId, kind] = deal;
       if (kind === DEAL_KINDS.kept) continue;
@@ -162,9 +166,12 @@ class StateEconomyModule {
     return this.consumption.get(stateId) ?? [];
   }
 
-  /** Consumption goes by who holds each burg and cell now, which the deals do not tell */
-  forgetConsumption(): void {
-    this.consumptionSource = null;
+  /** The summaries go by who holds each burg and cell now, which the deals do not tell */
+  forget(): void {
+    this.source = this.outputSource = this.consumptionSource = null;
+    ProvinceEconomy.forget();
+    Districts.forget();
+    Stability.forget();
   }
 
   private indexConsumption(): void {
@@ -222,6 +229,7 @@ class StateEconomyModule {
       return accounts;
     };
     const withWorld = (stateId: number) => [accountsOf(stateId), world];
+
     for (const state of pack.states) if (!state.removed) accountsOf(state.i); // a state with no people, the neutral lands too, has empty accounts
     // people-weighted sums of each group's living, averaged at the end
     const sums = new Map<StateAccounts, Partial<Record<Group, GroupLiving>>>();
@@ -271,6 +279,7 @@ class StateEconomyModule {
       if (!margin) continue;
       for (const accounts of withWorld(Markets.getState(Markets.get(deal[1])))) accounts.trade += margin;
     }
+
     // rural purchases make no deals, but their margin goes to the center too
     for (const market of pack.markets) {
       const margin = market.rural?.margin;
@@ -289,8 +298,10 @@ class StateEconomyModule {
             prosperity: row.prosperity / row.people
           }
         : null;
+
     const { salesTax, tariffs } = Trade.getTaxesByState();
     const taxes = [salesTax, tariffs, States.getPollTax().paid, States.getMarketFees()];
+
     const closeAccounts = (accounts: StateAccounts, collected: number) => {
       accounts.product = accounts.rural + accounts.manufacturing + accounts.trade;
       accounts.taxes = collected;
@@ -303,6 +314,7 @@ class StateEconomyModule {
         ? lived.reduce((sum, group) => sum + group.prosperity * group.people, 0) / people
         : null;
     };
+
     for (const [stateId, accounts] of this.accounts)
       closeAccounts(
         accounts,

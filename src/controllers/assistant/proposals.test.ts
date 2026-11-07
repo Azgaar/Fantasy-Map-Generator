@@ -68,6 +68,35 @@ it("records development changes per cell, and undo restores them", async () => {
   expect(Array.from(pack.cells.development!)).toEqual([10, 20]);
 });
 
+it("prunes a removed burg's deals on apply, restores them on undo, and renews the list for the summaries", () => {
+  const deals = [
+    [2, 1, 0, 0, 1, 1, 0, 0, 0],
+    [1, 1, 0, 0, 2, 1, 0, 0, 0],
+    [2, 1, 1, 0, 3, 1, 0, 0, 0]
+  ];
+  Object.assign(pack, {
+    deals,
+    markets: [],
+    provinces: [],
+    cells: { i: [0, 1], burg: [1, 2], development: [0, 0], h: [30, 30], pop: [1, 1] }
+  });
+  Object.assign(pack.burgs[2] as object, { cell: 1 });
+  const proposal = propose("Remove", [{ op: "Burgs.remove", args: [2] }], 1, MAP) as Proposal;
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(pack.deals).toEqual([[1, 1, 0, 0, 2, 1, 0, 0, 0]]);
+  expect(pack.deals).not.toBe(deals);
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(pack.deals).toEqual(deals);
+});
+
+it("remembers the goods an applied proposal changed", () => {
+  const save = vi.spyOn(Options, "save");
+  const proposal = proposeOk([rename(1, "New")]);
+  save.mockClear();
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(save).toHaveBeenCalled();
+});
+
 it("previews a batch with its side effects and leaves the map untouched", () => {
   const map = JSON.stringify(pack);
   const proposal = proposeOk([rename(1, "Saltmere"), rename(2, "Gull")]);

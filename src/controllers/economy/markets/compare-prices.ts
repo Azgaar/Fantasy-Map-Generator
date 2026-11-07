@@ -111,7 +111,10 @@ function renderDialog(): void {
     activeGoodId = +ensureEl<HTMLSelectElement>("marketsGoodCompareSelect").value;
     comparePricesTable.reset();
   });
-  ensureEl("marketsGoodCompareRefresh").addEventListener("click", comparePricesTable.refresh);
+  ensureEl("marketsGoodCompareRefresh").addEventListener("click", () => {
+    rebuildGoodSelect(); // a good may be gone
+    comparePricesTable.refresh();
+  });
   bindEconomyWiki("marketsGoodCompareWiki");
   ensureEl("marketsGoodComparePercentage").addEventListener("click", togglePercentageMode);
   ensureEl("marketsGoodCompareExport").addEventListener("click", downloadCsv);

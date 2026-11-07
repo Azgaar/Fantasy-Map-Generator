@@ -151,7 +151,7 @@ function updateRegimentData(regiment: Regiment): void {
     .map(u => {
       return `<div data-tip="${t("{{unit}} number. Input to change", { unit: capitalize(u.name) })}">
         <div class="label">${capitalize(u.name)}:</div>
-        <input data-u="${u.name}" type="number" min=0 step=1 value="${regiment.u[u.name] || 0}">
+        <input data-u="${u.name}" type="number" min=0 step=1 value="${Military.getTroops(regiment.u[u.name])}">
         <i>${u.type}</i></div>`;
     })
     .join("");
@@ -170,7 +170,8 @@ function updateRegimentData(regiment: Regiment): void {
 
 function updateRegimentPower(regiment: Regiment): void {
   const upkeep = rn(Military.getBattleUpkeep(regiment.state) * 100);
-  ensureEl("regimentPower").textContent = `${si(rn(Military.getRegimentPower(regiment)))} (${upkeep}% ${t("upkeep")})`;
+  ensureEl("regimentPower").textContent =
+    `${si(Military.getTroops(Military.getRegimentPower(regiment)))} (${upkeep}% ${t("upkeep")})`;
 }
 
 function toggleVisibility(): void {
@@ -352,9 +353,8 @@ function changeUnit(this: HTMLInputElement): void {
   const u = this.dataset.u!;
   const reg = getRegiment();
   if (!reg || !selectedRegiment) return;
-  const count = (value: number) => Math.max(0, Math.round(value || 0)); // older maps may hold fractional troops
-  const units = Object.fromEntries(Object.entries(reg.u).map(([name, value]) => [name, count(value)]));
-  Military.setUnits(reg.state, reg.i, { ...units, [u]: count(+this.value) });
+  const units = Object.fromEntries(Object.entries(reg.u).map(([name, value]) => [name, Military.getTroops(value)]));
+  Military.setUnits(reg.state, reg.i, { ...units, [u]: Math.max(0, Math.round(+this.value || 0)) });
   updateRegimentElement(reg, selectedRegiment);
   updateRegimentPower(reg);
 
@@ -376,7 +376,7 @@ function splitRegiment(): void {
   ensureEl("regimentComposition")
     .querySelectorAll<HTMLInputElement>("input")
     .forEach(el => {
-      el.value = String(reg.u[el.dataset.u!] || 0);
+      el.value = String(Military.getTroops(reg.u[el.dataset.u!]));
     });
   updateRegimentElement(reg, selectedRegiment);
   updateRegimentPower(reg);

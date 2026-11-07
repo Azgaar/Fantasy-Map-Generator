@@ -59,6 +59,7 @@ const columns: EditorColumn<ZoneRow>[] = [
 const zonesTable = initEditorTable<ZoneRow>({ dialogId, getData: getZonesData, onUpdate: renderZonesPage });
 
 function open(): void {
+  if (options.app.mode) return;
   Dialog.closeAll("#zonesEditor, .stable");
   Layers.show("zones");
 

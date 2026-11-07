@@ -125,7 +125,7 @@ Please also note that rural naval units are generated only in cells that have a 
 
 ### Goods and levies
 
-Once the economy has run, a unit with goods is fielded only as far as the state can equip it. The state's stock of a good is a year of what it consumes of it, its townspeople's and rural people's purchases and what the state buys with its budget, times how much of the military need one unit of the good covers (1 for a good that covers none, such as a custom one):
+Once the economy has run, a unit with goods is fielded only as far as the state can equip it. The state's stock of a good follows what it consumes of it, its townspeople's and rural people's purchases and what the state buys with its budget, times how much of the military need one unit of the good covers (1 for a good that covers none, such as a custom one):
 
 `Stock = daily consumption × 365 × military coverage`
 

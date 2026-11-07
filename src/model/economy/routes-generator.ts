@@ -978,6 +978,10 @@ class RoutesModule {
     const removed = new Set(routeIds.map(routeId => this.living(routeId).i));
     pack.routes = pack.routes.filter(r => !removed.has(r.i));
     this.relink(); // a cell pair links one route, so other routes through the same cells must be relinked
+    for (const key of this.connections.keys()) {
+      const [from, to] = key.split("-");
+      if (!pack.cells.routes[+from]?.[+to]) this.connections.delete(key);
+    }
   }
 
   getConnectivityRate(cellId: number): number {

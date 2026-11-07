@@ -25,6 +25,7 @@ export class Change {
   static readonly CELLS = "cells"; // the key of per-cell rows
   static readonly LORE = "lore"; // the key of the map's lore rows
   static readonly STYLE = "style"; // the key of the map's style rows, by store path
+  static readonly DEALS = "deals"; // the key of the row of deals pruned with what they named
 
   /** Entities the change adds or removes, so they may be missing on one side */
   private readonly addedOrRemoved: Set<string>;
@@ -39,6 +40,7 @@ export class Change {
     return [
       ...Change.entityRows(live, draft),
       ...Change.cellRows(live, draft),
+      ...Change.dealRows(live, draft),
       ...Change.recordRows(Change.LORE, live, draft),
       ...Change.recordRows(Change.STYLE, live, draft)
     ];
@@ -78,7 +80,7 @@ export class Change {
    * draft it is written to first */
   keepsReferencesIntact(world: World, side: Side): boolean {
     const result = this.addedOrRemoved.size ? this.writtenDraft(world, side) : world;
-    const edited = [...this.keys].filter(key => key !== Change.CELLS && !Change.isRecord(key));
+    const edited = [...this.keys].filter(key => key !== Change.CELLS && key !== Change.DEALS && !Change.isRecord(key));
     const missing = edited.filter(key => !result.exists(key));
     // an entity the change edits but does not remove is gone: someone removed it since
     if (missing.some(key => !this.addedOrRemoved.has(key))) return false;
@@ -142,6 +144,21 @@ export class Change {
     return rows;
   }
 
+  /** Deals the operations pruned, as `[index, deal]`, so Undo puts each back in its place */
+  private static dealRows(live: World, draft: World): Row[] {
+    const [was, now] = [live.pack.deals, draft.pack.deals];
+    if (!was || !now || was.length === now.length) return [];
+    let kept = 0;
+    const pruned = was.flatMap((deal, index) => {
+      if (isSame(deal, now[kept])) {
+        kept++;
+        return [];
+      }
+      return [[index, structuredClone(deal)]];
+    });
+    return [{ key: Change.DEALS, field: "pruned", before: pruned, after: [] }];
+  }
+
   /** The map's lore or style, recorded field by field */
   private static recordRows(key: string, live: World, draft: World): Row[] {
     const was = Change.recordOf(live, key);
@@ -178,6 +195,13 @@ export class Change {
 
   private rowMatches(world: World, row: ChangeRow, side: Side): boolean {
     const expected = row[side];
+    if (row.key === Change.DEALS) {
+      const pruned = row.before as [number, unknown][];
+      const deals = world.pack.deals ?? [];
+      if (side === "before") return pruned.every(([index, deal]) => isSame(deals[index], deal));
+      const gone = new Set(pruned.map(([, deal]) => JSON.stringify(deal)));
+      return !deals.some(deal => gone.has(JSON.stringify(deal)));
+    }
     if (row.key === Change.CELLS) {
       const data = world.cells(row.field);
       return Boolean(data) && Object.entries(expected as Cells).every(([cell, value]) => isSame(data![+cell], value));
@@ -203,7 +227,7 @@ export class Change {
     const exists = (key: string) => world.exists(key);
     return this.rows.every(row => {
       const value = row[side];
-      if (Change.isRecord(row.key)) return true;
+      if (Change.isRecord(row.key) || row.key === Change.DEALS) return true;
       if (row.key === Change.CELLS)
         return Object.values(value as Cells).every(id =>
           Change.everyId(CELL_FIELDS[row.field]?.references, id, exists)
@@ -244,6 +268,15 @@ export class Change {
 
   private writeRow(world: World, row: ChangeRow, side: Side): void {
     const value = row[side];
+    if (row.key === Change.DEALS) {
+      // a new list, as the economy's summaries go by its identity
+      const pruned = row.before as [number, (typeof world.pack.deals)[number]][];
+      const deals = [...world.pack.deals];
+      if (side === "before") for (const [index, deal] of pruned) deals.splice(index, 0, structuredClone(deal));
+      else for (const [index] of [...pruned].reverse()) deals.splice(index, 1);
+      world.pack.deals = deals;
+      return;
+    }
     if (row.key === Change.CELLS) {
       const data = world.cells(row.field)!;
       for (const [cell, next] of Object.entries(value as Cells)) {

@@ -256,7 +256,7 @@ function renderMarketDealsPage(view: TableView<MarketDealRow>): void {
 
 function renderDealLine(row: MarketDealRow): string {
   const { deal, good, side, burg, units, net, carriage, tax, tariff, income, formula } = row;
-  const context = getTradeContext(deal[0], deal[1], deal[2], deal[3], deal[8]);
+  const context = getTradeContext(deal[0], deal[1], deal[2], deal[3], deal[8], deal[7]);
   const { isImport } = context;
   const cellTips = tradeCellTips({ good, units, net, carriage, tax, tariff, formula, ...context });
   const isSale = side === "sell";
@@ -274,7 +274,7 @@ function renderDealLine(row: MarketDealRow): string {
       </svg>
       <div data-col="good" data-tip="${t("Name")}" class="goodName">${escapeHtml(good.name)}</div>
       <div data-col="side" data-tip="${sideTip}"><span class="marketBadge ${isSale ? "positive" : "negative"}">${badge.toUpperCase()}</span></div>
-      <div data-col="burg" class="marketDealBurg pointer" data-tip="${t("Click to zoom")}">${burg}</div>
+      <div data-col="burg" class="marketDealBurg pointer" data-tip="${t("Click to zoom")}">${escapeHtml(burg)}</div>
       <div data-col="units" data-tip="${cellTips.units}">${rn(units, 2)}</div>
       <div data-col="net" data-tip="${cellTips.net}">${money(net, isSale)}</div>
       <div data-col="carriage" data-tip="${cellTips.carriage}">${money(carriage, false)}</div>

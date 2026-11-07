@@ -16,14 +16,14 @@ export interface Regiment {
   i: number;
   t: number; // total troops
   name: string;
-  a: number; // regiment army
+  a: number; // regiment army, in population points
   s: number; // separate flag (for fleets)
   cell: number;
   x: number;
   y: number;
   bx: number; // base x (for movement)
   by: number; // base y (for movement)
-  u: Record<string, number>; // units composition
+  u: Record<string, number>; // units composition, in population points
   n: number; // naval unit flag
   type: string; // unit type
   icon: string;
@@ -54,7 +54,7 @@ interface Platoon {
 
 export const UPKEEP_COST = 20; // military spending a day that keeps troops of power 1, a population point's worth
 const MIN_UPKEEP = 0.05; // unpaid troops still fight, if barely
-const EQUIPMENT_DAYS = 365; // days of a state's consumption of a unit's goods that equip its troops
+const EQUIPMENT = 0.365; // population points of troops equipped by a unit a day a state consumes of their goods
 const FRONT_DEPTH = 2; // lines of cells behind the border a state at war deploys its regiments to
 const REGIMENT_SIZE = 3; // regiment box height at the default style, map units; layout ignores the style
 
@@ -268,7 +268,7 @@ class MilitaryModule {
                 unit.type as keyof (typeof cellTypeModifier)[keyof typeof cellTypeModifier]
               ] ?? 1); // cell specific modifier
         const army = modifier * perc * cellTypeMod; // rural cell army
-        const total = rn(army * draft.modifiers[unit.name] * options.map.units.population.scale); // total troops
+        const total = rn(army * draft.modifiers[unit.name], 3); // total troops
         if (!total) continue;
 
         let [x, y] = p[i];
@@ -327,7 +327,7 @@ class MilitaryModule {
                 unit.type as keyof (typeof burgTypeModifier)[keyof typeof burgTypeModifier]
               ] ?? 1); // cell specific modifier
         const army = m * perc * mod; // urban cell army
-        const total = rn(army * draft.modifiers[unit.name] * options.map.units.population.scale); // total troops
+        const total = rn(army * draft.modifiers[unit.name], 3); // total troops
         if (!total) continue;
 
         let [x, y] = p[b.cell];
@@ -354,7 +354,7 @@ class MilitaryModule {
       }
     }
 
-    StateEconomy.forgetConsumption(); // burgs may have changed hands since the run
+    StateEconomy.forget(); // burgs may have changed hands since the run
     // conscripts the state cannot equip with their unit's goods serve as levies where they were raised
     const levyUnit = options.map.military.units.find(unit => unit.type === "levies");
     for (const [stateId, draft] of drafts) {
@@ -365,11 +365,11 @@ class MilitaryModule {
       for (const platoon of draft.platoons) {
         const share = equipped[platoon.u] ?? 1;
         if (share >= 1) continue;
-        const unequipped = platoon.a - rn(platoon.a * share);
-        platoon.a = platoon.t = platoon.a - unequipped;
+        const unequipped = rn(platoon.a - platoon.a * share, 3);
+        platoon.a = platoon.t = rn(platoon.a - unequipped, 3);
         if (!levyUnit || !unequipped) continue;
         const levy = raised.get(platoon.cell);
-        if (levy) levy.a = levy.t = levy.a + unequipped;
+        if (levy) levy.a = levy.t = rn(levy.a + unequipped, 3);
         else {
           const [x, y] = p[platoon.cell];
           const { name: u, separate: s, type } = levyUnit;
@@ -379,7 +379,7 @@ class MilitaryModule {
       draft.platoons = draft.platoons.filter(platoon => platoon.a).concat([...raised.values()]);
     }
 
-    const expected = 3 * options.map.units.population.scale; // expected regiment size
+    const expected = 3; // expected regiment size
     const mergeable = (n0: { s: number; u: string }, n1: { s: number; u: string }) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
     const createRegiments = (nodes: Platoon[], s: State): Regiment[] => {
       if (!nodes.length) return [];
@@ -398,7 +398,7 @@ class MilitaryModule {
           n0.children.forEach(n => {
             n1.children!.push(n);
           });
-        n1.t += n0.t;
+        n1.t = rn(n1.t + n0.t, 3);
         n0.t = 0;
       };
 
@@ -410,7 +410,7 @@ class MilitaryModule {
           return;
         }
         if (node.t > expected) return;
-        const r = (expected - node.t) / (node.s ? 40 : 20); // search radius
+        const r = (expected - node.t) * (node.s ? 25 : 50); // search radius
         const candidates = findAllInQuadtree(node.x, node.y, r, tree);
         for (const c of candidates) {
           if (c.t < expected && mergeable(node, c)) {
@@ -428,7 +428,7 @@ class MilitaryModule {
           const u: Record<string, number> = {};
           u[r.u] = r.a;
           (r.children ?? []).forEach(n => {
-            u[n.u] = (u[n.u] ?? 0) + n.a;
+            u[n.u] = rn((u[n.u] ?? 0) + n.a, 3);
           });
           return {
             i,
@@ -629,7 +629,7 @@ class MilitaryModule {
     return `${number}${proper ? ` (${proper}) ` : ` `}${form}`;
   }
 
-  /** Share of each unit's conscripts a year of its goods equips; 1 with no goods or before the run */
+  /** Share of each unit's conscripts what the state consumes of its goods equips; 1 with no goods or before the run */
   getEquipped(stateId: number, demand: Record<string, number>): Record<string, number> {
     const units = options.map.military.units;
     const consumed = StateEconomy.getConsumption(stateId);
@@ -645,7 +645,7 @@ class MilitaryModule {
         continue;
       }
       const kits = sum(goods, good => {
-        const stock = (consumed[good.i] || 0) * EQUIPMENT_DAYS * (good.demandCoverage?.military || 1);
+        const stock = (consumed[good.i] || 0) * EQUIPMENT * (good.demandCoverage?.military || 1);
         return (stock * troops) / needing(good.i);
       });
       equipped[unit.name] = Math.min(1, kits / troops);
@@ -663,7 +663,7 @@ class MilitaryModule {
 
   /** The military spending a day that keeps a state's forces in full */
   getUpkeepNeed(stateId: number): number {
-    return (this.getNominalPower(stateId) / options.map.units.population.scale) * UPKEEP_COST;
+    return this.getNominalPower(stateId) * UPKEEP_COST;
   }
 
   /** How strongly a state's forces fight for their upkeep: it multiplies their power in battle */
@@ -689,9 +689,15 @@ class MilitaryModule {
     return sum(options.map.military.units, unit => (regiment.u[unit.name] || 0) * (+unit.power || 0));
   }
 
+  /** The troops a number of population points stands for, rounded up: there is no half of an archer */
+  getTroops(points = 0): number {
+    return Math.ceil(rn(points * options.map.units.population.scale, 3));
+  }
+
   // utilize si function to make regiment total text fit regiment box
   getTotal(reg: Regiment) {
-    return reg.a > (reg.n ? 999 : 99999) ? si(reg.a) : reg.a;
+    const troops = this.getTroops(reg.a);
+    return troops > (reg.n ? 999 : 99999) ? si(troops) : troops;
   }
 
   generateNote(r: Regiment, s: State) {
@@ -706,7 +712,7 @@ class MilitaryModule {
 
     const composition = r.a
       ? Object.keys(r.u)
-          .map(t => `— ${t}: ${r.u[t as keyof typeof r.u]}`)
+          .map(t => `— ${t}: ${this.getTroops(r.u[t])}`)
           .join("\r\n")
       : null;
     const troops = composition
@@ -777,7 +783,15 @@ class MilitaryModule {
       if (!Number.isInteger(count) || count < 0)
         throw new Error(`The number of ${name} must be a non-negative integer`);
     }
-    regiment.u = { ...units };
+    const { scale } = options.map.units.population;
+    const old = regiment.u;
+    // a number left as shown keeps its exact points
+    regiment.u = Object.fromEntries(
+      Object.entries(units).map(([name, count]) => [
+        name,
+        this.getTroops(old[name]) === count ? old[name] : count / scale
+      ])
+    );
     regiment.a = sum(Object.values(regiment.u));
   }
 
@@ -791,7 +805,7 @@ class MilitaryModule {
     state.alert = rn(alert, 2);
     const change = previous ? state.alert / previous : 0; // the stored value, so the next change divides by it
     for (const regiment of state.military ?? []) {
-      for (const unit of Object.keys(regiment.u)) regiment.u[unit] = rn(regiment.u[unit] * change);
+      for (const unit of Object.keys(regiment.u)) regiment.u[unit] = rn(regiment.u[unit] * change, 3);
       regiment.a = sum(Object.values(regiment.u));
     }
   }
@@ -835,10 +849,13 @@ class MilitaryModule {
     const regiment = this.living(stateId, regimentId);
     const state = pack.states[stateId];
     const military = state.military!;
-    const half = Object.fromEntries(Object.entries(regiment.u).map(([unit, count]) => [unit, Math.floor(count / 2)]));
+    const { scale } = options.map.units.population;
+    const half = Object.fromEntries(
+      Object.entries(regiment.u).map(([unit, count]) => [unit, Math.floor(this.getTroops(count) / 2) / scale])
+    );
     const a = sum(Object.values(half));
     if (!a) throw new Error(`Regiment ${stateId}-${regimentId} has too few troops to split`);
-    regiment.u = Object.fromEntries(Object.entries(regiment.u).map(([unit, count]) => [unit, Math.ceil(count / 2)]));
+    regiment.u = Object.fromEntries(Object.entries(regiment.u).map(([unit, count]) => [unit, count - half[unit]]));
     regiment.a = sum(Object.values(regiment.u));
 
     const shift = REGIMENT_SIZE * 2;

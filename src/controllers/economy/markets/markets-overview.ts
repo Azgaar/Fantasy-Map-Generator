@@ -11,7 +11,7 @@ import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
 import { App } from "@/ui/app-commands";
 import { Dialog } from "@/ui/dialog/dialog";
-import { noteIcon } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, noteIcon } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
   type EditorColumn,
@@ -350,6 +350,7 @@ function confirmRemoveMarket(marketId: number): void {
     confirm: t("Remove"),
     onConfirm: () => {
       Markets.removeMarket(marketId);
+      closeEntityDialogs();
       Layers.draw("markets", "goods", "trade");
       marketsTable.refresh();
     }

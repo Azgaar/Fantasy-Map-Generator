@@ -27,6 +27,7 @@ const REFRESHABLE_EDITORS = [
   "marketsOverviewRefresh",
   "marketOverviewRefresh",
   "marketDealsRefresh",
+  "marketsGoodCompareRefresh",
   "burgsOverviewRefresh",
   "routesOverviewRefresh",
   "riversOverviewRefresh",

@@ -1,5 +1,6 @@
 import { max, mean, median, sum } from "d3";
 import { Goods } from "@/model/economy/goods-generator";
+import { StateEconomy } from "@/model/economy/state-economy";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Development } from "@/model/society/development-generator";
 import { isWater } from "@/utils/height-utils";
@@ -119,6 +120,7 @@ class PopulationModule {
         4
       );
     }
+    StateEconomy.forget();
   }
 }
 

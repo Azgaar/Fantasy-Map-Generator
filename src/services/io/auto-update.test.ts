@@ -1313,6 +1313,32 @@ describe("v1.157.0 armies", () => {
   });
 });
 
+describe("v1.157.0 regiments in population points", () => {
+  it("converts saved troops from people at the map's own rate", async () => {
+    const regiment = { a: 300, u: { infantry: 200, archers: 100 }, children: [{ a: 50, u: { infantry: 50 } }] };
+    globalThis.pack = {
+      features: [],
+      cells: { i: [0], state: [1], culture: [1], religion: [1], pop: [1], burg: [0] },
+      cultures: [{ i: 0 }, { i: 1, type: "Generic" }],
+      religions: [{ i: 0 }, { i: 1, type: "Folk" }],
+      burgs: [{ i: 0 }],
+      markets: [],
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, name: "Old", form: "Monarchy", military: [regiment] }
+      ]
+    } as unknown as typeof pack;
+    const { scale } = options.map.units.population;
+    options.map.units.population.scale = 100;
+
+    await resolveVersionConflicts("1.156.0", []);
+
+    expect(regiment).toEqual({ a: 3, u: { infantry: 2, archers: 1 }, children: [{ a: 0.5, u: { infantry: 0.5 } }] });
+    expect(Military.getTroops(regiment.a)).toBe(300);
+    options.map.units.population.scale = scale;
+  });
+});
+
 describe("v1.157.0 carriage per good", () => {
   it("gives goods saved without a carriage price the default by name, or a tenth of their value", async () => {
     globalThis.pack = {

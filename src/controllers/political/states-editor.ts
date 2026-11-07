@@ -53,7 +53,7 @@ import { getAdjective } from "@/utils/language-utils";
 import { applyOption, ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
 import { rand } from "@/utils/probability-utils";
-import { errorText } from "@/utils/string-utils";
+import { errorText, escapeHtml } from "@/utils/string-utils";
 
 const dialogId = "statesEditor" as const;
 const LEGEND_NAME = "States"; // the legend box this editor toggles
@@ -615,7 +615,7 @@ function renderStatesPage(view: TableView<State>): void {
       <input data-tip="${sentences(t("Form name"), t("Click to change"))}" class="stateForm name pointer" value="${s.formName || ""}" readonly data-col="form" />
       <div data-col="capital">
         <span data-tip="${sentences(t("State capital"), t("Click to zoom"))}" class="icon-star-empty pointer"></span>
-        <div data-tip="${t("Capital name")}" class="stateCapital">${capital}</div>
+        <div data-tip="${t("Capital name")}" class="stateCapital">${escapeHtml(capital ?? "")}</div>
       </div>
       <select data-tip="${sentences(t("Dominant culture"), t("Click to change"))}" class="stateCulture" data-col="culture">${getCultureOptions(
         s.culture

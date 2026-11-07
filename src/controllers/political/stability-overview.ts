@@ -7,6 +7,7 @@ import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const dialogPrefix = "stabilityOverview";
 
@@ -87,7 +88,7 @@ function renderDistricts(stateId: number): string {
     .map((stability, k) => ({ ...stability, infrastructure: infrastructure[k] }))
     .sort((a, b) => a.stability - b.stability)
     .map(({ district, stability, infrastructure }) => {
-      const name = district.province ? (pack.provinces[district.province]?.name ?? "—") : t("Crown lands");
+      const name = district.province ? escapeHtml(pack.provinces[district.province]?.name ?? "—") : t("Crown lands");
       const corruption = Districts.getCorruption(state, district, state.economy.collected);
       return `<tr><td>${name}</td><td>${percent(district.share)}</td><td>${percent(district.remoteness)}</td><td>${percent(district.diversity)}</td><td>${rn(corruption)}%</td><td>${percent(infrastructure)}</td><td><b>${percent(stability)}</b></td></tr>`;
     })

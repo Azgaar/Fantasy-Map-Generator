@@ -607,6 +607,57 @@ describe("StatesModule.tariffs", () => {
     expect(pack.states[1].economy.tariffs).toEqual([{ states: "all", goods: "all", rate: 0.1 }]);
   });
 
+  it("merge() moves the merged states' rural poll tax to the ruling state", () => {
+    globalThis.pack = {
+      cells: { state: new Uint16Array(10), province: new Uint16Array(10) },
+      burgs: [],
+      provinces: [],
+      markets: [
+        {
+          i: 1,
+          rural: {
+            pollTax: [
+              [1, 10, 5],
+              [2, 4, 2],
+              [3, 6, 3]
+            ]
+          }
+        },
+        {
+          i: 2,
+          rural: {
+            pollTax: [
+              [3, 1, 1],
+              [4, 2, 2]
+            ]
+          }
+        },
+        { i: 3, rural: { pollTax: [[4, 7, 7]] } }
+      ],
+      states: withFinance([
+        { i: 0, name: "Neutrals" },
+        { i: 1, name: "A" },
+        { i: 2, name: "B" },
+        { i: 3, name: "C" },
+        { i: 4, name: "D" }
+      ])
+    } as any;
+    vi.spyOn(States, "collectStatistics").mockImplementation(() => {});
+    vi.spyOn(States, "findNeighbors").mockImplementation(() => {});
+    vi.spyOn(States, "getPoles").mockImplementation(() => {});
+
+    States.merge(1, [2, 3]);
+
+    expect(pack.markets.map(market => market.rural?.pollTax)).toEqual([
+      [[1, 20, 10]],
+      [
+        [1, 1, 1],
+        [4, 2, 2]
+      ],
+      [[4, 7, 7]]
+    ]);
+  });
+
   it("setTags() sets normalized tags on a state", () => {
     globalThis.pack = {
       states: [

@@ -13,7 +13,7 @@ import { Layers } from "@/renderers/layers";
 import { speak } from "@/services/speech";
 import { renderDevelopment } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { noteButton } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, noteButton } from "@/ui/dialog/dialog-helpers";
 import { EconomyTerms, prosperityTip, renderProsperity } from "@/ui/economy-view";
 
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
@@ -315,7 +315,7 @@ function updateBurgValues(): void {
   const province = pack.cells.province[b.cell];
   const provinceName = province ? `${pack.provinces[province].fullName}, ` : "";
   const stateName = pack.states[b.state!].fullName || pack.states[b.state!].name;
-  ensureEl("burgProvinceAndState").innerHTML = provinceName + stateName;
+  ensureEl("burgProvinceAndState").textContent = provinceName + stateName;
 
   ensureEl<HTMLInputElement>("burgName").value = b.name!;
   ensureEl<HTMLSelectElement>("burgGroup").value = b.group!;
@@ -736,7 +736,7 @@ function toggleRelocateBurg(): void {
 function relocateBurgOnClick(this: SVGGElement, event: MouseEvent): void {
   const [x, y] = getPointer(event, this);
   if (!tryEdit(() => Burgs.move(getSelectedId(), x, y))) return;
-  Layers.draw("burgIcons", "labels", "goods", "markets");
+  Layers.draw("burgIcons", "labels", "routes", "goods", "markets");
   if (event.shiftKey === false) toggleRelocateBurg();
 }
 
@@ -775,6 +775,7 @@ function removeSelectedBurg(): void {
       confirm: t("Remove"),
       onConfirm: () => {
         Burgs.remove(burgId);
+        closeEntityDialogs();
         removeEmblem("burg", burgId);
         Layers.draw("burgIcons", "labels", "goods", "trade");
         Dialog.close("burgEditor");

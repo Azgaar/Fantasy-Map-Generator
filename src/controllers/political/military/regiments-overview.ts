@@ -248,7 +248,7 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
       const unitCells = options.map.military.units
         .map(unit => {
           const value = regiment.u[unit.name] || 0;
-          return `<div data-col="${unitColumnKey(unit.name)}" data-tip="${t("{{unit}} units number", { unit: capitalize(unit.name) })}">${percentage ? percent(value, unitTotals[unit.name]) : value}</div>`;
+          return `<div data-col="${unitColumnKey(unit.name)}" data-tip="${t("{{unit}} units number", { unit: capitalize(unit.name) })}">${percentage ? percent(value, unitTotals[unit.name]) : Military.getTroops(value)}</div>`;
         })
         .join("");
       const emblem = `<span data-col="emblem" data-tip="${t("Regiment's emblem")}">${Icons.html(regiment.icon ?? "")}</span>`;
@@ -259,8 +259,8 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
         ${emblem}
         <input data-col="name" data-tip="${t("Name")}" value="${regiment.name}" readonly />
         ${unitCells}
-        <div data-col="total" data-tip="${t("Total military personnel (not considering crew)")}" style="font-weight:bold">${percentage ? percent(regiment.a, total) : regiment.a}</div>
-        <div data-col="power" data-tip="${t("Military power as the forces fight: units number multiplied by unit power and by upkeep")}">${percentage ? percent(Military.getRegimentPower(regiment), power) : si(rn(Military.getRegimentPower(regiment)))}</div>
+        <div data-col="total" data-tip="${t("Total military personnel (not considering crew)")}" style="font-weight:bold">${percentage ? percent(regiment.a, total) : Military.getTroops(regiment.a)}</div>
+        <div data-col="power" data-tip="${t("Military power as the forces fight: units number multiplied by unit power and by upkeep")}">${percentage ? percent(Military.getRegimentPower(regiment), power) : si(Military.getTroops(Military.getRegimentPower(regiment)))}</div>
         <div data-col="tags">
           <input
             data-tip="${t("Regiment tags (comma-separated)")}"
@@ -285,7 +285,7 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
   const footer = ensureEl("regimentsFooter");
   footer.innerHTML = /* html */ `<div style="margin-left:4px">${t("Regiments")}:&nbsp;${view.all.length}</div>
     ${options.map.military.units.map(unit => `<div data-col="${unitColumnKey(unit.name)}" style="margin-left:12px">${capitalize(unit.name)}:&nbsp;${si(unitTotals[unit.name])}</div>`).join("")}
-    <div data-col="total" style="margin-left:12px">${t("Total")}:&nbsp;${si(total)}</div>
+    <div data-col="total" style="margin-left:12px">${t("Total")}:&nbsp;${si(Military.getTroops(total))}</div>
     <div data-col="power" style="margin-left:12px">${t("Power")}:&nbsp;${si(rn(power))}</div>`;
   renderEditorPagination(footer, view, regimentsTable.goto);
 
@@ -436,9 +436,9 @@ function downloadRegimentsData(): void {
         r.i,
         Icons.glyphText(r.icon ?? "") ?? r.icon,
         r.name,
-        ...units.map(unit => r.u[unit]),
-        r.a,
-        rn(Military.getRegimentPower(r), 2),
+        ...units.map(unit => Military.getTroops(r.u[unit])),
+        Military.getTroops(r.a),
+        Military.getTroops(Military.getRegimentPower(r)),
         Tags.format(r.tags),
         r.x,
         r.y,

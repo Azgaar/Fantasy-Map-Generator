@@ -110,7 +110,9 @@ describe("Risk heightmap edit", () => {
         riskEdit(edit, erosion);
 
         expect(newViolations(before)).toEqual([]);
-        expect(counts()).toEqual(kept); // land under burgs is never sunk, so nothing goes
+        // land under burgs is never sunk, so nothing goes; a burg off the roads takes a new one
+        expect({ ...counts(), routes: 0 }).toEqual({ ...kept, routes: 0 });
+        expect(counts().routes).toBeGreaterThanOrEqual(kept.routes);
       });
     }
   }
@@ -206,6 +208,17 @@ describe("Submap and Transform", () => {
       const [cos, sin, cx, cy] = [Math.cos(angle), Math.sin(angle), width / 2, height / 2];
       return [cx + (x - cx) * cos - (y - cy) * sin, cy + (x - cx) * sin + (y - cy) * cos];
     };
+  it("a mirrored map keeps every burg on the roads, and land regiments on land", async () => {
+    await generateMap({ seed: "transform-roads" });
+    const mirror: Projection = (x, y) => [width - x, y];
+    resample(mirror, mirror, 1);
+    for (const burg of living(pack.burgs))
+      expect(Object.keys(pack.cells.routes[burg.cell] ?? {}).length).toBeGreaterThan(0);
+    for (const state of living(pack.states))
+      for (const regiment of state.military ?? [])
+        if (!regiment.n) expect(pack.cells.h[regiment.cell]).toBeGreaterThanOrEqual(20);
+  });
+
   it("a ×2 submap keeps the map sound", async () => {
     await generateMap({ seed: "restoration-submap" });
     const before = violations();

@@ -164,10 +164,17 @@ export const tradeColumnTips = () => ({
 });
 
 /** A burg's trade with a market: its route, whether it is an import, the states its taxes go to */
-export function getTradeContext(burgId: number, marketId: number, goodId: number, kind: DealKind, carriage = 0) {
+export function getTradeContext(
+  burgId: number,
+  marketId: number,
+  goodId: number,
+  kind: DealKind,
+  carriage = 0,
+  tariff = 0
+) {
   const burg = pack.burgs[burgId];
   const market = Markets.get(marketId);
-  const deal: Deal = [burgId, marketId, goodId, kind, 0, 0, 0, 0, 0];
+  const deal: Deal = [burgId, marketId, goodId, kind, 0, 0, 0, tariff, 0];
   const { taxState, tariffState } = Trade.getTaxStates(deal);
   const carriageFactor = market && burg ? Trade.getCarriageFactor(market, burg) : 1; // dearer from another state's market
   const measured = market && burg ? Trade.getDecimas(market, burg) : 0; // carried between the market and the burg

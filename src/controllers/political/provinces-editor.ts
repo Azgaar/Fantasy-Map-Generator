@@ -28,7 +28,7 @@ import { Csv } from "@/services/io/csv";
 import { speak } from "@/services/speech";
 import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { noteIcon } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -718,6 +718,7 @@ function removeProvince(p: number): void {
     confirm: t("Remove"),
     onConfirm: () => {
       Provinces.remove(p);
+      closeEntityDialogs();
       unfog(`focusProvince${p}`);
       removeEmblem("province", p);
 

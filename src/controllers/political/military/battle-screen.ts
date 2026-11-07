@@ -554,7 +554,7 @@ function addRegimentToSide(side: Side, regiment: Regiment): void {
     acc[key] = 0;
     return acc;
   }, {});
-  regiment.survivors = { ...regiment.u };
+  regiment.survivors = Object.fromEntries(Object.entries(regiment.u).map(([k, v]) => [k, Military.getTroops(v)]));
 
   const state = pack.states[regiment.state];
   const distance = (Math.hypot(b.y - regiment.by, b.x - regiment.bx) * options.map.units.distance.scale) | 0; // distance between regiment and its base
@@ -573,18 +573,14 @@ function addRegimentToSide(side: Side, regiment: Regiment): void {
   let survivorsRow = `<tr class="battleSurvivors"><td></td><td data-tip="${t("Supply line length, affects morale")}">${t("Distance to base")}: ${distance} ${options.map.units.distance.unit}</td>`;
 
   for (const u of options.map.military.units) {
-    initial += `<td data-tip="${t("Initial forces")}" style="width: 2.5em; text-align: center">${regiment.u[u.name] || 0}</td>`;
+    initial += `<td data-tip="${t("Initial forces")}" style="width: 2.5em; text-align: center">${Military.getTroops(regiment.u[u.name])}</td>`;
     casualtiesRow += `<td data-tip="${t("Casualties")}" style="width: 2.5em; text-align: center; color: red">0</td>`;
-    survivorsRow += `<td data-tip="${t("Survivors")}" style="width: 2.5em; text-align: center; color: green">${
-      regiment.u[u.name] || 0
-    }</td>`;
+    survivorsRow += `<td data-tip="${t("Survivors")}" style="width: 2.5em; text-align: center; color: green">${Military.getTroops(regiment.u[u.name])}</td>`;
   }
 
-  initial += `<td data-tip="${t("Initial forces")}" style="width: 2.5em; text-align: center">${regiment.a || 0}</td></tr>`;
+  initial += `<td data-tip="${t("Initial forces")}" style="width: 2.5em; text-align: center">${Military.getTroops(regiment.a)}</td></tr>`;
   casualtiesRow += `<td data-tip="${t("Casualties")}"  style="width: 2.5em; text-align: center; color: red">0</td></tr>`;
-  survivorsRow += `<td data-tip="${t("Survivors")}" style="width: 2.5em; text-align: center; color: green">${
-    regiment.a || 0
-  }</td></tr>`;
+  survivorsRow += `<td data-tip="${t("Survivors")}" style="width: 2.5em; text-align: center; color: green">${Military.getTroops(regiment.a)}</td></tr>`;
 
   const container = ensureEl(side === "attackers" ? "battleAttackers" : "battleDefenders");
   container.innerHTML += `${body + initial + casualtiesRow + survivorsRow}</tbody>`;
@@ -593,6 +589,7 @@ function addRegimentToSide(side: Side, regiment: Regiment): void {
 }
 
 function addSide(): void {
+  if (Dialog.isOpen("regimentSelectorScreen")) return; // its row listener is bound once
   const b = battle!;
   const body = ensureEl("regimentSelectorBody");
   const regiments = pack.states.filter(s => s.military && !s.removed).flatMap(s => s.military!);
@@ -611,14 +608,14 @@ function addSide(): void {
       return `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state=${
         s.name
       } data-regiment=${r.name}
-        data-total=${r.a} data-distance="${dist}" data-tip="${t("Click to select regiment")}">
+        data-total=${Military.getTroops(r.a)} data-distance="${dist}" data-tip="${t("Click to select regiment")}">
         <svg width=".9em" height=".9em" style="margin-bottom:-1px; stroke: #333"><rect x="0" y="0" width="100%" height="100%" fill="${
           s.color
         }" ></svg>
         <div style="width:6em">${s.name.slice(0, 11)}</div>
         <div style="width:1.2em; display:flex">${Icons.html(r.icon ?? "")}</div>
         <div style="width:13em">${r.name.slice(0, 24)}</div>
-        <div style="width:4em">${r.a}</div>
+        <div style="width:4em">${Military.getTroops(r.a)}</div>
         <div style="width:4em">${distLabel}</div>
       </div>`;
     })
@@ -901,7 +898,7 @@ function calculateStrength(side: Side): void {
     return upkeep.get(state)!;
   }); // ill-kept troops fight weaker
   const phase = b[side].phase!;
-  const adjuster = Math.max(options.map.units.population.scale / 10, 10); // population adjuster, by default 100
+  const adjuster = options.map.units.population.scale / 10; // survivors are troops, power goes by points
   b[side].power =
     sum(
       options.map.military.units.map(
@@ -1197,7 +1194,7 @@ function calculateCasualties(side: Side, casualties: number): void {
   for (const r of b[side].regiments) {
     for (const unit in r.u) {
       const randomness = 0.8 + Math.random() * 0.4;
-      const died = Math.min(Pint(r.u[unit] * casualties * randomness), r.survivors![unit]);
+      const died = Math.min(Pint(Military.getTroops(r.u[unit]) * casualties * randomness), r.survivors![unit]);
       r.casualties![unit] -= died;
       r.survivors![unit] -= died;
     }
@@ -1316,10 +1313,10 @@ function applyResults(): void {
     // add result to regiment note
     if (r.note) {
       const status = side === "attackers" ? battleStatus[0] : battleStatus[1];
-      const losses = r.a ? Math.abs(sum(Object.values(r.casualties!))) / r.a : 1;
+      const losses = r.a ? Math.abs(sum(Object.values(r.casualties!))) / Military.getTroops(r.a) : 1;
       const regStatus = getRegimentStatus(losses);
       const initialList = Object.keys(r.u)
-        .map(t => (r.u[t] ? `${r.u[t]} ${t}` : null))
+        .map(t => (r.u[t] ? `${Military.getTroops(r.u[t])} ${t}` : null))
         .filter((c): c is string => Boolean(c));
       const initialText = initialList.length ? ` Initial forces: ${list(initialList)}.` : "";
       const casualtiesList = Object.keys(r.casualties!)
@@ -1329,7 +1326,8 @@ function applyResults(): void {
       r.note += `<br><br>${battleName} (${options.map.lore.calendar.year} ${options.map.lore.calendar.eraShort}): ${status}. The regiment ${regStatus}.${initialText}${casualtiesText}`;
     }
 
-    r.u = { ...r.survivors };
+    const { scale } = options.map.units.population;
+    for (const unit in r.u) r.u[unit] = r.survivors![unit] ? r.u[unit] + r.casualties![unit] / scale : 0;
     r.a = sum(Object.values(r.u)); // reg total
     select<SVGGElement, unknown>("#armies").select(`g#${id} > text`).text(Military.getTotal(r)); // update reg box
 

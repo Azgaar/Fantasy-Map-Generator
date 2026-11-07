@@ -595,8 +595,8 @@ function renderMarket(row: HistoryRow): string {
   return `<span class="pointer" data-zoom-market="${marketId}" data-tip="${zoomTip}">${escapeHtml(name)}</span>`;
 }
 
-const getContext = ({ goodId, marketId = 0, kind = DEAL_KINDS.sale, carriage }: HistoryRow) =>
-  getTradeContext(activeBurgId, marketId, goodId, kind, carriage);
+const getContext = ({ goodId, marketId = 0, kind = DEAL_KINDS.sale, carriage, tariff }: HistoryRow) =>
+  getTradeContext(activeBurgId, marketId, goodId, kind, carriage, tariff);
 
 const getFigures = ({ units, price, carriage, tax, tariff, formula }: HistoryRow) => ({
   units,

@@ -2,6 +2,7 @@ import { quadtree } from "d3-quadtree";
 import type { Label } from "@/model/annotations/labels-generator";
 import type { BurgProduction } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
+import { StateEconomy } from "@/model/economy/state-economy";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { AUTO_BURG_LIMIT } from "@/model/options/options-schema";
@@ -9,6 +10,7 @@ import { NON_NAVIGABLE_LAKE_SUBTYPES } from "@/model/physical/features-generator
 import type { River } from "@/model/physical/river-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { Emblems } from "@/model/political/emblems-generator";
+import type { Province } from "@/model/political/provinces-generator";
 import { CULTURE_TYPES, type CultureType, DEFAULT_CULTURE_TYPE } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
@@ -826,6 +828,7 @@ class BurgModule {
     pack.burgs.push(burg);
     cells.burg[cellId] = burgId;
     Development.settle(cellId);
+    StateEconomy.forget();
 
     Routes.connect(cellId);
     return burgId;
@@ -887,7 +890,7 @@ class BurgModule {
       const cell = sorted[index];
       const [x, y] = cells.p[cell];
       const minDistance = spacing * gauss(1, 0.3, 0.2, 2, 2);
-      if (burgsTree.find(x, y, minDistance) !== undefined) continue;
+      if (cells.burg[cell] || burgsTree.find(x, y, minDistance) !== undefined) continue; // a locked one can stand here
 
       const stateId = cells.state[cell];
       const capital = Number(Boolean(stateId && !states[stateId].capital));
@@ -922,27 +925,22 @@ class BurgModule {
 
     for (const cell of oldCells) Development.vacate(cell); // land a dropped burg stood on alone
     this.specify();
-    this.seatProvinces();
+    for (const province of provinces)
+      if (province.i && !province.removed && !province.burg) this.seatProvince(province);
     Routes.regenerate();
   }
 
-  /** A province without a seat takes its capital, or else its biggest burg */
-  private seatProvinces(): void {
-    const { cells, provinces, burgs } = pack;
-    const seats: Burg[] = [];
+  /** A province takes the capital in its lands as its seat, or else its biggest burg, or none */
+  seatProvince(province: Province): void {
+    const { cells, burgs } = pack;
+    let seat: Burg | undefined;
     for (const burg of burgs) {
-      if (!burg.i || burg.removed) continue;
-      const province = cells.province[burg.cell];
-      const seat = seats[province];
+      if (!burg.i || burg.removed || cells.province[burg.cell] !== province.i) continue;
       const rank = (Number(burg.capital) || 0) - (Number(seat?.capital) || 0);
-      if (!seat || rank > 0 || (!rank && burg.population! > seat.population!)) seats[province] = burg;
+      if (!seat || rank > 0 || (!rank && burg.population! > seat.population!)) seat = burg;
     }
-    for (const province of provinces) {
-      const seat = seats[province.i];
-      if (!province.i || province.removed || province.burg || !seat) continue;
-      province.burg = seat.i!;
-      province.center = seat.cell;
-    }
+    province.burg = seat?.i ?? 0;
+    province.center = seat?.cell ?? cells.i.find(cell => cells.province[cell] === province.i) ?? province.center;
   }
 
   /** Ports on water that is gone stop being ports, as when rivers change */
@@ -976,6 +974,7 @@ class BurgModule {
     const { scale, urbanization } = options.map.units.population;
     if (!Number.isFinite(people) || people < 0) throw new Error("The population must be a non-negative number");
     burg.population = rn(people / scale / urbanization.rate, 4);
+    StateEconomy.forget();
   }
 
   /** Move a burg to an existing burg group */
@@ -1067,12 +1066,14 @@ class BurgModule {
     cells.burg[cell] = burgId;
     Development.settle(cell);
     Object.assign(burg, { cell, state, x: rn(x, 2), y: rn(y, 2), feature: cells.f[cell] });
+    StateEconomy.forget();
     if (burg.capital) pack.states[state].center = cell;
     if (province) province.center = cell;
     // a market center takes its market along, any other burg joins the market of its new cell
     const centered = pack.markets?.find(market => market.centerBurgId === burgId);
     if (centered) cells.market[cell] = centered.i;
     if (burg.port) burg.port = this.getPortWater(cell); // a port moved inland stops being one
+    if (!Routes.isConnected(cell)) Routes.connect(cell); // off the network it cannot trade
     if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined }); // a custom path no longer fits
   }
 
