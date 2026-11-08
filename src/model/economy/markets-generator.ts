@@ -194,6 +194,7 @@ export class MarketsModule {
     const MIN_COST = 1;
     const BASE_COST = 10;
     const DIFFERENT_STATE_COST = 200;
+    const ENEMY_STATE_COST = 10000;
     const WATER_COST = 50;
     const WATER_COST_FOR_NON_PORTS = 50;
     const ISLAND_CHANGE_COST = 100;
@@ -223,7 +224,11 @@ export class MarketsModule {
           if (burg.port !== cells.f[neighborId]) cost += WATER_COST_FOR_NON_PORTS;
         } else {
           if (cells.f[burg.cell] !== cells.f[neighborId]) cost += ISLAND_CHANGE_COST;
-          if (cells.state[neighborId] && !isNative) cost += DIFFERENT_STATE_COST;
+          const neighborState = cells.state[neighborId];
+          if (neighborState && !isNative) {
+            cost += DIFFERENT_STATE_COST;
+            if (pack.states[burg.state || 0]?.diplomacy?.[neighborState] === "Enemy") cost += ENEMY_STATE_COST;
+          }
         }
 
         const totalCost = priority + cost;
