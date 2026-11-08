@@ -1,6 +1,6 @@
+import type { GroupLiving, StateAccounts } from "@/model/economy/accounts";
 import { Goods } from "@/model/economy/goods-generator";
 import { PROSPERITY_LEVELS } from "@/model/economy/prosperity";
-import type { GroupLiving } from "@/model/economy/state-economy";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import {
@@ -21,7 +21,7 @@ export type Sector = (typeof SECTORS)[number];
 const SECTOR_COLORS: Record<Sector, string> = { rural: "#6a9a3a", manufacturing: "#d98a32", trade: "#4a7ac0" };
 
 type Sectors = Record<Sector | "product", number>;
-type Living = { towns: GroupLiving | null; country: GroupLiving | null; levels: Record<"towns" | "country", number[]> };
+type Living = Pick<StateAccounts, "living" | "levels">;
 
 /** Pixels from the right edge, so each next dialog of the class opens to the left of the last */
 export const getStackOffset = (className: string) => 10 + 660 * (document.querySelectorAll(`.${className}`).length - 1);
@@ -128,12 +128,12 @@ export function renderLiving(accounts: Living, button = ""): string {
       ? `<div data-tip="${renderProsperityParts(living)}" class="group">${label}: ${renderProsperity(living.prosperity)}${stack(counts)}</div>`
       : "";
 
-  const people = PROSPERITY_LEVELS.map((_, index) => accounts.levels.towns[index] + accounts.levels.country[index]);
+  const people = PROSPERITY_LEVELS.map((_, index) => accounts.levels.urban[index] + accounts.levels.rural[index]);
   return `<div><h4 data-tip="${t("Prosperity of urban and rural people")}"><span>${t("Prosperity")}</span>${button}</h4>
-    ${group(t("Total population"), combine(accounts.towns, accounts.country), people)}
-    ${group(t("Urban population"), accounts.towns, accounts.levels.towns)}
-    ${group(t("Rural population"), accounts.country, accounts.levels.country)}
-    ${accounts.towns || accounts.country ? "" : `<i>${t("None")}</i>`}
+    ${group(t("Total population"), combine(accounts.living.urban, accounts.living.rural), people)}
+    ${group(t("Urban population"), accounts.living.urban, accounts.levels.urban)}
+    ${group(t("Rural population"), accounts.living.rural, accounts.levels.rural)}
+    ${accounts.living.urban || accounts.living.rural ? "" : `<i>${t("None")}</i>`}
   </div>`;
 }
 

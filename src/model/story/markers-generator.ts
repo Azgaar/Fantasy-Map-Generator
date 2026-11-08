@@ -39,11 +39,10 @@ import {
   WATER_SOURCE_TYPES,
   WATERFALL_DESCRIPTIONS
 } from "@/data/markers";
-import type { Good } from "@/model/economy/goods-generator";
+import { DEAL_KINDS, Deals } from "@/model/economy/deals";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Routes } from "@/model/economy/routes-generator";
-import { DEAL_KINDS, Trade } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
@@ -51,6 +50,7 @@ import { States } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names-generator";
 import { Notes } from "@/model/story/notes";
 import { convertTemperature, getFriendlyHeight } from "@/model/units";
+import type { Good } from "@/types/economy";
 import type { PackedGraph } from "@/types/packed-graph";
 import { last } from "@/utils/array-utils";
 import { requireColor } from "@/utils/color-utils";
@@ -799,7 +799,7 @@ class MarkersModule {
       if (kind === DEAL_KINDS.kept) continue;
       volume[marketId] = (volume[marketId] || 0) + units * price;
       burgTrade[burgId] = (burgTrade[burgId] || 0) + units * price;
-      margin[marketId] = (margin[marketId] || 0) + Trade.getMargin(deal);
+      margin[marketId] = (margin[marketId] || 0) + Deals.getMargin(deal);
       traded[burgId] ??= new Set();
       traded[burgId].add(goodId);
       if (!tariff) continue;

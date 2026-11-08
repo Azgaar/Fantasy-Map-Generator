@@ -1,11 +1,11 @@
 import { Goods } from "@/model/economy/goods-generator";
-import { type Market, Markets } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
 import { Icons } from "@/model/icons";
 import { formatPrice, getMoneyUnit } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Csv } from "@/services/io/csv";
+import type { Market } from "@/types/economy";
 import { Dialog } from "@/ui/dialog/dialog";
-
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
   type EditorColumn,

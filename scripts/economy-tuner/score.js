@@ -45,7 +45,7 @@ const gini = xs => {
 };
 
 /** The doc's KPIs, per-good raw and made output and townspeople's prosperity; modules passed in for the game page */
-export function score(pack, { Goods, Production, Prosperity, StateEconomy }) {
+export function score(pack, { Goods, Output, Prosperity, Accounts }) {
   const value = id => Goods.get(id)?.value || 0;
   const markets = pack.markets.filter(m => m.i);
   const burgs = pack.burgs.filter(b => b.i && !b.removed && pack.cells.market[b.cell] && b.population > 0);
@@ -53,12 +53,11 @@ export function score(pack, { Goods, Production, Prosperity, StateEconomy }) {
     made = [];
   const mix = new Map(markets.map(m => [m.i, {}]));
   const ruralPeople = new Map();
-  const bp = Goods.getBiomesProduction();
   for (const c of pack.cells.i) {
     const v = mix.get(pack.cells.market[c]);
     if (!v) continue;
     ruralPeople.set(pack.cells.market[c], (ruralPeople.get(pack.cells.market[c]) || 0) + (pack.cells.pop[c] || 0));
-    for (const [gid, u] of Object.entries(Production.getCellProduction(c, bp))) {
+    for (const [gid, u] of Object.entries(Output.ofCell(c))) {
       units[+gid] = (units[+gid] || 0) + u;
       v[+gid] = (v[+gid] || 0) + u * value(+gid);
     }
@@ -108,7 +107,7 @@ export function score(pack, { Goods, Production, Prosperity, StateEconomy }) {
   const byTreasury = [...burgs].sort((a, b) => (b.treasury || 0) - (a.treasury || 0)).slice(0, top);
   const pos = treasuries.filter(t => t > 0).reduce((a, b) => a + b, 0) || 1;
   // KPIs 11 and 12 read the state accounts the States Editor shows: taxes, other revenue aside, and product
-  const accounts = StateEconomy.getWorld();
+  const accounts = Accounts.getWorld();
   const left = [];
   for (const m of markets)
     for (const [gid, x] of Object.entries(m.goods)) left[gid] = (left[gid] || 0) + (x?.stock || 0);
@@ -131,7 +130,7 @@ export function score(pack, { Goods, Production, Prosperity, StateEconomy }) {
   }
   // KPI 12: across states, the rank correlation of their wealth and the taxes they collect per person
   const stateRows = pack.states.flatMap(state => {
-    const own = state.i && !state.removed ? StateEconomy.getAccounts(state.i) : null;
+    const own = state.i && !state.removed ? Accounts.ofState(state.i) : null;
     return own?.people ? [[own.wealth, own.taxes / own.people]] : [];
   });
   const madeShare = {},

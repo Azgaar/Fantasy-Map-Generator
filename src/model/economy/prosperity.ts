@@ -1,7 +1,10 @@
-import { type District, Districts } from "@/model/political/districts";
-import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, type Good, Goods, getNeedsCost } from "./goods-generator";
-import { Production } from "./production-generator";
-import { DEAL_KINDS } from "./trade";
+import type { Good } from "@/types/economy";
+import { Corruption, type ProvinceCorruption } from "./corruption";
+import { DEAL_KINDS } from "./deals";
+import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, getNeedsCost } from "./demand";
+import { Goods } from "./goods-generator";
+import { Output } from "./output";
+import { StateOrders } from "./state-orders";
 
 const NEEDS_SHARE = 0.2; // what needs met alone are worth: the rest comes from comfort and variety
 const COMFORT_SHARE = 0.4;
@@ -37,7 +40,6 @@ type Consumption = {
   comfortTop?: number;
   varietyTop?: number;
 };
-const isNeeded = (good?: Good) => Object.values(good?.demandCoverage ?? {}).some(Boolean);
 /** A cell's rural people: share of rural earnings and purchases, units lived on by good id */
 type RuralCell = { people: number; earned: number; bought: number[]; goods: number[]; living: Living };
 
@@ -114,7 +116,7 @@ class ProsperityModule {
     if (!pack.deals?.length) return;
     const needsCost = getNeedsCost(options.map.goods);
     const infrastructure = this.getInfrastructure();
-    output ??= Production.getRuralOutput();
+    output ??= Output.getRural();
     const byMarket = new Map<number, { cellId: number; people: number; produce: number }[]>();
     for (const cellId of pack.cells.i) {
       const people = pack.cells.pop[cellId] || 0;
@@ -158,17 +160,17 @@ class ProsperityModule {
     }
   }
 
-  /** Infrastructure provision of the district a cell is in */
+  /** Infrastructure provision of the province a cell is in */
   private getInfrastructure(): (cellId: number) => number {
-    const served = new Map<District, number>();
+    const served = new Map<ProvinceCorruption, number>();
     for (const state of pack.states) {
       if (!state.i || state.removed) continue;
-      const provision = Districts.getInfrastructure(state);
-      for (const [k, district] of Districts.get(state.i).entries()) served.set(district, provision[k] ?? 0);
+      const provision = StateOrders.getInfrastructure(state);
+      for (const province of Corruption.getProvinces(state.i)) served.set(province, provision.get(province.id) ?? 0);
     }
     return cellId => {
-      const district = Districts.at(cellId);
-      return district ? (served.get(district) ?? 0) : 0;
+      const province = Corruption.ofCell(cellId);
+      return province ? (served.get(province) ?? 0) : 0;
     };
   }
 
@@ -221,3 +223,7 @@ class ProsperityModule {
 }
 
 export const Prosperity = new ProsperityModule();
+
+function isNeeded(good?: Good): boolean {
+  return Object.values(good?.demandCoverage ?? {}).some(Boolean);
+}

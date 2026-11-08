@@ -1,9 +1,10 @@
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
+import { DEAL_KINDS } from "@/model/economy/deals";
 import { Markets } from "@/model/economy/markets-generator";
-import { DEAL_KINDS, type Deal } from "@/model/economy/trade";
 import { TradeRoutes } from "@/model/economy/trade-routes";
 import type { Point } from "@/model/graph/voronoi";
 import { Layers } from "@/renderers/layers";
+import type { Deal } from "@/types/economy";
 import { log } from "@/utils/logger";
 import { ra } from "@/utils/probability-utils";
 import { clear, draw } from "./draw-trade-animation";

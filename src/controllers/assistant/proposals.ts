@@ -1,6 +1,6 @@
 import { Controllers } from "@/controllers";
 import { effectAt } from "@/controllers/style/effects";
-import { StateEconomy } from "@/model/economy/state-economy";
+import { Pack } from "@/model/graph/pack-generator";
 import { MapEntities } from "@/model/map-entities";
 import { Options } from "@/model/options/options-model";
 import { Styles } from "@/model/styles/styles";
@@ -139,7 +139,7 @@ class ProposalLifecycle {
   private refresh(change: Change): void {
     Layers.draw(...change.layers);
     this.refreshStyle(change.stylePaths);
-    StateEconomy.forget(); // the draft's edits forgot only the draft's numbers
+    Pack.markChanged(); // the draft's edits forgot only the draft's numbers
     Options.save();
     refreshEditors();
     for (const key of change.keys) this.refreshNameInputs(key);

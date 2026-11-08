@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Accounts } from "@/model/economy/accounts";
+import { DEAL_KINDS } from "@/model/economy/deals";
+import { Output } from "@/model/economy/output";
 import type { Burg } from "@/model/political/burgs-generator";
-import type { DemandCategory, Good } from "./goods-generator";
+import type { Deal, DemandCategory, Good, Market } from "@/types/economy";
 import { Goods } from "./goods-generator";
-import { type Market, Markets } from "./markets-generator";
-import { Production } from "./production-generator";
+import { Markets } from "./markets-generator";
 import { Prosperity } from "./prosperity";
-import { StateEconomy } from "./state-economy";
-import { DEAL_KINDS, type Deal, Trade } from "./trade";
 
 const good = (i: number, value: number, demandCoverage: Partial<Record<DemandCategory, number>>): Good => ({
   i,
@@ -97,7 +97,7 @@ describe("prosperity", () => {
       state: [1, 1, 1]
     } as unknown as typeof pack.cells;
     const output = [{ 1: 10 }, { 1: 30 }, { 1: 10 }];
-    vi.spyOn(Production, "getRuralOutput").mockReturnValue(output);
+    vi.spyOn(Output, "getRural").mockReturnValue(output);
     market.rural = { earned: 40, spent: 20, bought: [[5, 4]] };
     pack.deals = consume(bareNeeds);
 
@@ -134,10 +134,10 @@ describe("state trade", () => {
       [2, 1, 1, DEAL_KINDS.demand, 5, 2, 0, 0, 0], // a foreign burg buys here: 10 with the margin
       [1, 2, 2, DEAL_KINDS.input, 4, 3, 0, 1, 0.5] // buys abroad: 12 less the tariff, carriage and margin
     ];
-    const rate = Trade.getMarginRate();
+    const rate = Markets.getMarginRate();
     const exports = 10 / (1 - rate) + 10 / (1 + rate);
     const imports = 9 / (1 + rate);
-    const trade = StateEconomy.getTrade(1);
+    const trade = Accounts.getTrade(1);
     expect(trade.exports).toBeCloseTo(exports, 5);
     expect(trade.imports).toBeCloseTo(imports, 5);
     expect(trade.partners.get(2)!.exports).toBeCloseTo(exports, 5);

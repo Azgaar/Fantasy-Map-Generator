@@ -3,11 +3,12 @@
 import "./stubs";
 import { readFileSync } from "node:fs";
 import { GOODS_DATA } from "@/data/goods";
+import { Accounts } from "@/model/economy/accounts";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { Output } from "@/model/economy/output";
 import { Production } from "@/model/economy/production-generator";
 import { Prosperity } from "@/model/economy/prosperity";
-import { StateEconomy } from "@/model/economy/state-economy";
 import { Biomes } from "@/model/physical/biomes-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
@@ -69,6 +70,6 @@ export function runEconomy(snap: Snapshot, over: Overrides = {}) {
   Production.regenerate();
   return {
     ms: performance.now() - start,
-    ...score(pack, { Goods, Production, Prosperity, StateEconomy })
+    ...score(pack, { Goods, Output, Prosperity, Accounts })
   };
 }

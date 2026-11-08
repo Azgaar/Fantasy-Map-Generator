@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Accounts } from "@/model/economy/accounts";
+import { DEAL_KINDS, Deals } from "@/model/economy/deals";
+import { Output } from "@/model/economy/output";
 import { noFinance } from "@/model/political/states-generator";
 import { Markets } from "./markets-generator";
-import { Production } from "./production-generator";
 import { Prosperity } from "./prosperity";
-import { ProvinceEconomy } from "./province-economy";
-import { DEAL_KINDS, Trade } from "./trade";
 
 // state A rules provinces 1 and 2, state B province 3; market 1 is centered in province 1, market 2 in province 3
 beforeEach(() => {
   const markets = [{ i: 0 }, { i: 1, centerBurgId: 1, feePaid: 7 }, { i: 2, centerBurgId: 3 }];
   vi.spyOn(Markets, "get").mockImplementation(id => (id ? (markets[id] as any) : undefined));
-  vi.spyOn(Trade, "getMargin").mockReturnValue(0);
-  vi.spyOn(Production, "getRuralOutput").mockReturnValue([]);
+  vi.spyOn(Deals, "getMargin").mockReturnValue(0);
+  vi.spyOn(Output, "getRural").mockReturnValue([]);
   vi.spyOn(Prosperity, "getBurg").mockReturnValue(null);
   vi.spyOn(Prosperity, "getRuralCell").mockReturnValue(null);
   globalThis.pack = {
@@ -39,26 +39,26 @@ beforeEach(() => {
 
 describe("ProvinceEconomy", () => {
   it("counts each tax where its state's own taxpayer is, or at the market where a foreigner paid it", () => {
-    expect(ProvinceEconomy.get(1)!.taxes).toEqual({ salesTax: 3, tariffs: 0, pollTax: 4, marketFees: 7 });
-    expect(ProvinceEconomy.get(2)!.taxes).toEqual({ salesTax: 5, tariffs: 0, pollTax: 0, marketFees: 0 });
-    expect(ProvinceEconomy.get(3)!.taxes).toEqual({ salesTax: 1, tariffs: 2, pollTax: 0, marketFees: 0 });
+    expect(Accounts.ofProvince(1)!.taxes).toEqual({ salesTax: 3, tariffs: 0, pollTax: 4, marketFees: 7 });
+    expect(Accounts.ofProvince(2)!.taxes).toEqual({ salesTax: 5, tariffs: 0, pollTax: 0, marketFees: 0 });
+    expect(Accounts.ofProvince(3)!.taxes).toEqual({ salesTax: 1, tariffs: 2, pollTax: 0, marketFees: 0 });
   });
 
   it("sums its people and product, and the state spending delivered to its burgs", () => {
-    expect(ProvinceEconomy.get(1)).toMatchObject({ people: 10, manufacturing: 50, product: 50, wealth: 5, spent: 20 });
-    expect(ProvinceEconomy.get(2)!.spent).toBe(0);
+    expect(Accounts.ofProvince(1)).toMatchObject({ people: 10, manufacturing: 50, product: 50, wealth: 5, spent: 20 });
+    expect(Accounts.ofProvince(2)!.spent).toBe(0);
   });
 
   it("follows regenerated provinces without an economy run", () => {
-    expect(ProvinceEconomy.get(2)!.people).toBe(10);
+    expect(Accounts.ofProvince(2)!.people).toBe(10);
     pack.provinces = [{ i: 0 }, { i: 1, state: 1, burg: 1 }, { i: 2, state: 2, burg: 3 }] as any;
     pack.cells.province = [1, 1, 2] as any;
-    expect(ProvinceEconomy.get(1)!.people).toBe(20);
-    expect(ProvinceEconomy.get(3)).toBeNull();
+    expect(Accounts.ofProvince(1)!.people).toBe(20);
+    expect(Accounts.ofProvince(3)).toBeNull();
   });
 
   it("has nothing before the economy has run", () => {
     pack.deals = [];
-    expect(ProvinceEconomy.get(1)).toBeNull();
+    expect(Accounts.ofProvince(1)).toBeNull();
   });
 });

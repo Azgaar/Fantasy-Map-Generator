@@ -5,6 +5,7 @@ import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
+import { Taxes } from "@/model/economy/taxes";
 import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Biomes } from "@/model/physical/biomes-generator";
@@ -1001,7 +1002,7 @@ class MapRestorationModule {
       Goods.generate();
       Markets.generate();
       Production.produce();
-      States.collectTaxes();
+      Taxes.collect();
       return;
     }
 

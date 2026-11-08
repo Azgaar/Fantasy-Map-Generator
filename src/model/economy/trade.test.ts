@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DEAL_KINDS, Deals } from "@/model/economy/deals";
+import { SAVINGS_RATE } from "@/model/economy/demand";
+import { Taxes } from "@/model/economy/taxes";
 import type { Burg } from "@/model/political/burgs-generator";
 import { noFinance, States } from "@/model/political/states-generator";
+import type { Deal, Market } from "@/types/economy";
 import { rn } from "@/utils/number-utils";
-import { Goods, SAVINGS_RATE } from "./goods-generator";
-import { type Market, Markets, MarketsModule } from "./markets-generator";
-import { DEAL_KINDS, type Deal, IMPORT_CARRIAGE_FACTOR, MARKET_MARGIN, PRICE_CURVE, Trade, TradeModule } from "./trade";
+import { Goods } from "./goods-generator";
+import { MARKET_MARGIN, Markets, MarketsModule } from "./markets-generator";
+import { IMPORT_CARRIAGE_FACTOR, PRICE_CURVE, Trade, TradeModule } from "./trade";
 import { TradeRoutes } from "./trade-routes";
 
-const MARGIN = Trade.getMarginRate(); // a market that paid no license fee
+const MARGIN = Markets.getMarginRate(); // a market that paid no license fee
 
 /** States as the model keeps them: each with its finances, zero but for the given ones */
 const withFinance = (states: any[]) =>
@@ -118,7 +122,7 @@ describe("TradeModule", () => {
 
       tradeModule.sell({ burg: center, good, units: 4, taxRate: 0 });
       tradeModule.keep({ burg: center, good, units: 1 });
-      const margins = globalThis.pack.deals.reduce((sum: number, deal: Deal) => sum + tradeModule.getMargin(deal), 0);
+      const margins = globalThis.pack.deals.reduce((sum: number, deal: Deal) => sum + Deals.getMargin(deal), 0);
       expect(center.treasury).toBeCloseTo(margins, 1);
     });
 
@@ -130,7 +134,7 @@ describe("TradeModule", () => {
       const center: Burg = { i: 1, cell: 1, treasury: 0 } as any;
       globalThis.pack.burgs = [{ i: 0 } as any, center];
       const good = globalThis.options.map.goods[0];
-      const margin = (units: number) => units * 10 * tradeModule.getMarginRate(market);
+      const margin = (units: number) => units * 10 * Markets.getMarginRate(market);
 
       market.feePaid = 1;
       tradeModule.billLicenses();
@@ -167,7 +171,7 @@ describe("TradeModule", () => {
       })!;
       expect(trade.price).toBeCloseTo(10 * (1 + MARGIN) + 0.2 * 10, 2);
       expect(trade.tax).toBeCloseTo(0.2 * 10 * 2, 2);
-      expect(tradeModule.getTaxStates(globalThis.pack.deals[0]).taxState).toBe(1);
+      expect(Taxes.getTaxStates(globalThis.pack.deals[0]).taxState).toBe(1);
     });
 
     const setupImport = (states?: any[]) => {
@@ -718,7 +722,7 @@ describe("TradeModule", () => {
       const trade = importGood()!;
       expect(trade.tax).toBeCloseTo(0.2 * 5 * 10, 2);
       expect(trade.price).toBeCloseTo(rn(5 * (1 + MARGIN), 2) + 0.2 * 5 + transport, 2);
-      expect(tradeModule.getTaxStates(globalThis.pack.deals[0]).taxState).toBe(1);
+      expect(Taxes.getTaxStates(globalThis.pack.deals[0]).taxState).toBe(1);
     });
 
     it("buy() from a source applies the importer's tariff and records deal.tariff", () => {
@@ -730,7 +734,7 @@ describe("TradeModule", () => {
       importGood();
       const [deal] = globalThis.pack.deals;
       expect(deal[7]).toBeCloseTo(0.2 * 5 * 10, 2);
-      expect(tradeModule.getTaxStates(deal).tariffState).toBe(2);
+      expect(Taxes.getTaxStates(deal).tariffState).toBe(2);
     });
 
     it("isImport() is a purchase from a market of another state", () => {
@@ -738,18 +742,18 @@ describe("TradeModule", () => {
       const remoteBuy: Deal = [2, 1, 0, DEAL_KINDS.input, 1, 1, 0, 0, 0];
       const localBuy: Deal = [2, 2, 0, DEAL_KINDS.demand, 1, 1, 0, 0, 0];
       const sale: Deal = [2, 2, 0, DEAL_KINDS.sale, 1, 1, 0, 0, 0];
-      expect([remoteBuy, localBuy, sale].map(deal => tradeModule.isImport(deal))).toEqual([true, false, false]);
+      expect([remoteBuy, localBuy, sale].map(deal => Taxes.isImport(deal))).toEqual([true, false, false]);
 
       globalThis.pack.burgs[1].state = burg.state; // the source market's center joins the burg's state
-      expect(tradeModule.isImport(remoteBuy)).toBe(false);
+      expect(Taxes.isImport(remoteBuy)).toBe(false);
     });
 
     it("a burg that lost its market keeps paying its tariffs to its own state", () => {
       setupImport();
       const paid: Deal = [2, 1, 0, DEAL_KINDS.input, 1, 1, 0, 0.5, 0];
       globalThis.pack.cells.market[globalThis.pack.burgs[2].cell] = 0;
-      expect(tradeModule.getTaxStates(paid).tariffState).toBe(globalThis.pack.burgs[2].state);
-      expect(tradeModule.isImport(paid)).toBe(true);
+      expect(Taxes.getTaxStates(paid).tariffState).toBe(globalThis.pack.burgs[2].state);
+      expect(Taxes.isImport(paid)).toBe(true);
     });
 
     it("sell() to another state's market pays that state's tariff off the revenue: an import there", () => {
@@ -762,9 +766,9 @@ describe("TradeModule", () => {
       expect(sold.tariff).toBeCloseTo(0.1 * 5 * 10, 2);
       const [deal] = globalThis.pack.deals;
       expect(deal[7]).toBeCloseTo(sold.tariff!, 2);
-      expect(tradeModule.isImport(deal)).toBe(true);
-      expect(tradeModule.getTaxStates(deal).tariffState).toBe(1);
-      expect(tradeModule.getDealTariffRate(deal)).toBe(0.1);
+      expect(Taxes.isImport(deal)).toBe(true);
+      expect(Taxes.getTaxStates(deal).tariffState).toBe(1);
+      expect(Taxes.getDealTariffRate(deal)).toBe(0.1);
     });
 
     it("an embargo by either state blocks the sale too", () => {
@@ -861,12 +865,12 @@ describe("TradeModule", () => {
       const burg: Burg = { i: 1, cell: 1, state: 1 } as any;
       globalThis.pack.burgs = [{ i: 0 } as any, burg];
       globalThis.pack.states = withFinance([{ i: 0 }, { i: 1, economy: { salesTax: 0.2 } }]);
-      const taxRate = States.getSalesTax(burg);
+      const taxRate = Taxes.getSalesTax(burg);
       const deal = tradeModule.sell({ burg, good: globalThis.options.map.goods[0], units: 5, taxRate });
       expect(deal).not.toBeNull();
       expect(deal!.tax).toBeGreaterThan(0);
       expect(deal!.tax).toBeCloseTo(deal!.units * deal!.price * 0.2, 2);
-      expect(tradeModule.getTaxStates(globalThis.pack.deals[0]).taxState).toBe(1);
+      expect(Taxes.getTaxStates(globalThis.pack.deals[0]).taxState).toBe(1);
     });
 
     it("sums a burg's trades with a market in one good and kind into one deal at the average price", () => {
@@ -897,15 +901,15 @@ describe("TradeModule", () => {
 describe("market margin", () => {
   it("rises with the license fee the market's center paid, by the fee factor's root, in whole percents", () => {
     const market = { i: 1, centerBurgId: 1, color: "", goods: {} } as Market;
-    expect(Trade.getMarginRate(market)).toBe(Math.round(MARKET_MARGIN * 100) / 100);
+    expect(Markets.getMarginRate(market)).toBe(Math.round(MARKET_MARGIN * 100) / 100);
     market.feePaid = 35; // a typical monarchy's
-    expect(Trade.getMarginRate(market)).toBe(0.05);
+    expect(Markets.getMarginRate(market)).toBe(0.05);
     market.feePaid = 105; // a fee factor of 4
-    expect(Trade.getMarginRate(market)).toBe(Math.round(MARKET_MARGIN * 200) / 100);
+    expect(Markets.getMarginRate(market)).toBe(Math.round(MARKET_MARGIN * 200) / 100);
   });
 
   it("stays below the price, however dear the license", () => {
     const market = { i: 1, centerBurgId: 1, color: "", goods: {}, feePaid: 1000000 } as Market;
-    expect(Trade.getMarginRate(market)).toBe(0.5);
+    expect(Markets.getMarginRate(market)).toBe(0.5);
   });
 });

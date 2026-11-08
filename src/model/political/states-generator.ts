@@ -1,16 +1,13 @@
 import Alea from "alea";
 import { mean, median, quadtree, sum } from "d3";
+import { CULTURE_TYPES } from "@/data/culture-types";
 import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
+import { EXPENSES, type Expense, noExpenses } from "@/data/expenses";
 import type { Label } from "@/model/annotations/labels-generator";
 import { Goods } from "@/model/economy/goods-generator";
-import { Markets } from "@/model/economy/markets-generator";
-import { StateEconomy } from "@/model/economy/state-economy";
-import { Trade } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Feature } from "@/model/physical/features-generator";
-import { Districts } from "@/model/political/districts";
 import { Emblems } from "@/model/political/emblems-generator";
-import { CULTURE_TYPES } from "@/model/society/cultures-generator";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { Tags } from "@/model/tags";
@@ -68,10 +65,6 @@ export interface State {
   note?: string;
 }
 
-/** What a state spends its taxes on, buying goods during the economy run */
-export const EXPENSES = ["court", "administration", "infrastructure", "military"] as const;
-export type Expense = (typeof EXPENSES)[number];
-
 /** Expenses in whole percents of taxes, may sum past 100; corruption: percent officials pocket */
 export type StateBudget = Record<Expense | "corruption", number>;
 
@@ -88,13 +81,6 @@ export interface StateFinance {
   treasury: number;
   tariffs: TariffRule[];
 }
-
-export const noExpenses = (): Record<Expense, number> => ({
-  court: 0,
-  administration: 0,
-  infrastructure: 0,
-  military: 0
-});
 
 /** Anarchies levy nothing, like the neutral lands */
 export const levies = (state: State) => Boolean(state.i && !state.removed && state.form !== "Anarchy");
@@ -232,9 +218,6 @@ const CORRUPTION_BY_FORM: Record<string, number> = {
 const DESPOTIC_FORMS = ["Despotate", "Horde", "Junta", "Satrapy", "Shogunate"]; // double their form's corruption
 const SIZE_CORRUPTION = 15; // what the largest state's size adds; a city-state's adds nothing
 const DIVERSITY_CORRUPTION = 10; // what ruling no one of the state's culture and faith would add, half for each
-const ADMINISTRATION_NEED = 0.1; // administration's money a person a day that curbs corruption fully
-const ADMINISTRATION_CURB = 0.5; // the share of corruption a fully paid administration curbs
-export const PROVISION_NEED = { infrastructure: 0.05, court: 0.08 }; // spending a person a day that serves the state's people fully
 
 // base percents of the taxes; the court's grows with the capital's share of the townspeople
 const EXPENSES_BY_FORM: Record<string, Record<"court" | "administration" | "infrastructure", number>> = {
@@ -633,7 +616,7 @@ class StatesModule {
         states[s].burgs!++;
       }
     }
-    StateEconomy.forget();
+    Pack.markChanged();
   }
 
   generateCampaign(state: State): Campaign[] {
@@ -1138,26 +1121,6 @@ class StatesModule {
       if ((cells.religion?.[i] || 0) !== religion) strangers += weight / 2;
     }
     return people ? strangers / people : 0;
-  }
-
-  /** How fully last run's spending on infrastructure or the court served the people, 0 to 1 */
-  getProvision(state: State | undefined, expense: keyof typeof PROVISION_NEED): number {
-    if (!state?.i || state.removed) return 0;
-    const need = PROVISION_NEED[expense] * ((state.urban || 0) + (state.rural || 0));
-    return need ? Math.min(1, (state.economy.spent[expense] || 0) / need) : 0;
-  }
-
-  /** Percent officials pocket once this much is collected, curbed as administration meets its need */
-  getCorruption(state: State, collected: number, corruption = state.economy.budget.corruption): number {
-    const { administration } = state.economy.budget;
-    const need = ADMINISTRATION_NEED * ((state.urban || 0) + (state.rural || 0));
-    if (!corruption || !need || collected <= 0) return corruption;
-    // pay = allotted × (1 − graft), graft = corruption × (1 − curb × pay ÷ need): solved for pay
-    const allotted = (collected * administration) / 100;
-    const graft = corruption / 100;
-    const rest = 1 - (allotted * graft * ADMINISTRATION_CURB) / need;
-    const pay = rest > 0 ? (allotted * (1 - graft)) / rest : Infinity;
-    return corruption * (1 - ADMINISTRATION_CURB * Math.min(1, pay / need));
   }
 
   /** The form's fee, moved as the sales tax is: no extra random roll, so generation is unchanged */
@@ -1789,77 +1752,6 @@ class StatesModule {
     const state = pack.states[stateId];
     if (!state || state.removed) throw new Error(`State ${stateId} does not exist`);
     return state;
-  }
-
-  collectTaxes() {
-    const { states } = pack;
-    if (!states?.length) return;
-    const { salesTax, tariffs } = Trade.getTaxesByState();
-
-    const pollTax = this.getPollTax().paid;
-    const marketFees = this.getMarketFees();
-    for (const state of states) {
-      if (!state.i || state.removed) continue;
-      const { budget, adjustments } = state.economy;
-      const collected = rn(
-        (salesTax[state.i] || 0) +
-          (tariffs[state.i] || 0) +
-          (pollTax[state.i] || 0) +
-          (marketFees[state.i] || 0) +
-          sum(adjustments, line => line.value),
-        2
-      );
-      const expenses = sum(EXPENSES.map(expense => budget[expense]));
-      const corruption = Districts.getStateCorruption(state, collected);
-      const pocketed = rn((Math.max(0, collected) * expenses * corruption) / 10000, 2); // officials' cut of each expense
-      state.economy.collected = collected;
-      state.economy.pocketed = pocketed;
-      state.economy.treasury = rn(collected - pocketed - sum(Object.values(state.economy.spent)), 2);
-    }
-  }
-
-  /** The market fee a market centered in the state owes a day; neutrals charge none */
-  getMarketFee(stateId: number): number {
-    const state = pack.states?.[stateId];
-    return stateId && state && !state.removed ? state.economy.marketFee || 0 : 0;
-  }
-
-  /** Market fees paid in the last run, by the state of each market's center */
-  getMarketFees(): number[] {
-    const paid: number[] = [];
-    for (const market of pack.markets ?? []) {
-      if (!market?.feePaid) continue;
-      const stateId = Markets.getState(market);
-      paid[stateId] = (paid[stateId] || 0) + market.feePaid;
-    }
-    return paid;
-  }
-
-  /** The poll tax a state charges people at its rate; neutrals charge none */
-  getPollTaxDue(stateId: number, people: number): number {
-    const state = pack.states?.[stateId];
-    return stateId && state && !state.removed ? (state.economy.pollTax || 0) * people : 0;
-  }
-
-  /** Poll tax owed and paid last run, by state: rural people pay as far as their money goes */
-  getPollTax(): { owed: number[]; paid: number[] } {
-    const owed: number[] = [];
-    const paid: number[] = [];
-    const add = (stateId: number, owes: number, pays: number) => {
-      owed[stateId] = (owed[stateId] || 0) + owes;
-      paid[stateId] = (paid[stateId] || 0) + pays;
-    };
-    for (const burg of pack.burgs ?? [])
-      if (burg?.i && !burg.removed && burg.pollTaxPaid) add(burg.state || 0, burg.pollTaxPaid, burg.pollTaxPaid);
-    for (const market of pack.markets ?? [])
-      for (const [stateId, owes, pays] of market?.rural?.pollTax ?? []) add(stateId, owes, pays);
-    return { owed, paid };
-  }
-
-  getSalesTax(burg?: { state?: number }): number {
-    const stateId = burg?.state || 0;
-    if (!stateId) return 0;
-    return pack.states?.[stateId]?.economy.salesTax ?? 0;
   }
 }
 

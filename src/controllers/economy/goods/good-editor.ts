@@ -1,14 +1,15 @@
 import { Controllers } from "@/controllers";
+import { CULTURE_TYPES } from "@/data/culture-types";
 import { CULTURE_TYPE_LABELS, DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
-import type { DemandCategory, Good } from "@/model/economy/goods-generator";
-import { DEFAULT_CARRIAGE, DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, Goods } from "@/model/economy/goods-generator";
+import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "@/model/economy/demand";
+import { DEFAULT_CARRIAGE, Goods } from "@/model/economy/goods-generator";
 import { Icons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
-import { CULTURE_TYPES } from "@/model/society/cultures-generator";
 import { Tags } from "@/model/tags";
 import { getDecima, getDistance, getMoneyUnit } from "@/model/units";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
+import type { DemandCategory, Good } from "@/types/economy";
 import { App } from "@/ui/app-commands";
 import { eraLabel } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";

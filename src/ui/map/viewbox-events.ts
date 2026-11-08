@@ -2,9 +2,9 @@
 import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { LabelType } from "@/model/annotations/labels-generator";
-import type { Deal } from "@/model/economy/trade";
 import { dragLegendBox, legendBoxFromEvent } from "@/renderers/draw-legend";
 import { LegendBoxes } from "@/renderers/legend-boxes";
+import type { Deal } from "@/types/economy";
 import { tip } from "@/ui/tooltips";
 import { debounce } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";

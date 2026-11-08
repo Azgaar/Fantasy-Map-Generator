@@ -1,4 +1,4 @@
-import { DEAL_KINDS } from "./trade";
+import { DEAL_KINDS } from "@/model/economy/deals";
 import { TradeRoutes } from "./trade-routes";
 
 /** A route link's traffic: units of each good carried over it either way a day, by good id */

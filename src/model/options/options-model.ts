@@ -1,12 +1,12 @@
 // All app configuration options, options.map saved to `.map` file as settings; docs/architecture/configuration.md
 
 import { CULTURE_SETS } from "@/data/culture-sets";
+import { clearEntityMultipliers } from "@/data/goods";
 import { DEFAULT_DENSITY, getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import { DEFAULT_THREE_D } from "@/data/view-3d-options";
 import { Labels } from "@/model/annotations/labels-generator";
-import { Goods } from "@/model/economy/goods-generator";
 import { DEFAULT_JITTER } from "@/model/graph/lattice";
 import { adoptLegacyOptions } from "@/model/options/options-legacy";
 import {
@@ -22,7 +22,7 @@ import { Coastline } from "@/model/physical/coastline-generator";
 import { Coordinates } from "@/model/physical/coordinates";
 import { Relief } from "@/model/physical/relief-generator";
 import { Burgs } from "@/model/political/burgs-generator";
-import { Military } from "@/model/political/military-generator";
+import { getDefaultMilitaryUnits } from "@/model/political/military-units";
 import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
@@ -86,7 +86,7 @@ class OptionsModel {
         style: { preset: "default" },
         burgs: { groups: Burgs.getDefaultGroups() },
         labels: { groups: Labels.getDefaultGroups() },
-        military: { units: Military.getDefaultOptions() },
+        military: { units: getDefaultMilitaryUnits() },
         transports: Transports.getDefaults(),
         eras: Development.getDefaultEras(),
         customIcons: [],
@@ -282,7 +282,7 @@ class OptionsModel {
     map.coastline = previous.coastline;
     map.relief = previous.relief;
     map.goods = previous.goods;
-    Goods.clearEntityMultipliers(map.goods);
+    clearEntityMultipliers(map.goods);
 
     // and the requests it consumes
     const { width, height, density, sampling, jitter } = graph;

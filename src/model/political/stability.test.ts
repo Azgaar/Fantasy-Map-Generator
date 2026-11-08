@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Accounts } from "@/model/economy/accounts";
 import { Goods } from "@/model/economy/goods-generator";
 import { Prosperity } from "@/model/economy/prosperity";
-import { StateEconomy } from "@/model/economy/state-economy";
 import { Military, UPKEEP_COST } from "./military-generator";
 import { Stability } from "./stability";
 import { noFinance } from "./states-generator";
@@ -68,7 +68,7 @@ describe("Military.getUpkeep", () => {
 
 describe("Stability.get", () => {
   it("sums its parts: a kept army supports it, an unkept one undermines it", () => {
-    vi.spyOn(StateEconomy, "getAccounts").mockReturnValue({ prosperity: 0.25, taxes: 0, product: 100 } as any);
+    vi.spyOn(Accounts, "ofState").mockReturnValue({ prosperity: 0.25, taxes: 0, product: 100 } as any);
     vi.spyOn(Prosperity, "getRuralCell").mockReturnValue({ living: { prosperity: 0.25 } } as any);
     const kept = Stability.get(1)!;
     expect(kept.parts.prosperity).toBeCloseTo(0.25);
@@ -80,7 +80,7 @@ describe("Stability.get", () => {
   });
 
   it("is null for the neutral lands and before the economy has run", () => {
-    vi.spyOn(StateEconomy, "getAccounts").mockReturnValue(null);
+    vi.spyOn(Accounts, "ofState").mockReturnValue(null);
     expect(Stability.get(1)).toBeNull();
     expect(Stability.get(0)).toBeNull();
   });
@@ -104,7 +104,7 @@ describe("Military.getEquipped", () => {
   });
 
   it("equips a unit by what the state consumes of its goods and their military coverage, shared goods split by troops", () => {
-    vi.spyOn(StateEconomy, "getConsumption").mockReturnValue([0, 0, 2, 1, 0]);
+    vi.spyOn(Accounts, "getConsumption").mockReturnValue([0, 0, 2, 1, 0]);
     // horses: 2 × 0.365 × 0.5 = 0.365 points equipped, 3/4 to cavalry; camels: 0.365, all to cavalry
     const equipped = Military.getEquipped(1, { infantry: 5, cavalry: 0.9, knights: 0.3, fleet: 0.01 });
     expect(equipped.infantry).toBe(1); // needs no goods
@@ -115,12 +115,12 @@ describe("Military.getEquipped", () => {
 
   it("needs no goods for a unit without the goods field, as in maps and rosters saved before it", () => {
     options.map.military.units = [{ name: "legion", type: "melee" }] as any;
-    vi.spyOn(StateEconomy, "getConsumption").mockReturnValue([]);
+    vi.spyOn(Accounts, "getConsumption").mockReturnValue([]);
     expect(Military.getEquipped(1, { legion: 5 })).toEqual({ legion: 1 });
   });
 
   it("is full when goods suffice, and before the economy has run", () => {
-    vi.spyOn(StateEconomy, "getConsumption").mockReturnValue([0, 0, 100, 0, 1]);
+    vi.spyOn(Accounts, "getConsumption").mockReturnValue([0, 0, 100, 0, 1]);
     expect(Military.getEquipped(1, { cavalry: 0.1, knights: 0.1, fleet: 0.01 })).toEqual({
       infantry: 1,
       cavalry: 1,

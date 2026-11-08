@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DEAL_KINDS } from "@/model/economy/deals";
 import type { Burg } from "@/model/political/burgs-generator";
-import { type Market, MarketsModule } from "./markets-generator";
-import { DEAL_KINDS } from "./trade";
+import type { Market } from "@/types/economy";
+import { MarketsModule } from "./markets-generator";
 
 describe("MarketsModule", () => {
   describe("editing and lookup", () => {

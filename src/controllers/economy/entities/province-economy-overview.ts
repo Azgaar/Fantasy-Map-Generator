@@ -1,8 +1,7 @@
-import { type ProvinceAccounts, ProvinceEconomy } from "@/model/economy/province-economy";
-import { StateEconomy } from "@/model/economy/state-economy";
-import { Districts } from "@/model/political/districts";
+import { Accounts, type ProvinceAccounts } from "@/model/economy/accounts";
+import { Corruption } from "@/model/economy/corruption";
+import { StateOrders } from "@/model/economy/state-orders";
 import { Stability } from "@/model/political/stability";
-import { States } from "@/model/political/states-generator";
 import { formatPrice } from "@/model/units";
 import { Dialog } from "@/ui/dialog/dialog";
 import {
@@ -29,8 +28,7 @@ import {
 
 const DIALOG_CLASS = "provinceEconomyDialog";
 
-/** A province's district's: its own if its seat has a market, else the crown lands' */
-type Governance = { crown: boolean; corruption: number; infrastructure: number; stability: number | null };
+type ProvinceFigures = { corruption: number; infrastructure: number; stability: number | null };
 
 const dialogId = (provinceId: number) => `provinceEconomy${provinceId}`;
 
@@ -38,7 +36,7 @@ const dialogId = (provinceId: number) => `provinceEconomy${provinceId}`;
 function open(provinceId: number): void {
   const province = pack.provinces[provinceId];
   if (!province || province.removed) return;
-  if (!ProvinceEconomy.get(provinceId)) {
+  if (!Accounts.ofProvince(provinceId)) {
     tip(EconomyTerms.noData(), true, "error", 5000);
     return;
   }
@@ -77,10 +75,10 @@ function cleanup(provinceId: number): void {
 }
 
 function renderBody(provinceId: number): string {
-  const accounts = ProvinceEconomy.get(provinceId);
+  const accounts = Accounts.ofProvince(provinceId);
   const province = pack.provinces[provinceId];
   if (!province) return "";
-  const state = StateEconomy.getAccounts(province.state);
+  const state = Accounts.ofState(province.state);
   if (!accounts || !state) return "";
   return [
     renderCards(provinceId, accounts),
@@ -92,44 +90,38 @@ function renderBody(provinceId: number): string {
 
 const taxesOf = ({ taxes }: ProvinceAccounts) => taxes.salesTax + taxes.tariffs + taxes.pollTax + taxes.marketFees;
 
-/** Each province of the state with accounts: its own district's governance or the crown lands' */
-function getGovernance(stateId: number): Map<number, Governance> {
+/** Each province of the state by id */
+function getProvinceFigures(stateId: number): Map<number, ProvinceFigures> {
   const state = pack.states[stateId];
-  const governance = new Map<number, Governance>();
-  if (!stateId || !state || state.removed) return governance;
-  const districts = Districts.get(stateId);
-  const infrastructure = Districts.getInfrastructure(state);
-  const stability = Stability.getDistricts(stateId);
-  for (const province of pack.provinces) {
-    if (!province.i || province.removed || province.state !== stateId) continue;
-    const district = Districts.at(province.center);
-    const k = district ? districts.indexOf(district) : -1;
-    if (!district || k < 0) continue;
-    governance.set(province.i, {
-      crown: !district.province,
-      corruption: Districts.getCorruption(state, district, state.economy.collected),
-      infrastructure: infrastructure[k] ?? 0,
-      stability: stability[k]?.stability ?? null
+  const figures = new Map<number, ProvinceFigures>();
+  if (!stateId || !state || state.removed) return figures;
+  const infrastructure = StateOrders.getInfrastructure(state);
+  for (const { province, stability } of Stability.getProvinces(stateId)) {
+    if (!province.id) continue;
+    figures.set(province.id, {
+      corruption: Corruption.ofProvince(state, province, state.economy.collected),
+      infrastructure: infrastructure.get(province.id) ?? 0,
+      stability
     });
   }
-  return governance;
+  return figures;
 }
 
 /** Its figures, each ranked among its state's provinces and set against the state's */
 function renderCards(provinceId: number, accounts: ProvinceAccounts): string {
   const stateId = pack.provinces[provinceId].state;
   const state = pack.states[stateId];
-  const stateAccounts = StateEconomy.getAccounts(stateId)!;
+  const stateAccounts = Accounts.ofState(stateId)!;
   const ids = pack.provinces
-    .filter(p => p.i && !p.removed && p.state === stateId && ProvinceEconomy.get(p.i))
+    .filter(p => p.i && !p.removed && p.state === stateId && Accounts.ofProvince(p.i))
     .map(p => p.i);
-  const of = (id: number) => ProvinceEconomy.get(id)!;
+  const of = (id: number) => Accounts.ofProvince(id)!;
   const ranked = (measure: (accounts: ProvinceAccounts) => number) => rank(ids, provinceId, id => measure(of(id)));
 
   const { scale, urbanization } = options.map.units.population;
-  const urban = accounts.townspeople * scale * urbanization.rate;
-  const rural = (accounts.people - accounts.townspeople) * scale;
-  const population = (a: ProvinceAccounts) => (a.people - a.townspeople + a.townspeople * urbanization.rate) * scale;
+  const urban = accounts.urbanPeople * scale * urbanization.rate;
+  const rural = (accounts.people - accounts.urbanPeople) * scale;
+  const population = (a: ProvinceAccounts) => (a.people - a.urbanPeople + a.urbanPeople * urbanization.rate) * scale;
   const productShare = stateAccounts.product ? rn((accounts.product / stateAccounts.product) * 100, 1) : 0;
   const prosperity = (value: number | null) => (value === null ? "—" : renderProsperityPercent(value));
   const stateProsperity =
@@ -139,11 +131,11 @@ function renderCards(provinceId: number, accounts: ProvinceAccounts): string {
   const taxes = taxesOf(accounts);
   const burden = accounts.product ? rn((taxes / accounts.product) * 100, 1) : 0;
 
-  const governance = getGovernance(stateId);
-  const own = governance.get(provinceId);
+  const figures = getProvinceFigures(stateId);
+  const own = figures.get(provinceId);
   const governed = (
     label: string,
-    measure: (governance: Governance) => number | null,
+    measure: (figures: ProvinceFigures) => number | null,
     format: (value: number) => string,
     stateValue: string,
     tipText: string,
@@ -151,9 +143,9 @@ function renderCards(provinceId: number, accounts: ProvinceAccounts): string {
   ) => {
     const value = own ? measure(own) : null;
     if (!own || value === null) return card(label, "—", [EconomyTerms.noData()], tipText);
-    const others = ids.filter(id => governance.has(id));
-    const place = rank(others, provinceId, id => measure(governance.get(id)!) ?? 0, lowestFirst);
-    return card(label, format(value), [place, own.crown ? t("Crown lands") : `${t("State")}: ${stateValue}`], tipText);
+    const others = ids.filter(id => figures.has(id));
+    const place = rank(others, provinceId, id => measure(figures.get(id)!) ?? 0, lowestFirst);
+    return card(label, format(value), [place, `${t("State")}: ${stateValue}`], tipText);
   };
   const percent = (value: number) => `${rn(value * 100)}%`;
   const stateStability = Stability.get(stateId)?.stability;
@@ -168,11 +160,11 @@ function renderCards(provinceId: number, accounts: ProvinceAccounts): string {
       t("Corruption"),
       g => g.corruption,
       value => `${rn(value)}%`,
-      `${rn(Districts.getStateCorruption(state, state.economy.collected))}%`,
+      `${rn(Corruption.ofState(state, state.economy.collected))}%`,
       EconomyTerms.corruption(),
       true
     )}
-    ${governed(t("Infrastructure"), g => g.infrastructure, percent, percent(States.getProvision(state, "infrastructure")), t("Infrastructure: how well the state's public works serve the people"))}
+    ${governed(t("Infrastructure"), g => g.infrastructure, percent, percent(StateOrders.getProvision(state, "infrastructure")), t("Infrastructure: how well the state's public works serve the people"))}
     ${governed(t("Stability"), g => g.stability, percent, stateStability === undefined ? "—" : percent(stateStability), EconomyTerms.stability())}
   </div>`;
 }
@@ -183,7 +175,7 @@ function renderState(provinceId: number, accounts: ProvinceAccounts): string {
   const total = taxesOf(accounts);
   const stability = Stability.getProvince(provinceId);
   const state = pack.states[pack.provinces[provinceId].state];
-  const corruption = stability ? Districts.getCorruption(state, stability.district, state.economy.collected) : 0;
+  const corruption = stability ? Corruption.ofProvince(state, stability.province, state.economy.collected) : 0;
   const swatch = `<span class="swatch" style="background: ${ECONOMY_COLORS.pocketed}"></span>`;
   return `<div><h4 data-tip="${t("Taxes paid to the state and its spending in the province")}"><span>${t("Taxes and state spending")}</span></h4>
     ${line(t("Sales tax"), -taxes.salesTax, "", "negative")}

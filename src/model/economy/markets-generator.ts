@@ -1,7 +1,7 @@
 import Alea from "alea";
-import { quadtree } from "d3-quadtree";
+import { quadtree } from "d3";
 import type { Burg } from "@/model/political/burgs-generator";
-import { States } from "@/model/political/states-generator";
+import type { Market } from "@/types/economy";
 import { getColors, getRandomColor, requireFill } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { t } from "@/utils/i18n";
@@ -9,37 +9,19 @@ import { notify } from "@/utils/notices";
 import { minmax } from "@/utils/number-utils";
 
 const OTHER_LANDMASS_SPACING = 0.5; // share of the market spacing a market on another landmass keeps clear
-export const MARKET_FEE_DETERRENCE = 35; // market fee a day that halves a burg's chance to be a center and doubles each market's area
+const MARKET_FEE_DETERRENCE = 35; // market fee a day that halves a burg's chance to be a center and doubles each market's area
+export const MARKET_MARGIN = 0.035; // a market's margin before its license fee raises it
+const MAX_MARKET_MARGIN = 0.5; // however dear the license: past 1 a market would sell for less than nothing
 const CROSSROADS_BONUS = 0.25; // score a burg gains for each route beyond a road through it, up to 4 more
 const SPACING_RANGE = [0.5, 2.5]; // the spacing a burg needs, as a share of the base, from the busiest land to the emptiest
 const DENSITY_PULL = 0.6; // how far markets follow burgs: 1 gives every market about as many burgs, 0 spaces them evenly
 
 type ScoredBurg = { burg: Burg; score: number };
 
-export type Market = {
-  i: number;
-  centerBurgId: number;
-  color: string;
-  name?: string;
-  goods: Record<number, { stock: number; price: number }>;
-  rural?: RuralDay; // its rural people's last day, kept from the economy run
-  feePaid?: number; // license fee its center burg paid its state in the last economy run
-  note?: string;
-};
-
-/** A market's rural day: earnings, purchases, unsold produce, poll tax owed and paid by state */
-type RuralDay = {
-  earned: number;
-  spent: number;
-  bought: [goodId: number, units: number][];
-  kept?: [goodId: number, units: number][]; // their produce left unsold, which they keep; missing in maps saved before it
-  margin?: number; // what the market's center took on their produce sold and their purchases, in no deal
-  pollTax?: [stateId: number, owed: number, paid: number][];
-};
-
 export class MarketsModule {
   private marketById: Market[] = [];
   revision = 0; // bumped when a market is added or moved without replacing pack.markets
+  private marginRates = new Map<number, number>(); // by license fee paid
 
   regenerate(): Market[] {
     // the old centers' plazas go with them
@@ -83,7 +65,7 @@ export class MarketsModule {
   private createMarkets(scored = this.scoreBurgs()): Market[] {
     const spacing = this.getSpacing(
       scored.map(({ burg }) => burg).filter(burg => burg.i && !burg.removed),
-      this.feeFactor
+      burg => this.feeFactor(burg)
     );
 
     const markets: Market[] = [];
@@ -132,7 +114,7 @@ export class MarketsModule {
   }
 
   private feeFactor(burg: Burg) {
-    return 1 + States.getMarketFee(burg.state || 0) / MARKET_FEE_DETERRENCE;
+    return 1 + this.getFee(burg.state || 0) / MARKET_FEE_DETERRENCE;
   }
 
   /** Moves each market to the best burg it serves: spacing can seat a hamlet beside a blocked city */
@@ -361,6 +343,26 @@ export class MarketsModule {
 
     pack.markets = pack.markets.filter(m => m.i !== marketId);
     this.sync();
+  }
+
+  /** Share a market buys below and sells above its price, whole percents, raised by the license */
+  getMarginRate(market?: Market): number {
+    const fee = market?.feePaid || 0;
+    let rate = this.marginRates.get(fee);
+    if (rate === undefined) {
+      rate = Math.min(
+        MAX_MARKET_MARGIN,
+        Math.round(MARKET_MARGIN * Math.sqrt(1 + fee / MARKET_FEE_DETERRENCE) * 100) / 100
+      );
+      this.marginRates.set(fee, rate);
+    }
+    return rate;
+  }
+
+  /** The license fee a day a market centered in the state pays it; neutrals charge none */
+  getFee(stateId: number): number {
+    const state = pack.states?.[stateId];
+    return stateId && state && !state.removed ? state.economy.marketFee || 0 : 0;
   }
 
   getState(market: Market | undefined): number {

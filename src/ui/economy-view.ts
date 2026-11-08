@@ -1,11 +1,13 @@
 import { sum } from "d3";
+import type { Expense } from "@/data/expenses";
 import { PROSPERITY_LEVEL_LABELS } from "@/data/id-labels";
-import { type Good, Goods } from "@/model/economy/goods-generator";
+import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { type Living, Prosperity, type ProsperityLevel } from "@/model/economy/prosperity";
-import { type Deal, type DealKind, Trade, type Transaction } from "@/model/economy/trade";
-import type { Expense } from "@/model/political/states-generator";
+import { Taxes } from "@/model/economy/taxes";
+import { Trade } from "@/model/economy/trade";
 import { formatPrice, getDecima, getDistance } from "@/model/units";
+import type { Deal, DealKind, Good, Transaction } from "@/types/economy";
 import { wiki } from "@/utils/common-utils";
 import { Catalog, sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
@@ -53,8 +55,8 @@ export const EconomyTerms = {
   expenseTip: (expense: Expense) =>
     ({
       court: t("Court and clergy: luxuries the state buys at its capital"),
-      administration: t("Administration: utilities the state buys at its provinces' seats"),
-      infrastructure: t("Infrastructure: construction goods the state buys at its provinces' seats"),
+      administration: t("Administration: utilities the state buys at its provinces' capitals"),
+      infrastructure: t("Infrastructure: construction goods the state buys at its provinces' capitals"),
       military: t("Military: military goods and food the state buys at its capital")
     })[expense],
   prosperity: () => t("Prosperity: how well the people live"),
@@ -175,7 +177,7 @@ export function getTradeContext(
   const burg = pack.burgs[burgId];
   const market = Markets.get(marketId);
   const deal: Deal = [burgId, marketId, goodId, kind, 0, 0, 0, tariff, 0];
-  const { taxState, tariffState } = Trade.getTaxStates(deal);
+  const { taxState, tariffState } = Taxes.getTaxStates(deal);
   const carriageFactor = market && burg ? Trade.getCarriageFactor(market, burg) : 1; // dearer from another state's market
   const measured = market && burg ? Trade.getDecimas(market, burg) : 0; // carried between the market and the burg
   // a route removed since the run: the distance the deal paid for
@@ -183,8 +185,8 @@ export function getTradeContext(
   return {
     decimas: Number.isFinite(measured) ? measured : Number.isFinite(paidFor) ? paidFor : 0,
     carriageFactor,
-    isImport: Trade.isImport(deal),
-    tariffRate: Trade.getDealTariffRate(deal),
+    isImport: Taxes.isImport(deal),
+    tariffRate: Taxes.getDealTariffRate(deal),
     taxStateId: taxState,
     tariffStateId: tariffState
   };

@@ -7,6 +7,7 @@ import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
+import { Taxes } from "@/model/economy/taxes";
 import { GraphOverride } from "@/model/graph/graph-override";
 import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
@@ -68,7 +69,7 @@ const generationPipelineSteps = [
   { id: "featureNames", run: () => Features.defineNames() },
   { id: "markets", run: () => Markets.generate() },
   { id: "production", run: () => Production.produce() },
-  { id: "taxes", run: () => States.collectTaxes() },
+  { id: "taxes", run: () => Taxes.collect() },
   { id: "military", run: () => Military.generate() },
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() },
@@ -117,7 +118,7 @@ const erasePipelineSteps = [
   { id: "featureNames", run: () => Features.defineNames() },
   { id: "markets", run: () => Markets.generate() },
   { id: "production", run: () => Production.produce() },
-  { id: "taxes", run: () => States.collectTaxes() },
+  { id: "taxes", run: () => Taxes.collect() },
   { id: "military", run: () => Military.generate() },
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() }

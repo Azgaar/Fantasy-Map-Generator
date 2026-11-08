@@ -70,7 +70,8 @@ export function checkOverrides(page, over) {
       const { Goods } = await import(find("model/economy/goods-generator.ts"));
       const { Production } = await import(find("model/economy/production-generator.ts"));
       const { Prosperity } = await import(find("model/economy/prosperity.ts"));
-      const { StateEconomy } = await import(find("model/economy/state-economy.ts"));
+      const { Accounts } = await import(find("model/economy/accounts.ts"));
+      const { Output } = await import(find("model/economy/output.ts"));
       for (const g of options.map.goods) {
         if (over.value?.[g.name] !== undefined) g.value = over.value[g.name];
         if (over.coverage?.[g.name]) g.demandCoverage = { ...over.coverage[g.name] };
@@ -81,9 +82,9 @@ export function checkOverrides(page, over) {
       Production.regenerate();
       return new Function(`${scoreSource}\nreturn score;`)()(pack, {
         Goods,
-        Production,
+        Output,
         Prosperity,
-        StateEconomy
+        Accounts
       });
     },
     { over, scoreSource: SCORE }

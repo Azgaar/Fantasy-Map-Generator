@@ -1,13 +1,13 @@
 import { sum } from "d3";
 import { Controllers } from "@/controllers";
+import { EXPENSES, type Expense } from "@/data/expenses";
 import { EXPENSE_LABELS } from "@/data/id-labels";
+import { Accounts } from "@/model/economy/accounts";
+import { Corruption } from "@/model/economy/corruption";
 import { Goods } from "@/model/economy/goods-generator";
-import { StateEconomy } from "@/model/economy/state-economy";
-import { Districts } from "@/model/political/districts";
+import { StateOrders } from "@/model/economy/state-orders";
 import { Military } from "@/model/political/military-generator";
 import {
-  EXPENSES,
-  type Expense,
   type State,
   type StateBudget,
   type StateFinance,
@@ -111,7 +111,7 @@ function addListeners(): void {
 function render(): void {
   Dialog.close("tariffSelectorDialog"); // its rule is about to be replaced
   const state = pack.states[stateId];
-  const taxes = StateEconomy.getBudget(stateId);
+  const taxes = Accounts.getBudget(stateId);
   edit = {
     budget: { ...state.economy.budget },
     rules: copyRules(state.economy.tariffs),
@@ -165,7 +165,7 @@ const amount = (value: number, tone = "", tipText = "", id = "") =>
 
 /** The form's markup: revenue with adjustments, expenses and what they achieved, then tariffs */
 function renderForm(state: State): string {
-  const { salesTax, tariffs, pollTax, pollTaxOwed, marketFees, markets, corruption } = StateEconomy.getBudget(state.i);
+  const { salesTax, tariffs, pollTax, pollTaxOwed, marketFees, markets, corruption } = Accounts.getBudget(state.i);
   const { budget } = state.economy;
   const percent = (id: string, value: number, step = 1, max = 100) =>
     `<td><input id="${id}" type="number" min="0" max="${max}" step="${step}" value="${value}"/> %</td>`;
@@ -177,8 +177,8 @@ function renderForm(state: State): string {
   const effect = (label: string, value: string, tipText: string) =>
     `<tr><td colspan="3" data-tip="${tipText}">${label}</td><td class="amount" data-tip="${tipText}">${value}</td></tr>`;
   const share = (value: number) => `${rn(value * 100)}%`;
-  const curbed = rn(Districts.getStateCorruption(state, state.economy.collected));
-  const uncurbed = rn(Districts.getStateTendency(state)); // the setting as the expenses' districts weigh it
+  const curbed = rn(Corruption.ofState(state, state.economy.collected));
+  const uncurbed = rn(Corruption.getStateTendency(state)); // the setting as the expenses' districts weigh it
 
   return /* html */ `<table>${columns}
       <tbody>
@@ -200,8 +200,8 @@ function renderForm(state: State): string {
         <tr><th colspan="4" data-tip="${t("What the state's expenses achieved in the last run")}">${t("Effects")}</th></tr>
         ${effect(t("Army upkeep"), share(Military.getUpkeep(state.i)), EconomyTerms.upkeep())}
         ${effect(t("Corruption curbed"), `${uncurbed}% → ${curbed}%`, EconomyTerms.expenseTip("administration"))}
-        ${effect(t("Infrastructure served"), share(States.getProvision(state, "infrastructure")), EconomyTerms.expenseTip("infrastructure"))}
-        ${effect(t("Court and clergy served"), share(States.getProvision(state, "court")), EconomyTerms.expenseTip("court"))}
+        ${effect(t("Infrastructure served"), share(StateOrders.getProvision(state, "infrastructure")), EconomyTerms.expenseTip("infrastructure"))}
+        ${effect(t("Court and clergy served"), share(StateOrders.getProvision(state, "court")), EconomyTerms.expenseTip("court"))}
       </tbody>
     </table>
     <table>
@@ -220,7 +220,7 @@ function drawCollected(): void {
 function drawBudget(): void {
   const { economy } = pack.states[stateId];
   const set = economy.budget.corruption;
-  const taken = set ? Districts.getStateCorruption(pack.states[stateId], economy.collected) / set : 1; // the last run's take per point set
+  const taken = set ? Corruption.ofState(pack.states[stateId], economy.collected) / set : 1; // the last run's take per point set
   for (const input of ensureEl("stateBudget").querySelectorAll<HTMLInputElement>("input.share")) {
     const key = input.dataset.key as keyof StateBudget;
     input.value = String(edit.budget[key]);

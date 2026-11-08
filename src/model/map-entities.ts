@@ -1,5 +1,5 @@
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
-import { DEAL_KINDS } from "@/model/economy/trade";
+import { DEAL_KINDS } from "@/model/economy/deals";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Regiment } from "@/model/political/military-generator";
@@ -540,7 +540,9 @@ class EntityLookup {
       entity: id => (pack.deals?.[id] ? { i: id } : undefined),
       name: id => {
         const deal = pack.deals?.[id];
-        return deal ? `${this.byId(options.map.goods, deal[2])?.name || "Goods"} deal` : "";
+        if (!deal) return "";
+        const [, , goodId] = deal;
+        return `${this.byId(options.map.goods, goodId)?.name || "Goods"} deal`;
       },
       refs: () => (pack.deals ?? []).map((_, id) => ({ type: "deal" as const, id })),
       points: ref => {

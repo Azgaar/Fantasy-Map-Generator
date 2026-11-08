@@ -1,52 +1,15 @@
 import Alea from "alea";
 import { color, shuffler } from "d3";
-import { GOODS_DATA } from "@/data/goods";
+import { CULTURE_TYPES } from "@/data/culture-types";
+import { type ENTITY_MULTIPLIERS, GOODS_DATA, GOODS_ICON_SET } from "@/data/goods";
 import { Icons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
-import { CULTURE_TYPES, type CultureType } from "@/model/society/cultures-generator";
 import { Tags } from "@/model/tags";
-import type { IconSet } from "@/types/icons";
+import type { Good } from "@/types/economy";
 import { requireColor } from "@/utils/color-utils";
 import { rn } from "@/utils/number-utils";
 import { requireName } from "@/utils/validation-utils";
-
-export interface Good {
-  i: number;
-
-  // generation
-  deposits?: [number, number]; // deposits on the map, min and max
-  distribution?: string;
-  biomeOutput?: Partial<Record<number, number>>;
-  recipes?: Record<number, number>[];
-  development?: number; // the least technological development, 0–100, a cell needs to produce it
-
-  // multipliers; absent or 1 = no effect; 0 = fully suppressed
-  multipliers?: {
-    cultureType?: Partial<Record<CultureType, number>>;
-    culture?: Partial<Record<number, number>>;
-    state?: Partial<Record<number, number>>;
-    religion?: Partial<Record<number, number>>;
-    biome?: Partial<Record<number, number>>;
-    zone?: Partial<Record<number, number>>; // keyed by zone.i; rare, resolved via cell membership
-  };
-
-  // effects
-  demandCoverage?: Partial<Record<DemandCategory, number>>;
-
-  // lore
-  name: string;
-  tags: string[];
-  value: number;
-  carriage: number; // price of carrying one unit over a decima, in the map's currency
-  unit: string;
-
-  // ui
-  icon: string;
-  color: string;
-  visible?: boolean; // whether the good is shown on the Goods layer
-
-  note?: string;
-}
+import { DEMAND_PRIORITY } from "./demand";
 
 type ProductionRules = Partial<{
   deposits: [number, number] | null;
@@ -59,55 +22,8 @@ type ProductionRules = Partial<{
 export const DEFAULT_CARRIAGE = 0.5; // carriage price of a new good
 const DEPOSIT_CLUSTERING = 0.5; // chance a deposit lands beside the previous one of its good
 
-export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
-export type DemandCategory = (typeof DEMAND_PRIORITY)[number];
-
-export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
-  food: 0.2,
-  utilities: 0.15,
-  construction: 0.1,
-  military: 0.08,
-  luxury: 0.07
-};
-
-export const DEMAND_CATEGORY_ICONS: Record<DemandCategory, string> = {
-  food: "🍖",
-  utilities: "🛠️",
-  construction: "🧱",
-  military: "🛡️",
-  luxury: "💎"
-};
-
-export const WANT_SHARES: Record<DemandCategory, number> = {
-  food: 0.25,
-  utilities: 0.2,
-  construction: 0.15,
-  military: 0.1,
-  luxury: 0.3
-}; // how spare money is split once needs are met
-
-export const WANT_LIMITS: Record<DemandCategory, number> = {
-  food: 1,
-  utilities: 1,
-  construction: 1,
-  military: 1,
-  luxury: 4
-}; // the most a person buys beyond needs, in days of need: richer people eat only so much more
-
-export const WEALTH_WANTS: readonly DemandCategory[] = ["luxury"]; // wants that grow with affluence; staples stay capped, or the first in line buy them out
-
-export const SAVINGS_RATE = 0.32; // share of a day's income households keep
-export const VARIETY = 2.8; // spending over a need's goods goes by (price per coverage)^-VARIETY: higher buys only the cheapest
-export const NOVELTY = 5.3; // how much more a buyer pays per tenfold of affluence for a good it has had none of yet
-
-const ENTITY_MULTIPLIERS = ["culture", "state", "religion", "zone"] as const;
-
 export class GoodsModule {
-  readonly iconSet = {
-    id: "goods",
-    group: "Goods",
-    paint: { stroke: "#000000", strokeWidth: 2 }
-  } as const satisfies IconSet;
+  readonly iconSet = GOODS_ICON_SET;
 
   private goodById: Good[] = [];
 
@@ -198,11 +114,6 @@ export class GoodsModule {
   restoreDefaults() {
     options.map.goods = structuredClone(this.defaultGoods);
     this.sync();
-  }
-
-  /** Multipliers keyed by one map's entities mean nothing on the next map */
-  clearEntityMultipliers(goods: Good[]): void {
-    for (const good of goods) for (const dimension of ENTITY_MULTIPLIERS) delete good.multipliers?.[dimension];
   }
 
   /** Regeneration renumbers or drops entities: their multipliers follow the kept ones, the rest go */
@@ -409,7 +320,7 @@ export class GoodsModule {
       good.recipes = good.recipes.filter(recipe => !(goodId in recipe));
       if (!good.recipes.length) delete good.recipes;
     }
-    pack.deals = pack.deals.filter(deal => deal[2] !== goodId);
+    pack.deals = pack.deals.filter(([, , dealGood]) => dealGood !== goodId);
     const others = ([id]: [number, number]) => id !== goodId;
     for (const burg of pack.burgs) burg.production &&= burg.production.filter(others);
     for (const market of pack.markets) {
@@ -445,25 +356,3 @@ export class GoodsModule {
 }
 
 export const Goods = new GoodsModule();
-
-/** Spending shares: cheaper coverage gets more, every option gets some */
-export function getVarietyShares(costs: number[], variety = VARIETY): number[] {
-  const cheapest = Math.min(...costs.filter(cost => cost > 0));
-  const weights = costs.map(cost => (cost > 0 ? (cost / cheapest) ** -variety : 0));
-  const total = weights.reduce((sum, weight) => sum + weight, 0) || 1;
-  return weights.map(weight => weight / total);
-}
-
-/** A person's daily needs at base prices, each covered the cheapest way */
-export function getNeedsCost(goods: Good[]): number {
-  return DEMAND_PRIORITY.reduce((sum, category) => {
-    const costs = goods.flatMap(good =>
-      good.demandCoverage?.[category] ? [good.value / good.demandCoverage[category]!] : []
-    );
-    return sum + (costs.length ? DEMAND_TARGET_FACTORS[category] * Math.min(...costs) : 0);
-  }, 0);
-}
-
-export function getDemandTargets(population: number): number[] {
-  return DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
-}

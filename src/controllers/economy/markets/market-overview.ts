@@ -1,7 +1,7 @@
 import { select } from "d3";
 import { Controllers } from "@/controllers";
 import { Goods } from "@/model/economy/goods-generator";
-import { type Market, Markets } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
 import { Trade } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
@@ -11,6 +11,7 @@ import { goodBadge } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
+import type { Market } from "@/types/economy";
 import { Dialog } from "@/ui/dialog/dialog";
 import { noteButton } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -240,7 +241,7 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
     <div style="margin-left:5px">${t("Cells")}: ${pack.cells.market.reduce((count, m) => count + (m === market.i ? 1 : 0), 0)}</div>
     <div style="margin-left:12px">${t("Burgs")}: ${burgs.length}</div>
     <div data-col="stock" style="margin-left:12px">${t("Stock")}: ${rn(totalUnits, 2)}</div>
-    <div data-tip="${t("It buys this much below its prices and sells this much above; a dear market license raises it")}" style="margin-left:12px">${t("Market margin")}: ${rn(Trade.getMarginRate(market) * 100, 1)}%</div>`;
+    <div data-tip="${t("It buys this much below its prices and sells this much above; a dear market license raises it")}" style="margin-left:12px">${t("Market margin")}: ${rn(Markets.getMarginRate(market) * 100, 1)}%</div>`;
 
   renderEditorPagination(ensureEl("marketOverviewSummary"), view, marketOverviewTable.goto);
   Dialog.update(dialogId, { width: "fit-content", position });

@@ -1,5 +1,6 @@
 import { EXPENSE_LABELS } from "@/data/id-labels";
-import { Districts } from "@/model/political/districts";
+import { Corruption } from "@/model/economy/corruption";
+import { StateOrders } from "@/model/economy/state-orders";
 import { STABILITY_PARTS, Stability, type StabilityPart } from "@/model/political/stability";
 import { Dialog } from "@/ui/dialog/dialog";
 import { ECONOMY_COLORS, EconomyTerms, tone } from "@/ui/economy-view";
@@ -21,10 +22,10 @@ const STYLE = /* html */ `<style>
   .stabilityDialog .right { text-align: right; white-space: nowrap }
   .stabilityDialog .total { font-weight: bold; border-top: 1px solid #ccc }
   .stabilityDialog .scroll { max-height: 18em; overflow-y: auto }
-  .stabilityDialog table.districts { width: 100%; border-collapse: collapse }
-  .stabilityDialog table.districts th { text-align: right; font-weight: normal; color: #666; padding: 0 0.3em }
-  .stabilityDialog table.districts td { text-align: right; padding: 0 0.3em; line-height: 1.5 }
-  .stabilityDialog table.districts th:first-child, .stabilityDialog table.districts td:first-child { text-align: left }
+  .stabilityDialog table.provinces { width: 100%; border-collapse: collapse }
+  .stabilityDialog table.provinces th { text-align: right; font-weight: normal; color: #666; padding: 0 0.3em }
+  .stabilityDialog table.provinces td { text-align: right; padding: 0 0.3em; line-height: 1.5 }
+  .stabilityDialog table.provinces th:first-child, .stabilityDialog table.provinces td:first-child { text-align: left }
 </style>`;
 
 /** Opens one dialog per state, so states can be compared side by side */
@@ -40,7 +41,7 @@ function open(stateId: number): void {
   Dialog.destroy(id);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
-    /* html */ `<div id="${id}" class="dialog stable stabilityDialog">${STYLE}${renderParts(stateId)} ${renderDistricts(stateId)}</div>`
+    /* html */ `<div id="${id}" class="dialog stable stabilityDialog">${STYLE}${renderParts(stateId)} ${renderProvinces(stateId)}</div>`
   );
   Dialog.open(id, {
     title: t("Stability of {{- state}}", { state: state.fullName || state.name }),
@@ -77,24 +78,23 @@ function renderParts(stateId: number): string {
   return `<div><h4>${t("Stability")}</h4>${rows}${total}</div>`;
 }
 
-/** Each province with its own seat, and the crown lands, least stable first */
-function renderDistricts(stateId: number): string {
+/** Each province, least stable first */
+function renderProvinces(stateId: number): string {
   const state = pack.states[stateId];
-  const districts = Stability.getDistricts(stateId);
-  if (districts.length < 2) return "";
-  const infrastructure = Districts.getInfrastructure(state);
+  const provinces = Stability.getProvinces(stateId);
+  if (provinces.length < 2) return "";
+  const infrastructure = StateOrders.getInfrastructure(state);
   const percent = (value: number) => `${rn(value * 100)}%`;
-  const rows = districts
-    .map((stability, k) => ({ ...stability, infrastructure: infrastructure[k] }))
-    .sort((a, b) => a.stability - b.stability)
-    .map(({ district, stability, infrastructure }) => {
-      const name = district.province ? escapeHtml(pack.provinces[district.province]?.name ?? "—") : t("Crown lands");
-      const corruption = Districts.getCorruption(state, district, state.economy.collected);
-      return `<tr><td>${name}</td><td>${percent(district.share)}</td><td>${percent(district.remoteness)}</td><td>${percent(district.diversity)}</td><td>${rn(corruption)}%</td><td>${percent(infrastructure)}</td><td><b>${percent(stability)}</b></td></tr>`;
+  const rows = provinces
+    .toSorted((a, b) => a.stability - b.stability)
+    .map(({ province, stability }) => {
+      const name = province.id ? escapeHtml(pack.provinces[province.id]?.name ?? "—") : "—";
+      const corruption = Corruption.ofProvince(state, province, state.economy.collected);
+      return `<tr><td>${name}</td><td>${percent(province.share)}</td><td>${percent(province.remoteness)}</td><td>${percent(province.diversity)}</td><td>${rn(corruption)}%</td><td>${percent(infrastructure.get(province.id) ?? 0)}</td><td><b>${percent(stability)}</b></td></tr>`;
     })
     .join("");
   const header = [
-    [t("Province"), t("Province, or the crown lands governed from the capital")],
+    [t("Province"), ""],
     [t("People"), t("Share of the state's people")],
     [t("Remoteness"), t("Distance from the capital")],
     [t("Minorities"), t("Share of other cultures and faiths")],
@@ -102,9 +102,9 @@ function renderDistricts(stateId: number): string {
     [t("Infrastructure"), t("How well the state's public works serve the people")],
     [t("Stability"), EconomyTerms.stability()]
   ]
-    .map(([label, tipText]) => `<th data-tip="${tipText}">${label}</th>`)
+    .map(([label, tipText]) => `<th${tipText ? ` data-tip="${tipText}"` : ""}>${label}</th>`)
     .join("");
-  return `<h4>${t("Provinces")}</h4><div class="scroll"><table class="districts"><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<h4>${t("Provinces")}</h4><div class="scroll"><table class="provinces"><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 export const StabilityOverview = { open };

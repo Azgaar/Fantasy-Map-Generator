@@ -1,7 +1,6 @@
 import { quadtree, sum } from "d3";
-import { GOODS_DATA } from "@/data/goods";
+import { Accounts } from "@/model/economy/accounts";
 import { Goods } from "@/model/economy/goods-generator";
-import { StateEconomy } from "@/model/economy/state-economy";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { MilitaryUnit } from "@/types/military";
@@ -354,7 +353,7 @@ class MilitaryModule {
       }
     }
 
-    StateEconomy.forget(); // burgs may have changed hands since the run
+    Pack.markChanged(); // burgs may have changed hands since the run
     // conscripts the state cannot equip with their unit's goods serve as levies where they were raised
     const levyUnit = options.map.military.units.find(unit => unit.type === "levies");
     for (const [stateId, draft] of drafts) {
@@ -537,84 +536,6 @@ class MilitaryModule {
     }
   }
 
-  getDefaultOptions() {
-    const units = [
-      {
-        icon: "🪓",
-        name: "levies",
-        rural: 0,
-        urban: 0,
-        crew: 1,
-        power: 0.5,
-        type: "levies",
-        separate: 0
-      },
-      {
-        icon: "⚔️",
-        name: "infantry",
-        rural: 0.25,
-        urban: 0.2,
-        crew: 1,
-        power: 1,
-        type: "melee",
-        separate: 0,
-        goods: ["Arms"]
-      },
-      {
-        icon: "🏹",
-        name: "archers",
-        rural: 0.12,
-        urban: 0.2,
-        crew: 1,
-        power: 1,
-        type: "ranged",
-        separate: 0,
-        goods: ["Arms"]
-      },
-      {
-        icon: "🐴",
-        name: "cavalry",
-        rural: 0.12,
-        urban: 0.03,
-        crew: 1,
-        power: 2,
-        type: "mounted",
-        separate: 0,
-        goods: ["Horses", "Camels", "Harnesses"]
-      },
-      {
-        icon: "💣",
-        name: "artillery",
-        rural: 0,
-        urban: 0.03,
-        crew: 8,
-        power: 12,
-        type: "machinery",
-        separate: 0,
-        goods: ["Artillery", "Gunpowder"]
-      },
-      {
-        icon: "🌊",
-        name: "fleet",
-        rural: 0,
-        urban: 0.015,
-        crew: 100,
-        power: 50,
-        type: "naval",
-        separate: 1,
-        goods: ["Boats"]
-      }
-    ];
-    const goodId = (name: string) => GOODS_DATA.findIndex(good => good.name === name) + 1; // default goods' ids
-    return units.map(
-      ({ goods, ...unit }): MilitaryUnit => ({
-        ...unit,
-        icon: Icons.glyph(unit.icon),
-        ...(goods && { goods: goods.map(goodId) })
-      })
-    );
-  }
-
   getName(r: Regiment, regiments: Regiment[]) {
     const cells = pack.cells;
     const proper = r.n
@@ -632,7 +553,7 @@ class MilitaryModule {
   /** Share of each unit's conscripts what the state consumes of its goods equips; 1 with no goods or before the run */
   getEquipped(stateId: number, demand: Record<string, number>): Record<string, number> {
     const units = options.map.military.units;
-    const consumed = StateEconomy.getConsumption(stateId);
+    const consumed = Accounts.getConsumption(stateId);
     const goodsOf = (unit: MilitaryUnit) => (unit.goods ?? []).flatMap(goodId => Goods.get(goodId) ?? []);
     const needing = (goodId: number) => sum(units, unit => (unit.goods?.includes(goodId) ? demand[unit.name] || 0 : 0));
 

@@ -1,5 +1,6 @@
 import { max, quadtree, range } from "d3";
 import { CULTURE_SETS } from "@/data/culture-sets";
+import { CULTURE_TYPES, type CultureType, DEFAULT_CULTURE_TYPE } from "@/data/culture-types";
 import { DEFAULT_DEVELOPMENT } from "@/data/development";
 import { Goods } from "@/model/economy/goods-generator";
 import { Pack } from "@/model/graph/pack-generator";
@@ -45,10 +46,6 @@ export interface Culture {
   note?: string;
   tags?: string[];
 }
-
-export const CULTURE_TYPES = ["Generic", "Hunting", "Highland", "River", "Lake", "Naval", "Nomadic"] as const;
-export type CultureType = (typeof CULTURE_TYPES)[number];
-export const DEFAULT_CULTURE_TYPE: CultureType = "Generic";
 
 /** A random culture's level by name, 15–42: drawing a number would shift the random sequence */
 function getNameDevelopment(name: string): number {

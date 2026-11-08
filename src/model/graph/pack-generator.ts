@@ -10,6 +10,7 @@ import { DEFAULT_JITTER, Lattice } from "./lattice";
 import { calculateVoronoi } from "./voronoi";
 
 class PackModule {
+  revision = 0; // bumped when burgs or cells change hands or people move, so sums read from them sum again
   private readonly quadtreeCache = new WeakMap<object, Quadtree<[number, number, number]>>();
 
   /** deep ocean points dropped and coastal cells split so packed graph has a higher resolution where needed */
@@ -64,6 +65,11 @@ class PackModule {
   }
 
   /** generate does clean pack graph so clear data where required */
+  /** Burgs or cells changed hands, or people moved, without a new pack */
+  markChanged(): void {
+    this.revision++;
+  }
+
   clear(): void {
     pack = {} as PackedGraph;
   }

@@ -1,4 +1,18 @@
-import type { Good } from "@/model/economy/goods-generator";
+import type { Good } from "@/types/economy";
+import type { IconSet } from "@/types/icons";
+
+export const GOODS_ICON_SET = {
+  id: "goods",
+  group: "Goods",
+  paint: { stroke: "#000000", strokeWidth: 2 }
+} as const satisfies IconSet;
+
+/** Multipliers keyed by one map's entities, which mean nothing on the next map */
+export const ENTITY_MULTIPLIERS = ["culture", "state", "religion", "zone"] as const;
+
+export function clearEntityMultipliers(goods: Pick<Good, "multipliers">[]): void {
+  for (const good of goods) for (const dimension of ENTITY_MULTIPLIERS) delete good.multipliers?.[dimension];
+}
 
 type GoodData = Omit<Good, "i"> & { recipes?: Record<string, number>[] };
 export const GOODS_DATA: GoodData[] = [

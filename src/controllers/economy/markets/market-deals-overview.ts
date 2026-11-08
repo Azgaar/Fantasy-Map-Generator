@@ -1,11 +1,11 @@
-import type { Good } from "@/model/economy/goods-generator";
+import { DEAL_KINDS, Deals } from "@/model/economy/deals";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
-import { DEAL_KINDS, type Deal, Trade } from "@/model/economy/trade";
 import { Icons } from "@/model/icons";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Csv } from "@/services/io/csv";
+import type { Deal, Good } from "@/types/economy";
 import { Dialog } from "@/ui/dialog/dialog";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
@@ -207,7 +207,7 @@ export function getMarketSide([, , , kind]: Deal): "buy" | "sell" {
 
 /** The market's income: what the burg paid less taxes passed on, or minus what it got */
 export function getDealNet(deal: Deal): number {
-  return rn(Trade.getMarketIncome(deal), 2);
+  return rn(Deals.getMarketIncome(deal), 2);
 }
 
 function getMarketDealRow(deal: Deal): MarketDealRow | null {
@@ -236,7 +236,7 @@ function getMarketDealRow(deal: Deal): MarketDealRow | null {
 /** price × units, less the sales tax and tariff passed to states and the center's margin */
 function getIncomeFormula(deal: Deal, income: number): string {
   const [, , , kind, units, price, tax, tariff] = deal;
-  const margin = Trade.getMargin(deal);
+  const margin = Deals.getMargin(deal);
   const marginTerm = margin ? ` − ${t("Market margin")} ${formatPrice(rn(margin, 2))}` : "";
   const paid = `${formatPrice(price)} × ${rn(units, 2)}`;
   if (kind === DEAL_KINDS.sale) return `−${paid}${marginTerm} = ${formatPrice(income)}`;
@@ -256,11 +256,12 @@ function renderMarketDealsPage(view: TableView<MarketDealRow>): void {
 
 function renderDealLine(row: MarketDealRow): string {
   const { deal, good, side, burg, units, net, carriage, tax, tariff, income, formula } = row;
-  const context = getTradeContext(deal[0], deal[1], deal[2], deal[3], deal[8], deal[7]);
+  const [burgId, marketId, goodId, kind, , , , dealTariff, dealCarriage] = deal;
+  const context = getTradeContext(burgId, marketId, goodId, kind, dealCarriage, dealTariff);
   const { isImport } = context;
   const cellTips = tradeCellTips({ good, units, net, carriage, tax, tariff, formula, ...context });
   const isSale = side === "sell";
-  const isOrder = deal[3] === DEAL_KINDS.order;
+  const isOrder = kind === DEAL_KINDS.order;
   const sideTip = isOrder
     ? t("The market sells the goods to the state, delivered to the burg")
     : isSale
@@ -268,7 +269,7 @@ function renderDealLine(row: MarketDealRow): string {
       : t("The market buys the goods from the burg");
   const badge = isOrder ? t("State") : isSale ? t("Sell") : t("Buy");
 
-  return /* html */ `<div class="states marketDeal" data-burg-id="${deal[0]}" data-good="${escapeHtml(good.name)}" data-side="${side}" data-burg="${escapeHtml(burg)}" data-units="${rn(units, 2)}" data-income="${rn(income, 2)}">
+  return /* html */ `<div class="states marketDeal" data-burg-id="${burgId}" data-good="${escapeHtml(good.name)}" data-side="${side}" data-burg="${escapeHtml(burg)}" data-units="${rn(units, 2)}" data-income="${rn(income, 2)}">
       <svg data-col="icon" data-tip="${t("Good icon")}" width="1.3em" height="1.3em" class="goodIcon">
         ${goodBadge(good)}
       </svg>

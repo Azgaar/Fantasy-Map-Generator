@@ -1,12 +1,11 @@
 // Regenerating one element on real generated maps
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import { Accounts } from "@/model/economy/accounts";
 import { Goods } from "@/model/economy/goods-generator";
-import { ProvinceEconomy } from "@/model/economy/province-economy";
 import { Routes } from "@/model/economy/routes-generator";
-import { StateEconomy } from "@/model/economy/state-economy";
+import { Pack } from "@/model/graph/pack-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { Burgs } from "@/model/political/burgs-generator";
-import { Districts } from "@/model/political/districts";
 import { Military } from "@/model/political/military-generator";
 import { Stability } from "@/model/political/stability";
 import { States } from "@/model/political/states-generator";
@@ -20,19 +19,16 @@ beforeAll(() => vi.stubGlobal("localStorage", { getItem: () => null, setItem: ()
 const stateMultipliers = () => Goods.get(FIRST_GOOD)!.multipliers?.state;
 
 describe("Regenerate Burgs", () => {
-  it("seats every province holding a burg, so provinces stay districts", async () => {
+  it("gives every province holding a burg a capital inside it", async () => {
     await generateMap({ seed: "regen-burgs" });
-    const before = living(pack.states).reduce((total, { i }) => total + Districts.get(i).length, 0);
     Burgs.regenerate();
     for (const province of living(pack.provinces)) {
       const holdsBurg = living(pack.burgs).some(burg => pack.cells.province[burg.cell] === province.i);
       if (!holdsBurg) continue;
-      const seat = pack.burgs[province.burg];
-      expect(pack.cells.province[seat.cell]).toBe(province.i);
-      expect(province.center).toBe(seat.cell);
+      const capital = pack.burgs[province.burg];
+      expect(pack.cells.province[capital.cell]).toBe(province.i);
+      expect(province.center).toBe(capital.cell);
     }
-    const after = living(pack.states).reduce((total, { i }) => total + Districts.get(i).length, 0);
-    expect(after).toBeGreaterThan(before / 2);
   });
 
   it("keeps a locked burg its province's seat under its new id", async () => {
@@ -65,9 +61,9 @@ describe("Burgs on the map", () => {
 
   it("takes a road when moved off the network", async () => {
     await generateMap({ seed: "move-off-road" });
-    const seats = new Set(living(pack.provinces).map(province => province.burg));
+    const provinceCapitals = new Set(living(pack.provinces).map(province => province.burg));
     const burg = living(pack.burgs).find(
-      b => !b.capital && !seats.has(b.i!) && !pack.markets.some(market => market.centerBurgId === b.i)
+      b => !b.capital && !provinceCapitals.has(b.i!) && !pack.markets.some(market => market.centerBurgId === b.i)
     )!;
     const free = Array.from(pack.cells.i).find(
       cell =>
@@ -100,11 +96,11 @@ describe("the economy's summaries", () => {
   it("follow an edit of a burg's people and of a province's cells", async () => {
     await generateMap({ seed: "summaries-follow" });
     const province = living(pack.provinces).find(p => p.burg)!;
-    const was = ProvinceEconomy.get(province.i)!.people;
+    const was = Accounts.ofProvince(province.i)!.people;
     const burg = pack.burgs[province.burg];
     const { scale, urbanization } = options.map.units.population;
     Burgs.setPopulation(burg.i!, burg.population! * scale * urbanization.rate * 5);
-    expect(ProvinceEconomy.get(province.i)!.people).toBeGreaterThan(was);
+    expect(Accounts.ofProvince(province.i)!.people).toBeGreaterThan(was);
   });
 });
 
@@ -146,7 +142,7 @@ describe("army figures", () => {
     const army = Stability.get(state.i)!.parts.army;
     const rate = options.map.units.population.scale;
     options.map.units.population.scale = rate * 100;
-    StateEconomy.forget();
+    Pack.markChanged();
     expect(Military.getUpkeepNeed(state.i)).toBe(need);
     expect(Stability.get(state.i)!.parts.army).toBeCloseTo(army);
     const troops = () => living(pack.states).map(s => (s.military ?? []).map(r => r.a));

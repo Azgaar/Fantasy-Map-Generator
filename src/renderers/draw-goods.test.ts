@@ -11,6 +11,7 @@ vi.mock("@/model/icons", () => ({
 
 import "@/model/styles/styles";
 import { Goods } from "@/model/economy/goods-generator";
+import { Output } from "@/model/economy/output";
 import { Production } from "@/model/economy/production-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { drawGoods } from "./draw-goods";
@@ -21,9 +22,9 @@ const CELLS = [
   [550, 50]
 ];
 
-type Output = Record<number, number>;
-const cellOutput = vi.fn<(cellId: number) => Output>(); // each cell's rural output
-const getBurgProduction = vi.fn<(burg: { i: number }) => Output>();
+type GoodUnits = Record<number, number>;
+const cellOutput = vi.fn<(cellId: number) => GoodUnits>(); // each cell's rural output
+const getBurgProduction = vi.fn<(burg: { i: number }) => GoodUnits>();
 
 beforeEach(() => {
   mocks.layerOn = true;
@@ -60,10 +61,11 @@ beforeEach(() => {
     get: (id: number) => options.map.goods.find(good => good.i === id),
     getStroke: () => "#333"
   });
-  Object.assign(Production, { getRuralOutput: () => Array.from(pack.cells.i, cellOutput), getBurgProduction });
+  Object.assign(Output, { getRural: () => Array.from(pack.cells.i, cellOutput) });
+  Object.assign(Production, { getBurgProduction });
   Object.assign(Pack, { getPolygon: (cellId: number) => pack.cells.v[cellId].map(v => pack.vertices.p[v]) });
-  cellOutput.mockReset().mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 2: 8 }) as Output);
-  getBurgProduction.mockReset().mockImplementation(burg => (burg.i === 1 ? { 1: 5, 2: 2 } : { 2: 9 }) as Output);
+  cellOutput.mockReset().mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 2: 8 }) as GoodUnits);
+  getBurgProduction.mockReset().mockImplementation(burg => (burg.i === 1 ? { 1: 5, 2: 2 } : { 2: 9 }) as GoodUnits);
   styles.goods.groups.goodsCells.options = { render: true };
   styles.goods.groups.goodsIcons.options = { render: true, size: 4, circle: true };
   styles.goods.groups.goodsBurgs.options = { render: true, size: 3 };
@@ -161,7 +163,7 @@ test("each sublayer can be switched off in the style", async () => {
 test("with no good selected, cells show their output value in their most valuable good's color, with every icon and burg", async () => {
   for (const good of options.map.goods) good.visible = false;
   options.map.goods[1].value = 10; // one iron is worth ten grain
-  cellOutput.mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 1: 20, 2: 8 }) as Output);
+  cellOutput.mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 1: 20, 2: 8 }) as GoodUnits);
   setViewportTransform(0.1, 0, 0);
   await drawGoods();
 

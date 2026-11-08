@@ -1,8 +1,8 @@
 import { mean } from "d3";
+import { Corruption } from "@/model/economy/corruption";
+import { DEAL_KINDS } from "@/model/economy/deals";
 import { Goods } from "@/model/economy/goods-generator";
 import { Routes } from "@/model/economy/routes-generator";
-import { DEAL_KINDS } from "@/model/economy/trade";
-import { Districts } from "@/model/political/districts";
 import { Stability, type StabilityPart } from "@/model/political/stability";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
@@ -231,7 +231,7 @@ class ZonesModule {
   private addRebels(usedCells: Uint8Array) {
     const { cells, states } = pack;
 
-    // unstable states rise more often, in their least stable district; all alike before the run
+    // unstable states rise more often, in their least stable land; all alike before the run
     const instability = (stability = 0.5) => (1 - stability) ** 2;
     const candidates = states.filter(s => s.i && !s.removed && s.neighbors?.some(Boolean));
     const state = pickWeighted(
@@ -243,24 +243,25 @@ class ZonesModule {
     const neibStateId = ra(state.neighbors!.filter((n: number) => n && !states[n].removed));
     if (!neibStateId) return;
 
-    const districts = Stability.getDistricts(state.i).filter(d => d.district.people);
-    const districtStability = districts.length
+    const provinces = Stability.getProvinces(state.i).filter(d => d.province.people);
+    const unstable = provinces.length
       ? pickWeighted(
-          districts,
-          districts.map(d => instability(d.stability))
+          provinces,
+          provinces.map(d => instability(d.stability))
         )
       : undefined;
-    const district = districtStability?.district;
+    const risen = unstable?.province;
     const inside = (cellId: number) =>
-      cells.state[cellId] === state.i && (!district || Districts.at(cellId) === district);
+      cells.state[cellId] === state.i && (!risen || Corruption.ofCell(cellId) === risen);
     const atBorder = (cellId: number) => cells.c[cellId].some(c => cells.state[c] === neibStateId);
 
     const cellsArray: number[] = [];
     const queue: number[] = [];
     const borderCellId = cells.i.find(i => inside(i) && atBorder(i));
-    // away from the neighbor, it rises around its seat, or anywhere when the seat lies outside it
-    const seat = district?.seat?.cell;
-    const start = borderCellId ?? (district && (seat !== undefined && inside(seat) ? seat : cells.i.find(inside)));
+    // away from the neighbor, it rises around the province's capital, or anywhere when that lies outside it
+    const capital = risen?.burg?.cell;
+    const start =
+      borderCellId ?? (risen && (capital !== undefined && inside(capital) ? capital : cells.i.find(inside)));
     if (start !== undefined) queue.push(start);
     const maxCells = rand(10, 30);
 
@@ -278,8 +279,8 @@ class ZonesModule {
       });
     }
 
-    const parts = districtStability?.parts;
-    const TAX_REVOLT_BURDEN = 0.1; // stability the tax burden takes, its largest loss, for a district's rebels to be a tax revolt
+    const parts = unstable?.parts;
+    const TAX_REVOLT_BURDEN = 0.1; // stability the tax burden takes, its largest loss, for a province's rebels to be a tax revolt
     const isTaxRevolt =
       !!parts && parts.burden <= -TAX_REVOLT_BURDEN && Object.values(parts).every(part => part >= parts.burden);
     const rebels = isTaxRevolt
@@ -299,7 +300,7 @@ class ZonesModule {
           Conspiracy: 1
         });
 
-    const province = district?.province ? pack.provinces[district.province] : undefined;
+    const province = risen?.id ? pack.provinces[risen.id] : undefined;
     const named = isTaxRevolt
       ? (province ?? state)
       : borderCellId !== undefined || !province
@@ -466,9 +467,9 @@ class ZonesModule {
     });
   }
 
-  /** What weakens a district most, as a sentence; none when nothing takes much */
+  /** What weakens a land most, as a sentence; none when nothing takes much */
   private getUnrestCause(parts: Record<StabilityPart, number>): string | undefined {
-    const UNREST_CAUSE = 0.05; // stability a part takes from a district for the note to name it
+    const UNREST_CAUSE = 0.05; // stability a part takes from a land for the note to name it
     const causes: Partial<Record<StabilityPart, string>> = {
       remoteness: "The capital is far away, and its rule is weak here",
       diversity: "Its people are strangers to the ruling culture",

@@ -1,9 +1,9 @@
 import { Controllers } from "@/controllers";
+import { EXPENSES } from "@/data/expenses";
 import { EXPENSE_LABELS } from "@/data/id-labels";
+import { Accounts, type StateAccounts } from "@/model/economy/accounts";
+import { Corruption } from "@/model/economy/corruption";
 import { Goods } from "@/model/economy/goods-generator";
-import { type StateAccounts, StateEconomy } from "@/model/economy/state-economy";
-import { Districts } from "@/model/political/districts";
-import { EXPENSES } from "@/model/political/states-generator";
 import { formatPrice } from "@/model/units";
 import { Dialog } from "@/ui/dialog/dialog";
 import {
@@ -44,7 +44,7 @@ const dialogId = (stateId: number) => `stateEconomy${stateId}`;
 function open(stateId: number): void {
   const state = pack.states[stateId];
   if (!state || state.removed || (!state.cells && !state.burgs)) return; // 0 is the neutral lands, often empty
-  if (!StateEconomy.getAccounts(stateId)) {
+  if (!Accounts.ofState(stateId)) {
     tip(EconomyTerms.noData(), true, "error", 5000);
     return;
   }
@@ -95,10 +95,10 @@ function cleanup(stateId: number): void {
 }
 
 function renderBody(stateId: number): string {
-  const accounts = StateEconomy.getAccounts(stateId);
-  const world = StateEconomy.getWorld();
+  const accounts = Accounts.ofState(stateId);
+  const world = Accounts.getWorld();
   if (!accounts || !world) return "";
-  const trade = StateEconomy.getTrade(stateId);
+  const trade = Accounts.getTrade(stateId);
   return [
     renderCards(stateId, accounts, world, trade.exports, trade.imports),
     renderSectors(accounts, world, t("World")),
@@ -108,7 +108,7 @@ function renderBody(stateId: number): string {
     ),
     stateId ? `<div class="columns">${renderRevenue(stateId, accounts)}${renderExpenses(stateId)}</div>` : "",
     `<div class="columns">${renderGoods(t("Main exports"), trade.exported, tableButton("exports"))}${renderGoods(t("Main imports"), trade.imported, tableButton("imports"))}</div>`,
-    `<div class="columns">${renderGoods(t("Most valuable goods made"), StateEconomy.getOutput(stateId), tableButton("made"))}${renderPartners(trade.partners)}</div>`
+    `<div class="columns">${renderGoods(t("Most valuable goods made"), Accounts.getOutput(stateId), tableButton("made"))}${renderPartners(trade.partners)}</div>`
   ].join("");
 }
 
@@ -119,13 +119,13 @@ function stateRank(stateId: number, measure: (stateId: number) => number, lowest
   return rank(ids, stateId, measure, lowestFirst);
 }
 
-const accountsOf = (stateId: number) => StateEconomy.getAccounts(stateId);
+const accountsOf = (stateId: number) => Accounts.ofState(stateId);
 
-/** Population as people, from townspeople and rural population points */
+/** Population as people, from urban and rural population points */
 function people(accounts: StateAccounts) {
   const { scale, urbanization } = options.map.units.population;
-  const urban = accounts.townspeople * scale * urbanization.rate;
-  const rural = (accounts.people - accounts.townspeople) * scale;
+  const urban = accounts.urbanPeople * scale * urbanization.rate;
+  const rural = (accounts.people - accounts.urbanPeople) * scale;
   return { urban, rural, total: urban + rural };
 }
 
@@ -185,12 +185,12 @@ function economyNotes(stateId: number, accounts: StateAccounts, world: StateAcco
 
 /** The good weighing most in its exports: its share² ÷ its world share */
 function knownFor(stateId: number): string | null {
-  const { exported, exports } = StateEconomy.getTrade(stateId);
+  const { exported, exports } = Accounts.getTrade(stateId);
   if (!exports) return null;
   const world: number[] = [];
   for (const state of pack.states) {
     if (state.removed) continue;
-    StateEconomy.getTrade(state.i).exported.forEach((value, goodId) => {
+    Accounts.getTrade(state.i).exported.forEach((value, goodId) => {
       world[goodId] = (world[goodId] || 0) + value;
     });
   }
@@ -224,7 +224,7 @@ const budgetButton = () =>
 
 /** What the state collected today, by tax */
 function renderRevenue(stateId: number, accounts: StateAccounts): string {
-  const { salesTax, tariffs, pollTax, pollTaxOwed, marketFees, adjustments } = StateEconomy.getBudget(stateId);
+  const { salesTax, tariffs, pollTax, pollTaxOwed, marketFees, adjustments } = Accounts.getBudget(stateId);
   const { economy } = pack.states[stateId];
   const taxes = salesTax + tariffs + pollTax + marketFees;
   const share = accounts.product ? rn((accounts.taxes / accounts.product) * 100, 1) : 0;
@@ -247,7 +247,7 @@ function renderExpenses(stateId: number): string {
   const row = (name: string, share: number, bar: string, value: number, tip: string, tone: string) =>
     `<div data-tip="${tip}" class="row budget"><span class="name">${name}</span><span class="right">${share}%</span>${bar}<span class="right ${tone}">${formatPrice(value)}</span></div>`;
   const swatch = `<span class="swatch" style="background: ${ECONOMY_COLORS.pocketed}"></span>`;
-  const corruption = Districts.getStateCorruption(pack.states[stateId], economy.collected);
+  const corruption = Corruption.ofState(pack.states[stateId], economy.collected);
   return `<div><h4 data-tip="${EconomyTerms.budget()}"><span>${t("Expenses")}</span>${budgetButton()}</h4>
     ${EXPENSES.map(expense => row(EXPENSE_LABELS[expense], budget[expense], `<div class="bar" style="background: ${budgetBackground(budget[expense], corruption)}"></div>`, -economy.spent[expense], EconomyTerms.expenseTip(expense), "negative")).join("")}
     <div class="total">${row(t("Day Balance"), balance, "<span></span>", economy.treasury, EconomyTerms.stateTreasury(), tone(economy.treasury))}</div>

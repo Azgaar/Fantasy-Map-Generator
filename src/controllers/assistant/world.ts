@@ -1,6 +1,6 @@
-import type { Good } from "@/model/economy/goods-generator";
 import { MapEntities } from "@/model/map-entities";
 import { Styles } from "@/model/styles/styles";
+import type { Good } from "@/types/economy";
 import type { StylesData } from "@/types/styles";
 
 export type Item = { i: number } & Record<string, unknown>;

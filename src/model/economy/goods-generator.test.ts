@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { clearEntityMultipliers } from "@/data/goods";
 import { Goods } from "./goods-generator";
 
 describe("remapEntityMultipliers", () => {
@@ -140,28 +141,6 @@ describe("GoodsModule", () => {
     expect(globalThis.options.map.goods[0].name).toBe("Wood");
   });
 
-  it("clears only the multipliers keyed by a map's entities", () => {
-    const multipliers = {
-      cultureType: { Naval: 2 },
-      biome: { 5: 2 },
-      culture: { 1: 2 },
-      state: { 3: 0 },
-      religion: { 1: 2 },
-      zone: { 1: 2 }
-    };
-    const good = { i: 1, name: "Custom", value: 777, visible: true, multipliers } as any;
-
-    Goods.clearEntityMultipliers([good]);
-
-    expect(good).toEqual({
-      i: 1,
-      name: "Custom",
-      value: 777,
-      visible: true,
-      multipliers: { cultureType: { Naval: 2 }, biome: { 5: 2 } }
-    });
-  });
-
   it("initialises the catalogue from defaults when none exists yet", () => {
     globalThis.options.map.goods = [];
     goodsModule.generate();
@@ -223,8 +202,30 @@ describe("GoodsModule", () => {
     expect(placed([0, 0])).toEqual(new Set([0]));
   });
 
+  it("clears only the multipliers keyed by a map's entities", () => {
+    const multipliers = {
+      cultureType: { Naval: 2 },
+      biome: { 5: 2 },
+      culture: { 1: 2 },
+      state: { 3: 0 },
+      religion: { 1: 2 },
+      zone: { 1: 2 }
+    };
+    const good = { i: 1, name: "Custom", value: 777, visible: true, multipliers } as any;
+
+    clearEntityMultipliers([good]);
+
+    expect(good).toEqual({
+      i: 1,
+      name: "Custom",
+      value: 777,
+      visible: true,
+      multipliers: { cultureType: { Naval: 2 }, biome: { 5: 2 } }
+    });
+  });
+
   it("spreads spending over options by price per coverage, cheaper ones getting more", async () => {
-    const { getVarietyShares, VARIETY } = await import("./goods-generator");
+    const { getVarietyShares, VARIETY } = await import("./demand");
     const [cheap, dear, none] = getVarietyShares([1, 2, 0]);
     expect(cheap / dear).toBeCloseTo(2 ** VARIETY, 5); // (2 / 1)^VARIETY
     expect(cheap + dear).toBeCloseTo(1, 5);

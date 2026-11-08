@@ -1,6 +1,6 @@
+import { Accounts } from "@/model/economy/accounts";
 import { Goods } from "@/model/economy/goods-generator";
 import { Prosperity } from "@/model/economy/prosperity";
-import { StateEconomy } from "@/model/economy/state-economy";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Csv } from "@/services/io/csv";
@@ -98,8 +98,8 @@ type GoodRow = { goodId: number; units: number; value: number; share: number };
 /** Every good the state exports, imports or makes, with its units, value and share */
 function openGoods(stateId: number, kind: GoodsKind): void {
   const rows = (): GoodRow[] => {
-    const trade = StateEconomy.getTrade(stateId);
-    const values = { exports: trade.exported, imports: trade.imported, made: StateEconomy.getOutput(stateId) }[kind];
+    const trade = Accounts.getTrade(stateId);
+    const values = { exports: trade.exported, imports: trade.imported, made: Accounts.getOutput(stateId) }[kind];
     const units = { exports: trade.exportedUnits, imports: trade.importedUnits, made: [] as number[] }[kind];
     const total = values.reduce((sum, value) => sum + (value || 0), 0) || 1;
     return values.flatMap((value, goodId) => {
@@ -143,7 +143,7 @@ type PartnerRow = { stateId: number; exports: number; imports: number; balance: 
 /** Every state the state trades with, what it sells them and buys from them */
 function openPartners(stateId: number): void {
   const rows = (): PartnerRow[] => {
-    const { partners } = StateEconomy.getTrade(stateId);
+    const { partners } = Accounts.getTrade(stateId);
     const volume = [...partners.values()].reduce((sum, row) => sum + row.exports + row.imports, 0) || 1;
     return [...partners].map(([partnerId, row]) => ({
       stateId: partnerId,
@@ -199,8 +199,8 @@ function openProsperity(stateId: number): void {
       if (!living || !burg.population) return [];
       return [{ name: burg.name!, people: burg.population * scale * urbanization.rate, ...living }];
     });
-    const country = StateEconomy.getAccounts(stateId)?.country;
-    const rural = country ? [{ name: t("Rural population"), ...country, people: country.people * scale }] : [];
+    const living = Accounts.ofState(stateId)?.living.rural;
+    const rural = living ? [{ name: t("Rural population"), ...living, people: living.people * scale }] : [];
     return [...rural, ...burgs];
   };
   open({

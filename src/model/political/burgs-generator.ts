@@ -1,8 +1,7 @@
-import { quadtree } from "d3-quadtree";
+import { quadtree } from "d3";
+import { CULTURE_TYPES, type CultureType, DEFAULT_CULTURE_TYPE } from "@/data/culture-types";
 import type { Label } from "@/model/annotations/labels-generator";
-import type { BurgProduction } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
-import { StateEconomy } from "@/model/economy/state-economy";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { AUTO_BURG_LIMIT } from "@/model/options/options-schema";
@@ -11,11 +10,11 @@ import type { River } from "@/model/physical/river-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import type { Province } from "@/model/political/provinces-generator";
-import { CULTURE_TYPES, type CultureType, DEFAULT_CULTURE_TYPE } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import type { BurgGroup } from "@/types/burg-groups";
+import type { BurgProduction } from "@/types/economy";
 import type { Emblem } from "@/types/emblems";
 import type { IconSet } from "@/types/icons";
 import { log } from "@/utils/logger";
@@ -828,7 +827,7 @@ class BurgModule {
     pack.burgs.push(burg);
     cells.burg[cellId] = burgId;
     Development.settle(cellId);
-    StateEconomy.forget();
+    Pack.markChanged();
 
     Routes.connect(cellId);
     return burgId;
@@ -974,7 +973,7 @@ class BurgModule {
     const { scale, urbanization } = options.map.units.population;
     if (!Number.isFinite(people) || people < 0) throw new Error("The population must be a non-negative number");
     burg.population = rn(people / scale / urbanization.rate, 4);
-    StateEconomy.forget();
+    Pack.markChanged();
   }
 
   /** Move a burg to an existing burg group */
@@ -1066,7 +1065,7 @@ class BurgModule {
     cells.burg[cell] = burgId;
     Development.settle(cell);
     Object.assign(burg, { cell, state, x: rn(x, 2), y: rn(y, 2), feature: cells.f[cell] });
-    StateEconomy.forget();
+    Pack.markChanged();
     if (burg.capital) pack.states[state].center = cell;
     if (province) province.center = cell;
     // a market center takes its market along, any other burg joins the market of its new cell

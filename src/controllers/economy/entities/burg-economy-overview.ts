@@ -1,24 +1,19 @@
 import { DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
+import { DEAL_KINDS, Deals } from "@/model/economy/deals";
+import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "@/model/economy/demand";
 import { EconomyDebug } from "@/model/economy/economy-debug";
-import type { Good } from "@/model/economy/goods-generator";
-import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "@/model/economy/goods-generator";
+import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import type { ProductionCandidate, ProductionLogEntry } from "@/model/economy/production-generator";
 import { isDemandEntry, isTradeEntry, Production } from "@/model/economy/production-generator";
 import { Prosperity } from "@/model/economy/prosperity";
-import {
-  DEAL_KINDS,
-  type Deal,
-  type DealKind,
-  type SourceOption,
-  Trade,
-  type Transaction
-} from "@/model/economy/trade";
+import type { SourceOption } from "@/model/economy/trade";
 import { Icons } from "@/model/icons";
 import { type Burg, Burgs } from "@/model/political/burgs-generator";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Csv } from "@/services/io/csv";
+import type { Deal, DealKind, Good, Transaction } from "@/types/economy";
 import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import {
@@ -194,10 +189,11 @@ function getSummaryRows(burg: Burg): HistoryRow[] {
   const production = burg.production ?? [];
   const deals = pack.deals.filter(([dealBurg]) => dealBurg === burg.i);
   const isLocal = (goodId: number) => goodId === pack.cells.good[burg.cell]; // worked in place of its recipes
-  const byValue = (a: Deal, b: Deal) => b[4] * b[5] - a[4] * a[5];
+  const value = ([, , , , units, price]: Deal) => units * price;
+  const byValue = (a: Deal, b: Deal) => value(b) - value(a);
   const dealRows = (kind: DealKind) =>
     deals
-      .filter(deal => deal[3] === kind)
+      .filter(([, , , dealKind]) => dealKind === kind)
       .toSorted(byValue)
       .map(([, marketId, goodId, , units, price, tax, tariff, carriage]) =>
         getTradeRow(goodId, marketId, kind, { units, price, tax, tariff, carriage })
@@ -205,7 +201,7 @@ function getSummaryRows(burg: Burg): HistoryRow[] {
 
   // recipes the burg had every ingredient for: bought for production or made itself
   const hadGoods = new Set([
-    ...deals.filter(deal => deal[3] === DEAL_KINDS.input).map(deal => deal[2]),
+    ...deals.filter(([, , , kind]) => kind === DEAL_KINDS.input).map(([, , goodId]) => goodId),
     ...production.map(([goodId]) => goodId)
   ]);
   const recipeInputs = (goodId: number) => {
@@ -247,7 +243,7 @@ function getLogRow(entry: ProductionLogEntry): HistoryRow {
     return { ...getLocalRow(entry.goodId, entry.units), details: `${workers}${renderDecision(entry.candidates)}` };
 
   const inputs = entry.recipe.map(item => `${rn(item.units, 2)} ${goodDot(item.goodId)}`).join(` ${t("and")} `);
-  const modifier = entry.cultureModifier ?? 1;
+  const modifier = entry.modifier ?? 1;
   const modifierNote = modifier !== 1 ? `. ${t("Production multiplier")}: x${rn(modifier, 2)}` : "";
   const specializationNote = entry.specialization ? `. ${t("Division of labor bonus")}: x${entry.specialization}` : "";
   return {
@@ -669,7 +665,7 @@ function renderBalance(burg: Burg): string {
   let margin = isCenter ? market.rural?.margin || 0 : 0;
   for (const deal of pack.deals) {
     const [dealBurg, marketId, , kind, units, price, tax, tariff] = deal;
-    if (isCenter && marketId === market.i) margin += Trade.getMargin(deal);
+    if (isCenter && marketId === market.i) margin += Deals.getMargin(deal);
     if (dealBurg !== burg.i) continue;
     if (kind === DEAL_KINDS.sale) flows.sales += units * price - tax - tariff;
     else if (kind === DEAL_KINDS.input) flows.ingredients -= units * price;
@@ -691,7 +687,7 @@ function renderBalance(burg: Burg): string {
     ${line(t("Consumption"), t("Paid for goods the people bought"), flows.consumption)}
     ${line(t("Poll Tax"), t("Poll tax: {{rate}} a head", { rate: pack.states[burg.state || 0]?.economy.pollTax || 0 }), -(burg.pollTaxPaid || 0))}
     ${line(t("Market License"), t("The license its state charges a market's center a day"), -fee)}
-    ${isCenter ? line(t("Market Margin"), t("Market margin: {{rate}}% of every trade at its market", { rate: rn(Trade.getMarginRate(market) * 100, 1) }), margin, true) : ""}
+    ${isCenter ? line(t("Market Margin"), t("Market margin: {{rate}}% of every trade at its market", { rate: rn(Markets.getMarginRate(market) * 100, 1) }), margin, true) : ""}
     <div id="${dialogId}Adjustments"></div>
     <div class="total">${line(t("Day Balance"), treasuryTip, treasury, true)}</div>`;
 }

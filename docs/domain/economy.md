@@ -6,30 +6,34 @@ The FMG economy is **one frozen cycle: a typical day**, not a simulation over ti
 
 ## Elements
 
-| Element                                                                                  | Model                                                                                                                                                                | Persisted state                                                                          |
-| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Goods: the catalogue, deposits on cells, what people need and want                       | `Goods` ([goods-generator.ts](../../src/model/economy/goods-generator.ts))                                                                                           | `options.map.goods`, `pack.cells.good`                                                   |
-| Development: each cell's technology, read by the run                                     | `Development` ([development-generator.ts](../../src/model/society/development-generator.ts))                                                                         | `pack.cells.development`                                                                 |
-| Route network, which carriage travels                                                    | `Routes` ([routes-generator.ts](../../src/model/economy/routes-generator.ts))                                                                                        | `pack.routes`, `pack.cells.routes`                                                       |
-| Markets: regions and their centers                                                       | `Markets` ([markets-generator.ts](../../src/model/economy/markets-generator.ts))                                                                                     | `pack.markets`, `pack.cells.market`, `burg.plaza`                                        |
-| The run: workers, what burgs make and buy                                                | `Production` ([production-generator.ts](../../src/model/economy/production-generator.ts))                                                                            | `burg.production`, `burg.product`, `burg.pollTaxPaid`, `burg.treasury`, `market.feePaid` |
-| Trading: prices, stock, quotes, carriage, margins, tariffs, rural spending, the deal log | `Trade` ([trade.ts](../../src/model/economy/trade.ts))                                                                                                               | `market.goods`, `market.rural`, `pack.deals`                                             |
-| Travel cost over routes                                                                  | `TradeRoutes` ([trade-routes.ts](../../src/model/economy/trade-routes.ts))                                                                                           | nothing: measured per run                                                                |
-| State orders: spending the budget during the run                                         | `StateOrders` ([state-orders.ts](../../src/model/economy/state-orders.ts))                                                                                           | `state.economy.spent`, `order` deals                                                     |
-| Taxes, budgets, adjustments and treasuries                                               | `States` ([states-generator.ts](../../src/model/political/states-generator.ts))                                                                                      | `state.economy`, `state.alert`, `burg.adjustments`                                       |
-| Districts: where a state spends, and their corruption                                    | `Districts` ([districts.ts](../../src/model/political/districts.ts))                                                                                                 | nothing: derived from cells and provinces                                                |
-| Prosperity: how well people live                                                         | `Prosperity` ([prosperity.ts](../../src/model/economy/prosperity.ts))                                                                                                | `pack.cells.prosperity`, the rest on demand                                              |
-| State and province accounts                                                              | `StateEconomy`, `ProvinceEconomy` ([state-economy.ts](../../src/model/economy/state-economy.ts), [province-economy.ts](../../src/model/economy/province-economy.ts)) | nothing: summed on demand                                                                |
-| Stability                                                                                | `Stability` ([stability.ts](../../src/model/political/stability.ts))                                                                                                 | nothing: worked out on demand                                                            |
-| Army upkeep and equipment                                                                | `Military` ([military-generator.ts](../../src/model/political/military-generator.ts))                                                                                | nothing: worked out on demand                                                            |
-| Trade animation and traffic                                                              | `TradeAnimation` ([trade-animation.ts](../../src/renderers/trade-animation.ts)), `TradeTraffic` ([trade-traffic.ts](../../src/model/economy/trade-traffic.ts))       | nothing: read-only views of the deals                                                    |
-| The run's debug log                                                                      | `EconomyDebug` ([economy-debug.ts](../../src/model/economy/economy-debug.ts))                                                                                        | nothing: in memory, in debug mode only                                                   |
+| Element                                                                        | Model                                                                                                                                                          | Persisted state                                                                          |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Goods: the catalogue and deposits on cells                                     | `Goods` ([goods-generator.ts](../../src/model/economy/goods-generator.ts))                                                                                     | `options.map.goods`, `pack.cells.good`                                                   |
+| What people need and how they spend                                            | [demand.ts](../../src/model/economy/demand.ts)                                                                                                                 | nothing: constants                                                                       |
+| Rural output, deposits and multipliers                                         | `Output` ([output.ts](../../src/model/economy/output.ts))                                                                                                      | nothing: read from the map and good rules                                                |
+| Development: each cell's technology, read by the run                           | `Development` ([development-generator.ts](../../src/model/society/development-generator.ts))                                                                   | `pack.cells.development`                                                                 |
+| Route network, which carriage travels                                          | `Routes` ([routes-generator.ts](../../src/model/economy/routes-generator.ts))                                                                                  | `pack.routes`, `pack.cells.routes`                                                       |
+| Markets: regions, centers and margin rates                                     | `Markets` ([markets-generator.ts](../../src/model/economy/markets-generator.ts))                                                                               | `pack.markets`, `pack.cells.market`, `burg.plaza`                                        |
+| The run: workers, what burgs make and buy                                      | `Production` ([production-generator.ts](../../src/model/economy/production-generator.ts))                                                                      | `burg.production`, `burg.product`, `burg.pollTaxPaid`, `burg.treasury`, `market.feePaid` |
+| Trading: prices, stock, quotes, carriage, rural spending, writing the deal log | `Trade` ([trade.ts](../../src/model/economy/trade.ts))                                                                                                         | `market.goods`, `market.rural`, `pack.deals`                                             |
+| Reading the deal log: margins and values                                       | `Deals` ([deals.ts](../../src/model/economy/deals.ts))                                                                                                         | nothing: reads `pack.deals`                                                              |
+| Travel cost over routes                                                        | `TradeRoutes` ([trade-routes.ts](../../src/model/economy/trade-routes.ts))                                                                                     | nothing: measured per run                                                                |
+| State orders: spending the budget during the run, and what it provided         | `StateOrders` ([state-orders.ts](../../src/model/economy/state-orders.ts))                                                                                     | `state.economy.spent`, `order` deals                                                     |
+| Taxes: rates, tariff rules, each deal's taxes, collection                      | `Taxes` ([taxes.ts](../../src/model/economy/taxes.ts))                                                                                                         | `state.economy.collected`, `.pocketed`, `.treasury`                                      |
+| Forms, budgets, adjustments and tariffs set                                    | `States` ([states-generator.ts](../../src/model/political/states-generator.ts))                                                                                | `state.economy`, `state.alert`, `burg.adjustments`                                       |
+| Corruption by province                                                         | `Corruption` ([corruption.ts](../../src/model/economy/corruption.ts))                                                                                          | nothing: derived from cells and provinces                                                |
+| Prosperity: how well people live                                               | `Prosperity` ([prosperity.ts](../../src/model/economy/prosperity.ts))                                                                                          | `pack.cells.prosperity`, the rest on demand                                              |
+| State, province and world accounts                                             | `Accounts` ([accounts.ts](../../src/model/economy/accounts.ts))                                                                                                | nothing: summed on demand                                                                |
+| Stability                                                                      | `Stability` ([stability.ts](../../src/model/political/stability.ts))                                                                                           | nothing: worked out on demand                                                            |
+| Army upkeep and equipment                                                      | `Military` ([military-generator.ts](../../src/model/political/military-generator.ts))                                                                          | nothing: worked out on demand                                                            |
+| Trade animation and traffic                                                    | `TradeAnimation` ([trade-animation.ts](../../src/renderers/trade-animation.ts)), `TradeTraffic` ([trade-traffic.ts](../../src/model/economy/trade-traffic.ts)) | nothing: read-only views of the deals                                                    |
+| The run's debug log                                                            | `EconomyDebug` ([economy-debug.ts](../../src/model/economy/economy-debug.ts))                                                                                  | nothing: in memory, in debug mode only                                                   |
 
-From `Prosperity` down, modules only read the last run: the run never reads them. The dialogs live in [controllers/economy](../../src/controllers/economy) (goods, markets, trade, routes, and the burg, state and province overviews), sharing cells and terms from [economy-view.ts](../../src/ui/economy-view.ts). [scripts/economy-tuner](../../scripts/economy-tuner) tunes the catalogue and constants ([below](#tuning)).
+From `Prosperity` down, modules only read the last run: the run never reads them. Their sums go stale when burgs or cells change hands, so what moves them calls `Pack.markChanged()`. Shared shapes live in [types/economy.ts](../../src/types/economy.ts). All of these are on `window.FMG` and in the Assistant's scripts. The dialogs live in [controllers/economy](../../src/controllers/economy) (goods, markets, trade, routes, and the burg, state and province overviews), sharing cells and terms from [economy-view.ts](../../src/ui/economy-view.ts). [scripts/economy-tuner](../../scripts/economy-tuner) tunes the catalogue and constants ([below](#tuning)).
 
 ## When it runs
 
-Generation runs `Goods.generate()` early, before population ranking, which reads good values and deposits. Near the end it runs `Markets.generate()` → `Production.produce()` → `States.collectTaxes()`.
+Generation runs `Goods.generate()` early, before population ranking, which reads good values and deposits. Near the end it runs `Markets.generate()` → `Production.produce()` → `Taxes.collect()`.
 
 **The run changes only when the user asks for it.** One dialog, `openEconomyRegeneration(preset)`, ticks what to run, always in this order. Tools has one Economy button for it; each button only opens it with its own ticks:
 
@@ -91,7 +95,7 @@ Each market floods out from its center by cost: another state's land or another 
 
 ### Stock and price
 
-A market holds no money, only per-good `{ stock, price }`, rebuilt by every run. `price` is a midpoint: burgs buy above it and sell below it by the market's margin rate (`Trade.getMarginRate`), `MARKET_MARGIN` × √(fee factor) of the license its center paid, rounded to a whole percent, at most `MAX_MARKET_MARGIN`: 4% with no license, usually 5% in a monarchy. So a greedy state's markets are dearer and slower. The **margin** goes to the market's center burg as each trade happens (`payMargin`), kept out of `burg.product` and untaxed.
+A market holds no money, only per-good `{ stock, price }`, rebuilt by every run. `price` is a midpoint: burgs buy above it and sell below it by the market's margin rate (`Markets.getMarginRate`), `MARKET_MARGIN` × √(fee factor) of the license its center paid, rounded to a whole percent, at most `MAX_MARKET_MARGIN`: 4% with no license, usually 5% in a monarchy. So a greedy state's markets are dearer and slower. The **margin** goes to the market's center burg as each trade happens (`payMargin`), kept out of `burg.product` and untaxed.
 
 Each market expects to sell a day's demand of each good, its **depth** (`initializeMarketPrices`, `collectDemand`): its people × what a person buys of the good, with `WANTS_ESTIMATE` for wants, plus what the trades making its products need, down whole production chains.
 
@@ -103,7 +107,7 @@ Each market expects to sell a day's demand of each good, its **depth** (`initial
 
 `Production.produce()`:
 
-1. **Rural supply** (`collectRuralProduction`). Every cell delivers to its market: population × biome output × multipliers × `RURAL_OUTPUT_FACTOR`, plus its deposit (`getDepositOutput`: population up to `DEPOSIT_MAX_POPULATION` × `DEPOSIT_RICHNESS` × the map's cells ÷ `DEPOSIT_MAP_CELLS` × multipliers). A water cell counts its land neighbours' population.
+1. **Rural supply** (`collectRuralProduction`). Every cell delivers to its market: population × biome output × multipliers × `RURAL_OUTPUT_FACTOR`, plus its deposit (`Output.getDeposit`: population up to `DEPOSIT_MAX_POPULATION` × `DEPOSIT_RICHNESS` × the map's cells ÷ `DEPOSIT_MAP_CELLS` × multipliers). A water cell counts its land neighbours' population.
 2. **Opening prices and depth**, as above.
 3. **Routes.** One route search from every market center prices carriage for the run.
 4. **Burg turns.** Burgs go by √population × development, the most first (`getTurnOrder`). Round after round, each burg:
@@ -174,44 +178,44 @@ purchase: price = market price × (1 + margin rate) + tax + tariff + carriage
 
 **Adjustments** (`burg.adjustments`, `state.economy.adjustments`) are named lines the user sets, income or costs a day besides trade. They come at dawn, count in income and are kept on regeneration.
 
-**Poll tax** is the day's first claim (`States.getPollTaxDue`). A burg starts the day owing it and pays it from its first sales, always in full, so one whose sales fall short ends in debt. Rural people keep it back from their wants and pay what they can (`Trade.settleRuralPollTax`, `market.rural.pollTax`), so a state may collect less than it is owed (`States.getPollTax`).
+**Poll tax** is the day's first claim (`Taxes.getPollTaxDue`). A burg starts the day owing it and pays it from its first sales, always in full, so one whose sales fall short ends in debt. Rural people keep it back from their wants and pay what they can (`Trade.settleRuralPollTax`, `market.rural.pollTax`), so a state may collect less than it is owed (`Taxes.getPollTax`).
 
 **Market license** is a fixed fee a day (`state.economy.marketFee`) a market's center owes its state whatever the trade (`market.feePaid`). It is paid from the margin as it comes in (`Trade.payMarginAmount`), and what the margin has not covered by the day's end then (`Trade.settleLicenses`), so a quiet market in a greedy state ends in debt.
 
 **Corruption** (`state.economy.budget.corruption`) is the share of each expense officials would pocket; it leaves the economy. It is set with the forms (`States.defineCorruption`) from the form, the state's size and its diversity, with no random roll.
 
-**Administration curbs corruption** (`States.getCorruption`): officials pocket up to `ADMINISTRATION_CURB` less, in proportion to what administration is paid of what the state's people need (`ADMINISTRATION_NEED`).
+**Administration curbs corruption** (`Corruption.curb`): officials pocket up to `ADMINISTRATION_CURB` less, in proportion to what administration is paid of what the state's people need (`ADMINISTRATION_NEED`).
 
-**Districts.** A state is governed through **districts** (`Districts`, [districts.ts](../../src/model/political/districts.ts)): each province whose seat burg has a market, and the **crown lands**, governed from the capital. A district's corruption rises with its remoteness and minorities above the state's average (`Districts.getTendency`), and administration curbs each with its own corruption. The state's rate is theirs by where each expense is spent (`Districts.getStateCorruption`).
+**Corruption by province** (`Corruption`). A province's corruption rises with its capital's remoteness and its minorities above the state's average (`Corruption.getTendency`), and administration curbs each with its own. A state's cells outside any province count as one more, governed from the capital. The state's rate is its provinces' by where each expense is spent (`Corruption.ofState`).
 
 **Budget** (`state.economy.budget`) is four expenses, each in whole percents of the taxes collected (`States.setBudget`), set with the forms (`States.defineExpenses`). They need not sum to 100: below it the state saves, above it its treasury goes negative. The **war alert** (`state.alert`, `States.defineAlert`) drives the military share and military generation.
 
-| Expense          | Buys              | Where                                 | Effect ([below](#what-state-spending-does)) |
-| ---------------- | ----------------- | ------------------------------------- | ------------------------------------------- |
-| Court and clergy | luxury            | the capital                           | stability                                   |
-| Administration   | utilities         | the provinces' seats, by their people | curbs corruption                            |
-| Infrastructure   | construction      | the provinces' seats, by their people | a share of prosperity                       |
-| Military         | military and food | the capital                           | the forces' upkeep                          |
+| Expense          | Buys              | Where                                    | Effect ([below](#what-state-spending-does)) |
+| ---------------- | ----------------- | ---------------------------------------- | ------------------------------------------- |
+| Court and clergy | luxury            | the capital                              | stability                                   |
+| Administration   | utilities         | the provinces' capitals, by their people | curbs corruption                            |
+| Infrastructure   | construction      | the provinces' capitals, by their people | a share of prosperity                       |
+| Military         | military and food | the capital                              | the forces' upkeep                          |
 
-**State orders** (`StateOrders`) spend the budget during the run, so state demand pulls production. After each round, each seat spends its share of what the state has collected so far (`Trade.getTaxesSoFar`), less what officials pocket, once it has gathered `MIN_ORDER`. It buys like a burg, spreading money over goods as rural people do, and the deal is the state's (kind `order`): it pays margin and carriage, but no tax to itself. The day's last orders spend the rest of each expense. What each expense spent is kept in `state.economy.spent`.
+**State orders** (`StateOrders`) spend the budget during the run, so state demand pulls production. Court and military buy at the capital, administration and infrastructure at each province's capital, or at the state's where the province's has no market. After each round, each buyer spends its share of what the state has collected so far (`Trade.getTaxesSoFar`), less what officials pocket, once it has gathered `MIN_ORDER`. It buys like a burg, spreading money over goods as rural people do, and the deal is the state's (kind `order`): it pays margin and carriage, but no tax to itself. The day's last orders spend the rest of each expense. What each expense spent is kept in `state.economy.spent`.
 
-**Collection** (`States.collectTaxes`) adds up each deal's tax and tariff (`Trade.getTaxStates`), the poll tax paid and the license fees, plus the adjustments (`state.economy.collected`). Officials pocket their share (`state.economy.pocketed`), and the treasury is collected − pocketed − spent.
+**Collection** (`Taxes.collect`) adds up each deal's tax and tariff (`Taxes.getTaxStates`), the poll tax paid and the license fees, plus the adjustments (`state.economy.collected`). Officials pocket their share (`state.economy.pocketed`), and the treasury is collected − pocketed − spent.
 
 ## The deal log
 
 `pack.deals` is the only record of trade. One deal per burg, market, good and kind sums the run's trades, so units × price gives back what was paid.
 
-| Kind     | Meaning                                                                    | Market                                    |
-| -------- | -------------------------------------------------------------------------- | ----------------------------------------- |
-| `sale`   | the burg sold its output                                                   | where it fetched most, often its own      |
-| `input`  | bought as a production input                                               | its own, or a source market               |
-| `demand` | bought for its people's needs or wants                                     | its own, or a source market               |
-| `kept`   | its own output taken back for its people, free                             | its own                                   |
-| `order`  | a state's purchase for an expense; the burg is the seat it is delivered to | the seat's own market, or a source market |
+| Kind     | Meaning                                                  | Market                                    |
+| -------- | -------------------------------------------------------- | ----------------------------------------- |
+| `sale`   | the burg sold its output                                 | where it fetched most, often its own      |
+| `input`  | bought as a production input                             | its own, or a source market               |
+| `demand` | bought for its people's needs or wants                   | its own, or a source market               |
+| `kept`   | its own output taken back for its people, free           | its own                                   |
+| `order`  | a state's purchase for an expense, delivered to the burg | the burg's own market, or a source market |
 
-- A burg's treasury change equals its adjustments and its deals, `order` deals aside, within a cent or two: sales minus purchases, plus, for a market's center, the margin on every deal at its market (`Trade.getMargin`) and on its rural people's trade (`market.rural.margin`).
-- An **import** is trade between the burg's own market and a market of another state, either way (`Trade.isImport`). Trade with the neutral lands never is.
-- A deal's money to its market (`Trade.getMarketIncome`) only reports: the Markets overview sums it into Sales and Buys.
+- A burg's treasury change equals its adjustments and its deals, `order` deals aside, within a cent or two: sales minus purchases, plus, for a market's center, the margin on every deal at its market (`Deals.getMargin`) and on its rural people's trade (`market.rural.margin`).
+- An **import** is trade between the burg's own market and a market of another state, either way (`Taxes.isImport`). Trade with the neutral lands never is.
+- A deal's money to its market (`Deals.getMarketIncome`) only reports: the Markets overview sums it into Sales and Buys.
 - Rural purchases make no deals, so a market's stock falls by more than its deals explain.
 - With Economy checked under Debugging (`options.app.debug`), the run records each burg's steps in memory (`EconomyDebug`, never saved), and the Economy Overview shows that log.
 
@@ -227,21 +231,21 @@ Shown, not used by the run, and worked out on demand from the last run.
 
 Living = needs met × (`NEEDS_SHARE` + `COMFORT_SHARE` × comfort score + `VARIETY_SHARE` × variety score), and prosperity is living with `INFRASTRUCTURE_SHARE` from the infrastructure serving them, named by ten levels (`PROSPERITY_LEVELS`). Rural people's needs come from their fields, and they are measured against village wants (`RURAL_COMFORT_TOP`, `RURAL_VARIETY_TOP`). A market's rural earnings and purchases go to its cells by the value of their produce (`getRuralCell`), and unsold produce meeting a need stays with the cells that grew it. Each cell keeps its rural prosperity (`pack.cells.prosperity`). It measures living standards only, not happiness.
 
-**State accounts** (`StateEconomy`, [state-economy.ts](../../src/model/economy/state-economy.ts)) sum a state's economy. Its **product** has three sectors: rural (rural earnings), manufacturing (its burgs' product) and trade (its centers' margins). Its **economy type** is the sector whose share most exceeds the world's: Agrarian, Artisan or Mercantile. The good it is **known for** has the largest share² of its exports ÷ its share of the world's. Wealth is product per person, and tax burden is its taxes (adjustments aside) over its product. Exports and imports count goods at market prices, without carriage, taxes and the margin: a sale of its burg to a foreign market, or a foreign burg buying at its market, is an export.
+**State accounts** (`Accounts.ofState`, [accounts.ts](../../src/model/economy/accounts.ts)) sum a state's economy. Its **product** has three sectors: rural (rural earnings), manufacturing (its burgs' product) and trade (its centers' margins). Its **economy type** is the sector whose share most exceeds the world's: Agrarian, Artisan or Mercantile. The good it is **known for** has the largest share² of its exports ÷ its share of the world's. Wealth is product per person, and tax burden is its taxes (adjustments aside) over its product. Exports and imports count goods at market prices, without carriage, taxes and the margin: a sale of its burg to a foreign market, or a foreign burg buying at its market, is an export.
 
-**Province accounts** (`ProvinceEconomy`, [province-economy.ts](../../src/model/economy/province-economy.ts)) sum a province the same way. Taxes count where the state's own taxpayer is or, for a foreigner, at the market where they were paid. A state's provinces and its lands outside any province sum to its accounts, adjustments aside.
+**Province accounts** (`Accounts.ofProvince`) sum a province the same way. Taxes count where the state's own taxpayer is or, for a foreigner, at the market where they were paid. A state's provinces and its lands outside any province sum to its accounts, adjustments aside.
 
 ## What state spending does
 
 Each expense works after the run, measured by what was spent against the need of a state of that size. All are worked out on demand.
 
 - **Military → upkeep** (`Military.getUpkeep`): spending against its forces' power (`UPKEEP_COST`). Regiments hold population points; `Military.getTroops` shows them as troops at the map's population rate, rounded up, so changing that rate moves no economy or army figure. It scales regiments' power in battle (`Military.getBattleUpkeep`) and the Military overview's power. Army size follows the war alert, and the budget only its root, so warlike states overstretch. It is 1 before the economy has run, and for an anarchy.
-- **Goods → equipment** (`Military.getEquipped`): a unit lists the goods that equip it (`unit.goods`). A state's stock of a good, in population points of troops, is its consumption (`StateEconomy.getConsumption`) × `EQUIPMENT` × the good's military coverage, split between the units needing it. Conscripts beyond it serve as levies, so the army's size stays and its strength falls. What the state has counts, not what it makes.
-- **Infrastructure → prosperity**: provision against `PROVISION_NEED`. Each district gets the state's spending by its people, less what its officials pocket (`Districts.getInfrastructure`), so far and foreign provinces are served worse.
+- **Goods → equipment** (`Military.getEquipped`): a unit lists the goods that equip it (`unit.goods`). A state's stock of a good, in population points of troops, is its consumption (`Accounts.getConsumption`) × `EQUIPMENT` × the good's military coverage, split between the units needing it. Conscripts beyond it serve as levies, so the army's size stays and its strength falls. What the state has counts, not what it makes.
+- **Infrastructure → prosperity**: provision against `PROVISION_NEED`. Each province gets the state's spending by its people, less what its officials pocket (`StateOrders.getInfrastructure`), so far and foreign provinces are served worse.
 - **Administration → corruption**: see [Money and taxes](#money-and-taxes).
 - **Court and clergy → stability**: provision against a need per person.
 
-**Stability** ([stability.ts](../../src/model/political/stability.ts), 0–1) is how firmly a district holds together, the sum of its parts, clamped. A state's is its districts' by their people. It is null for the neutral lands and before the economy has run.
+**Stability** ([stability.ts](../../src/model/political/stability.ts), 0–1) is how firmly a province holds together, the sum of its parts, clamped; a state's cells outside any province count as one more. A state's is theirs by their people. It is null for the neutral lands and before the economy has run.
 
 | Part             | Adds                                       |
 | ---------------- | ------------------------------------------ |
@@ -254,7 +258,7 @@ Each expense works after the run, measured by what was spent against the need of
 | Corruption       | −0.2 at 40% curbed corruption or more      |
 | Tax burden       | −0.15 at taxes of half the product or more |
 
-Rebel zones rise in a state and district by the square of their instability, as a tax revolt where the tax burden is the largest loss. Battle morale follows each side's stability.
+Rebel zones rise in a state and province by the square of their instability, as a tax revolt where the tax burden is the largest loss. Battle morale follows each side's stability.
 
 **Story.** Zones and markers are generated after the economy and read its last run. Invasions favour prosperous borders, disease the busiest burgs and ports, and famine land of low rural prosperity. Among markers, brigands, inns and pirates favour busy markets, fairs burgs trading many goods, customs houses roads between states trading under tariffs, merchant houses the richest market centers, bridges the busiest burgs, and mines the most valuable deposits. A guild hall marks a burg famed for a made good (`indexGuilds`): world share × √makers × √state share at least 0.75, the good worth 15 a day and a quarter of what the burg makes.
 
@@ -263,7 +267,7 @@ Rebel zones rise in a state and district by the square of their instability, as 
 What the economy should achieve, scored on ten maps with default options, averaged (seeds and templates in `scripts/economy-tuner/export-maps.mjs`). Re-measure after any change to the economy and update the table. The **tuner fee** is what each unit of miss costs in the tuner's objective (`objective.mjs`).
 
 - **Product**: what a burg's trades add in a day: its sales, less their sales tax and the ingredients it bought.
-- **Wealth**: a burg's product per person. A state's wealth is its product per person, towns and country together.
+- **Wealth**: a burg's product per person. A state's wealth is its product per person, urban and rural together.
 - **Treasury**: the money a burg holds at the end of the day.
 - **The economy's product**: all burgs' product, plus market margins and rural people's earnings.
 

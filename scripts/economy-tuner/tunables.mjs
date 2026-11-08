@@ -2,7 +2,7 @@
 // becomes a variable with a setter on globalThis.__economyTunables: the Node bundle and the game page apply it alike.
 
 export const TUNABLES = {
-  "src/model/economy/goods-generator.ts": {
+  "src/model/economy/demand.ts": {
     SAVINGS_RATE: [0.05, 0.6],
     VARIETY: [1.5, 5],
     NOVELTY: [0, 10]
@@ -11,12 +11,14 @@ export const TUNABLES = {
     WORKFORCE_SHARE: [0.2, 0.6],
     BURG_SPECIALIZATION: [0, 4],
     MARKET_SPECIALIZATION: [0, 2],
-    DEPOSIT_RICHNESS: [0.25, 4],
     DEPOSIT_OUTPUT: [1, 4],
-    RURAL_OUTPUT_FACTOR: [0.5, 3],
     LOT_DEPTH_SHARE: [0.02, 2],
     MIN_STEP: [0.02, 1],
     MIN_PURCHASE: [0.25, 3]
+  },
+  "src/model/economy/output.ts": {
+    DEPOSIT_RICHNESS: [0.25, 4],
+    RURAL_OUTPUT_FACTOR: [0.5, 3]
   },
   "src/model/economy/trade.ts": {
     PRICE_CURVE: [1, 3],

@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEAL_KINDS } from "@/model/economy/deals";
 import type { Burg } from "@/model/political/burgs-generator";
 import { noFinance, type State } from "@/model/political/states-generator";
-import type { Good } from "./goods-generator";
+import type { Good, Market } from "@/types/economy";
 import { Goods } from "./goods-generator";
-import { type Market, Markets } from "./markets-generator";
+import { Markets } from "./markets-generator";
 import { StateOrders } from "./state-orders";
-import { DEAL_KINDS, Trade } from "./trade";
+import { Trade } from "./trade";
 
 const good = (i: number, name: string, value: number, need: string): Good => ({
   i,

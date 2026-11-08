@@ -1,11 +1,12 @@
 import { type D3DragEvent, drag, easeSinIn, select, transition } from "d3";
 import { Controllers } from "@/controllers";
+import { CULTURE_TYPES } from "@/data/culture-types";
 import { DEFAULT_DEVELOPMENT } from "@/data/development";
 import { CULTURE_TYPE_LABELS, SHIELD_LABELS } from "@/data/id-labels";
 import { Pack } from "@/model/graph/pack-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
-import { CULTURE_TYPES, type Culture, Cultures } from "@/model/society/cultures-generator";
+import { type Culture, Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";

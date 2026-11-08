@@ -1,12 +1,13 @@
 import { type HierarchyCircularNode, max, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
+import { EXPENSES } from "@/data/expenses";
 import { CULTURE_TYPE_LABELS, EXPENSE_LABELS } from "@/data/id-labels";
-import { StateEconomy } from "@/model/economy/state-economy";
+import { Accounts } from "@/model/economy/accounts";
+import { Corruption } from "@/model/economy/corruption";
 import { Pack } from "@/model/graph/pack-generator";
 import { Burgs } from "@/model/political/burgs-generator";
-import { Districts } from "@/model/political/districts";
 import { Stability } from "@/model/political/stability";
-import { EXPENSES, STATE_FORMS, type State, States } from "@/model/political/states-generator";
+import { STATE_FORMS, type State, States } from "@/model/political/states-generator";
 import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
@@ -69,7 +70,7 @@ const renderDevelopmentCell = (level: number | undefined): string =>
 
 /** Taxes as a percent of product; null for the neutral lands or before an economy run */
 const taxBurden = (s: State): number | null => {
-  const accounts = s.i ? StateEconomy.getAccounts(s.i) : null;
+  const accounts = s.i ? Accounts.ofState(s.i) : null;
   return accounts?.product ? (accounts.taxes / accounts.product) * 100 : null;
 };
 
@@ -165,7 +166,7 @@ const columns: EditorColumn<State>[] = [
     hidden: true,
     mobileHidden: true,
     tip: sentences(EconomyTerms.corruption(), EconomyTerms.openValue()),
-    sortBy: s => (s.i ? Districts.getStateCorruption(s, s.economy.collected) : 0)
+    sortBy: s => (s.i ? Corruption.ofState(s, s.economy.collected) : 0)
   },
   ...EXPENSES.map(
     (expense): EditorColumn<State> => ({
@@ -184,7 +185,7 @@ const columns: EditorColumn<State>[] = [
     width: "6em",
     mobileHidden: true,
     tip: sentences(EconomyTerms.prosperity(), EconomyTerms.openValue()),
-    sortBy: s => StateEconomy.getAccounts(s.i)?.prosperity ?? -1
+    sortBy: s => Accounts.ofState(s.i)?.prosperity ?? -1
   },
   {
     key: "stability",
@@ -201,7 +202,7 @@ const columns: EditorColumn<State>[] = [
     hidden: true,
     mobileHidden: true,
     tip: sentences(EconomyTerms.stateProduct(), EconomyTerms.openValue()),
-    sortBy: s => StateEconomy.getAccounts(s.i)?.product ?? 0
+    sortBy: s => Accounts.ofState(s.i)?.product ?? 0
   },
   {
     key: "wealth",
@@ -210,7 +211,7 @@ const columns: EditorColumn<State>[] = [
     hidden: true,
     mobileHidden: true,
     tip: sentences(EconomyTerms.wealth(), EconomyTerms.openValue()),
-    sortBy: s => StateEconomy.getAccounts(s.i)?.wealth ?? 0
+    sortBy: s => Accounts.ofState(s.i)?.wealth ?? 0
   },
   {
     key: "development",
@@ -498,14 +499,14 @@ function renderStatesPage(view: TableView<State>): void {
       t("Sales tax: {{rate}}%", { rate: rn((s.economy.salesTax || 0) * 100, 1) }),
       t("Poll tax: {{rate}} a head", { rate: rn(s.economy.pollTax || 0, 2) }),
       t("Market license: {{fee}}", { fee: rn(s.economy.marketFee || 0, 2) }),
-      t("Corruption: {{rate}}%", { rate: rn(Districts.getStateCorruption(s, s.economy.collected)) }),
+      t("Corruption: {{rate}}%", { rate: rn(Corruption.ofState(s, s.economy.collected)) }),
       EconomyTerms.open()
     );
-    const accounts = s.i ? StateEconomy.getAccounts(s.i) : null;
+    const accounts = s.i ? Accounts.ofState(s.i) : null;
     const stability = Stability.get(s.i);
     const burden = taxBurden(s);
     const expenses = s.economy.budget;
-    const neutrals = s.i ? null : StateEconomy.getAccounts(0);
+    const neutrals = s.i ? null : Accounts.ofState(0);
 
     if (!s.i) {
       // Neutral line
@@ -638,7 +639,7 @@ function renderStatesPage(view: TableView<State>): void {
       </div>
       <div data-tip="${treasuryTip}" class="stateTreasury stateEconomy pointer" data-col="treasury">🟡 ${si(s.economy.treasury)}</div>
       <div data-tip="${sentences(t("Tax burden: the taxes' share of the product"), EconomyTerms.open())}" class="stateEconomy pointer" data-col="burden">${burden === null ? "—" : `${rn(burden, 1)}%`}</div>
-      <div data-tip="${sentences(EconomyTerms.corruption(), t("Before administration: {{rate}}%", { rate: rn(Districts.getStateTendency(s)) }), EconomyTerms.open())}" class="stateEconomy pointer" data-col="corruption">${rn(Districts.getStateCorruption(s, s.economy.collected))}%</div>
+      <div data-tip="${sentences(EconomyTerms.corruption(), t("Before administration: {{rate}}%", { rate: rn(Corruption.getStateTendency(s)) }), EconomyTerms.open())}" class="stateEconomy pointer" data-col="corruption">${rn(Corruption.ofState(s, s.economy.collected))}%</div>
       ${EXPENSES.map(expense => `<div data-tip="${sentences(EconomyTerms.expenseTip(expense), EconomyTerms.open())}" class="stateEconomy pointer" data-col="${expense}">${expenses[expense]}%</div>`).join("")}
       <div data-tip="${accounts?.prosperity == null ? EconomyTerms.noData() : sentences(prosperityTip(accounts.prosperity), EconomyTerms.open())}" class="stateEconomy stateProsperity pointer" data-col="prosperity">${accounts?.prosperity == null ? "—" : renderProsperityPercent(accounts.prosperity)}</div>
       <div data-tip="${stability ? sentences(EconomyTerms.stability(), t("Click to open the stability overview")) : EconomyTerms.noData()}" class="stateStability pointer" data-col="stability">${stability ? `${rn(stability.stability * 100)}%` : "—"}</div>
@@ -686,7 +687,7 @@ function renderStatesPage(view: TableView<State>): void {
   ensureEl("statesFooterTreasury").innerHTML = `🟡 ${si(shown.length ? treasury / shown.length : 0)}`;
   // by people, as a state's own prosperity is
   const lived = shown.flatMap(s => {
-    const accounts = StateEconomy.getAccounts(s.i);
+    const accounts = Accounts.ofState(s.i);
     return accounts?.prosperity == null ? [] : [{ people: accounts.people, prosperity: accounts.prosperity }];
   });
   const people = lived.reduce((sum, row) => sum + row.people, 0);
@@ -1072,7 +1073,7 @@ function togglePercentageMode(): void {
       (sum, s) => sum + (s.i && !s.removed ? Math.abs(s.economy.treasury || 0) : 0),
       0
     );
-    const world = StateEconomy.getWorld();
+    const world = Accounts.getWorld();
     const totalCells = pack.states.reduce((sum, s) => sum + (s.i && !s.removed ? s.cells || 0 : 0), 0);
 
     ensureEl("statesBodySection")

@@ -1,4 +1,4 @@
-import type { CultureType } from "@/model/society/cultures-generator";
+import type { CultureType } from "@/data/culture-types";
 
 export interface Era {
   level: number; // the level it begins at

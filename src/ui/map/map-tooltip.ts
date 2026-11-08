@@ -1,7 +1,8 @@
 import { select } from "d3";
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
-import { type Good, Goods } from "@/model/economy/goods-generator";
+import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { Output } from "@/model/economy/output";
 import { Production } from "@/model/economy/production-generator";
 import { TradeTraffic } from "@/model/economy/trade-traffic";
 import { Grid } from "@/model/graph/grid-generator";
@@ -12,6 +13,7 @@ import { convertTemperature, getCellPopulation, getFriendlyHeight, getFriendlyPr
 import { goodBadge } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
 import { isDevelopmentOverlayShown } from "@/renderers/overlays/development-overlay";
+import type { Good } from "@/types/economy";
 import type { Point } from "@/types/global";
 import { developmentTip } from "@/ui/development-view";
 import { highlightEmblemElement } from "@/ui/map/highlight";
@@ -291,13 +293,13 @@ function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
   const icon = target.closest<SVGElement>("#goodsIcons [data-i]");
   if (icon) {
     const goodId = Number(icon.dataset.i);
-    const produced = Production.getCellProduction(Number(icon.dataset.cell));
+    const produced = Output.ofCell(Number(icon.dataset.cell));
     const [deposit] = listGoods([[goodId, produced[goodId] || 0]]);
     return deposit && t("Deposit production: {{- production}}", { production: deposit.badge });
   }
 
   if (target.closest("#goodsCells")) {
-    const production = listGoods(Object.entries(Production.getCellProduction(cellId)))
+    const production = listGoods(Object.entries(Output.ofCell(cellId)))
       .map(({ badge }) => badge)
       .join(" ");
     return t("Cell rural production: {{- production}}", { production });

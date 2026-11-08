@@ -19,13 +19,13 @@ import {
 } from "d3";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { Output } from "@/model/economy/output";
 import { Production } from "@/model/economy/production-generator";
 import { mapHistory } from "@/model/map-history";
 import { convertTemperature, formatPrice, getArea, getAreaUnit, getHeight, getPrecipitation } from "@/model/units";
 import { Csv } from "@/services/io/csv";
 import { getFileName } from "@/services/io/file-name";
 import { Dialog } from "@/ui/dialog/dialog";
-
 import { tip } from "@/ui/tooltips";
 import { downloadFile } from "@/utils/file-utils";
 import { isWater } from "@/utils/height-utils";
@@ -308,7 +308,7 @@ const quantizationMap: Record<string, Metric> = {
     label: t("Production value"),
     hint: t("Worth of produced goods"),
     provides: ["good"],
-    prepare: () => ({ rural: Production.getRuralOutput() }),
+    prepare: () => ({ rural: Output.getRural() }),
     getContributions: (cellId, { rural }) => {
       const produced = getCellProductionByGood(cellId, rural);
       const contributions: Contribution[] = [];
@@ -328,7 +328,7 @@ const quantizationMap: Record<string, Metric> = {
     label: t("Production volume"),
     hint: t("Units of goods produced"),
     provides: ["good"],
-    prepare: () => ({ rural: Production.getRuralOutput() }),
+    prepare: () => ({ rural: Output.getRural() }),
     getContributions: (cellId, { rural }) => {
       const produced = getCellProductionByGood(cellId, rural);
       const contributions: Contribution[] = [];

@@ -1,14 +1,15 @@
 import { select } from "d3";
 import { Controllers } from "@/controllers";
 import { ColorPicker } from "@/controllers/color-picker";
-import { type Market, Markets } from "@/model/economy/markets-generator";
-import { Trade } from "@/model/economy/trade";
+import { Deals } from "@/model/economy/deals";
+import { Markets } from "@/model/economy/markets-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { formatPrice } from "@/model/units";
 import { highlightMarketOff, highlightMarketOn } from "@/renderers/draw-markets";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
+import type { Market } from "@/types/economy";
 import { App } from "@/ui/app-commands";
 import { Dialog } from "@/ui/dialog/dialog";
 import { closeEntityDialogs, noteIcon } from "@/ui/dialog/dialog-helpers";
@@ -398,8 +399,9 @@ function getMarketFinancials(market: Market): {
   let sales = 0;
   let buys = 0;
   for (const deal of pack.deals || []) {
-    if (deal[1] !== market.i) continue;
-    const income = Trade.getMarketIncome(deal);
+    const [, marketId] = deal;
+    if (marketId !== market.i) continue;
+    const income = Deals.getMarketIncome(deal);
     if (income > 0) sales += income;
     else buys -= income;
   }

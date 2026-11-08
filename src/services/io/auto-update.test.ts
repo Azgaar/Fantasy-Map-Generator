@@ -6,8 +6,8 @@ import "@/model/physical/biomes-generator"; // the 1.139 step reads the default 
 import "@/model/physical/features-generator"; // migrations call the Features module through its global
 import "@/model/political/burgs-generator"; // the burg sets that tell style icon references from text
 import { Goods } from "@/model/economy/goods-generator"; // also the goods icon namespace the 1.154 step migrates into
-import { DEAL_KINDS } from "@/model/economy/trade";
 import "@/model/physical/relief-generator"; // the relief set namespace the 1.154 step migrates into
+import { DEAL_KINDS } from "@/model/economy/deals";
 import { Pack } from "@/model/graph/pack-generator";
 import { Options } from "@/model/options/options-model";
 import { Military } from "@/model/political/military-generator";

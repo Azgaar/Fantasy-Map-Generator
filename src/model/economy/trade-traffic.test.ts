@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEAL_KINDS } from "./trade";
+import { DEAL_KINDS } from "@/model/economy/deals";
 import { TradeTrafficModule } from "./trade-traffic";
 
 // a road 0–1–2–3 and a branch 1–4; burg 1 at cell 0 is the market center, burg 2 at cell 3, burg 3 at cell 4

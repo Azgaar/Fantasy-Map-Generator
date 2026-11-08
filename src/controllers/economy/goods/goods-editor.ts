@@ -1,8 +1,9 @@
 import { select } from "d3";
 import { Controllers } from "@/controllers";
-import type { Good } from "@/model/economy/goods-generator";
-import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, Goods } from "@/model/economy/goods-generator";
+import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "@/model/economy/demand";
+import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { Output } from "@/model/economy/output";
 import { Production } from "@/model/economy/production-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
@@ -12,6 +13,7 @@ import { goodBadge } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { Csv } from "@/services/io/csv";
+import type { Good } from "@/types/economy";
 import type { LegendItem } from "@/types/legend";
 import { App } from "@/ui/app-commands";
 import { developmentTip } from "@/ui/development-view";
@@ -388,10 +390,10 @@ function getProducers(goodId: number): Producer[] {
   const byState: number[] = [];
   const byProvince: number[] = [];
   let neutralCell = 0; // neutrals have no center of their own to zoom to
-  Production.getRuralOutput().forEach((produced, cellId) => {
+  Output.getRural().forEach((produced, cellId) => {
     const units = produced[goodId];
     if (!units || !cells.market[cellId]) return;
-    const workingCell = Production.getWorkingCell(cellId);
+    const workingCell = Output.getWorkingCell(cellId);
     const stateId = cells.state[workingCell];
     byState[stateId] = (byState[stateId] || 0) + units;
     if (!stateId) neutralCell ||= workingCell;
@@ -525,7 +527,7 @@ function getProduction() {
     production[goodId][type] += amount;
   };
 
-  Production.getRuralOutput().forEach((produced, cellId) => {
+  Output.getRural().forEach((produced, cellId) => {
     if (!pack.cells.market[cellId]) return; // out of every market, it reaches no one
     for (const goodId in produced) addProduction(Number(goodId), produced[goodId] || 0, "cell");
   });

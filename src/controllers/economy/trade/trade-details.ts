@@ -1,12 +1,14 @@
+import { DEAL_KINDS } from "@/model/economy/deals";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
-import { DEAL_KINDS, type Deal, Trade } from "@/model/economy/trade";
+import { Taxes } from "@/model/economy/taxes";
 import type { Point } from "@/model/graph/voronoi";
 import { Icons } from "@/model/icons";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { clearHighlight, highlight } from "@/renderers/draw-trade-animation";
 import { TradeAnimation } from "@/renderers/trade-animation";
+import type { Deal } from "@/types/economy";
 import { Dialog } from "@/ui/dialog/dialog";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
@@ -147,7 +149,7 @@ function open(deal: Deal): void {
       ? t("State order: {{- state}} buys from {{- market}} for {{- burg}}", names)
       : isSale
         ? t("Trade: {{- burg}} sells to {{- market}}", names)
-        : !Trade.isImport(deal)
+        : !Taxes.isImport(deal)
           ? t("Trade: {{- burg}} buys from {{- market}}", names)
           : t("Trade: {{- burg}} imports from {{- market}}", names),
     position,
@@ -231,13 +233,14 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
   const { burgId, marketId, isSale, deals } = activeFlow;
   const burg = pack.burgs[burgId];
   const market = Markets.get(marketId);
+  const [, , firstGood, kind, , , , , firstCarriage] = deals[0];
   const context = getTradeContext(
     burgId,
     marketId,
-    deals[0][2],
-    deals[0][3],
-    deals[0][8],
-    Math.max(...deals.map(deal => deal[7]))
+    firstGood,
+    kind,
+    firstCarriage,
+    Math.max(...deals.map(([, , , , , , , tariff]) => tariff))
   );
   const { isImport } = context;
   const zoom = (target: string) =>
@@ -256,7 +259,7 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
       tax,
       tariff,
       formula,
-      ...getTradeContext(burgId, marketId, goodId, deals[0][3], carriage, tariff)
+      ...getTradeContext(burgId, marketId, goodId, kind, carriage, tariff)
     });
     return /* html */ `<div class="states tradeDeal" data-good="${escapeHtml(good.name)}" data-units="${rn(units, 2)}" data-income="${rn(income, 2)}">
     <svg data-col="icon" data-tip="${t("Good icon")}" width="2em" height="2em" class="goodIcon">

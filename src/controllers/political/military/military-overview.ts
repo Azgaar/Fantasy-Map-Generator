@@ -1,17 +1,18 @@
 import { interpolateString, select, sum } from "d3";
 import { Controllers } from "@/controllers";
-import { type Good, Goods } from "@/model/economy/goods-generator";
+import { Goods } from "@/model/economy/goods-generator";
 import { Icons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
 import { Military } from "@/model/political/military-generator";
+import { getDefaultMilitaryUnits } from "@/model/political/military-units";
 import type { State } from "@/model/political/states-generator";
 import { goodBadge } from "@/renderers/draw-goods";
 import { drawRegiment } from "@/renderers/draw-military";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
+import type { Good } from "@/types/economy";
 import type { MilitaryUnit } from "@/types/military";
 import { Dialog } from "@/ui/dialog/dialog";
-
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { type LimitationItem, limitationTip, pickLimitation } from "@/ui/dialog/limitation-picker";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -544,7 +545,7 @@ function militaryCustomize(): void {
 
   function restoreDefaultUnits(): void {
     removeUnitLines();
-    Military.getDefaultOptions().map((unit: MilitaryUnit) => addUnitLine(unit));
+    getDefaultMilitaryUnits().map((unit: MilitaryUnit) => addUnitLine(unit));
   }
 
   function getGoodsTitle(goods?: number[]): string {

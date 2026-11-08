@@ -1,4 +1,5 @@
 import { Goods } from "@/model/economy/goods-generator";
+import { Output } from "@/model/economy/output";
 import { Production } from "@/model/economy/production-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
@@ -141,7 +142,7 @@ function buildCellProduction(displayedGoods: Set<number>): void {
 
   // First pass: accumulate total production per cell to find the global max
   const cellTotals = new Map<number, { produced: Map<number, number>; total: number }>();
-  const rural = Production.getRuralOutput();
+  const rural = Output.getRural();
   let maxTotal = 0;
   for (const cellId of pack.cells.i) {
     let total = 0;
@@ -182,7 +183,7 @@ function getSaturation(values: number[]): number {
 /** Every producing cell in its most valuable good's color, opacity by its output value */
 function buildCellOverview(): void {
   cellProduction = [];
-  const rural = Production.getRuralOutput();
+  const rural = Output.getRural();
   const cells: [number, number, string][] = [];
   for (const cellId of pack.cells.i) {
     let value = 0;

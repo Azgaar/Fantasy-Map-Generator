@@ -9,9 +9,9 @@ import {
   treemap
 } from "d3";
 import { Controllers } from "@/controllers";
-import { ProvinceEconomy } from "@/model/economy/province-economy";
+import { Accounts } from "@/model/economy/accounts";
+import { Corruption } from "@/model/economy/corruption";
 import type { Burg } from "@/model/political/burgs-generator";
-import { Districts } from "@/model/political/districts";
 import type { Province } from "@/model/political/provinces-generator";
 import { Provinces } from "@/model/political/provinces-generator";
 import { Stability } from "@/model/political/stability";
@@ -78,24 +78,24 @@ const CSV_COLUMNS = [
 ];
 
 const getProvinceArea = (province: Province) => getArea(province.area!);
-/** What officials pocket of the state's spending in the province's district */
+/** What officials pocket of the state's spending in the province */
 function getProvinceCorruption(
   province: Province,
-  district = Stability.getProvince(province.i)?.district
+  corruption = Stability.getProvince(province.i)?.province
 ): number | null {
   const state = pack.states[province.state];
-  return district && state ? Districts.getCorruption(state, district, state.economy.collected) : null;
+  return corruption && state ? Corruption.ofProvince(state, corruption, state.economy.collected) : null;
 }
 
-/** The province's prosperity, corruption and stability, its own district's or the crown lands' */
-function renderGovernance(province: Province): string {
-  const prosperity = ProvinceEconomy.get(province.i)?.prosperity;
+/** The province's prosperity, corruption and stability */
+function renderEconomyCells(province: Province): string {
+  const prosperity = Accounts.ofProvince(province.i)?.prosperity;
   const prosperityCell =
     prosperity == null
       ? `<div data-tip="${EconomyTerms.noData()}" class="placeholder" data-col="prosperity"></div>`
       : `<div data-tip="${sentences(prosperityTip(prosperity), t("Click to open the province's economy"))}" class="provinceEconomy pointer" data-col="prosperity">${renderProsperityPercent(prosperity)}</div>`;
   const stability = Stability.getProvince(province.i);
-  const corruption = stability ? getProvinceCorruption(province, stability.district) : null;
+  const corruption = stability ? getProvinceCorruption(province, stability.province) : null;
   if (!stability || corruption === null)
     return `${prosperityCell}<div data-tip="${EconomyTerms.noData()}" class="placeholder" data-col="corruption"></div><div class="placeholder" data-col="stability"></div>`;
   return /* html */ `${prosperityCell}
@@ -165,7 +165,7 @@ const columns: EditorColumn<Province>[] = [
     width: "6em",
     mobileHidden: true,
     tip: sentences(EconomyTerms.prosperity(), t("Click a value to open the province's economy")),
-    sortBy: province => ProvinceEconomy.get(province.i)?.prosperity ?? -1
+    sortBy: province => Accounts.ofProvince(province.i)?.prosperity ?? -1
   },
   {
     key: "corruption",
@@ -488,7 +488,7 @@ function renderProvincesPage(view: TableView<Province>): void {
         <span data-tip="${populationTip}" class="icon-male"></span>
         <span data-tip="${populationTip}" class="culturePopulation">${percentage ? `${rn(totals.population ? (population / totals.population) * 100 : 0)}%` : si(population)}</span>
       </div>
-      ${renderGovernance(p)}
+      ${renderEconomyCells(p)}
       ${
         development[p.i] === undefined
           ? `<div class="placeholder" data-col="development"></div>`
