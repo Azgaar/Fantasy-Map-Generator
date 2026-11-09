@@ -1,4 +1,5 @@
 // Interface text catalog: strings keyed by their English text, i18next v4 JSON shape. See docs/prd/translation.md
+import bundledEnglish from "../locales/en.json"; // the build keeps only the entries that differ from their key
 import { escapeHtml } from "./string-utils";
 
 type Strings = Record<string, string>;
@@ -12,14 +13,14 @@ interface TranslateOptions {
   [value: string]: string | number | null | undefined;
 }
 
-const loaders = import.meta.glob<Strings>("../locales/*.json", { import: "default" });
+const loaders = import.meta.glob<Strings>(["../locales/*.json", "!../locales/en.json"], { import: "default" });
 const loadStrings = (code: string): Promise<Strings> => loaders[`../locales/${code}.json`]?.() ?? Promise.resolve({});
 
 const ENGLISH_PLURALS = new Intl.PluralRules("en");
 
 let language = "en";
 let active: Strings = {};
-let english: Strings = {};
+let english: Strings = bundledEnglish;
 let plurals = ENGLISH_PLURALS;
 
 export const Catalog = {
@@ -30,12 +31,11 @@ export const Catalog = {
 
   /** Load a language's strings with the English ones behind them; resolves before any `t()` that should see them */
   async load(code: string): Promise<void> {
-    const [en, strings] = await Promise.all([loadStrings("en"), code === "en" ? {} : loadStrings(code)]);
-    this.use(code, strings, en);
+    this.use(code, code === "en" ? {} : await loadStrings(code));
   },
 
   /** Put already loaded strings to use */
-  use(code: string, strings: Strings, en: Strings = {}): void {
+  use(code: string, strings: Strings, en: Strings = bundledEnglish): void {
     language = code;
     active = strings;
     english = en;
