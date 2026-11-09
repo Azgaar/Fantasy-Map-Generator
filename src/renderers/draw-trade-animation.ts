@@ -1,8 +1,8 @@
 import { curveCatmullRom, easeLinear, line, select } from "d3";
 import type { Point } from "@/model/graph/voronoi";
+import type { Deal } from "@/types/economy";
 import { ensureEl } from "@/utils/node-utils";
 import { minmax } from "@/utils/number-utils";
-import type { TradeBatch } from "./trade-animation";
 
 const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.1));
 
@@ -20,7 +20,9 @@ function ensureSymbols(): Promise<void> {
     await Promise.all(
       Object.values(MARKER_SYMBOLS).map(async ({ id, src }) => {
         if (defs.querySelector(`#${id}`)) return;
-        const text = await fetch(src).then(r => r.text());
+        const response = await fetch(src);
+        if (!response.ok) throw new Error(`Trade marker ${src}: ${response.status}`);
+        const text = await response.text();
         const svgNode = new DOMParser().parseFromString(text, "image/svg+xml").documentElement;
         const symbol = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
         symbol.id = id;
@@ -30,12 +32,15 @@ function ensureSymbols(): Promise<void> {
         defs.appendChild(symbol);
       })
     );
-  })();
+  })().catch(error => {
+    symbolsReady = null; // the next draw tries again
+    throw error;
+  });
   return symbolsReady;
 }
 
 export async function draw(
-  batch: TradeBatch,
+  deal: Deal,
   segments: { type: "land" | "water"; points: Point[] }[],
   onComplete?: () => void,
   isCancelled?: () => boolean
@@ -57,7 +62,7 @@ export async function draw(
     const segDuration =
       segment.type === "land" ? duration * options.app.trade.animation.landDurationModifier : duration;
 
-    const group = select("#tradeAnimation").append("g").datum(batch); // a click opens its details: ui/map/viewbox-events
+    const group = select("#tradeAnimation").append("g").datum(deal); // a click opens its details: ui/map/viewbox-events
     group
       .append("use")
       .attr("href", `#trade-marker-${segment.type}`)

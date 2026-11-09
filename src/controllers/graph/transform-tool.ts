@@ -235,8 +235,7 @@ function transformMap(): void {
 
   Layers.drawAll();
 
-  registerMap(); // a transformed map is a new map: it gets its own id and history entry
-
+  registerMap();
   log.groupEnd();
 }
 

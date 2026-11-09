@@ -251,3 +251,18 @@ it("uses an explicitly selected preview grid and clears its old heights", async 
     vi.unstubAllGlobals();
   }
 });
+
+it("gives a map saved before the money unit the uncia, and keeps its other units", () => {
+  const saved = structuredClone(Options.getDefaultOptions().map) as Record<string, unknown>;
+  const units = { ...Options.getDefaultOptions().map.units, distance: { unit: "lg", scale: 2 } } as Record<
+    string,
+    unknown
+  >;
+  delete units.money;
+  saved.units = units;
+
+  Options.applyLoaded(saved);
+
+  expect(options.map.units.distance.unit).toBe("lg");
+  expect(options.map.units.money.unit).toBe("uncia");
+});

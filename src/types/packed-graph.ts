@@ -1,7 +1,5 @@
 import type { AddedLabel } from "@/model/annotations/added-labels";
 import type { Measurer } from "@/model/annotations/measurers-generator";
-import type { Good } from "@/model/economy/goods-generator";
-import type { Deal, Market } from "@/model/economy/markets-generator";
 import type { Route } from "@/model/economy/routes-generator";
 import type { Biome } from "@/model/physical/biomes-generator";
 import type { Feature } from "@/model/physical/features-generator";
@@ -15,6 +13,7 @@ import type { Zone } from "@/model/political/zones-generator";
 import type { Culture } from "@/model/society/cultures-generator";
 import type { Religion } from "@/model/society/religions-generator";
 import type { Marker } from "@/model/story/markers-generator";
+import type { Deal, Market } from "@/types/economy";
 import type { Journey } from "./journey";
 import type { Legend } from "./legend";
 
@@ -47,6 +46,8 @@ export interface PackedGraph {
     province: TypedArray; // cell province id
     good: Uint16Array; // cell good id
     market: Uint16Array; // cell market id
+    prosperity: Uint8Array; // cell rural prosperity %, 0 if none
+    development: Uint8Array; // technological development, 1–100; 0 where nobody lives
     routes: Record<number, Record<number, number>>;
   };
   vertices: {
@@ -70,7 +71,6 @@ export interface PackedGraph {
   markers: Marker[];
   ice: Ice[];
   provinces: Province[];
-  goods: Good[];
   markets: Market[];
   deals: Deal[];
   measurers: Measurer[];

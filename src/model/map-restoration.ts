@@ -5,6 +5,7 @@ import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
+import { Taxes } from "@/model/economy/taxes";
 import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Biomes } from "@/model/physical/biomes-generator";
@@ -18,6 +19,7 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Provinces } from "@/model/political/provinces-generator";
 import { States } from "@/model/political/states-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
+import { Transports } from "@/model/story/journeys/transports-generator";
 import type { Point } from "@/types/global";
 import type { JourneyPoint, JourneySegment } from "@/types/journey";
 import type { PackedGraph, TypedArray } from "@/types/packed-graph";
@@ -31,6 +33,7 @@ import type { LockedRiver, River } from "./physical/river-generator";
 import type { Burg } from "./political/burgs-generator";
 import type { Regiment } from "./political/military-generator";
 import type { Province } from "./political/provinces-generator";
+import { Development } from "./society/development-generator";
 import { Population } from "./society/population-generator";
 
 type Projection = (x: number, y: number) => Point;
@@ -153,9 +156,11 @@ class MapRestorationModule {
     else pack.relief = [];
     this.restoreRoutes(parent, projection, features); // before the states: a new capital connects to the roads
     this.restoreCultures(parent, projection);
+    pack.cells.development = new Uint8Array(pack.cells.i.length); // founded capitals settle it before it is generated
     const strayed = this.restoreBurgs(parent, projection, scale);
     this.restoreStates(parent, projection, strayed);
     this.restoreProvinces(parent, projection, strayed);
+    this.reconnectBurgs();
     States.findNeighbors();
     States.collectStatistics();
     this.restoreReligions(parent, projection);
@@ -169,7 +174,15 @@ class MapRestorationModule {
       this.restoreRiverData(parent, links, projection);
     }
     Features.defineNames();
+    this.restoreDevelopment(parent, links);
     this.restoreEconomy(parent);
+  }
+
+  /** A burg placed off the restored roads cannot trade: it takes a road to them */
+  private reconnectBurgs(): void {
+    for (const burg of pack.burgs) {
+      if (burg.i && !burg.removed && !Routes.isConnected(burg.cell)) Routes.connect(burg.cell);
+    }
   }
 
   private linkCells(parent: PackedGraph, inverse: Projection, radius: number): CellLinks {
@@ -196,6 +209,13 @@ class MapRestorationModule {
 
   private isInMap(x: number, y: number) {
     return x >= 0 && x <= options.map.graph.width && y >= 0 && y <= options.map.graph.height;
+  }
+
+  /** the map plus a cell spacing around it: a route can end at a port just off the edge */
+  private routeBox(): [number, number, number, number] {
+    const margin = grid.spacing;
+    const { width, height } = options.map.graph;
+    return [-margin, -margin, width + margin, height + margin];
   }
 
   /** on the map and off its edge */
@@ -504,6 +524,7 @@ class MapRestorationModule {
     cells.religion = new Uint16Array(n);
     cells.province = new Uint16Array(n);
     cells.good = new Uint16Array(n);
+    cells.prosperity = new Uint8Array(n); // the economy rerun fills it
 
     const unlinked: number[] = [];
     for (let cell = 0; cell < n; cell++) {
@@ -597,8 +618,16 @@ class MapRestorationModule {
     pack.rivers = pack.rivers.map(river => {
       const old = matched.get(river.i);
       if (!old) return river;
-      const { name, type, note, tags, label } = old;
-      const restored = { ...river, name, type, ...(note && { note }), ...(tags && { tags }), ...(label && { label }) };
+      const { name, type, group, note, tags, label } = old;
+      const restored = {
+        ...river,
+        name,
+        type,
+        group,
+        ...(note && { note }),
+        ...(tags && { tags }),
+        ...(label && { label })
+      };
       return this.projectLabel(restored, projection);
     });
   }
@@ -713,6 +742,7 @@ class MapRestorationModule {
 
   private restoreStates(parent: PackedGraph, projection: Projection, strayed: Set<number>) {
     const { cells, burgs } = pack;
+    const nearestLand = createAvailableLandCellFinder({ h: cells.h, p: cells.p });
     for (const state of parent.states) {
       if (!state.i || state.removed) continue;
       const capital = burgs[state.capital];
@@ -764,11 +794,15 @@ class MapRestorationModule {
       const restoreRegiment = (regiment: Regiment): Regiment => {
         const [x, y] = projection(regiment.x, regiment.y);
         const home = this.projectPoint(parent, regiment.cell, projection);
-        const cell = home && this.isInMap(...home) ? this.findCell(...home) : this.findCell(x, y);
+        const kept = home && this.isInMap(...home) ? this.findCell(...home) : this.findCell(x, y);
+        // the land under a land regiment can have gone under the sea
+        const cell = !regiment.n && cells.h[kept] < 20 ? (nearestLand(x, y) ?? kept) : kept;
         const [baseX, baseY] = projection(regiment.bx, regiment.by);
-        const [bx, by] = this.isInMap(baseX, baseY) ? [rn(baseX, 2), rn(baseY, 2)] : cells.p[cell];
+        const moved = cell !== kept; // a stranded regiment and its base go to its new land
+        const [rx, ry] = moved ? cells.p[cell] : [rn(x, 2), rn(y, 2)];
+        const [bx, by] = !moved && this.isInMap(baseX, baseY) ? [rn(baseX, 2), rn(baseY, 2)] : cells.p[cell];
         const children = regiment.children?.map(restoreRegiment);
-        return { ...regiment, cell, x: rn(x, 2), y: rn(y, 2), bx, by, ...(children && { children }) };
+        return { ...regiment, cell, x: rx, y: ry, bx, by, ...(children && { children }) };
       };
       state.military = (state.military ?? [])
         .filter(regiment => this.isInMap(...projection(regiment.x, regiment.y)))
@@ -812,10 +846,10 @@ class MapRestorationModule {
         province.center = burgs[province.burg].cell;
         continue;
       }
-      // a province that had a capital takes the most populous burg left on its land
-      const successor =
-        province.burg &&
-        this.findMostPopulous(burg => cells.province[burg.cell] === province.i && !capitals.has(burg.i));
+      // the most populous burg left on its land takes over, even a capital founded there for its state
+      const successor = this.findMostPopulous(
+        burg => cells.province[burg.cell] === province.i && !capitals.has(burg.i)
+      );
       if (successor) {
         Provinces.setCapital(province.i, successor.i);
         capitals.add(successor.i);
@@ -844,10 +878,7 @@ class MapRestorationModule {
   /** a point cut at the map edge takes the cell under it */
   private restoreRoutes(parent: PackedGraph, projection: Projection, featureIds: Map<number, number>) {
     const { cells } = pack;
-    // a route can end at a port just off the map edge: a cell spacing of margin keeps it whole
-    const margin = grid.spacing;
-    const { width, height } = options.map.graph;
-    const bbox: [number, number, number, number] = [-margin, -margin, width + margin, height + margin];
+    const bbox = this.routeBox();
     const routes = parent.routes.map(route => {
       const projected = route.points.map(([x, y, cell]) => [...projection(x, y), cell]);
       // lineclip keeps the inner points as given and adds [x, y] points where the line is cut; of the parts the longest stays
@@ -878,7 +909,8 @@ class MapRestorationModule {
   private restoreMarkers(parent: PackedGraph, projection: Projection) {
     pack.markers = parent.markers.flatMap(marker => {
       const [x, y] = projection(marker.x, marker.y).map(value => rn(value, 2));
-      if (!this.isInMap(x, y)) return [];
+      const home = this.projectPoint(parent, marker.cell, projection) ?? [x, y]; // a port's marker can lie off the edge
+      if (!this.isInMap(...home)) return [];
       return [{ ...marker, x, y, cell: this.findCell(x, y) }];
     });
   }
@@ -903,16 +935,18 @@ class MapRestorationModule {
 
   private restoreJourneys(parent: PackedGraph, projection: Projection) {
     let dropped = 0;
+    const [minX, minY, maxX, maxY] = this.routeBox();
     const restoreSegment = (segment: JourneySegment): JourneySegment | null => {
       let points: JourneyPoint[] = [];
       for (const [parentX, parentY, cell] of segment.points) {
         const [x, y] = projection(parentX, parentY).map(value => rn(value, 2));
-        // a clipped path can't stay valid cell-by-cell, so a segment leaving the map goes whole
-        if (!this.isInMap(x, y)) return null;
+        // a clipped path can't stay valid cell-by-cell, so a segment leaving the routes' box goes whole
+        if (x < minX || x > maxX || y < minY || y > maxY) return null;
         points.push([x, y, this.findPathCell(parent, projection, cell, x, y)]);
       }
       if (!points.length) return null;
-      points = this.fillPathGaps(points);
+      const direct = !segment.custom && ["air", "stay"].includes(Transports.getDomain(segment.transport));
+      if (!direct) points = this.fillPathGaps(points); // a flight or a stay goes in a direct line
       const from = segment.from === undefined ? undefined : points[0][2];
       const to = segment.to === undefined ? undefined : points.at(-1)![2];
       return { ...segment, points, from, to, distance: Journeys.getPathLength(points) };
@@ -945,32 +979,56 @@ class MapRestorationModule {
     });
   }
 
-  /** goods and market anchors are kept, everything cell-bound in the economy is rebuilt */
+  /** Carries over peopled cells' levels; land once empty is generated, moved burgs settle */
+  private restoreDevelopment(parent: PackedGraph, links: CellLinks) {
+    Development.generate(); // of the restored cultures and land
+    const from = parent.cells.development;
+    const { cells } = pack;
+    for (const cell of cells.i) {
+      const source = links.sameType[cell];
+      if (source === -1 || !Development.isPeopled(cell)) continue;
+      if (!parent.cells.pop[source] && !parent.cells.burg[source]) continue; // its 0 is no people, not a painted level
+      cells.development[cell] = from[source];
+      if (cells.burg[cell] && !parent.cells.burg[source]) Development.settle(cell);
+    }
+  }
+
+  /** market anchors are kept, everything cell-bound in the economy is rebuilt */
   private restoreEconomy(parent: PackedGraph) {
-    pack.goods = parent.goods;
     pack.markets = (parent.markets ?? []).filter(market => {
       const burg = pack.burgs[market.centerBurgId];
       return Boolean(burg?.i && !burg.removed);
     });
 
-    if (!pack.goods?.length) {
+    if (!options.map.goods.length) {
       Goods.generate();
+      Markets.releasePlazas();
       Markets.generate();
       Production.produce();
-      States.collectTaxes();
+      Taxes.collect();
       return;
     }
 
-    // a rerun adds a round of income: the burgs keep the balance they had
-    const treasuries = new Map(pack.burgs.map(burg => [burg, burg?.treasury]));
-    if (pack.markets.length || !parent.markets?.length) Production.regenerateEconomy();
-    else {
+    if (pack.markets.length || !parent.markets?.length) {
+      Goods.sync();
+      this.expandMarkets();
+      Production.regenerate();
+    } else {
       // every market center left the map
       Goods.sync();
       Markets.regenerate();
       Production.regenerate();
     }
-    for (const [burg, treasury] of treasuries) if (burg?.i) burg.treasury = treasury;
+  }
+
+  /** a burg no kept market reaches, as on land cut off by deep water, centers a market of its own */
+  private expandMarkets() {
+    for (let cellMarket = Markets.expand(); pack.markets.length; ) {
+      const unreached = this.findMostPopulous(burg => !cellMarket[burg.cell]);
+      if (!unreached) return;
+      Markets.addMarket(unreached.i);
+      cellMarket = Markets.expand();
+    }
   }
 }
 

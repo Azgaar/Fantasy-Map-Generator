@@ -22,6 +22,38 @@ afterEach(() => {
   log.enabled.error = false;
 });
 
+describe("old contour spacing", () => {
+  const stored = (extra: object) =>
+    JSON.stringify({
+      ...Styles.defaults,
+      ...extra,
+      heightmap: {
+        ...Styles.defaults.heightmap,
+        groups: {
+          ...Styles.defaults.heightmap.groups,
+          landHeights: {
+            ...Styles.defaults.heightmap.groups.landHeights,
+            options: {
+              ...Styles.defaults.heightmap.groups.landHeights.options,
+              contours: { mode: "overlay", interval: 10 }
+            }
+          }
+        }
+      }
+    });
+  const interval = (styles: any) => styles.heightmap.groups.landHeights.options.contours.interval;
+
+  test("a preset without river groups spaces contours in height units", async () => {
+    localStorage.setItem(`${CUSTOM_PREFIX}old`, stored({ rivers: { attrs: { fill: "#5d97bb" } } }));
+    expect(interval((await StylePresetsService.load(`${CUSTOM_PREFIX}old`)).styles)).toBeGreaterThan(20);
+  });
+
+  test("a current preset keeps a spacing of 10", async () => {
+    localStorage.setItem(`${CUSTOM_PREFIX}new`, stored({}));
+    expect(interval((await StylePresetsService.load(`${CUSTOM_PREFIX}new`)).styles)).toBe(10);
+  });
+});
+
 describe("StylePresets.load", () => {
   test("the default preset comes from the bundle, not the network", async () => {
     const loaded = await StylePresetsService.load("default");

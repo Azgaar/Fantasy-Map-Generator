@@ -213,6 +213,16 @@ describe("the definition sets carry to the next map", () => {
     expect(options.map.military.units[0].name).toBe("theirs");
   });
 
+  it("carries the goods to a new map, and a loaded map brings its own", () => {
+    const mine = { i: 1000, name: "Mine" } as never;
+    options.map.goods = [mine];
+    Options.randomize();
+    expect(options.map.goods).toEqual([mine]);
+
+    load(savedFile(map => (map.goods = [{ i: 1, name: "Theirs" } as never])));
+    expect(options.map.goods.map(good => good.name)).toEqual(["Theirs"]);
+  });
+
   it("carries the custom icons to a new map, and a loaded map brings its own", () => {
     const icon = {
       id: "custom-1a2b3c4d",
@@ -225,8 +235,9 @@ describe("the definition sets carry to the next map", () => {
     expect(options.map.customIcons).toEqual([icon]);
 
     const theirs = { ...icon, id: "custom-5e6f7a8b" };
-    load(savedFile(map => (map.customIcons = [theirs])));
-    expect(options.map.customIcons).toEqual([theirs]);
+    const armoria = { ...icon, id: "custom-9c0d1e2f", kind: "svg" as const, content: "<g/>", coa: { t1: "gules" } };
+    load(savedFile(map => (map.customIcons = [theirs, armoria])));
+    expect(options.map.customIcons).toEqual([theirs, armoria]);
   });
 
   it("drops a broken custom icon on its own, keeping the others", () => {
@@ -243,6 +254,23 @@ describe("the definition sets carry to the next map", () => {
     load(savedFile(map => delete (map as Partial<MapData>).customIcons));
     expect(options.map.customIcons).toEqual([]);
     expect(warn.mock.calls.flat().join()).not.toContain("customIcons");
+  });
+
+  it("carries the era names to a new map, and a loaded map brings its own", () => {
+    const eras = [{ level: 1, name: "Age of Ash" }];
+    options.map.eras = eras;
+    Options.randomize();
+    expect(options.map.eras).toEqual(eras);
+
+    load(savedFile(map => (map.eras = [{ level: 1, name: "Age of Salt" }])));
+    expect(options.map.eras).toEqual([{ level: 1, name: "Age of Salt" }]);
+  });
+
+  it("opens a file saved before the eras with the defaults and no warning", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    load(savedFile(map => delete (map as Partial<MapData>).eras));
+    expect(options.map.eras).toEqual(defaults().eras);
+    expect(warn.mock.calls.flat().join()).not.toContain("eras");
   });
 
   it("never leaves a set empty: the module that owns it answers for what it must hold", () => {

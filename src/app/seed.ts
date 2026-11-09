@@ -64,9 +64,10 @@ export function showSeedHistoryDialog(): void {
 
 /** Generate a map with a seed from this session's history, restoring the size and template it used */
 export function restoreSeed(index: number): void {
-  const { seed, width, height, template } = mapHistory[index];
+  const { seed, width, height, template, templatePinned } = mapHistory[index];
   Options.set(o => (o.generation.template = template));
 
-  if (Pins.has("template")) Pins.clear("template");
+  if (templatePinned) Pins.set("template", template);
+  else if (Pins.has("template")) Pins.clear("template");
   regeneratePrompt({ seed, width, height });
 }

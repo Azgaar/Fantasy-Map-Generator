@@ -13,6 +13,7 @@ import { LocalDB } from "@/services/local-db";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { Dialog } from "@/ui/dialog/dialog";
+import { restoreFeatureMaskBounds } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { link, parseError } from "@/utils/common-utils";
 import { isElectron } from "@/utils/environment";
@@ -96,6 +97,7 @@ function prepareMapData(viewOnly = false): string {
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
 
   restoreOceanVectors(cloneEl);
+  restoreFeatureMaskBounds(cloneEl);
 
   // reset transform values to default
   cloneEl.setAttribute("width", String(options.map.graph.width));
@@ -133,7 +135,6 @@ function prepareMapData(viewOnly = false): string {
   const routes = JSON.stringify(pack.routes);
   const zones = JSON.stringify(pack.zones);
   const ice = JSON.stringify(pack.ice);
-  const goods = JSON.stringify(pack.goods);
   const markets = JSON.stringify(pack.markets || []);
   const deals = JSON.stringify(pack.deals || []);
   const labels = JSON.stringify(pack.addedLabels || []);
@@ -194,7 +195,7 @@ function prepareMapData(viewOnly = false): string {
     zones,
     ice,
     pack.cells.good,
-    goods,
+    "", // deprecated goods, now options.map.goods
     markets,
     deals,
     pack.cells.market,
@@ -206,7 +207,9 @@ function prepareMapData(viewOnly = false): string {
     layers,
     graphOverride,
     journeys,
-    legends
+    legends,
+    pack.cells.prosperity,
+    pack.cells.development
   ].join("\r\n");
   return mapData;
 }

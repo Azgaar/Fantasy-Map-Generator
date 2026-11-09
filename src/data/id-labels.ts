@@ -1,9 +1,11 @@
 // Interface names for ids the data stores in English: a select shows the label, keeps the id as its value
 
+import type { Expense } from "@/data/expenses";
 import type { LabelType } from "@/model/annotations/labels-generator";
-import type { DemandCategory } from "@/model/economy/goods-generator";
-import type { TransportDomain } from "@/model/economy/transports-generator";
+import type { ProsperityLevel } from "@/model/economy/prosperity";
 import type { Sampling } from "@/model/graph/lattice";
+import type { TransportDomain } from "@/model/story/journeys/transports-generator";
+import type { DemandCategory } from "@/types/economy";
 import { t } from "@/utils/i18n";
 
 export const FEATURE_SUBTYPE_LABELS: Record<string, string> = {
@@ -146,6 +148,50 @@ export const DEMAND_CATEGORY_LABELS: Record<DemandCategory, string> = {
   construction: t("construction"),
   military: t("military"),
   luxury: t("luxury")
+};
+
+export const EXPENSE_LABELS: Record<Expense, string> = {
+  court: t("Court and clergy"),
+  administration: t("Administration"),
+  infrastructure: t("Infrastructure"),
+  military: t("Military")
+};
+
+export const PROSPERITY_LEVEL_LABELS: Record<ProsperityLevel, string> = {
+  Desolate: t("Desolate"),
+  Destitute: t("Destitute"),
+  Poor: t("Poor"),
+  Modest: t("Modest"),
+  Comfortable: t("Comfortable"),
+  Thriving: t("Thriving"),
+  Affluent: t("Affluent"),
+  Opulent: t("Opulent"),
+  Splendid: t("Splendid"),
+  Peerless: t("Peerless")
+};
+
+export const ERA_LABELS: Record<string, string> = {
+  Paleolithic: t("Paleolithic"),
+  Mesolithic: t("Mesolithic"),
+  Neolithic: t("Neolithic"),
+  "Copper Age": t("Copper Age"),
+  "Bronze Age": t("Bronze Age"),
+  "Late Bronze Age": t("Late Bronze Age"),
+  "Iron Age": t("Iron Age"),
+  "Classical Age": t("Classical Age"),
+  "Late Antiquity": t("Late Antiquity"),
+  "Early Middle Ages": t("Early Middle Ages"),
+  "High Middle Ages": t("High Middle Ages"),
+  "Commercial Revolution": t("Commercial Revolution"),
+  "Late Middle Ages": t("Late Middle Ages"),
+  Renaissance: t("Renaissance"),
+  "Age of Discovery": t("Age of Discovery"),
+  "Scientific Revolution": t("Scientific Revolution"),
+  Enlightenment: t("Enlightenment"),
+  "Industrial Revolution": t("Industrial Revolution"),
+  "Machine Age": t("Machine Age"),
+  "Space Age": t("Space Age"),
+  "Post-human": t("Post-human")
 };
 
 /** the map's SVG filters, by element id */

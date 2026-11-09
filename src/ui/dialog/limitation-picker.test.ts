@@ -56,6 +56,19 @@ describe("pickLimitation", () => {
     expect(onApply).not.toHaveBeenCalled();
   });
 
+  it("in exact mode checks only the allowed and applies any selection, none included", () => {
+    const onApply = vi.fn();
+    pickLimitation({ title: "Goods", heading: "Goods", items, allowed: [], onApply, exact: true });
+    expect(boxes().map(box => box.checked)).toEqual([false, false]);
+    click("Apply");
+    expect(onApply).toHaveBeenLastCalledWith([]);
+
+    pickLimitation({ title: "Goods", heading: "Goods", items, allowed: [1, 3], onApply, exact: true });
+    expect(boxes().map(box => box.checked)).toEqual([true, true]);
+    click("Apply");
+    expect(onApply).toHaveBeenLastCalledWith([1, 3]);
+  });
+
   it("keeps a long list on screen by capping the dialog height", () => {
     pick([]);
     const content = document.getElementById("limitationPicker")!;

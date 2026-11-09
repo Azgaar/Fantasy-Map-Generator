@@ -65,7 +65,9 @@ function materializeLabel(label: LabelData, context: ViewportRenderContext): voi
   if (!groupOptions || !isGroupVisible({ group: groupOptions, bounds: context.bounds })) return;
   if (!isLabelVisible(context.bounds, label)) return;
 
-  const group = findElement(context.root, `labels-${label.group}`);
+  const group = findElement(context.root, "labels")?.querySelector(
+    `:scope > [data-group="${CSS.escape(label.group)}"]`
+  );
   const textPaths = findElement(context.root, "textPaths");
   if (!group || !textPaths) return;
 
@@ -88,7 +90,7 @@ function reconcileLabels(context: ViewportRenderContext): void {
 }
 
 function reconcileGroup(labels: Element, textPaths: Element, groupName: string, context: ViewportRenderContext): void {
-  const group = labels.querySelector<SVGGElement>(`#${CSS.escape(`labels-${groupName}`)}`);
+  const group = labels.querySelector<SVGGElement>(`:scope > [data-group="${CSS.escape(groupName)}"]`);
   const groupOptions = options.map.labels.groups.find(group => group.name === groupName);
   if (!group || !groupOptions) return;
 

@@ -38,7 +38,7 @@ function open(): void {
   Dialog.open(DIALOG_ID, {
     title: t("Layers Order"),
     width: "16em",
-    maxHeight: Math.round(window.innerHeight * 0.8),
+    maxHeight: Math.round(window.innerHeight * 0.85),
     position: { my: "left top", at: "right+10 top", of: "#options" },
     buttons: [{ label: t("Restore"), tip: t("Restore the default layer order"), onClick: () => Layers.resetOrder() }],
     onClose: close

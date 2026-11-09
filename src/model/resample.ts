@@ -71,6 +71,7 @@ class Resampler {
     Temperature.generate();
 
     Pack.generate();
+    if (!pack.cells.i.length) throw new Error("The area holds no land");
     Features.markupPack();
     Ice.generate();
     Measurers.createDefaultRuler();

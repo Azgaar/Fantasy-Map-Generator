@@ -3,14 +3,15 @@ import { color, hsl, rgb } from "d3";
 import { Hatches } from "@/renderers/hatches";
 import { Dialog } from "@/ui/dialog/dialog";
 import { getRandomColor } from "@/utils/color-utils";
-import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/node-utils";
+import { t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/node-utils";
 import { minmax } from "@/utils/number-utils";
 
 const DIALOG = "colorPicker";
 const PRESETS = Array.from({ length: 12 }, (_, i) => hsl(i * 30, 0.7, 0.7).formatHex());
 // clean, tileable hatchings shown by default; the rest stay for maps that already use them
-const BASIC_HATCHES = [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11].map(i => `hatch${i}`);
+const BASIC_HATCHES = [0, 1, 2, 3, 4, 5, 6, 8, 9, 11].map(i => `hatch${i}`);
+const [MIN_TILE, MAX_TILE] = [50, 200]; // tile size range in %, as Hatches accept it
 const FORMATS = ["hex", "rgb", "hsl"] as const;
 let format: (typeof FORMATS)[number] = "hex";
 
@@ -44,6 +45,10 @@ const STYLE = /* css */ `
   #${DIALOG} .expand { padding: 0; }
   #${DIALOG} .swatches svg, #${DIALOG} .preview svg { display: block; width: 100%; height: 100%; }
   #${DIALOG} .patterns { position: absolute; }
+  #${DIALOG} .tile-size { display: flex; grid-column: 1 / -1; align-items: center; gap: .4em; }
+  #${DIALOG} .tile-size slider-input { flex: 1; }
+  #${DIALOG} .tile-size input[type=range] { flex: 1; min-width: 0; }
+  #${DIALOG} .tile-size input[type=number] { width: 4.5em; }
 `;
 
 const EYEDROPPER_ICON = /* html */ `<svg viewBox="0 0 16 16"><path d="M13.4 2.6a2 2 0 0 0-2.8 0L8.9 4.3 8.2 3.6 7.1 4.7l.7.7L2.5 10.7V13.5h2.8l5.3-5.3.7.7 1.1-1.1-.7-.7 1.7-1.7a2 2 0 0 0 0-2.8ZM4.7 12H4v-.7l5-5 .7.7Z"/></svg>`;
@@ -58,19 +63,22 @@ function open(fill: string, callback: (fill: string) => void): void {
   close();
   const hatched = Hatches.parse(fill);
   let pattern = hatched?.hatch ?? ""; // "" for a solid color
+  let tileSize = hatched?.size ?? 100;
   let { h: hue, s: saturation, v: value } = toHsv(hatched?.color || normalize(fill) || PRESETS[0]);
   if (Number.isNaN(hue)) hue = 0;
 
-  ensureEl("dialogs").insertAdjacentHTML("beforeend", renderDialog());
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", renderDialog(tileSize));
   const dialog = ensureEl(DIALOG);
   const find = <T extends Element = HTMLElement>(selector: string) => dialog.querySelector<T>(selector)!;
-  const [area, handle, hueSlider, preview, inputs, patterns] = [
+  const [area, handle, hueSlider, preview, inputs, patterns, solid, tileSlider] = [
     find(".area"),
     find(".handle"),
     find<HTMLInputElement>(".hue"),
     find<SVGRectElement>(".preview rect"),
     find(".inputs"),
-    find<SVGSVGElement>(".patterns")
+    find<SVGSVGElement>(".patterns"),
+    find<SVGRectElement>(`[data-hatch=""] rect`),
+    find<HTMLInputElement>(".tile-size slider-input")
   ];
 
   const render = (fields = true) => {
@@ -79,7 +87,12 @@ function open(fill: string, callback: (fill: string) => void): void {
     Object.assign(handle.style, { left: `${saturation * 100}%`, top: `${(1 - value) * 100}%`, background: hex });
     hueSlider.value = String(Math.round(hue));
     patterns.style.color = hex; // the hatching swatches draw in the current color
-    preview.setAttribute("fill", pattern ? `url(#picker-${pattern})` : hex);
+    const base = pattern && findEl<SVGPatternElement>(pattern);
+    const current = base && Hatches.recolor(base, "picker-current", "currentColor", tileSize); // the selection as scaled
+    if (current) find("#picker-current").replaceWith(current);
+    preview.setAttribute("fill", current ? "url(#picker-current)" : hex);
+    solid.setAttribute("fill", hex);
+    for (const input of tileSlider.querySelectorAll("input")) input.disabled = !pattern;
     if (fields) {
       const elements = inputs.querySelectorAll("input");
       getFields(hex, hue).forEach((field, i) => {
@@ -96,7 +109,7 @@ function open(fill: string, callback: (fill: string) => void): void {
 
   const pick = (fields = true) => {
     const hex = toHex(hue, saturation, value);
-    const picked = pattern ? Hatches.fill(pattern, hex) : hex;
+    const picked = pattern ? Hatches.fill(pattern, hex, tileSize) : hex;
     render(fields);
     Hatches.ensure(picked);
     callback(picked);
@@ -127,6 +140,17 @@ function open(fill: string, callback: (fill: string) => void): void {
   hueSlider.addEventListener("input", () => {
     hue = hueSlider.valueAsNumber;
     pick();
+  });
+
+  tileSlider.addEventListener("input", event => {
+    const size = Math.round(tileSlider.valueAsNumber);
+    // skip the inner controls' events slider-input re-dispatches, and numbers still being typed
+    if (event.target !== tileSlider || !(size >= MIN_TILE && size <= MAX_TILE)) return;
+    tileSize = size;
+    pick();
+  });
+  tileSlider.addEventListener("change", () => {
+    tileSlider.value = String(tileSize);
   });
 
   // typing updates the map live but leaves the fields alone; committing a field normalizes them in place
@@ -169,8 +193,8 @@ function open(fill: string, callback: (fill: string) => void): void {
   dialog.addEventListener("click", event => {
     const swatch = (event.target as Element).closest<HTMLElement>(".swatch");
     if (swatch?.dataset.color) pickColor(swatch.dataset.color);
-    else if (swatch?.dataset.hatch) {
-      pattern = pattern === swatch.dataset.hatch ? "" : swatch.dataset.hatch; // clicking the selected one goes solid
+    else if (swatch?.dataset.hatch !== undefined) {
+      pattern = swatch.dataset.hatch; // "" for the solid swatch
       pick();
     }
   });
@@ -183,7 +207,7 @@ function open(fill: string, callback: (fill: string) => void): void {
     expandButton.dataset.tip = expanded ? t("Show only the basic hatchings") : t("Show all hatchings");
   };
   expandButton.addEventListener("click", () => expand(!hatchGrid.classList.contains("expanded")));
-  expand(Boolean(pattern) && !BASIC_HATCHES.includes(pattern));
+  expand(Boolean(pattern) && (!BASIC_HATCHES.includes(pattern) || tileSize !== 100));
 
   buildFields();
   render();
@@ -191,11 +215,12 @@ function open(fill: string, callback: (fill: string) => void): void {
   Dialog.open(DIALOG, {
     title: t("Color Picker"),
     width: "26em",
-    position: { my: "center", at: "center", of: "svg" }
+    position: { my: "center", at: "center", of: "svg" },
+    onClose: () => Hatches.sync() // drop the hatchings tried on the way
   });
 }
 
-function renderDialog(): string {
+function renderDialog(tileSize: number): string {
   const bases = Hatches.bases();
   const previews = bases.map(base => Hatches.recolor(base, `picker-${base.id}`, "currentColor").outerHTML).join("");
   const swatch = (data: string, fill: string, hint: string, extra = false) =>
@@ -205,14 +230,14 @@ function renderDialog(): string {
     swatch(
       `data-hatch="${id}"`,
       `url(#picker-${id})`,
-      sentences(t("Click to fill with the hatching {{hatching}}", { hatching: id }), t("Click again to remove it")),
+      t("Click to fill with the hatching {{hatching}}", { hatching: id }),
       !BASIC_HATCHES.includes(id)
     );
   const extras = bases.map(({ id }) => id).filter(id => !BASIC_HATCHES.includes(id));
 
   return /* html */ `<div id="${DIALOG}" class="dialog">
     <style>${STYLE}</style>
-    <svg class="patterns" width="0" height="0"><defs>${previews}</defs></svg>
+    <svg class="patterns" width="0" height="0"><defs>${previews}<pattern id="picker-current" /></defs></svg>
     <div class="area" data-tip="${t("Drag to set saturation and brightness")}"><div class="handle"></div></div>
     <div class="controls">
       <button class="eyedropper" data-tip="${t("Pick a color from the screen")}">${EYEDROPPER_ICON}</button>
@@ -226,8 +251,11 @@ function renderDialog(): string {
     </div>
     <div class="swatches">${colors.join("")}</div>
     <div class="swatches hatches">
-      ${BASIC_HATCHES.map(hatch).join("")}
+      ${swatch(`data-hatch=""`, "", t("Click to fill with the color"))}${BASIC_HATCHES.map(hatch).join("")}
       <button class="expand"></button>${extras.map(hatch).join("")}
+      <label class="tile-size extra">${t("Tile size")}
+        <slider-input min="${MIN_TILE}" max="${MAX_TILE}" step="1" value="${tileSize}"></slider-input><span>%</span>
+      </label>
     </div>
   </div>`;
 }

@@ -22,3 +22,6 @@
 /result
 /result-*
 .vitest/
+
+# economy tuner: exported maps, bundle, results
+scripts/economy-tuner/.cache/

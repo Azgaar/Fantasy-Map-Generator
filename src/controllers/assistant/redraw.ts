@@ -29,10 +29,11 @@ const ENTITY_LAYERS: Record<string, Record<string, readonly LayerId[]>> = {
     "": ["rivers", "labels"],
     name: ["labels"],
     type: ["labels"],
+    group: ["rivers"],
     sourceWidth: ["rivers"],
     widthFactor: ["rivers"]
   },
-  route: { "*": ["routes", "labels"] },
+  route: { "*": ["routes", "labels", "trade"] },
   feature: { group: ["lakes"], coastline: ["landmass", "coastline", "lakes"] },
   zone: { "*": ["zones"] },
   marker: { "*": ["markers"] },
@@ -48,6 +49,7 @@ const SHARED_FIELDS: Record<string, readonly LayerId[]> = { label: ["labels"], c
 function rowLayers({ key, field }: Pick<ChangeRow, "key" | "field">): readonly LayerId[] {
   const type = key.split(":")[0];
   if (type === "cells") return CELL_FIELDS[field]?.layers ?? [];
+  if (type === "deals") return ["goods", "trade"];
   const rules = ENTITY_LAYERS[type];
   if (!rules) return [];
   const name = field.split(".")[0];

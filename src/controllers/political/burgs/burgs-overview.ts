@@ -1,6 +1,7 @@
 import { type HierarchyCircularNode, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
 import { Markets } from "@/model/economy/markets-generator";
+import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Names } from "@/model/society/names-generator";
@@ -9,7 +10,9 @@ import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/u
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
+import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
+import { closeEntityDialogs } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -21,6 +24,13 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import {
+  adjustmentsFromText,
+  adjustmentsToText,
+  EconomyTerms,
+  prosperityTip,
+  renderProsperityPercent
+} from "@/ui/economy-view";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { getLatitude, getLongitude } from "@/utils/common-utils";
@@ -47,7 +57,9 @@ const CSV_COLUMNS = [
   "Market",
   "Product",
   "Wealth",
-  "Treasury",
+  "Prosperity",
+  "Balance",
+  "Adjustments",
   "X",
   "Y",
   "Latitude",
@@ -94,14 +106,14 @@ const columns: EditorColumn<Burg>[] = [
   {
     key: "state",
     label: t("State"),
-    width: "8em",
+    width: "7em",
     sortBy: b => pack.states[b.state!]?.name || "",
     sortType: "alpha"
   },
   {
     key: "culture",
     label: t("Culture"),
-    width: "10em",
+    width: "7em",
     mobileHidden: true,
     sortBy: b => pack.cultures[b.culture!]?.name || "",
     sortType: "alpha"
@@ -109,7 +121,7 @@ const columns: EditorColumn<Burg>[] = [
   {
     key: "group",
     label: t("Group"),
-    width: "6em",
+    width: "7em",
     mobileHidden: true,
     sortBy: b => b.group || "",
     sortType: "alpha"
@@ -130,27 +142,61 @@ const columns: EditorColumn<Burg>[] = [
     sortBy: b => rn(b.product || 0, 2)
   },
   {
+    key: "prosperity",
+    label: t("Prosperity"),
+    width: "6.5em",
+    mobileHidden: true,
+    tip: sentences(EconomyTerms.prosperity(), EconomyTerms.openValue()),
+    sortBy: b => Prosperity.getBurg(b.i!)?.prosperity ?? -1
+  },
+  {
+    key: "development",
+    label: t("Development"),
+    width: "7.5em",
+    hidden: true,
+    mobileHidden: true,
+    tip: t("Development of the burg's land, 0–100, and its era"),
+    sortBy: b => pack.cells.development?.[b.cell] ?? -1
+  },
+  {
     key: "productpercapita",
     label: t("Wealth"),
     width: "6.5em",
     mobileHidden: true,
-    tip: t("Click to sort by burg wealth (gross product per capita)"),
+    tip: sentences(EconomyTerms.wealth(), EconomyTerms.openValue()),
     sortBy: b => rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2)
   },
   {
     key: "treasury",
-    label: t("Treasury"),
+    label: t("Balance"),
     width: "6.5em",
+    hidden: true,
     mobileHidden: true,
     sortBy: b => rn(b.treasury || 0, 2)
   },
   {
-    key: "features",
-    label: t("Features", { context: "burg" }),
-    width: "6em",
+    key: "capital",
+    label: t("Capital"),
+    icon: "icon-star-empty",
+    width: "2.2em",
     mobileHidden: true,
-    sortType: "alpha",
-    sortBy: b => (b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg")
+    sortBy: b => (b.capital ? 1 : 0)
+  },
+  {
+    key: "port",
+    label: t("Port"),
+    icon: "icon-anchor",
+    width: "2.2em",
+    mobileHidden: true,
+    sortBy: b => (b.port ? 1 : 0)
+  },
+  {
+    key: "market",
+    label: t("Market"),
+    icon: "icon-store",
+    width: "2.2em",
+    mobileHidden: true,
+    sortBy: b => (getCenteredMarket(b) ? 1 : 0)
   },
   {
     key: "tags",
@@ -166,6 +212,7 @@ const columns: EditorColumn<Burg>[] = [
 ];
 
 const burgsTable = initEditorTable<Burg>({
+  dialogId,
   getData: () => sortDataByColumns(dialogId, getFilteredBurgs(), columns),
   onUpdate: renderBurgsPage
 });
@@ -215,14 +262,17 @@ function renderDialog(): void {
         <div data-tip="${t("Average population")}" style="margin-left: 12px" data-col="population">
           ${t("Avg population")}:&nbsp;<span id="burgsFooterPopulation">0</span>
         </div>
-        <div data-tip="${t("Average gross product")}" style="margin-left: 12px" data-col="grossproduct">
+        <div data-tip="${EconomyTerms.prosperity()}" style="margin-left: 12px" data-col="prosperity">
+          ${t("Avg prosperity")}:&nbsp;<span id="burgsFooterProsperity">0</span>
+        </div>
+        <div data-tip="${EconomyTerms.product()}" style="margin-left: 12px" data-col="grossproduct">
           ${t("Avg product")}:&nbsp;<span id="burgsFooterGrossProduct">0</span> 🟡
         </div>
-        <div data-tip="${t("Average wealth (product per capita)")}" style="margin-left: 12px" data-col="productpercapita">
+        <div data-tip="${EconomyTerms.wealth()}" style="margin-left: 12px" data-col="productpercapita">
           ${t("Avg wealth")}:&nbsp;<span id="burgsFooterProductPerCapita">0</span> 🟡
         </div>
-        <div data-tip="${t("Average treasury")}" style="margin-left: 12px" data-col="treasury">
-          ${t("Avg treasury")}:&nbsp;<span id="burgsFooterTreasury">0</span> 🟡
+        <div data-tip="${EconomyTerms.treasury()}" style="margin-left: 12px" data-col="treasury">
+          ${t("Avg balance")}:&nbsp;<span id="burgsFooterTreasury">0</span> 🟡
         </div>
       </div>
       <div id="burgsBottom" class="editorToolbar">
@@ -355,6 +405,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
   let totalProduct = 0;
   let totalProductPerCapita = 0;
   let totalTreasury = 0;
+  let totalProsperity = 0;
+  let measured = 0;
 
   for (const b of view.all) {
     const population =
@@ -366,15 +418,23 @@ function renderBurgsPage(view: TableView<Burg>): void {
     totalProduct += grossProduct;
     totalProductPerCapita += productPerCapita;
     totalTreasury += treasury;
+    const living = Prosperity.getBurg(b.i!);
+    if (living) {
+      totalProsperity += living.prosperity;
+      measured++;
+    }
   }
 
+  const treasuryTip = EconomyTerms.treasury();
+  const openTip = EconomyTerms.open();
   for (const b of view.rows) {
     const population =
       b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const grossProduct = rn(b.product || 0, 2);
     const productPerCapita = rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
     const treasury = rn(b.treasury || 0, 2);
-    const features = b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg";
+    const living = Prosperity.getBurg(b.i!);
+    const market = getCenteredMarket(b);
     const state = pack.states[b.state!].name;
     const prov = pack.cells.province[b.cell];
     const province = prov ? pack.provinces[prov].name : "";
@@ -391,8 +451,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
         data-population=${population}
         data-grossproduct=${grossProduct}
         data-productpercapita=${productPerCapita}
+        data-prosperity="${living ? rn(living.prosperity * 100) : ""}"
         data-treasury=${treasury}
-        data-features="${features}"
       >
         <span data-tip="${t("Click to zoom")}" class="icon-dot-circled pointer" data-col="locate"></span>
         <input data-tip="${t("Name")}" class="burgName" value="${b.name}" data-col="name" disabled />
@@ -404,25 +464,34 @@ function renderBurgsPage(view: TableView<Burg>): void {
           <span data-tip="${t("Burg population")}" class="icon-male"></span>
           <input data-tip="${t("Burg population")}" value=${si(population)} disabled />
         </div>
-        <div data-col="grossproduct">
-          <span data-tip="${t("Gross Product: local sale revenue minus purchased ingredient costs during the production.")}">🟡</span>
-          <input data-tip="${t("Gross Product: local sale revenue minus purchased ingredient costs during the production.")}" value=${grossProduct} disabled />
+        <div data-col="grossproduct" class="burgEconomy pointer" data-tip="${sentences(EconomyTerms.product(), openTip)}">
+          <span>🟡</span>
+          <input class="pointer" value=${grossProduct} readonly />
         </div>
-        <div data-col="productpercapita">
-          <span data-tip="${t("Wealth: gross product divided by population")}">🟡</span>
-          <input data-tip="${t("Wealth: gross product divided by population")}" value=${productPerCapita} disabled />
+        <div data-col="prosperity" class="burgEconomy pointer" data-tip="${living ? sentences(prosperityTip(living.prosperity), openTip) : EconomyTerms.noData()}">
+          ${living ? renderProsperityPercent(living.prosperity) : "—"}
         </div>
-        <div data-col="treasury">
-          <span data-tip="${t("Treasury: accumulated cash balance")}">🟡</span>
-          <input data-tip="${t("Treasury: accumulated cash balance")}" value=${treasury} disabled />
+        ${
+          pack.cells.development
+            ? `<div data-tip="${developmentTip(pack.cells.development[b.cell])}" data-col="development">${pack.cells.development[b.cell]}</div>`
+            : `<div class="placeholder" data-col="development"></div>`
+        }
+        <div data-col="productpercapita" class="burgEconomy pointer" data-tip="${sentences(EconomyTerms.wealth(), openTip)}">
+          <span>🟡</span>
+          <input class="pointer" value=${productPerCapita} readonly />
         </div>
-        <div data-col="features">
-          <span
-            data-tip="${b.capital ? t("This burg is a state capital") : t("This burg is NOT a state capital")}"
-            class="icon-star-empty${b.capital ? "" : " inactive"}" style="padding: 0 1px;"></span>
-          <span data-tip="${b.port ? t("This burg is a port") : t("This burg is NOT a port")}"
-          class="icon-anchor${b.port ? "" : " inactive"}" style="font-size: .9em; padding: 0 1px;"></span>
+        <div data-col="treasury" class="burgEconomy pointer" data-tip="${sentences(treasuryTip, openTip)}">
+          <span>🟡</span>
+          <input class="pointer" value=${treasury} readonly />
         </div>
+        <span data-col="capital"
+          data-tip="${b.capital ? t("This burg is a state capital") : t("This burg is NOT a state capital")}"
+          class="icon-star-empty${b.capital ? "" : " inactive"}"></span>
+        <span data-col="port" data-tip="${b.port ? t("This burg is a port") : t("This burg is NOT a port")}"
+          class="icon-anchor${b.port ? "" : " inactive"}"></span>
+        <span data-col="market"
+          data-tip="${market ? t("Center of the {{market}} market. Click to open", { market: Markets.getName(market) }) : t("This burg is NOT a market center")}"
+          class="icon-store${market ? " pointer" : " inactive"}" data-market="${market?.i ?? ""}"></span>
         <div data-col="tags">
           <input
             data-tip="${t("Tags (comma-separated)")}"
@@ -449,6 +518,7 @@ function renderBurgsPage(view: TableView<Burg>): void {
     ? String(rn(totalProductPerCapita / view.all.length, 2))
     : "0";
   ensureEl("burgsFooterTreasury").innerHTML = view.all.length ? String(rn(totalTreasury / view.all.length, 2)) : "0";
+  ensureEl("burgsFooterProsperity").innerHTML = measured ? renderProsperityPercent(totalProsperity / measured) : "—";
 
   renderEditorPagination(ensureEl("burgsFooter"), view, burgsTable.goto);
 
@@ -458,10 +528,22 @@ function renderBurgsPage(view: TableView<Burg>): void {
   body.querySelectorAll("div > span.icon-dot-circled").forEach(el => void el.addEventListener("click", zoomIntoBurg));
   body.querySelectorAll("div > span.locks").forEach(el => void el.addEventListener("click", toggleBurgLockStatus));
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openBurgEditor));
+  body.querySelectorAll<HTMLElement>(".burgEconomy").forEach(el => {
+    el.addEventListener("click", () =>
+      Controllers.BurgEconomyOverview.open(+(el.closest(".states") as HTMLElement).dataset.id!)
+    );
+  });
+  body.querySelectorAll<HTMLElement>("span.icon-store[data-market]").forEach(el => {
+    if (el.dataset.market) el.addEventListener("click", () => Controllers.MarketOverview.open(+el.dataset.market!));
+  });
   body.querySelectorAll("div > input.burgTags").forEach(el => void el.addEventListener("change", burgChangeTags));
   body
     .querySelectorAll("div > span.icon-trash-empty")
     .forEach(el => void el.addEventListener("click", triggerBurgRemove));
+}
+
+function getCenteredMarket(burg: Burg) {
+  return pack.markets.find(market => market.centerBurgId === burg.i);
 }
 
 function burgChangeTags(this: HTMLInputElement): void {
@@ -529,9 +611,10 @@ function triggerBurgRemove(this: HTMLElement): void {
     confirm: t("Remove"),
     onConfirm: () => {
       Burgs.remove(burgId);
+      closeEntityDialogs();
       removeEmblem("burg", burgId);
       burgsTable.refresh();
-      Layers.draw("burgIcons", "labels");
+      Layers.draw("burgIcons", "labels", "goods", "trade");
     }
   });
 }
@@ -763,7 +846,7 @@ function downloadBurgsData(): void {
     .map(b => {
       const province = pack.provinces[pack.cells.province[b.cell]];
       const temperature = grid.cells.temp[pack.cells.g[b.cell]];
-      const market = Markets.get(b.market);
+      const market = Markets.ofBurg(b);
       return [
         b.i,
         b.name,
@@ -779,7 +862,9 @@ function downloadBurgsData(): void {
         market ? Markets.getName(market) : "",
         rn(b.product || 0, 2),
         rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2),
+        Prosperity.getBurg(b.i!) ? rn(Prosperity.getBurg(b.i!)!.prosperity * 100) : "",
         rn(b.treasury || 0, 2),
+        adjustmentsToText(b.adjustments),
         b.x,
         b.y,
         getLatitude(b.y, coordinates, options.map.graph.height, 2),
@@ -816,8 +901,9 @@ function triggerAllBurgsRemove(): void {
         Burgs.remove(burg.i);
         removeEmblem("burg", burg.i);
       }
+      closeEntityDialogs();
       burgsTable.refresh();
-      Layers.draw("burgIcons", "labels");
+      Layers.draw("burgIcons", "labels", "goods", "trade");
     }
   });
 }
@@ -872,7 +958,11 @@ async function uploadBurgsCsv(text: string): Promise<void> {
         people => Burgs.setPopulation(id, +people),
         rn(burg.population! * scale * urbanization.rate)
       );
-      row.apply("Treasury", amount => Burgs.setTreasury(id, +amount), rn(burg.treasury || 0, 2));
+      row.assign(
+        "Adjustments",
+        text => Burgs.setAdjustments(id, adjustmentsFromText(text)),
+        adjustmentsToText(burg.adjustments)
+      );
       row.apply("Capital", () => Burgs.setCapital(id), capitals.has(id) ? "capital" : "");
       row.assign("Port", port => Burgs.setPort(id, Boolean(port)), burg.port ? "port" : "");
       for (const [column, building] of BUILDING_COLUMNS)

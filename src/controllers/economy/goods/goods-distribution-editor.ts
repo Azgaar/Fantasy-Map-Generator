@@ -1,6 +1,7 @@
 import { Goods } from "@/model/economy/goods-generator";
 import { convertTemperature, getHeight } from "@/model/units";
 import { Dialog } from "@/ui/dialog/dialog";
+import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { list } from "@/utils/language-utils";
 import { ensureEl } from "@/utils/node-utils";
@@ -164,7 +165,12 @@ function createDefaultCondition(): DistCondition {
 }
 
 function open(onApply: (distribution: string) => void, initialExpression = "") {
-  const groups: DistCondition[][] = parseExpression(initialExpression) ?? [[createDefaultCondition()]];
+  const parsed = parseExpression(initialExpression);
+  if (initialExpression && !parsed) {
+    tip(t("This distribution is too complex for the visual editor"), false, "error", 5000);
+    return; // a blank builder would replace it on Apply
+  }
+  const groups: DistCondition[][] = parsed ?? [[createDefaultCondition()]];
 
   function conditionToExpr(c: DistCondition): string {
     const def = FN_DEFS.find(f => f.id === c.fnId);
@@ -633,7 +639,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
 
     <div class="ded-wrap">
       <div class="ded-info">
-        ${t("Distribution controls where this raw good spawns. Leave empty for manufactured-only goods.")}
+        ${t("Where the good is produced; empty if only made")}
       </div>
       <div class="ded-body">
         <div class="ded-builder">
@@ -656,15 +662,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     </div>
   `;
 
-  renderGroupList();
-  updateOutput();
-
-  ensureEl<HTMLButtonElement>("distAddGroup").addEventListener("click", () => {
-    groups.push([createDefaultCondition()]);
-    renderGroupList();
-    updateOutput();
-  });
-
+  // the builder looks its elements up by id: they must be in the page first
   Dialog.message({
     id: "distributionEditor",
     message: popupEl,
@@ -681,6 +679,15 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
         }
       }
     ]
+  });
+
+  renderGroupList();
+  updateOutput();
+
+  ensureEl<HTMLButtonElement>("distAddGroup").addEventListener("click", () => {
+    groups.push([createDefaultCondition()]);
+    renderGroupList();
+    updateOutput();
   });
 }
 
@@ -755,19 +762,22 @@ function parseConditionStr(s: string): DistCondition | null {
   return cond;
 }
 
-function parseExpression(expr: string): DistCondition[][] | null {
+/** The expression as the builder's OR of ANDs; a nested OR multiplies out. Null if anything else */
+export function parseExpression(expr: string): DistCondition[][] | null {
   if (!expr) return null;
 
   const groups: DistCondition[][] = [];
-  for (const orPart of splitTopLevel(expr, " || ")) {
-    const groupStr = stripOuterParens(orPart.trim());
-    const group: DistCondition[] = [];
-    for (const andPart of splitTopLevel(groupStr, " && ")) {
-      const cond = parseConditionStr(andPart.trim());
-      if (!cond) return null; // unparseable
-      group.push(cond);
+  for (const orPart of splitTopLevel(stripOuterParens(expr.trim()), " || ")) {
+    let alternatives: DistCondition[][] = [[]];
+    for (const andPart of splitTopLevel(orPart, " && ")) {
+      const part = andPart.trim();
+      const cond = parseConditionStr(part);
+      const inner = stripOuterParens(part);
+      const nested = cond ? [[cond]] : inner !== part ? parseExpression(inner) : null;
+      if (!nested) return null;
+      alternatives = alternatives.flatMap(left => nested.map(right => [...left, ...right]));
     }
-    if (group.length) groups.push(group);
+    groups.push(...alternatives);
   }
   return groups.length ? groups : null;
 }
@@ -780,10 +790,14 @@ function interpretDistribution(dist: string): string {
       const names = args.split(",").map((a: string) => pack.biomes[parseInt(a.trim(), 10)]?.name);
       return names.length === 1 ? names[0] : `${list(names)}`;
     })
-    .replace(/minHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => `min height ${getHeight(+h)}`)
-    .replace(/maxHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => `max height ${getHeight(+h)}`)
-    .replace(/minTemp\((-?\d+(?:\.\d+)?)\)/g, (_, t) => `min temp ${convertTemperature(+t)}`)
-    .replace(/maxTemp\((-?\d+(?:\.\d+)?)\)/g, (_, t) => `max temp ${convertTemperature(+t)}`)
+    .replace(/minHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => t("min height {{- height}}", { height: getHeight(+h) }))
+    .replace(/maxHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => t("max height {{- height}}", { height: getHeight(+h) }))
+    .replace(/minTemp\((-?\d+(?:\.\d+)?)\)/g, (_, temp) =>
+      t("min temperature {{- temperature}}", { temperature: convertTemperature(+temp) })
+    )
+    .replace(/maxTemp\((-?\d+(?:\.\d+)?)\)/g, (_, temp) =>
+      t("max temperature {{- temperature}}", { temperature: convertTemperature(+temp) })
+    )
     .replace(/shore\(([^)]+)\)/g, (_, args) =>
       args
         .split(",")
@@ -795,17 +809,17 @@ function interpretDistribution(dist: string): string {
         .replace(/["']/g, "")
         .split(",")
         .map((a: string) => a.trim());
-      return `type: ${types.join("/")}`;
+      return `${t("Type")}: ${types.join("/")}`;
     })
-    .replace(/river\(\)/g, "river presence")
-    .replace(/minHabitability\((\d+)\)/g, (_, n) => `habitability ≥ ${n}%`)
-    .replace(/habitability\(\)/g, "more habitable areas")
-    .replace(/elevation\(\)/g, "more elevated areas")
-    .replace(/nth\((\d+)\)/g, (_, n) => `1 in ${n} cells`)
-    .replace(/random\((\d+)\)/g, (_, n) => `${n}% chance`)
-    .replace(/\s*&&\s*/g, " AND ")
-    .replace(/\s*\|\|\s*/g, " OR ")
-    .replace(/!\s*/g, "NOT ")
+    .replace(/river\(\)/g, t("river presence"))
+    .replace(/minHabitability\((\d+)\)/g, (_, n) => t("habitability at least {{percent}}%", { percent: n }))
+    .replace(/habitability\(\)/g, t("more habitable areas"))
+    .replace(/elevation\(\)/g, t("more elevated areas"))
+    .replace(/nth\((\d+)\)/g, (_, n) => t("one in {{n}} cells", { n }))
+    .replace(/random\((\d+)\)/g, (_, n) => t("{{percent}}% chance", { percent: n }))
+    .replace(/\s*&&\s*/g, ` ${t("AND")} `)
+    .replace(/\s*\|\|\s*/g, ` ${t("OR")} `)
+    .replace(/!\s*/g, `${t("NOT")} `)
     .replace(/\s+/g, " ")
     .trim();
 }

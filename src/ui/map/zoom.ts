@@ -11,11 +11,13 @@ import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
+const IS_FIREFOX = navigator.userAgent.includes("Firefox");
 const DEFAULT_SCALE_EXTENT: [number, number] = [1, 20];
 const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent(DEFAULT_SCALE_EXTENT).interpolate(constrainedFlight);
 
 export function applyZoomBehavior(): void {
   select<SVGSVGElement, unknown>("#map").call(zoomBehavior.on("zoom", onZoom).on("end", handleZoomEnd));
+  applyControlsScale();
 }
 
 let frameId: number | null = null;
@@ -62,9 +64,11 @@ function handleZoomPerFrame(): void {
     "transform",
     `translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`
   );
+  updateFeatureMaskBounds();
 
   if (didScaleChange) {
     Layers.draw("scaleBar");
+    applyControlsScale();
     if (options.app.performance.viewportRedraw === "continuous") applyZoomFontSize();
   }
 
@@ -90,11 +94,11 @@ function handleZoomEnd(): void {
 }
 
 /** Mirror the map transform onto the heightmap tracing canvas */
-function redrawTracedImage(): void {
+export function redrawTracedImage(): void {
   if (options.app.mode !== "heightmap") return;
   const canvas = findEl<HTMLCanvasElement>("canvas");
   if (!canvas || canvas.style.opacity === "0") return;
-  const image = findEl<HTMLImageElement>("imageToConvert");
+  const image = findEl<HTMLCanvasElement>("imageToConvert");
   const context = image && canvas.getContext("2d");
   if (!context) return;
 
@@ -110,7 +114,46 @@ function applyZoomFontSize(): void {
   }
 }
 
+const FEATURE_MASKS = "mask#land, mask#water";
+
+/** Firefox drops oversized masks at high zoom (ocean turns white): bound them to the visible viewport */
+export function updateFeatureMaskBounds(): void {
+  if (!IS_FIREFOX) return;
+  const { x, y, width, height, scale } = viewport;
+  const attrs = {
+    maskUnits: "userSpaceOnUse",
+    x: String((-x - 1) / scale),
+    y: String((-y - 1) / scale),
+    width: String((width + 2) / scale),
+    height: String((height + 2) / scale)
+  };
+  for (const mask of document.querySelector("#map")?.querySelectorAll(FEATURE_MASKS) ?? []) {
+    for (const [name, value] of Object.entries(attrs)) mask.setAttribute(name, value);
+  }
+}
+
+/** Save and export clones get the complete masks back */
+export function restoreFeatureMaskBounds(root: ParentNode): void {
+  if (!IS_FIREFOX) return;
+  for (const mask of root.querySelectorAll(FEATURE_MASKS)) {
+    for (const name of ["maskUnits", "x", "y", "width", "height"]) mask.removeAttribute(name);
+  }
+}
+
+const CONTROL_CONTAINERS = "#ruler, #debug, #regimentBase, #journeyOverlay";
+let controlsRule: CSSStyleRule | null = null;
+
+/** Handles keep screen size: `--px` is a screen pixel in map units; a rule restyles only them */
+function applyControlsScale(): void {
+  if (!controlsRule) {
+    const sheet = document.head.appendChild(document.createElement("style")).sheet!;
+    controlsRule = sheet.cssRules[sheet.insertRule(`${CONTROL_CONTAINERS} {}`)] as CSSStyleRule;
+  }
+  controlsRule.style.setProperty("--px", `${1 / viewport.scale}px`);
+}
+
 export function invokeActiveZooming(): void {
+  updateFeatureMaskBounds();
   applyZoomFontSize();
   ViewportLayers.renderNow();
 

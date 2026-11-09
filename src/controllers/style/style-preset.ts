@@ -6,6 +6,7 @@ import { Routes } from "@/model/economy/routes-generator";
 import { CustomIcons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
 import { Lakes } from "@/model/physical/lakes";
+import { Rivers } from "@/model/physical/river-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Styles } from "@/model/styles/styles";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
@@ -76,6 +77,7 @@ export function ensureGroupStyles(): void {
   Burgs.ensureBurgGroupStyles();
   Routes.ensureRouteGroupStyles();
   Lakes.ensureLakeGroupStyles();
+  Rivers.ensureRiverGroupStyles();
 }
 
 // the preset by name; when it is gone or broken, the default with a tip saying so

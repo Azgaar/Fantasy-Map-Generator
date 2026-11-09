@@ -3,6 +3,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
+import { Stability } from "@/model/political/stability";
 import { Names } from "@/model/society/names-generator";
 import type { Marker } from "@/model/story/markers-generator";
 import { moveRegiment } from "@/renderers/draw-military";
@@ -10,6 +11,7 @@ import { Layers } from "@/renderers/layers";
 import { Dialog } from "@/ui/dialog/dialog";
 
 import { applySorting, applySortingByHeader } from "@/ui/dialog/sorting";
+import { EconomyTerms } from "@/ui/economy-view";
 import { tip } from "@/ui/tooltips";
 import { last } from "@/utils/array-utils";
 import { wiki } from "@/utils/common-utils";
@@ -552,7 +554,7 @@ function addRegimentToSide(side: Side, regiment: Regiment): void {
     acc[key] = 0;
     return acc;
   }, {});
-  regiment.survivors = { ...regiment.u };
+  regiment.survivors = Object.fromEntries(Object.entries(regiment.u).map(([k, v]) => [k, Military.getTroops(v)]));
 
   const state = pack.states[regiment.state];
   const distance = (Math.hypot(b.y - regiment.by, b.x - regiment.bx) * options.map.units.distance.scale) | 0; // distance between regiment and its base
@@ -564,28 +566,21 @@ function addRegimentToSide(side: Side, regiment: Regiment): void {
       <use href="${href}" x="10%" y="10%" width="80%" height="80%" stroke="none"></use></svg>`;
   const body = `<tbody id="battle${state.i}-${regiment.i}">`;
 
-  let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment" data-tip="${
-    regiment.name
-  }">${regiment.name.slice(0, 24)}</td>`;
-  let casualtiesRow = `<tr class="battleCasualties"><td></td><td data-tip="${state.fullName}">${state.fullName!.slice(
-    0,
-    26
-  )}</td>`;
+  let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment">${regiment.name}</td>`;
+  const upkeep = rn(Military.getBattleUpkeep(state.i) * 100);
+  const upkeepTip = sentences(EconomyTerms.upkeep(), t("Troops fight with this share of their power"));
+  let casualtiesRow = `<tr class="battleCasualties"><td></td><td class="regiment">${state.fullName} <span data-tip="${upkeepTip}" class="${upkeep < 100 ? "negative" : ""}">(${t("upkeep {{upkeep}}%", { upkeep })})</span></td>`;
   let survivorsRow = `<tr class="battleSurvivors"><td></td><td data-tip="${t("Supply line length, affects morale")}">${t("Distance to base")}: ${distance} ${options.map.units.distance.unit}</td>`;
 
   for (const u of options.map.military.units) {
-    initial += `<td data-tip="${t("Initial forces")}" style="width: 2.5em; text-align: center">${regiment.u[u.name] || 0}</td>`;
+    initial += `<td data-tip="${t("Initial forces")}" style="width: 2.5em; text-align: center">${Military.getTroops(regiment.u[u.name])}</td>`;
     casualtiesRow += `<td data-tip="${t("Casualties")}" style="width: 2.5em; text-align: center; color: red">0</td>`;
-    survivorsRow += `<td data-tip="${t("Survivors")}" style="width: 2.5em; text-align: center; color: green">${
-      regiment.u[u.name] || 0
-    }</td>`;
+    survivorsRow += `<td data-tip="${t("Survivors")}" style="width: 2.5em; text-align: center; color: green">${Military.getTroops(regiment.u[u.name])}</td>`;
   }
 
-  initial += `<td data-tip="${t("Initial forces")}" style="width: 2.5em; text-align: center">${regiment.a || 0}</td></tr>`;
+  initial += `<td data-tip="${t("Initial forces")}" style="width: 2.5em; text-align: center">${Military.getTroops(regiment.a)}</td></tr>`;
   casualtiesRow += `<td data-tip="${t("Casualties")}"  style="width: 2.5em; text-align: center; color: red">0</td></tr>`;
-  survivorsRow += `<td data-tip="${t("Survivors")}" style="width: 2.5em; text-align: center; color: green">${
-    regiment.a || 0
-  }</td></tr>`;
+  survivorsRow += `<td data-tip="${t("Survivors")}" style="width: 2.5em; text-align: center; color: green">${Military.getTroops(regiment.a)}</td></tr>`;
 
   const container = ensureEl(side === "attackers" ? "battleAttackers" : "battleDefenders");
   container.innerHTML += `${body + initial + casualtiesRow + survivorsRow}</tbody>`;
@@ -594,6 +589,7 @@ function addRegimentToSide(side: Side, regiment: Regiment): void {
 }
 
 function addSide(): void {
+  if (Dialog.isOpen("regimentSelectorScreen")) return; // its row listener is bound once
   const b = battle!;
   const body = ensureEl("regimentSelectorBody");
   const regiments = pack.states.filter(s => s.military && !s.removed).flatMap(s => s.military!);
@@ -612,14 +608,14 @@ function addSide(): void {
       return `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state=${
         s.name
       } data-regiment=${r.name}
-        data-total=${r.a} data-distance="${dist}" data-tip="${t("Click to select regiment")}">
+        data-total=${Military.getTroops(r.a)} data-distance="${dist}" data-tip="${t("Click to select regiment")}">
         <svg width=".9em" height=".9em" style="margin-bottom:-1px; stroke: #333"><rect x="0" y="0" width="100%" height="100%" fill="${
           s.color
         }" ></svg>
         <div style="width:6em">${s.name.slice(0, 11)}</div>
         <div style="width:1.2em; display:flex">${Icons.html(r.icon ?? "")}</div>
         <div style="width:13em">${r.name.slice(0, 24)}</div>
-        <div style="width:4em">${r.a}</div>
+        <div style="width:4em">${Military.getTroops(r.a)}</div>
         <div style="width:4em">${distLabel}</div>
       </div>`;
     })
@@ -717,11 +713,15 @@ function generateBattleName(type: "culture" | "random"): void {
   Dialog.open("battleScreen", { title: b.name });
 }
 
-function getJoinedForces(regiments: Regiment[]): Record<string, number> {
+function getJoinedForces(
+  regiments: Regiment[],
+  weight: (regiment: Regiment) => number = () => 1
+): Record<string, number> {
   return regiments.reduce<Record<string, number>>((acc, regiment) => {
+    const factor = weight(regiment);
     for (const k in regiment.survivors) {
       if (!Object.hasOwn(regiment.survivors, k)) continue;
-      acc[k] = (acc[k] || 0) + regiment.survivors![k];
+      acc[k] = (acc[k] || 0) + regiment.survivors![k] * factor;
     }
     return acc;
   }, {});
@@ -892,11 +892,19 @@ function calculateStrength(side: Side): void {
     dogfight: { melee: 0, ranged: 0.1, mounted: 0, machinery: 0.1, naval: 0, armored: 0, aviation: 2, magical: 0.1 } // aviation
   };
 
-  const forces = getJoinedForces(b[side].regiments);
+  const upkeep = new Map<number, number>();
+  const forces = getJoinedForces(b[side].regiments, ({ state }) => {
+    if (!upkeep.has(state)) upkeep.set(state, Military.getBattleUpkeep(state));
+    return upkeep.get(state)!;
+  }); // ill-kept troops fight weaker
   const phase = b[side].phase!;
-  const adjuster = Math.max(options.map.units.population.scale / 10, 10); // population adjuster, by default 100
+  const adjuster = options.map.units.population.scale / 10; // survivors are troops, power goes by points
   b[side].power =
-    sum(options.map.military.units.map(u => (forces[u.name] || 0) * u.power * scheme[phase][u.type])) / adjuster;
+    sum(
+      options.map.military.units.map(
+        u => (forces[u.name] || 0) * u.power * (scheme[phase][u.type] ?? scheme[phase].melee) // levies fight as melee
+      )
+    ) / adjuster;
   const uiValue = b[side].power ? Math.max(b[side].power | 0, 1) : 0;
   ensureEl(`battlePower_${side}`).innerHTML = String(uiValue);
 }
@@ -905,9 +913,23 @@ function getInitialMorale(): void {
   const b = battle!;
   const powerFee = (diff: number): number => minmax(100 - diff ** 1.5 * 10 + 10, 50, 100);
   const distanceFee = (dist: number[]): number => Math.min((mean(dist) ?? 0) / 50, 15);
+  // a stable state's troops fight with heart: ×0.75 when it falls apart to ×1.25 when unshakable
+  const stabilityFactor = (regiments: Regiment[]): number => {
+    const troops = sum(regiments, regiment => regiment.a);
+    const stability = troops
+      ? sum(regiments, regiment => (Stability.get(regiment.state)?.stability ?? 0.5) * regiment.a) / troops
+      : 0.5;
+    return 0.75 + stability / 2;
+  };
   const powerDiff = b.defenders.power / b.attackers.power;
-  b.attackers.morale = powerFee(powerDiff) - distanceFee(b.attackers.distances);
-  b.defenders.morale = powerFee(1 / powerDiff) - distanceFee(b.defenders.distances);
+  b.attackers.morale = Math.min(
+    100,
+    powerFee(powerDiff) * stabilityFactor(b.attackers.regiments) - distanceFee(b.attackers.distances)
+  );
+  b.defenders.morale = Math.min(
+    100,
+    powerFee(1 / powerDiff) * stabilityFactor(b.defenders.regiments) - distanceFee(b.defenders.distances)
+  );
   updateMorale("attackers");
   updateMorale("defenders");
 }
@@ -1172,7 +1194,7 @@ function calculateCasualties(side: Side, casualties: number): void {
   for (const r of b[side].regiments) {
     for (const unit in r.u) {
       const randomness = 0.8 + Math.random() * 0.4;
-      const died = Math.min(Pint(r.u[unit] * casualties * randomness), r.survivors![unit]);
+      const died = Math.min(Pint(Military.getTroops(r.u[unit]) * casualties * randomness), r.survivors![unit]);
       r.casualties![unit] -= died;
       r.survivors![unit] -= died;
     }
@@ -1291,10 +1313,10 @@ function applyResults(): void {
     // add result to regiment note
     if (r.note) {
       const status = side === "attackers" ? battleStatus[0] : battleStatus[1];
-      const losses = r.a ? Math.abs(sum(Object.values(r.casualties!))) / r.a : 1;
+      const losses = r.a ? Math.abs(sum(Object.values(r.casualties!))) / Military.getTroops(r.a) : 1;
       const regStatus = getRegimentStatus(losses);
       const initialList = Object.keys(r.u)
-        .map(t => (r.u[t] ? `${r.u[t]} ${t}` : null))
+        .map(t => (r.u[t] ? `${Military.getTroops(r.u[t])} ${t}` : null))
         .filter((c): c is string => Boolean(c));
       const initialText = initialList.length ? ` Initial forces: ${list(initialList)}.` : "";
       const casualtiesList = Object.keys(r.casualties!)
@@ -1304,7 +1326,8 @@ function applyResults(): void {
       r.note += `<br><br>${battleName} (${options.map.lore.calendar.year} ${options.map.lore.calendar.eraShort}): ${status}. The regiment ${regStatus}.${initialText}${casualtiesText}`;
     }
 
-    r.u = { ...r.survivors };
+    const { scale } = options.map.units.population;
+    for (const unit in r.u) r.u[unit] = r.survivors![unit] ? r.u[unit] + r.casualties![unit] / scale : 0;
     r.a = sum(Object.values(r.u)); // reg total
     select<SVGGElement, unknown>("#armies").select(`g#${id} > text`).text(Military.getTotal(r)); // update reg box
 

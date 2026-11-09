@@ -20,7 +20,7 @@ import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
-import { rn } from "@/utils/number-utils";
+import { rn, si } from "@/utils/number-utils";
 import { capitalize } from "@/utils/string-utils";
 
 let selectedRegiment: SVGGElement | null = null;
@@ -151,14 +151,27 @@ function updateRegimentData(regiment: Regiment): void {
     .map(u => {
       return `<div data-tip="${t("{{unit}} number. Input to change", { unit: capitalize(u.name) })}">
         <div class="label">${capitalize(u.name)}:</div>
-        <input data-u="${u.name}" type="number" min=0 step=1 value="${regiment.u[u.name] || 0}">
+        <input data-u="${u.name}" type="number" min=0 step=1 value="${Military.getTroops(regiment.u[u.name])}">
         <i>${u.type}</i></div>`;
     })
     .join("");
 
+  composition.insertAdjacentHTML(
+    "beforeend",
+    `<div data-tip="${t("Military power as the forces fight: units number multiplied by unit power and by upkeep")}">
+      <div class="label">${t("Power")}:</div>
+      <span id="regimentPower"></span></div>`
+  );
   composition.querySelectorAll("input").forEach(el => {
     el.addEventListener("change", changeUnit);
   });
+  updateRegimentPower(regiment);
+}
+
+function updateRegimentPower(regiment: Regiment): void {
+  const upkeep = rn(Military.getBattleUpkeep(regiment.state) * 100);
+  ensureEl("regimentPower").textContent =
+    `${si(Military.getTroops(Military.getRegimentPower(regiment)))} (${upkeep}% ${t("upkeep")})`;
 }
 
 function toggleVisibility(): void {
@@ -179,7 +192,6 @@ function drawBase(): void {
   const base = select<SVGGElement, unknown>("#viewbox")
     .insert("g", "g#armies")
     .attr("id", "regimentBase")
-    .attr("stroke-width", 0.3)
     .attr("stroke", "#000")
     .attr("cursor", "move")
     .on("mouseenter", () => tip(t("Regiment base. Drag to re-base the regiment"), true))
@@ -196,7 +208,6 @@ function drawBase(): void {
     .append("circle")
     .attr("cx", reg.bx)
     .attr("cy", reg.by)
-    .attr("r", 2)
     .attr("fill", clr ?? null)
     .call(drag<SVGCircleElement, unknown>().on("drag", dragBase));
 }
@@ -212,10 +223,8 @@ function drawRotationControl(): void {
     .attr("id", "rotationControl")
     .attr("cx", x1 + w)
     .attr("cy", reg.y)
-    .attr("r", 1)
     .attr("opacity", 1)
     .attr("fill", "yellow")
-    .attr("stroke-width", 0.3)
     .attr("stroke", "black")
     .attr("cursor", "alias")
     .attr("transform", `rotate(${reg.angle || 0})`)
@@ -344,10 +353,10 @@ function changeUnit(this: HTMLInputElement): void {
   const u = this.dataset.u!;
   const reg = getRegiment();
   if (!reg || !selectedRegiment) return;
-  const count = (value: number) => Math.max(0, Math.round(value || 0)); // older maps may hold fractional troops
-  const units = Object.fromEntries(Object.entries(reg.u).map(([name, value]) => [name, count(value)]));
-  Military.setUnits(reg.state, reg.i, { ...units, [u]: count(+this.value) });
+  const units = Object.fromEntries(Object.entries(reg.u).map(([name, value]) => [name, Military.getTroops(value)]));
+  Military.setUnits(reg.state, reg.i, { ...units, [u]: Math.max(0, Math.round(+this.value || 0)) });
   updateRegimentElement(reg, selectedRegiment);
+  updateRegimentPower(reg);
 
   refreshEditors();
 }
@@ -367,9 +376,10 @@ function splitRegiment(): void {
   ensureEl("regimentComposition")
     .querySelectorAll<HTMLInputElement>("input")
     .forEach(el => {
-      el.value = String(reg.u[el.dataset.u!] || 0);
+      el.value = String(Military.getTroops(reg.u[el.dataset.u!]));
     });
   updateRegimentElement(reg, selectedRegiment);
+  updateRegimentPower(reg);
   drawRegiment(pack.states[state].military!.find(r => r.i === newId)!, state); // draw new reg below
 
   refreshEditors();

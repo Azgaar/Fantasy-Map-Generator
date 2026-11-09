@@ -551,7 +551,67 @@ describe("RoutesModule.remove", () => {
 
     expect(() => Routes.remove(globalThis.pack.routes[0].i)).not.toThrow();
     expect(globalThis.pack.routes).toHaveLength(0);
-    expect(globalThis.pack.cells.routes[10][20]).toBeUndefined();
+    expect(globalThis.pack.cells.routes).toEqual({});
+  });
+
+  it("keeps the links of a route that shares cells with the removed one", () => {
+    globalThis.pack.routes = [
+      {
+        i: 1,
+        group: "roads",
+        points: [
+          [0, 0, 10],
+          [0, 0, 20],
+          [0, 0, 30]
+        ]
+      },
+      {
+        i: 2,
+        group: "trails",
+        points: [
+          [0, 0, 10],
+          [0, 0, 20]
+        ]
+      }
+    ] as any;
+    Routes.relink(); // route 2 owns the shared 10-20 link
+
+    Routes.remove(2);
+    expect(globalThis.pack.cells.routes).toEqual({ 10: { 20: 1 }, 20: { 10: 1, 30: 1 }, 30: { 20: 1 } });
+  });
+
+  it("removes several routes at once", () => {
+    globalThis.pack.routes = [
+      {
+        i: 1,
+        group: "roads",
+        points: [
+          [0, 0, 10],
+          [0, 0, 20]
+        ]
+      },
+      {
+        i: 2,
+        group: "roads",
+        points: [
+          [0, 0, 20],
+          [0, 0, 30]
+        ]
+      },
+      {
+        i: 3,
+        group: "roads",
+        points: [
+          [0, 0, 30],
+          [0, 0, 40]
+        ]
+      }
+    ] as any;
+    Routes.relink();
+
+    Routes.remove(1, 3);
+    expect(globalThis.pack.routes.map((r: any) => r.i)).toEqual([2]);
+    expect(globalThis.pack.cells.routes).toEqual({ 20: { 30: 2 }, 30: { 20: 2 } });
   });
 });
 

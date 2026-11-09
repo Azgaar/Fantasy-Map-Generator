@@ -75,14 +75,14 @@ test("the library styles the live map through the contract", async ({ page }, te
   const result = await page.evaluate(async () => {
     const { Styles } = await import("/Fantasy-Map-Generator/model/styles/styles.ts");
     const styles = globalThis.styles;
-    styles.rivers.attrs.fill = "#ff00aa";
+    styles.rivers.groups.regular.attrs.fill = "#ff00aa";
     styles.routes.groups.roads.attrs.stroke = "#00e5ff";
     styles.routes.groups.roads.attrs["stroke-width"] = 2;
     styles.lakes.groups.freshwater.attrs.fill = "#ffe000";
     styles.states.groups.statesHalo.attrs.filter = null; // null = remove
     Styles.apply("rivers", "routes", "lakes", "states");
     return {
-      riverFill: document.querySelector('[data-layer="rivers"]')?.getAttribute("fill"),
+      riverFill: document.querySelector('[data-layer="rivers"] > [data-group="regular"]')?.getAttribute("fill"),
       roadStroke: document.querySelector('[data-group="roads"]')?.getAttribute("stroke"),
       lakeFill: document.querySelector('[data-group="freshwater"]')?.getAttribute("fill"),
       haloFilterRemoved: !document.querySelector('[data-group="statesHalo"]')?.hasAttribute("filter"),

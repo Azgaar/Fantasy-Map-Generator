@@ -9,6 +9,7 @@ export const Services = createRegistry(
     ExportJson: () => import("@/services/io/export-json").then(m => m.ExportJson),
     ExportMap: () => import("@/services/io/export").then(m => m.ExportMap),
     Load: () => import("@/services/io/load").then(m => m.Load),
+    ReleaseNotes: () => import("@/services/release-notes").then(m => m.ReleaseNotes),
     Save: eager(Save), // the picker must not wait for a module download after a click
     UiTour: () => import("@/services/ui-tour").then(m => m.UiTour)
   },

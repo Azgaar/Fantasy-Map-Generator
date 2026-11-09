@@ -18,17 +18,27 @@ type EditorTable<T> = {
   reset: () => void;
 };
 
+/** A table holds its data for the dialog `dialogId` and forgets it when the dialog closes */
 export function initEditorTable<T>({
+  dialogId,
   getData,
   onUpdate,
   pageSize
 }: {
+  dialogId: string;
   getData: () => T[];
   onUpdate: (view: TableView<T>) => void;
   pageSize?: number;
 }): EditorTable<T> {
   let page = 1;
-  let current: TableView<T> = { rows: [], all: [], page: 1, totalPages: 1, total: 0 };
+  const empty = (): TableView<T> => ({ rows: [], all: [], page: 1, totalPages: 1, total: 0 });
+  let current = empty();
+  let watched: HTMLElement | null = null;
+
+  const forget = () => {
+    current = empty();
+    watched = null;
+  };
 
   const refresh = () => {
     const size = pageSize ?? defaultPageSize();
@@ -39,6 +49,11 @@ export function initEditorTable<T>({
     const start = (page - 1) * size;
     current = { rows: all.slice(start, start + size), all, page, totalPages, total };
     onUpdate(current);
+    const dialog = findEl(dialogId);
+    if (dialog && dialog !== watched) {
+      watched = dialog;
+      dialog.addEventListener("dialog:close", forget, { once: true });
+    }
   };
 
   return {
@@ -95,6 +110,7 @@ export function renderEditorPagination(
 export type EditorColumn<T = never> = {
   key: string;
   label?: string;
+  icon?: string;
   width?: string;
   tip?: string;
   sortBy?: (item: T) => string | number;
@@ -143,8 +159,7 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
       .join(" ");
 
     const style = [
-      "white-space:nowrap",
-      column.align ? `text-align:${column.align}` : "",
+      column.align === "right" ? "justify-content:flex-end" : "",
       column.marginLeft ? `margin-left:${column.marginLeft}` : ""
     ]
       .filter(Boolean)
@@ -154,7 +169,12 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
       index === lastVisibleIndex
         ? `<button id="${dialogId}ColumnsButton" data-tip="${t("Show or hide columns")}" class="icon-sliders" style="line-height: 0;padding: 0 .2em;"></button>`
         : "";
-    return `<div ${attributes} style="${style}">${column.label ?? ""}${button}</div>`;
+    const label = column.icon
+      ? `<span class="${column.icon}"></span>`
+      : column.label
+        ? `<span>${column.label}</span>`
+        : "";
+    return `<div ${attributes}${style ? ` style="${style}"` : ""}>${label}${button}</div>`;
   });
   return `<div id="${dialogId}Header" class="header">${cells.join("")}</div>`;
 }
@@ -282,7 +302,7 @@ function bindColumnsPicker({
       z-index: 100;
       width: max-content;
       min-width: 100px;
-      max-height: 50vh;
+      max-height: 40vh;
       overflow-y: auto;
       white-space: nowrap;
       padding: 0.6em 0.4em;

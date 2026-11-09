@@ -23,6 +23,7 @@ Terms every `da.json` string uses the same way. Rules for all catalogs are in
 | state                           | stat                             |                                               |
 | province                        | provins                          |                                               |
 | culture                         | kultur                           |                                               |
+| development / era               | udvikling / tidsalder            | a people's technology level, 0–100            |
 | religion                        | religion                         |                                               |
 | namesbase                       | navnebase (pl. navnebaser)       |                                               |
 | heightmap                       | højdekort                        |                                               |
@@ -78,6 +79,14 @@ Terms every `da.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                    | aftale / handel                  |
 | treasury                        | statskasse                       |
 | sales tax / poll tax            | omsætningsafgift / hovedskat     |
+| prosperity / living standards   | trivsel / levestandard           |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | forarmet / nødlidende / fattig / beskeden / velbjærget / blomstrende / velhavende / overdådig / prægtig / uforlignelig |
+| consumption / need / want       | forbrug / behov / ønske          |
+| product (economy) / townspeople / rural people | produkt / byfolk / landbefolkning |
+| exports / imports / trade balance | udførsel / indførsel / handelsbalance |
+| inequality / tax burden         | ulighed / skattetryk             |
+| sector: rural / manufacturing / trade | land / håndværk / handel         |
+| economy type: agrarian / artisan / mercantile | landbrug / håndværk / købmandsskab |
 
 ## Interface
 

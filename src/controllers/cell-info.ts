@@ -2,6 +2,7 @@
 import { select } from "d3";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { Output } from "@/model/economy/output";
 import { Production } from "@/model/economy/production-generator";
 import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
@@ -16,7 +17,6 @@ import {
   getHeight
 } from "@/model/units";
 import { Dialog } from "@/ui/dialog/dialog";
-
 import { debounce, getLatitude, getLongitude } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
 import { ensureEl, getPointer } from "@/utils/node-utils";
@@ -111,10 +111,11 @@ function updateFields(point: Point, cellId: number, gridCellId: number): void {
   set("infoBurg", getNamedInfo(pack.burgs, cells.burg[cellId], "name"));
   set("infoFeature", featureId ? `${feature.subtype || feature.type} (${featureId})` : "n/a");
   set("infoBiome", pack.biomes[cells.biome[cellId]].name);
-  set("infoGood", getNamedInfo(pack.goods, cells.good[cellId], "name"));
+  const good = Goods.get(cells.good[cellId]);
+  set("infoGood", good ? `${good.name} (${good.i})` : "no");
   set("infoMarket", getMarketInfo(cells.market?.[cellId]));
 
-  set("infoCellProduction", listProduction(Production.getCellProduction(cellId, Goods.getBiomesProduction())));
+  set("infoCellProduction", listProduction(Output.ofCell(cellId)));
 
   const burgId = cells.burg[cellId];
   set("infoBurgProduction", burgId ? listProduction(Production.getBurgProduction(pack.burgs[burgId])) : "n/a");

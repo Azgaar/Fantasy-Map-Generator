@@ -64,7 +64,7 @@ const SETTINGS: Setting[] = [
 
 const PRESET_LABELS: Record<string, string> = {
   quality: t("Quality"),
-  balance: t("Balance"),
+  balance: t("Balance", { context: "preset" }),
   speed: t("Speed"),
   custom: t("Custom")
 };

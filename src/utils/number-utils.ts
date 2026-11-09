@@ -56,6 +56,12 @@ export const lerp = (a: number, b: number, t: number) => {
  * @param {number} n - The number to convert
  * @returns {string} - The converted string
  */
+/** The value a share of the way up the sorted values; undefined with none */
+export const getPercentile = (values: number[], share: number): number | undefined => {
+  const sorted = values.toSorted((a, b) => a - b);
+  return sorted[Math.floor((sorted.length - 1) * share)];
+};
+
 export const si = (n: number): string => {
   if (n >= 1e9) return `${rn(n / 1e9, 1)}B`;
   if (n >= 1e8) return `${rn(n / 1e6)}M`;

@@ -12,6 +12,7 @@ export const HEIGHTMAP_CURVES = {
   curveStep: t("Rectangular")
 };
 export const CONTOUR_MODES = { off: t("Off"), overlay: t("Over colors"), only: t("Lines only") };
+export const CONTOUR_INTERVALS = [10, 20, 50, 100, 200, 500, 1000, 2000] as const; // in the map's height unit
 export const HACHURE_MODES = { off: t("Off"), overlay: t("Over colors"), only: t("Strokes only") };
 
 export const LAKE_EMBELLISHMENTS = { none: t("None"), ripples: t("Ripples"), lines: t("Straight strokes") };

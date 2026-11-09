@@ -1,10 +1,10 @@
 // On-map interaction modes for journey segments
 import { type D3DragEvent, drag, select } from "d3";
-import type { TransportDomain } from "@/model/economy/transports-generator";
-import { Transports } from "@/model/economy/transports-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { CellKind } from "@/model/story/journeys/journeys-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
+import type { TransportDomain } from "@/model/story/journeys/transports-generator";
+import { Transports } from "@/model/story/journeys/transports-generator";
 import { Layers } from "@/renderers/layers";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/journey";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -106,9 +106,7 @@ export class JourneyPathEditor {
     const points = mode.kind === "draw" ? mode.points : seg.points;
 
     const dots = points
-      .map(
-        ([x, y]) => /* html */ `<circle cx="${x}" cy="${y}" r="0.8" fill="#fff" stroke="${color}" stroke-width="0.3"/>`
-      )
+      .map(([x, y]) => /* html */ `<circle cx="${x}" cy="${y}" fill="#fff" stroke="${color}"/>`)
       .join("");
     const preview =
       mode.kind === "draw" && points.length > 1

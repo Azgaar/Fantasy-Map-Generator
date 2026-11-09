@@ -27,6 +27,7 @@ Terms every `pt.json` string uses the same way. Rules for all catalogs are in
 | state                           | Estado                              | capitalized                            |
 | province                        | província                           |                                        |
 | culture                         | cultura                             |                                        |
+| development / era               | desenvolvimento / era               | a people's technology level, 0–100     |
 | religion                        | religião                            |                                        |
 | namesbase                       | base de nomes                       |                                        |
 | heightmap                       | mapa de altitudes                   | the layer is “Altitudes”               |
@@ -82,6 +83,14 @@ Terms every `pt.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                     | transação / comércio                |
 | treasury                         | tesouro                             |
 | sales tax / poll tax             | imposto sobre vendas / imposto de capitação |
+| prosperity / living standards    | prosperidade / nível de vida                |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | miserável / indigente / pobre / modesto / desafogado / próspero / abastado / opulento / esplêndido / sem igual |
+| consumption / need / want        | consumo / necessidade / desejo              |
+| product (economy) / townspeople / rural people | produto / habitantes das povoações / camponeses |
+| exports / imports / trade balance | exportações / importações / balança comercial |
+| inequality / tax burden          | desigualdade / carga fiscal                 |
+| sector: rural / manufacturing / trade | campo / ofícios / comércio                  |
+| economy type: agrarian / artisan / mercantile | agrária / artesã / mercantil                |
 
 ## Interface
 

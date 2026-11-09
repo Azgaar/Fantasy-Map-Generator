@@ -80,6 +80,7 @@ function getFilteredRoutes(): Route[] {
 }
 
 const routesTable = initEditorTable<Route>({
+  dialogId,
   getData: () => sortDataByColumns(dialogId, getFilteredRoutes(), columns),
   onUpdate: renderRoutesPage
 });
@@ -147,9 +148,6 @@ function renderDialog(): void {
 
 function closeRoutesOverview(): void {
   Dialog.destroy("routesOverview");
-  const view = routesTable.view();
-  view.rows = [];
-  view.all = [];
 }
 
 function createNewRoute(): void {
@@ -201,9 +199,9 @@ function renderRoutesPage(view: TableView<Route>): void {
     shown: view.all.length,
     total: pack.routes.length
   });
-  const averageLength = rn(mean(view.all.map(r => r.length)) || 0) || 0;
+  const averageLength = mean(view.all.map(r => r.length)) || 0;
   ensureEl("routesFooterLength").innerHTML =
-    `${averageLength * options.map.units.distance.scale} ${options.map.units.distance.unit}`;
+    `${rn(averageLength * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
 
   // add listeners
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", routeHighlightOn));
@@ -309,8 +307,9 @@ function triggerRouteRemove(this: HTMLElement): void {
     confirm: t("Remove"),
     onConfirm: () => {
       const route = pack.routes.find((r: Route) => r.i === routeId) as Route;
+      Dialog.close("routeEditor"); // it may be editing this route
       Routes.remove(route.i);
-      Layers.draw("routes", "labels");
+      Layers.draw("routes", "labels", "goods", "trade");
       routesTable.refresh();
     }
   });
@@ -349,11 +348,9 @@ function triggerAllRoutesRemove(): void {
         }
         return;
       }
-      for (const route of routesToRemove) {
-        Routes.remove(route.i);
-      }
-      pack.cells.routes = Routes.buildLinks(pack.routes);
-      Layers.draw("routes", "labels");
+      Dialog.close("routeEditor"); // it may be editing one of them
+      Routes.remove(...routesToRemove.map(route => route.i));
+      Layers.draw("routes", "labels", "goods", "trade");
       routesTable.refresh();
     }
   });
@@ -375,7 +372,7 @@ async function uploadRoutesCsv(text: string): Promise<void> {
   );
   if (!updated) return;
 
-  Layers.draw("routes", "labels");
+  Layers.draw("routes", "labels", "trade");
   routesTable.refresh();
 }
 

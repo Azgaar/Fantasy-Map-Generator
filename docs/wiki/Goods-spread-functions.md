@@ -2,14 +2,15 @@ A good **distribution** is an expression that decides whether the good can be pl
 
 # How placement works
 
-Cells are processed in random order. For every cell the generator walks the (reshuffled) list of goods and takes the first good that passes all of these checks:
+Every good with a distribution has a **deposits** range: how many deposits it gets on the map, from a minimum to a maximum. On each run the generator picks a whole number in the range; the count does not depend on the map's size.
 
-1. the good has both a distribution and a non-zero **chance**;
-2. the good has not yet reached its cell cap of `ceil(200 × cells count / 5000)` cells;
-3. a random roll against the good `chance` (in percent) succeeds;
-4. the distribution expression evaluates to `true`.
+Goods are placed one by one in random order. The first deposit of a good lands on a random cell where its distribution is `true`. Each next one has a 50% chance to land next to the previous deposit, if the distribution allows one of its neighbours; otherwise it lands on another random cell where the distribution is `true`. Deposits therefore form loose clusters: mining districts and fishing grounds rather than single scattered cells.
 
-A cell holds at most one good. Glacier cells are skipped entirely while the Glacier biome habitability is `0`. Because goods are reshuffled as the generator walks the map, no good gets a systematic advantage over the others.
+A cell holds at most one good. Glacier cells are skipped entirely while the Glacier biome habitability is `0`.
+
+A deposit yields its cell's population in units a day, counting up to 10 population points, times the good's multipliers. Because the counts are per map, a deposit yields more on a bigger map: the yield is multiplied by the map's cells ÷ 5,000. Deposits raise their cells' attraction for settlers, so people tend to live near them. A deposit on an empty cell yields nothing.
+
+The good's editor can also place deposits by output: set how many units a day its deposits should yield, and they are re-placed the same way until they yield it.
 
 # Technical info
 Technically a distribution is an expression evaluated for each cell to return `true` or `false`. If `true` is returned, the good can be placed in the cell. The expression is plain JS, so you can use logical operators (`!` for NOT, `||` for OR, `&&` for AND) and parentheses.
@@ -77,7 +78,7 @@ The distributions used by the built-in goods, as a starting point for your own:
 | Salt | `shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))` |
 | Dates | `biome(1)` |
 | Horses | `biome(3) || (biome(2) && nth(4))` |
-| Elephants | `biome(1, 3, 5, 7)` |
+| Ivory | `biome(1, 3, 5, 7)` |
 | Camels | `biome(1, 2)` |
 | Hemp | `biome(6, 7, 8)` |
 | Pearls | `shore(-1) && minTemp(18)` |
@@ -88,14 +89,14 @@ The distributions used by the built-in goods, as a starting point for your own:
 | Spices | `biome(7)` |
 | Amber | `shore(1) && biome(6, 7, 8, 9)` |
 | Furs | `biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))` |
-| Sheep | `(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))` |
+| Wool | `(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))` |
 | Slaves | `shore(1) && minHabitability(1) && !habitability()` |
 | Tar | `biome(1, 2) || (minHeight(50) && random(20))` |
 | Coal | `minHeight(40) || (minHeight(20) && elevation())` |
 | Oil | `biome(1, 2, 10) || (shore(-1) && minTemp(18) && random(15))` |
 | Mahogany | `biome(5, 7) && random(50)` |
-| Whales | `shore(-1) && type("ocean") && maxTemp(7)` |
-| Sugarcane | `biome(7)` |
+| Blubber | `shore(-1) && type("ocean") && maxTemp(7)` |
+| Sugar | `biome(7)` |
 | Tea | `minHeight(40) && (biome(5) || (biome(7) || biome(8)))` |
 | Tobacco | `random(20) && (biome(3) || (biome(5) || biome(6)))` |
 | Clay | `minTemp(8) && (shore(1) || river())` |

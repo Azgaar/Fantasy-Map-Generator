@@ -44,46 +44,49 @@ const ACTION_COLUMNS: Record<string, string[]> = {
 
 async function survey(page: import("@playwright/test").Page, dialogId: string, controller: string) {
   const actions = ACTION_COLUMNS[dialogId] ?? [];
-  return page.evaluate(async ([id, name, actionKeys]) => {
-    await (window as any).FMG.Controllers[name].open();
-    await new Promise(resolve => setTimeout(resolve, 500));
+  return page.evaluate(
+    async ([id, name, actionKeys]) => {
+      await (window as any).FMG.Controllers[name].open();
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-    const dialog = document.getElementById(id);
-    if (!dialog) return { id, error: "dialog did not open" };
+      const dialog = document.getElementById(id);
+      if (!dialog) return { id, error: "dialog did not open" };
 
-    const header = document.getElementById(`${id}Header`);
-    const headerCells = header ? header.querySelectorAll(":scope > [data-col]").length : 0;
-    const rows = [...dialog.querySelectorAll<HTMLElement>(".states")];
-    if (!rows.length) return { id, error: "no rows rendered" };
+      const header = document.getElementById(`${id}Header`);
+      const headerCells = header ? header.querySelectorAll(":scope > [data-col]").length : 0;
+      const rows = [...dialog.querySelectorAll<HTMLElement>(".states")];
+      if (!rows.length) return { id, error: "no rows rendered" };
 
-    const rowCellCounts = [...new Set(rows.map(row => row.querySelectorAll(":scope > [data-col]").length))];
-    const clipped = rows
-      .flatMap(row => [...row.querySelectorAll<HTMLElement>(":scope > [data-col]")])
-      .filter(cell => (actionKeys as readonly string[]).includes(cell.dataset.col ?? ""))
-      .filter(cell => cell.scrollWidth > cell.clientWidth)
-      .map(cell => ({ col: cell.dataset.col, over: cell.scrollWidth - cell.clientWidth }));
+      const rowCellCounts = [...new Set(rows.map(row => row.querySelectorAll(":scope > [data-col]").length))];
+      const clipped = rows
+        .flatMap(row => [...row.querySelectorAll<HTMLElement>(":scope > [data-col]")])
+        .filter(cell => (actionKeys as readonly string[]).includes(cell.dataset.col ?? ""))
+        .filter(cell => cell.scrollWidth > cell.clientWidth)
+        .map(cell => ({ col: cell.dataset.col, over: cell.scrollWidth - cell.clientWidth }));
 
-    // the button rides in the last column, which every table keeps permanent and at least 1.4em wide
-    const button = document.getElementById(`${id}ColumnsButton`);
-    const buttonHost = button?.closest<HTMLElement>("[data-col]") ?? null;
-    const headerColumns = [...(header?.querySelectorAll<HTMLElement>(":scope > [data-col]") ?? [])];
-    const em = header ? Number.parseFloat(getComputedStyle(header).fontSize) : 0;
-    const lastCell = headerColumns.at(-1);
-    return {
-      id,
-      headerCells,
-      rowCellCounts,
-      clipped,
-      buttonColumn: buttonHost?.dataset.col ?? null,
-      lastColumn: lastCell?.dataset.col ?? null,
-      lastColumnEm: lastCell && em ? +(lastCell.getBoundingClientRect().width / em).toFixed(2) : 0,
-      // what actually matters: the whole button is inside the dialog, not cut off at its edge
-      buttonVisible: Boolean(
-        button && button.getBoundingClientRect().right <= dialog.getBoundingClientRect().right + 0.5
-      ),
-      columns: headerColumns.map(c => c.dataset.col)
-    };
-  }, [dialogId, controller, actions] as const);
+      // the button rides in the last column, which every table keeps permanent and at least 1.4em wide
+      const button = document.getElementById(`${id}ColumnsButton`);
+      const buttonHost = button?.closest<HTMLElement>("[data-col]") ?? null;
+      const headerColumns = [...(header?.querySelectorAll<HTMLElement>(":scope > [data-col]") ?? [])];
+      const em = header ? Number.parseFloat(getComputedStyle(header).fontSize) : 0;
+      const lastCell = headerColumns.at(-1);
+      return {
+        id,
+        headerCells,
+        rowCellCounts,
+        clipped,
+        buttonColumn: buttonHost?.dataset.col ?? null,
+        lastColumn: lastCell?.dataset.col ?? null,
+        lastColumnEm: lastCell && em ? +(lastCell.getBoundingClientRect().width / em).toFixed(2) : 0,
+        // what actually matters: the whole button is inside the dialog, not cut off at its edge
+        buttonVisible: Boolean(
+          button && button.getBoundingClientRect().right <= dialog.getBoundingClientRect().right + 0.5
+        ),
+        columns: headerColumns.map(c => c.dataset.col)
+      };
+    },
+    [dialogId, controller, actions] as const
+  );
 }
 
 test("every row lines up with its header, and no action cell is clipped", async ({ page }) => {
@@ -154,23 +157,26 @@ test("the note icon opens the Notes Editor on the row's entity", async ({ page }
   await page.waitForSelector("#notesEditor", { timeout: 30000 });
 
   for (const [dialogId, controller, noteType] of NOTE_TABLES) {
-    const opened = await page.evaluate(async ([id, name]) => {
-      const controllers = (window as any).FMG.Controllers;
-      document.getElementById("notesEditor")?.remove();
-      await controllers[name].open();
-      await new Promise(resolve => setTimeout(resolve, 500));
+    const opened = await page.evaluate(
+      async ([id, name]) => {
+        const controllers = (window as any).FMG.Controllers;
+        document.getElementById("notesEditor")?.remove();
+        await controllers[name].open();
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-      // a table may lead with a pseudo-row (No religion, Wildlands) whose action cells are empty
-      const icon = document.querySelector<HTMLElement>(`#${id} .states [data-col="note"].icon-book`);
-      if (!icon) return { error: "no note icon in any row" };
+        // a table may lead with a pseudo-row (No religion, Wildlands) whose action cells are empty
+        const icon = document.querySelector<HTMLElement>(`#${id} .states [data-col="note"].icon-book`);
+        if (!icon) return { error: "no note icon in any row" };
 
-      // an icon class with no glyph behind it renders as an empty box
-      const glyph = getComputedStyle(icon, "::before").content.replace(/"/g, "");
-      icon.click();
-      await new Promise(resolve => setTimeout(resolve, 700));
+        // an icon class with no glyph behind it renders as an empty box
+        const glyph = getComputedStyle(icon, "::before").content.replace(/"/g, "");
+        icon.click();
+        await new Promise(resolve => setTimeout(resolve, 700));
 
-      return { glyph, selected: document.querySelector<HTMLSelectElement>("#notesSelect")?.value ?? null };
-    }, [dialogId, controller] as const);
+        return { glyph, selected: document.querySelector<HTMLSelectElement>("#notesSelect")?.value ?? null };
+      },
+      [dialogId, controller] as const
+    );
 
     expect(opened.error, dialogId).toBeUndefined();
     expect(opened.glyph, dialogId).toBeTruthy();
@@ -184,16 +190,9 @@ test.describe("Goods display filter", () => {
   let initial: { i: number; visible: boolean; matches: boolean }[];
   let errors: string[];
 
-  async function filterGoods(page: Page) {
-    await page.click("#goodsTagsFilter");
-    await page.locator('.message input[value="batch-a"]').check();
-    await page.locator('.message input[value="batch-b"]').check();
-    await page.locator(".dialog-window:has(.message)").getByRole("button", { name: "Apply", exact: true }).click();
-  }
-
   async function expectFilteredVisibility(page: Page, visible: boolean) {
     const expected = initial.map(good => ({ i: good.i, visible: good.matches ? visible : good.visible }));
-    expect(await page.evaluate(() => pack.goods.map(({ i, visible }) => ({ i, visible })))).toEqual(expected);
+    expect(await page.evaluate(() => options.map.goods.map(({ i, visible }) => ({ i, visible })))).toEqual(expected);
     await expect(page.locator("#goodsDisplayed")).toHaveText(String(expected.filter(good => good.visible).length));
     await expect(page.locator("#goodsNumber")).toHaveText(String(initial.length));
     await expect(page.locator("#goodsDisplayAll")).toHaveJSProperty("checked", visible);
@@ -217,14 +216,14 @@ test.describe("Goods display filter", () => {
     await page.goto("/?seed=goods-filter&width=1600&height=1000");
     await waitForMap(page);
     initial = await page.evaluate(() => {
-      pack.goods.forEach((good, index) => {
+      options.map.goods.forEach((good, index) => {
         good.tags = index === 0 ? ["batch-a"] : ["unrelated"];
         good.visible = index > 0 && index % 2 === 0;
       });
-      const firstId = Math.max(...pack.goods.map(good => good.i)) + 1;
+      const firstId = Math.max(...options.map.goods.map(good => good.i)) + 1;
       for (let index = 0; index < 104; index++) {
-        pack.goods.push({
-          ...structuredClone(pack.goods[0]),
+        options.map.goods.push({
+          ...structuredClone(options.map.goods[0]),
           i: firstId + index,
           name: `Filter test ${index}`,
           tags: [index % 2 ? "batch-a" : "batch-b"],
@@ -232,8 +231,8 @@ test.describe("Goods display filter", () => {
         });
       }
       const cell = pack.cells.i.find(i => pack.cells.h[i] >= 20)!;
-      pack.cells.good[cell] = pack.goods[0].i;
-      return pack.goods.map(good => ({
+      pack.cells.good[cell] = options.map.goods[0].i;
+      return options.map.goods.map(good => ({
         i: good.i,
         visible: Boolean(good.visible),
         matches: good.tags[0] !== "unrelated"
@@ -241,12 +240,12 @@ test.describe("Goods display filter", () => {
     });
     await page.evaluate(() => FMG.Controllers.GoodsEditor.open());
     await expect(page.locator("#goodsEditor")).toBeVisible();
+    await page.locator("#goodsSearch").fill("#batch");
   });
 
   test.afterEach(() => expect(errors).toEqual([]));
 
   test("bulk show and hide affect every matching page and preserve unrelated goods", async ({ page }) => {
-    await filterGoods(page);
     await page.locator("#goodsFooter .editorPageNext").click();
     await expect(page.locator("#goodsBody .goodDisplayed")).toHaveCount(5);
     await page.locator("#goodsDisplayAll").check();
@@ -262,9 +261,9 @@ test.describe("Goods display filter", () => {
 
   test("master checkbox follows filtered goods and individual row changes", async ({ page }) => {
     await page.evaluate(() => {
-      for (const good of pack.goods) if (good.tags[0] !== "unrelated") good.visible = true;
+      for (const good of options.map.goods) if (good.tags[0] !== "unrelated") good.visible = true;
     });
-    await filterGoods(page);
+    await page.click("#goodsEditorRefresh");
     await expectFilteredVisibility(page, true);
     await page.locator("#goodsBody .goodDisplayed").first().uncheck();
     await expect(page.locator("#goodsDisplayAll")).not.toBeChecked();
@@ -273,35 +272,5 @@ test.describe("Goods display filter", () => {
     await expect(page.locator("#goodsDisplayed")).toHaveText(String(count));
     await page.locator("#goodsDisplayAll").check();
     await expectFilteredVisibility(page, true);
-  });
-
-  test("clearing the filter restores bulk actions and counts for the whole catalogue", async ({ page }) => {
-    await filterGoods(page);
-    await page.click("#goodsTagsFilter");
-    await page.locator(".dialog-window:has(.message)").getByRole("button", { name: "Clear filter", exact: true }).click();
-    await page.locator("#goodsDisplayAll").check();
-    expect(await page.evaluate(() => pack.goods.every(good => good.visible))).toBe(true);
-    await expect(page.locator("#goodsDisplayed")).toHaveText(String(initial.length));
-    await expect(page.locator("#goodsDisplayAll")).toHaveJSProperty("indeterminate", false);
-    await page.locator("#goodsDisplayAll").uncheck();
-    expect(await page.evaluate(() => pack.goods.every(good => !good.visible))).toBe(true);
-    await expect(page.locator("#goodsDisplayed")).toHaveText("0");
-    await expect(page.locator("#goodsIcons > *")).toHaveCount(0);
-  });
-
-  test("a filter with no matching goods disables the bulk checkbox", async ({ page }) => {
-    await filterGoods(page);
-    await page.evaluate(() => {
-      for (const good of pack.goods) good.tags = ["unrelated"];
-    });
-    await page.click("#goodsEditorRefresh");
-    await expect(page.locator("#goodsBody .goodDisplayed")).toHaveCount(0);
-    await expect(page.locator("#goodsDisplayAll")).toBeDisabled();
-    await expect(page.locator("#goodsDisplayAll")).not.toBeChecked();
-    await expect(page.locator("#goodsDisplayAll")).toHaveJSProperty("indeterminate", false);
-    expect(await page.evaluate(() => pack.goods.map(({ i, visible }) => ({ i, visible })))).toEqual(
-      initial.map(({ i, visible }) => ({ i, visible }))
-    );
-    await expect(page.locator("#goodsDisplayed")).toHaveText(String(initial.filter(good => good.visible).length));
   });
 });

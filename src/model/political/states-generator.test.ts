@@ -1,190 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Markets } from "@/model/economy/markets-generator";
-import { Routes } from "@/model/economy/routes-generator";
-import { Names } from "@/model/society/names-generator";
-import { States } from "./states-generator";
+import { noFinance, States } from "./states-generator";
 
-describe("StatesModule.collectTaxes", () => {
-  let StatesModule: any;
-
-  beforeEach(async () => {
-    globalThis.window = globalThis.window || ({} as any);
-    globalThis.pack = {
-      states: [],
-      burgs: [],
-      markets: [],
-      deals: [],
-      biomes: []
-    } as any;
-    // Stub Names/COA data not needed for this test
-    Object.assign(Names, { getCultureShort: () => "X", getState: () => "X" });
-    Object.assign(Routes, { areConnected: () => false });
-    Object.assign(Markets, {
-      get: (marketId: number | undefined) =>
-        marketId ? globalThis.pack.markets?.find((m: any) => m?.i === marketId) : undefined
-    });
-    globalThis.options = {} as any;
-
-    // Reload module fresh
-    await import("./states-generator");
-    StatesModule = States;
-  });
-
-  it("credits sales-tax deal.tax to the seller's state and adds poll tax", () => {
-    globalThis.pack.states = [
-      { i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0 },
-      {
-        i: 1,
-        name: "A",
-        salesTax: 0.2,
-        pollTax: 0.5,
-        treasury: 0,
-        rural: 100,
-        urban: 50
-      },
-      {
-        i: 2,
-        name: "B",
-        salesTax: 0.1,
-        pollTax: 0.1,
-        treasury: 0,
-        rural: 200,
-        urban: 100
-      }
-    ] as any;
-
-    globalThis.pack.burgs = [{ i: 0 }, { i: 1, state: 1, cell: 1 }, { i: 2, state: 2, cell: 2 }] as any;
-
-    globalThis.pack.markets = [
-      { i: 1, centerBurgId: 1, color: "", goods: {} },
-      { i: 2, centerBurgId: 2, color: "", goods: {} }
-    ] as any;
-
-    globalThis.pack.deals = [
-      {
-        i: 0,
-        seller: 1,
-        sellerType: "burg",
-        buyer: 1,
-        buyerType: "market",
-        good: 0,
-        units: 10,
-        price: 5,
-        tax: 10 // 10 = 0.2 * 10 * 5
-      },
-      {
-        i: 1,
-        seller: 1,
-        sellerType: "market",
-        buyer: 2,
-        buyerType: "market",
-        good: 0,
-        units: 4,
-        price: 3,
-        tax: 2 // exporter market 1 -> state 1
-      },
-      {
-        i: 2,
-        seller: 2,
-        sellerType: "burg",
-        buyer: 2,
-        buyerType: "market",
-        good: 1,
-        units: 2,
-        price: 6,
-        tax: 1.2
-      },
-      {
-        i: 3,
-        seller: 2,
-        sellerType: "market",
-        buyer: 1,
-        buyerType: "burg",
-        good: 1,
-        units: 1,
-        price: 8
-        // no tax — pure buy from market
-      }
-    ] as any;
-
-    StatesModule.collectTaxes();
-
-    // State 1: sales tax 10 + 2 = 12; poll tax 0.5 * (100+50) = 75; treasury = 87
-    expect(globalThis.pack.states[1].treasury).toBeCloseTo(87, 2);
-    // State 2: sales tax 1.2; poll tax 0.1 * (200+100) = 30; treasury = 31.2
-    expect(globalThis.pack.states[2].treasury).toBeCloseTo(31.2, 2);
-    // Neutrals always 0
-    expect(globalThis.pack.states[0].treasury).toBe(0);
-  });
-
-  it("leaves neutrals at zero even with deals from neutral burgs", () => {
-    globalThis.pack.states = [
-      { i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0 },
-      { i: 1, name: "A", salesTax: 0.1, pollTax: 0, treasury: 0, rural: 10, urban: 0 }
-    ] as any;
-    globalThis.pack.burgs = [
-      { i: 0 },
-      { i: 1, state: 0, cell: 0 } // neutral burg
-    ] as any;
-    globalThis.pack.markets = [];
-    globalThis.pack.deals = [
-      {
-        i: 0,
-        seller: 1,
-        sellerType: "burg",
-        buyer: 1,
-        buyerType: "market",
-        good: 0,
-        units: 5,
-        price: 5,
-        tax: 2.5
-      }
-    ] as any;
-
-    StatesModule.collectTaxes();
-
-    expect(globalThis.pack.states[0].treasury).toBe(0);
-    // State 1 has no deal credit and only poll tax (0 here), so treasury stays 0
-    expect(globalThis.pack.states[1].treasury).toBe(0);
-  });
-
-  it("credits deal.tariff to the buyer market's state treasury", () => {
-    globalThis.pack.states = [
-      { i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0 },
-      { i: 1, name: "A", salesTax: 0, pollTax: 0, treasury: 0 },
-      { i: 2, name: "B", salesTax: 0, pollTax: 0, treasury: 0 }
-    ] as any;
-
-    globalThis.pack.burgs = [{ i: 0 }, { i: 1, state: 1, cell: 1 }, { i: 2, state: 2, cell: 2 }] as any;
-
-    globalThis.pack.markets = [
-      { i: 1, centerBurgId: 1, color: "", goods: {} },
-      { i: 2, centerBurgId: 2, color: "", goods: {} }
-    ] as any;
-
-    globalThis.pack.deals = [
-      {
-        i: 0,
-        seller: 1,
-        sellerType: "market",
-        buyer: 2,
-        buyerType: "market",
-        good: 0,
-        units: 10,
-        price: 5,
-        tax: 0,
-        tariff: 4.5
-      }
-    ] as any;
-
-    StatesModule.collectTaxes();
-
-    // Exporter state 1 gets tax (0)
-    expect(globalThis.pack.states[1].treasury).toBe(0);
-    // Importer state 2 gets tariff (4.5)
-    expect(globalThis.pack.states[2].treasury).toBe(4.5);
-  });
-});
+/** States as the model keeps them: each with its finances, zero but for the given ones */
+const withFinance = (states: any[]) =>
+  states.map(state => ({ ...state, economy: { ...noFinance(), ...state.economy } }));
 
 describe("StatesModule.generateDiplomacy", () => {
   let StatesModule: any;
@@ -201,24 +20,50 @@ describe("StatesModule.generateDiplomacy", () => {
     vi.restoreAllMocks();
   });
 
+  it("keeps a locked state's tariffs and rebuilds the others'", () => {
+    const rules = [{ states: "all", goods: [1], rate: 0.5 }];
+    globalThis.pack = {
+      cells: { i: [0, 1], h: [30, 30], state: [1, 2], pop: [10, 10], f: [1, 1] },
+      states: withFinance([
+        { i: 0, name: "Neutrals" },
+        {
+          i: 1,
+          name: "A",
+          lock: true,
+          neighbors: [2],
+          center: 0,
+          expansionism: 1,
+          campaigns: [],
+          economy: { tariffs: rules }
+        },
+        { i: 2, name: "B", neighbors: [1], center: 1, expansionism: 1, campaigns: [], economy: { tariffs: rules } }
+      ])
+    } as any;
+
+    StatesModule.generateDiplomacy();
+
+    expect(globalThis.pack.states[1].economy.tariffs).toEqual(rules);
+    expect(globalThis.pack.states[2].economy.tariffs).not.toEqual(rules);
+  });
+
   it("skips removed states when vassals copy their suzerain's relations", () => {
-    // state 2 is a large state bordering the small state 3, which becomes its vassal; state 4 is far away
+    // state 2 is a populous state bordering the small state 3, which becomes its vassal; state 4 is far away
     const cellState = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 4];
     globalThis.pack = {
       cells: {
         i: cellState.map((_, i) => i),
         h: cellState.map(() => 30),
         state: cellState,
-        area: cellState.map(() => 10),
+        pop: cellState.map(() => 10),
         f: cellState.map(() => 1)
       },
-      states: [
+      states: withFinance([
         { i: 0, name: "Neutrals" },
         { i: 1, removed: true },
         { i: 2, name: "A", neighbors: [3], center: 0, expansionism: 1, campaigns: [] },
         { i: 3, name: "B", neighbors: [2], center: 10, expansionism: 1, campaigns: [] },
         { i: 4, name: "C", neighbors: [], center: 11, expansionism: 1, campaigns: [] }
-      ]
+      ])
     } as any;
 
     expect(() => StatesModule.generateDiplomacy()).not.toThrow();
@@ -364,7 +209,7 @@ describe("StatesModule.tariffs", () => {
 
   afterEach(() => vi.restoreAllMocks());
 
-  it("defineTariffs() seeds the 0 baseline and relation-based overrides", () => {
+  it("defineTariffs() seeds the 5% baseline and relation-based overrides", () => {
     globalThis.pack = {
       states: [
         { i: 0, name: "Neutrals" },
@@ -385,7 +230,7 @@ describe("StatesModule.tariffs", () => {
 
     const rules = States.defineTariffs(pack.states[1]);
     expect(rules).toEqual([
-      { states: "all", goods: "all", rate: 0 },
+      { states: "all", goods: "all", rate: 0.05 },
       { states: [2, 3], goods: "all", rate: 0 },
       { states: [4], goods: "all", rate: 0.2 },
       { states: [5], goods: "all", rate: 0.3 },
@@ -398,18 +243,33 @@ describe("StatesModule.tariffs", () => {
     expect(States.defineTariffs(pack.states[0])).toEqual([]);
   });
 
+  it("defineTariffs() returns empty array for an anarchy, whatever its relations", () => {
+    globalThis.pack = {
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, name: "A", form: "Anarchy", diplomacy: ["x", "x", "Enemy"] },
+        { i: 2, name: "B" }
+      ]
+    } as any;
+    expect(States.defineTariffs(pack.states[1])).toEqual([]);
+  });
+
   it("setTariffs() validates and normalizes rules", () => {
     globalThis.pack = {
       states: [
         { i: 0, name: "Neutrals" },
-        { i: 1, name: "A", tariffs: [] },
+        { i: 1, name: "A", economy: { ...noFinance(), tariffs: [] } },
         { i: 2, name: "B" },
         { i: 3, name: "C", removed: true }
-      ],
-      goods: [
-        { i: 0, name: "Wheat" },
-        { i: 1, name: "Iron" }
       ]
+    } as any;
+    globalThis.options = {
+      map: {
+        goods: [
+          { i: 0, name: "Wheat" },
+          { i: 1, name: "Iron" }
+        ]
+      }
     } as any;
 
     States.setTariffs(1, [
@@ -418,7 +278,7 @@ describe("StatesModule.tariffs", () => {
       { states: [3], goods: "all", rate: 0.2 } // state 3 is removed -> rule dropped
     ]);
 
-    expect(pack.states[1].tariffs).toEqual([
+    expect(pack.states[1].economy.tariffs).toEqual([
       { states: "all", goods: "all", rate: 0.15 },
       { states: [2], goods: [0], rate: "embargo" }
     ]);
@@ -429,26 +289,28 @@ describe("StatesModule.tariffs", () => {
       cells: { state: new Uint16Array(10), province: new Uint16Array(10) },
       burgs: [],
       provinces: [],
-      states: [
+      states: withFinance([
         { i: 0, name: "Neutrals" },
         {
           i: 1,
           name: "A",
-          tariffs: [
-            { states: "all", goods: "all", rate: 0.1 },
-            { states: [2, 3], goods: "all", rate: 0 },
-            { states: [2], goods: "all", rate: "embargo" }
-          ]
+          economy: {
+            tariffs: [
+              { states: "all", goods: "all", rate: 0.1 },
+              { states: [2, 3], goods: "all", rate: 0 },
+              { states: [2], goods: "all", rate: "embargo" }
+            ]
+          }
         },
         { i: 2, name: "B" },
         { i: 3, name: "C" }
-      ]
+      ])
     } as any;
     vi.spyOn(States, "collectStatistics").mockImplementation(() => {});
 
     States.remove(2);
 
-    expect(pack.states[1].tariffs).toEqual([
+    expect(pack.states[1].economy.tariffs).toEqual([
       { states: "all", goods: "all", rate: 0.1 },
       { states: [3], goods: "all", rate: 0 }
       // Rule with [2] alone dropped because states becomes empty
@@ -460,19 +322,21 @@ describe("StatesModule.tariffs", () => {
       cells: { state: new Uint16Array(10), province: new Uint16Array(10) },
       burgs: [],
       provinces: [],
-      states: [
+      states: withFinance([
         { i: 0, name: "Neutrals" },
         {
           i: 1,
           name: "A",
-          tariffs: [
-            { states: "all", goods: "all", rate: 0.1 },
-            { states: [2, 3], goods: "all", rate: 0.2 }
-          ]
+          economy: {
+            tariffs: [
+              { states: "all", goods: "all", rate: 0.1 },
+              { states: [2, 3], goods: "all", rate: 0.2 }
+            ]
+          }
         },
         { i: 2, name: "B" },
         { i: 3, name: "C" }
-      ]
+      ])
     } as any;
     vi.spyOn(States, "collectStatistics").mockImplementation(() => {});
     vi.spyOn(States, "findNeighbors").mockImplementation(() => {});
@@ -480,7 +344,58 @@ describe("StatesModule.tariffs", () => {
 
     States.merge(1, [2, 3]);
 
-    expect(pack.states[1].tariffs).toEqual([{ states: "all", goods: "all", rate: 0.1 }]);
+    expect(pack.states[1].economy.tariffs).toEqual([{ states: "all", goods: "all", rate: 0.1 }]);
+  });
+
+  it("merge() moves the merged states' rural poll tax to the ruling state", () => {
+    globalThis.pack = {
+      cells: { state: new Uint16Array(10), province: new Uint16Array(10) },
+      burgs: [],
+      provinces: [],
+      markets: [
+        {
+          i: 1,
+          rural: {
+            pollTax: [
+              [1, 10, 5],
+              [2, 4, 2],
+              [3, 6, 3]
+            ]
+          }
+        },
+        {
+          i: 2,
+          rural: {
+            pollTax: [
+              [3, 1, 1],
+              [4, 2, 2]
+            ]
+          }
+        },
+        { i: 3, rural: { pollTax: [[4, 7, 7]] } }
+      ],
+      states: withFinance([
+        { i: 0, name: "Neutrals" },
+        { i: 1, name: "A" },
+        { i: 2, name: "B" },
+        { i: 3, name: "C" },
+        { i: 4, name: "D" }
+      ])
+    } as any;
+    vi.spyOn(States, "collectStatistics").mockImplementation(() => {});
+    vi.spyOn(States, "findNeighbors").mockImplementation(() => {});
+    vi.spyOn(States, "getPoles").mockImplementation(() => {});
+
+    States.merge(1, [2, 3]);
+
+    expect(pack.markets.map(market => market.rural?.pollTax)).toEqual([
+      [[1, 20, 10]],
+      [
+        [1, 1, 1],
+        [4, 2, 2]
+      ],
+      [[4, 7, 7]]
+    ]);
   });
 
   it("setTags() sets normalized tags on a state", () => {
@@ -503,12 +418,12 @@ describe("StatesModule.tariffs", () => {
       cells: { state: new Uint16Array(10), province: new Uint16Array(10) },
       burgs: [],
       provinces: [],
-      states: [
+      states: withFinance([
         { i: 0, name: "Neutrals" },
         { i: 1, name: "A", tags: ["coastal"] },
         { i: 2, name: "B", tags: ["trade", "coastal"] },
         { i: 3, name: "C", tags: ["empire"] }
-      ]
+      ])
     } as any;
     vi.spyOn(States, "collectStatistics").mockImplementation(() => {});
     vi.spyOn(States, "findNeighbors").mockImplementation(() => {});
@@ -517,5 +432,100 @@ describe("StatesModule.tariffs", () => {
     States.merge(1, [2, 3]);
 
     expect(pack.states[1].tags).toEqual(["coastal", "trade", "empire"]);
+  });
+});
+
+describe("StatesModule.defineCorruption", () => {
+  it("adds size and diversity to the form's share, doubled for despots", () => {
+    globalThis.pack = {
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, form: "Monarchy", formName: "Despotate", cells: 100, burgs: 5, culture: 1, capital: 1 },
+        { i: 2, form: "Republic", formName: "City-state", cells: 25, burgs: 1, culture: 1, capital: 2 },
+        { i: 3, form: "Anarchy", formName: "Commune", cells: 25, burgs: 3, culture: 1, capital: 2 },
+        { i: 4, form: "Union", formName: "League", cells: 25, burgs: 3, culture: 1, capital: 2 }
+      ],
+      burgs: [{ i: 0 }, { i: 1, cell: 0, population: 10 }, { i: 2, cell: 4, population: 1 }],
+      // the despotate's people: 20 at its capital, 10 of its culture and faith, 10 of another culture, 10 of both others
+      cells: {
+        i: [0, 1, 2, 3, 4],
+        state: [1, 1, 1, 1, 0],
+        culture: [1, 1, 2, 2, 1],
+        religion: [1, 1, 1, 2, 1],
+        pop: [10, 10, 10, 10, 0],
+        burg: [1, 0, 0, 0, 2]
+      }
+    } as any;
+
+    // 30 for a despotic monarchy, 15 as the largest state, 10 × 15 strangers of 50 people
+    expect(States.defineCorruption(pack.states[1])).toBe(48);
+    expect(States.defineCorruption(pack.states[2])).toBe(8); // a city-state: its form's share only
+    expect(States.defineCorruption(pack.states[3])).toBe(0); // anarchies collect nothing to steal
+    expect(States.defineCorruption(pack.states[4])).toBe(12); // 4 + 15 × √(25 ÷ 100)
+    expect(States.defineCorruption(pack.states[0])).toBe(0);
+  });
+});
+
+describe("StatesModule tribal forms", () => {
+  const tribal = (development: number, state: object, tier = 1, formName = "Kingdom") => {
+    globalThis.pack = {
+      burgs: [{ i: 0 }, { i: 1, cell: 0 }],
+      cells: { development: Uint8Array.from([development]) }
+    } as any;
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    return States["getTribalForm"]({ capital: 1, ...state } as any, tier, formName);
+  };
+
+  it("titles states ruled from before the Bronze Age as tribes, chiefdoms and hordes", () => {
+    expect(tribal(5, { form: "Monarchy" }, 1)).toBe("Tribe");
+    expect(tribal(5, { form: "Monarchy" }, 3)).toBe("Chiefdom");
+    expect(tribal(5, { form: "Monarchy" }, 4, "Empire")).toBe("Paramount Chiefdom");
+    expect(tribal(11, { form: "Monarchy", type: "Nomadic" })).toBe("Horde");
+    expect(tribal(5, { form: "Republic" }, 1, "Republic")).toBe("Tribal Council");
+    expect(tribal(5, { form: "Union" }, 1, "League")).toBe("Clans Union");
+    expect(tribal(5, { form: "Theocracy" }, 1, "Diocese")).toBe("Shamanate");
+    expect(tribal(5, { form: "Anarchy" }, 1, "Commune")).toBe("Commune");
+  });
+
+  it("keeps the form's title from the Bronze Age on, and where development is unknown", () => {
+    expect(tribal(12, { form: "Monarchy" }, 4, "Empire")).toBe("Empire");
+    expect(tribal(0, { form: "Monarchy" }, 4, "Empire")).toBe("Empire");
+  });
+});
+
+describe("StatesModule regeneration of locked states", () => {
+  it("moves their tariff rules to the kept states' new ids and drops rules on dropped states", () => {
+    const random = Math.random;
+    globalThis.options = { generation: { states: { limit: 2 } }, map: { graph: { width: 100, height: 100 } } } as any;
+    const tariffs = [
+      { states: "all", goods: "all", rate: 0.05 },
+      { states: [3, 2], goods: "all", rate: 0.2 }, // 3 stays as 1, 2 is dropped
+      { states: [2], goods: [7], rate: "embargo" } // only the dropped state
+    ];
+    globalThis.pack = {
+      cells: { i: [0, 1, 2], state: [3, 5, 2] },
+      burgs: [
+        {},
+        { i: 1, x: 10, y: 10, capital: 1, state: 3 },
+        { i: 2, x: 50, y: 50, capital: 1, state: 5 },
+        { i: 3, x: 90, y: 90, state: 2 }
+      ],
+      provinces: [],
+      states: withFinance([
+        { i: 0, name: "Neutrals" },
+        { i: 2, name: "Unlocked", capital: 3 },
+        { i: 3, name: "A", lock: true, capital: 1 },
+        { i: 5, name: "B", lock: true, capital: 2, economy: { tariffs } }
+      ])
+    } as any;
+
+    const { states } = (States as any).recreate();
+    Math.random = random;
+
+    expect(states.map((state: any) => state.name)).toEqual(["Neutrals", "A", "B"]);
+    expect(states[2].economy.tariffs).toEqual([
+      { states: "all", goods: "all", rate: 0.05 },
+      { states: [1], goods: "all", rate: 0.2 }
+    ]);
   });
 });

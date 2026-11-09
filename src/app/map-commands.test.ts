@@ -5,12 +5,17 @@ const mocks = vi.hoisted(() => ({
   draw: vi.fn(),
   refresh: vi.fn(),
   regenerate: vi.fn(),
+  produce: vi.fn(),
+  clear: vi.fn(),
   applyPreset: vi.fn(),
-  save: vi.fn()
+  save: vi.fn(),
+  syncPorts: vi.fn(),
+  collectStatistics: vi.fn()
 }));
 vi.mock("@/renderers/layers", () => ({ Layers: { draw: mocks.draw, toggle: vi.fn() } }));
 vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
   ...(await importOriginal<typeof import("@/ui/dialog/dialog-helpers")>()),
+  closeEntityDialogs: vi.fn(),
   refreshEditors: mocks.refresh
 }));
 vi.mock("@/app/chrome/tabs/layers-tab", () => ({
@@ -30,10 +35,16 @@ vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
 vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
 
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Production } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
+import { Ice } from "@/model/physical/ice-generator";
 import { Rivers } from "@/model/physical/river-generator";
+import { Burgs } from "@/model/political/burgs-generator";
+import { States } from "@/model/political/states-generator";
 import { DIALOGS_MARKUP, dialogButton } from "@/ui/dialog/dialog-testing";
-import { isLinkable, MAP_COMMANDS } from "./map-commands";
+import { isLinkable, MAP_COMMANDS, openEconomyRegeneration } from "./map-commands";
 
 beforeEach(() => {
   document.body.innerHTML = DIALOGS_MARKUP;
@@ -41,6 +52,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   Object.assign(Rivers, { regenerate: mocks.regenerate });
   Object.assign(Routes, { sync: () => {} });
+  Object.assign(Burgs, { syncPorts: mocks.syncPorts });
+  Object.assign(States, { collectStatistics: mocks.collectStatistics });
 });
 
 it("offers overwriting the saved file in command search without another save button", () => {
@@ -56,7 +69,8 @@ describe("shared regeneration commands", () => {
     expect(mocks.regenerate).not.toHaveBeenCalled();
     dialogButton("Proceed").click();
     expect(mocks.regenerate).toHaveBeenCalledOnce();
-    expect(mocks.draw).toHaveBeenCalledWith("rivers");
+    expect(mocks.syncPorts).toHaveBeenCalledOnce();
+    expect(mocks.draw).toHaveBeenCalledWith("rivers", "burgIcons");
     expect(mocks.refresh).toHaveBeenCalledOnce();
   });
 
@@ -67,11 +81,121 @@ describe("shared regeneration commands", () => {
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
-  it("honors the existing session preference to skip confirmation", () => {
-    sessionStorage.setItem("regenerateFeatureDontAsk", "true");
+  it("keeps asking after a cancel with Do not ask again ticked", () => {
     MAP_COMMANDS.find(command => command.id === "regenerateRivers")!.run();
+    document.querySelector<HTMLInputElement>("#regenerateDontAsk")!.checked = true;
+    dialogButton("Cancel").click();
+    MAP_COMMANDS.find(command => command.id === "regenerateRivers")!.run();
+    expect(mocks.regenerate).not.toHaveBeenCalled();
+  });
+
+  it("skips only the regeneration Do not ask again was ticked on", () => {
+    Object.assign(Ice, { regenerate: vi.fn() });
+    MAP_COMMANDS.find(command => command.id === "regenerateRivers")!.run();
+    document.querySelector<HTMLInputElement>("#regenerateDontAsk")!.checked = true;
+    dialogButton("Proceed").click();
     expect(mocks.regenerate).toHaveBeenCalledOnce();
+
+    MAP_COMMANDS.find(command => command.id === "regenerateRivers")!.run();
+    expect(mocks.regenerate).toHaveBeenCalledTimes(2);
     expect(document.querySelector(".message")).toBeNull();
+
+    MAP_COMMANDS.find(command => command.id === "regenerateIce")!.run();
+    expect(document.querySelector("#regenerateDontAsk")).not.toBeNull();
+    expect(Ice.regenerate).not.toHaveBeenCalled();
+  });
+
+  describe("the economy regeneration dialog", () => {
+    const part = (id: string) => document.querySelector<HTMLInputElement>(`#regeneratePart-${id}`)!;
+    const run = (id: string) => MAP_COMMANDS.find(command => command.id === id)!.run();
+    const ticks = () => ["restore", "deposits", "markets", "territories", "production"].filter(id => part(id).checked);
+    let calls: string[];
+
+    beforeEach(() => {
+      calls = [];
+      const spy = (name: string) => () => void calls.push(name);
+      Object.assign(Goods, { regenerate: spy("deposits") });
+      Object.assign(Markets, { regenerate: spy("markets"), expand: spy("territories") });
+      Object.assign(Production, { regenerate: spy("production"), clear: spy("clear") });
+    });
+
+    it.each([
+      [
+        ["deposits", "production"],
+        ["deposits", "production"]
+      ],
+      [
+        ["markets", "production"],
+        ["markets", "territories", "production"]
+      ],
+      [["production"], ["production"]]
+    ] as const)("opens with %j ticked", (preset, expected) => {
+      openEconomyRegeneration([...preset]);
+      expect(ticks()).toEqual(expected);
+      expect(calls).toEqual([]);
+    });
+
+    it("is what the Tools Economy button opens, production alone ticked", () => {
+      run("regenerateEconomy");
+      expect(ticks()).toEqual(["production"]);
+      expect(
+        MAP_COMMANDS.some(({ id }) => ["regenerateGoods", "regenerateMarkets", "regenerateProduction"].includes(id))
+      ).toBe(false);
+    });
+
+    it("runs the ticked parts in order, whichever button opened it", () => {
+      run("regenerateEconomy");
+      part("deposits").checked = true;
+      part("markets").click();
+      dialogButton("Proceed").click();
+      expect(calls).toEqual(["deposits", "markets", "production"]);
+      expect(mocks.refresh).toHaveBeenCalledOnce();
+    });
+
+    it("keeps the deals under new deposits or territories, and clears them when markets are replaced", () => {
+      openEconomyRegeneration(["deposits", "production"]);
+      part("production").checked = false;
+      dialogButton("Proceed").click();
+      expect(calls).toEqual(["deposits"]);
+
+      calls = [];
+      openEconomyRegeneration(["territories"]);
+      dialogButton("Proceed").click();
+      expect(calls).toEqual(["territories"]);
+
+      calls = [];
+      openEconomyRegeneration(["markets"]);
+      dialogButton("Proceed").click();
+      expect(calls).toEqual(["markets", "clear"]);
+    });
+
+    it("locks a part while the one rebuilding it is ticked, and puts it back after", () => {
+      openEconomyRegeneration(["markets", "production"]);
+      expect(part("territories").disabled).toBe(true);
+      part("markets").click();
+      expect(part("territories")).toMatchObject({ disabled: false, checked: false });
+
+      part("markets").click();
+      expect(part("territories")).toMatchObject({ disabled: true, checked: true });
+    });
+
+    it("always asks, and offers no Do not ask again", () => {
+      sessionStorage.setItem("regenerateDontAsk-regenerateEconomy", "true");
+      run("regenerateEconomy");
+      expect(calls).toEqual([]);
+      expect(document.querySelector("#regenerateDontAsk")).toBeNull();
+    });
+  });
+
+  it("regenerates burgs, counts the states' people, then markets, then production", () => {
+    const order: string[] = [];
+    Object.assign(Burgs, { regenerate: () => order.push("burgs") });
+    Object.assign(States, { collectStatistics: () => order.push("statistics") });
+    Object.assign(Markets, { regenerate: () => order.push("markets") });
+    Object.assign(Production, { regenerate: () => order.push("production") });
+    MAP_COMMANDS.find(command => command.id === "regenerateBurgs")!.run();
+    dialogButton("Proceed").click();
+    expect(order).toEqual(["burgs", "statistics", "markets", "production"]);
   });
 
   it("offers every built-in layers preset as a command", () => {

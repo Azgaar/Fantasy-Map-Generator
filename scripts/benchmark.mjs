@@ -171,15 +171,18 @@ function findSpots({ width, height }) {
   return [burgs[0]?.at, burgs.find(burg => burg.port)?.at, sea?.at];
 }
 
-/** Load the map in a fresh profile, then zoom at three spots and pan a loop at 20x, with real input, one event per frame */
-async function sample(browser, side) {
+const MAP_FILE = "benchmark.map";
+
+/** A fresh offline profile with the app loaded from `query`; the shared map file is served next to the app */
+async function open(browser, side, query, mapFile) {
   const context = await browser.newContext({ viewport: VIEWPORT, serviceWorkers: "block" });
   const origin = new URL(side.url).origin;
   await context.route(url => url.origin !== origin, route => route.abort()); // offline: no fonts, no analytics
+  if (mapFile) await context.route(`${origin}/${MAP_FILE}`, route => route.fulfill({ body: mapFile }));
   await context.addInitScript(prepare);
 
   const page = await context.newPage();
-  await page.goto(`${side.url}?seed=${SEED}`);
+  await page.goto(`${side.url}?${query}`);
   // the full draw closes the load; a ref from before the app's measures only ever registers the map
   await page.waitForFunction(
     () =>
@@ -191,16 +194,41 @@ async function sample(browser, side) {
   const measures = await page.evaluate(() =>
     performance.getEntriesByType("measure").map(({ name, duration, detail }) => ({ name, duration, detail }))
   );
+  return { context, page, measures };
+}
 
+/** The base build generates the seed and saves it: a newer file may not open in the older build */
+async function makeMapFile(browser, side) {
+  const { context, page } = await open(browser, side, `seed=${SEED}`);
+  const data = await page.evaluate(() => (globalThis.FMG ?? globalThis).Services.Save.prepareMapData());
+  await context.close();
+  return data;
+}
+
+/**
+ * Generation is timed from the seed; drawing, zoom and pan on the shared map file, so a change to what
+ * generation makes does not read as a rendering change. Zoom at three spots and pan a loop at 20x,
+ * with real input, one event per frame
+ */
+async function sample(browser, side, mapFile) {
   const metrics = {};
   const add = (key, ms) => (metrics[key] = (metrics[key] ?? 0) + ms);
-  for (const { name, duration, detail } of measures) {
+
+  const generated = await open(browser, side, `seed=${SEED}`);
+  for (const { name, duration, detail } of generated.measures) {
     if (name === "Generation Pipeline") add("generation", duration);
     else if (detail === "Generation Pipeline") add(`generation › ${name}`, duration);
-    else if (detail === "Layers") {
-      add("rendering", duration);
-      add(`rendering › ${name}`, duration);
-    }
+  }
+  await generated.context.close();
+
+  const origin = new URL(side.url).origin;
+  const { context, page, measures } = await open(browser, side, `maplink=${origin}/${MAP_FILE}`, mapFile);
+  // a failed load falls back to a random map
+  if (measures.some(({ name }) => name === "Generation Pipeline")) throw new Error(`[${side.label}] cannot load ${MAP_FILE}`);
+  for (const { name, duration, detail } of measures) {
+    if (detail !== "Layers") continue;
+    add("rendering", duration);
+    add(`rendering › ${name}`, duration);
   }
 
   await settle(page);
@@ -270,7 +298,7 @@ function report(rows, baseLabel) {
     .sort((a, b) => Math.abs(b.after - (b.before ?? 0)) - Math.abs(a.after - (a.before ?? 0)));
   const partLabel = key => {
     const [total, part] = key.split(" › ");
-    return total in TOTALS ? `${TOTALS[total]} ${PHASES[part]}` : `${PARTS[total]}: ${part}`;
+    return part in PHASES ? `${TOTALS[total]} ${PHASES[part]}` : `${PARTS[total]}: ${part}`;
   };
 
   const markdown = [
@@ -311,9 +339,10 @@ try {
   sides.push(await serve("base", baseDir, 4310), await serve("head", repo, 4311));
 
   browser = await chromium.launch();
+  const mapFile = await makeMapFile(browser, sides[0]);
   for (let round = 0; round <= rounds; round++) {
     for (const side of round % 2 ? sides : [...sides].reverse()) {
-      const metrics = await sample(browser, side);
+      const metrics = await sample(browser, side, mapFile);
       if (round) samples[side.label].push(metrics); // round 0 is the warm-up
     }
     console.error(round ? `round ${round}/${rounds}` : "warm-up done");

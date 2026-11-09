@@ -7,6 +7,7 @@ const createBiome = (i: number): Biome => ({
   name: `Biome ${i}`,
   color: `#00000${i}`,
   habitability: 50,
+  development: 0,
   iconsDensity: 0,
   icons: {},
   cost: 50

@@ -36,7 +36,7 @@ vi.mock("@/ui/map/highlight", () => ({
 vi.mock("@/ui/map/zoom", () => ({ zoomTo: mocks.zoom }));
 vi.mock("@/renderers/viewport/viewport", () => ({ viewport: { width: 1000, height: 800, scale: 1 } }));
 vi.mock("@/renderers/labels/label-data", () => ({ getLabelsIndex: mocks.labels }));
-vi.mock("@/ui/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
+vi.mock("@/ui/dialog/dialog-helpers", () => ({ closeEntityDialogs: vi.fn(), refreshEditors: vi.fn() }));
 vi.mock("@/ui/tooltips", () => ({ tip: mocks.tip, loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/controllers", () => ({
   Controllers: new Proxy(
@@ -108,10 +108,10 @@ beforeEach(() => {
     zones: [],
     journeys: [],
     markets: [],
-    goods: [],
     biomes: [],
     addedLabels: []
   } as unknown as typeof pack;
+  options.map.goods = [];
 });
 afterEach(() => {
   window.dispatchEvent(new Event("blur"));
@@ -261,7 +261,7 @@ describe("Omnibar public behavior", () => {
     const action = vi.fn();
     Object.assign(Rivers, { regenerate: action });
     Object.assign(Routes, { sync: () => {} });
-    sessionStorage.setItem("regenerateFeatureDontAsk", "true");
+    sessionStorage.setItem("regenerateDontAsk-regenerateRivers", "true");
     document.getElementById("regenerateRivers")!.remove();
     Omnibar.open();
     search("> regenerate rivers");
@@ -403,7 +403,7 @@ describe("Omnibar public behavior", () => {
   });
 
   it("opens the Goods editor filtered to the chosen good instead of zooming", () => {
-    pack.goods = [{ i: 1, name: "Copper" }] as typeof pack.goods;
+    options.map.goods = [{ i: 1, name: "Copper" }] as typeof options.map.goods;
     Omnibar.open();
     search("Copper");
     key("Enter");
@@ -413,7 +413,7 @@ describe("Omnibar public behavior", () => {
   });
 
   it("reports an editor that fails to load instead of failing silently", async () => {
-    pack.goods = [{ i: 1, name: "Copper" }] as typeof pack.goods;
+    options.map.goods = [{ i: 1, name: "Copper" }] as typeof options.map.goods;
     mocks.open.mockRejectedValueOnce(new Error("chunk failed"));
     Omnibar.open();
     search("Copper");

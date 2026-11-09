@@ -19,13 +19,13 @@ import {
 } from "d3";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { Output } from "@/model/economy/output";
 import { Production } from "@/model/economy/production-generator";
 import { mapHistory } from "@/model/map-history";
 import { convertTemperature, formatPrice, getArea, getAreaUnit, getHeight, getPrecipitation } from "@/model/units";
 import { Csv } from "@/services/io/csv";
 import { getFileName } from "@/services/io/file-name";
 import { Dialog } from "@/ui/dialog/dialog";
-
 import { tip } from "@/ui/tooltips";
 import { downloadFile } from "@/utils/file-utils";
 import { isWater } from "@/utils/height-utils";
@@ -77,10 +77,8 @@ interface ChartDatum {
   value: number;
 }
 
-type BiomeProduction = Record<number, { goodId: number; production: number }[]>;
-
 interface ProductionContext {
-  biomeProduction: BiomeProduction;
+  rural: Record<number, number>[]; // by cell
 }
 
 type NamedColored = { name?: string; color?: string };
@@ -310,9 +308,9 @@ const quantizationMap: Record<string, Metric> = {
     label: t("Production value"),
     hint: t("Worth of produced goods"),
     provides: ["good"],
-    prepare: () => ({ biomeProduction: Goods.getBiomesProduction() }),
-    getContributions: (cellId, { biomeProduction }) => {
-      const produced = getCellProductionByGood(cellId, biomeProduction);
+    prepare: () => ({ rural: Output.getRural() }),
+    getContributions: (cellId, { rural }) => {
+      const produced = getCellProductionByGood(cellId, rural);
       const contributions: Contribution[] = [];
       for (const [goodId, units] of Object.entries(produced)) {
         const good = Goods.get(+goodId);
@@ -330,9 +328,9 @@ const quantizationMap: Record<string, Metric> = {
     label: t("Production volume"),
     hint: t("Units of goods produced"),
     provides: ["good"],
-    prepare: () => ({ biomeProduction: Goods.getBiomesProduction() }),
-    getContributions: (cellId, { biomeProduction }) => {
-      const produced = getCellProductionByGood(cellId, biomeProduction);
+    prepare: () => ({ rural: Output.getRural() }),
+    getContributions: (cellId, { rural }) => {
+      const produced = getCellProductionByGood(cellId, rural);
       const contributions: Contribution[] = [];
       for (const [goodId, units] of Object.entries(produced)) contributions.push({ good: +goodId, value: units });
       return contributions;
@@ -369,6 +367,7 @@ const plotTypeMap: Record<
 let charts: ChartOptions[] = [];
 let chartedMap: number | undefined; // the map the charts were built for, by its creation stamp
 function open() {
+  if (options.app.mode) return;
   renderDialog();
   changeViewColumns();
   updateMetricInfo();
@@ -978,11 +977,11 @@ function goodNameGetter(i: string | number): string {
 }
 
 function goodColorsGetter(): Record<string, string> {
-  return Object.fromEntries((pack.goods || []).map(g => [g.name || EMPTY_NAME, g.color || NEUTRAL_COLOR]));
+  return Object.fromEntries(options.map.goods.map(g => [g.name || EMPTY_NAME, g.color || NEUTRAL_COLOR]));
 }
 
-function getCellProductionByGood(cellId: number, biomeProduction: BiomeProduction): Record<number, number> {
-  const produced = Production.getCellProduction(cellId, biomeProduction);
+function getCellProductionByGood(cellId: number, rural: Record<number, number>[]): Record<number, number> {
+  const produced = { ...rural[cellId] };
   const burgId = pack.cells.burg[cellId];
   if (burgId) {
     const urban = Production.getBurgProduction(pack.burgs[burgId]);

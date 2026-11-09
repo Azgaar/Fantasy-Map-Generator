@@ -1,5 +1,6 @@
 import { MapEntities } from "@/model/map-entities";
 import { Styles } from "@/model/styles/styles";
+import type { Good } from "@/types/economy";
 import type { StylesData } from "@/types/styles";
 
 export type Item = { i: number } & Record<string, unknown>;
@@ -14,17 +15,19 @@ interface Found {
   item: Item | undefined;
 }
 
-/** Everything a proposal can change: the map data (`pack`), the map's lore and its style. Either the live map,
+/** Everything a proposal can change: the map data (`pack`), the map's goods, lore and style. Either the live map,
  * or a draft copy that a proposal is tried on first */
 export class World {
   private constructor(
     readonly pack: typeof globalThis.pack,
     readonly lore: Lore | undefined,
-    readonly styles: StylesData | undefined
+    readonly styles: StylesData | undefined,
+    readonly goods: Good[] | undefined
   ) {}
 
   static live(): World {
-    return new World(globalThis.pack, globalThis.options?.map.lore as unknown as Lore | undefined, globalThis.styles);
+    const map = globalThis.options?.map;
+    return new World(globalThis.pack, map?.lore as unknown as Lore | undefined, globalThis.styles, map?.goods);
   }
 
   static isItem(value: unknown): value is Item {
@@ -43,7 +46,12 @@ export class World {
           GEOMETRY.has(field) ? data : ArrayBuffer.isView(data) ? (data as Uint32Array).slice() : structuredClone(data)
         ])
       ) as typeof cells;
-    return new World(copy, this.lore && structuredClone(this.lore), this.styles && structuredClone(this.styles));
+    return new World(
+      copy,
+      this.lore && structuredClone(this.lore),
+      this.styles && structuredClone(this.styles),
+      this.goods && structuredClone(this.goods)
+    );
   }
 
   /** Run a task as if this world were the live map. The generators read and write the global map, so it is swapped
@@ -58,8 +66,9 @@ export class World {
     }
   }
 
-  /** An entity list by its `pack` field, such as `burgs` */
+  /** An entity list by its field, such as `burgs` */
   items(field: string): Item[] | undefined {
+    if (field === "goods") return this.goods as unknown as Item[] | undefined;
     return MapEntities.list(field, this.pack) as Item[] | undefined;
   }
 
@@ -89,6 +98,7 @@ export class World {
   private makeLive(): void {
     globalThis.pack = this.pack;
     if (this.lore && globalThis.options) globalThis.options.map.lore = this.lore as unknown as typeof options.map.lore;
+    if (this.goods && globalThis.options) globalThis.options.map.goods = this.goods;
     if (this.styles) Styles.set(this.styles);
   }
 }

@@ -2,19 +2,25 @@ import { select } from "d3";
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { Output } from "@/model/economy/output";
 import { Production } from "@/model/economy/production-generator";
+import { TradeTraffic } from "@/model/economy/trade-traffic";
 import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { MapEntities } from "@/model/map-entities";
 import { Notes } from "@/model/story/notes";
 import { convertTemperature, getCellPopulation, getFriendlyHeight, getFriendlyPrecipitation } from "@/model/units";
+import { goodBadge } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
+import { isDevelopmentOverlayShown } from "@/renderers/overlays/development-overlay";
+import type { Good } from "@/types/economy";
 import type { Point } from "@/types/global";
+import { developmentTip } from "@/ui/development-view";
 import { highlightEmblemElement } from "@/ui/map/highlight";
 import { showMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { findEl, getPointer } from "@/utils/node-utils";
-import { si } from "@/utils/number-utils";
+import { rn, si } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
 
 /**
@@ -241,38 +247,66 @@ function getMarketTip(target: SVGElement): string | undefined {
   if (!marketEl) return undefined;
 
   const market = Markets.get(Number(marketEl.dataset.id));
-  const centerBurg = market && pack.burgs[market.centerBurgId];
-  if (!centerBurg) return undefined;
+  if (!market) return undefined;
 
-  return withHint(t("{{burg}} market", { burg: centerBurg.name }), t("Click to view"));
+  return withHint(t("{{burg}} market", { burg: Markets.getName(market) }), t("Click to view"));
+}
+
+/** The displayed goods as badged amounts, the most valuable first, as the overview colors cells */
+function listGoods(produced: Iterable<[number | string, number]>, format = (_good: Good, units: number) => `${units}`) {
+  return [...produced]
+    .flatMap(([goodId, units]) => {
+      const good = Goods.get(+goodId);
+      return good && units > 0 && Goods.isDisplayed(good) ? [{ good, units, worth: units * good.value }] : [];
+    })
+    .sort((a, b) => b.worth - a.worth)
+    .map(({ good, units, worth }) => ({
+      good,
+      worth,
+      badge: badgeOf(good, format(good, units))
+    }));
+}
+
+function badgeOf(good: Good, text: string): string {
+  return `<svg width="1.2em" height="1.2em" style="vertical-align: middle; margin: 0 0.1em 0 0.3em">${goodBadge(good)}</svg>${text}`;
+}
+
+/** The displayed goods the line's link at the cell carries a day, the most valuable first */
+function getTrafficTip(target: SVGElement, cellId: number): string | undefined {
+  const cells = target.dataset.cells?.split(",").map(Number) ?? [];
+  const at = Math.min(Math.max(0, cells.indexOf(cellId)), cells.length - 2);
+  const link = cells.length > 1 ? TradeTraffic.get(cells[at], cells[at + 1]) : undefined;
+  if (!link) return undefined;
+
+  const MAX_LISTED = 5;
+  const carried = listGoods(link.goods, (good, units) => {
+    const amount = rn(units, units < 10 ? 1 : 0);
+    return !good.unit ? `${amount}` : amount === 1 ? `${amount} ${good.unit}` : `${amount} ${good.unit}s`;
+  });
+  const goods = carried.slice(0, MAX_LISTED).map(({ badge }) => badge);
+  if (carried.length > MAX_LISTED) goods.push("…");
+  const list = goods.join(" ");
+  return link.water
+    ? t("By water a day: {{- goods}}", { goods: list })
+    : t("By land a day: {{- goods}}", { goods: list });
 }
 
 function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
-  const bonusGoodId = pack.cells.good[cellId];
+  if (target.closest("#goodsTraffic")) return getTrafficTip(target, cellId);
 
-  const formatProduction = (produced: Record<string, number>) =>
-    Object.entries(produced)
-      .filter(([goodId]) => Goods.get(Number(goodId))?.visible)
-      .map(([goodId, amount]) => {
-        const name = (Goods.get(Number(goodId))?.name || "unknown").toLowerCase();
-        return `${name} ${amount}${Number(goodId) === bonusGoodId ? " (bonus)" : ""}`;
-      })
-      .join(", ");
-
-  if (target.closest("#goodsIcons")) {
-    const good = Goods.get(Number(target.closest<SVGElement>("[data-i]")?.dataset.i));
-    return withHint(
-      t("{{good}} bonus resource", { good: good?.name }),
-      t("Click to open Goods Editor and select displayed goods")
-    );
+  const icon = target.closest<SVGElement>("#goodsIcons [data-i]");
+  if (icon) {
+    const good = Goods.get(Number(icon.dataset.i));
+    if (!good) return undefined;
+    const units = Output.ofCell(Number(icon.dataset.cell))[good.i] || 0; // 0 where the land is not developed enough
+    return t("Deposit production: {{- production}}", { production: badgeOf(good, `${units}`) });
   }
 
   if (target.closest("#goodsCells")) {
-    const produced = Production.getCellProduction(cellId, Goods.getBiomesProduction());
-    return withHint(
-      t("Cell rural production: {{production}}", { production: formatProduction(produced) }),
-      t("Click to select displayed goods in Goods Editor")
-    );
+    const production = listGoods(Object.entries(Output.ofCell(cellId)))
+      .map(({ badge }) => badge)
+      .join(" ");
+    return t("Cell rural production: {{- production}}", { production });
   }
 
   if (target.closest("#goodsBurgs")) {
@@ -281,11 +315,19 @@ function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
     if (!burg || burg.removed) return undefined;
 
     select(burgEl).raise();
+    // a pie sector: only its goods, each with its share of the burg's output value
+    const sector = target.closest<SVGElement>("[data-goods]")?.dataset.goods?.split(",").map(Number);
+    const produced = listGoods(Object.entries(Production.getBurgProduction(burg)));
+    const total = produced.reduce((sum, { worth }) => sum + worth, 0) || 1;
+    const production = produced
+      .filter(({ good }) => !sector || sector.includes(good.i))
+      .map(({ badge, worth }) => {
+        const percent = (worth / total) * 100;
+        return `${badge} (${percent < 1 ? "<1" : rn(percent)}%)`;
+      })
+      .join(" ");
     return withHint(
-      t("{{burg}} urban production: {{production}}", {
-        burg: burg.name,
-        production: formatProduction(Production.getBurgProduction(burg))
-      }),
+      t("{{burg}} urban production: {{- production}}", { burg: burg.name, production }),
       t("Click to view")
     );
   }
@@ -301,6 +343,9 @@ function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: 
   if (Layers.isOn("population")) return void tip(getPopulationTip(cellId));
   if (Layers.isOn("temperature"))
     return void tip(`${t("Temperature")}: ${convertTemperature(grid.cells.temp[gridCellId])}`);
+  if (isDevelopmentOverlayShown() && cells.development?.[cellId]) {
+    return void tip(developmentTip(cells.development[cellId]));
+  }
   if (Layers.isOn("biomes") && cells.biome[cellId]) {
     const biomeId = cells.biome[cellId];
     return void tip(`${t("Biome")}: ${escapeHtml(pack.biomes[biomeId].name)}`);

@@ -12,7 +12,7 @@ import { isLand } from "@/utils/height-utils";
 import { getAdjective, replaceWholeWord } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { distanceSquared, rn } from "@/utils/number-utils";
-import { curveLength, findPath, meander } from "@/utils/path-utils";
+import { curveLength, findPath } from "@/utils/path-utils";
 import { ra, rw } from "@/utils/probability-utils";
 import { round } from "@/utils/string-utils";
 import { requireName, requireOneOf } from "@/utils/validation-utils";
@@ -562,14 +562,7 @@ class RoutesModule {
     const cached = this.riverGeometryCache.get(river.i);
     if (cached) return cached;
 
-    const { h, p } = pack.cells;
-    const geometry = meander(river.cells, p, {
-      anchors: river.points ?? undefined,
-      meandering: 0.5,
-      startStep: h[river.cells[0]] < 20 ? 1 : 10,
-      isWaterCell: river.cells.map(c => c !== -1 && h[c] < 20),
-      bounds: { width: options.map.graph.width, height: options.map.graph.height }
-    });
+    const geometry = Rivers.getCourse(river.cells, river.points);
 
     this.riverGeometryCache.set(river.i, geometry);
     return geometry;
@@ -975,25 +968,20 @@ class RoutesModule {
     return route;
   }
 
-  /** Remove a route and its cell connections */
-  remove(routeId: number) {
-    const route = this.living(routeId);
-    const routes = pack.cells.routes;
+  /** Rebuild the cell links from the routes' points */
+  relink(): void {
+    pack.cells.routes = this.buildLinks(pack.routes);
+  }
 
-    for (const point of route.points) {
-      const from = point[2];
-      if (!routes[from]) continue;
-
-      for (const [to, routeId] of Object.entries(routes[from])) {
-        if (routeId === route.i) {
-          const toCell = parseInt(to, 10);
-          delete routes[from][toCell];
-          if (routes[toCell]) delete routes[toCell][from];
-        }
-      }
+  /** Remove routes and their cell connections */
+  remove(...routeIds: number[]) {
+    const removed = new Set(routeIds.map(routeId => this.living(routeId).i));
+    pack.routes = pack.routes.filter(r => !removed.has(r.i));
+    this.relink(); // a cell pair links one route, so other routes through the same cells must be relinked
+    for (const key of this.connections.keys()) {
+      const [from, to] = key.split("-");
+      if (!pack.cells.routes[+from]?.[+to]) this.connections.delete(key);
     }
-
-    pack.routes = pack.routes.filter(r => r.i !== route.i);
   }
 
   getConnectivityRate(cellId: number): number {

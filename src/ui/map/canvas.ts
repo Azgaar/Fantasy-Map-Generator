@@ -3,7 +3,7 @@ import { Options } from "@/model/options/options-model";
 import { fitLegendBox } from "@/renderers/draw-legend";
 import { Layers } from "@/renderers/layers";
 import { setViewportSize, viewport } from "@/renderers/viewport/viewport";
-import { constrainZoom, resetZoom, setTranslateExtent, setZoomExtent } from "@/ui/map/zoom";
+import { constrainZoom, resetZoom, setTranslateExtent, setZoomExtent, updateFeatureMaskBounds } from "@/ui/map/zoom";
 import { findEl } from "@/utils/node-utils";
 
 /** Resize everything that covers the whole map to the graph extent */
@@ -46,6 +46,7 @@ export function setViewport(width: number, height: number): void {
 
   setTranslateExtent(0, 0, options.map.graph.width, options.map.graph.height);
   applyZoomExtent();
+  updateFeatureMaskBounds();
 
   const showViewport = (id: string, value: number) => {
     const input = findEl<HTMLInputElement>(id);

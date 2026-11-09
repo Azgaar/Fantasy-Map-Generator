@@ -8,7 +8,6 @@ import { changeMapZoom, panMap, resetZoom, setMapZoom } from "@/ui/map/zoom";
 import { t } from "@/utils/i18n";
 import { findEl } from "@/utils/node-utils";
 import { minmax } from "@/utils/number-utils";
-import { showInfo } from "./chrome/app-info";
 import { getLayerByShortcut } from "./chrome/tabs/layers-tab";
 import { regeneratePrompt } from "./lifecycle";
 
@@ -45,7 +44,7 @@ function handleKeyup(event: KeyboardEvent): void {
   const brush = getVisibleBrush();
 
   if (code === "Space") openOmnibar(event);
-  else if (code === "F1") showInfo();
+  else if (code === "F1") Services.ReleaseNotes.open();
   else if (code === "F2") regeneratePrompt();
   else if (code === "F6") Services.Save.toStorage();
   else if (code === "F9") Services.Load.quickLoad();
@@ -83,6 +82,7 @@ function handleKeyup(event: KeyboardEvent): void {
   else if ((shift || altShift) && code === "KeyG") Controllers.GoodsEditor.open();
   else if ((shift || altShift) && code === "KeyJ") Controllers.JourneysOverview.open();
   else if ((shift || altShift) && code === "KeyW") Controllers.WrapTool.open();
+  else if ((shift || altShift) && code === "KeyX") Controllers.DevelopmentEditor.open();
   else if ((shift || altShift) && code === "Equal" && !brush) Controllers.MeasurersEditor.open();
   else if (key === "!") Controllers.BurgCreator.toggle();
   else if (key === "@") Controllers.LabelCreator.toggle();

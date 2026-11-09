@@ -58,6 +58,17 @@ test("replacing keeps the id, framing edits only the frame, removing leaves refe
   expect(options.map.customIcons).toEqual([]);
 });
 
+test("an Armoria picture keeps its COA through framing, and drops it for another picture", () => {
+  const coa = { t1: "gules" };
+  const icon = CustomIcons.add({ kind: "svg", content: "<g/>", viewBox: "0 0 200 200", coa });
+  CustomIcons.update(icon.id, { viewBox: "10 10 180 180" });
+  expect(CustomIcons.get(icon.id)?.coa).toBe(coa);
+  CustomIcons.update(icon.id, { content: "<g id='new'/>", coa: { t1: "or" } });
+  expect(CustomIcons.get(icon.id)?.coa).toEqual({ t1: "or" });
+  CustomIcons.update(icon.id, { kind: "image", content: "https://a.b/c.png" });
+  expect(CustomIcons.get(icon.id)).not.toHaveProperty("coa");
+});
+
 test("any short text round-trips through its glyph reference", () => {
   for (const text of ["🏰", "XIV", "⟱", "🏴‍☠️", "💃🏽", "#️⃣", "a b"])
     expect(Icons.glyphText(Icons.glyph(text))).toBe(text);
@@ -104,7 +115,6 @@ test("every slot kind's uses of an icon are counted", () => {
     { ...options.map.relief.rules[0], icons: { mount: { weight: 1 }, "custom-a": { weight: 1 } } }
   ];
   globalThis.pack = {
-    goods: [{ icon: "goods-wood" }],
     markers: [{ icon: "custom-a" }, { icon: "custom-a" }],
     states: [{ i: 0 }, { i: 1, military: [{ icon: "custom-a" }], coa: { icon: "custom-a" } }],
     provinces: [{ i: 0 }, { i: 1, coa: { icon: "custom-a" } }],
@@ -123,6 +133,7 @@ test("every slot kind's uses of an icon are counted", () => {
       { icons: { "custom-a": { weight: 2 }, "custom-b": { weight: 1 } } }
     ]
   } as unknown as typeof pack;
+  options.map.goods = [{ icon: "goods-wood" }] as never;
 
   expect(Icons.uses("custom-a")).toEqual({
     marker: 2,

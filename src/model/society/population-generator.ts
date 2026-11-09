@@ -1,6 +1,7 @@
 import { max, mean, median, sum } from "d3";
-import { Goods } from "@/model/economy/goods-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
+import { Development } from "@/model/society/development-generator";
 import { isWater } from "@/utils/height-utils";
 import { normalize, rn } from "@/utils/number-utils";
 import { gauss } from "@/utils/probability-utils";
@@ -28,7 +29,9 @@ class PopulationModule {
     const meanFlux = median(cells.fl.filter(f => f)) || 0;
     const maxFlux = max(cells.fl)! + max(cells.conf)!; // to normalize flux
     const meanArea = mean(cells.area)!; // to adjust population by cell area
-    const getGoodValue = (i: number) => (cells.good?.[i] ? (Goods.get(cells.good[i])?.value ?? 0) : 0);
+    const goodValues: number[] = [];
+    for (const { i, value } of options.map.goods) goodValues[i] = value;
+    const getGoodValue = (i: number) => (cells.good?.[i] ? (goodValues[cells.good[i]] ?? 0) : 0);
 
     for (const i of cells.i) {
       if (isWater(i, pack)) continue; // no population in water
@@ -65,7 +68,9 @@ class PopulationModule {
 
   /** recalculate rural and urban population, keeping locked burgs */
   regenerate(): void {
+    const wasPeopled = Array.from(pack.cells.i, cell => Development.isPeopled(cell));
     this.rankCells();
+    Development.resettle(wasPeopled);
 
     pack.burgs.forEach(burg => {
       if (!burg.i || burg.removed || burg.lock) return;
@@ -116,6 +121,7 @@ class PopulationModule {
         4
       );
     }
+    Pack.markChanged();
   }
 }
 

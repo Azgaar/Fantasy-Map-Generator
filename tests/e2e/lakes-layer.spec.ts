@@ -113,7 +113,7 @@ test.describe("Lakes layer", () => {
         subtypeBefore,
         subtypeAfter: feature.subtype,
         group: feature.group,
-        parentAfterMove: use.parentElement?.id,
+        parentAfterMove: use.parentElement?.dataset.group,
       };
     });
 
@@ -125,7 +125,7 @@ test.describe("Lakes layer", () => {
     const parentAfterRedraw = await page.evaluate(featureId => {
       const win = window as any;
       win.FMG.Layers.draw("lakes");
-      return document.querySelector(`#lakes use[data-f="${featureId}"]`)?.parentElement?.id;
+      return document.querySelector(`#lakes use[data-f="${featureId}"]`)?.parentElement?.dataset.group;
     }, moved.featureId);
 
     expect(parentAfterRedraw).toBe("my_lakes");

@@ -331,11 +331,14 @@ export async function loadFontsAsDataURI(fonts: FontDefinition[]): Promise<FontD
   const promises = fonts.map(async font => {
     const url = font.src?.match(/url\(['"]?(.+?)['"]?\)/)?.[1];
     if (!url) return font;
-    const resp = await fetch(url);
-    const blob = await resp.blob();
-    const dataURL = await readBlobAsDataURL(blob);
-
-    return { ...font, src: `url('${dataURL}')` };
+    try {
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      return { ...font, src: `url('${await readBlobAsDataURL(blob)}')` };
+    } catch (error) {
+      log.warn(`Font ${url} is not embedded: it cannot be fetched`, error); // the rest of the export goes on
+      return font;
+    }
   });
 
   return await Promise.all(promises);

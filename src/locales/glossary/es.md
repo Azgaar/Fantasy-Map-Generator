@@ -7,9 +7,9 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 
 - Neutral Spanish for both Spain and Latin America: no _vosotros_, no regionalisms (_ordenador_ /
   _computadora_ are avoided by wording around them).
-- Address the user with **tú**: “¿Seguro que quieres eliminar el asentamiento?”.
+- Address the user with **tú**: “¿Seguro que quieres eliminar el poblado?”.
 - Buttons and menu items take the infinitive: “Guardar mapa”, “Eliminar todo”.
-- Tooltips take the imperative: “Haz clic para editar el asentamiento”, “Haz clic para ordenar por …”.
+- Tooltips take the imperative: “Haz clic para editar el poblado”, “Haz clic para ordenar por …”.
 - Questions and exclamations open with ¿ and ¡. Quotes are «…».
 - Capitalize only the first word of a label: “Editor de culturas”, not “Editor de Culturas”.
 - **Estado** (the polity) is always capitalized, so it is never read as “state, condition”.
@@ -22,12 +22,13 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 | English                         | Spanish                               | Note                                   |
 | ------------------------------- | ------------------------------------- | -------------------------------------- |
 | map                             | mapa                                  |                                        |
-| burg                            | asentamiento (m.)                     | any settlement, from hamlet to capital |
+| burg                            | poblado (m.)                          | any settlement, from hamlet to capital |
 | capital                         | capital                               |                                        |
 | port                            | puerto                                |                                        |
 | state                           | Estado                                | capitalized                            |
 | province                        | provincia                             |                                        |
 | culture                         | cultura                               |                                        |
+| development / era               | desarrollo / época                    | a people's technology level, 0–100     |
 | religion                        | religión                              |                                        |
 | namesbase                       | base de nombres (pl. bases de nombres) | the Tools button is “Nombres”         |
 | heightmap                       | mapa de alturas                       | the layer is “Alturas”                 |
@@ -50,8 +51,9 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 | hachures                        | líneas de achurado                    |                                        |
 | relief pool / relief rule       | conjunto de relieves / regla de relieve |                                      |
 | marker                          | marcador                              |                                        |
-| label / added label             | etiqueta / etiqueta añadida           |                                        |
-| label group                     | grupo de etiquetas                    |                                        |
+| label / added label             | rótulo (m.) / rótulo añadido          | never _etiqueta_, that is a tag        |
+| label group                     | grupo de rótulos                      |                                        |
+| tag                             | etiqueta                              |                                        |
 | zone                            | zona                                  |                                        |
 | emblem / coat of arms           | emblema / escudo de armas             |                                        |
 | heraldic / picture emblem       | emblema heráldico / emblema ilustrado |                                        |
@@ -84,6 +86,14 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                     | transacción / comercio                  |
 | treasury                         | tesoro                                  |
 | sales tax / poll tax             | impuesto sobre las ventas / capitación  |
+| prosperity / living standards    | prosperidad / nivel de vida             |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | mísero / indigente / pobre / modesto / holgado / próspero / acomodado / opulento / espléndido / sin par |
+| consumption / need / want        | consumo / necesidad / antojo            |
+| product (economy) / townspeople / rural people | producto / habitantes de los poblados / campesinos |
+| exports / imports / trade balance | exportaciones / importaciones / balanza comercial |
+| inequality / tax burden          | desigualdad / carga fiscal              |
+| sector: rural / manufacturing / trade | campo / oficios / comercio              |
+| economy type: agrarian / artisan / mercantile | agraria / artesana / mercantil          |
 
 ## Interface
 

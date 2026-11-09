@@ -7,7 +7,9 @@ import { LANGUAGE_CODES } from "@/data/languages";
 import { MAX_JITTER, SAMPLINGS } from "@/model/graph/lattice";
 import { Icons } from "@/model/icons";
 import type { LayerId } from "@/renderers/layers";
-import { log } from "@/utils/logger";
+import type { Good } from "@/types/economy";
+import type { HeraldicEmblem } from "@/types/emblems";
+import { DEBUG_MODES, log } from "@/utils/logger";
 import { count, degrees, hexColor, ids, nonNegative, percent, positive, ratio } from "@/utils/schema-utils";
 
 /** the map edit modes: while one is on, other editors, saving and regeneration stay off */
@@ -77,7 +79,8 @@ const militaryUnit = z.strictObject({
   biomes: ids,
   states: ids,
   cultures: ids,
-  religions: ids
+  religions: ids,
+  goods: ids
 });
 
 const transport = z.strictObject({
@@ -93,7 +96,8 @@ export const customIcon = z.strictObject({
   id: z.string().regex(/^custom-[\w-]+$/),
   kind: z.enum(["svg", "image"]),
   content: z.string(),
-  viewBox: z.string().refine(viewBox => Icons.parseFrame(viewBox) !== null)
+  viewBox: z.string().refine(viewBox => Icons.parseFrame(viewBox) !== null),
+  coa: z.custom<HeraldicEmblem>(value => z.looseObject({ t1: z.string() }).safeParse(value).success).optional()
 });
 
 /** a broken icon is dropped on its own, so it never costs the map its other icons; absent in older maps */
@@ -103,6 +107,20 @@ const customIcons = z.preprocess(value => {
   if (valid.length < value.length) log.warn(`Dropped ${value.length - valid.length} invalid custom icon(s)`);
   return valid;
 }, z.array(customIcon));
+
+const good = z.custom<Good>(value => z.looseObject({ i: z.number().int(), name: z.string() }).safeParse(value).success);
+
+/** a broken good is dropped on its own; absent in older maps, which keep goods outside the settings */
+const goods = z.preprocess(
+  value => (Array.isArray(value) ? value.filter(item => good.safeParse(item).success) : []),
+  z.array(good)
+);
+
+/** absent in older maps, which take the defaults */
+const eras = z.preprocess(
+  value => value ?? [],
+  z.array(z.strictObject({ level: z.number().int().min(1).max(100), name: z.string().min(1) }))
+);
 
 /** read at render time to build every feature outline */
 const coastlineSettings = z.strictObject({
@@ -164,6 +182,7 @@ const units = z.strictObject({
   area: z.strictObject({ unit: z.string() }),
   height: z.strictObject({ unit: z.string(), exponent: positive }),
   temperature: z.strictObject({ unit: z.string() }),
+  money: z.strictObject({ unit: z.string() }),
   population: z.strictObject({
     scale: positive,
     urbanization: z.strictObject({ rate: nonNegative, density: positive })
@@ -187,7 +206,9 @@ export const mapSchema = z.strictObject({
   labels: z.strictObject({ groups: z.array(labelGroup) }),
   military: z.strictObject({ units: z.array(militaryUnit) }),
   transports: z.array(transport),
+  eras,
   customIcons,
+  goods,
   coastline: coastlineSettings,
   relief: z.strictObject({ rules: z.array(reliefRule) }),
   viewOnly: z.boolean().optional()
@@ -240,6 +261,7 @@ export const optionsSchema = z.strictObject({
       viewportRedraw: z.enum(["continuous", "settled"])
     }),
     onLoad: z.enum(["random", "lastSaved"]), // what the app does with no map asked for
+    debug: z.array(z.enum(DEBUG_MODES)), // diagnostics on: they may draw or record more, never change the map file
     language: z.union([z.literal(""), z.enum(LANGUAGE_CODES)]), // the interface language, "" follows the browser
     zoomExtent: z.strictObject({ min: positive, max: positive }).refine(({ min, max }) => min <= max, {
       message: "zoomExtent.min must not exceed max"
@@ -261,7 +283,6 @@ export const optionsSchema = z.strictObject({
     }),
     trade: z.strictObject({
       animation: z.strictObject({
-        displayType: z.enum(["local", "global", "both"]),
         concurrent: count.positive(),
         duration: positive,
         landDurationModifier: nonNegative,
@@ -335,6 +356,7 @@ export const pinSchemas: Record<string, z.ZodType> = {
   heightUnit: units.shape.height.shape.unit,
   heightExponent: units.shape.height.shape.exponent,
   temperatureScale: units.shape.temperature.shape.unit,
+  moneyUnit: units.shape.money.shape.unit,
   populationRate: units.shape.population.shape.scale,
   urbanization: units.shape.population.shape.urbanization.shape.rate,
   urbanDensity: units.shape.population.shape.urbanization.shape.density

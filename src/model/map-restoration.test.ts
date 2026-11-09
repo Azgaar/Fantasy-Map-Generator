@@ -6,6 +6,7 @@ import { Relief } from "@/model/physical/relief-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Provinces } from "@/model/political/provinces-generator";
+import { Development } from "@/model/society/development-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import type { PackedGraph } from "@/types/packed-graph";
 import { createAvailableLandCellFinder, MapRestoration } from "./map-restoration";
@@ -25,8 +26,10 @@ const internals = MapRestoration as unknown as {
   restoreProvinces(parent: PackedGraph, projection: Projection): void;
   restoreRoutes(parent: PackedGraph, projection: Projection, featureIds: Map<number, number>): void;
   restoreZones(parent: PackedGraph, links: Links): void;
+  restoreDevelopment(parent: PackedGraph, links: Links): void;
   fillPathGaps(points: [number, number, number][]): [number, number, number][];
   restoreJourneys(parent: PackedGraph, projection: Projection): void;
+  expandMarkets(): void;
 };
 
 const identity: Projection = (x, y) => [x, y];
@@ -597,6 +600,7 @@ describe("restoreJourneys", () => {
     // cells 20 apart are neighbors too, so the points below need no filling
     const c = Array.from({ length: 101 }, (_, i) => [i - 1, i + 1, i - 20, i + 20]);
     vi.stubGlobal("pack", graph({ cells: { c } }));
+    vi.stubGlobal("grid", { spacing: 10 });
   });
 
   // parent point (30, 30) lands at (10, 10); parent point (10, 10) lands off-map at (-30, -30)
@@ -655,6 +659,33 @@ describe("restoreJourneys", () => {
     });
   });
 
+  it("keeps a segment that ends at a port just off the edge, as its route keeps it", () => {
+    Object.assign(Pack, { findCell: (x: number) => (x < 0 ? 9 : Math.round(x)) }); // off the edge, the edge cell by 10
+    const parent = graph({
+      cells: { p: { 7: [30, 30], 11: [22, 30] } },
+      journeys: [
+        {
+          i: 0,
+          name: "to the edge port",
+          segments: [
+            segment(0, [
+              [30, 30, 7],
+              [22, 30, 11] // projects to (-6, 10): off the map, within a cell spacing
+            ])
+          ]
+        }
+      ]
+    });
+
+    internals.restoreJourneys(parent, projection);
+
+    expect(pack.journeys[0].segments).toHaveLength(1);
+    expect(pack.journeys[0].segments[0].points.map(([x, y]) => [x, y])).toEqual([
+      [10, 10],
+      [-6, 10]
+    ]);
+  });
+
   it("restores an empty array when the snapshot has no journeys", () => {
     internals.restoreJourneys(graph({}), projection);
     expect(pack.journeys).toEqual([]);
@@ -668,16 +699,16 @@ describe("restoreRiverData", () => {
       graph({
         cells: { r: Uint16Array.from([1, 1, 1, 2, 2, 0]) },
         rivers: [
-          { i: 1, name: "Generated", type: "River", tags: [] },
-          { i: 2, name: "Other", type: "Creek", tags: [] }
+          { i: 1, name: "Generated", type: "River", group: "regular", tags: [] },
+          { i: 2, name: "Other", type: "Creek", group: "regular", tags: [] }
         ]
       })
     );
     const parent = graph({
       cells: { r: Uint16Array.from([7, 7, 7, 7, 0, 8]) },
       rivers: [
-        { i: 7, name: "Seven", type: "Brook", note: "Old", label: { pathPoints: [[0, 0]] } },
-        { i: 8, name: "Eight", type: "Fork" }
+        { i: 7, name: "Seven", type: "Brook", group: "lava", note: "Old", label: { pathPoints: [[0, 0]] } },
+        { i: 8, name: "Eight", type: "Fork", group: "frozen" }
       ]
     });
 
@@ -687,11 +718,12 @@ describe("restoreRiverData", () => {
       i: 1,
       name: "Seven",
       type: "Brook",
+      group: "lava",
       note: "Old",
       tags: [],
       label: { pathPoints: [[5, 0]] }
     });
-    expect(pack.rivers[1]).toMatchObject({ name: "Other", type: "Creek" }); // only a bit of Seven's course
+    expect(pack.rivers[1]).toMatchObject({ name: "Other", type: "Creek", group: "regular" }); // only a bit of Seven's course
   });
 
   it("leaves locked rivers out: they keep their own data", () => {
@@ -858,5 +890,66 @@ describe("restoreLockedRivers", () => {
         { i: 5, cells: [0, 1, 2], widthFactor: 1 }
       ])
     ).toEqual([]);
+  });
+});
+
+describe("expandMarkets", () => {
+  it("gives land no kept market reaches a market centered at its most populous burg", () => {
+    // two strips of land the graph does not link, as across deep water
+    const cells = lineCells([25, 25, 25, 25, 25]);
+    cells.c = [[1], [0, 2], [1], [4], [3]];
+    const n = cells.i.length;
+    vi.stubGlobal(
+      "pack",
+      graph({
+        cells: { ...cells, f: new Uint16Array(n).fill(1), state: new Uint16Array(n), good: new Uint16Array(n) },
+        burgs: [
+          {},
+          { i: 1, cell: 0, population: 1 },
+          { i: 2, cell: 3, population: 2 },
+          { i: 3, cell: 4, population: 5 }
+        ],
+        markets: [{ i: 1, centerBurgId: 1, color: "", goods: {} }]
+      })
+    );
+
+    internals.expandMarkets();
+
+    expect(pack.markets.map(market => market.centerBurgId)).toEqual([1, 3]);
+    expect(Array.from(pack.cells.market)).toEqual([1, 1, 1, 2, 2]);
+  });
+});
+
+describe("restoreDevelopment", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("keeps painted levels on their cells, generates new land and settles a burg moved to empty land", () => {
+    vi.stubGlobal(
+      "pack",
+      graph({ cells: { ...lineCells([30, 30, 30, 30, 10]), pop: [1, 1, 1, 1, 0], burg: [0, 0, 0, 1, 0] } })
+    );
+    vi.spyOn(Development, "generate").mockImplementation(() => {
+      pack.cells.development = Uint8Array.from([7, 7, 7, 7, 0]);
+    });
+    const parent = graph({
+      cells: { development: Uint8Array.from([40, 0, 25, 3, 0]), pop: [1, 1, 1, 1, 0], burg: [0, 0, 0, 0, 0] }
+    });
+
+    internals.restoreDevelopment(parent, links([0, 1, -1, 3, 4]));
+
+    // painted 40 and 0 kept, new land generated, the moved burg's cell raised to a town's least
+    expect([...pack.cells.development!]).toEqual([40, 0, 7, 5, 0]);
+  });
+
+  it("generates land newly peopled where the snapshot had nobody", () => {
+    vi.stubGlobal("pack", graph({ cells: { ...lineCells([30, 30]), pop: [1, 1], burg: [0, 0] } }));
+    vi.spyOn(Development, "generate").mockImplementation(() => {
+      pack.cells.development = Uint8Array.from([7, 7]);
+    });
+    const parent = graph({ cells: { development: Uint8Array.from([0, 20]), pop: [0, 1], burg: [0, 0] } });
+
+    internals.restoreDevelopment(parent, links([0, 1]));
+
+    expect([...pack.cells.development!]).toEqual([7, 20]);
   });
 });

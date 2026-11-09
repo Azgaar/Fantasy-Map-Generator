@@ -53,14 +53,6 @@ export const BRIDGE_ADJECTIVES = {
   weathered: 1
 };
 
-export const BRIDGE_DECLINE_REASONS = [
-  "its collapse during the flood",
-  "being rumoured to attract trolls",
-  "the drying up of local trade",
-  "banditry infested the area",
-  "the old waypoints crumbled"
-];
-
 export const INN_COLORS = [
   "Dark",
   "Light",

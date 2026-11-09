@@ -12,11 +12,21 @@ import { AddedLabels } from "@/model/annotations/added-labels";
 import { Labels } from "@/model/annotations/labels-generator";
 import { Legends } from "@/model/annotations/legends";
 import { Measurers } from "@/model/annotations/measurers-generator";
+import { Accounts } from "@/model/economy/accounts";
+import { Corruption } from "@/model/economy/corruption";
+import { DEAL_KINDS, Deals } from "@/model/economy/deals";
+import { EconomyDebug } from "@/model/economy/economy-debug";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { Output } from "@/model/economy/output";
 import { Production } from "@/model/economy/production-generator";
+import { Prosperity } from "@/model/economy/prosperity";
 import { Routes } from "@/model/economy/routes-generator";
-import { Transports } from "@/model/economy/transports-generator";
+import { StateOrders } from "@/model/economy/state-orders";
+import { Taxes } from "@/model/economy/taxes";
+import { Trade } from "@/model/economy/trade";
+import { TradeRoutes } from "@/model/economy/trade-routes";
+import { TradeTraffic } from "@/model/economy/trade-traffic";
 import { ErasePipeline, GenerationPipeline } from "@/model/generation-pipeline";
 import { GraphOverride } from "@/model/graph/graph-override";
 import { Grid } from "@/model/graph/grid-generator";
@@ -45,14 +55,17 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { Military } from "@/model/political/military-generator";
 import { Provinces } from "@/model/political/provinces-generator";
+import { Stability } from "@/model/political/stability";
 import { States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Resample } from "@/model/resample";
 import { Cultures } from "@/model/society/cultures-generator";
+import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
+import { Transports } from "@/model/story/journeys/transports-generator";
 import { Lore } from "@/model/story/lore";
 import { Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
@@ -122,12 +135,14 @@ const FMG = {
   speak,
   getFileName,
   VERSION,
+  DEAL_KINDS,
   mapHistory,
   log,
   fonts,
   heightmapTemplates,
   precreatedHeightmaps,
 
+  Accounts,
   AddedLabels,
   Biomes,
   Burgs,
@@ -135,11 +150,15 @@ const FMG = {
   Coordinates,
   Cultures,
   CustomIcons,
+  Deals,
+  Development,
+  EconomyDebug,
   Emblems,
   ErasePipeline,
   Features,
   GenerationPipeline,
   Goods,
+  Corruption,
   GraphOverride,
   Grid,
   HeightmapGenerator,
@@ -162,21 +181,29 @@ const FMG = {
   Notes,
   Ocean,
   Options,
+  Output,
   Pack,
   Pins,
   Population,
   Precipitation,
   Production,
+  Prosperity,
   Provinces,
   Relief,
   Religions,
   Resample,
   Rivers,
   Routes,
+  Stability,
+  StateOrders,
   States,
   Styles,
   Tags,
+  Taxes,
   Temperature,
+  Trade,
+  TradeRoutes,
+  TradeTraffic,
   Transports,
   Zones,
 

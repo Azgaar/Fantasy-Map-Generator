@@ -3,6 +3,7 @@
 import { emojiName } from "@/data/icons-list";
 import { type IconSetId, IconSets } from "@/model/icon-sets";
 import { Options } from "@/model/options/options-model";
+import type { HeraldicEmblem } from "@/types/emblems";
 import type { IconPaint } from "@/types/icons";
 import { sanitizeSvgIcon } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
@@ -18,7 +19,7 @@ type IconOwner = { icon?: string };
 
 /** the slots that reference icons, as `Icons.uses` counts them: their name and their owners */
 const SLOTS = {
-  good: { label: t("goods"), owners: () => pack.goods ?? [] },
+  good: { label: t("goods"), owners: () => options.map.goods },
   marker: { label: t("markers"), owners: () => pack.markers ?? [] },
   regiment: {
     label: t("regiments"),
@@ -61,6 +62,7 @@ export interface CustomIcon {
   kind: "svg" | "image";
   content: string; // svg: sanitised, scoped markup; image: http(s) URL or data: URI
   viewBox: string; // the icon frame, "x y w h"; an image is letterboxed in 0 0 100 100
+  coa?: HeraldicEmblem; // an Armoria picture: the COA it renders, so it opens in Armoria again
 }
 
 export type IconPicture = Omit<CustomIcon, "id">;
@@ -101,6 +103,7 @@ class CustomIconList {
     const icon = this.get(id);
     if (!icon) return;
     Object.assign(icon, patch);
+    if (patch.content !== undefined && !patch.coa) delete icon.coa; // a new picture no longer renders the COA
     this.changed(id);
   }
 

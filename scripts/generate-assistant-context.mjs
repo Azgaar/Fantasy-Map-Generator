@@ -83,10 +83,15 @@ function globalDeclarations() {
   return ["declare const FMG: {", ...fmgMembers().map(line => `  ${line}`), "};"].join("\n");
 }
 
-// the generator singletons; the Globals doc lists the rest
+// the generator singletons and what reads the economy; the Globals doc lists the rest
+const ECONOMY_READERS = ["Accounts", "Corruption", "Deals", "Prosperity", "Stability", "Taxes"];
 function generatorNames() {
   const names = [...fmgImports]
-    .filter(([name, path]) => /^[A-Z]/.test(name) && path.startsWith("src/model/") && path.endsWith("-generator.ts"))
+    .filter(
+      ([name, path]) =>
+        ECONOMY_READERS.includes(name) ||
+        (/^[A-Z]/.test(name) && path.startsWith("src/model/") && path.endsWith("-generator.ts"))
+    )
     .map(([name]) => name);
   return [...new Set(names)].sort().join(", ");
 }

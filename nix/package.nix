@@ -19,6 +19,8 @@ buildNpmPackage {
       # bundled into the assistant via ?raw imports
       ../docs/architecture/configuration.md
       ../docs/architecture/data-model.md
+      # the latest-update plugin in vite.config.ts reads the newest note
+      ../docs/updates
       ../docs/wiki
       ../electron
       ../package.json

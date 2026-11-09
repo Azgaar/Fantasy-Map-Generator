@@ -1,7 +1,7 @@
 # Benchmark
 
-`npm run benchmark` measures a change against the commit it branched from: the same map is generated,
-drawn, zoomed and panned on both builds, and the report says what got slower.
+`npm run benchmark` measures a change against the commit it branched from: the same seed is generated and
+the same map file drawn, zoomed and panned on both builds, and the report says what got slower.
 
 ## What is compared
 
@@ -16,10 +16,15 @@ same machine.
 
 One map: seed `benchmark`, 10k cells, a 1280×720 viewport, the default style and layers.
 
+Generation is timed from the seed. Everything else runs on one map file: the before build generates the
+seed and saves it, and both builds open that file. A change to what generation makes, such as bigger
+states, would otherwise read as slower drawing, zooming and panning of a map that is no longer the same.
+The file comes from the before build because an older build may not open a newer file.
+
 | Total            | What it is                                                                        |
 | ---------------- | --------------------------------------------------------------------------------- |
 | Generate the map | the Generation Pipeline, start to end                                             |
-| Draw the map     | every layer draw during load, summed                                              |
+| Draw the map     | every layer draw while the map file opens, summed                                 |
 | Zoom: page work  | main-thread time of zooming in to the 20× maximum and back out, at three spots    |
 | Zoom: painting   | raster time of the same zooms                                                     |
 | Pan: page work   | main-thread time of one 100-step drag around a 400×300 px square at 20×           |

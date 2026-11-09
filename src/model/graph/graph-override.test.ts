@@ -196,6 +196,52 @@ describe("GraphOverride", () => {
     });
   });
 
+  it("finds a renumbered vertex by its generated position", () => {
+    GraphOverride.movePackVertex(0, [12, 13]);
+    GraphOverride.movePackVertex(2, [22, 2]);
+    const state = structuredClone(GraphOverride.state);
+
+    // reGraph that renumbers the vertices: the central one moves to id 4, vertex 2 is generated elsewhere
+    const rebuilt = createGraph();
+    rebuilt.vertices.p = [
+      [0, 0],
+      [20, 1],
+      [20, 20],
+      [0, 20],
+      [10, 10 + 1e-9]
+    ];
+    rebuilt.cells.v = [
+      [4, 0, 1],
+      [4, 1, 2],
+      [4, 2, 3],
+      [4, 3, 0]
+    ];
+    rebuilt.vertices.c = [
+      [0, 3],
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [0, 1, 2, 3]
+    ];
+    globalThis.pack = rebuilt as unknown as typeof globalThis.pack;
+    GraphOverride.restore(state);
+
+    expect(pack.vertices.p[4]).toEqual([12, 13]);
+    expect(pack.vertices.p[1]).toEqual([20, 1]);
+    expect(GraphOverride.state).toEqual({
+      pack: {
+        vertices: {
+          p: {
+            4: [
+              [10, 10],
+              [12, 13]
+            ]
+          }
+        }
+      }
+    });
+  });
+
   it("preserves ocean area as cell-area sum when a vertex is moved", () => {
     globalThis.pack = createGraphWithOcean() as unknown as typeof globalThis.pack;
     GraphOverride.revert();

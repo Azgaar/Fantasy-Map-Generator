@@ -21,6 +21,7 @@ export const CELL_FIELDS: Record<string, CellField> = {
   religion: { label: t("Religion"), layers: ["religions"], references: "religion" },
   biome: { label: t("Biome"), layers: ["biomes"], references: "biome" },
   pop: { label: t("Rural population"), layers: ["population"] },
+  development: { label: t("Development"), layers: [] },
   r: { label: t("River"), layers: ["rivers"], references: "river" },
   fl: { label: t("Water flux"), layers: ["rivers"] },
   conf: { label: t("Confluence"), layers: ["rivers"] },

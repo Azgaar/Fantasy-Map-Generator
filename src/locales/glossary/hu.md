@@ -30,6 +30,7 @@ Terms every `hu.json` string uses the same way. Rules for all catalogs are in
 | state                           | állam                                   |                                                   |
 | province                        | tartomány                               |                                                   |
 | culture                         | kultúra                                 |                                                   |
+| development / era               | fejlettség / korszak                    | a people's technology level, 0–100                |
 | religion                        | vallás                                  |                                                   |
 | namesbase                       | névbázis                                |                                                   |
 | heightmap                       | magassági térkép                        | the layer is “Magasság”                           |
@@ -108,6 +109,14 @@ Terms every `hu.json` string uses the same way. Rules for all catalogs are in
 | wealth / gross product           | gazdagság / bruttó termék                |
 | treasury                         | kincstár                                 |
 | sales tax / poll tax             | forgalmi adó / fejadó                    |
+| prosperity / living standards    | jólét / életszínvonal                    |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | nyomorúságos / nincstelen / szegény / szerény / kényelmes / virágzó / tehetős / fényűző / pompás / páratlan |
+| consumption / need / want        | fogyasztás / szükséglet / vágy           |
+| product (economy) / townspeople / rural people | termék / városlakók / falusiak           |
+| exports / imports / trade balance | kivitel / behozatal / kereskedelmi mérleg |
+| inequality / tax burden          | egyenlőtlenség / adóteher                |
+| sector: rural / manufacturing / trade | vidék / kézművesség / kereskedelem       |
+| economy type: agrarian / artisan / mercantile | földművelő / kézműves / kereskedő        |
 
 ## Interface
 

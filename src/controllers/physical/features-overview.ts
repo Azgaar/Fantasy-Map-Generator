@@ -110,6 +110,7 @@ function getFilteredFeatures(): Feature[] {
 }
 
 const featuresTable = initEditorTable<Feature>({
+  dialogId,
   getData: () => sortDataByColumns(dialogId, getFilteredFeatures(), columns),
   onUpdate: renderFeaturesPage
 });
@@ -184,9 +185,6 @@ function renderDialog(): void {
 function closeFeaturesOverview(): void {
   Dialog.destroy(dialogId);
   oceanPaths.clear();
-  const view = featuresTable.view();
-  view.rows = [];
-  view.all = [];
 }
 
 function refreshOverview(): void {

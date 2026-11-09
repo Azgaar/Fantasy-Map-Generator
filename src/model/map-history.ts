@@ -1,3 +1,4 @@
+import { Pins } from "@/model/options/pins";
 import { log } from "@/utils/logger";
 
 interface MapHistoryEntry {
@@ -5,6 +6,7 @@ interface MapHistoryEntry {
   width: number;
   height: number;
   template: string;
+  templatePinned: boolean; // a pin skips the template's roll, so a seed restores only with it
   created: number;
   /** when this entry was put on screen in this session, unlike `created` never backdated to a loaded file's own timestamp */
   registeredAt: number;
@@ -21,6 +23,7 @@ export function registerMap(created: number = Date.now()): void {
     width: options.map.graph.width,
     height: options.map.graph.height,
     template: options.generation.template,
+    templatePinned: Pins.has("template"),
     created: created,
     registeredAt: Date.now()
   });

@@ -1,5 +1,6 @@
 import { Controllers } from "@/controllers";
 import { effectAt } from "@/controllers/style/effects";
+import { Pack } from "@/model/graph/pack-generator";
 import { MapEntities } from "@/model/map-entities";
 import { Options } from "@/model/options/options-model";
 import { Styles } from "@/model/styles/styles";
@@ -127,6 +128,7 @@ class ProposalLifecycle {
   private label(key: string, fallback: string): string {
     if (key === Change.LORE) return "Map lore";
     if (key === Change.STYLE) return "Style";
+    if (key === Change.DEALS) return "Trade deals";
     const ref = MapEntities.parseKey(key);
     if (!ref) return "Cells";
     const { kind } = MapEntities.getDisplay(ref);
@@ -137,13 +139,12 @@ class ProposalLifecycle {
   private refresh(change: Change): void {
     Layers.draw(...change.layers);
     this.refreshStyle(change.stylePaths);
+    Pack.markChanged(); // the draft's edits forgot only the draft's numbers
+    Options.save();
     refreshEditors();
     for (const key of change.keys) this.refreshNameInputs(key);
     if (findEl("notesEditor")) void Controllers.NotesEditor.refresh();
-    if (change.keys.has(Change.LORE)) {
-      Options.save();
-      if (findEl("loreEditor")) void Controllers.LoreEditor.refresh();
-    }
+    if (change.keys.has(Change.LORE) && findEl("loreEditor")) void Controllers.LoreEditor.refresh();
   }
 
   /** Run what each changed style value declares (see style-editor/effects), drawing each layer once */

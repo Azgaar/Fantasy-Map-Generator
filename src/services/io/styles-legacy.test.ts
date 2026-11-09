@@ -66,7 +66,7 @@ test("unknown selector throws by default, skips on request", () => {
 
 test('the string "null" converts to a real null', () => {
   const styles = presetFromLegacy({ "#rivers": { opacity: "null" } } as any, { onUnknown: "skip" });
-  expect(styles.rivers.attrs.opacity).toBeNull();
+  expect(styles.rivers.groups.regular.attrs.opacity).toBeNull();
 });
 
 test("R5: an attribute absent from the legacy bag keeps the default, not null", () => {
@@ -214,7 +214,7 @@ test("presetBagFor reads a legacy '#'-keyed preset bag directly", () => {
 });
 
 test("presetBagFor resolves a store-format preset through the selector route table", () => {
-  const preset = { map: {}, rivers: { attrs: { opacity: 0.7, filter: null } } };
+  const preset = { map: {}, rivers: { groups: { regular: { attrs: { opacity: 0.7, filter: null } } } } };
   expect(presetBagFor(preset, "#rivers")).toEqual({ opacity: 0.7, filter: null });
 });
 
@@ -245,19 +245,34 @@ test("normalizeStyles folds the pre-1.154 fixed children under their element's g
 
 test("normalizeStyles converts legacy CSS colors to hex", () => {
   const record: any = {
-    rivers: { attrs: { fill: "rgb(18, 52, 86)", stroke: "rgba(0, 0, 0, 0.5)", filter: "url(#dropShadow05)" } },
+    landmass: { attrs: { fill: "rgb(18, 52, 86)", stroke: "rgba(0, 0, 0, 0.5)", filter: "url(#dropShadow05)" } },
     ocean: { groups: { base: { attrs: { fill: "#466eab" } } }, options: { color: "rgb(1, 2, 3)" } }
   };
 
   normalizeStyles(record);
 
-  expect(record.rivers.attrs).toEqual({
+  expect(record.landmass.attrs).toEqual({
     fill: "#123456",
     stroke: "#00000080",
     filter: "url(#dropShadow05)"
   });
   expect(record.ocean.groups.base.attrs.fill).toBe("#466eab");
   expect(record.ocean.options.color).toBe("#010203");
+});
+
+test("normalizeStyles moves the pre-1.157 rivers style into the default group, beside the stock groups", () => {
+  const record: any = { rivers: { attrs: { opacity: 0.8, fill: "#123456", filter: null } } };
+
+  normalizeStyles(record);
+
+  expect(record.rivers.attrs).toBeUndefined();
+  expect(Object.keys(record.rivers.groups)).toEqual(Object.keys(Styles.defaults.rivers.groups));
+  expect(record.rivers.groups.regular.attrs).toEqual({
+    ...Styles.defaults.rivers.groups.regular.attrs,
+    opacity: 0.8,
+    fill: "#123456"
+  });
+  expect(record.rivers.groups.lava).toEqual(Styles.defaults.rivers.groups.lava);
 });
 
 test("normalizeStyles merges the two burg records into one entry per group", () => {

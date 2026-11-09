@@ -145,7 +145,7 @@ source credits when redrawing an icon.
 
 The goods icons style sets the lines: `stroke` is their colour and `stroke-width` the circle outline, the icon
 lines drawn at 40% of it. `goodIconLines()` (`renderers/draw-goods.ts`) carries that width into the icon frame
-at the marker's proportions and writes both on every goods `<use>` — markers, burg plates and the interface,
+at the marker's proportions and writes both on every goods `<use>` — markers and the interface,
 where `goodBadge(good)` draws a good on its circle — so a good looks the same wherever it is drawn.
 
 ## Editing artwork
@@ -173,7 +173,7 @@ written (`Icons.href`). `Icons` is the one entry point for a reference, whatever
 - **Custom icons** — `custom-<8 hex>` (`custom-goods-<id>` for uploads kept from older maps), the
   pictures in `options.map.customIcons` (`CustomIcons`, beside `Icons` in `model/icons.ts`), which this browser
   keeps in IndexedDB rather than `localStorage` ([configuration](configuration.md)). Each is SVG markup or an image
-  URL with its frame. `Icons.syncCustom()` rebuilds the `custom` group from the list
+  URL with its frame; an Armoria picture also keeps the `coa` it renders, dropped when the picture is replaced. `Icons.syncCustom()` rebuilds the `custom` group from the list
   on generation and after a load; `CustomIcons` rebuilds one icon's symbol on every add, update and remove. SVG content is sanitised again on the way, since a
   file may carry anything, and an image must be an `http(s)` or `data:image/` URL.
 
@@ -247,9 +247,16 @@ fixed; custom art gets no outline; a raster keeps its colours. Picking an icon f
 charge (`Emblems.chargeOf` stores a charge set icon by its name, so blazons stay Armoria's); Shape _None_ turns
 that charge into a Picture emblem, and choosing a shape puts a picture back on a field as its charge.
 
-`controllers/political/emblems/armoria.ts` reads Armoria edit links, API links and COA strings without the DOM. The
-drawability check in `drawability.ts` uses the renderer's known names. Drawable COAs stay heraldic; others
-link Armoria's SVG API render. The GUI and API URLs are constants in the reader.
+`Armoria` (`model/political/armoria.ts`) reads Armoria edit links, API links and COA strings without the DOM. The
+drawability check in `drawability.ts` uses the renderer's known names. Drawable COAs stay heraldic; a pasted
+COA that is not drawable is refused, and one from an Armoria session keeps the SVG Armoria sent. FMG makes no API
+requests: API links are read only for their COA, and older maps' linked API pictures become blazons on load where
+drawable. The GUI and API URLs are constants in the reader.
+A single-emblem download from Armoria keeps its COA inside the file: a `<metadata class="armoria-coa">` element
+in SVG, an uncompressed `iTXt` chunk with the keyword `armoria-coa` in PNG, a `COM` segment starting
+`armoria-coa:` in JPEG. `Armoria.fileCoa` reads it from the original upload, before sanitising or re-encoding
+drop it, and `IconPictures.fromFile` keeps it as the icon's `coa` for the emblem profile. Picking such a picture for
+an emblem draws its COA when drawable, and the unused upload goes; otherwise the picture is the whole emblem.
 For local round-trip testing, `VITE_ARMORIA_GUI` can point an FMG development server at a local Armoria
 server (the `armoria` and `dev-armoria` preview configurations do this); production builds always use the
 published GUI origin.
@@ -259,8 +266,9 @@ Armoria opened from FMG receives `from=FMG`, a `session` and `returnOrigin`. It 
 and redo, once editing pauses for half a second; the unchanged original is not sent. FMG accepts an update only
 from the GUI origin recorded for that session, with the session's token, while the same map is loaded; a session
 stays live until the emblem opens in Armoria again. Updates of one session apply in order. A drawable COA
-replaces the blazon; otherwise FMG sanitises the returned SVG into a Custom icon, one per session that later
-updates replace, removed once a drawable update leaves it unused.
+replaces the blazon; otherwise FMG sanitises the returned SVG into a Custom icon with its COA, so the picture
+opens in Armoria again. An emblem that alone shows such a picture redraws it in place on later updates, and any
+editor change that leaves an Armoria picture (one with a `coa` or an API link) unused removes it.
 Armoria keeps recoloured and added tinctures in its own palette, so it sends each of them as its hex colour, as
 its API accepts (`{ "t1": "#228833" }`, or `vair-#228833-or` inside a pattern); default tinctures keep their
 names. An emblem therefore carries its exact shades, and reopening it in Armoria shows them. The renderer and the
@@ -277,7 +285,7 @@ migrates old relief ids (`relief-mount-3-bw`) into descriptors after the style m
 against the incoming map's styles, and renames `#icon-<name>` to `#burgs-atlas-<name>` (or `#burgs-<name>`
 for names that already carried their style) / `#ports-<name>` in
 style records (`styles-legacy.ts`, so presets are covered too), `good-<name>` to `goods-<name>` and
-`good-custom-<id>` to `custom-goods-<id>` in `pack.goods` and field 45.
+`good-custom-<id>` to `custom-goods-<id>` in the goods and field 45.
 
 Version 1.154.0 made every slot a bare icon reference. The 1.154.0 auto-update step migrates an older map,
 and startup (`adoptLegacyIconSlots` after restoring the options) migrates the unit types a browser keeps between maps:

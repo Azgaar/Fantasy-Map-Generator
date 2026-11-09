@@ -28,6 +28,7 @@ Terms every `af.json` string uses the same way. Rules for all catalogs are in
 | state                         | staat (pl. state)                  |                                       |
 | province                      | provinsie                          |                                       |
 | culture                       | kultuur (pl. kulture)              |                                       |
+| development / era             | ontwikkeling / tydperk             | a people's technology level, 0–100    |
 | religion                      | godsdiens (pl. godsdienste)        |                                       |
 | namesbase                     | naambasis (pl. naambasisse)        |                                       |
 | heightmap                     | hoogtekaart                        |                                       |
@@ -93,6 +94,16 @@ Terms every `af.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                     | transaksie / handel                    |
 | treasury                         | skatkis                                |
 | sales tax / poll tax             | verkoopbelasting / hoofbelasting       |
+| prosperity / living standards    | welvaart / lewenstandaard              |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | berooid / behoeftig / arm / beskeie / gemaklik / florerend / welgesteld / weelderig / luisterryk / weergaloos |
+| consumption / need / want        | verbruik / behoefte / begeerte         |
+| product (economy) / townspeople / rural people | produk / stedelinge / plattelanders    |
+| exports / imports / trade balance | uitvoer / invoer / handelsbalans       |
+| inequality / tax burden          | ongelykheid / belastinglas             |
+| sector: rural / manufacturing / trade | platteland / ambagte / handel          |
+| economy type: agrarian / artisan / mercantile | landbou / ambag / handel               |
+| carriage / tariff / market license | vervoerkoste / tarief / marklisensie |
+| decima / upkeep                  | desima / onderhoud                     |
 
 ## Interface
 

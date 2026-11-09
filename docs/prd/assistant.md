@@ -510,7 +510,7 @@ Names follow one pattern: `rename`, `recolor`, `set<Field>`, `add`, `create` or 
 | Relocate                                                              | `Burgs.move(burgId, x, y)`                     | Registered |
 | Add (Burg creator)                                                    | `Burgs.add(x, y)`                              | Registered |
 | Remove                                                                | `Burgs.remove(burgId)`                         | Registered |
-| Treasury                                                              | `Burgs.setTreasury(burgId, amount)`            | Registered |
+| Adjustments                                                           | `Burgs.setAdjustments(burgId, adjustments)`    | Registered |
 | Lock                                                                  | `Burgs.setLocked(burgId, locked)`              | Registered |
 | Custom preview link                                                   | `Burgs.setLink(burgId, url)`                   | Registered |
 | Regenerate names, import names, lock all, remove all (Burgs overview) | `rename`, `setLocked`, `remove`                | Batch      |
@@ -529,7 +529,7 @@ Names follow one pattern: `rename`, `recolor`, `set<Field>`, `add`, `create` or 
 | Remove                                                        | `States.remove(stateId)`                                                                                                                                   | Registered |
 | Capital                                                       | `Burgs.setCapital(burgId)`                                                                                                                                 | Registered |
 | Merge keeping the merged states as provinces                  | `States.merge(rulingId, stateIds, asProvinces)`                                                                                                            | Registered |
-| Sales tax, poll tax, treasury                                 | `States.setTaxes(stateId, salesTax, pollTax)`, `setTreasury(stateId, amount)`                                                                              | Registered |
+| Sales tax, poll tax, adjustments                              | `States.setTaxes(stateId, salesTax, pollTax)`, `setAdjustments(stateId, adjustments)`                                                                        | Registered |
 | Lock                                                          | `States.setLocked(stateId, locked)`                                                                                                                        | Registered |
 | Chronicle entry (Diplomacy overview history)                  | `States.setChronicleEntry(index, lines)`                                                                                                                   | Registered |
 | Paint cells (States editor brush)                             | `States.setCells(stateId, cells)`                                                                                                                          | Registered |

@@ -32,9 +32,12 @@ export const requireColor = (value: unknown): string => {
   return hex;
 };
 
+/** A hatching fill: base pattern, optional HEX color and tile size in %, "url(#hatch3-c0392b-s150)" */
+export const HATCH_FILL = /^url\(#(hatch\d+)(?:-([\da-f]{6}))?(?:-s([5-9]\d|1\d\d|200))?\)$/;
+
 /** A HEX color or a hatching pattern reference, as the fill picker gives them */
 export const requireFill = (value: unknown): string =>
-  typeof value === "string" && /^url\(#hatch\d+(?:-[\da-f]{6})?\)$/.test(value) ? value : requireColor(value);
+  typeof value === "string" && HATCH_FILL.test(value) ? value : requireColor(value);
 
 /** Predefined set of 12 distinct pastel colors */
 export const C_12 = [

@@ -1,15 +1,20 @@
 import { Controllers } from "@/controllers";
+import { CULTURE_TYPES } from "@/data/culture-types";
 import { CULTURE_TYPE_LABELS, DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
-import type { DemandCategory, Good } from "@/model/economy/goods-generator";
-import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, Goods } from "@/model/economy/goods-generator";
-import { Production } from "@/model/economy/production-generator";
+import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "@/model/economy/demand";
+import { DEFAULT_CARRIAGE, Goods } from "@/model/economy/goods-generator";
 import { Icons } from "@/model/icons";
-import { CULTURE_TYPES } from "@/model/society/cultures-generator";
+import { Options } from "@/model/options/options-model";
 import { Tags } from "@/model/tags";
+import { getDecima, getDistance, getMoneyUnit } from "@/model/units";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
+import type { DemandCategory, Good } from "@/types/economy";
+import { App } from "@/ui/app-commands";
+import { eraLabel } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import { refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { bindEconomyWiki, economyWikiButton } from "@/ui/economy-view";
 import { tip } from "@/ui/tooltips";
 import { getRandomColor } from "@/utils/color-utils";
 import { sentences, t } from "@/utils/i18n";
@@ -52,13 +57,11 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
   };
 
   const renderMultiplierRow = (dim: MultiplierDimKey, label: string) => /*html*/ `
-      <label data-tip="${sentences(t("Production multiplier by {{dimension}}", { dimension: label.toLowerCase() }), MULTIPLIER_LEGEND)}">${label}</label>
-      <div class="ge-edit-row">
-        <span id="mSummary_${dim}">${multiplierSummary(dim)}</span>
-        <button class="mEdit icon-pencil ge-edit" data-dim="${dim}" data-tip="${t("Edit {{dimension}} multipliers", { dimension: label })}"></button>
-      </div>`;
+      <label class="ge-top" data-tip="${sentences(t("Production multiplier by {{dimension}}", { dimension: label.toLowerCase() }), MULTIPLIER_LEGEND)}">${label}</label>
+      <span id="mSummary_${dim}" class="ge-summary">${multiplierSummary(dim)}</span>
+      <button class="mEdit icon-pencil ge-edit ge-top" data-dim="${dim}" data-tip="${t("Edit {{dimension}} multipliers", { dimension: label })}"></button>`;
 
-  const recipes: Record<number, number>[] = editedGood?.recipes || [];
+  const recipes: Record<number, number>[] = structuredClone(editedGood?.recipes ?? []); // Cancel drops them
   let icon = editedGood?.icon || "goods-unknown";
 
   let dialog: HTMLElement;
@@ -67,15 +70,9 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
   void Icons.retry(Goods.iconSet.id); // the previews resolve once the symbols land
 
   Dialog.open("goodEditor", {
-    width: "30em",
+    width: "36em",
     title: editedGood ? t("Edit good") : t("Add"),
-    // only edits can recompute the economy
-    footer: editedGood
-      ? /*html*/ `<div class="dontAsk" data-tip="${t("Re-place this good and recompute production, trade and taxes. Uncheck to update the good only, without disturbing the current economy.")}">
-          <input id="goodRegenerateEconomy" class="checkbox" type="checkbox" checked />
-          <label for="goodRegenerateEconomy" class="checkbox-label"><i>${t("regenerate economy on apply")}</i></label>
-        </div>`
-      : undefined,
+    footer: economyWikiButton("goodEditorWiki"),
     buttons: [
       {
         label: t("Cancel"),
@@ -92,15 +89,24 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           const tagsInput = ensureEl<HTMLInputElement>("newGoodTags").value.trim();
           const tags = Tags.parse(tagsInput);
           const value = +ensureEl<HTMLInputElement>("newGoodValue").value;
-          const chance = +ensureEl<HTMLInputElement>("newGoodChance").value;
+          const carriage = +ensureEl<HTMLInputElement>("newGoodCarriage").value;
+          const development = +ensureEl<HTMLInputElement>("newGoodDevelopment").value;
+          const deposits: [number, number] = [
+            +ensureEl<HTMLInputElement>("newGoodDepositsMin").value,
+            +ensureEl<HTMLInputElement>("newGoodDepositsMax").value
+          ];
           const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
           const color = ensureEl<HTMLInputElement>("newGoodColor").value;
           const distribution = ensureEl("newGoodDistribution").textContent?.trim() ?? "";
 
           if (!name) errors.push(t("Name is required"));
           if (!Number.isFinite(value) || value < 0) errors.push(t("Value must be a valid non-negative number"));
-          if (!Number.isFinite(chance) || chance < 0 || chance > 100)
-            errors.push(t("Chance must be between 0 and 100"));
+          if (!Number.isFinite(carriage) || carriage < 0)
+            errors.push(t("Carriage price must be a valid non-negative number"));
+          if (!Number.isInteger(development) || development < 0 || development > 100)
+            errors.push(t("Development must be a whole number from 0 to 100"));
+          if (deposits.some(count => !Number.isFinite(count) || count < 0) || deposits[0] > deposits[1])
+            errors.push(t("Deposits must be a range of non-negative numbers, the minimum first"));
 
           if (distribution) {
             try {
@@ -146,14 +152,19 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
           if (editedGood) {
             const id = editedGood.i;
+            const placementChanged =
+              distribution !== (editedGood.distribution ?? "") ||
+              String(distribution ? deposits : undefined) !== String(editedGood.deposits);
             Goods.rename(id, name);
             Goods.setTags(id, tags);
             Goods.setIcon(id, icon);
             Goods.recolor(id, color);
             Goods.setPrice(id, value);
+            Goods.setCarriage(id, carriage);
+            Goods.setDevelopment(id, development);
             Goods.setUnit(id, unit);
             Goods.setProduction(id, {
-              chance,
+              deposits: distribution ? deposits : null, // nothing to place otherwise
               demandCoverage: demandCoverageState,
               multipliers: buildFinalMultipliers() ?? null,
               biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : null,
@@ -161,48 +172,49 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             });
             editedGood.distribution = distribution || undefined; // code the user typed, checked above; never an operation
 
-            // opt-out: by default re-place the good and recompute the economy to reflect the change
-            if (ensureEl<HTMLInputElement>("goodRegenerateEconomy").checked) {
-              Goods.regeneratePlacement(editedGood.i);
-              Production.regenerateEconomy();
-              Layers.draw("markets", "goods");
-              Layers.draw("trade");
-              refreshEditors();
-            } else {
-              Goods.sync();
-            }
+            Goods.sync();
+            if (placementChanged) Goods.regeneratePlacement(editedGood.i);
+            Layers.draw("markets", "goods", "trade");
+            refreshEditors();
           } else {
             const getNextId = () => {
-              let nextId = pack.goods?.at(-1)?.i ?? 1;
-              while (Goods.get(nextId)) nextId++;
+              // units keep a removed good's id for later maps: a new good must not answer to it
+              const equipping = new Set(options.map.military.units.flatMap(unit => unit.goods ?? []));
+              let nextId = options.map.goods.at(-1)?.i ?? 1;
+              while (Goods.get(nextId) || equipping.has(nextId)) nextId++;
               return nextId;
             };
 
-            pack.goods.push({
+            const good: Good = {
               i: getNextId(),
               name,
               tags,
               icon,
               color,
               value,
-              chance,
+              carriage,
+              development: development || undefined,
+              deposits: distribution ? deposits : undefined, // nothing to place otherwise
               unit,
               demandCoverage: demandCoverageState,
               multipliers: buildFinalMultipliers(),
               distribution: distribution || undefined,
               biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : undefined,
               recipes: recipes.length ? recipes : undefined
-            });
-            Goods.sync();
+            };
+            Options.set(({ map }) => map.goods.push(good));
+            Goods.regeneratePlacement(good.i);
           }
 
           tip(editedGood ? t("Good is updated") : t("Good is added"), false, "success", 5000);
           onUpdate?.();
           Dialog.close("goodEditor");
+          if (editedGood) App.openEconomyRegeneration(["production"]);
         }
       }
     ]
   });
+  bindEconomyWiki("goodEditorWiki");
 
   function renderDialog(): void {
     Dialog.destroy("goodEditor");
@@ -210,22 +222,20 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       "beforeend",
       /*html*/ `<div id="goodEditor" class="dialog">
     <style>
-      .ge                 { display:flex; width: auto !important; flex-direction:column; gap:9px; max-height:72vh; overflow-y:auto; padding-right:2px; }
-      .ge-section-title   { display:flex; align-items:center; justify-content:space-between; font-weight:bold; text-transform:uppercase; font-size:.8em; letter-spacing:.06em; margin-bottom:7px; padding-bottom:4px; border-bottom:1px solid #666; }
-      .ge-grid            { display:grid; grid-template-columns:9em minmax(0, 1fr); gap:.2em; align-items:center; }
-      .ge-grid--top       { align-items:start; }
+      .ge                 { display:flex; width:auto !important; flex-direction:column; gap:10px; max-height:72vh; overflow-y:auto; padding-right:2px; }
+      .ge-section-title   { display:flex; align-items:center; justify-content:space-between; min-height:1.6em; font-weight:bold; text-transform:uppercase; font-size:.8em; letter-spacing:.06em; margin-bottom:6px; padding-bottom:3px; border-bottom:1px solid #666; }
+      .ge-grid            { display:grid; grid-template-columns:9.5em minmax(0, 1fr) 1.8em; column-gap:.5em; row-gap:.35em; align-items:center; }
       .ge-grid > *        { min-width:0; }
       .ge-grid > label    { color:#555; }
-      .ge-field           { width:100%; }
-      input.ge-num        { width:6em; }
-      .ge-inline          { display:flex; align-items:center; gap:.4em; }
-      .ge-icon-select     { flex:1; min-width:0; display:flex; align-items:center; gap:.4em; margin:0; }
-      .ge-icon-preview    { flex-shrink:0; }
-      .ge-color           { width:2.4em; height:1.4em; padding:0; border:none; flex-shrink:0; }
-      .ge-edit-row        { display:flex; align-items:flex-start; justify-content:space-between; gap:6px; }
-      .ge-edit-row > span { flex:1; min-width:0; }
-      .ge-edit            { flex-shrink:0; }
-      .ge-dist            { flex:1; min-width:0; color:#555; font-size:.9em; font-family:var(--monospace); word-break:break-all; }
+      .ge-grid > .ge-top  { align-self:start; }
+      .ge-field           { width:100%; box-sizing:border-box; }
+      input.ge-num        { width:5em; }
+      .ge-inline          { display:flex; flex-wrap:wrap; align-items:center; gap:.4em; }
+      .ge-badge           { width:2em; height:2em; flex-shrink:0; }
+      .ge-color           { width:2.4em; height:1.4em; padding:0; border:none; }
+      .ge-edit            { justify-self:end; }
+      .ge-summary         { line-height:1.35; }
+      .ge-dist            { color:#555; font-family:var(--monospace); word-break:break-all; }
       .ge-note            { color:#777; font-style:italic; font-size:.9em; }
       .ge-error           { color:#b20000; min-height:1.2em; }
       .ge-recipe-list     { display:flex; flex-direction:column; gap:.45em; }
@@ -241,61 +251,71 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
         <div class="ge-section-title">${t("General")}</div>
         <div class="ge-grid">
           <label for="newGoodName">${t("Name")}*</label>
-          <input id="newGoodName" class="ge-field" value="${editedGood?.name || ""}" />
+          <input id="newGoodName" class="ge-field" value="${escapeHtml(editedGood?.name || "")}" />
+          <span></span>
 
           <label for="newGoodTags">${t("Tags")}</label>
           <input id="newGoodTags" class="ge-field" value="${Tags.format(editedGood?.tags)}" placeholder="${t("comma separated")}" />
+          <span></span>
 
-          <label for="newGoodValue">${t("Base Price")}*</label>
+          <label for="newGoodIconEdit">${t("Icon")}*</label>
+          <span class="ge-inline">
+            <svg class="ge-badge">
+              <circle id="newGoodIconCircle" cx="50%" cy="50%" r="42%" fill="${editedGood?.color || "#ff5959"}" stroke="${Goods.getStroke(editedGood?.color || "#ff5959")}"/>
+              <use id="newGoodIconPreview" href="${escapeHtml(Icons.href(icon))}" x="10%" y="10%" width="80%" height="80%"${goodIconLines()}/>
+            </svg>
+            <input id="newGoodColor" class="ge-color" type="color" data-tip="${t("Color")}" value="${editedGood?.color || "#ff5959"}" />
+          </span>
+          <button id="newGoodIconEdit" type="button" class="icon-pencil ge-edit" data-tip="${t("Select the good's icon")}"></button>
+
+          <label for="newGoodValue" data-tip="${t("Price of one unit in {{money}}, the price markets start from", { money: getMoneyUnit() })}">${t("Base Price")}*</label>
           <span class="ge-inline"><input id="newGoodValue" class="ge-num" type="number" min="0" step="1" value="${editedGood?.value ?? 1}" /> 🟡</span>
+          <span></span>
 
-          <label for="newGoodChance">${t("Chance")}</label>
-          <input id="newGoodChance" class="ge-num" type="number" min="0" max="100" step="0.1" value="${editedGood?.chance ?? 1}" />
+          <label for="newGoodCarriage" data-tip="${t("Carriage: price of one unit per decima ({{distance}})", { distance: getDistance(getDecima()) })}">${t("Carriage Price")}*</label>
+          <span class="ge-inline"><input id="newGoodCarriage" class="ge-num" type="number" min="0" step="0.1" value="${editedGood?.carriage ?? DEFAULT_CARRIAGE}" /> 🟡</span>
+          <span></span>
+
+          <label for="newGoodDevelopment" data-tip="${t("The least development, 0–100, a land needs to produce the good; 0 for none")}">${t("Development")}</label>
+          <span class="ge-inline"><input id="newGoodDevelopment" class="ge-num" type="number" min="0" max="100" step="1" value="${editedGood?.development ?? 0}" /> <span id="newGoodEra">${escapeHtml(eraLabel(editedGood?.development ?? 0))}</span></span>
+          <span></span>
 
           <label for="newGoodUnit">${t("Unit")}</label>
-          <input id="newGoodUnit" class="ge-field" placeholder="${t("e.g. wagon, barrel")}" value="${editedGood?.unit || ""}" />
+          <input id="newGoodUnit" class="ge-field" placeholder="${t("e.g. wagon, barrel")}" value="${escapeHtml(editedGood?.unit || "")}" />
+          <span></span>
 
-          <label for="newGoodIcon">${t("Icon")}*</label>
-          <div class="ge-inline">
-            <button id="newGoodIcon" type="button" class="ge-icon-select" data-tip="${t("Select the good's icon")}">
-              <svg class="ge-icon-preview" width="2em" height="2em">
-                <circle id="newGoodIconCircle" cx="50%" cy="50%" r="42%" fill="${editedGood?.color || "#ff5959"}" stroke="${Goods.getStroke(editedGood?.color || "#ff5959")}"/>
-                <use id="newGoodIconPreview" href="${escapeHtml(Icons.href(icon))}" x="10%" y="10%" width="80%" height="80%"${goodIconLines()}/>
-              </svg>
-              <span id="newGoodIconName">${escapeHtml(Icons.name(icon))}</span>
-            </button>
-            <input id="newGoodColor" class="ge-color" type="color" data-tip="${t("Set stroke color")}" value="${editedGood?.color || "#ff5959"}" />
-          </div>
-
-          <label data-tip="${t("How much of each demand category this good satisfies. Click the pencil icon to edit.")}">${t("Demand Coverage")}</label>
-          <div class="ge-edit-row">
-            <span id="demandCoverageSummary" >${demandCoverageSummary()}</span>
-            <button class="dcEdit icon-pencil ge-edit" data-tip="${t("Edit demand coverage")}"></button>
-          </div>
+          <label class="ge-top" data-tip="${t("Needs one unit covers. Click the pencil to edit")}">${t("Demand Coverage")}</label>
+          <span id="demandCoverageSummary" class="ge-summary">${demandCoverageSummary()}</span>
+          <button class="dcEdit icon-pencil ge-edit ge-top" data-tip="${t("Edit demand coverage")}"></button>
         </div>
       </div>
 
       <div>
         <div class="ge-section-title">${t("Raw Production")}</div>
-        <div class="ge-grid ge-grid--top">
-          <label data-tip="${t("For raw resources: sets the baseline production per biome")}">${t("Rural production")}</label>
-          <div class="ge-edit-row">
-            <span id="biomeProductionSummary">${biomeOutputSummary()}</span>
-            <button class="bpEdit icon-pencil ge-edit" data-tip="${t("Edit biome baseline production")}"></button>
-          </div>
+        <div class="ge-grid">
+          <label class="ge-top" data-tip="${t("For raw resources: sets the baseline production per biome")}">${t("Rural production")}</label>
+          <span id="biomeProductionSummary" class="ge-summary">${biomeOutputSummary()}</span>
+          <button class="bpEdit icon-pencil ge-edit ge-top" data-tip="${t("Edit biome baseline production")}"></button>
 
-          <label data-tip="${t("For raw resources: controls where and how this good is produced directly from the environment (e.g. biome, elevation, temperature)")}">${t("Bonus distribution")}</label>
-          <div class="ge-edit-row">
-            <div id="newGoodDistribution" class="ge-dist">${editedGood?.distribution || ""}</div>
-            <button id="newGoodDistributionEditor" class="icon-pencil ge-edit" data-tip="${t("Open the Distribution visual editor")}"></button>
-          </div>
+          <label class="ge-top" data-tip="${t("Where the raw good is produced")}">${t("Deposit distribution")}</label>
+          <div id="newGoodDistribution" class="ge-dist">${editedGood?.distribution || ""}</div>
+          <button id="newGoodDistributionEditor" class="icon-pencil ge-edit ge-top" data-tip="${t("Open the Distribution visual editor")}"></button>
+
+          <label data-tip="${t("Deposits placed on the map, minimum to maximum")}">${t("Deposits")}</label>
+          <span class="ge-inline">
+            <input id="newGoodDepositsMin" class="ge-num" type="number" min="0" step="1" value="${editedGood?.deposits?.[0] ?? 1}" />
+            –
+            <input id="newGoodDepositsMax" class="ge-num" type="number" min="0" step="1" value="${editedGood?.deposits?.[1] ?? 2}" />
+            ${t("on the map")}
+          </span>
+          <span></span>
         </div>
         <div id="newGoodRawNote" class="ge-note"></div>
       </div>
 
       <div>
         <div class="ge-section-title">
-          <span data-tip="${t("For manufactured goods: recipes define which other goods are required to produce this good")}">${t("Recipes")}</span>
+          <span data-tip="${t("Ingredients to make the good")}">${t("Recipes")}</span>
           <button id="newGoodAddRecipe" class="icon-plus" data-tip="${t("Add")}"></button>
         </div>
         <div id="newGoodRecipeList" class="ge-recipe-list"></div>
@@ -306,7 +326,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
         <div class="ge-section-title">
           <span data-tip="${sentences(t("Per-dimension production multipliers"), MULTIPLIER_LEGEND)}">${t("Multipliers")}</span>
         </div>
-        <div class="ge-grid ge-grid--top">
+        <div class="ge-grid">
           ${renderMultiplierRow("cultureType", MULTIPLIER_LABELS.cultureType)}
           ${renderMultiplierRow("culture", MULTIPLIER_LABELS.culture)}
           ${renderMultiplierRow("state", MULTIPLIER_LABELS.state)}
@@ -324,8 +344,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
     const recipeList = ensureEl("newGoodRecipeList");
 
-    const defaultGoodId = pack.goods[0]?.i ?? 0;
-    const sortedGoods = [...pack.goods].sort((a, b) => a.name.localeCompare(b.name));
+    const defaultGoodId = options.map.goods[0]?.i ?? 0;
+    const sortedGoods = [...options.map.goods].sort((a, b) => a.name.localeCompare(b.name));
 
     const isRawProductionEmpty = () =>
       !Object.values(biomeOutputState).some(v => (v ?? 0) > 0) && !findEl("newGoodDistribution")?.textContent?.trim();
@@ -335,7 +355,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       const rawEmpty = isRawProductionEmpty();
       const recipesEmpty = recipes.length === 0;
 
-      const recipeNote = ensureEl("newGoodRecipeNote");
+      const recipeNote = findEl("newGoodRecipeNote");
+      if (!recipeNote) return; // the editor closed before its popup applied
       recipeNote.textContent = t("This good is raw-only: gathered from the environment.");
       recipeNote.style.display = recipesEmpty && !rawEmpty ? "" : "none";
 
@@ -361,7 +382,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
                 .map(
                   ([ingredientId, amount], ingredientIndex) => /*html*/ `
                     <div class="ge-recipe-ing" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}">
-                      <select class="recipeGoodSelect" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}">${sortedGoods.map(good => `<option value="${good.i}" ${good.i === Number(ingredientId) ? "selected" : ""}>${good.name}</option>`).join("")}</select>
+                      <select class="recipeGoodSelect" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}">${sortedGoods.map(good => `<option value="${good.i}" ${good.i === Number(ingredientId) ? "selected" : ""}>${escapeHtml(good.name)}</option>`).join("")}</select>
                       <input class="recipeAmountInput" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" type="number" min="1" step="1" value="${amount}" />
                       <span class="recipeRemoveIngredient icon-trash-empty pointer" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" data-tip="${t("Remove")}" />
                     </div>`
@@ -380,8 +401,9 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           const ingredientIndex = +select.dataset.ingredientIndex!;
           const recipe = recipes[recipeIndex];
 
-          const oldAmount = recipe[ingredientIndex] || 0;
-          delete recipe[ingredientIndex];
+          const ingredientId = Number(Object.keys(recipe)[ingredientIndex]);
+          const oldAmount = recipe[ingredientId];
+          delete recipe[ingredientId];
           recipe[selectedGoodId] = oldAmount;
           renderRecipes();
         };
@@ -402,10 +424,9 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           event.preventDefault();
           const recipeIndex = +button.dataset.recipeIndex!;
           const recipe = recipes[recipeIndex];
-          const newIngredientId = Object.keys(recipe).length
-            ? Math.max(...Object.keys(recipe).map(id => +id)) + 1
-            : defaultGoodId;
-          recipe[newIngredientId] = 1;
+          const newIngredient = sortedGoods.find(good => !(good.i in recipe) && good.i !== editedGood?.i);
+          if (!newIngredient) return;
+          recipe[newIngredient.i] = 1;
           renderRecipes();
         };
       });
@@ -484,9 +505,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
     const setIcon = (id: string) => {
       icon = id;
       ensureEl("newGoodIconPreview").setAttribute("href", Icons.href(id));
-      ensureEl("newGoodIconName").textContent = Icons.name(id);
     };
-    ensureEl("newGoodIcon").onclick = () =>
+    ensureEl("newGoodIconEdit").onclick = () =>
       Controllers.IconPicker.open({
         current: icon,
         onPick: setIcon
@@ -497,6 +517,11 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       const circle = ensureEl("newGoodIconCircle");
       circle.setAttribute("fill", colorInput.value);
       circle.setAttribute("stroke", Goods.getStroke(colorInput.value));
+    };
+
+    const developmentInput = ensureEl<HTMLInputElement>("newGoodDevelopment");
+    developmentInput.oninput = () => {
+      ensureEl("newGoodEra").textContent = eraLabel(+developmentInput.value);
     };
   }
 }
@@ -571,8 +596,8 @@ function openMultiplierPopup(
 
   const rows = entities.map(entity => {
     const val = currentValues[entity.id] ?? 1;
-    const box = `<fill-box fill="${entity.color || getRandomColor()}" size="1em" disabled data-tip="${entity.name}"></fill-box>`;
-    return `${box}<span>${entity.name}</span><input type="number" class="mPopupInput" data-id="${entity.id}" min="0" step="0.1" style="width:5em;" value="${val}" />`;
+    const box = `<fill-box fill="${entity.color || getRandomColor()}" size="1em" disabled data-tip="${escapeHtml(entity.name)}"></fill-box>`;
+    return `${box}<span>${escapeHtml(entity.name)}</span><input type="number" class="mPopupInput" data-id="${entity.id}" min="0" step="0.1" style="width:5em;" value="${val}" />`;
   });
 
   const popupEl = document.createElement("div");
@@ -648,7 +673,7 @@ function openBiomeProductionPopup(
     .filter(biome => !biome.removed)
     .map(({ i, name }) => {
       const val = currentValues[i] ?? 0;
-      return `<span>${name}</span><input type="number" class="bpPopupInput" data-id="${i}" min="0" step="0.01" style="width:5em;" value="${val}" />`;
+      return `<span>${escapeHtml(name)}</span><input type="number" class="bpPopupInput" data-id="${i}" min="0" step="0.01" style="width:5em;" value="${val}" />`;
     })
     .join("");
 

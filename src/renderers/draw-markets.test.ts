@@ -52,7 +52,7 @@ beforeEach(() => {
 test("panning culls territories and centers without rebuilding their paths", () => {
   drawMarkets();
   expect(document.querySelector("#market1 .fill")).not.toBeNull();
-  expect(document.querySelector("#market1 circle")).not.toBeNull();
+  expect(document.querySelector("#market1 .pin")).not.toBeNull();
   expect(document.getElementById("market2")).toBeNull();
   const markup = document.getElementById("markets")!.innerHTML;
   ViewportLayers.renderNow();
@@ -60,7 +60,7 @@ test("panning culls territories and centers without rebuilding their paths", () 
   setViewportTransform(1, -500, 0);
   ViewportLayers.renderNow();
   expect(document.getElementById("market1")).toBeNull();
-  expect(document.querySelector("#market2 circle")).not.toBeNull();
+  expect(document.querySelector("#market2 .pin")).not.toBeNull();
   expect(getIsolines).toHaveBeenCalledTimes(1);
 });
 
@@ -69,7 +69,7 @@ test("territories intersecting the viewport render even when their centers are o
   vi.mocked(getIsolines).mockReturnValue({ 1: territory(-500, -500, 1500), 2: territory(500) });
   drawMarkets();
   expect(document.querySelector("#market1 .fill")).not.toBeNull();
-  expect(document.querySelector("#market1 circle")).toBeNull();
+  expect(document.querySelector("#market1 .pin")).toBeNull();
   expect(document.querySelector("#market1 .border")?.getAttribute("clip-path")).toBe("url(#market-clip-1)");
 });
 
@@ -86,15 +86,17 @@ test("center artwork at the edge renders independently of its territory", () => 
 test("zoom updates icon sizing and full-map export restores every market at scale one", () => {
   setViewportTransform(4, 0, 0);
   drawMarkets();
-  expect(document.querySelector("#market1 circle")?.getAttribute("r")).toBe("3.25");
+  // the tip on the burg, the icon in the incircle of radius 3.25 two radii above it
+  expect(document.querySelector("#market1 .pin")?.getAttribute("d")).toBe("M50,50L44.37,40.25L55.63,40.25Z");
   expect(document.querySelector("#market1 use")?.getAttribute("width")).toBe("5.25");
+  expect(document.querySelector("#market1 use")?.getAttribute("y")).toBe("40.88");
   const clone = document.getElementById("map")!.cloneNode(true) as SVGSVGElement;
   ViewportLayers.renderTo(clone);
   expect(clone.querySelectorAll("#markets > g")).toHaveLength(2);
-  expect(clone.querySelector("#market2 circle")?.getAttribute("r")).toBe("4");
+  expect(clone.querySelector("#market2 .pin")?.getAttribute("d")).toBe("M550,50L543.07,38L556.93,38Z");
   expect(clone.querySelector("#market2 use")?.getAttribute("width")).toBe("6");
   expect(document.getElementById("market2")).toBeNull();
-  expect(document.querySelector("#market1 circle")?.getAttribute("r")).toBe("3.25");
+  expect(document.querySelector("#market1 .pin")?.getAttribute("d")).toBe("M50,50L44.37,40.25L55.63,40.25Z");
   const markup = clone.innerHTML;
   ViewportLayers.renderTo(clone);
   expect(clone.innerHTML).toBe(markup);
@@ -113,8 +115,7 @@ test("redraw picks up territory painting, styles, centers and deletion", () => {
   drawMarkets();
   expect(document.querySelector("#market1 .fill")?.getAttribute("d")).not.toBe(oldPath);
   expect(document.querySelector("#market1 .fill")?.getAttribute("fill")).toBe("#0000ff");
-  expect(document.querySelector("#market1 circle")?.getAttribute("cx")).toBe("70");
-  expect(document.querySelector("#market1 circle")?.getAttribute("r")).toBe("9");
+  expect(document.querySelector("#market1 .pin")?.getAttribute("d")).toBe("M70,50L54.41,23L85.59,23Z");
   expect(document.querySelector("#market1 use")?.getAttribute("href")).toBe("#glyph-1f3f0");
   expect(document.querySelectorAll("#markets > g")).toHaveLength(1);
 });
@@ -152,13 +153,13 @@ test("delegated hover ignores movement within a market and highlights rebuilt gr
   Element.prototype.getAnimations = () => [];
   drawMarkets();
   ViewportLayers.renderNow();
-  const circle = document.querySelector("#market1 circle")!;
-  circle.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+  const pin = document.querySelector("#market1 .pin")!;
+  pin.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
   expect(document.querySelectorAll("#market1 .highlight")).toHaveLength(1);
   expect(animations).toHaveLength(1);
-  circle.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: circle.nextElementSibling }));
+  pin.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: pin.nextElementSibling }));
   expect(animations).toHaveLength(1);
-  circle.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
+  pin.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
   animations[1].onfinish!();
   expect(document.querySelector("#market1 .highlight")).toBeNull();
   highlightMarketOn(1);
