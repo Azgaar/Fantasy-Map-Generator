@@ -24,12 +24,16 @@ export class MarketsModule {
   private marginRates = new Map<number, number>(); // by license fee paid
 
   regenerate(): Market[] {
-    // the old centers' plazas go with them
+    this.releasePlazas();
+    return this.generate(true);
+  }
+
+  /** The current centers' plazas go with their markets */
+  releasePlazas(): void {
     for (const { centerBurgId } of pack.markets ?? []) {
       const center = pack.burgs[centerBurgId];
       if (center) center.plaza = 0;
     }
-    return this.generate(true);
   }
 
   generate(regenerate: boolean = false): Market[] {
@@ -194,7 +198,7 @@ export class MarketsModule {
     const MIN_COST = 1;
     const BASE_COST = 10;
     const DIFFERENT_STATE_COST = 200;
-    const ENEMY_STATE_COST = 10000;
+    const ENEMY_STATE_COST = 1000; // once, at the enemy border
     const WATER_COST = 50;
     const WATER_COST_FOR_NON_PORTS = 50;
     const ISLAND_CHANGE_COST = 100;
@@ -227,7 +231,8 @@ export class MarketsModule {
           const neighborState = cells.state[neighborId];
           if (neighborState && !isNative) {
             cost += DIFFERENT_STATE_COST;
-            if (pack.states[burg.state || 0]?.diplomacy?.[neighborState] === "Enemy") cost += ENEMY_STATE_COST;
+            const isEnemy = pack.states[burg.state || 0]?.diplomacy?.[neighborState] === "Enemy";
+            if (isEnemy && cells.state[cellId] !== neighborState) cost += ENEMY_STATE_COST;
           }
         }
 

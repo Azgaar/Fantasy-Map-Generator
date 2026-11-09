@@ -448,6 +448,7 @@ function confirmRemoveMarket(market: Market): void {
     confirm: t("Remove"),
     onConfirm: () => {
       Markets.removeMarket(market.i);
+      closeEntityDialogs();
       Layers.draw("markets", "goods", "trade");
       updateBurgValues();
     }

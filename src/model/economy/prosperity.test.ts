@@ -92,6 +92,7 @@ describe("prosperity", () => {
   it("splits a market's rural earnings and purchases over its cells by their produce", () => {
     pack.cells = {
       i: [0, 1, 2],
+      h: [30, 30, 30],
       pop: [0, 20, 20],
       market: [1, 1, 1],
       state: [1, 1, 1]

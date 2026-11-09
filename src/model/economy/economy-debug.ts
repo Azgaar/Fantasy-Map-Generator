@@ -14,6 +14,11 @@ class EconomyDebugModule {
     return this.source !== null;
   }
 
+  clear(): void {
+    this.logs = [];
+    this.source = null;
+  }
+
   set(burgId: number, entries: ProductionLogEntry[]): void {
     this.logs[burgId] = entries;
   }

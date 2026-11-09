@@ -1000,6 +1000,7 @@ class MapRestorationModule {
 
     if (!options.map.goods.length) {
       Goods.generate();
+      Markets.releasePlazas();
       Markets.generate();
       Production.produce();
       Taxes.collect();

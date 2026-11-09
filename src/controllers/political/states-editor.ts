@@ -415,7 +415,7 @@ function renderDialog(): void {
     else if (classList.contains("icon-star-empty")) stateCapitalZoomIn(stateId);
     else if (classList.contains("icon-dot-circled")) Controllers.BurgsOverview.open({ stateId });
     else if (classList.contains("statePopulation")) changePopulation(stateId);
-    else if ($element.closest(".stateEconomy")) Controllers.StateEconomyOverview.open(stateId);
+    else if ($element.closest(".stateEconomy")) Controllers.EconomyOverview.open("state", stateId);
     else if ($element.closest(".stateStability")) Controllers.StabilityOverview.open(stateId);
     else if (classList.contains("icon-book")) void Controllers.NotesEditor.open({ type: "state", id: stateId });
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);

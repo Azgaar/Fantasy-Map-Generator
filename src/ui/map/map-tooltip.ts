@@ -263,8 +263,12 @@ function listGoods(produced: Iterable<[number | string, number]>, format = (_goo
     .map(({ good, units, worth }) => ({
       good,
       worth,
-      badge: `<svg width="1.2em" height="1.2em" style="vertical-align: middle; margin: 0 0.1em 0 0.3em">${goodBadge(good)}</svg>${format(good, units)}`
+      badge: badgeOf(good, format(good, units))
     }));
+}
+
+function badgeOf(good: Good, text: string): string {
+  return `<svg width="1.2em" height="1.2em" style="vertical-align: middle; margin: 0 0.1em 0 0.3em">${goodBadge(good)}</svg>${text}`;
 }
 
 /** The displayed goods the line's link at the cell carries a day, the most valuable first */
@@ -292,10 +296,10 @@ function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
 
   const icon = target.closest<SVGElement>("#goodsIcons [data-i]");
   if (icon) {
-    const goodId = Number(icon.dataset.i);
-    const produced = Output.ofCell(Number(icon.dataset.cell));
-    const [deposit] = listGoods([[goodId, produced[goodId] || 0]]);
-    return deposit && t("Deposit production: {{- production}}", { production: deposit.badge });
+    const good = Goods.get(Number(icon.dataset.i));
+    if (!good) return undefined;
+    const units = Output.ofCell(Number(icon.dataset.cell))[good.i] || 0; // 0 where the land is not developed enough
+    return t("Deposit production: {{- production}}", { production: badgeOf(good, `${units}`) });
   }
 
   if (target.closest("#goodsCells")) {

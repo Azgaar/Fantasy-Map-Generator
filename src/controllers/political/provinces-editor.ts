@@ -357,7 +357,7 @@ function renderDialog(): void {
     else if (cl.contains("icon-dot-circled")) void Controllers.BurgsOverview.open({ stateId });
     else if (cl.contains("culturePopulation")) changePopulation(p);
     else if (cl.contains("provinceStability")) void Controllers.StabilityOverview.open(stateId);
-    else if (cl.contains("provinceEconomy")) void Controllers.ProvinceEconomyOverview.open(p);
+    else if (cl.contains("provinceEconomy")) void Controllers.EconomyOverview.open("province", p);
     else if (cl.contains("icon-target"))
       highlightElement(select<SVGGElement, unknown>("#provs").select(`#province${p}`).node() as Element, 8);
     else if (cl.contains("icon-pin")) toggleFog(p, cl);

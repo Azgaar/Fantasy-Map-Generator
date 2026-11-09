@@ -178,7 +178,10 @@ class RiverModule {
     );
 
     if (river) {
-      Object.assign(river, { source, length, discharge, width, cells: riverCells, group: this.pickGroup(riverCells) });
+      // a group the user chose stays
+      const isPicked = !river.lock && river.group === this.pickGroup(river.cells ?? []);
+      const group = isPicked ? this.pickGroup(riverCells) : river.group;
+      Object.assign(river, { source, length, discharge, width, cells: riverCells, group });
     } else {
       const basin = this.getBasin(parent);
       const name = this.getName(mouth);

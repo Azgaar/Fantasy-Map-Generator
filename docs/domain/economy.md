@@ -91,7 +91,7 @@ Buyers **spread their spending** over every good covering a need, cheaper covera
 
 Burgs are scored by population (capitals, ports and crossroads score more, dear licenses less, then random noise) and walked best first. A burg becomes a market center when no other center on its landmass is within its **spacing** (`getSpacing`), and none on another landmass within half of it, so most inhabited islands get a market. Busy land and cheap licenses pack markets closer; steppes, deserts and greedy states spread them out (`MARKET_FEE_DETERRENCE`, `DENSITY_PULL`).
 
-Each market floods out from its center by cost: another state's land or another landmass costs extra, water much more, and water cells join only when they hold a good. Each market then moves to the best-scored burg it serves and floods again (`recenter`). Every burg belongs to its cell's market (`Markets.ofBurg`). Users can add, relocate and remove markets and paint territories. Cells with no market (id 0) supply nothing, and their burgs sit out the run.
+Each market floods out from its center by cost: another state's land or another landmass costs extra, crossing into an enemy's land much more, water much more, and water cells join only when they hold a good. Each market then moves to the best-scored burg it serves and floods again (`recenter`). Every burg belongs to its cell's market (`Markets.ofBurg`). Users can add, relocate and remove markets and paint territories. Cells with no market (id 0) supply nothing, and their burgs sit out the run.
 
 ### Stock and price
 

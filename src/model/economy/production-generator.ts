@@ -30,6 +30,7 @@ export const DEPOSIT_OUTPUT = 2; // units a worker gets a day from the burg's ow
 const MAX_WORKERS = 300;
 export const WORKFORCE_SHARE = 0.32; // townspeople working in trades; the rest serve, build, farm or are too young or old
 const WORKERS_PER_TURN = 5;
+const MAX_CLEARING_PASSES = 3; // outlets a burg tries for its leftovers on its last turn
 const LOT_DEPTH_SHARE = 0.5; // a step sells at most this share of a day's sales where it sells
 const MIN_STEP = 0.5; // fewest workers in a step, so a thin market does not take endless decisions
 const MIN_PURCHASE = 1; // fewest coins a burg spends on a good, so it buys fewer goods in bigger lots
@@ -162,6 +163,7 @@ export class ProductionModule {
   /** Forgets the run when what it names is gone; adjustments stay */
   clear(): void {
     pack.deals = [];
+    EconomyDebug.clear();
     for (const market of pack.markets) {
       market.goods = {};
       market.feePaid = 0;
@@ -224,12 +226,15 @@ export class ProductionModule {
         worked ||= day.workersUsed > before; // a burg putting its last workers to work worked too
         // inputs made for the chain still under way wait for its next step
         const inputs = hasWork ? this.getChainInputs(index, day.activeGoalGoodId) : null;
+        // a burg with idle workers tries again next round: buyers in between move the prices that idled it
+        const isDone = !hasWork && day.workersUsed >= day.workers - 0.001;
         this.sellInventoryToMarket(index, day, goodId => !inputs?.has(goodId));
+        // on its last turn, what one outlet refused is offered to the next best
+        for (let pass = 0; isDone && pass < MAX_CLEARING_PASSES && this.sellInventoryToMarket(index, day); pass++);
         this.fillDemand(index, day, hasWork && day.workers ? day.workersUsed / day.workers : 1);
         this.spendOnWants(index, day);
         day.settled = day.burg.treasury || 0;
-        // a burg with idle workers tries again next round: buyers in between move the prices that idled it
-        return hasWork || day.workersUsed < day.workers - 0.001;
+        return !isDone;
       });
       for (const market of pack.markets) Trade.spendRural(market);
       StateOrders.place();
@@ -372,8 +377,10 @@ export class ProductionModule {
     for (const ingredient of ingredients) {
       const ingredientId = ingredient.goodId;
       const amount = actualYield * ingredient.amount;
-      const fromMarket = amount - Math.min(day.inventory[ingredientId] || 0, amount);
-      if (fromMarket <= 0.01) continue;
+      // trades go in hundredths: buy the shortfall rounded up, so no input is made from nothing
+      const shortfall = amount - Math.min(day.inventory[ingredientId] || 0, amount);
+      const fromMarket = Math.ceil(shortfall * 100 - 1e-6) / 100;
+      if (fromMarket <= 0) continue;
 
       const trade = this.acquire(index, day, Goods.get(ingredientId)!, fromMarket, DEAL_KINDS.input);
       if (trade) {
@@ -383,7 +390,7 @@ export class ProductionModule {
         day.inventory[ingredientId] = (day.inventory[ingredientId] || 0) + trade.units;
       }
       // short of an input, the step makes nothing: what was bought waits in the inventory
-      if (!trade || trade.units < fromMarket - 0.01) {
+      if (!trade || trade.units < fromMarket) {
         const message = `Failed to acquire ${rn(fromMarket, 2)} units of ${Goods.get(ingredientId)?.name} from market for production of ${good.name}`;
         log.error(message);
         return workerFraction;
@@ -523,12 +530,13 @@ export class ProductionModule {
     day.log!.push({ category, shortage: rn(shortage, 2), options });
   }
 
-  /** Sells the chosen inventory goods, all by default, where each fetches most; unsold ones wait */
+  /** Sells the chosen inventory goods, all by default, where each fetches most; unsold ones wait. True if any sold */
   private sellInventoryToMarket(
     index: ProductionIndex,
     day: BurgDay,
     sells: (goodId: number) => boolean = () => true
-  ): void {
+  ): boolean {
+    let sold = false;
     let phaseRevenue = 0;
     const { taxRate } = day;
 
@@ -540,6 +548,7 @@ export class ProductionModule {
       const market = this.getOutlet(index, day, good)?.market ?? day.market;
       const trade = Trade.sell({ burg: day.burg, good, units, taxRate, market, terms: index.tradeTerms });
       if (!trade) continue;
+      sold = true;
       const left = units - trade.units;
       day.inventory[goodId] = left < 0.01 ? 0 : left;
       day.outlets.quotes[goodId] = undefined; // the sale moved its price
@@ -552,6 +561,7 @@ export class ProductionModule {
 
     day.revenue += phaseRevenue;
     day.burg.treasury = (day.burg.treasury || 0) + phaseRevenue;
+    return sold;
   }
 
   private getChainInputs(index: ProductionIndex, goodId: number | null): Set<number> {

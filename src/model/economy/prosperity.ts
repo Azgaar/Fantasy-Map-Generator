@@ -116,14 +116,14 @@ class ProsperityModule {
     if (!pack.deals?.length) return;
     const needsCost = getNeedsCost(options.map.goods);
     const infrastructure = this.getInfrastructure();
-    output ??= Output.getRural();
+    const worked = this.getWorked(output ?? Output.getRural());
     const byMarket = new Map<number, { cellId: number; people: number; produce: number }[]>();
     for (const cellId of pack.cells.i) {
       const people = pack.cells.pop[cellId] || 0;
       const marketId = pack.cells.market[cellId];
       if (!people || !marketId) continue;
       let produce = 0;
-      for (const [goodId, units] of Object.entries(output[cellId])) produce += units * (Goods.get(+goodId)?.value || 0);
+      for (const [goodId, units] of Object.entries(worked[cellId])) produce += units * (Goods.get(+goodId)?.value || 0);
       const cells = byMarket.get(marketId) ?? [];
       cells.push({ cellId, people, produce });
       byMarket.set(marketId, cells);
@@ -137,7 +137,7 @@ class ProsperityModule {
       // unsold produce stays with those who grew it; only what meets a need is lived on
       const grown: number[] = [];
       for (const { cellId } of cells)
-        for (const [goodId, units] of Object.entries(output[cellId])) grown[+goodId] = (grown[+goodId] || 0) + units;
+        for (const [goodId, units] of Object.entries(worked[cellId])) grown[+goodId] = (grown[+goodId] || 0) + units;
       const kept = (market.rural.kept ?? []).filter(([goodId]) => grown[goodId] && isNeeded(Goods.get(goodId)));
       for (const { cellId, people, produce } of cells) {
         const share = totalProduce ? produce / totalProduce : people / totalPeople;
@@ -145,7 +145,7 @@ class ProsperityModule {
         for (const [goodId, units] of market.rural.bought) bought[goodId] = units * share;
         const goods = bought.slice();
         for (const [goodId, units] of kept)
-          goods[goodId] = (goods[goodId] || 0) + (units * (output[cellId][goodId] || 0)) / grown[goodId];
+          goods[goodId] = (goods[goodId] || 0) + (units * (worked[cellId][goodId] || 0)) / grown[goodId];
         const living = this.measure({
           people,
           goods,
@@ -158,6 +158,21 @@ class ProsperityModule {
         this.rural.set(cellId, { people, earned: market.rural.earned * share, bought, goods, living });
       }
     }
+  }
+
+  /** Each cell's output, with the water deposits its people work from the shore of the same market */
+  private getWorked(output: Record<number, number>[]): Record<number, number>[] {
+    const { h, market, pop } = pack.cells;
+    const worked = output.slice();
+    for (const cellId of pack.cells.i) {
+      if (h[cellId] >= 20 || !market[cellId]) continue;
+      const shore = Output.getWorkingCell(cellId);
+      if (shore === cellId || !pop[shore] || market[shore] !== market[cellId]) continue;
+      const merged = { ...worked[shore] };
+      for (const [goodId, units] of Object.entries(output[cellId])) merged[+goodId] = (merged[+goodId] || 0) + units;
+      worked[shore] = merged;
+    }
+    return worked;
   }
 
   /** Infrastructure provision of the province a cell is in */

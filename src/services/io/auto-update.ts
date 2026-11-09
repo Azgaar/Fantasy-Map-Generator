@@ -2183,7 +2183,8 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       for (const unit of Object.keys(regiment.u ?? {})) regiment.u[unit] /= scale;
       regiment.children?.forEach(toPoints);
     };
-    for (const state of pack.states ?? []) state.military?.forEach(toPoints);
+    // pre-1.3 maps got their regiments from the 1.3 step, already in points
+    if (!isOlderThan("1.3.0")) for (const state of pack.states ?? []) state.military?.forEach(toPoints);
 
     // v1.157.0 draws rivers in style groups, as routes are: they all start in the default one
     for (const river of pack.rivers ?? []) river.group ??= "regular";

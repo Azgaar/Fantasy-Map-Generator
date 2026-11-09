@@ -308,13 +308,24 @@ class AccountsModule {
       for (const [goodId, units] of Object.entries(produced)) make(of(Output.getWorkingCell(cellId)), +goodId, units);
     });
 
-    // rural people pay what their market's share allowed of the poll tax each cell owed
-    const paidShare = new Map<number, Map<number, number>>(); // by market: state -> share paid
-    for (const market of pack.markets)
-      paidShare.set(
-        market.i,
-        new Map((market.rural?.pollTax ?? []).map(([stateId, owed, paid]) => [stateId, owed ? paid / owed : 0]))
-      );
+    // rural people share what their market paid of their state's poll tax in the run, by head
+    const heads = new Map<number, number[]>(); // by market: people by state
+    for (const cellId of cells.i) {
+      const marketId = cells.market[cellId];
+      if (!marketId || !cells.pop[cellId]) continue;
+      const byState = heads.get(marketId) ?? [];
+      byState[cells.state[cellId]] = (byState[cells.state[cellId]] || 0) + cells.pop[cellId];
+      heads.set(marketId, byState);
+    }
+    const paidPerHead = new Map<number, Map<number, number>>(); // by market: state -> paid a head
+    for (const market of pack.markets) {
+      const byState = heads.get(market.i) ?? [];
+      const paid = (market.rural?.pollTax ?? []).map(([stateId, , pays]): [number, number] => [
+        stateId,
+        pays / (byState[stateId] || 1)
+      ]);
+      paidPerHead.set(market.i, new Map(paid));
+    }
     for (const cellId of cells.i) {
       const people = cells.pop[cellId] || 0;
       const accounts = people ? of(cellId) : undefined;
@@ -323,8 +334,7 @@ class AccountsModule {
       accounts.people += people;
       accounts.rural += rural?.earned || 0;
       const stateId = cells.state[cellId];
-      accounts.taxes.pollTax +=
-        Taxes.getPollTaxDue(stateId, people) * (paidShare.get(cells.market[cellId])?.get(stateId) || 0);
+      accounts.taxes.pollTax += people * (paidPerHead.get(cells.market[cellId])?.get(stateId) || 0);
       living.add(accounts, "rural", people, rural?.living ?? null);
     }
 

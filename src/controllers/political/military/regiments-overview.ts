@@ -27,7 +27,7 @@ import { last } from "@/utils/array-utils";
 import { getLatitude, getLongitude } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
-import { rn, si } from "@/utils/number-utils";
+import { si } from "@/utils/number-utils";
 import { capitalize } from "@/utils/string-utils";
 
 const dialogId = "regimentsOverview" as const;
@@ -284,9 +284,9 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
 
   const footer = ensureEl("regimentsFooter");
   footer.innerHTML = /* html */ `<div style="margin-left:4px">${t("Regiments")}:&nbsp;${view.all.length}</div>
-    ${options.map.military.units.map(unit => `<div data-col="${unitColumnKey(unit.name)}" style="margin-left:12px">${capitalize(unit.name)}:&nbsp;${si(unitTotals[unit.name])}</div>`).join("")}
+    ${options.map.military.units.map(unit => `<div data-col="${unitColumnKey(unit.name)}" style="margin-left:12px">${capitalize(unit.name)}:&nbsp;${si(Military.getTroops(unitTotals[unit.name]))}</div>`).join("")}
     <div data-col="total" style="margin-left:12px">${t("Total")}:&nbsp;${si(Military.getTroops(total))}</div>
-    <div data-col="power" style="margin-left:12px">${t("Power")}:&nbsp;${si(rn(power))}</div>`;
+    <div data-col="power" style="margin-left:12px">${t("Power")}:&nbsp;${si(Military.getTroops(power))}</div>`;
   renderEditorPagination(footer, view, regimentsTable.goto);
 
   body.querySelectorAll<HTMLElement>(":scope > .states").forEach(line => {

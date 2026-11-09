@@ -178,8 +178,10 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             refreshEditors();
           } else {
             const getNextId = () => {
+              // units keep a removed good's id for later maps: a new good must not answer to it
+              const equipping = new Set(options.map.military.units.flatMap(unit => unit.goods ?? []));
               let nextId = options.map.goods.at(-1)?.i ?? 1;
-              while (Goods.get(nextId)) nextId++;
+              while (Goods.get(nextId) || equipping.has(nextId)) nextId++;
               return nextId;
             };
 

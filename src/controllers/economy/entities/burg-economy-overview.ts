@@ -41,7 +41,7 @@ import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
-import { economyStyle } from "./economy-parts";
+import { economyStyle } from "./economy-overview";
 
 type RowType = "LOCAL" | "BUY" | "MFG" | "SELL" | "KEEP" | "NEED";
 type HistoryRow = {
@@ -95,7 +95,8 @@ function open(burgId: number): void {
 
   Dialog.open(dialogId, {
     title: t("Burg Economy: {{- burg}}", { burg: burg.name }),
-    width: "56em",
+    width: "min(56em, calc(100vw - 20px))",
+    maxHeight: window.innerHeight - 20,
     resizable: true,
     onClose: () => {
       activeBurgId = 0;
@@ -120,7 +121,7 @@ function renderDialog(): void {
         #${dialogId} .columns h4 { margin-top: 0.3em }
         #${dialogId} .row { line-height: 1.6 }
         #${dialogId} .row.plain .right { font-variant-numeric: tabular-nums }
-        #${dialogId} .row.need { grid-template-columns: 8.5em 1fr 7.5em 3em; white-space: nowrap }
+        #${dialogId} .row.need { grid-template-columns: minmax(0, 8.5em) minmax(1em, 1fr) minmax(7.5em, max-content) 3em; white-space: nowrap }
         #${dialogId} .adjustments .head { grid-template-columns: 1fr 6em; line-height: 1.6 }
         #${dialogId} .adjustments .head > span:last-child { text-align: right; font-variant-numeric: tabular-nums }
         #${dialogId} .productionGood { display: inline-flex; align-items: center; gap: 0.2em; vertical-align: middle }
@@ -337,7 +338,7 @@ function goodDot(goodId: number): string {
 
 function render(): void {
   const burg = pack.burgs[activeBurgId];
-  if (!burg) return;
+  if (!burg || burg.removed) return;
 
   renderStats(burg);
   const tips = tradeColumnTips();

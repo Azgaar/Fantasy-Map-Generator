@@ -451,7 +451,7 @@ function renderBurgsPage(view: TableView<Burg>): void {
         data-population=${population}
         data-grossproduct=${grossProduct}
         data-productpercapita=${productPerCapita}
-        data-prosperity=${living ? rn(living.prosperity * 100) : ""}
+        data-prosperity="${living ? rn(living.prosperity * 100) : ""}"
         data-treasury=${treasury}
       >
         <span data-tip="${t("Click to zoom")}" class="icon-dot-circled pointer" data-col="locate"></span>
@@ -901,6 +901,7 @@ function triggerAllBurgsRemove(): void {
         Burgs.remove(burg.i);
         removeEmblem("burg", burg.i);
       }
+      closeEntityDialogs();
       burgsTable.refresh();
       Layers.draw("burgIcons", "labels", "goods", "trade");
     }
