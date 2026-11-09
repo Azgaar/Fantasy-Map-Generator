@@ -15,6 +15,7 @@ import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import { getFileName } from "@/services/io/file-name";
 import { savedMessage } from "@/services/platform";
+import { restoreFeatureMaskBounds } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { unique } from "@/utils/array-utils";
 import { getCoordinates } from "@/utils/common-utils";
@@ -391,6 +392,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
   } = config;
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
   restoreOceanVectors(cloneEl);
+  restoreFeatureMaskBounds(cloneEl);
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone: MapSelection = select(cloneEl);

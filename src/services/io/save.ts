@@ -13,6 +13,7 @@ import { LocalDB } from "@/services/local-db";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { Dialog } from "@/ui/dialog/dialog";
+import { restoreFeatureMaskBounds } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { link, parseError } from "@/utils/common-utils";
 import { isElectron } from "@/utils/environment";
@@ -96,6 +97,7 @@ function prepareMapData(viewOnly = false): string {
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
 
   restoreOceanVectors(cloneEl);
+  restoreFeatureMaskBounds(cloneEl);
 
   // reset transform values to default
   cloneEl.setAttribute("width", String(options.map.graph.width));

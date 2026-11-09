@@ -10,6 +10,7 @@ import { GenerationPipeline } from "@/model/generation-pipeline";
 import { Icons } from "@/model/icons";
 import { mapHistory, registerMap } from "@/model/map-history";
 import { Options } from "@/model/options/options-model";
+import { Hatches } from "@/renderers/hatches";
 import { Layers } from "@/renderers/layers";
 import { undraw } from "@/renderers/undraw";
 import { is3dView } from "@/renderers/view-mode";
@@ -81,6 +82,7 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     applyGraphSize(); // TODO: DOM change, not part of generation
 
     await GenerationPipeline.run({ graph: precreatedGraph });
+    Hatches.sync(); // drops the previous map's derived hatchings
     Options.persist();
 
     syncOptionInputs();

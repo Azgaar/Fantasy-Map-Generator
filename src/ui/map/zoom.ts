@@ -11,6 +11,7 @@ import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
+const IS_FIREFOX = navigator.userAgent.includes("Firefox");
 const DEFAULT_SCALE_EXTENT: [number, number] = [1, 20];
 const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent(DEFAULT_SCALE_EXTENT).interpolate(constrainedFlight);
 
@@ -63,6 +64,7 @@ function handleZoomPerFrame(): void {
     "transform",
     `translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`
   );
+  updateFeatureMaskBounds();
 
   if (didScaleChange) {
     Layers.draw("scaleBar");
@@ -112,6 +114,32 @@ function applyZoomFontSize(): void {
   }
 }
 
+const FEATURE_MASKS = "mask#land, mask#water";
+
+/** Firefox drops oversized masks at high zoom (ocean turns white): bound them to the visible viewport */
+export function updateFeatureMaskBounds(): void {
+  if (!IS_FIREFOX) return;
+  const { x, y, width, height, scale } = viewport;
+  const attrs = {
+    maskUnits: "userSpaceOnUse",
+    x: String((-x - 1) / scale),
+    y: String((-y - 1) / scale),
+    width: String((width + 2) / scale),
+    height: String((height + 2) / scale)
+  };
+  for (const mask of document.querySelector("#map")?.querySelectorAll(FEATURE_MASKS) ?? []) {
+    for (const [name, value] of Object.entries(attrs)) mask.setAttribute(name, value);
+  }
+}
+
+/** Save and export clones get the complete masks back */
+export function restoreFeatureMaskBounds(root: ParentNode): void {
+  if (!IS_FIREFOX) return;
+  for (const mask of root.querySelectorAll(FEATURE_MASKS)) {
+    for (const name of ["maskUnits", "x", "y", "width", "height"]) mask.removeAttribute(name);
+  }
+}
+
 const CONTROL_CONTAINERS = "#ruler, #debug, #regimentBase, #journeyOverlay";
 let controlsRule: CSSStyleRule | null = null;
 
@@ -125,6 +153,7 @@ function applyControlsScale(): void {
 }
 
 export function invokeActiveZooming(): void {
+  updateFeatureMaskBounds();
   applyZoomFontSize();
   ViewportLayers.renderNow();
 

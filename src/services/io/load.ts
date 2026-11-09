@@ -388,10 +388,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     await resolveVersionConflicts(mapVersion!, data);
 
-    // hidden layers save no paths, so colored hatchings are restored from data
-    const { biomes, cultures, states, religions, provinces, zones, markets } = pack;
-    const entities = [biomes, cultures, states, religions, provinces, zones, markets].flat();
-    Hatches.ensureAll(entities.map(entity => entity?.color));
+    Hatches.sync();
 
     const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined; // data[48] should be already migrated by auto-update
     Styles.set(Styles.parse(styleRecord));
