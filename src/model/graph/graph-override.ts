@@ -1,5 +1,5 @@
 // User edits applied on top of the generated graph
-import { polygonArea } from "d3";
+import { polygonArea, type Quadtree, quadtree } from "d3";
 import type { Point } from "@/types/global";
 import type { PackedGraph } from "@/types/packed-graph";
 import { TYPED_ARRAY_MAX, unique } from "@/utils/array-utils";
@@ -10,6 +10,7 @@ import { Pack } from "./pack-generator";
 type OverrideValue = number | number[];
 /** property name → element id → [original value, custom value] */
 type PropOverrides = Record<string, Record<number, [OverrideValue, OverrideValue]>>;
+const POSITION_TOLERANCE = 0.001; // circumcenters of the same cells can differ by float rounding
 
 export interface GraphOverrides {
   pack?: { cells?: PropOverrides; vertices?: PropOverrides };
@@ -47,10 +48,18 @@ class GraphOverrideModule {
     this.reset();
 
     const restored: number[] = [];
+    let byPosition: Quadtree<[number, number, number]> | null = null;
     for (const [id, [from, to]] of movedVertices) {
-      const vertexId = Number(id);
+      let vertexId = Number(id);
       const current = pack.vertices.p[vertexId];
-      if (!current || String(current) !== String(from)) continue; // the graph changed, the id means another point
+      if (!current || String(current) !== String(from)) {
+        // the rebuild renumbered the vertices: find the one still generated at the original point
+        byPosition ??= quadtree(pack.vertices.p.map(([x, y], i) => [x, y, i] as [number, number, number]));
+        const [x, y] = from as Point;
+        const match = byPosition.find(x, y, POSITION_TOLERANCE);
+        if (!match || this.movedVertices[match[2]]) continue; // the graph changed around it
+        vertexId = match[2];
+      }
 
       pack.vertices.p[vertexId] = to as Point;
       this.movedVertices[vertexId] = [from, to];
