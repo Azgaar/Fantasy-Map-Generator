@@ -10,6 +10,7 @@ import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations
 import { DEAL_KINDS } from "@/model/economy/deals";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { PROVISION_NEED } from "@/model/economy/state-orders";
 import type { GraphOverrides } from "@/model/graph/graph-override";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
@@ -2310,9 +2311,15 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
       if (pack.cells?.i) pack.cells.prosperity ??= new Uint8Array(pack.cells.i.length); // rural days were not kept
 
-      // the old run kept no military spending: armies count as fully kept until the next run
-      for (const state of pack.states ?? [])
-        if (state?.i && !state.removed) state.economy.spent.military = Military.getUpkeepNeed(state.i);
+      // the old run kept no state spending: the army, court and infrastructure count as fully kept until the next run
+      for (const state of pack.states ?? []) {
+        if (!state?.i || state.removed) continue;
+        const people = (state.urban || 0) + (state.rural || 0);
+        const { spent } = state.economy;
+        spent.military = Military.getUpkeepNeed(state.i);
+        spent.court = rn(PROVISION_NEED.court * people, 2);
+        spent.infrastructure = rn(PROVISION_NEED.infrastructure * people, 2);
+      }
     }
     migrateEconomyRun();
   }

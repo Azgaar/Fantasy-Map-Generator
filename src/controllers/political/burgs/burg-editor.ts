@@ -737,7 +737,7 @@ function toggleRelocateBurg(): void {
 function relocateBurgOnClick(this: SVGGElement, event: MouseEvent): void {
   const [x, y] = getPointer(event, this);
   if (!tryEdit(() => Burgs.move(getSelectedId(), x, y))) return;
-  Layers.draw("burgIcons", "labels", "routes", "goods", "markets");
+  Layers.draw("burgIcons", "labels", "routes", "goods", "markets", "trade");
   if (event.shiftKey === false) toggleRelocateBurg();
 }
 

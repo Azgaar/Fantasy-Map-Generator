@@ -87,10 +87,8 @@ class TaxesModule {
 
   /** Only an import may pay a tariff */
   isImport(deal: Deal): boolean {
-    const [burgId, marketId, , , , , , tariff] = deal;
-    const burg = pack.burgs[burgId];
-    const own = Markets.getState(burg && Markets.ofBurg(burg));
-    return tariff > 0 || this.isForeign(own, Markets.getState(Markets.get(marketId)));
+    const { own, market } = this.getMarketStates(deal);
+    return deal[7] > 0 || this.isForeign(own, market);
   }
 
   /** The rate of the deal's tariff: the importer's on goods from the other market's state */

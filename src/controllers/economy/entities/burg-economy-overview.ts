@@ -211,7 +211,7 @@ function getSummaryRows(burg: Burg): HistoryRow[] {
     return (used.length ? used : recipes)
       .map(recipe =>
         Object.keys(recipe)
-          .map(id => Goods.get(+id)?.name ?? "")
+          .map(id => escapeHtml(Goods.get(+id)?.name ?? ""))
           .join(` ${t("and")} `)
       )
       .join(" / ");
@@ -325,7 +325,7 @@ function renderDecision(candidates: readonly ProductionCandidate[]): string {
         ? `${t("goal sell")} ${formatPrice((candidate.gainPerWorker || 0) * workers)} ÷ ${t("workers")} ${workers} × ${t("units")} ${rn(candidate.units, 2)}`
         : `${t("sell")} ${formatPrice(candidate.sellPrice)} - ${t("cost")} ${formatPrice(candidate.ingredientCost)}`;
       const inputs = ingredients ? ` ${t("Ingredients")}: ${ingredients}` : ` ${t("Gathered from the deposit")}`;
-      return `<li><b>${name}</b>${prep}: ${formula} = ${score(candidate.score)}.${inputs}</li>`;
+      return `<li><b>${escapeHtml(name)}</b>${prep}: ${formula} = ${score(candidate.score)}.${inputs}</li>`;
     });
   const basis = t("highest score among feasible options ({{options}})", { options: candidates.length });
   return `<div><b>${t("Decision basis")}:</b> ${basis}:</div><ul>${items.join("")}</ul>`;

@@ -1,3 +1,4 @@
+import { Pack } from "@/model/graph/pack-generator";
 import type { Good } from "@/types/economy";
 import { Corruption, type ProvinceCorruption } from "./corruption";
 import { DEAL_KINDS } from "./deals";
@@ -44,10 +45,10 @@ type Consumption = {
 type RuralCell = { people: number; earned: number; bought: number[]; goods: number[]; living: Living };
 
 class ProsperityModule {
-  private source: unknown = null; // the deals the cache describes
+  private source: unknown[] = []; // the deals and Pack revision the cache describes
   private burgs = new Map<number, Living>();
   private consumed = new Map<number, number[]>();
-  private cellsSource: unknown = null;
+  private cellsSource: unknown[] = [];
   private rural = new Map<number, RuralCell>(); // by cell id
 
   /** Units of each good the burg's people bought or kept in the last run, by good id */
@@ -80,8 +81,8 @@ class ProsperityModule {
   }
 
   private index(): void {
-    if (this.source === pack.deals) return;
-    this.source = pack.deals;
+    if (isCurrent(this.source)) return;
+    this.source = [pack.deals, Pack.revision];
     this.burgs.clear();
     this.consumed.clear();
     if (!pack.deals?.length) return; // no economy run: nothing to measure
@@ -110,8 +111,8 @@ class ProsperityModule {
 
   /** Rural earnings and purchases go to cells by produce value, or by people where none */
   private indexRural(output?: Record<number, number>[]): void {
-    if (!output && this.cellsSource === pack.deals) return;
-    this.cellsSource = pack.deals;
+    if (!output && isCurrent(this.cellsSource)) return;
+    this.cellsSource = [pack.deals, Pack.revision];
     this.rural.clear();
     if (!pack.deals?.length) return;
     const needsCost = getNeedsCost(options.map.goods);
@@ -242,3 +243,5 @@ export const Prosperity = new ProsperityModule();
 function isNeeded(good?: Good): boolean {
   return Object.values(good?.demandCoverage ?? {}).some(Boolean);
 }
+
+const isCurrent = ([deals, revision]: unknown[]) => deals === pack.deals && revision === Pack.revision;

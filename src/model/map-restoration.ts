@@ -798,9 +798,11 @@ class MapRestorationModule {
         // the land under a land regiment can have gone under the sea
         const cell = !regiment.n && cells.h[kept] < 20 ? (nearestLand(x, y) ?? kept) : kept;
         const [baseX, baseY] = projection(regiment.bx, regiment.by);
-        const [bx, by] = this.isInMap(baseX, baseY) ? [rn(baseX, 2), rn(baseY, 2)] : cells.p[cell];
+        const moved = cell !== kept; // a stranded regiment and its base go to its new land
+        const [rx, ry] = moved ? cells.p[cell] : [rn(x, 2), rn(y, 2)];
+        const [bx, by] = !moved && this.isInMap(baseX, baseY) ? [rn(baseX, 2), rn(baseY, 2)] : cells.p[cell];
         const children = regiment.children?.map(restoreRegiment);
-        return { ...regiment, cell, x: rn(x, 2), y: rn(y, 2), bx, by, ...(children && { children }) };
+        return { ...regiment, cell, x: rx, y: ry, bx, by, ...(children && { children }) };
       };
       state.military = (state.military ?? [])
         .filter(regiment => this.isInMap(...projection(regiment.x, regiment.y)))

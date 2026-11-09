@@ -71,7 +71,7 @@ Every cell where people live has a technological development from 1 to 100, from
 
 # Trade and carriage
 
-A burg buys from **its own market** whenever it has the good. When it does not, the burg buys from the other market where the good comes cheapest, counting the price there, that market's sales tax and the carriage. Buying from a market of another state is an **import**, and the burg's state may charge a tariff on it. A burg sells to whichever market pays it best after carriage; selling to a market of another state is an import there, and that state may charge its tariff.
+A burg buys from **its own market** while it stocks at least one unit of the good. Otherwise, the burg buys from the other market where the good comes cheapest, counting the price there, that market's sales tax and the carriage. Buying from a market of another state is an **import**, and the state of the burg's own market may charge a tariff on it. A border burg whose market is centered in another state pays that state's tariff. A burg sells to whichever market pays it best after carriage; selling to a market of another state is an import there, and that state may charge its tariff.
 
 Goods travel along **routes**: roads, trails and sea lanes. The Trade layer draws exactly the path the goods take, and the carriage is paid for that path:
 

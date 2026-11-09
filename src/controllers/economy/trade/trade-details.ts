@@ -133,10 +133,9 @@ function open(deal: Deal): void {
       (k === DEAL_KINDS.sale) === isSale &&
       (k === DEAL_KINDS.order) === isOrder
   );
-  activeFlow = { deals, burgId, marketId, isSale };
-
   const path = TradeAnimation.findRoutePath(pack.burgs[ends.startBurgId].cell, pack.burgs[ends.endBurgId].cell);
   if (!path) return;
+  activeFlow = { deals, burgId, marketId, isSale };
   activePoints = path.points;
 
   renderDialog();

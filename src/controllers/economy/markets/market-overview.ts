@@ -311,6 +311,7 @@ function downloadStockCsv() {
 function closeMarketOverview() {
   if (ensureEl("marketOverviewRelocate").classList.contains("pressed")) toggleRelocateMarket();
   Dialog.destroy(dialogId);
+  activeMarketId = 0;
 }
 
 export const MarketOverview = { open };
