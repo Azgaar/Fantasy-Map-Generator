@@ -807,6 +807,82 @@ describe("TradeModule", () => {
       expect(globalThis.pack.deals).toHaveLength(0);
     });
 
+    it("an embargo on specific goods blocks only those goods, over any tariff", () => {
+      const cases: [any[], boolean][] = [
+        [[{ states: "all", goods: [1], rate: "embargo" }], true],
+        [[{ states: "all", goods: [0], rate: "embargo" }], false],
+        [[{ states: [1], goods: [0, 1], rate: "embargo" }], false],
+        [
+          [
+            { states: [1], goods: "all", rate: 0.1 },
+            { states: [1], goods: [0], rate: "embargo" }
+          ],
+          false
+        ],
+        [
+          [
+            { states: "all", goods: [0], rate: "embargo" },
+            { states: [1], goods: "all", rate: 0.1 }
+          ],
+          false
+        ],
+        [
+          [
+            { states: [1], goods: "all", rate: "embargo" },
+            { states: "all", goods: [0], rate: 0.1 }
+          ],
+          false
+        ],
+        [
+          [
+            { states: "all", goods: [0], rate: "embargo" },
+            { states: [1], goods: [0], rate: 0.1 }
+          ],
+          false
+        ],
+        [
+          [
+            { states: [1], goods: "all", rate: "embargo" },
+            { states: [1], goods: [0], rate: 0.1 }
+          ],
+          false
+        ],
+        [
+          [
+            { states: "all", goods: "all", rate: "embargo" },
+            { states: [1], goods: "all", rate: 0 }
+          ],
+          false
+        ],
+        [
+          [
+            { states: [1], goods: [0], rate: 0.1 },
+            { states: [1], goods: [0], rate: "embargo" }
+          ],
+          false
+        ]
+      ];
+      for (const [tariffs, opens] of cases) {
+        for (const states of [
+          [{ i: 0 }, { i: 1 }, { i: 2, economy: { tariffs } }],
+          [
+            { i: 0 },
+            {
+              i: 1,
+              economy: { tariffs: tariffs.map(rule => ({ ...rule, states: rule.states === "all" ? "all" : [2] })) }
+            },
+            { i: 2 }
+          ]
+        ]) {
+          globalThis.pack.deals = [];
+          const { exporter, burg, good, terms, importGood } = setupImport(states);
+          expect(tradeModule.quoteSource(burg, good, terms) !== null).toBe(opens);
+          expect(importGood() !== null).toBe(opens);
+          expect(tradeModule.sell({ burg, good, units: 1, taxRate: 0, market: exporter }) !== null).toBe(opens);
+        }
+      }
+    });
+
     it("tariffs take the most specific rule of the importer's state", () => {
       const { importGood } = setupImport([
         { i: 0 },

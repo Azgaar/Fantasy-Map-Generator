@@ -174,7 +174,7 @@ purchase: price = market price × (1 + margin rate) + tax + tariff + carriage
 
 **Rates** come from the state form (`DEFAULT_TAX_BY_FORM`), jittered per state. The license fee follows the state's sales tax roll (`States.defineMarketFee`), so the rest of generation keeps its random sequence. Neutrals never tax.
 
-**Tariffs** (`state.economy.tariffs`) are rules by state and good, most specific first, seeded from diplomacy: a default on all states, none for allies, friends, vassals and suzerains, more for suspicion and rivals, an embargo for enemies. The importer is the state of the market the goods go to: the deal's market on a sale, the burg's own on a purchase. An embargo by either side rules that market out. Neutral lands levy nothing, and no rule reaches them.
+**Tariffs** (`state.economy.tariffs`) are rules by state and good: any matching embargo applies, else the most specific tariff, seeded from diplomacy: a default on all states, none for allies, friends, vassals and suzerains, more for suspicion and rivals, an embargo for enemies. The importer is the state of the market the goods go to: the deal's market on a sale, the burg's own on a purchase. An embargo by either side rules that market out. Neutral lands levy nothing, and no rule reaches them.
 
 **Adjustments** (`burg.adjustments`, `state.economy.adjustments`) are named lines the user sets, income or costs a day besides trade. They come at dawn, count in income and are kept on regeneration.
 

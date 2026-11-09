@@ -123,19 +123,18 @@ class TaxesModule {
     return rate === "embargo" ? 0 : rate;
   }
 
-  /** The importer's most specific rule: state and good, state, good, all; an embargo wins a tie */
+  /** Any matching embargo of the importer, else its most specific tariff: state and good, state, good, all */
   findTariff(importerStateId: number, exporterStateId: number, goodId: number): TariffRate {
     const importer = pack.states[importerStateId];
     if (!this.isForeign(importerStateId, exporterStateId) || !importer || importer.removed) return 0;
-    let rate: TariffRate = 0;
+    let rate = 0;
     let rank = -1;
     for (const { states, goods, rate: ruleRate } of importer.economy.tariffs) {
       if (states !== "all" && !states.includes(exporterStateId)) continue;
       if (goods !== "all" && !goods.includes(goodId)) continue;
+      if (ruleRate === "embargo") return "embargo";
       const ruleRank = (states === "all" ? 0 : 2) + (goods === "all" ? 0 : 1);
-      if (ruleRank < rank || (ruleRank === rank && rate === "embargo")) continue;
-      rate = ruleRate;
-      rank = ruleRank;
+      if (ruleRank >= rank) [rate, rank] = [ruleRate, ruleRank];
     }
     return rate;
   }
