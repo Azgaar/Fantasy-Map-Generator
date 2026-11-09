@@ -2,6 +2,7 @@
 
 import { Pack } from "@/model/graph/pack-generator";
 import { type IntegrityViolation, MapIntegrity } from "@/model/map-integrity";
+import { Lakes } from "@/model/physical/lakes";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
@@ -19,6 +20,7 @@ class MapRepairService {
     }
 
     return [
+      ...this.repairRivers(),
       ...this.repairCellOwners(),
       ...this.repairBurgs(),
       ...this.repairCapitals(),
@@ -42,6 +44,18 @@ class MapRepairService {
     const rules = broken.map(({ rule, count, examples }) => `${rule}: ${count} (${examples.join(", ")})`);
     const title = `[Data integrity] ${repairs.length} repaired, ${broken.length} rules broken:`;
     log.warn([title, ...repairs, ...rules].join("\n"));
+  }
+
+  // runs before the cell owners, which then drop the removed rivers from the cells
+  private repairRivers(): string[] {
+    const repairs: string[] = [];
+    pack.rivers = pack.rivers.filter(river => {
+      if (river.cells?.length >= 2) return true;
+      repairs.push(`River ${river.i} has less than 2 cells. Removing the river`);
+      return false;
+    });
+    if (repairs.length) Lakes.cleanupLakeData();
+    return repairs;
   }
 
   private repairCellOwners(): string[] {

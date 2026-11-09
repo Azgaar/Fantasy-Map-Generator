@@ -302,6 +302,7 @@ function addControlPoint(this: SVGElement, event: MouseEvent): void {
 }
 
 function removeControlPoint(this: SVGCircleElement): void {
+  if (getRiver().cells.length <= 2) return void tip(t("A path needs at least two points."), false, "error");
   this.remove();
   redrawRiver();
 
