@@ -16,8 +16,6 @@ jobs:
         with:
           persist-credentials: false
       - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-        with:
-          version: latest
+        uses: biomejs/setup-biome@v2 # no version: it installs the one package-lock.json pins
       - name: Run Biome
         run: biome ci .

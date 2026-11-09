@@ -47,7 +47,7 @@ function watchErrors(page: Page): string[] {
 const layerContent = (page: Page) =>
   page.evaluate(() =>
     Object.fromEntries(
-      FMG.Layers.all.map(layer => {
+      FMG.Layers.all.map((layer: any) => {
         const element = document.getElementById(layer.params.element ?? layer.id);
         return [layer.id, element ? element.innerHTML.length : -1];
       })
@@ -58,7 +58,7 @@ const layerContent = (page: Page) =>
 const visibilityDrift = (page: Page) =>
   page.evaluate(() =>
     FMG.Layers.all
-      .map(layer => {
+      .map((layer: any) => {
         const element = document.getElementById(layer.params.element ?? layer.id);
         if (!element) return `${layer.id}: no element`;
         const hidden = element.style.display === "none";
@@ -147,13 +147,13 @@ test.describe("layer scenarios", () => {
     const leftovers = await page.evaluate(() =>
       FMG.Layers.all
         .filter(
-          layer =>
+          (layer: any) =>
             !layer.params.permanent &&
             !layer.params.keepContent &&
             !layer.params.erase &&
             !FMG.Layers.isOn(layer.id)
         )
-        .map(layer => {
+        .map((layer: any) => {
           const element = document.getElementById(layer.params.element ?? layer.id);
           // declared children are the skeleton and are meant to survive; their content is not
           const content = Array.from(element?.children ?? []).filter(child => child.innerHTML.length);

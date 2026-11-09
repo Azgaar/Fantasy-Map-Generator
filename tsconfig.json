@@ -28,6 +28,5 @@
     "noUncheckedSideEffectImports": true
     // "noUncheckedIndexedAccess": true, // TODO: turn on in the next version
   },
-  "include": ["src"],
-  "exclude": ["src/e2e"]
+  "include": ["src", "tests", "*.ts"]
 }

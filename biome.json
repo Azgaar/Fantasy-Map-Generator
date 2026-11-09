@@ -47,7 +47,7 @@
   },
   "overrides": [
     {
-      "includes": ["**", "!src/e2e/**"],
+      "includes": ["**"],
       "linter": { "rules": { "correctness": { "usePlaywrightValidDescribeCallback": "off" } } }
     },
     {

@@ -19,6 +19,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: "24"
+          cache: "npm"
       - name: Install dependencies
         run: npm ci
       - name: Check the version is in sync across versioning.ts and the package files
@@ -42,6 +43,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: "24"
+          cache: "npm"
       - name: Install dependencies
         run: npm ci
       - name: Run scenario tests
@@ -55,6 +57,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: "24"
+          cache: "npm"
       - name: Install dependencies
         run: npm ci
       - name: Warn if the English catalog misses a translated interface string

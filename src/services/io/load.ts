@@ -272,11 +272,12 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
   let isLogGroupOpen = false;
 
   try {
-    const { migrateLegacySettings, resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
+    const isOutdated = compareVersions(mapVersion, VERSION).isOlder;
+    const autoUpdate = isOutdated ? await import("./auto-update") : null; // every migration is gated on an older version
 
     Dialog.closeAll(undefined, { minimized: true });
 
-    migrateLegacySettings(mapVersion!, data);
+    autoUpdate?.migrateLegacySettings(mapVersion!, data);
     const settings = data[1] ? safeParseJSON(data[1]) : null;
     if (!settings) throw new Error("Map settings are missing or malformed");
     Options.applyLoaded(settings);
@@ -386,7 +387,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       : defaultNameBases;
     Names.clearChains();
 
-    await resolveVersionConflicts(mapVersion!, data);
+    await autoUpdate?.resolveVersionConflicts(mapVersion!, data);
 
     Hatches.sync();
 

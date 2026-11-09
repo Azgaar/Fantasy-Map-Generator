@@ -38,12 +38,6 @@ test.describe("States", () => {
 
     expect(stateId).not.toBeNull();
 
-    // Verify this state is in neighbors of other states before removal
-    const neighborsBefore = await page.evaluate((id: number) => {
-      const {states} = (window as any).pack;
-      return states.filter((s: any) => s.i && !s.removed && s.neighbors && s.neighbors.includes(id)).length;
-    }, stateId!);
-
     // Click the trash icon to remove the state
     await page.click(`#statesBodySection > div[data-id="${stateId}"] .icon-trash-empty`);
 
@@ -202,7 +196,7 @@ test.describe("Diplomacy", () => {
   const diplomacy = (page: Page) => page.evaluate(() => JSON.stringify(pack.states.map(state => state.diplomacy)));
   const relation = (page: Page, subject: number, object: number) =>
     page.evaluate(([a, b]) => pack.states[a].diplomacy![b], [subject, object]);
-  const chronicleLength = (page: Page) => page.evaluate(() => pack.states[0].diplomacy.length);
+  const chronicleLength = (page: Page) => page.evaluate(() => pack.states[0].diplomacy!.length);
   const selfId = (page: Page) => page.locator("#diplomacyBodySection .Self");
 
   async function openEditor(page: Page, relationName: string): Promise<void> {

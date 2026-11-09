@@ -43,7 +43,7 @@ test.describe("Notes Editor", () => {
 
     await expect(page.locator("#notesSelect")).toHaveValue(`burg:${burgId}`);
     await expect(page.locator("#notesName")).toHaveText(burgName);
-    const groups = await page.locator("#notesSelect optgroup").evaluateAll(els => els.map(el => el.label));
+    const groups = await page.locator("#notesSelect optgroup").evaluateAll(els => els.map(el => (el as HTMLOptGroupElement).label));
     expect(groups).toEqual(expect.arrayContaining(["Burgs", "Regiments"]));
     await expect(page.locator("#notesEditor .ql-editor")).toContainText("Hello world");
   });

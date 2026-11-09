@@ -73,7 +73,8 @@ test("the library styles the live map through the contract", async ({ page }, te
   await page.screenshot({ path: testInfo.outputPath("styles-demo-before.png") });
 
   const result = await page.evaluate(async () => {
-    const { Styles } = await import("/Fantasy-Map-Generator/model/styles/styles.ts");
+    const served = "/Fantasy-Map-Generator/model/styles/styles.ts"; // a served path, not one tsc can resolve
+    const { Styles } = await import(served);
     const styles = globalThis.styles;
     styles.rivers.groups.regular.attrs.fill = "#ff00aa";
     styles.routes.groups.roads.attrs.stroke = "#00e5ff";

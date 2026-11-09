@@ -1,7 +1,7 @@
 # Project Overview
 
 - **Purpose**: Procedural generation, editing, and visualization of fantasy maps for writers, game masters, and cartographers.
-- **Entry Points**: Start by inspecting `docs/architecture.md` to align with the domain model.
+- **Entry Points**: Start by inspecting `docs/architecture/architecture.md` to align with the domain model.
 - **Main Technologies**: Typescript, SVG/WebGL for rendering, Vite for bundling, Biome for linting/formatting.
 - **Architecture**: Moving toward FMG 2.0. The system is divided into four major layers:
   1. **State**: The world data (`grid` and `pack` objects).
