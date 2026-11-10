@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearEntityMultipliers } from "@/data/goods";
+import { log } from "@/utils/logger";
 import { Goods } from "./goods-generator";
 
 describe("remapEntityMultipliers", () => {
@@ -183,6 +184,23 @@ describe("GoodsModule", () => {
     goodsModule.generate({ randomSeed: 2 });
 
     expect(Array.from(globalThis.pack.cells.good)).toEqual([0, 1, 1, 0]);
+  });
+
+  it("logs an invalid distribution and places nothing for it, not breaking the rest", () => {
+    log.enabled.error = true;
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    globalThis.pack.cells.biome = Uint8Array.from([0, 1, 1, 0]);
+    for (const distribution of ["biome(1) || missing()", "biome(1) &&"]) {
+      globalThis.options.map.goods[0].distribution = distribution; // throws only where biome(1) is false; can't compile
+      goodsModule.generate({ randomSeed: 3 });
+
+      const goodIds = Array.from(globalThis.pack.cells.good);
+      expect(goodIds).not.toContain(1);
+      expect(goodIds.filter(id => id === 2)).toHaveLength(2);
+    }
+    expect(error).toHaveBeenCalledTimes(2);
+    error.mockRestore();
+    log.enabled.error = false;
   });
 
   it("picks a whole count within the range, rounding fractions up", () => {

@@ -37,19 +37,18 @@ Generation runs `Goods.generate()` early, before population ranking, which reads
 
 **The run changes only when the user asks for it.** One dialog, `openEconomyRegeneration(preset)`, ticks what to run, always in this order. Tools has one Economy button for it; each button only opens it with its own ticks:
 
-| Part          | Does                                                                                                         | Tools Economy | Goods Editor | Markets Overview |
-| ------------- | ------------------------------------------------------------------------------------------------------------ | ------------- | ------------ | ---------------- |
-| Restore goods | `Goods.restoreDefaults`, placing all deposits                                                                |               |              |                  |
-| Deposits      | `Goods.regenerate`                                                                                           |               | ✓            |                  |
-| Markets       | `Markets.regenerate`, drawing their areas                                                                    |               |              | ✓                |
-| Market areas  | `Markets.expand`, discarding hand-painted cells                                                              |               |              |                  |
-| Production    | `Production.regenerate`: gives new water deposits a market, clears deals and stock, runs the day, pays taxes | ✓             | ✓            | ✓                |
+| Part          | Does                                                                      | Tools Economy | Goods Editor | Markets Overview |
+| ------------- | ------------------------------------------------------------------------- | ------------- | ------------ | ---------------- |
+| Restore goods | `Goods.restoreDefaults`, placing all deposits                             |               |              |                  |
+| Deposits      | `Goods.regenerate`                                                        |               | ✓            |                  |
+| Markets       | `Markets.regenerate`, drawing their areas                                 |               |              | ✓                |
+| Market areas  | `Markets.expand`, discarding hand-painted cells                           |               |              |                  |
+| Production    | `Production.regenerate`: clears deals and stock, runs the day, pays taxes | ✓             | ✓            | ✓                |
 
 **Burgs** and **States** stay out of it, behind the plain confirmation: Burgs runs burgs, then Markets, then Production; States runs states, then Production, then the military, equipped from the new run.
 
 - **It always asks**, with no "Do not ask again": choosing is the point of it.
 - **Without Production**, new deposits or areas leave the run as it was; new markets or restored goods call `Production.clear()`, as the run named what is gone.
-- **Water deposits** join a market when production runs (`Markets.claimWaterDeposits`), as the flood skips water without goods. It keeps the land, so hand-painted cells survive.
 - **Removing** a good, a burg or a market prunes what names it from the run and reruns nothing, so the rest stays until the next run. A burg left without a market pays its tariffs to its own state until then; painting markets or states moves the taxes of the deals with them. The military roster outlives the map, so it keeps a removed good's id and units ignore it while the map lacks that good.
 - **Painting deposits** by hand only changes the cells.
 - **Apply** in the good editor and the State budget dialog sets the changes, then opens the same dialog with Production ticked; cancelling leaves them for the next run. The good editor re-places a good whose distribution or deposit count changed either way.
@@ -91,7 +90,7 @@ Buyers **spread their spending** over every good covering a need, cheaper covera
 
 Burgs are scored by population (capitals, ports and crossroads score more, dear licenses less, then random noise) and walked best first. A burg becomes a market center when no other center on its landmass is within its **spacing** (`getSpacing`), and none on another landmass within half of it, so most inhabited islands get a market. Busy land and cheap licenses pack markets closer; steppes, deserts and greedy states spread them out (`MARKET_FEE_DETERRENCE`, `DENSITY_PULL`).
 
-Each market floods out from its center by cost: another state's land or another landmass costs extra, crossing into an enemy's land much more, water much more, and water cells join only when they hold a good. Each market then moves to the best-scored burg it serves and floods again (`recenter`). Every burg belongs to its cell's market (`Markets.ofBurg`). Users can add, relocate and remove markets and paint territories. Cells with no market (id 0) supply nothing, and their burgs sit out the run.
+Each market floods out from its center by cost: another state's land or another landmass costs extra, crossing into an enemy's land much more, and water much more. Water cells join too, so a market covers its sea and the deposits in it. Each market then moves to the best-scored burg it serves and floods again (`recenter`). Every burg belongs to its cell's market (`Markets.ofBurg`). Users can add, relocate and remove markets and paint territories. Cells with no market (id 0) supply nothing, and their burgs sit out the run.
 
 ### Stock and price
 

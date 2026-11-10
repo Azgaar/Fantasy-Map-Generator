@@ -153,7 +153,6 @@ export type ProductionLogEntry = ManufacturingEntry | TradeEntry | DemandEntry;
 
 export class ProductionModule {
   regenerate(): void {
-    Markets.claimWaterDeposits();
     pack.deals = [];
     for (const market of pack.markets) market.goods = {};
     this.produce();

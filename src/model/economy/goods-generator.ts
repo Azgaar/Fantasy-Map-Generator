@@ -7,6 +7,7 @@ import { Options } from "@/model/options/options-model";
 import { Tags } from "@/model/tags";
 import type { Good } from "@/types/economy";
 import { requireColor } from "@/utils/color-utils";
+import { log } from "@/utils/logger";
 import { rn } from "@/utils/number-utils";
 import { requireName } from "@/utils/validation-utils";
 import { DEMAND_PRIORITY } from "./demand";
@@ -58,8 +59,19 @@ export class GoodsModule {
     return min + Math.floor(Math.random() * (max - min + 1));
   }
 
+  /** A rule that fails to compile or run places nothing, so the map still generates */
   private placeDeposits(good: Good, count: number) {
     if (!good.distribution) return;
+    try {
+      this.spreadDeposits(good, count);
+    } catch (error) {
+      log.error(`Goods: invalid distribution of ${good.name}, no deposits placed`, error);
+      const { good: cellGood } = pack.cells;
+      for (let cellId = 0; cellId < cellGood.length; cellId++) if (cellGood[cellId] === good.i) cellGood[cellId] = 0;
+    }
+  }
+
+  private spreadDeposits(good: Good, count: number) {
     const { cells } = pack;
     const methods = `{${Object.keys(this.getMethods()).join(", ")}}`;
     const spread = new Function(methods, `return ${good.distribution}`);
