@@ -35,14 +35,14 @@ Any change has to be confirmed with _Apply_, which triggers a full military rege
 
 The default unit set is:
 
-| Icon | Name      | Goods                     | Rural % | Urban % | Crew | Power | Type      | Separate |
-| ---- | --------- | ------------------------- | ------- | ------- | ---- | ----- | --------- | -------- |
-| 🪓   | levies    | none                      | 0       | 0       | 1    | 0.5   | levies    | no       |
-| ⚔️   | infantry  | Arms                      | 0.25    | 0.2     | 1    | 1     | melee     | no       |
-| 🏹   | archers   | Arms                      | 0.12    | 0.2     | 1    | 1     | ranged    | no       |
-| 🐴   | cavalry   | Horses, Camels, Harnesses | 0.12    | 0.03    | 1    | 2     | mounted   | no       |
-| 💣   | artillery | Artillery, Gunpowder      | 0       | 0.03    | 8    | 12    | machinery | no       |
-| 🌊   | fleet     | Boats                     | 0       | 0.015   | 100  | 50    | naval     | yes      |
+| Icon | Name      | Goods                | Rural % | Urban % | Crew | Power | Type      | Separate |
+| ---- | --------- | -------------------- | ------- | ------- | ---- | ----- | --------- | -------- |
+| 🪓   | levies    | none                 | 0       | 0       | 1    | 0.5   | levies    | no       |
+| ⚔️   | infantry  | Arms                 | 0.25    | 0.2     | 1    | 1     | melee     | no       |
+| 🏹   | archers   | Arms                 | 0.12    | 0.2     | 1    | 1     | ranged    | no       |
+| 🐴   | cavalry   | Horses, Camels, Tack | 0.12    | 0.03    | 1    | 2     | mounted   | no       |
+| 💣   | artillery | Artillery, Gunpowder | 0       | 0.03    | 8    | 12    | machinery | no       |
+| 🌊   | fleet     | Boats                | 0       | 0.015   | 100  | 50    | naval     | yes      |
 
 The available types are melee, ranged, mounted, machinery, naval, armored, aviation, magical and levies. Levies are a normal unit, just weak: poorly armed conscripts with half an infantryman's power. By default their rural and urban percentages are 0, so they only take in troops other units could not equip, but they can be raised directly like any other unit.
 

@@ -355,7 +355,7 @@ The catalogue as it should be, the source the tuner (`scripts/economy-tuner/cata
 | Sails          | Mfg  | 3          | 11    |      |           |              |          |        |
 | Boats          | Mfg  | 1          | 65    |      |           |              | 1        |        |
 | Boots          | Mfg  | 8          | 10    |      | 1         |              |          |        |
-| Harnesses      | Mfg  | 5          | 9     |      |           |              | 0.85     |        |
+| Tack           | Mfg  | 5          | 9     |      |           |              | 0.85     |        |
 | Barrels        | Mfg  | 7          | 12    |      |           |              |          |        |
 | Bronze         | Mfg  | 4          | 15    |      |           |              |          |        |
 | Tools          | Mfg  | 8          | 16    |      | 0.6       |              |          |        |

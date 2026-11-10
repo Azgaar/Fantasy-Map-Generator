@@ -746,7 +746,7 @@ export const GOODS_DATA: GoodData[] = [
     demandCoverage: { utilities: 1 }
   },
   {
-    name: "Harnesses",
+    name: "Tack",
     tags: ["mounted"],
     icon: "goods-harnesses",
     color: "#a0522d",
