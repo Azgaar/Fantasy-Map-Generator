@@ -10,6 +10,65 @@ import { createFileInput } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
+
+// one grid for the list, so columns line up across rows whatever the language
+const BROWSER_SAVES_STYLE = /* css */ `
+  #browserSaves {
+    display: grid;
+    grid-template-columns: auto minmax(9em, 1fr) auto auto auto auto;
+    row-gap: 0.2em;
+    width: auto;
+    max-height: 16em;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .browserSave {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    column-gap: 0.9em;
+    padding: 0.3em 0.5em;
+    border: 1px solid #00000022;
+    cursor: pointer;
+  }
+
+  .browserSave:hover {
+    border-color: #00000055;
+    background-color: #00000010;
+  }
+
+  #browserSaves > i {
+    grid-column: 1 / -1;
+    opacity: 0.7;
+  }
+
+  .browserSaveKind {
+    padding: 0 0.5em;
+    border-radius: 1em;
+    font-size: 0.85em;
+    text-align: center;
+    background-color: #00000014;
+  }
+
+  .browserSaveKind.quick {
+    background-color: var(--header);
+    color: #fff;
+  }
+
+  .browserSaveName {
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .browserSaveSize {
+    text-align: right;
+    opacity: 0.7;
+  }
+`;
 
 const TEMPLATE = /* html */ `
   <div id="exportMapData" style="display: none" class="dialog">
@@ -81,6 +140,9 @@ const TEMPLATE = /* html */ `
     <p>
       ${t("Maps are saved in .map format, that can be loaded back via the Load in menu. There is no way to restore the progress if file is lost. Please keep old save files on your machine or cloud storage as backups.")}
     </p>
+    <p>
+      ${t("Browser storage is only a backup: the browser can clear it at any time. It keeps one quick save and the latest autosaves, listed in the Load menu.")}
+    </p>
     <div data-tip="${t("Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed")}">
       <input id="saveViewOnly" class="checkbox" type="checkbox" />
       <label for="saveViewOnly" class="checkbox-label">${t("View-only mode")}</label>
@@ -94,12 +156,13 @@ const TEMPLATE = /* html */ `
       <button data-action="loadFromURL" data-tip="${t("Load map file (.map or .gz) file from URL. Note that the server should allow CORS")}">
         URL
       </button>
-      <button data-action="loadFromStorage" data-tip="${t("Load map from browser storage (if saved before)")}">${t("storage")}</button>
     </div>
-    <p>${t("Click on storage to open the last saved map.")}</p>
+    <p style="margin-bottom: 0.3em"><strong>${t("Saved in the browser")}</strong></p>
+    <style>${BROWSER_SAVES_STYLE}</style>
+    <div id="browserSaves"></div>
     <div id="loadFromDropbox">
       <p style="margin-bottom: 0.3em">
-        ${t("Or load from your Dropbox account")}
+        <b>${t("Or load from your Dropbox account")}</b>
         <button id="dropboxConnectButton" data-action="connectDropbox" data-tip="${t("Connect your Dropbox account to be able to load maps from it")}">
           ${t("Connect")}
         </button>
@@ -161,7 +224,9 @@ const ACTIONS: Record<string, (event: MouseEvent) => void> = {
   saveToDropbox: () => Services.Save.toDropbox(isViewOnlyCopy()),
   saveToStorage: () => Services.Save.toStorage(),
   loadFromURL: () => loadURL(),
-  loadFromStorage: () => Services.Load.quickLoad(),
+  loadBrowserSave: event => Services.Load.loadFromBrowser(browserSaveId(event)),
+  downloadBrowserSave: event => Services.BrowserSaves.download(browserSaveId(event)),
+  removeBrowserSave: event => removeBrowserSave(browserSaveId(event)),
   connectDropbox: () => connectToDropbox(),
   loadFromDropbox: () => Services.Load.loadFromDropbox(),
   shareDropboxLink: () => Services.Load.createSharableDropboxLink(),
@@ -208,8 +273,10 @@ async function showLoadPane(): Promise<void> {
     width: "auto",
     position: { my: "center", at: "center", of: "svg" },
     buttons: closeButton("loadMapData"),
+    onClose: () => ensureEl("browserSaves").replaceChildren(),
     persistent: true
   });
+  void renderBrowserSaves();
 
   // Electron has no Dropbox integration, the whole block is removed from the DOM there
   if (!findEl("loadFromDropbox")) return;
@@ -245,6 +312,39 @@ async function showLoadPane(): Promise<void> {
     const label = `${new Date(updated).toLocaleDateString()}: ${name} [${rn(size / 1024 / 1024, 2)} MB]`;
     fileSelect.options.add(new Option(label, path));
   }
+}
+
+async function renderBrowserSaves(): Promise<void> {
+  const saves = await Services.BrowserSaves.list().catch(() => []);
+  const rows = saves.map(({ id, kind, name, savedAt, size }) => {
+    const date = savedAt
+      ? new Date(savedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+      : "";
+    return /* html */ `<div data-id="${id}" data-action="loadBrowserSave" data-tip="${t("Load")}" class="browserSave">
+      <span class="browserSaveKind ${kind}">${kind === "quick" ? t("Quick save") : t("Autosave")}</span>
+      <span class="browserSaveName">${escapeHtml(name) || `<i>${t("Unnamed")}</i>`}</span>
+      <span>${date}</span>
+      <span class="browserSaveSize">${rn(size / 1024 / 1024, 1)} MB</span>
+      <span data-action="downloadBrowserSave" data-tip="${t("Download")}" class="icon-download pointer"></span>
+      <span data-action="removeBrowserSave" data-tip="${t("Remove")}" class="icon-trash-empty pointer"></span>
+    </div>`;
+  });
+  ensureEl("browserSaves").innerHTML = rows.join("") || /* html */ `<i>${t("No maps saved in the browser")}</i>`;
+}
+
+const browserSaveId = (event: MouseEvent): string =>
+  (event.target as HTMLElement).closest<HTMLElement>("[data-id]")?.dataset.id ?? "";
+
+function removeBrowserSave(id: string): void {
+  Dialog.confirm({
+    title: t("Remove"),
+    message: `${t("Are you sure you want to remove this map from the browser storage?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
+    onConfirm: async () => {
+      await Services.BrowserSaves.remove(id);
+      if (Dialog.isOpen("loadMapData")) void renderBrowserSaves();
+    }
+  });
 }
 
 async function connectToDropbox(): Promise<void> {

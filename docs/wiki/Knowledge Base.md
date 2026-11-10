@@ -46,7 +46,7 @@ This its because the border of states or provinces follow the border of the cell
 
 ### Why is there no autosave?
 
-There is an autosave. Go to Options -> Configure -> Advanced -> Autosave interval and set the interval in minutes (0 disables it). The map is saved to the browser storage, and browser storage can be cleared accidentally, so also save .map file backups to your machine from time to time
+There is an autosave. Go to Options -> Configure -> Advanced -> Autosave interval and set the interval in minutes (0 disables it). The five latest autosaves are kept in the browser storage and listed in the Load menu, where each can be loaded, downloaded as a .map file or removed. Browser storage can be cleared accidentally, so also save .map file backups to your machine from time to time
 
 ### Why is there no undo button?
 
@@ -486,7 +486,7 @@ You can set States number to 0 in Options and regenerate. Cultures number cannot
 
 ### How to make map to open in specific zoom and focus on specific area on load?
 
-Follow the steps. 1. Save the map to storage. 2. Go to Options -> Configure -> Advanced and set 'On load' to 'Open last saved map'. 3. Add URL parameters to make it look like this: https://azgaar.github.io/Fantasy-Map-Generator/?scale=4&x=800&y=200. 4. Change scale, x and y values as you need and use the link
+Follow the steps. 1. Save the map to the browser (F6). 2. Go to Options -> Configure -> Advanced and set 'On load' to 'Open last saved map'. 3. Add URL parameters to make it look like this: https://azgaar.github.io/Fantasy-Map-Generator/?scale=4&x=800&y=200. 4. Change scale, x and y values as you need and use the link
 
 ### How the map is rendered? Is it on GPU or CPU?
 
