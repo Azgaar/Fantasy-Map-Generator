@@ -151,4 +151,15 @@ describe("invokeActiveZooming", () => {
     invokeActiveZooming();
     expect(fontSizes()).toEqual(["52.5px", "22.36px", "80.81px", null]);
   });
+
+  it("sizes a layer as its zoomSize option says", () => {
+    const size = (zoomSize: string) => {
+      styles.labels.options.zoomSize = zoomSize;
+      invokeActiveZooming();
+      return document.getElementById("labels")!.getAttribute("font-size");
+    };
+    setViewportTransform(4, viewport.x, viewport.y);
+    expect(["geometric", "natural", "map", "screen"].map(size)).toEqual(["50px", "96.39px", "100px", "25px"]);
+    styles.labels.options.zoomSize = "arithmetic";
+  });
 });

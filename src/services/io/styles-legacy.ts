@@ -689,7 +689,7 @@ function upgradeShape(record: unknown): void {
   if (biomes?.attrs) delete biomes.attrs.mask; // the schema dropped the mask
   rename(asNode(root.markets)?.options, "fontSize", "iconSize");
   const markers = asNode(root.markers);
-  if (markers) delete markers.options;
+  if (markers?.options) delete markers.options.rescale;
   const seaIsland = asNode(asNode(asNode(root.coastline)?.groups)?.sea_island);
   if (seaIsland) delete seaIsland.options;
   // the schema dropped the coastline dash/linecap and the markets fill/opacity

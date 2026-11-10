@@ -176,7 +176,7 @@ describe("normalizeStyles", () => {
     expect(doc.temperature.attrs.opacity).toBeUndefined();
     expect(doc.temperature.attrs["stroke-opacity"]).toBe(0.7);
     expect(doc.markets.options).toEqual({ size: 3, iconSize: 6, icon: "glyph-78" });
-    expect(doc.markers.options).toBeUndefined();
+    expect(doc.markers.options).toEqual({});
     expect(doc.coastline.groups.sea_island.options).toBeUndefined();
     expect(doc.compass.attrs["shape-rendering"]).toBeUndefined();
     expect(doc.heightmap.groups.landHeights.options.render).toBeUndefined();
