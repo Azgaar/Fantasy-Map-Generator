@@ -483,6 +483,7 @@ Goods (tradable resources and products) are stored in `options.map.goods: Good[]
 - `icon`: `string` - icon reference used for the good's map/UI icon: usually `goods-<file>` from the goods icon set, or any other icon, including a custom one (see `icons.md`)
 - `color`: `string` - good color in hex
 - `deposits`: `[number, number]` - deposits on the map, min and max (whole numbers), for goods with a `distribution`. The same on any map size; a deposit's yield scales with the map's cells instead. Optional
+- `depositYield`: `number` - multiplier on each deposit's output, to its cell and to a burg working it. Absent = 1. Optional
 - `distribution`: `string` - JS expression evaluated per cell to decide where the raw good is placed (see [Goods spread functions](../wiki/Goods-spread-functions.md)). Optional
 - `biomeOutput`: `Record<biomeId, number>` - units produced per rural population point per production cycle, per biome. Optional
 - `recipes`: `Record<goodId, number>[]` - array of alternative recipes; each maps input good id → units consumed per 1 unit of output. Optional

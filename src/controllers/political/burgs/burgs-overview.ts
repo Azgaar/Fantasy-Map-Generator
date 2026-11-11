@@ -27,7 +27,10 @@ import {
 import {
   adjustmentsFromText,
   adjustmentsToText,
+  BURG_FIGURES,
   EconomyTerms,
+  getBurgFigures,
+  getFlows,
   prosperityTip,
   renderProsperityPercent
 } from "@/ui/economy-view";
@@ -838,7 +841,8 @@ function showBurgsChart(): void {
 function downloadBurgsData(): void {
   const { coordinates } = options.map.geography;
   const { scale, urbanization } = options.map.units.population;
-  const headers = CSV_COLUMNS.map(column =>
+  const flows = getFlows();
+  const headers = [...CSV_COLUMNS, ...BURG_FIGURES].map(column =>
     column === "Elevation" ? `Elevation (${options.map.units.height.unit})` : column
   );
   const rows = pack.burgs
@@ -881,7 +885,8 @@ function downloadBurgsData(): void {
         b.shanty ? "shanty town" : "",
         b.coa ? JSON.stringify(b.coa).replace(/"/g, "").replace(/,/g, ";") : "",
         Burgs.getPreview(b).link,
-        Tags.format(b.tags)
+        Tags.format(b.tags),
+        ...getBurgFigures(b, flows)
       ];
     });
   Csv.download("Burgs", headers, rows);
@@ -941,7 +946,7 @@ async function uploadBurgsCsv(text: string): Promise<void> {
   const links = new Map(burgs.map(burg => [burg.i, Burgs.getPreview(burg).link]));
   const updated = await Controllers.CsvUpload.update(
     text,
-    CSV_COLUMNS,
+    [...CSV_COLUMNS, ...BURG_FIGURES],
     { find, units: ["Elevation"], text: ["Burg", "Tags"] },
     (id, row) => {
       const burg = find(id)!;

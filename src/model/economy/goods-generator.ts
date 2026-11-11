@@ -14,6 +14,7 @@ import { DEMAND_PRIORITY } from "./demand";
 
 type ProductionRules = Partial<{
   deposits: [number, number] | null;
+  depositYield: number | null;
   recipes: Record<number, number>[] | null;
   biomeOutput: Partial<Record<number, number>> | null;
   multipliers: Good["multipliers"] | null;
@@ -245,7 +246,7 @@ export class GoodsModule {
     Tags.set(this.edit(goodId), tags);
   }
 
-  /** Set how a good is produced: deposits ([min, max] on the map), recipes ([{ goodId: amount }]), biomeOutput ({ biomeId: amount }), multipliers ({ cultureType | culture | state | religion | biome | zone: { key: factor } }), demandCoverage ({ category: share }). A key set to null clears it. Takes effect on the next economy run */
+  /** Set how a good is produced: deposits ([min, max] on the map), depositYield (multiplier on each deposit's output), recipes ([{ goodId: amount }]), biomeOutput ({ biomeId: amount }), multipliers ({ cultureType | culture | state | religion | biome | zone: { key: factor } }), demandCoverage ({ category: share }). A key set to null clears it. Takes effect on the next economy run */
   setProduction(goodId: number, rules: ProductionRules): void {
     if (typeof rules !== "object" || rules === null) throw new Error("The production rules must be an object");
     const nonNegative = (value: unknown, label: string) => {
@@ -272,7 +273,8 @@ export class GoodsModule {
         nonNegative(value[0], "The minimum deposits");
         nonNegative(value[1], "The maximum deposits");
         if (value[0] > value[1]) throw new Error("The minimum deposits must not exceed the maximum");
-      } else if (key === "recipes") {
+      } else if (key === "depositYield") nonNegative(value, "The deposit yield");
+      else if (key === "recipes") {
         if (!Array.isArray(value)) throw new Error("Recipes are a list of { goodId: amount }");
         for (const recipe of value) {
           record(recipe, "A recipe", id => Boolean(this.findGood(+id)));
@@ -299,7 +301,7 @@ export class GoodsModule {
         }
       } else
         throw new Error(
-          `Unknown production rule ${key}; known: deposits, recipes, biomeOutput, multipliers, demandCoverage`
+          `Unknown production rule ${key}; known: deposits, depositYield, recipes, biomeOutput, multipliers, demandCoverage`
         );
       next[key as keyof ProductionRules] = structuredClone(value) as never;
     }

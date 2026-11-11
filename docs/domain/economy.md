@@ -106,7 +106,7 @@ Each market expects to sell a day's demand of each good, its **depth** (`initial
 
 `Production.produce()`:
 
-1. **Rural supply** (`collectRuralProduction`). Every cell delivers to its market: population × biome output × multipliers × `RURAL_OUTPUT_FACTOR`, plus its deposit (`Output.getDeposit`: population up to `DEPOSIT_MAX_POPULATION` × `DEPOSIT_RICHNESS` × the map's cells ÷ `DEPOSIT_MAP_CELLS` × multipliers). A water cell counts its land neighbours' population.
+1. **Rural supply** (`collectRuralProduction`). Every cell delivers to its market: population × biome output × multipliers × `RURAL_OUTPUT_FACTOR`, plus its deposit (`Output.getDeposit`: population up to `DEPOSIT_MAX_POPULATION` × `DEPOSIT_RICHNESS` × the good's `depositYield` × the map's cells ÷ `DEPOSIT_MAP_CELLS` × multipliers). A water cell counts its land neighbours' population.
 2. **Opening prices and depth**, as above.
 3. **Routes.** One route search from every market center prices carriage for the run.
 4. **Burg turns.** Burgs go by √population × development, the most first (`getTurnOrder`). Round after round, each burg:
@@ -121,7 +121,7 @@ Each market expects to sell a day's demand of each good, its **depth** (`initial
 
 When rural stock is bought, rural people are paid the price less the margin (`takeStock`). Their purchases make no deals and pay no tax.
 
-A burg on a deposit gets nothing free: **working the deposit** is one more thing its workers can make, with no inputs (`getRecipes`), chosen by what it pays. A worker gets `DEPOSIT_OUTPUT` units a day from it, up to `MAX_DEPOSIT_VALUE` a day at base value, so a large burg cannot grind a gemstone mine. While the deposit lasts it replaces the good's recipes; once capped, they apply again at the usual output. A recipe taking the deposit's good is planned both with the good bought and with it worked (`getRecipeStocks`).
+A burg on a deposit gets nothing free: **working the deposit** is one more thing its workers can make, with no inputs (`getRecipes`), chosen by what it pays. A worker gets `DEPOSIT_OUTPUT` units a day from it, up to `MAX_DEPOSIT_VALUE` × `depositYield` a day at base value, so a large burg cannot grind a gemstone mine. While the deposit lasts it replaces the good's recipes; once capped, they apply again at the usual output. A recipe taking the deposit's good is planned both with the good bought and with it worked (`getRecipeStocks`).
 
 ### What a burg makes
 

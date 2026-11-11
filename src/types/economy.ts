@@ -9,6 +9,7 @@ export interface Good {
 
   // generation
   deposits?: [number, number]; // deposits on the map, min and max
+  depositYield?: number; // multiplier on each deposit's output; absent = 1
   distribution?: string;
   biomeOutput?: Partial<Record<number, number>>;
   recipes?: Record<number, number>[];

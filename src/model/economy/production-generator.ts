@@ -308,7 +308,7 @@ export class ProductionModule {
       produced: [],
       log: recording ? [] : undefined,
       deposit,
-      depositLeft: deposit?.value ? MAX_DEPOSIT_VALUE / deposit.value : Infinity,
+      depositLeft: deposit?.value ? (MAX_DEPOSIT_VALUE * (deposit.depositYield ?? 1)) / deposit.value : Infinity,
       goals,
       taxRate: Taxes.getSalesTax(burg),
       ingredientCosts: 0,

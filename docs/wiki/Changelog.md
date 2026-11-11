@@ -15,6 +15,8 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Autosafe slots
 - Style: zoom size option for labels, markers and burg icons
 - Economy: tariffs and embargoes follow the burg's state
+- Economy: optional deposit yield multiplier
+- Economy: download the economy overview as CSV
 
 **[1.157.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.157.0) - 2026-11-09**:
 
