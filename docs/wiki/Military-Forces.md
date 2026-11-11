@@ -18,10 +18,14 @@ The footer sums up states number, total and average forces, average rate and ave
 
 Military units used for generation are customizable. To open the units editor click the _cog_ icon in the Military overview screen. Here you can add new units and specify their features. The number of units is not limited, but having many of them makes the overview screens hard to read. The behaviour of a unit is defined by its _type_. Type variants are hard-coded and define the rules applied on generation, described in the next section.
 
+Applying the changes keeps the regiments. A renamed unit keeps its troops, a removed unit's troops are disbanded, and a new icon, crew or power applies at once. For a new unit, or one whose goods, limitations, rural or urban share, type or separate flag changed, the recalculation dialog opens. _Update_ raises the changed units again, with the levies their equipment leaves: the troops join the nearest regiment, so regiments keep their names, places, notes and other troops, and new regiments form only where a state has none nearby. _Regenerate_ rebuilds all regiments from scratch. _Keep_ changes nothing until the next recalculation.
+
+Every recalculate button (Tools, the Military overview, the Regiments overview) opens the same dialog; there _Update_ covers all units.
+
 Customizable parameters are:
 
 - **Icon** - unit symbol, chosen in the icon picker: an emoji or short text (the defaults), a built-in icon or a custom icon linked or uploaded to the map. Emoji look different in different systems and browsers. See [Icons](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons)
-- **Name** - a unique unit name. Renaming an existing unit replaces it
+- **Name** - a unique unit name. Regiments follow a renamed unit
 - **Goods** - goods that equip the unit, such as arms for infantry or horses for cavalry. Click the button to pick them; `none` means the unit needs no goods. A state fields only as many troops of the unit as its goods can equip, the rest serve as levies. See [Goods and levies](#goods-and-levies) below
 - **Biomes**, **States**, **Cultures**, **Religions** - optional limitations. By default a unit is generated everywhere (`all`); click a button to restrict the unit to selected biomes, states, cultures or religions (`some`). A cell or burg that fails any active limitation produces no troops of that unit
 - **Rural** - the most of the rural population, in percent, that can be raised to the unit. It defines how many troops of this unit are generated per cell population point at most: the number is then adjusted by the rules described in the next section, and a state lacking the unit's goods raises fewer. Set to 0 if you want the unit to be generated in burgs only
@@ -60,7 +64,7 @@ For each state a _War Alert_ is calculated. It shows how much the state is willi
 
 `Ally: -0.2, Friendly: -0.1, Neutral: 0, Suspicion: 0.1, Enemy: 1, Unknown: 0, Rival: 0.5, Vassal: 0.5, Suzerain: -0.5`
 
-War Alert can be overridden manually in the Military overview.
+War Alert can be overridden manually in the Military overview. Recalculating the forces keeps the alert set; regenerating states defines it anew.
 
 War Alert is not the only state-specific modifier. The other one depends on _State Type_ and getting applied based on hard-coded matrix:
 
@@ -149,7 +153,7 @@ A state at war marches its land regiments from their bases to the front: its own
 
 If you click on a regiment box, a Regiment Editor will pop up at the top left corner. Once editor is displayed, you can drag regiment boxes to move them around. A circle shows regiment's base and can be dragged as well.
 
-From the Regiment Editor screen you can rename the regiment or restore its original name, hear the name spoken, toggle its visibility on the map (eye icon), change the regiment emblem and edit the number of troops of each unit. Below the units it shows the regiment's _Power_, which is not editable: the number of each unit multiplied by its power and by the state's upkeep, as in the Military overview. The regiments overview has the same _Power_ column. You can also switch the regiment type between _land_ and _naval_. Naval regiments look almost the same as land ones, the only visual difference is the box size. Hidden regiments can also be toggled from the regiments overview table.
+From the Regiment Editor screen you can rename the regiment or restore its original name, hear the name spoken, toggle its visibility on the map (eye icon), change the regiment emblem and edit the number of troops of each unit. Below the units it shows the regiment's _Power_, which is not editable: the number of each unit multiplied by its power and by the state's upkeep, as in the Military overview. The regiments overview has the same _Power_ column, and its _Recalculate_ button recalculates the forces of the state selected in the filter, or of all states. You can also switch the regiment type between _land_ and _naval_. Naval regiments look almost the same as land ones, the only visual difference is the box size. Hidden regiments can also be toggled from the regiments overview table.
 
 The buttons at the bottom let you attack a foreign regiment (see [Battle Simulator](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Battle-Simulator) for the details), create a new regiment or fleet, split the regiment into two, attach it to another regiment, regenerate or edit the regiment legend, and remove the regiment.
 

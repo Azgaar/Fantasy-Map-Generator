@@ -398,7 +398,7 @@ Open Heightmap editor in Erase or Risk mode and then add the new land using the 
 
 ### Is there a way to add a new military unit type without removing my hand placed regiments?
 
-Not without a recalculation. Unit types are edited in Tools -> Military -> Edit Military Units, and applying the changes recalculates forces and regenerates regiments for all states. You can add and edit individual regiments manually in the Regiments Overview, but the unit types list cannot be changed without regenerating the forces
+Yes. Unit types are edited in Tools -> Military -> Edit Military Units. Applying the changes keeps the regiments: a renamed unit keeps its troops, a removed unit's troops are disbanded, and a change of icon, crew or power applies at once. For a new unit, or one whose share, type, limits, goods or separate flag changed, a dialog offers to update just those units (their troops join the nearest regiments, which keep their names, places and other troops), regenerate all regiments from scratch, or keep the current troops. To recalculate one state's forces, select the state in the Regiments Overview and click Recalculate
 
 ### Is there any way I can, after making a map, select a specific state and only work on that state as a seperate map?
 

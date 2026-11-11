@@ -60,6 +60,7 @@ test.describe("States", () => {
 
     // Now click "Military" regenerate button and verify no errors
     await page.click("#regenerateMilitary");
+    await page.click(".dialog-buttonset button:has-text('Regenerate')");
     await page.waitForTimeout(1000);
 
     // Verify military was regenerated without throwing

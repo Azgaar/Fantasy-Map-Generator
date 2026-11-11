@@ -466,8 +466,8 @@ function defineType(): void {
   const defender = b.defenders.regiments[0];
 
   const getType = (): string => {
-    const typesA = Object.keys(attacker.u).map(name => options.map.military.units.find(u => u.name === name)!.type);
-    const typesD = Object.keys(defender.u).map(name => options.map.military.units.find(u => u.name === name)!.type);
+    const typesA = Object.keys(attacker.u).map(name => options.map.military.units.find(u => u.name === name)?.type);
+    const typesD = Object.keys(defender.u).map(name => options.map.military.units.find(u => u.name === name)?.type);
 
     if (attacker.n && defender.n) return "naval"; // attacker and defender are navals
     if (typesA.every(t => t === "aviation") && typesD.every(t => t === "aviation")) return "air"; // if attackers and defender have only aviation units
