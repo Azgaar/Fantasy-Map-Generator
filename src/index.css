@@ -1082,49 +1082,10 @@ fieldset {
   stroke: #2c0808;
 }
 
-#battleBody > table {
-  padding: 0.2em 0.6em 0.2em 0.6em;
-  border: 1px solid #ccc;
-  margin: 0.2em 0 0.4em 0;
-  display: block;
-  overflow: auto;
-  max-height: 34vh;
-  width: 100%;
-}
-
-#battleBody > table .regiment {
-  width: 16em;
-  max-width: 16em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#battleBody > table .battleInitial .regiment {
-  font-weight: bold;
-}
-
-tr.battleCasualties,
-tr.battleSurvivors {
-  font-style: italic;
-  font-size: 0.9em;
-}
-
-#battleBottom div.battleTypes {
-  position: fixed;
-  background-color: #ffffff30;
-}
-
-#battleBody div.battlePhases {
-  position: absolute;
-  background-color: #ffffff30;
-}
-
-#battleBody div.battlePhases > button,
-#battleBottom div.battleTypes > button {
-  width: 3.2em;
-  display: block;
-  margin: 0.2em 0;
+div#regimentSelectorHeader {
+  grid-template-columns: 10em 16em 5em 6em;
+  width: auto;
+  padding: 0 calc(0.2em + 1px) 0.2em;
 }
 
 div#regimentSelectorBody {
@@ -1133,26 +1094,42 @@ div#regimentSelectorBody {
 }
 
 div#regimentSelectorBody > div {
-  padding: 0.1em;
-  border: 1px solid #fff;
+  display: grid;
+  grid-template-columns: 10em 16em 5em 6em;
+  align-items: center;
+  padding: 0.15em 0.2em;
+  border: 1px solid transparent;
+  cursor: pointer;
 }
 
 div#regimentSelectorBody > div:hover {
-  border: 1px solid #ccc;
+  border-color: #ccc;
 }
 
 div#regimentSelectorBody > div.selected {
-  border: 1px solid #b28585;
+  border-color: #b28585;
+  background-color: #f6ecec;
 }
 
 div#regimentSelectorBody > div.inactive {
   background-color: #eee;
   color: #aaa;
+  cursor: default;
 }
 
-div#regimentSelectorBody > div > div {
-  display: inline-block;
+div#regimentSelectorBody > div > span {
+  overflow: hidden;
+  padding-right: 0.6em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   pointer-events: none;
+}
+
+div#regimentSelectorBody > div > span > svg {
+  width: 0.9em;
+  height: 0.9em;
+  margin-right: 0.4em;
+  vertical-align: -0.05em;
 }
 
 .drag-trigger {

@@ -4,6 +4,7 @@ import type { Expense } from "@/data/expenses";
 import type { LabelType } from "@/model/annotations/labels-generator";
 import type { ProsperityLevel } from "@/model/economy/prosperity";
 import type { Sampling } from "@/model/graph/lattice";
+import type { BattleType } from "@/model/political/battle/battle-rules";
 import type { TransportDomain } from "@/model/story/journeys/transports-generator";
 import type { DemandCategory } from "@/types/economy";
 import { t } from "@/utils/i18n";
@@ -254,4 +255,39 @@ export const SAMPLING_LABELS: Record<Sampling, string> = {
   hexFlat: t("Hex grid (flat)"),
   diamond: t("Square 45 degrees grid"),
   triangle: t("Triangle grid (horizontal)")
+};
+
+export const BATTLE_TYPE_LABELS: Record<BattleType, string> = {
+  field: t("Field battle"),
+  naval: t("Naval battle"),
+  siege: t("Siege"),
+  ambush: t("Ambush"),
+  landing: t("Landing"),
+  air: t("Air battle")
+};
+
+export const BATTLE_PHASE_LABELS: Record<string, string> = {
+  skirmish: t("Skirmish"),
+  melee: t("Melee"),
+  pursue: t("Pursuit"),
+  retreat: t("Retreat"),
+  shelling: t("Shelling"),
+  boarding: t("Boarding"),
+  chase: t("Chase"),
+  withdrawal: t("Withdrawal"),
+  blockade: t("Blockade"),
+  bombardment: t("Bombardment"),
+  storming: t("Storming"),
+  looting: t("Looting"),
+  sheltering: t("Sheltering"),
+  sortie: t("Sortie"),
+  defense: t("Defense"),
+  surrendering: t("Surrender"),
+  shock: t("Shock"),
+  surprise: t("Surprise attack"),
+  landing: t("Landing"),
+  flee: t("Flight"),
+  waiting: t("Waiting"),
+  maneuvering: t("Maneuvering"),
+  dogfight: t("Dogfight")
 };

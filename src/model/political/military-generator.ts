@@ -29,8 +29,6 @@ export interface Regiment {
   children?: Regiment[]; // merged regiments
   state: number;
   angle?: number;
-  casualties?: Record<string, number>; // battle-screen: per-unit casualties while a battle is in progress
-  survivors?: Record<string, number>; // battle-screen: per-unit survivors while a battle is in progress
   px?: number; // battle-screen: position before being moved into a battle, restored afterward
   py?: number;
   note?: string;

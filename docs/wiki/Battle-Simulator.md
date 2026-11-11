@@ -1,14 +1,33 @@
-**Battle Simulator** allows you to simulate battles between two or more regiments. It works based on units power parameter that can be set in the [Military units editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces#military-units-editor).
+**Battle Simulator** plays battles between two or more regiments on an animated battle plan. It works based on units power parameter that can be set in the [Military units editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces#military-units-editor).
 
 To start a battle select a regiment, click on the _Attack foreign regiment_ button and then click on another regiment to attack it. You cannot attack regiments of the same state as the selected regiment or regiments without any forces. It does not matter where attacked regiment is located and whether it's reachable or not - attacker regiment will be moved straight to the selected one.
 
+## Battle screen
+
+The battle opens as a battle plan: a map of the ground around the battle point with both armies drawn up on it. The rivers, roads, coast, burgs and slopes are those of the map around the battle cell; woods, marshes and hills follow its biome and heights, with details added to make a battlefield of it. A burg with walls is drawn with battlements.
+
+Above the plan both sides are named, the attackers on the left and the defenders on the right: the emblems of their states, morale as a bar beside the title, the current phase, the troops left and lost. Attackers are always red and defenders blue, whatever the colors of their states. Between them are the battle name and the balance of power: a ribbon with the power of the troops each side still has on the field, each side taking as much of the ribbon as it has of the total. The power is counted as in the Military overview: units number multiplied by unit power and by upkeep. The die of each side stands at its end of the ribbon.
+
+Under the plan are the button to start, pause and continue the battle, the step, restart and speed buttons and the round, with the result beside it once the battle is over; then the battle type, the reroll button, the battle log and the buttons to apply or cancel the battle. Below the controls are the regiments of each side; click a regiment to see its units. Point at a regiment to make its battalions stand out on the plan; point at a battalion to mark its regiment in the list.
+
+Every regiment is split into _battalions_ of its units. A battalion has the same size for both sides, a round number that makes about thirty battalions of all the troops, so a regiment with 5000 infantry fields ten times as many blocks as one with 500. A unit too small for a battalion still gets a block, a narrower one. Battalions never stand on each other: they close up side by side and go around those in their way, so only as many fight as the front has room for and the rest wait behind. Units with a crew, such as cavalry or artillery, count by their men. The icon on a block is its unit; the dark line along the front of the block is as long as the share of its troops alive. When allies fight on one side, every battalion flies a small flag of the color of its state. Hover over a block to see its troops and morale. Dotted arcs are shooting and a red star marks a melee.
+
+## Setting up
+
+Everything in the setup is optional, the battle can be started right away.
+
+- **Deployment**. Attackers form up where they came from, defenders hold the battle point on the best ground nearby: melee in the middle with the strongest in the centre, ranged units beside them, mounted on the wings and machinery behind, in more than one line when the front is too narrow. Drag any battalion to place it yourself, or hold it still to turn it and let go when it faces the way you want. Every move and turn is written to the battle log. The reroll button sets the troops up anew.
+- **Regiments**. Add more regiments with the _Add_ button above the regiments of a side. There is no restriction for state: a state can have regiments on both sides.
+- **Battle type**. Click the type under the plan and pick another one, see below. The type can be changed only before the battle starts.
+- **Actions**. The button with the phase and a cog, beside the title of a side, opens what can be done to the side by hand: order another phase, add power or take it away, add morale or take it away. Power is in the units of the ribbon. Each change is made once, at any time, and is written to the battle log.
+- **Name**. Type the battle name or generate one.
+- **Reroll** gives other ground details and other fortune and resets the deployment, before the battle starts.
+
 ## Battle process
 
-![](https://cdn.discordapp.com/attachments/587406457725779968/722571310290567209/Battle_Simulator.png)
+Press _Start battle_. The battle goes by itself in short steps, six steps make a _round_. It can be paused at any moment to drag troops, add regiments, order another phase or add power or morale, and then continued. The step button advances it by a single step, and the buttons below it set the speed. _Play again_ returns the battle to its start and plays the same battle once more, with every change made on the way.
 
-Battle simulation is iterative. It means that it is processed step by step, with each step being controlled automatically, but there is also an ability of a manual change. To progress to the next iteration click on ▶️ button. To apply the current result and end the battle click on ✅, to abandon and cancel the results - click on ❎ button. To add a regiment click on 🙍‍♂️➕ button, select any regiment the list and click on a button to set the side. There is no restriction for state - you can add regiment of the same state both to attackers and defenders side. You can also define battle name using 🅰️ button.
-
-Once a battle is initiated, the system automatically selects a _Battle type_. The battle type defines the _battle phases_, which control the battle process. There are 6 battle types, each with its own logic. Both the battle type and the current phase can be changed manually at any time. The type is chosen from the two initial regiments, in this order:
+Once a battle is initiated, the system automatically selects a _Battle type_. The battle type defines the _battle phases_, which control what troops do. There are 6 battle types, each with its own logic. The type is chosen from the two initial regiments, in this order:
 
 1. **Naval** — both regiments are naval
 2. **Air** — every unit on both sides is of the aviation type
@@ -17,15 +36,32 @@ Once a battle is initiated, the system automatically selects a _Battle type_. Th
 5. **Ambush** — 10% chance when the defender is in a forest or wetland biome
 6. **Field** — everything else
 
-For each iteration the _strength_ of both sides is calculated as the sum of `unit count × unit power × phase modifier` over all units, scaled down by a population adjuster. See the tables below for the phase modifiers.
+Field battles and ambushes are played on the ground of the map. Naval and air battles are played on open water and sky; sieges and landings use the ground, but walls, ships and the shore do not affect the troops yet.
 
-One more parameter auto-defined on battle start is _morale_. Initial morale is based on the difference in strength — the weaker army gets lower morale, but never below 50. _Supply line length_ then subtracts up to 15 points: the further a regiment is from its base, the bigger the penalty. Please note that supply line length affects only the initial morale, it has no effect on army strength. Morale drops as casualties accumulate, and low morale is what pushes a side into retreat, withdrawal or surrender.
+**Strength**. The strength of a battalion is `troops × unit power × phase modifier × upkeep`, see the tables below for the phase modifiers. Position changes it:
 
-To add a random factor to battles a 6-sided die is rolled for each side. Click a die to re-roll both. The die works as a multiplier for army strength (`die / 10 + 0.4`), so ⚅ (die 6) means full power and ⚀ (die 1) means half power.
+- high ground: up to +20% against troops standing lower, up to −20% against those standing higher
+- crossing a river halves the strength, a marsh takes a quarter of it; a road bridges the river
+- mounted units lose 40% in woods; shooting at troops in woods or in a burg loses 40%
+- troops in a burg defend 25% better
+- a hit in the flank is 30% stronger, in the rear 60%, and both shake the morale of the troops hit
 
-For each iteration combined strength of both armies is considered to calculate _casualties_. Casualties are displayed as red line with negative numbers, _survivors_ -as green line with positive value. While there is a significant random factor affecting casualties, the generic pattern is defined by strength ratio and battle phase. It means that displayed _power_ actually shows which army excels at the current iteration and what would be ratio of casualties.
+Troops also move slower through woods, marshes and rivers and faster along roads.
 
-If one of the armies has no survivors left, you cannot proceed with iterations. Now you can either apply battle results or cancel them. Please note that you can apply results at any iteration, you don't need to wait while one army is completely destroyed. If results are applied, regiments' note (legend) is getting updated with a short info about the battle and also a battlefield _marker_ is getting added.
+To add a random factor a 6-sided die is rolled for each side every round. The die works as a multiplier for strength (`die / 10 + 0.4`), so ⚅ (die 6) means full power and ⚀ (die 1) means half power. Point at the die to see the multiplier. Click the die to roll it again: the new die stands for the round to come, and the roll is written to the battle log.
+
+**Casualties**. Battalions lose men only when somebody strikes or shoots at them. The losses of a battalion depend on the phase and on the strength of all the troops attacking it against its own, so two battalions on one, or archers supporting a melee, tell quickly.
+
+**Morale**. Initial morale is based on the difference in strength — the weaker army gets lower morale, but never below 50 — and on the stability of the state. _Supply line length_ then subtracts up to 15 points: the further a regiment is from its base, the bigger the penalty. In the battle every battalion has its own morale. It drops with casualties and with hits in the flank and rear, and recovers slowly when the battalion is left alone. Troops with morale below 25 may _break and run_: they leave the field and can be cut down on the way. A flight unsettles the friends nearby and heartens their foes. When the morale of a whole side drops, it retreats, and a side that turned to run does not come back.
+
+The battle ends when one side has no troops in order: the other one _holds the field_. It also ends when the fighting dies down. You can apply the results at any moment with the apply button, you don't need to wait for the end; the cancel button rolls the battle back. If results are applied, casualties are taken from the regiments, the regiments' notes (legend) are updated with a short info about the battle and a battlefield _marker_ is added.
+
+## Battle log
+
+Everything that happens is written to the battle log, open it with the list button. The log can be downloaded as a file and loaded later:
+
+- with the same regiments on the map the battle is set up as it was and replays exactly, with every change made on the way at its moment
+- with other regiments only the settings are taken: the battle type and what was done to the sides by hand
 
 ## Battle types
 #### 🗡️ Field battle

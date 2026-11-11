@@ -1,53 +1,90 @@
-import { mean, select, sum } from "d3";
+import { select, sum } from "d3";
+import { BATTLE_PHASE_LABELS, BATTLE_TYPE_LABELS } from "@/data/id-labels";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import {
+  applyDue,
+  type Battle,
+  type BattleRegiment,
+  type Block,
+  createBattle,
+  getLosses,
+  getResult,
+  getTroops,
+  getUnitsPower,
+  type Intervention,
+  intervene,
+  type LogEntry,
+  prepare,
+  ROUND_TICKS,
+  tick
+} from "@/model/political/battle/battle";
+import {
+  BATTLE_TYPES,
+  type BattleType,
+  createRandom,
+  getBattleName,
+  getRegimentStatus,
+  getTypeName,
+  PHASES,
+  SIDES,
+  type Side
+} from "@/model/political/battle/battle-rules";
+import { buildBattlefield, createEmptyBattlefield } from "@/model/political/battle/battlefield";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
 import { Stability } from "@/model/political/stability";
 import { Names } from "@/model/society/names-generator";
 import type { Marker } from "@/model/story/markers-generator";
+import {
+  drawBattlefield,
+  drawBlocks,
+  type Positions,
+  SIDE_COLORS,
+  snapshot,
+  updateBlocks
+} from "@/renderers/draw-battle-scene";
 import { moveRegiment } from "@/renderers/draw-military";
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
+import { viewport } from "@/renderers/viewport/viewport";
 import { Dialog } from "@/ui/dialog/dialog";
-
 import { applySorting, applySortingByHeader } from "@/ui/dialog/sorting";
-import { EconomyTerms } from "@/ui/economy-view";
 import { tip } from "@/ui/tooltips";
 import { last } from "@/utils/array-utils";
 import { wiki } from "@/utils/common-utils";
+import { createFileInput, downloadFile, uploadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
 import { getAdjective, list } from "@/utils/language-utils";
 import { ensureEl, findEl } from "@/utils/node-utils";
-import { minmax, rn } from "@/utils/number-utils";
-import { P, Pint, rand } from "@/utils/probability-utils";
+import { rn, si } from "@/utils/number-utils";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
 
-type Side = "attackers" | "defenders";
+const TICK_MS = 170; // a tick at normal speed
+const LOG_VERSION = 1;
 
-interface BattleSide {
-  regiments: Regiment[];
-  distances: number[];
-  morale: number;
-  casualties: number;
-  power: number;
-  phase?: string;
-  die?: number;
-}
-
-interface BattleState {
-  iteration: number;
-  x: number;
-  y: number;
-  cell: number;
-  attackers: BattleSide;
-  defenders: BattleSide;
-  phasesRecord: { phase: string; count: number }[];
-  place: string | null;
-  type: string;
+interface BattleLogFile {
+  version: number;
   name: string;
+  type: BattleType;
+  seed: string;
+  attackers: { state: number; i: number }[];
+  defenders: { state: number; i: number }[];
+  interventions: Intervention[];
+  log: string[];
+  result: string | null;
 }
 
-let battle: BattleState | null = null;
+let battle: Battle | null = null;
+let regiments = new Map<string, Regiment>(); // the map's regiments in the battle, by state and id
+let script: Intervention[] = []; // changes of a loaded log still to come
+let rerolls = 0;
+let fileInput: HTMLInputElement | null = null;
+
+const player = { playing: false, speed: 1, frame: 0, tickStart: 0, previous: null as Positions | null };
+
+const regimentKey = (regiment: { state: number; i: number }): string => `${regiment.state}-${regiment.i}`;
+const scene = (): SVGSVGElement => document.getElementById("battleScene") as unknown as SVGSVGElement;
 
 function open(attacker: Regiment, defender: Regiment): void {
   if (options.app.mode) return;
@@ -55,581 +92,851 @@ function open(attacker: Regiment, defender: Regiment): void {
   options.app.mode = "battle"; // an edit mode keeps other dialogs from opening
 
   renderDialog();
+  rerolls = pack.markers.filter(marker => marker.type === "battlefields").length;
+  regiments = new Map([attacker, defender].map(regiment => [regimentKey(regiment), regiment]));
+  script = [];
+  setup([attacker], [defender]);
 
-  const x = defender.x;
-  const y = defender.y;
+  Dialog.open("battleScreen", {
+    title: battle!.name,
+    width: viewport.width * SCREEN_SHARE * 0.6, // a guess: fitDialog sets the size
+    height: viewport.height * SCREEN_SHARE,
+    minWidth: 320,
+    minHeight: 320,
+    position: POSITION,
+    resizable: true,
+    onClose: cancelResults
+  });
+  fitDialog();
+  tip(t("Drag troops to change the deployment, hold one to turn it, then start the battle"), true, "info", 8000);
+}
+
+const SCREEN_SHARE = 0.92; // of the viewport the window may take
+const SPARE = 6; // em left under the army sheets, for a regiment's units or a regiment more
+const POSITION = { my: "center", at: "center", of: "svg" };
+
+/** Size the window by what really stands around the battlefield: as large a plan as the screen has room for */
+function fitDialog(): void {
+  const frame = ensureEl("battleScreen").closest<HTMLElement>(".dialog-window")!;
+  const layout = ensureEl("battleLayout");
+  const stage = ensureEl("battleStage");
+  const { width, height } = frame.getBoundingClientRect();
+  const style = getComputedStyle(layout);
+  const rows = [...layout.children] as HTMLElement[];
+  const content = sum(rows, row => row.offsetHeight) + (parseFloat(style.rowGap) || 0) * (rows.length - 1);
+  const aroundX = width - stage.offsetWidth;
+  const aroundY =
+    height - layout.clientHeight + content - stage.offsetHeight + SPARE * (parseFloat(style.fontSize) || 12);
+  const maxHeight = viewport.height * SCREEN_SHARE;
+  const room = Math.min(viewport.width * SCREEN_SHARE - aroundX, (maxHeight - aroundY) * (5 / 3));
+  const field = Math.max(Math.floor(room / 5) * 5, 300); // a whole number of pixels both ways
+  Dialog.update("battleScreen", {
+    width: field + aroundX - (width - frame.clientWidth),
+    height: Math.min(field * 0.6 + aroundY, maxHeight),
+    position: POSITION
+  });
+}
+
+/** A new battle of the regiments; `from` carries over the settings of a loaded log */
+function setup(
+  attackers: Regiment[],
+  defenders: Regiment[],
+  from?: Partial<Pick<BattleLogFile, "seed" | "type" | "name">>
+): void {
+  const defender = defenders[0];
+  const attacker = attackers[0];
+  const { x, y } = battle ?? defender;
   const cell = Pack.findCell(x, y) ?? 0;
+  const seed = from?.seed ?? `${options.map.seed}_b${cell}_${rerolls}`;
+  const random = createRandom(`${seed}_n`);
+  const type = from?.type ?? defineType(attacker, defender, cell, random.P);
+  const place = definePlace(cell);
+  const point = { x, y };
 
-  battle = {
-    iteration: 0,
+  battle = createBattle({
+    seed,
+    type,
+    name: from?.name ?? battle?.name ?? getBattleName(type, place, random),
+    place,
     x,
     y,
     cell,
-    attackers: { regiments: [], distances: [], morale: 100, casualties: 0, power: 0 },
-    defenders: { regiments: [], distances: [], morale: 100, casualties: 0, power: 0 },
-    phasesRecord: [],
-    place: null,
-    type: "field",
-    name: ""
-  };
-
-  addHeaders();
-  addRegimentToSide("attackers", attacker);
-  addRegimentToSide("defenders", defender);
-  battle.place = definePlace();
-  defineType();
-  battle.name = defineBattleName();
-  randomizeBattle();
-  calculateStrength("attackers");
-  calculateStrength("defenders");
-  getInitialMorale();
-
-  Dialog.open("battleScreen", {
-    title: battle.name,
-    width: "fit-content",
-    position: { my: "center", at: "center", of: "#map" },
-    onClose: cancelResults
+    axis: Math.atan2(y - (attacker.py ?? attacker.y), x - (attacker.px ?? attacker.x)),
+    field: buildField(x, y, seed, type),
+    units: options.map.military.units,
+    powerScale: options.map.units.population.scale / 10, // blocks count troops, power goes by points
+    attackers: attackers.map(regiment => toBattleRegiment(regiment, point)),
+    defenders: defenders.map(regiment => toBattleRegiment(regiment, point))
   });
+
+  player.previous = null;
+  drawBattlefield(scene(), battle.field);
+  drawScene();
+  ensureEl("battleLogList").innerHTML = "";
+  refresh();
 }
+
+function buildField(x: number, y: number, seed: string, type: BattleType) {
+  if (type === "naval") return createEmptyBattlefield(seed, "sea");
+  if (type === "air") return createEmptyBattlefield(seed, "sky");
+  return buildBattlefield(x, y, seed, type !== "ambush");
+}
+
+function toBattleRegiment(regiment: Regiment, point: { x: number; y: number }): BattleRegiment {
+  const distance = Math.hypot(point.y - regiment.by, point.x - regiment.bx) * options.map.units.distance.scale;
+  return {
+    state: regiment.state,
+    i: regiment.i,
+    name: regiment.name,
+    icon: regiment.icon ?? "",
+    troops: Object.fromEntries(Object.entries(regiment.u).map(([unit, points]) => [unit, Military.getTroops(points)])),
+    upkeep: Military.getBattleUpkeep(regiment.state), // ill-kept troops fight weaker
+    stability: Stability.get(regiment.state)?.stability ?? 0.5,
+    distance: distance | 0
+  };
+}
+
+function defineType(attacker: Regiment, defender: Regiment, cell: number, P: (p: number) => boolean): BattleType {
+  const types = (regiment: Regiment): (string | undefined)[] =>
+    Object.keys(regiment.u).map(name => options.map.military.units.find(u => u.name === name)?.type);
+  const typesA = types(attacker);
+  const burg = pack.burgs[pack.cells.burg[cell]];
+
+  if (attacker.n && defender.n) return "naval";
+  if (typesA.every(type => type === "aviation") && types(defender).every(type => type === "aviation")) return "air";
+  if (attacker.n && !defender.n && typesA.some(type => type !== "naval")) return "landing";
+  if (!defender.n && (burg?.walls || burg?.citadel)) return "siege";
+  if (P(0.1) && [5, 6, 7, 8, 9, 12].includes(pack.cells.biome[cell])) return "ambush"; // forest or marsh
+  return "field";
+}
+
+function definePlace(cell: number): string | null {
+  const { cells } = pack;
+  if (cells.burg[cell]) return pack.burgs[cells.burg[cell]].name ?? null;
+  const river = cells.r[cell] && pack.rivers.find(river => river.i === cells.r[cell]);
+  if (river) return `${river.name} ${river.type}`;
+  return Names.getCulture(cells.culture[cell]);
+}
+
+const STYLE = /* css */ `
+  #battleScreen { overflow: hidden; container: battle / size; }
+  /* top to bottom: who fights whom, the battlefield, the controls, the armies; scrolls when the armies outgrow the window */
+  #battleLayout { --line: #ccc; --muted: #666; --loss: #c5221f; display: flex; flex-direction: column; gap: 0.5em; box-sizing: border-box; width: auto; height: 100%; overflow-y: auto; }
+  #battleLayout > * { flex: none; }
+  #battleLayout [hidden] { display: none !important; }
+  #battleLayout .attackers { --side: ${SIDE_COLORS.attackers}; }
+  #battleLayout .defenders { --side: ${SIDE_COLORS.defenders}; }
+  #battleLayout button { white-space: nowrap; }
+  .battleGroup { display: inline-flex; }
+
+  /* a button that opens a list of named choices, upward: the pickers stand low in the window */
+  .battlePicker { position: relative; display: inline-block; }
+  .battlePicker > button::before, .battleMenu > button::before { margin-right: 0.3em; }
+  .battlePicker > button:not(:disabled)::after { content: "▾"; margin-left: 0.4em; }
+  .battleMenu { position: absolute; bottom: 100%; left: 0; z-index: 5; display: flex; flex-direction: column; min-width: 100%; border: 1px solid #999; background: #fff; }
+  #battleLayout .battleMenu > button { padding: 0.3em 0.9em 0.3em 0.5em; border: 0; border-radius: 0; background: none; text-align: left; }
+  #battleLayout .battleMenu > button:hover { background: #eee; }
+  #battleLayout .battleMenu > button.current { font-weight: bold; }
+
+  /* who fights whom, and how the scales stand */
+  #battleHeader { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.3em 1.2em; }
+  .battleBanner { display: flex; align-items: center; gap: 0.7em; width: 100%; max-width: 30em; min-width: 0; }
+  .battleBanner.defenders { justify-self: end; }
+  .battleBanner.defenders, .battleBanner.defenders .battleBannerText > span { flex-direction: row-reverse; }
+  .battleBanner.defenders .battleStates { text-align: right; }
+  .battleEmblems { display: flex; flex-shrink: 0; }
+  .battleEmblems > svg { width: 3.2em; height: 3.2em; }
+  .battleEmblems > svg + svg { margin-left: -1.9em; }
+  .battleBannerText { display: flex; flex: 1; flex-direction: column; gap: 0.1em; min-width: 0; }
+  .battleBannerText > span { display: flex; align-items: center; gap: 0.6em; }
+  .battleBannerText > span > b { font-size: 1.2em; }
+  .battleBannerText .battleBar { flex: 1; }
+  .battleStates { flex: 1; min-width: 0; overflow: hidden; font-style: italic; text-overflow: ellipsis; white-space: nowrap; }
+  .battleTroops { display: inline-flex; align-items: baseline; gap: 0.4em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .battleCount > b { font-size: 1.2em; }
+  .battleCount > span { color: var(--muted); }
+  .battleLost { color: var(--loss); font-style: italic; }
+  .battleBar { height: 0.5em; border: 1px solid #999; border-radius: 0.3em; overflow: hidden; }
+  .battleBar > i { display: block; height: 100%; background: #3f9b3f; transition: width 0.15s linear; }
+  .battleBar.mid > i { background: #e0a920; }
+  .battleBar.low > i { background: var(--loss); }
+  .battleOrdersButton { display: inline-flex; align-items: center; gap: 0.4em; }
+  .battleOrdersButton > i { color: var(--muted); }
+  #battleTitle { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.7em; min-width: 0; }
+  #battleTitle > div { display: flex; flex-direction: column; align-items: center; gap: 0.25em; min-width: 0; }
+  /* the die of the round, in the side's colour: a click rolls it again */
+  .battleDie { width: 3em; height: 3em; cursor: pointer; }
+  .battleDie > rect { fill: var(--side); }
+  .battleDie > circle { fill: #fff; }
+  .battleDie:hover > rect { stroke: #333; }
+  #battleName { position: relative; width: 22em; max-width: 100%; }
+  #battleNameFull { width: 100%; padding: 0 0.4em; border-color: transparent; background: none; font-size: 1.15em; font-weight: bold; text-align: center; text-overflow: ellipsis; }
+  #battleNameFull:hover, #battleNameFull:focus { border-color: #abadb3; background: #fff; }
+  #battleNameTools { position: absolute; top: 0; right: 0; bottom: 0; display: none; background: #fff; }
+  #battleName:hover > #battleNameTools, #battleName:focus-within > #battleNameTools { display: flex; }
+
+  /* the scales: the power of each side, as its share of the ribbon */
+  #battleBalance { position: relative; display: flex; width: clamp(11em, 30cqw, 22em); height: 1.6em; color: #fff; font-weight: bold; font-variant-numeric: tabular-nums; }
+  #battleBalance > i { display: flex; align-items: center; min-width: 4.2em; padding: 0 0.7em 0 1.2em; box-sizing: border-box; background: ${SIDE_COLORS.attackers}; font-style: normal; clip-path: polygon(0.7em 0, 100% 0, 100% 100%, 0.7em 100%, 0 50%); transition: width 0.25s ease-out; }
+  #battleBalance > i + i { flex: 1; justify-content: flex-end; padding: 0 1.2em 0 0.7em; background: ${SIDE_COLORS.defenders}; clip-path: polygon(0 0, calc(100% - 0.7em) 0, 100% 50%, calc(100% - 0.7em) 100%, 0 100%); }
+  #battleBalance > b { position: absolute; top: 50%; left: var(--at, 50%); width: 0.75em; height: 0.75em; border: 1px solid #333; background: #fff; transform: translate(-50%, -50%) rotate(45deg); transition: left 0.25s ease-out; }
+
+  /* the battlefield: as wide as the window, in the plan's shape */
+  #battleStage { position: relative; aspect-ratio: 5 / 3; margin: 1px; outline: 1px solid #999; overflow: hidden; }
+  #battleScene { display: block; width: 100%; height: 100%; font-family: var(--serif); }
+  #battleScene.battleEditable .battleBlock { cursor: grab; }
+  #battleScene.battleFocus .battleBlock:not(.battleFocused) { opacity: 0.3; }
+  #battleLog { position: absolute; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; width: 21em; max-width: 100%; border-left: 1px solid #999; background: #fffffff0; }
+  #battleLog > header { display: flex; align-items: center; gap: 0.2em; padding: 0.3em 0.3em 0.3em 0.6em; border-bottom: 1px solid var(--line); }
+  #battleLog > header > b { flex: 1; }
+  #battleLogList { flex: 1; padding: 0.3em 0.6em; overflow-y: auto; line-height: 1.4; user-select: text; }
+  #battleLogList > div { display: grid; grid-template-columns: 1.8em 0.6em minmax(0, 1fr); gap: 0.4em; align-items: baseline; }
+  #battleLogList > div > i { color: var(--muted); font-style: normal; font-variant-numeric: tabular-nums; text-align: right; }
+  #battleLogList > div > u { width: 0.6em; height: 0.6em; background: var(--side, transparent); }
+  #battleLogList > div.phases { color: var(--muted); }
+  #battleLogList > div.start, #battleLogList > div.end { font-weight: bold; }
+
+  #battleFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4em 1em; }
+  #battleFooter > div { display: flex; align-items: center; gap: 0.3em; min-width: 0; }
+  #battleFooter button { height: 2em; box-sizing: border-box; } /* one height, whatever the icon */
+  #battleRun, #battleResultRestart { min-width: 10em; }
+  #battleRun.battlePause::before { content: "❚❚"; margin-right: 0.5em; font-size: 0.7em; vertical-align: 0.15em; }
+  #battleSpeed { margin: 0 0.5em; }
+  #battleClock { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #battleResult { overflow: hidden; margin-left: 0.6em; color: var(--side); font-weight: bold; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* army sheets: the orders of each side and its regiments */
+  #battleSides { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 0.8em; }
+  .battleSide { display: flex; flex-direction: column; gap: 0.3em; min-width: 0; padding: 0.4em 0.6em; border: 1px solid var(--line); border-top: 3px solid var(--side); }
+  .battleSectionHead { display: flex; align-items: center; justify-content: space-between; }
+  .battleRegiment.battleFocused { background: #eee; }
+  .battleRegiment > summary { display: grid; grid-template-columns: 1.3em minmax(0, 1fr) 4em 3.6em; align-items: center; gap: 0.5em; padding: 0.2em 0; cursor: pointer; font-variant-numeric: tabular-nums; list-style: none; }
+  .battleRegiment > summary::-webkit-details-marker { display: none; }
+  .battleRegiment > summary:hover { background: #eee; }
+  .battleRegiment > summary > svg { width: 1.3em; height: 1.3em; }
+  .battleRegiment .battleLeft, .battleRegiment .battleLost { text-align: right; }
+  .battleRegimentName { overflow: hidden; font-weight: bold; text-overflow: ellipsis; white-space: nowrap; }
+  .battleUnits { display: grid; grid-template-columns: 1.3em minmax(0, 1fr) 4em 3.6em; gap: 0.1em 0.5em; align-items: center; padding: 0 0 0.2em 1.8em; font-variant-numeric: tabular-nums; }
+  .battleUnits > div { display: contents; }
+  .battleUnits .battleLeft { color: #2e7d32; font-style: italic; }
+  .battleRegimentInfo { padding: 0 0 0.4em 1.8em; font-style: italic; }
+
+  /* a narrow window: the name and the scales above the sides, then one sheet a row */
+  @container battle (width < 52em) {
+    #battleHeader { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    #battleTitle { grid-column: 1 / -1; grid-row: 1; }
+    #battleFooter { justify-content: center; }
+  }
+  @container battle (width < 42em) {
+    #battleSides { grid-template-columns: minmax(0, 1fr); }
+    .battleEmblems > svg { width: 2.4em; height: 2.4em; }
+  }
+`;
 
 function renderDialog(): void {
   findEl("battleScreen")?.remove();
   findEl("regimentSelectorScreen")?.remove();
-  const editorHtml = /* html */ `<div id="battleScreen" class="dialog stable">
-      <div id="battleBody">
-        <template id="battlePhases_field">
-          <button
-            data-tip="${t("Skirmish phase. Ranged units excel")}"
-            data-phase="skirmish"
-            class="icon-button-skirmish"
-          ></button>
-          <button data-tip="${sentences(t("Melee phase"), t("Melee units excel"))}" data-phase="melee" class="icon-button-melee"></button>
-          <button
-            data-tip="${sentences(t("Pursue phase"), t("Mounted units excel"))}"
-            data-phase="pursue"
-            class="icon-button-pursue"
-          ></button>
-          <button
-            data-tip="${sentences(t("Retreat phase"), t("Units strength reduced"))}"
-            data-phase="retreat"
-            class="icon-button-retreat"
-          ></button>
-        </template>
-        <template id="battlePhases_naval">
-          <button
-            data-tip="${t("Shelling phase. Naval artillery bombardment of enemy fleet")}"
-            data-phase="shelling"
-            class="icon-button-shelling"
-          ></button>
-          <button
-            data-tip="${t("Boarding phase. Melee units go aboard")}"
-            data-phase="boarding"
-            class="icon-button-boarding"
-          ></button>
-          <button
-            data-tip="${t("Сhase phase. Naval units pursue and rarely shell enemy fleet")}"
-            data-phase="chase"
-            class="icon-button-chase"
-          ></button>
-          <button
-            data-tip="${t("Withdrawal phase. Naval units try to escape enemy fleet")}"
-            data-phase="withdrawal"
-            class="icon-button-withdrawal"
-          ></button>
-        </template>
-        <template id="battlePhases_siege_attackers">
-          <button
-            data-tip="${t("Blockade phase. Prepare or hold the blockade")}"
-            data-phase="blockade"
-            class="icon-button-blockade"
-          ></button>
-          <button
-            data-tip="${t("Bombardment phase. Attack enemy with machinery units")}"
-            data-phase="bombardment"
-            class="icon-button-bombardment"
-          ></button>
-          <button
-            data-tip="${sentences(t("Storming phase"), t("Storm enemy town"), t("Melee units excel"))}"
-            data-phase="storming"
-            class="icon-button-storming"
-          ></button>
-          <button
-            data-tip="${sentences(t("Looting phase"), t("Plunder the town"), t("Units strength increased"))}"
-            data-phase="looting"
-            class="icon-button-looting"
-          ></button>
-          <button
-            data-tip="${sentences(t("Retreat phase"), t("Units strength reduced"))}"
-            data-phase="retreat"
-            class="icon-button-retreat"
-          ></button>
-        </template>
-        <template id="battlePhases_siege_defenders">
-          <button
-            data-tip="${t("Sheltering phase. Hide behind the walls and wait")}"
-            data-phase="sheltering"
-            class="icon-button-sheltering"
-          ></button>
-          <button
-            data-tip="${sentences(t("Sortie phase"), t("Make a sortie from besieged town"), t("Melee units excel"))}"
-            data-phase="sortie"
-            class="icon-button-sortie"
-          ></button>
-          <button
-            data-tip="${t("Bombardment phase. Attack enemy with machinery units")}"
-            data-phase="bombardment"
-            class="icon-button-bombardment"
-          ></button>
-          <button
-            data-tip="${sentences(t("Defense phase"), t("Ranged and melee units excel"))}"
-            data-phase="defense"
-            class="icon-button-defense"
-          ></button>
-          <button
-            data-tip="${sentences(t("Surrendering phase"), t("Give up the defense"), t("Units strength reduced"))}"
-            data-phase="surrendering"
-            class="icon-button-surrendering"
-          ></button>
-          <button
-            data-tip="${sentences(t("Pursue phase"), t("Mounted units excel"))}"
-            data-phase="pursue"
-            class="icon-button-pursue"
-          ></button>
-        </template>
-        <template id="battlePhases_ambush_attackers">
-          <button
-            data-tip="${sentences(t("Shock phase"), t("Units strength reduced"))}"
-            data-phase="shock"
-            class="icon-button-shock"
-          ></button>
-          <button data-tip="${sentences(t("Melee phase"), t("Melee units excel"))}" data-phase="melee" class="icon-button-melee"></button>
-          <button
-            data-tip="${sentences(t("Pursue phase"), t("Mounted units excel"))}"
-            data-phase="pursue"
-            class="icon-button-pursue"
-          ></button>
-          <button
-            data-tip="${sentences(t("Retreat phase"), t("Units strength reduced"))}"
-            data-phase="retreat"
-            class="icon-button-retreat"
-          ></button>
-        </template>
-        <template id="battlePhases_ambush_defenders">
-          <button
-            data-tip="${t("Surprice attack phase. Units strength increased, ranged units excel")}"
-            data-phase="surprise"
-            class="icon-button-surprise"
-          ></button>
-          <button data-tip="${sentences(t("Melee phase"), t("Melee units excel"))}" data-phase="melee" class="icon-button-melee"></button>
-          <button
-            data-tip="${sentences(t("Pursue phase"), t("Mounted units excel"))}"
-            data-phase="pursue"
-            class="icon-button-pursue"
-          ></button>
-          <button
-            data-tip="${sentences(t("Retreat phase"), t("Units strength reduced"))}"
-            data-phase="retreat"
-            class="icon-button-retreat"
-          ></button>
-        </template>
-        <template id="battlePhases_landing_attackers">
-          <button
-            data-tip="${t("Landing phase. Amphibious attack. Units are vulnerable against prepared defense")}"
-            data-phase="landing"
-            class="icon-button-landing"
-          ></button>
-          <button data-tip="${sentences(t("Melee phase"), t("Melee units excel"))}" data-phase="melee" class="icon-button-melee"></button>
-          <button
-            data-tip="${sentences(t("Pursue phase"), t("Mounted units excel"))}"
-            data-phase="pursue"
-            class="icon-button-pursue"
-          ></button>
-          <button data-tip="${sentences(t("Flee phase"), t("Units strength reduced"))}" data-phase="flee" class="icon-button-flee"></button>
-        </template>
-        <template id="battlePhases_landing_defenders">
-          <button
-            data-tip="${sentences(t("Shock phase"), t("Units are not prepared for a defense"))}"
-            data-phase="shock"
-            class="icon-button-shock"
-          ></button>
-          <button
-            data-tip="${sentences(t("Defense phase"), t("Prepared defense"), t("Units strength increased"))}"
-            data-phase="defense"
-            class="icon-button-defense"
-          ></button>
-          <button data-tip="${sentences(t("Melee phase"), t("Melee units excel"))}" data-phase="melee" class="icon-button-melee"></button>
-          <button
-            data-tip="${t("Waiting phase. Cannot pursue fleeing naval")}"
-            data-phase="waiting"
-            class="icon-button-waiting"
-          ></button>
-          <button
-            data-tip="${sentences(t("Pursue phase"), t("Try to intercept fleeing attackers"), t("Mounted units excel"))}"
-            data-phase="pursue"
-            class="icon-button-pursue"
-          ></button>
-          <button
-            data-tip="${sentences(t("Retreat phase"), t("Units strength reduced"))}"
-            data-phase="retreat"
-            class="icon-button-retreat"
-          ></button>
-        </template>
-        <template id="battlePhases_air">
-          <button
-            data-tip="${sentences(t("Maneuvering phase"), t("Units strength reduced"))}"
-            data-phase="maneuvering"
-            class="icon-button-maneuvering"
-          ></button>
-          <button
-            data-tip="${sentences(t("Dogfight phase"), t("Units strength increased"))}"
-            data-phase="dogfight"
-            class="icon-button-dogfight"
-          ></button>
-          <button
-            data-tip="${sentences(t("Pursue phase"), t("Units strength increased"))}"
-            data-phase="pursue"
-            class="icon-button-pursue"
-          ></button>
-          <button
-            data-tip="${sentences(t("Retreat phase"), t("Units strength reduced"))}"
-            data-phase="retreat"
-            class="icon-button-retreat"
-          ></button>
-        </template>
-        <div style="font-size: 1.2em; font-weight: bold; width: unset">
-          <span>${t("Attackers")}</span>
-          <div style="float: right; font-size: 0.7em">
-            <meter
-              id="battleMorale_attackers"
-              data-tip="${t("Attackers morale")}: "
-              min="0"
-              max="100"
-              low="33"
-              high="66"
-              optimum="80"
-            ></meter>
-            <div
-              id="battlePower_attackers"
-              data-tip="${sentences(t("Attackers strength during this phase"), t("Strength defines dealt damage"))}"
-              style="display: inline-block; text-align: center"
-              class="icon-button-power"
-            ></div>
-            <div style="display: inline-block">
-              <button id="battlePhase_attackers" style="width: 3.2em"></button>
-              <div class="battlePhases" style="display: none"></div>
-            </div>
-            <button
-              id="battleDie_attackers"
-              data-tip="${sentences(t("Random factor for attackers"), t("Click to re-roll"))}"
-              style="padding: 0.1em 0.2em; width: 3.2em"
-              class="icon-button-die"
-            ></button>
-          </div>
-        </div>
-        <table id="battleAttackers"></table>
-        <div style="font-size: 1.2em; font-weight: bold; width: unset">
-          <span>${t("Defenders")}</span>
-          <div style="float: right; font-size: 0.7em">
-            <meter
-              id="battleMorale_defenders"
-              data-tip="${t("Defenders morale")}: "
-              min="0"
-              max="100"
-              low="33"
-              high="66"
-              optimum="80"
-            ></meter>
-            <div
-              id="battlePower_defenders"
-              data-tip="${sentences(t("Defenders strength during this phase"), t("Strength defines dealt damage"))}"
-              style="display: inline-block; text-align: center"
-              class="icon-button-power"
-            ></div>
-            <div style="display: inline-block">
-              <button id="battlePhase_defenders" style="width: 3.2em"></button>
-              <div class="battlePhases" style="display: none"></div>
-            </div>
-            <button
-              id="battleDie_defenders"
-              data-tip="${sentences(t("Random factor for defenders"), t("Click to re-roll"))}"
-              style="padding: 0.1em 0.2em; width: 3.2em"
-              class="icon-button-die"
-            ></button>
-          </div>
-        </div>
-        <table id="battleDefenders"></table>
+
+  const banner = (side: Side): string => /* html */ `<div id="battleBanner_${side}" class="battleBanner ${side}">
+      <span class="battleEmblems"></span>
+      <span class="battleBannerText">
+        <span>
+          <b>${side === "attackers" ? t("Attackers") : t("Defenders")}</b>
+          <div class="battleBar battleMorale"><i></i></div>
+          <button class="battleOrdersButton" data-tip="${t("Change the phase, add power or morale. Each change is made once and written to the battle log")}"><span class="battlePhase"></span></button>
+        </span>
+        <span>
+          <span class="battleStates"></span>
+          <span class="battleTroops">
+            <span class="battleCount" data-tip="${t("Troops left")}"><b></b><span></span></span>
+            <span class="battleLost" data-tip="${t("Casualties")}"></span>
+          </span>
+        </span>
+      </span>
+    </div>`;
+
+  const sheet = (side: Side): string => /* html */ `<section id="battleSide_${side}" class="battleSide ${side}">
+      <div class="battleSectionHead">
+        <b>${t("Regiments")}</b>
+        <button class="battleAddRegiment icon-user-plus" data-tip="${t("Add regiment to the battle")}"></button>
       </div>
-      <div id="battleBottom">
-        <button id="battleType" data-tip="${sentences(t("Battle type"), t("Click to change"))}"></button>
-        <div class="battleTypes" style="display: none">
-          <button
-            data-tip="${t("Field Battle: a standard type of combat")}"
-            data-type="field"
-            class="icon-button-field"
-          ></button>
-          <button data-tip="${t("Naval Battle: naval units combat")}" data-type="naval" class="icon-button-naval"></button>
-          <button data-tip="${t("Siege: burg blockade and storming")}" data-type="siege" class="icon-button-siege"></button>
-          <button data-tip="${t("Ambush: surprise attack")}" data-type="ambush" class="icon-button-ambush"></button>
-          <button data-tip="${t("Landing: amphibious attack")}" data-type="landing" class="icon-button-landing"></button>
-          <button
-            data-tip="${t("Air Battle: maneuring fight of avia units")}"
-            data-type="air"
-            class="icon-button-air"
-          ></button>
+      <div class="battleRegimentList"></div>
+    </section>`;
+
+  const editorHtml = /* html */ `<div id="battleScreen" class="dialog stable">
+      <style>${STYLE}</style>
+      <div id="battleLayout">
+        <div id="battleHeader">
+          ${banner("attackers")}
+          <div id="battleTitle">
+            <svg id="battleDie_attackers" class="battleDie attackers" viewBox="0 0 20 20"></svg>
+            <div>
+            <div id="battleName">
+              <input id="battleNameFull" data-tip="${t("Type full battle name")}" />
+              <span id="battleNameTools">
+                <button id="battleNameCulture" data-tip="${t("Generate culture-specific name")}" class="icon-book"></button>
+                <button id="battleNameRandom" data-tip="${t("Generate random name")}" class="icon-globe"></button>
+              </span>
+            </div>
+            <div id="battleBalance" data-tip="${t("Military power as the forces fight: units number multiplied by unit power and by upkeep")}">
+              <i class="icon-button-power"></i><i class="icon-button-power"></i><b></b>
+            </div>
+            </div>
+            <svg id="battleDie_defenders" class="battleDie defenders" viewBox="0 0 20 20"></svg>
+          </div>
+          ${banner("defenders")}
         </div>
-        <button id="battleNameShow" data-tip="${t("Set battle name")}" class="icon-font"></button>
-        <div id="battleNameSection" style="display: none">
-          <button id="battleNameHide" data-tip="${t("Hide")}" class="icon-font"></button>
-          <input id="battleNamePlace" data-tip="${t("Type place name")}" style="width: 30%" />
-          <input id="battleNameFull" data-tip="${t("Type full battle name")}" style="width: 46%" />
-          <button
-            id="battleNameCulture"
-            data-tip="${t("Generate culture-specific name")}"
-            class="icon-book"
-          ></button>
-          <button
-            id="battleNameRandom"
-            data-tip="${t("Generate random name")}"
-            class="icon-globe"
-          ></button>
+        <div id="battleStage">
+          <svg id="battleScene" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet"></svg>
+          <div id="battleLog" hidden>
+            <header>
+              <b>${t("Battle log")}</b>
+              <button id="battleLogDownload" data-tip="${t("Download the battle log: it can be loaded to replay the battle or to repeat its setup in another one")}" class="icon-download"></button>
+              <button id="battleLogUpload" data-tip="${t("Load a battle log")}" class="icon-upload"></button>
+              <button id="battleLogClose" data-tip="${t("Close")}" class="icon-cancel"></button>
+            </header>
+            <div id="battleLogList"></div>
+          </div>
         </div>
-        <button id="battleAddRegiment" data-tip="${t("Add regiment to the battle")}" class="icon-user-plus"></button>
-        <button id="battleRoll" data-tip="${t("Roll dice to update random factor")}" class="icon-die"></button>
-        <button id="battleRun" data-tip="${t("Iterate battle")}" class="icon-play"></button>
-        <button
-          id="battleApply"
-          data-tip="${t("End battle: apply current results and close the screen")}"
-          class="icon-check"
-        ></button>
-        <button
-          id="battleCancel"
-          data-tip="${t("Cancel battle: roll back results and close the screen")}"
-          class="icon-cancel"
-        ></button>
-        <button id="battleWiki" data-tip="${t("Open Battle Simulation Tutorial")}" class="icon-info"></button>
+        <div id="battleFooter">
+          <div>
+            <button id="battleRun" data-tip="${t("Start or pause the battle")}"></button>
+            <button id="battleResultRestart" class="icon-ccw" data-tip="${t("Play the same battle again from the start")}" hidden> ${t("Play again")}</button>
+            <button id="battleStep" data-tip="${t("Advance the battle by a single step")}" class="icon-right-open"></button>
+            <button id="battleRestart" data-tip="${t("Play the same battle again from the start")}" class="icon-ccw"></button>
+            <div id="battleSpeed" class="battleGroup" data-tip="${t("Battle speed")}">
+              ${[0.5, 1, 2, 4].map(speed => `<button data-speed="${speed}" class="${speed === 1 ? "pressed" : ""}">×${speed === 0.5 ? "½" : speed}</button>`).join("")}
+            </div>
+            <span id="battleClock"></span>
+            <span id="battleResult" hidden></span>
+          </div>
+          <div>
+            <span class="battlePicker">
+              <button id="battleType"></button>
+              <div class="battleMenu battleTypes" hidden>
+                ${BATTLE_TYPES.map(type => `<button data-tip="${typeTip(type)}" data-type="${type}" class="icon-button-${type}">${BATTLE_TYPE_LABELS[type]}</button>`).join("")}
+              </div>
+            </span>
+            <button id="battleRoll" data-tip="${t("Reroll the battlefield details and fortune. Only before the battle starts")}" class="icon-arrows-cw"></button>
+            <button id="battleLogToggle" data-tip="${t("Show the battle log")}" class="icon-list-bullet"></button>
+            <button id="battleWiki" data-tip="${t("Open Battle Simulation Tutorial")}" class="icon-info"></button>
+            <button id="battleApply" data-tip="${t("End battle: apply current results and close the screen")}" class="icon-check"></button>
+            <button id="battleCancel" data-tip="${t("Cancel battle: roll back results and close the screen")}" class="icon-cancel"></button>
+          </div>
+        </div>
+        <div id="battleSides">
+          ${sheet("attackers")}
+          ${sheet("defenders")}
+        </div>
       </div>
     </div>
     <div id="regimentSelectorScreen" class="dialog">
-      <div id="regimentSelectorHeader" class="header" style="grid-template-columns: 9em 13em 4em 6em">
-        <div data-tip="${t("Click to sort")}" class="sortable alphabetically" data-sortby="state">
-          ${t("State")}&nbsp;
-        </div>
-        <div data-tip="${t("Click to sort")}" class="sortable alphabetically" data-sortby="regiment">
-          ${t("Regiment")}&nbsp;
-        </div>
+      <div id="regimentSelectorHeader" class="header">
+        <div data-tip="${t("Click to sort")}" class="sortable alphabetically" data-sortby="state">${t("State")}&nbsp;</div>
+        <div data-tip="${t("Click to sort")}" class="sortable alphabetically" data-sortby="regiment">${t("Regiment")}&nbsp;</div>
         <div data-tip="${t("Click to sort")}" class="sortable" data-sortby="total">${t("Total")}&nbsp;</div>
-        <div
-          data-tip="${t("Click to sort")}"
-          class="sortable icon-sort-number-up"
-          data-sortby="distance"
-        >
-          ${t("Distance")}&nbsp;
-        </div>
+        <div data-tip="${t("Click to sort")}" class="sortable icon-sort-number-up" data-sortby="distance">${t("Distance")}&nbsp;</div>
       </div>
       <div id="regimentSelectorBody" class="table"></div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   applySortingByHeader("battleScreen", "regimentSelectorHeader");
 
-  ensureEl("battleType").addEventListener("click", event => toggleChange(event));
-  ensureEl("battleType").nextElementSibling!.addEventListener("click", event => changeType(event));
-  ensureEl("battleNameShow").addEventListener("click", () => showNameSection());
-  ensureEl<HTMLInputElement>("battleNamePlace").addEventListener("change", event => {
-    if (battle) battle.place = (event.target as HTMLInputElement).value;
+  ensureEl("battleRun").addEventListener("click", () => (player.playing ? pause() : play()));
+  ensureEl("battleStep").addEventListener("click", () => step());
+  ensureEl("battleRestart").addEventListener("click", () => restart());
+  ensureEl("battleResultRestart").addEventListener("click", () => restart());
+  ensureEl("battleSpeed").addEventListener("click", event => {
+    const button = (event.target as HTMLElement).closest<HTMLElement>("button");
+    if (!button) return;
+    player.speed = +button.dataset.speed!;
+    for (const other of ensureEl("battleSpeed").children) other.classList.toggle("pressed", other === button);
   });
-  ensureEl<HTMLInputElement>("battleNameFull").addEventListener("change", event => changeName(event));
+  ensureEl("battleType").addEventListener("click", event => togglePicker(event));
+  ensureEl("battleType").nextElementSibling!.addEventListener("click", event => changeType(event));
+  ensureEl("battleRoll").addEventListener("click", () => reroll());
+  ensureEl("battleLogToggle").addEventListener("click", () => toggleLog());
+  ensureEl("battleLogClose").addEventListener("click", () => toggleLog(false));
+  ensureEl("battleLogDownload").addEventListener("click", () => downloadLog());
+  ensureEl("battleLogUpload").addEventListener("click", () => fileInput?.click());
+  ensureEl<HTMLInputElement>("battleNameFull").addEventListener("change", event => {
+    setName((event.target as HTMLInputElement).value);
+  });
   ensureEl("battleNameCulture").addEventListener("click", () => generateBattleName("culture"));
   ensureEl("battleNameRandom").addEventListener("click", () => generateBattleName("random"));
-  ensureEl("battleNameHide").addEventListener("click", () => hideNameSection());
-  ensureEl("battleAddRegiment").addEventListener("click", () => addSide());
-  ensureEl("battleRoll").addEventListener("click", () => randomizeBattle());
-  ensureEl("battleRun").addEventListener("click", () => runBattle());
   ensureEl("battleApply").addEventListener("click", () => applyResults());
   ensureEl("battleCancel").addEventListener("click", () => cancelResults());
   ensureEl("battleWiki").addEventListener("click", () => wiki("Battle-Simulator"));
 
-  ensureEl("battlePhase_attackers").addEventListener("click", event => toggleChange(event));
-  ensureEl("battlePhase_attackers").nextElementSibling!.addEventListener("click", event =>
-    changePhase(event, "attackers")
-  );
-  ensureEl("battlePhase_defenders").addEventListener("click", event => toggleChange(event));
-  ensureEl("battlePhase_defenders").nextElementSibling!.addEventListener("click", event =>
-    changePhase(event, "defenders")
-  );
-  ensureEl("battleDie_attackers").addEventListener("click", () => rollDie("attackers"));
-  ensureEl("battleDie_defenders").addEventListener("click", () => rollDie("defenders"));
-}
+  // a block under the pointer shows its regiment in the sheet
+  scene().addEventListener("pointerover", event => {
+    const el = (event.target as Element).closest(".battleBlock");
+    const block = el && select<Element, Block>(el).datum();
+    focusRegiment(block ? `${block.state}-${block.regiment}` : null, false);
+  });
+  scene().addEventListener("pointerleave", () => focusRegiment(null));
 
-function defineType(): void {
-  const b = battle!;
-  const attacker = b.attackers.regiments[0];
-  const defender = b.defenders.regiments[0];
+  for (const side of SIDES) {
+    const el = ensureEl(`battleSide_${side}`);
+    el.querySelector(".battleAddRegiment")!.addEventListener("click", () => addSide(side));
+    ensureEl(`battleDie_${side}`).addEventListener("click", () => rollDie(side));
+    ensureEl(`battleBanner_${side}`)
+      .querySelector(".battleOrdersButton")!
+      .addEventListener("click", () => openOrders(side));
 
-  const getType = (): string => {
-    const typesA = Object.keys(attacker.u).map(name => options.map.military.units.find(u => u.name === name)!.type);
-    const typesD = Object.keys(defender.u).map(name => options.map.military.units.find(u => u.name === name)!.type);
-
-    if (attacker.n && defender.n) return "naval"; // attacker and defender are navals
-    if (typesA.every(t => t === "aviation") && typesD.every(t => t === "aviation")) return "air"; // if attackers and defender have only aviation units
-    if (attacker.n && !defender.n && typesA.some(t => t !== "naval")) return "landing"; // if attacked is naval with non-naval units and defender is not naval
-    if (!defender.n && (pack.burgs[pack.cells.burg[b.cell]].walls || pack.burgs[pack.cells.burg[b.cell]].citadel))
-      return "siege"; // defender is in walled town
-    if (P(0.1) && [5, 6, 7, 8, 9, 12].includes(pack.cells.biome[b.cell])) return "ambush"; // 20% if defenders are in forest or marshes
-    return "field";
-  };
-
-  b.type = getType();
-  setType();
-}
-
-function setType(): void {
-  const b = battle!;
-  ensureEl("battleType").className = `icon-button-${b.type}`;
-
-  const sideSpecific = findEl<HTMLTemplateElement>(`battlePhases_${b.type}_attackers`);
-  const attackersContent = sideSpecific
-    ? sideSpecific.content
-    : ensureEl<HTMLTemplateElement>(`battlePhases_${b.type}`).content;
-  const defendersContent = sideSpecific
-    ? ensureEl<HTMLTemplateElement>(`battlePhases_${b.type}_defenders`).content
-    : attackersContent;
-
-  const attackersPhase = ensureEl("battlePhase_attackers").nextElementSibling!;
-  const defendersPhase = ensureEl("battlePhase_defenders").nextElementSibling!;
-  attackersPhase.innerHTML = "";
-  defendersPhase.innerHTML = "";
-  attackersPhase.append(attackersContent.cloneNode(true));
-  defendersPhase.append(defendersContent.cloneNode(true));
-}
-
-function definePlace(): string | null {
-  const cells = pack.cells;
-  const i = battle!.cell;
-  const burg = cells.burg[i] ? pack.burgs[cells.burg[i]].name : null;
-  const getRiver = (riverId: number): string => {
-    const river = pack.rivers.find(r => r.i === riverId)!;
-    return `${river.name} ${river.type}`;
-  };
-  const river = !burg && cells.r[i] ? getRiver(cells.r[i]) : null;
-  const proper = burg || river ? null : Names.getCulture(cells.culture[i]);
-  return burg ? burg : river ? river : proper;
-}
-
-function defineBattleName(): string {
-  const b = battle!;
-  if (b.type === "field") return `Battle of ${b.place}`;
-  if (b.type === "naval") return `Naval Battle of ${b.place}`;
-  if (b.type === "siege") return `Siege of ${b.place}`;
-  if (b.type === "ambush") return `${b.place} Ambush`;
-  if (b.type === "landing") return `${b.place} Landing`;
-  return `${b.place} ${P(0.8) ? "Air Battle" : "Dogfight"}`; // "air"
-}
-
-function getTypeName(): string {
-  const b = battle!;
-  if (b.type === "field") return "field battle";
-  if (b.type === "naval") return "naval battle";
-  if (b.type === "siege") return "siege";
-  if (b.type === "ambush") return "ambush";
-  if (b.type === "landing") return "landing";
-  return "battle"; // "air"
-}
-
-function addHeaders(): void {
-  let headers = "<thead><tr><th></th><th></th>";
-
-  for (const u of options.map.military.units) {
-    const label = capitalize(u.name.replace(/_/g, " "));
-    headers += `<th data-tip="${label}">${Icons.html(u.icon)}</th>`;
+    // a regiment under the pointer stands out on the battlefield
+    const list = el.querySelector<HTMLElement>(".battleRegimentList")!;
+    list.addEventListener("pointerover", event => {
+      focusRegiment((event.target as Element).closest<HTMLElement>(".battleRegiment")?.dataset.key ?? null);
+    });
+    list.addEventListener("pointerleave", () => focusRegiment(null));
   }
 
-  headers += `<th data-tip="${t("Total military forces")}">${t("Total")}</th></tr></thead>`;
-  ensureEl("battleAttackers").innerHTML = headers;
-  ensureEl("battleDefenders").innerHTML = headers;
+  fileInput = createFileInput(".json");
+  fileInput.onchange = () => uploadFile(fileInput!, loadLog);
 }
 
-function addRegimentToSide(side: Side, regiment: Regiment): void {
+function toggleLog(show = ensureEl("battleLog").hidden): void {
+  ensureEl("battleLog").hidden = !show;
+  ensureEl("battleLogToggle").classList.toggle("pressed", show);
+  if (show) ensureEl("battleLogList").scrollTop = ensureEl("battleLogList").scrollHeight;
+}
+
+/** Mark a regiment in its sheet and, unless the pointer is on the field already, its troops on the field */
+function focusRegiment(key: string | null, onField = true): void {
+  for (const row of ensureEl("battleLayout").querySelectorAll<HTMLElement>(".battleRegiment")) {
+    row.classList.toggle("battleFocused", row.dataset.key === key);
+  }
+  scene().classList.toggle("battleFocus", onField && key !== null);
+  select(scene())
+    .selectAll<SVGGElement, Block>(".battleBlock")
+    .classed("battleFocused", block => `${block.state}-${block.regiment}` === key);
+}
+
+// the player
+
+function play(): void {
   const b = battle!;
-  regiment.casualties = Object.keys(regiment.u).reduce<Record<string, number>>((acc, key) => {
-    acc[key] = 0;
-    return acc;
-  }, {});
-  regiment.survivors = Object.fromEntries(Object.entries(regiment.u).map(([k, v]) => [k, Military.getTroops(v)]));
+  if (b.result) return;
+  player.playing = true;
+  player.tickStart = performance.now();
+  if (!player.previous) advance();
+  setEditable();
+  cancelAnimationFrame(player.frame);
+  player.frame = requestAnimationFrame(animate);
+}
 
-  const state = pack.states[regiment.state];
-  const distance = (Math.hypot(b.y - regiment.by, b.x - regiment.bx) * options.map.units.distance.scale) | 0; // distance between regiment and its base
-  const color = state.color?.[0] === "#" ? state.color : "#999";
+function pause(): void {
+  player.playing = false;
+  cancelAnimationFrame(player.frame);
+  player.previous = null;
+  if (battle) updateBlocks(scene(), battle, null, 1);
+  setEditable();
+}
 
-  const href = escapeHtml(Icons.href(regiment.icon ?? ""));
-  const icon = `<svg width="1.4em" height="1.4em" style="margin-bottom: -.6em; stroke: #333">
-      <rect x="0" y="0" width="100%" height="100%" fill="${color}"></rect>
-      <use href="${href}" x="10%" y="10%" width="80%" height="80%" stroke="none"></use></svg>`;
-  const body = `<tbody id="battle${state.i}-${regiment.i}">`;
+function step(): void {
+  if (!battle || battle.result) return;
+  pause();
+  advance();
+  player.previous = null;
+  updateBlocks(scene(), battle, null, 1);
+}
 
-  let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment">${regiment.name}</td>`;
-  const upkeep = rn(Military.getBattleUpkeep(state.i) * 100);
-  const upkeepTip = sentences(EconomyTerms.upkeep(), t("Troops fight with this share of their power"));
-  let casualtiesRow = `<tr class="battleCasualties"><td></td><td class="regiment">${state.fullName} <span data-tip="${upkeepTip}" class="${upkeep < 100 ? "negative" : ""}">(${t("upkeep {{upkeep}}%", { upkeep })})</span></td>`;
-  let survivorsRow = `<tr class="battleSurvivors"><td></td><td data-tip="${t("Supply line length, affects morale")}">${t("Distance to base")}: ${distance} ${options.map.units.distance.unit}</td>`;
+function animate(now: number): void {
+  const b = battle;
+  if (!b || !player.playing) return;
+  let progress = (now - player.tickStart) / (TICK_MS / player.speed);
+  // a throttled tab catches up a few ticks a frame
+  for (let ticks = 0; progress >= 1 && ticks < 4; ticks++) {
+    if (b.result) {
+      pause();
+      return;
+    }
+    advance();
+    progress -= 1;
+  }
+  if (progress >= 1) progress = 0;
+  player.tickStart = now - progress * (TICK_MS / player.speed);
+  updateBlocks(scene(), b, player.previous, progress);
+  player.frame = requestAnimationFrame(animate);
+}
 
-  for (const u of options.map.military.units) {
-    initial += `<td data-tip="${t("Initial forces")}" style="width: 2.5em; text-align: center">${Military.getTroops(regiment.u[u.name])}</td>`;
-    casualtiesRow += `<td data-tip="${t("Casualties")}" style="width: 2.5em; text-align: center; color: red">0</td>`;
-    survivorsRow += `<td data-tip="${t("Survivors")}" style="width: 2.5em; text-align: center; color: green">${Military.getTroops(regiment.u[u.name])}</td>`;
+function advance(): void {
+  const b = battle!;
+  player.previous = snapshot(b);
+  const blocks = b.blocks.length;
+  applyDue(b, script);
+  if (b.blocks.length !== blocks) drawScene(); // a recorded reinforcement
+  tick(b);
+  refresh();
+  if (b.result) tip(sentences(t("{{battle}} is over", { battle: b.name }), outcome(b)), true, "success", 4000);
+}
+
+function drawScene(): void {
+  drawBlocks(scene(), battle!, dropBlock, turnBlock);
+  setEditable();
+}
+
+function dropBlock(block: Block, x: number, y: number): void {
+  const b = battle!;
+  intervene(b, { tick: b.tick, kind: "move", block: block.key, x, y });
+  updateBlocks(scene(), b, null, 1);
+  refresh();
+}
+
+function turnBlock(block: Block, facing: number): void {
+  const b = battle!;
+  intervene(b, { tick: b.tick, kind: "turn", block: block.key, facing });
+  updateBlocks(scene(), b, null, 1);
+  refresh();
+}
+
+/** Troops can be dragged while the battle stands still */
+function setEditable(): void {
+  scene().classList.toggle("battleEditable", !player.playing && !battle?.result);
+  const run = ensureEl("battleRun");
+  run.className = player.playing ? "battlePause" : "icon-play";
+  run.textContent = player.playing ? t("Pause") : ` ${battle?.tick ? t("Continue") : t("Start battle")}`;
+}
+
+// the panels
+
+const DIE_PIPS = [[4], [0, 8], [0, 4, 8], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 2, 3, 5, 6, 8]]; // cells of a 3x3 grid
+
+const dieFace = (die: number): string =>
+  `<rect x="1" y="1" width="18" height="18" rx="3.5"/>${(DIE_PIPS[die - 1] ?? [])
+    .map(cell => `<circle cx="${5 + (cell % 3) * 5}" cy="${5 + Math.floor(cell / 3) * 5}" r="1.7"/>`)
+    .join("")}`;
+
+const stateColor = (state: number): string => {
+  const color = pack.states[state]?.color;
+  return color?.[0] === "#" ? color : "#999";
+};
+
+const put = (root: Element, selector: string, text: string | number): void => {
+  const el = root.querySelector(selector)!;
+  if (el.textContent !== String(text)) el.textContent = String(text);
+};
+
+function refresh(): void {
+  const b = battle!;
+  for (const side of SIDES) refreshSide(side);
+
+  // the scales: the power of the troops each side still has on the field, as the military screens count it
+  const power = SIDES.map(side => getUnitsPower(b, side));
+  const share = power[0] + power[1] ? (power[0] / (power[0] + power[1])) * 100 : 50;
+  const balance = ensureEl("battleBalance");
+  put(balance, "i", si(power[0]));
+  put(balance, "i + i", si(power[1]));
+  (balance.firstElementChild as HTMLElement).style.width = `${share}%`;
+  balance.style.setProperty("--at", `clamp(4.2em, ${share}%, 100% - 4.2em)`);
+
+  const started = b.tick > 0;
+  const over = Boolean(b.result);
+  const type = ensureEl<HTMLButtonElement>("battleType");
+  type.className = `icon-button-${b.type}`;
+  type.textContent = BATTLE_TYPE_LABELS[b.type];
+  type.disabled = started; // the ground is of the type the battle began as
+  type.dataset.tip = started ? t("Battle type") : sentences(t("Battle type"), t("Click to change"));
+  for (const button of type.nextElementSibling!.children) {
+    button.classList.toggle("current", (button as HTMLElement).dataset.type === b.type);
+  }
+  const name = ensureEl<HTMLInputElement>("battleNameFull");
+  if (document.activeElement !== name) name.value = b.name;
+
+  put(ensureEl("battleFooter"), "#battleClock", t("Round {{round}}", { round: Math.floor(b.tick / ROUND_TICKS) + 1 }));
+  const result = ensureEl("battleResult");
+  result.hidden = !over;
+  if (b.result) {
+    result.className = b.result.winner ?? "";
+    result.dataset.tip = outcome(b);
+    put(ensureEl("battleFooter"), "#battleResult", logText(b.log.at(-1)!));
   }
 
-  initial += `<td data-tip="${t("Initial forces")}" style="width: 2.5em; text-align: center">${Military.getTroops(regiment.a)}</td></tr>`;
-  casualtiesRow += `<td data-tip="${t("Casualties")}"  style="width: 2.5em; text-align: center; color: red">0</td></tr>`;
-  survivorsRow += `<td data-tip="${t("Survivors")}" style="width: 2.5em; text-align: center; color: green">${Military.getTroops(regiment.a)}</td></tr>`;
+  // setup only; nothing is hidden, so the controls never jump
+  ensureEl<HTMLButtonElement>("battleRoll").disabled = started;
+  ensureEl<HTMLButtonElement>("battleStep").disabled = over;
+  ensureEl<HTMLButtonElement>("battleRestart").disabled = !started;
+  ensureEl("battleRun").hidden = over;
+  ensureEl("battleResultRestart").hidden = !over;
+  setEditable();
 
-  const container = ensureEl(side === "attackers" ? "battleAttackers" : "battleDefenders");
-  container.innerHTML += `${body + initial + casualtiesRow + survivorsRow}</tbody>`;
-  b[side].regiments.push(regiment);
-  b[side].distances.push(distance);
+  const list = ensureEl("battleLogList");
+  if (list.childElementCount > b.log.length) list.innerHTML = "";
+  for (const entry of b.log.slice(list.childElementCount)) {
+    const round = Math.floor(entry.tick / ROUND_TICKS) + 1;
+    list.insertAdjacentHTML(
+      "beforeend",
+      `<div class="${entry.event} ${entry.side ?? ""}"><i>${round}</i><u></u><span>${escapeHtml(logText(entry))}</span></div>`
+    );
+    list.scrollTop = list.scrollHeight;
+  }
 }
 
-function addSide(): void {
+function refreshSide(side: Side): void {
+  const b = battle!;
+  const banner = ensureEl(`battleBanner_${side}`);
+  const data = b[side];
+  const troops = getTroops(b, side);
+  const morale = data.morale | 0;
+
+  put(banner, ".battleCount > b", troops.left);
+  put(banner, ".battleCount > span", ` / ${troops.initial}`);
+  put(banner, ".battleTroops > .battleLost", troops.left < troops.initial ? `−${troops.initial - troops.left}` : "");
+  const moraleBar = banner.querySelector<HTMLElement>(".battleMorale")!;
+  moraleBar.className = `battleBar battleMorale ${morale < 33 ? "low" : morale < 66 ? "mid" : ""}`;
+  moraleBar.dataset.tip = `${side === "attackers" ? t("Attackers morale") : t("Defenders morale")}: ${morale}`;
+  (moraleBar.firstElementChild as HTMLElement).style.width = `${morale}%`;
+
+  const die = ensureEl<SVGElement & HTMLElement>(`battleDie_${side}`);
+  if (die.dataset.die !== String(data.die)) {
+    const factor = side === "attackers" ? t("Random factor for attackers") : t("Random factor for defenders");
+    die.dataset.die = String(data.die);
+    die.dataset.tip = sentences(`${factor}: ×${(data.die / 10 + 0.4).toFixed(1)}`, t("Click to re-roll"));
+    die.innerHTML = dieFace(data.die);
+  }
+
+  const phase = banner.querySelector<HTMLElement>(".battlePhase")!;
+  phase.className = `battlePhase icon-button-${data.phase}`;
+  phase.dataset.tip = phaseTip(data.phase, b.type);
+  put(banner, ".battlePhase", phaseLabel(data.phase));
+
+  refreshRegiments(side);
+}
+
+const phaseLabel = (phase: string): string => BATTLE_PHASE_LABELS[phase] ?? capitalize(phase);
+
+/** The sheet's regiments: built when their set changes, then only the numbers move */
+function refreshRegiments(side: Side): void {
+  const b = battle!;
+  const el = ensureEl(`battleSide_${side}`);
+  const { regiments } = b[side];
+  const container = el.querySelector<HTMLElement>(".battleRegimentList")!;
+  const keys = regiments.map(regimentKey).join();
+  if (container.dataset.keys !== keys) {
+    container.dataset.keys = keys;
+    renderRegiments(side);
+  }
+
+  for (const regiment of regiments) {
+    const row = ensureEl(`battleRegiment_${regimentKey(regiment)}`);
+    const losses = getLosses(b, regiment);
+    const initial = sum(Object.values(regiment.troops));
+    const lost = sum(Object.values(losses));
+    put(row, ".battleLeft", initial - lost);
+    put(row, "summary > .battleLost", lost ? `−${lost}` : "");
+    for (const unit of row.querySelectorAll<HTMLElement>("[data-unit]")) {
+      const name = unit.dataset.unit!;
+      put(unit, ".battleLeft", regiment.troops[name] - (losses[name] ?? 0));
+      put(unit, ".battleLost", losses[name] ? `−${losses[name]}` : "");
+    }
+  }
+}
+
+function renderRegiments(side: Side): void {
+  const b = battle!;
+  const el = ensureEl(`battleSide_${side}`);
+  const { regiments } = b[side];
+
+  const states = [...new Set(regiments.map(regiment => regiment.state))];
+  const [only] = states;
+  const names =
+    states.length === 1
+      ? (pack.states[only].fullName ?? pack.states[only].name)
+      : list(states.map(s => pack.states[s].name));
+  const banner = ensureEl(`battleBanner_${side}`);
+  banner.querySelector(".battleEmblems")!.innerHTML = states
+    .slice(0, 4)
+    .map(state => {
+      void EmblemRenderer.trigger(`stateCOA${state}`, pack.states[state].coa);
+      return `<svg data-tip="${escapeHtml(pack.states[state].fullName ?? "")}" viewBox="0 0 200 200"><use href="#stateCOA${state}"></use></svg>`;
+    })
+    .join("");
+  const title = banner.querySelector<HTMLElement>(".battleStates")!;
+  title.textContent = names;
+  title.dataset.tip = names;
+
+  const container = el.querySelector<HTMLElement>(".battleRegimentList")!;
+  const opened = new Set([...container.querySelectorAll("details[open]")].map(details => details.id));
+  container.innerHTML = regiments
+    .map(regiment => {
+      const state = pack.states[regiment.state];
+      const upkeep = rn(regiment.upkeep * 100);
+      const units = b.units
+        .filter(unit => regiment.troops[unit.name])
+        .map(
+          unit => /* html */ `<div data-unit="${escapeHtml(unit.name)}">
+            <span>${Icons.html(unit.icon)}</span><span>${escapeHtml(capitalize(unit.name.replace(/_/g, " ")))}</span>
+            <span class="battleLeft"></span><span class="battleLost"></span>
+          </div>`
+        )
+        .join("");
+      const id = `battleRegiment_${regimentKey(regiment)}`;
+      return /* html */ `<details id="${id}" class="battleRegiment" data-key="${regimentKey(regiment)}" ${opened.has(id) ? "open" : ""}>
+          <summary>
+            <svg viewBox="0 0 20 20"><rect width="20" height="20" fill="${stateColor(regiment.state)}" stroke="#333"></rect>
+              <use href="${escapeHtml(Icons.href(regiment.icon))}" x="2" y="2" width="16" height="16"></use></svg>
+            <span class="battleRegimentName" data-tip="${escapeHtml(regiment.name)}">${escapeHtml(regiment.name)}</span>
+            <span class="battleLeft" data-tip="${t("Survivors")}"></span>
+            <span class="battleLost" data-tip="${t("Casualties")}"></span>
+          </summary>
+          <div class="battleUnits">${units}</div>
+          <div class="battleRegimentInfo">${escapeHtml(state.fullName ?? "")} <span class="${upkeep < 100 ? "negative" : ""}" data-tip="${t("Troops fight with this share of their power")}">(${t("upkeep {{upkeep}}%", { upkeep })})</span><br>
+            <span data-tip="${t("Supply line length, affects morale")}">${t("Distance to base")}: ${regiment.distance} ${options.map.units.distance.unit}</span></div>
+        </details>`;
+    })
+    .join("");
+}
+
+/** Another die for the side: it stands for the round to come */
+function rollDie(side: Side): void {
+  const b = battle!;
+  if (b.result) return;
+  const die = ((b[side].die - 1 + 1 + Math.floor(Math.random() * 5)) % 6) + 1; // never the same face
+  intervene(b, { tick: b.tick, kind: "die", side, die });
+  refresh();
+}
+
+/** What the user may do to a side by hand: each change is made once and goes to the log */
+function openOrders(side: Side): void {
+  const b = battle!;
+  if (b.result) return;
+  findEl("battleOrdersScreen")?.remove();
+  const amount = t("Amount to add; a negative one is taken away");
+  const phases = PHASES[b.type][side]
+    .map(phase => `<option value="${phase}" ${phase === b[side].phase ? "selected" : ""}>${phaseLabel(phase)}</option>`)
+    .join("");
+  ensureEl("dialogs").insertAdjacentHTML(
+    "beforeend",
+    /* html */ `<div id="battleOrdersScreen" class="dialog">
+      <div style="display: grid; grid-template-columns: auto 8em; align-items: center; gap: 0.5em 1em; width: auto">
+        <label for="battleOrdersPhase">${t("Phase")}</label>
+        <select id="battleOrdersPhase">${phases}</select>
+        <label for="battleOrdersPower" data-tip="${amount}">${t("Power")}</label>
+        <input id="battleOrdersPower" data-tip="${amount}" type="number" step="10" value="0" />
+        <label for="battleOrdersMorale" data-tip="${amount}">${t("Morale")}</label>
+        <input id="battleOrdersMorale" data-tip="${amount}" type="number" step="5" min="-100" max="100" value="0" />
+      </div>
+    </div>`
+  );
+
+  const apply = (): void => {
+    const phase = ensureEl<HTMLSelectElement>("battleOrdersPhase").value;
+    const power = +ensureEl<HTMLInputElement>("battleOrdersPower").value || 0;
+    const morale = +ensureEl<HTMLInputElement>("battleOrdersMorale").value || 0;
+    if (phase !== b[side].phase) intervene(b, { tick: b.tick, kind: "phase", side, phase });
+    if (power) intervene(b, { tick: b.tick, kind: "power", side, value: power });
+    if (morale) intervene(b, { tick: b.tick, kind: "morale", side, value: morale });
+    Dialog.close("battleOrdersScreen");
+    refresh();
+  };
+
+  Dialog.open("battleOrdersScreen", {
+    title: side === "attackers" ? t("Attackers") : t("Defenders"),
+    position: { my: "center", at: "center", of: "#battleScreen" },
+    buttons: [
+      { label: t("Apply"), onClick: apply },
+      { label: t("Cancel"), onClick: () => Dialog.close("battleOrdersScreen") }
+    ]
+  });
+}
+
+function closePickers(): void {
+  for (const menu of findEl("battleLayout")?.querySelectorAll<HTMLElement>(".battleMenu") ?? []) menu.hidden = true;
+}
+
+function togglePicker(event: Event): void {
+  event.stopPropagation();
+  const menu = (event.currentTarget as HTMLElement).nextElementSibling as HTMLElement;
+  const show = menu.hidden;
+  closePickers();
+  if (!show) return;
+  menu.hidden = false;
+  document.addEventListener("click", closePickers, { once: true });
+}
+
+function changeType(event: Event): void {
+  const target = event.target as HTMLElement;
+  const b = battle!;
+  if (target.tagName !== "BUTTON" || target.dataset.type === b.type || b.tick) return;
+  const type = target.dataset.type as BattleType;
+  const named = b.name === getBattleName(b.type, b.place, createRandom(`${b.seed}_n`));
+
+  intervene(b, { tick: b.tick, kind: "type", type });
+  if (!b.tick) {
+    // the ground follows the type until the battle starts
+    b.field = buildField(b.x, b.y, b.seed, type);
+    prepare(b);
+    drawBattlefield(scene(), b.field);
+    drawScene();
+  }
+  if (named) setName(getBattleName(type, b.place, createRandom(`${b.seed}_n`)));
+  refresh();
+}
+
+function reroll(): void {
+  const b = battle!;
+  if (b.tick) return;
+  rerolls += 1;
+  const sides = SIDES.map(side => b[side].regiments.map(regiment => regiments.get(regimentKey(regiment))!));
+  setup(sides[0], sides[1], { type: b.type, name: b.name });
+  // what was done to the sides by hand stays done
+  for (const change of b.interventions) {
+    if (change.kind === "power" || change.kind === "morale") intervene(battle!, change);
+  }
+  refresh();
+}
+
+function setName(name: string): void {
+  battle!.name = name;
+  ensureEl<HTMLInputElement>("battleNameFull").value = name;
+  Dialog.update("battleScreen", { title: name });
+}
+
+function generateBattleName(type: "culture" | "random"): void {
+  const b = battle!;
+  b.place =
+    type === "culture"
+      ? Names.getCulture(pack.cells.culture[b.cell], undefined, undefined, "")
+      : Names.getBase(Math.floor(Math.random() * Names.nameBases.length));
+  setName(getBattleName(b.type, b.place, createRandom(`${b.seed}_n`)));
+}
+
+function addSide(side: Side): void {
   if (Dialog.isOpen("regimentSelectorScreen")) return; // its row listener is bound once
   const b = battle!;
   const body = ensureEl("regimentSelectorBody");
-  const regiments = pack.states.filter(s => s.military && !s.removed).flatMap(s => s.military!);
-
+  const all = pack.states.filter(s => s.military && !s.removed).flatMap(s => s.military!);
   const distance = (reg: Regiment): number =>
     rn(Math.hypot(b.y - reg.y, b.x - reg.x) * options.map.units.distance.scale);
-  const isAdded = (reg: Regiment): boolean =>
-    b.defenders.regiments.some(r => r === reg) || b.attackers.regiments.some(r => r === reg);
 
-  body.innerHTML = regiments
+  body.innerHTML = all
     .map(r => {
       const s = pack.states[r.state];
-      const added = isAdded(r);
+      const added = regiments.has(regimentKey(r));
       const dist = added ? 0 : distance(r);
-      const distLabel = `${dist} ${options.map.units.distance.unit}`;
-      return `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state=${
-        s.name
-      } data-regiment=${r.name}
-        data-total=${Military.getTroops(r.a)} data-distance="${dist}" data-tip="${t("Click to select regiment")}">
-        <svg width=".9em" height=".9em" style="margin-bottom:-1px; stroke: #333"><rect x="0" y="0" width="100%" height="100%" fill="${
-          s.color
-        }" ></svg>
-        <div style="width:6em">${s.name.slice(0, 11)}</div>
-        <div style="width:1.2em; display:flex">${Icons.html(r.icon ?? "")}</div>
-        <div style="width:13em">${r.name.slice(0, 24)}</div>
-        <div style="width:4em">${Military.getTroops(r.a)}</div>
-        <div style="width:4em">${distLabel}</div>
+      return /* html */ `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state="${escapeHtml(s.name)}"
+        data-regiment="${escapeHtml(r.name)}" data-total=${Military.getTroops(r.a)} data-distance="${dist}" data-tip="${t("Click to select regiment")}">
+        <span><svg viewBox="0 0 10 10"><rect width="10" height="10" fill="${s.color}" stroke="#333"/></svg>${escapeHtml(s.name)}</span>
+        <span>${Icons.html(r.icon ?? "")} ${escapeHtml(r.name)}</span>
+        <span>${Military.getTroops(r.a)}</span>
+        <span>${dist} ${options.map.units.distance.unit}</span>
       </div>`;
     })
     .join("");
 
   Dialog.open("regimentSelectorScreen", {
     width: "fit-content",
+    minWidth: 360,
     title: t("Add regiment to the battle"),
-    position: { my: "left center", at: "right+10 center", of: "#battleScreen" },
+    position: { my: "center", at: "center", of: "#battleScreen" },
     persistent: true, // markup is built with the battle screen, so it must survive closing
     onClose: addSideClosed,
     buttons: [
-      { label: t("Add to attackers"), onClick: () => addSideClicked("attackers") },
-      { label: t("Add to defenders"), onClick: () => addSideClicked("defenders") },
+      {
+        label: side === "attackers" ? t("Add to attackers") : t("Add to defenders"),
+        onClick: () => addSideClicked()
+      },
       { label: t("Cancel"), onClick: () => Dialog.close("regimentSelectorScreen") }
     ]
   });
@@ -638,15 +945,16 @@ function addSide(): void {
   body.addEventListener("click", selectLine);
 
   function selectLine(event: Event): void {
-    const target = event.target as HTMLElement;
-    if (target.className === "inactive") {
+    const row = (event.target as HTMLElement).closest<HTMLElement>("#regimentSelectorBody > div");
+    if (!row) return;
+    if (row.classList.contains("inactive")) {
       tip(t("Regiment is already in the battle"), false, "error");
       return;
     }
-    target.classList.toggle("selected");
+    row.classList.toggle("selected");
   }
 
-  function addSideClicked(side: Side): void {
+  function addSideClicked(): void {
     const selected = body.querySelectorAll<HTMLElement>(".selected");
     if (!selected.length) {
       tip(t("Please select a regiment first"), false, "error");
@@ -655,20 +963,12 @@ function addSide(): void {
 
     Dialog.close("regimentSelectorScreen");
     selected.forEach(line => {
-      const state = pack.states[+line.dataset.s!];
-      const regiment = state.military!.find(r => r.i === +line.dataset.i!)!;
-      addRegimentToSide(side, regiment);
-      calculateStrength(side);
-      getInitialMorale();
-
-      // move regiment
-      const defenders = b.defenders.regiments;
-      const attackers = b.attackers.regiments;
-      const shift = side === "attackers" ? attackers.length * -8 : (defenders.length - 1) * 8;
-      regiment.px = regiment.x;
-      regiment.py = regiment.y;
-      moveRegiment(regiment, defenders[0].x, defenders[0].y + shift);
+      const regiment = pack.states[+line.dataset.s!].military!.find(r => r.i === +line.dataset.i!)!;
+      joinBattle(regiment, side);
+      intervene(b, { tick: b.tick, kind: "add", side, regiment: toBattleRegiment(regiment, b) });
     });
+    drawScene();
+    refresh();
   }
 
   function addSideClosed(): void {
@@ -677,666 +977,198 @@ function addSide(): void {
   }
 }
 
-function showNameSection(): void {
-  document.querySelectorAll<HTMLElement>("#battleBottom > button").forEach(el => {
-    el.style.display = "none";
-  });
-  ensureEl("battleNameSection").style.display = "inline-block";
-
-  ensureEl<HTMLInputElement>("battleNamePlace").value = battle!.place ?? "";
-  ensureEl<HTMLInputElement>("battleNameFull").value = battle!.name;
-}
-
-function hideNameSection(): void {
-  document.querySelectorAll<HTMLElement>("#battleBottom > button").forEach(el => {
-    el.style.display = "inline-block";
-  });
-  ensureEl("battleNameSection").style.display = "none";
-}
-
-function changeName(event: Event): void {
-  const value = (event.target as HTMLInputElement).value;
-  battle!.name = value;
-  Dialog.open("battleScreen", { title: value });
-}
-
-function generateBattleName(type: "culture" | "random"): void {
+/** Bring a regiment to the battle on the map */
+function joinBattle(regiment: Regiment, side: Side): void {
   const b = battle!;
-  const place =
-    type === "culture"
-      ? Names.getCulture(pack.cells.culture[b.cell], undefined, undefined, "")
-      : Names.getBase(rand(Names.nameBases.length - 1));
-  b.place = place;
-  ensureEl<HTMLInputElement>("battleNamePlace").value = place;
-  b.name = defineBattleName();
-  ensureEl<HTMLInputElement>("battleNameFull").value = b.name;
-  Dialog.open("battleScreen", { title: b.name });
+  regiments.set(regimentKey(regiment), regiment);
+  const shift = side === "attackers" ? (b.attackers.regiments.length + 1) * -8 : b.defenders.regiments.length * 8;
+  regiment.px = regiment.x;
+  regiment.py = regiment.y;
+  moveRegiment(regiment, b.x, b.y + shift);
 }
 
-function getJoinedForces(
-  regiments: Regiment[],
-  weight: (regiment: Regiment) => number = () => 1
-): Record<string, number> {
-  return regiments.reduce<Record<string, number>>((acc, regiment) => {
-    const factor = weight(regiment);
-    for (const k in regiment.survivors) {
-      if (!Object.hasOwn(regiment.survivors, k)) continue;
-      acc[k] = (acc[k] || 0) + regiment.survivors![k] * factor;
-    }
-    return acc;
-  }, {});
+// the log
+
+function logText({ event, side, params }: LogEntry): string {
+  const attackers = side === "attackers";
+  if (event === "start") return t("The battle begins");
+  if (event === "phases") {
+    return t("Attackers: {{attackers}}, defenders: {{defenders}}", {
+      attackers: phaseLabel(params!.attackers),
+      defenders: phaseLabel(params!.defenders)
+    });
+  }
+  if (event === "move") return t("{{block}} are moved", params);
+  if (event === "turn") return t("{{block}} are turned", params);
+  if (event === "die") {
+    return `${attackers ? t("Random factor for attackers") : t("Random factor for defenders")}: ${params!.die}`;
+  }
+  if (event === "power") return `${attackers ? t("Attackers power") : t("Defenders power")}: ${params!.value}`;
+  if (event === "morale") return `${attackers ? t("Attackers morale") : t("Defenders morale")}: ${params!.value}`;
+  if (event === "rout") return t("{{block}} break and run", params);
+  if (event === "destroyed") return t("{{block}} are destroyed", params);
+  if (event === "fled") return t("{{block}} leave the field", params);
+  if (event === "join") {
+    return attackers ? t("{{regiment}} joins the attackers", params) : t("{{regiment}} joins the defenders", params);
+  }
+  if (event === "order") {
+    return attackers
+      ? t("Attackers are ordered to {{phase}}", { phase: phaseLabel(params!.phase) })
+      : t("Defenders are ordered to {{phase}}", { phase: phaseLabel(params!.phase) });
+  }
+  if (!side) return t("The battle dies down");
+  return attackers ? t("The attackers hold the field") : t("The defenders hold the field");
 }
 
-function calculateStrength(side: Side): void {
+function outcome(b: Battle): string {
+  const [attackers, defenders] = getResult(b).status;
+  return attackers === defenders ? capitalize(attackers) : `${capitalize(attackers)}, ${defenders}`;
+}
+
+function buildLog(): BattleLogFile {
   const b = battle!;
-  const scheme: Record<string, Record<string, number>> = {
-    // field battle phases
-    skirmish: {
-      melee: 0.2,
-      ranged: 2.4,
-      mounted: 0.1,
-      machinery: 3,
-      naval: 1,
-      armored: 0.2,
-      aviation: 1.8,
-      magical: 1.8
-    }, // ranged excel
-    melee: { melee: 2, ranged: 1.2, mounted: 1.5, machinery: 0.5, naval: 0.2, armored: 2, aviation: 0.8, magical: 0.8 }, // melee excel
-    pursue: { melee: 1, ranged: 1, mounted: 4, machinery: 0.05, naval: 1, armored: 1, aviation: 1.5, magical: 0.6 }, // mounted excel
-    retreat: {
-      melee: 0.1,
-      ranged: 0.01,
-      mounted: 0.5,
-      machinery: 0.01,
-      naval: 0.2,
-      armored: 0.1,
-      aviation: 0.8,
-      magical: 0.05
-    }, // reduced
-
-    // naval battle phases
-    shelling: { melee: 0, ranged: 0.2, mounted: 0, machinery: 2, naval: 2, armored: 0, aviation: 0.1, magical: 0.5 }, // naval and machinery excel
-    boarding: {
-      melee: 1,
-      ranged: 0.5,
-      mounted: 0.5,
-      machinery: 0,
-      naval: 0.5,
-      armored: 0.4,
-      aviation: 0,
-      magical: 0.2
-    }, // melee excel
-    chase: { melee: 0, ranged: 0.15, mounted: 0, machinery: 1, naval: 1, armored: 0, aviation: 0.15, magical: 0.5 }, // reduced
-    withdrawal: {
-      melee: 0,
-      ranged: 0.02,
-      mounted: 0,
-      machinery: 0.5,
-      naval: 0.1,
-      armored: 0,
-      aviation: 0.1,
-      magical: 0.3
-    }, // reduced
-
-    // siege phases
-    blockade: {
-      melee: 0.25,
-      ranged: 0.25,
-      mounted: 0.2,
-      machinery: 0.5,
-      naval: 0.2,
-      armored: 0.1,
-      aviation: 0.25,
-      magical: 0.25
-    }, // no active actions
-    sheltering: {
-      melee: 0.3,
-      ranged: 0.5,
-      mounted: 0.2,
-      machinery: 0.5,
-      naval: 0.2,
-      armored: 0.1,
-      aviation: 0.25,
-      magical: 0.25
-    }, // no active actions
-    sortie: { melee: 2, ranged: 0.5, mounted: 1.2, machinery: 0.2, naval: 0.1, armored: 0.5, aviation: 1, magical: 1 }, // melee excel
-    bombardment: {
-      melee: 0.2,
-      ranged: 0.5,
-      mounted: 0.2,
-      machinery: 3,
-      naval: 1,
-      armored: 0.5,
-      aviation: 1,
-      magical: 1
-    }, // machinery excel
-    storming: {
-      melee: 1,
-      ranged: 0.6,
-      mounted: 0.5,
-      machinery: 1,
-      naval: 0.1,
-      armored: 0.1,
-      aviation: 0.5,
-      magical: 0.5
-    }, // melee excel
-    defense: { melee: 2, ranged: 3, mounted: 1, machinery: 1, naval: 0.1, armored: 1, aviation: 0.5, magical: 1 }, // ranged excel
-    looting: {
-      melee: 1.6,
-      ranged: 1.6,
-      mounted: 0.5,
-      machinery: 0.2,
-      naval: 0.02,
-      armored: 0.2,
-      aviation: 0.1,
-      magical: 0.3
-    }, // melee excel
-    surrendering: {
-      melee: 0.1,
-      ranged: 0.1,
-      mounted: 0.05,
-      machinery: 0.01,
-      naval: 0.01,
-      armored: 0.02,
-      aviation: 0.01,
-      magical: 0.03
-    }, // reduced
-
-    // ambush phases
-    surprise: { melee: 2, ranged: 2.4, mounted: 1, machinery: 1, naval: 1, armored: 1, aviation: 0.8, magical: 1.2 }, // increased
-    shock: {
-      melee: 0.5,
-      ranged: 0.5,
-      mounted: 0.5,
-      machinery: 0.4,
-      naval: 0.3,
-      armored: 0.1,
-      aviation: 0.4,
-      magical: 0.5
-    }, // reduced
-
-    // landing phases
-    landing: {
-      melee: 0.8,
-      ranged: 0.6,
-      mounted: 0.6,
-      machinery: 0.5,
-      naval: 0.5,
-      armored: 0.5,
-      aviation: 0.5,
-      magical: 0.6
-    }, // reduced
-    flee: {
-      melee: 0.1,
-      ranged: 0.01,
-      mounted: 0.5,
-      machinery: 0.01,
-      naval: 0.5,
-      armored: 0.1,
-      aviation: 0.2,
-      magical: 0.05
-    }, // reduced
-    waiting: {
-      melee: 0.05,
-      ranged: 0.5,
-      mounted: 0.05,
-      machinery: 0.5,
-      naval: 2,
-      armored: 0.05,
-      aviation: 0.5,
-      magical: 0.5
-    }, // reduced
-
-    // air battle phases
-    maneuvering: { melee: 0, ranged: 0.1, mounted: 0, machinery: 0.2, naval: 0, armored: 0, aviation: 1, magical: 0.2 }, // aviation
-    dogfight: { melee: 0, ranged: 0.1, mounted: 0, machinery: 0.1, naval: 0, armored: 0, aviation: 2, magical: 0.1 } // aviation
-  };
-
-  const upkeep = new Map<number, number>();
-  const forces = getJoinedForces(b[side].regiments, ({ state }) => {
-    if (!upkeep.has(state)) upkeep.set(state, Military.getBattleUpkeep(state));
-    return upkeep.get(state)!;
-  }); // ill-kept troops fight weaker
-  const phase = b[side].phase!;
-  const adjuster = options.map.units.population.scale / 10; // survivors are troops, power goes by points
-  b[side].power =
-    sum(
-      options.map.military.units.map(
-        u => (forces[u.name] || 0) * u.power * (scheme[phase][u.type] ?? scheme[phase].melee) // levies fight as melee
-      )
-    ) / adjuster;
-  const uiValue = b[side].power ? Math.max(b[side].power | 0, 1) : 0;
-  ensureEl(`battlePower_${side}`).innerHTML = String(uiValue);
-}
-
-function getInitialMorale(): void {
-  const b = battle!;
-  const powerFee = (diff: number): number => minmax(100 - diff ** 1.5 * 10 + 10, 50, 100);
-  const distanceFee = (dist: number[]): number => Math.min((mean(dist) ?? 0) / 50, 15);
-  // a stable state's troops fight with heart: ×0.75 when it falls apart to ×1.25 when unshakable
-  const stabilityFactor = (regiments: Regiment[]): number => {
-    const troops = sum(regiments, regiment => regiment.a);
-    const stability = troops
-      ? sum(regiments, regiment => (Stability.get(regiment.state)?.stability ?? 0.5) * regiment.a) / troops
-      : 0.5;
-    return 0.75 + stability / 2;
-  };
-  const powerDiff = b.defenders.power / b.attackers.power;
-  b.attackers.morale = Math.min(
-    100,
-    powerFee(powerDiff) * stabilityFactor(b.attackers.regiments) - distanceFee(b.attackers.distances)
+  // the regiments the battle began with: latecomers are in the interventions
+  const late = new Set(
+    b.interventions.flatMap(change => (change.kind === "add" ? [regimentKey(change.regiment)] : []))
   );
-  b.defenders.morale = Math.min(
-    100,
-    powerFee(1 / powerDiff) * stabilityFactor(b.defenders.regiments) - distanceFee(b.defenders.distances)
+  const ids = (side: Side): { state: number; i: number }[] =>
+    b[side].regiments.filter(regiment => !late.has(regimentKey(regiment))).map(({ state, i }) => ({ state, i }));
+  return {
+    version: LOG_VERSION,
+    name: b.name,
+    type: b.type,
+    seed: b.seed,
+    attackers: ids("attackers"),
+    defenders: ids("defenders"),
+    interventions: [...b.interventions],
+    log: b.log.map(entry => `${Math.floor(entry.tick / ROUND_TICKS) + 1}. ${logText(entry)}`),
+    result: b.result ? outcome(b) : null
+  };
+}
+
+function downloadLog(): void {
+  const name = `${battle!.name.replace(/[^\p{L}\p{N}]+/gu, "-")}-log.json`;
+  downloadFile(JSON.stringify(buildLog(), null, 2), name, "application/json");
+}
+
+function loadLog(data: string): void {
+  let file: BattleLogFile;
+  try {
+    file = JSON.parse(data);
+    if (file.version !== LOG_VERSION || !Array.isArray(file.interventions)) throw new Error("Not a battle log");
+  } catch {
+    tip(t("The file is not a battle log"), false, "error");
+    return;
+  }
+
+  const same = restore(file);
+  tip(
+    same
+      ? t("Battle log is loaded. Start the battle to replay it")
+      : t("Battle log is loaded: its settings are applied to this battle"),
+    true,
+    "success",
+    4000
   );
-  updateMorale("attackers");
-  updateMorale("defenders");
 }
 
-function updateMorale(side: Side): void {
+/** Back to the start, to play the same battle again: every change made on the way comes at its moment */
+function restart(): void {
+  restore(buildLog());
+}
+
+/** Set a logged battle up to replay when its regiments are here, or else repeat its settings with the current ones */
+function restore(file: BattleLogFile): boolean {
   const b = battle!;
-  const morale = ensureEl<HTMLInputElement>(`battleMorale_${side}`);
-  morale.dataset.tip = (morale.dataset.tip || "").replace(morale.value, "");
-  morale.value = String(b[side].morale | 0);
-  morale.dataset.tip += morale.value;
-}
+  pause();
+  const find = (ref: { state: number; i: number }): Regiment | undefined =>
+    pack.states[ref.state]?.military?.find(regiment => regiment.i === ref.i && regiment.a);
+  const sides = [file.attackers, file.defenders].map(side => side.map(find));
+  const same = sides.every(side => side.length && side.every(Boolean));
 
-function randomizeBattle(): void {
-  rollDie("attackers");
-  rollDie("defenders");
-  selectPhase();
-  calculateStrength("attackers");
-  calculateStrength("defenders");
-}
-
-function rollDie(side: Side): void {
-  const b = battle!;
-  const el = ensureEl(`battleDie_${side}`);
-  const prev = +el.innerHTML;
-  let value: number;
-  do {
-    value = rand(1, 6);
-    el.innerHTML = String(value);
-  } while (value === prev);
-  b[side].die = value;
-}
-
-function selectPhase(): void {
-  const b = battle!;
-  const i = b.iteration;
-  const morale = [b.attackers.morale, b.defenders.morale];
-  const powerRatio = b.attackers.power / b.defenders.power;
-
-  const getFieldBattlePhase = (): [string, string] => {
-    const prev = [b.attackers.phase || "skirmish", b.defenders.phase || "skirmish"]; // previous phase
-
-    // chance if moral < 25
-    if (P(1 - morale[0] / 25)) return ["retreat", "pursue"];
-    if (P(1 - morale[1] / 25)) return ["pursue", "retreat"];
-
-    // skirmish phase continuation depends on ranged forces number
-    if (prev[0] === "skirmish" && prev[1] === "skirmish") {
-      const forces = getJoinedForces(b.attackers.regiments.concat(b.defenders.regiments));
-      const total = sum(Object.values(forces)); // total forces
-      const ranged =
-        sum(
-          options.map.military.units
-            .filter(u => u.type === "ranged")
-            .map(u => u.name)
-            .map(u => forces[u])
-        ) / total; // ranged units
-      if (P(ranged) || P(0.8 - i / 10)) return ["skirmish", "skirmish"];
+  // regiments leave the old battle and join the new one on the map
+  const current = SIDES.map(side => b[side].regiments.map(regiment => regiments.get(regimentKey(regiment))!));
+  const [attackers, defenders] = same ? (sides as Regiment[][]) : current.map(side => side.slice(0, 1));
+  const staying = new Set([...attackers, ...defenders]);
+  for (const regiment of regiments.values()) if (!staying.has(regiment)) leaveBattle(regiment);
+  regiments = new Map();
+  setup(attackers, defenders, file); // at the same place
+  SIDES.forEach((side, i) => {
+    for (const regiment of [attackers, defenders][i]) {
+      if (regiment.px === undefined) joinBattle(regiment, side);
+      else regiments.set(regimentKey(regiment), regiment);
     }
+  });
 
-    return ["melee", "melee"]; // default option
-  };
-
-  const getNavalBattlePhase = (): [string, string] => {
-    const prev = [b.attackers.phase || "shelling", b.defenders.phase || "shelling"]; // previous phase
-
-    if (prev[0] === "withdrawal") return ["withdrawal", "chase"];
-    if (prev[0] === "chase") return ["chase", "withdrawal"];
-
-    // withdrawal phase when power imbalanced
-    if (prev[0] !== "boarding") {
-      if (powerRatio < 0.5 || (P(b.attackers.casualties) && powerRatio < 1)) return ["withdrawal", "chase"];
-      if (powerRatio > 2 || (P(b.defenders.casualties) && powerRatio > 1)) return ["chase", "withdrawal"];
-    }
-
-    // boarding phase can start from 2nd iteration
-    if (prev[0] === "boarding" || P(i / 10 - 0.1)) return ["boarding", "boarding"];
-
-    return ["shelling", "shelling"]; // default option
-  };
-
-  const getSiegePhase = (): [string, string] => {
-    const prev: [string, string] = [b.attackers.phase || "blockade", b.defenders.phase || "sheltering"]; // previous phase
-    const phase: [string, string] = ["blockade", "sheltering"]; // default phase
-
-    if (prev[0] === "retreat" || prev[0] === "looting") return prev;
-
-    if (P(1 - morale[0] / 30) && powerRatio < 1) return ["retreat", "pursue"]; // attackers retreat chance if moral < 30
-    if (P(1 - morale[1] / 15)) return ["looting", "surrendering"]; // defenders surrendering chance if moral < 15
-
-    if (P((powerRatio - 1) / 2)) return ["storming", "defense"]; // start storm
-
-    if (prev[0] !== "storming") {
-      const machinery = options.map.military.units.filter(u => u.type === "machinery").map(u => u.name); // machinery units
-
-      const attackersForces = getJoinedForces(b.attackers.regiments);
-      const machineryA = sum(machinery.map(u => attackersForces[u]));
-      if (i && machineryA && P(0.9)) phase[0] = "bombardment";
-
-      const defendersForces = getJoinedForces(b.defenders.regiments);
-      const machineryD = sum(machinery.map(u => defendersForces[u]));
-      if (machineryD && P(0.9)) phase[1] = "bombardment";
-
-      if (i && prev[1] !== "sortie" && machineryD < machineryA && P(0.25) && P(morale[1] / 70)) phase[1] = "sortie"; // defenders sortie
-    }
-
-    return phase;
-  };
-
-  const getAmbushPhase = (): [string, string] => {
-    const prev = [b.attackers.phase || "shock", b.defenders.phase || "surprise"]; // previous phase
-
-    if (prev[1] === "surprise" && P(1 - (powerRatio * i) / 5)) return ["shock", "surprise"];
-
-    // chance if moral < 25
-    if (P(1 - morale[0] / 25)) return ["retreat", "pursue"];
-    if (P(1 - morale[1] / 25)) return ["pursue", "retreat"];
-
-    return ["melee", "melee"]; // default option
-  };
-
-  const getLandingPhase = (): [string, string] => {
-    const prev = [b.attackers.phase || "landing", b.defenders.phase || "defense"]; // previous phase
-
-    if (prev[1] === "waiting") return ["flee", "waiting"];
-    if (prev[1] === "pursue") return ["flee", P(0.3) ? "pursue" : "waiting"];
-    if (prev[1] === "retreat") return ["pursue", "retreat"];
-
-    if (prev[0] === "landing") {
-      const attackersPhase = P(i / 2) ? "melee" : "landing";
-      const defendersPhase = i ? prev[1] : P(0.5) ? "defense" : "shock";
-      return [attackersPhase, defendersPhase];
-    }
-
-    if (P(1 - morale[0] / 40)) return ["flee", "pursue"]; // chance if moral < 40
-    if (P(1 - morale[1] / 25)) return ["pursue", "retreat"]; // chance if moral < 25
-
-    return ["melee", "melee"]; // default option
-  };
-
-  const getAirBattlePhase = (): [string, string] => {
-    const prev = [b.attackers.phase || "maneuvering", b.defenders.phase || "maneuvering"]; // previous phase
-
-    // chance if moral < 25
-    if (P(1 - morale[0] / 25)) return ["retreat", "pursue"];
-    if (P(1 - morale[1] / 25)) return ["pursue", "retreat"];
-
-    if (prev[0] === "maneuvering" && P(1 - i / 10)) return ["maneuvering", "maneuvering"];
-
-    return ["dogfight", "dogfight"]; // default option
-  };
-
-  const phase: [string, string] = (() => {
-    switch (b.type) {
-      case "field":
-        return getFieldBattlePhase();
-      case "naval":
-        return getNavalBattlePhase();
-      case "siege":
-        return getSiegePhase();
-      case "ambush":
-        return getAmbushPhase();
-      case "landing":
-        return getLandingPhase();
-      case "air":
-        return getAirBattlePhase();
-      default:
-        return getFieldBattlePhase();
-    }
-  })();
-
-  b.attackers.phase = phase[0];
-  b.defenders.phase = phase[1];
-
-  const buttonA = ensureEl("battlePhase_attackers");
-  buttonA.className = `icon-button-${b.attackers.phase}`;
-  buttonA.dataset.tip = buttonA.nextElementSibling!.querySelector<HTMLElement>(
-    `[data-phase='${phase[0]}']`
-  )!.dataset.tip;
-
-  const buttonD = ensureEl("battlePhase_defenders");
-  buttonD.className = `icon-button-${b.defenders.phase}`;
-  buttonD.dataset.tip = buttonD.nextElementSibling!.querySelector<HTMLElement>(
-    `[data-phase='${phase[1]}']`
-  )!.dataset.tip;
+  script = file.interventions
+    .filter(change => {
+      if (change.kind === "move") return same;
+      if (change.kind !== "add") return true;
+      const regiment = same && find(change.regiment);
+      if (regiment) joinBattle(regiment, change.side);
+      return Boolean(regiment);
+    })
+    .sort((a, b) => a.tick - b.tick);
+  applyDue(battle!, script);
+  drawScene();
+  setName(file.name);
+  refresh();
+  return same;
 }
 
-function runBattle(): void {
-  const b = battle!;
-  // validations
-  if (!b.attackers.power) {
-    tip(t("Attackers army destroyed"), false, "warn");
-    return;
-  }
-  if (!b.defenders.power) {
-    tip(t("Defenders army destroyed"), false, "warn");
-    return;
-  }
-
-  const currentPhase = `Attackers: ${b.attackers.phase}, defenders: ${b.defenders.phase}`;
-  const lastRecord = b.phasesRecord.at(-1);
-  if (lastRecord?.phase === currentPhase) lastRecord.count += 1;
-  else b.phasesRecord.push({ phase: currentPhase, count: 1 });
-
-  // calculate casualties
-  const attack = b.attackers.power * (b.attackers.die! / 10 + 0.4);
-  const defense = b.defenders.power * (b.defenders.die! / 10 + 0.4);
-
-  // casualties modifier for phase
-  const phaseCasualtyRate: Record<string, number> = {
-    skirmish: 0.1,
-    melee: 0.2,
-    pursue: 0.3,
-    retreat: 0.3,
-    boarding: 0.2,
-    shelling: 0.1,
-    chase: 0.03,
-    withdrawal: 0.03,
-    blockade: 0,
-    sheltering: 0,
-    sortie: 0.1,
-    bombardment: 0.05,
-    storming: 0.2,
-    defense: 0.2,
-    looting: 0.5,
-    surrendering: 0.5,
-    surprise: 0.3,
-    shock: 0.3,
-    landing: 0.3,
-    flee: 0,
-    waiting: 0,
-    maneuvering: 0.1,
-    dogfight: 0.2
-  };
-
-  const casualties =
-    Math.random() * Math.max(phaseCasualtyRate[b.attackers.phase!], phaseCasualtyRate[b.defenders.phase!]); // total casualties, ~10% per iteration
-  const casualtiesA = (casualties * defense) / (attack + defense); // attackers casualties, ~5% per iteration
-  const casualtiesD = (casualties * attack) / (attack + defense); // defenders casualties, ~5% per iteration
-
-  calculateCasualties("attackers", casualtiesA);
-  calculateCasualties("defenders", casualtiesD);
-  b.attackers.casualties += casualtiesA;
-  b.defenders.casualties += casualtiesD;
-
-  // change morale
-  b.attackers.morale = Math.max(b.attackers.morale - casualtiesA * 100 - 1, 0);
-  b.defenders.morale = Math.max(b.defenders.morale - casualtiesD * 100 - 1, 0);
-
-  // update table values
-  updateTable("attackers");
-  updateTable("defenders");
-
-  // prepare for next iteration
-  b.iteration += 1;
-  selectPhase();
-  calculateStrength("attackers");
-  calculateStrength("defenders");
-}
-
-function calculateCasualties(side: Side, casualties: number): void {
-  const b = battle!;
-  for (const r of b[side].regiments) {
-    for (const unit in r.u) {
-      const randomness = 0.8 + Math.random() * 0.4;
-      const died = Math.min(Pint(Military.getTroops(r.u[unit]) * casualties * randomness), r.survivors![unit]);
-      r.casualties![unit] -= died;
-      r.survivors![unit] -= died;
-    }
-  }
-}
-
-function updateTable(side: Side): void {
-  const b = battle!;
-  for (const r of b[side].regiments) {
-    const tbody = ensureEl(`battle${r.state}-${r.i}`);
-    const battleCasualties = tbody.querySelector(".battleCasualties")!;
-    const battleSurvivors = tbody.querySelector(".battleSurvivors")!;
-
-    let index = 3; // index to find table element easily
-    for (const u of options.map.military.units) {
-      battleCasualties.querySelector(`td:nth-child(${index})`)!.innerHTML = String(r.casualties![u.name] || 0);
-      battleSurvivors.querySelector(`td:nth-child(${index})`)!.innerHTML = String(r.survivors![u.name] || 0);
-      index++;
-    }
-
-    battleCasualties.querySelector(`td:nth-child(${index})`)!.innerHTML = String(sum(Object.values(r.casualties!)));
-    battleSurvivors.querySelector(`td:nth-child(${index})`)!.innerHTML = String(sum(Object.values(r.survivors!)));
-  }
-  updateMorale(side);
-}
-
-function toggleChange(event: Event): void {
-  event.stopPropagation();
-  const button = event.target as HTMLElement;
-  const div = button.nextElementSibling as HTMLElement;
-
-  const hideSection = (): void => {
-    button.style.opacity = "1";
-    div.style.display = "none";
-  };
-  if (div.style.display === "block") {
-    hideSection();
-    return;
-  }
-
-  button.style.opacity = "0.5";
-  div.style.display = "block";
-
-  document.getElementsByTagName("body")[0].addEventListener("click", hideSection, { once: true });
-}
-
-function changeType(event: Event): void {
-  const target = event.target as HTMLElement;
-  if (target.tagName !== "BUTTON") return;
-  const b = battle!;
-  b.type = target.dataset.type!;
-  setType();
-  selectPhase();
-  calculateStrength("attackers");
-  calculateStrength("defenders");
-  b.name = defineBattleName();
-  Dialog.open("battleScreen", { title: b.name });
-}
-
-function changePhase(event: Event, side: Side): void {
-  const target = event.target as HTMLElement;
-  if (target.tagName !== "BUTTON") return;
-  const b = battle!;
-  const phase = target.dataset.phase!;
-  b[side].phase = phase;
-  const button = ensureEl(`battlePhase_${side}`);
-  button.className = `icon-button-${phase}`;
-  button.dataset.tip = target.dataset.tip;
-  calculateStrength(side);
-}
-
-function getRegimentStatus(losses: number): string {
-  if (losses === 1) return "was annihilated";
-  if (losses > 0.9) return "was virtually wiped out";
-  if (losses > 0.75) return "was nearly destroyed";
-  if (losses > 0.6) return "was devastated";
-  if (losses > 0.45) return "sustained catastrophic losses";
-  if (losses > 0.3) return "sustained severe losses";
-  if (losses > 0.2) return "sustained heavy losses";
-  if (losses > 0.1) return "took considerable losses";
-  if (losses > 0.05) return "took noticeable losses";
-  if (losses > 0) return "took minor losses";
-  return "emerged unscathed";
-}
+// the end
 
 function applyResults(): void {
   const b = battle!;
-  const battleName = b.name;
-  const maxCasualties = Math.max(b.attackers.casualties, b.defenders.casualties);
-  const totalCasualties = b.attackers.casualties + b.defenders.casualties;
-  const relativeCasualties = totalCasualties ? b.defenders.casualties / totalCasualties : NaN;
-  const battleStatus = getBattleStatus(relativeCasualties, maxCasualties);
+  pause();
+  const battleStatus = getResult(b).status;
+  const { year, eraShort } = options.map.lore.calendar;
+  const unitsText = (units: Record<string, number>): string =>
+    list(Object.keys(units).flatMap(unit => (units[unit] ? [`${units[unit]} ${unit}`] : [])));
 
-  function getBattleStatus(relative: number, max: number): [string, string] {
-    if (Number.isNaN(relative)) return ["standoff", "standoff"]; // if no casualties at all
-    if (max < 0.05) return ["minor skirmishes", "minor skirmishes"];
-    if (relative > 0.95) return ["attackers flawless victory", "disorderly retreat of defenders"];
-    if (relative > 0.7) return ["attackers decisive victory", "defenders disastrous defeat"];
-    if (relative > 0.6) return ["attackers victory", "defenders defeat"];
-    if (relative > 0.4) return ["stalemate", "stalemate"];
-    if (relative > 0.3) return ["attackers defeat", "defenders victory"];
-    if (relative >= 0) return ["attackers disorderly retreat", "flawless victory of defenders"];
-    return ["stalemate", "stalemate"]; // exception
-  }
-
-  b.attackers.regiments.forEach(r => {
-    applyResultForSide(r, "attackers");
-  });
-  b.defenders.regiments.forEach(r => {
-    applyResultForSide(r, "defenders");
-  });
-
-  function applyResultForSide(r: Regiment, side: Side): void {
-    const id = `regiment${r.state}-${r.i}`;
-
-    // add result to regiment note
-    if (r.note) {
-      const status = side === "attackers" ? battleStatus[0] : battleStatus[1];
-      const losses = r.a ? Math.abs(sum(Object.values(r.casualties!))) / Military.getTroops(r.a) : 1;
-      const regStatus = getRegimentStatus(losses);
-      const initialList = Object.keys(r.u)
-        .map(t => (r.u[t] ? `${Military.getTroops(r.u[t])} ${t}` : null))
-        .filter((c): c is string => Boolean(c));
-      const initialText = initialList.length ? ` Initial forces: ${list(initialList)}.` : "";
-      const casualtiesList = Object.keys(r.casualties!)
-        .map(t => (r.casualties![t] ? `${Math.abs(r.casualties![t])} ${t}` : null))
-        .filter((c): c is string => Boolean(c));
-      const casualtiesText = casualtiesList.length ? ` Casualties: ${list(casualtiesList)}.` : "";
-      r.note += `<br><br>${battleName} (${options.map.lore.calendar.year} ${options.map.lore.calendar.eraShort}): ${status}. The regiment ${regStatus}.${initialText}${casualtiesText}`;
+  const forcesLegend = (label: string, side: Side): string => {
+    const initial: Record<string, number> = {};
+    const casualties: Record<string, number> = {};
+    for (const regiment of b[side].regiments) {
+      const losses = getLosses(b, regiment);
+      for (const unit in regiment.troops) {
+        initial[unit] = (initial[unit] || 0) + regiment.troops[unit];
+        casualties[unit] = (casualties[unit] || 0) + (losses[unit] ?? 0);
+      }
     }
+    let text = sum(Object.values(initial)) ? `<br>${label} initial forces: ${unitsText(initial)}.` : "";
+    if (sum(Object.values(casualties))) text += ` Casualties: ${unitsText(casualties)}.`;
+    return text;
+  };
 
-    const { scale } = options.map.units.population;
-    for (const unit in r.u) r.u[unit] = r.survivors![unit] ? r.u[unit] + r.casualties![unit] / scale : 0;
-    r.a = sum(Object.values(r.u)); // reg total
-    select<SVGGElement, unknown>("#armies").select(`g#${id} > text`).text(Military.getTotal(r)); // update reg box
+  SIDES.forEach((side, sideIndex) => {
+    for (const data of b[side].regiments) {
+      const regiment = regiments.get(regimentKey(data));
+      if (!regiment) continue;
+      const losses = getLosses(b, data);
+      const initial = sum(Object.values(data.troops));
 
-    moveRegiment(r, r.px!, r.py!); // move regiment back to initial position
-  }
+      if (regiment.note) {
+        const share = initial ? sum(Object.values(losses)) / initial : 1;
+        const initialText = initial ? ` Initial forces: ${unitsText(data.troops)}.` : "";
+        const casualtiesText = sum(Object.values(losses)) ? ` Casualties: ${unitsText(losses)}.` : "";
+        regiment.note += `<br><br>${b.name} (${year} ${eraShort}): ${battleStatus[sideIndex]}. The regiment ${getRegimentStatus(share)}.${initialText}${casualtiesText}`;
+      }
 
-  const i = (last(pack.markers)?.i ?? -1) + 1;
+      const { scale } = options.map.units.population;
+      for (const unit in regiment.u) {
+        const died = losses[unit] ?? 0;
+        regiment.u[unit] = (data.troops[unit] ?? 0) > died ? regiment.u[unit] - died / scale : 0;
+      }
+      regiment.a = sum(Object.values(regiment.u));
+      select<SVGGElement, unknown>("#armies")
+        .select(`g#regiment${regiment.state}-${regiment.i} > text`)
+        .text(Military.getTotal(regiment));
+    }
+  });
+
   const marker: Marker = {
-    i,
+    i: (last(pack.markers)?.i ?? -1) + 1,
     x: b.x,
     y: b.y,
     cell: b.cell,
@@ -1349,91 +1181,97 @@ function applyResults(): void {
   pack.markers.push(marker);
   Layers.draw("markers");
 
-  const getSide = (regs: Regiment[], n: number): string =>
-    regs.length > 1
+  const getSide = (side: Side, n: number): string => {
+    const regs = b[side].regiments;
+    return regs.length > 1
       ? `${n ? "regiments" : "forces"} of ${list([...new Set(regs.map(r => pack.states[r.state].name))])}`
       : `${getAdjective(pack.states[regs[0].state].name)} ${regs[0].name}`;
-  const getLosses = (casualties: number): number => Math.min(rn(casualties * 100), 100);
-
-  // aggregate units across all regiments of a side (casualties keys hold every unit type of the regiment)
-  const aggregateUnits = (regs: Regiment[], getCount: (r: Regiment, unit: string) => number): Record<string, number> =>
-    regs.reduce<Record<string, number>>((acc, r) => {
-      for (const unit in r.casualties) acc[unit] = (acc[unit] || 0) + getCount(r, unit);
-      return acc;
-    }, {});
-  const unitsToText = (units: Record<string, number>): string => {
-    const items = Object.keys(units)
-      .map(t => (units[t] ? `${units[t]} ${t}` : null))
-      .filter((c): c is string => Boolean(c));
-    return items.length ? list(items) : "";
   };
-  const getForcesLegend = (label: string, side: BattleSide): string => {
-    // initial forces are reconstructed from survivors + casualties, as r.u now holds survivors
-    const initial = unitsToText(
-      aggregateUnits(side.regiments, (r, u) => (r.survivors![u] || 0) + Math.abs(r.casualties![u]))
-    );
-    const casualties = unitsToText(aggregateUnits(side.regiments, (r, u) => Math.abs(r.casualties![u])));
-    let text = initial ? `<br>${label} initial forces: ${initial}.` : "";
-    if (casualties) text += ` Casualties: ${casualties}.`;
-    return text;
-  };
+  const getLossesShare = (casualties: number): number => Math.min(rn(casualties * 100), 100);
 
-  const status = battleStatus[+P(0.7)];
-  const result = `The ${getTypeName()} ended in ${status}`;
-  let legend = `${b.name} took place in ${options.map.lore.calendar.year} ${options.map.lore.calendar.eraShort}. It was fought between ${getSide(
-    b.attackers.regiments,
-    1
-  )} and ${getSide(b.defenders.regiments, 0)}. ${result}.
-      <br>Attackers losses: ${getLosses(b.attackers.casualties)}%, defenders losses: ${getLosses(
-        b.defenders.casualties
-      )}%.`;
-  legend += getForcesLegend("Attackers", b.attackers);
-  legend += getForcesLegend("Defenders", b.defenders);
+  const status = battleStatus[+createRandom(`${b.seed}_r`).P(0.7)];
+  const result = `The ${getTypeName(b.type)} ended in ${status}`;
+  let legend = `${b.name} took place in ${year} ${eraShort}. It was fought between ${getSide("attackers", 1)} and ${getSide("defenders", 0)}. ${result}.
+      <br>Attackers losses: ${getLossesShare(b.attackers.casualties)}%, defenders losses: ${getLossesShare(b.defenders.casualties)}%.`;
+  legend += forcesLegend("Attackers", "attackers");
+  legend += forcesLegend("Defenders", "defenders");
 
   if (b.phasesRecord.length) {
     const phasesText = b.phasesRecord.map(r => (r.count > 1 ? `${r.phase} (x${r.count})` : r.phase)).join("<br>");
     legend += `<br><br>${t("Engagement progression")}:<br>${phasesText}`;
   }
-
   marker.note = legend;
 
   tip(t("{{battle}} is over. {{result}}", { battle: b.name, result }), true, "success", 4000);
-
   closeBattleScreen();
-  cleanData();
 }
 
 function cancelResults(): void {
-  const b = battle!;
-  b.attackers.regiments.forEach(r => {
-    moveRegiment(r, r.px!, r.py!);
-  });
-  b.defenders.regiments.forEach(r => {
-    moveRegiment(r, r.px!, r.py!);
-  });
-
+  if (!battle) return;
   closeBattleScreen();
-  cleanData();
+}
+
+function leaveBattle(regiment: Regiment): void {
+  if (regiment.px !== undefined) moveRegiment(regiment, regiment.px, regiment.py!); // back to where it stood
+  delete regiment.px;
+  delete regiment.py;
 }
 
 function closeBattleScreen(): void {
+  pause();
+  for (const regiment of regiments.values()) leaveBattle(regiment);
+  battle = null;
+  regiments = new Map();
+  script = [];
+  fileInput?.remove();
+  fileInput = null;
+  options.app.mode = null; // exit edit mode
+  Dialog.destroy("battleOrdersScreen");
   Dialog.destroy("battleScreen");
   Dialog.destroy("regimentSelectorScreen");
 }
 
-function cleanData(): void {
-  options.app.mode = null; // exit edit mode
+function typeTip(type: BattleType): string {
+  if (type === "field") return t("Field Battle: a standard type of combat");
+  if (type === "naval") return t("Naval Battle: naval units combat");
+  if (type === "siege") return t("Siege: burg blockade and storming");
+  if (type === "ambush") return t("Ambush: surprise attack");
+  if (type === "landing") return t("Landing: amphibious attack");
+  return t("Air Battle: maneuring fight of avia units");
+}
 
-  // clean temp data
-  if (battle) {
-    battle.attackers.regiments.concat(battle.defenders.regiments).forEach(r => {
-      delete r.px;
-      delete r.py;
-      delete r.casualties;
-      delete r.survivors;
-    });
-  }
-  battle = null;
+function phaseTip(phase: string, type: BattleType): string {
+  const reduced = t("Units strength reduced");
+  const increased = t("Units strength increased");
+  const tips: Record<string, () => string> = {
+    skirmish: () => t("Skirmish phase. Ranged units excel"),
+    melee: () => sentences(t("Melee phase"), t("Melee units excel")),
+    pursue: () => sentences(t("Pursue phase"), type === "air" ? increased : t("Mounted units excel")),
+    retreat: () => sentences(t("Retreat phase"), reduced),
+    shelling: () => t("Shelling phase. Naval artillery bombardment of enemy fleet"),
+    boarding: () => t("Boarding phase. Melee units go aboard"),
+    chase: () => t("Сhase phase. Naval units pursue and rarely shell enemy fleet"),
+    withdrawal: () => t("Withdrawal phase. Naval units try to escape enemy fleet"),
+    blockade: () => t("Blockade phase. Prepare or hold the blockade"),
+    bombardment: () => t("Bombardment phase. Attack enemy with machinery units"),
+    storming: () => sentences(t("Storming phase"), t("Storm enemy town"), t("Melee units excel")),
+    looting: () => sentences(t("Looting phase"), t("Plunder the town"), increased),
+    sheltering: () => t("Sheltering phase. Hide behind the walls and wait"),
+    sortie: () => sentences(t("Sortie phase"), t("Make a sortie from besieged town"), t("Melee units excel")),
+    defense: () =>
+      type === "siege"
+        ? sentences(t("Defense phase"), t("Ranged and melee units excel"))
+        : sentences(t("Defense phase"), t("Prepared defense"), increased),
+    surrendering: () => sentences(t("Surrendering phase"), t("Give up the defense"), reduced),
+    shock: () => sentences(t("Shock phase"), type === "landing" ? t("Units are not prepared for a defense") : reduced),
+    surprise: () => t("Surprice attack phase. Units strength increased, ranged units excel"),
+    landing: () => t("Landing phase. Amphibious attack. Units are vulnerable against prepared defense"),
+    flee: () => sentences(t("Flee phase"), reduced),
+    waiting: () => t("Waiting phase. Cannot pursue fleeing naval"),
+    maneuvering: () => sentences(t("Maneuvering phase"), reduced),
+    dogfight: () => sentences(t("Dogfight phase"), increased)
+  };
+  return tips[phase]?.() ?? phase;
 }
 
 export const BattleScreen = { open };
