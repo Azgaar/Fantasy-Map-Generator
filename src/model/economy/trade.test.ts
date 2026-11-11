@@ -263,15 +263,39 @@ describe("TradeModule", () => {
 
     it("treats trade with the neutral lands as no import: no import carriage, tariff or embargo", () => {
       const embargoAll = { states: "all", goods: "all", rate: "embargo" };
-      const { exporter, importer, burg, good, terms } = setupImport([
+      const { exporter, burg, good, terms } = setupImport([
         { i: 0 },
         { i: 1 },
         { i: 2, economy: { tariffs: [embargoAll] } }
       ]);
-      expect(terms(exporter, importer, good, 5)).toBeNull();
+      expect(terms(1, 2, good, 5)).toBeNull();
       globalThis.pack.burgs[1].state = 0; // the exporter's center in the neutral lands
       expect(tradeModule.getTransport(exporter, burg, good)).toBeCloseTo(carriage(100), 5);
-      expect(tradeModule.getTradeTerms()(exporter, importer, good, 5)).toEqual({ taxPerUnit: 0, tariffPerUnit: 0 });
+      expect(tradeModule.getTradeTerms()(0, 2, good, 5)).toEqual({ taxPerUnit: 0, tariffPerUnit: 0 });
+    });
+
+    it("charges a burg the tariff of its own state when it buys at a home market of another state", () => {
+      const tariff = { states: "all", goods: "all", rate: 0.1 };
+      const { exporter, burg, good, terms } = setupImport([
+        { i: 0 },
+        { i: 1 },
+        { i: 2, economy: { tariffs: [tariff] } }
+      ]);
+      globalThis.pack.cells.market = [0, 1, 1] as any; // the burg's home market is centered in state 1
+      const trade = tradeModule.buy({ burg, good, units: 10, kind: DEAL_KINDS.input, terms });
+      expect(trade?.tariff).toBeCloseTo(10 * 0.1 * 5, 0); // a tenth of the market's price
+      expect(globalThis.pack.deals[0][1]).toBe(exporter.i);
+      expect(Taxes.getTaxStates(globalThis.pack.deals[0]).tariffState).toBe(2);
+    });
+
+    it("keeps an embargoed burg out of its own home market", () => {
+      const embargo = { states: [1], goods: "all", rate: "embargo" };
+      const { burg, good, terms } = setupImport([{ i: 0 }, { i: 1 }, { i: 2, economy: { tariffs: [embargo] } }]);
+      globalThis.pack.cells.market = [0, 1, 1] as any; // the burg's home market is centered in state 1
+      expect(tradeModule.getSupplier(burg, good, () => undefined, terms)).toBeNull();
+      expect(tradeModule.buy({ burg, good, units: 10, kind: DEAL_KINDS.input, terms })).toBeNull();
+      expect(tradeModule.sell({ burg, good, units: 10, taxRate: 0, terms })).toBeNull();
+      expect(tradeModule.quoteSale(globalThis.pack.markets[0], good, burg, terms).sellPrice).toBe(0);
     });
 
     it("quoteSource() skips a market with no route to the burg", () => {

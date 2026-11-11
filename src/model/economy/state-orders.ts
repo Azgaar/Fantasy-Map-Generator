@@ -163,7 +163,7 @@ class StateOrdersModule {
       if (!sources.has(good.i))
         sources.set(
           good.i,
-          Trade.getSupplier(market, good, () => Trade.quoteSource(burg, good, terms)?.source)
+          Trade.getSupplier(burg, good, () => Trade.quoteSource(burg, good, terms)?.source, terms)
         );
       const source = sources.get(good.i);
       if (!source || (source.goods[good.i]?.stock || 0) <= 0.01) return 0;
@@ -190,12 +190,12 @@ class StateOrdersModule {
 
   /** A state pays no sales tax or tariff to itself */
   private exempt(terms: TradeTerms, stateId: number): TradeTerms {
-    return (source, market, good, price) => {
-      const costs = terms(source, market, good, price);
+    return (exporter, importer, good, price) => {
+      const costs = terms(exporter, importer, good, price);
       if (!costs) return null;
       return {
-        taxPerUnit: Markets.getState(source) === stateId ? 0 : costs.taxPerUnit,
-        tariffPerUnit: Markets.getState(market) === stateId ? 0 : costs.tariffPerUnit
+        taxPerUnit: exporter === stateId ? 0 : costs.taxPerUnit,
+        tariffPerUnit: importer === stateId ? 0 : costs.tariffPerUnit
       };
     };
   }
