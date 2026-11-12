@@ -1,5 +1,3 @@
-import Alea from "alea";
-
 export type Side = "attackers" | "defenders";
 export type BattleType = "field" | "naval" | "siege" | "ambush" | "landing" | "air";
 export type Stance = "hold" | "shoot" | "advance" | "flee";
@@ -7,29 +5,6 @@ export type Stance = "hold" | "shoot" | "advance" | "flee";
 export const SIDES: Side[] = ["attackers", "defenders"];
 export const BATTLE_TYPES: BattleType[] = ["field", "naval", "siege", "ambush", "landing", "air"];
 export const enemyOf = (side: Side): Side => (side === "attackers" ? "defenders" : "attackers");
-
-export interface BattleRandom {
-  next: () => number;
-  rand: (min: number, max: number) => number;
-  P: (probability: number) => boolean;
-  Pint: (float: number) => number;
-}
-
-/** A generator of its own, so a battle replays from its seed and leaves the map seed alone */
-export function createRandom(seed: string): BattleRandom {
-  const next = Alea(seed);
-  const P = (probability: number): boolean => {
-    if (probability >= 1) return true;
-    if (probability <= 0) return false;
-    return next() < probability;
-  };
-  return {
-    next,
-    P,
-    rand: (min, max) => Math.floor(next() * (max - min + 1)) + min,
-    Pint: float => ~~float + +P(float % 1)
-  };
-}
 
 /** Phases a side can be in, the first one is where it starts */
 export const PHASES: Record<BattleType, Record<Side, string[]>> = {
@@ -256,107 +231,57 @@ export const getPhasePower = (phase: string, unitType: string): number => {
   return scheme[unitType] ?? scheme.melee;
 };
 
-export interface PhaseInput {
-  type: BattleType;
-  round: number;
-  previous: [string | undefined, string | undefined]; // attackers, defenders
-  morale: [number, number];
-  powerRatio: number; // attackers to defenders
-  casualties: [number, number]; // share of the initial troops lost
-  rangedShare: number; // ranged troops among all on the field
-  machinery: [number, number]; // machinery troops
+/** What the phases of a battle type are to a general: standing off, closing, chasing, running */
+export interface Postures {
+  apart: string;
+  close: string;
+  chase: string;
+  run: string;
 }
 
-/** Phases of both sides for the next round */
-export function selectPhases(input: PhaseInput, random: BattleRandom): [string, string] {
-  const { P } = random;
-  const { round: i, morale, powerRatio, casualties, machinery } = input;
-  const [prevA, prevD] = input.previous;
+const postures = (apart: string, close: string, chase: string, run: string): Postures => ({ apart, close, chase, run });
+const FIELD_POSTURES = postures("skirmish", "melee", "pursue", "retreat");
 
-  // a side that turned to run does not come back
-  const broken = (): [string, string] | null =>
-    prevA === "retreat" ? ["retreat", "pursue"] : prevD === "retreat" ? ["pursue", "retreat"] : null;
+export const POSTURES: Record<BattleType, Record<Side, Postures>> = {
+  field: { attackers: FIELD_POSTURES, defenders: FIELD_POSTURES },
+  naval: {
+    attackers: postures("shelling", "boarding", "chase", "withdrawal"),
+    defenders: postures("shelling", "boarding", "chase", "withdrawal")
+  },
+  siege: {
+    attackers: postures("blockade", "storming", "looting", "retreat"),
+    defenders: postures("sheltering", "defense", "pursue", "surrendering")
+  },
+  ambush: {
+    attackers: postures("shock", "melee", "pursue", "retreat"),
+    defenders: postures("surprise", "melee", "pursue", "retreat")
+  },
+  landing: {
+    attackers: postures("landing", "melee", "pursue", "flee"),
+    defenders: postures("defense", "melee", "pursue", "retreat")
+  },
+  air: {
+    attackers: postures("maneuvering", "dogfight", "pursue", "retreat"),
+    defenders: postures("maneuvering", "dogfight", "pursue", "retreat")
+  }
+};
 
-  // a side with morale below 25 may turn to run, the more shaken one first
-  const breaks = (): [string, string] | null => {
-    const attackersFirst = morale[0] <= morale[1];
-    for (const attackers of [attackersFirst, !attackersFirst]) {
-      if (P(1 - morale[attackers ? 0 : 1] / 25)) return attackers ? ["retreat", "pursue"] : ["pursue", "retreat"];
-    }
-    return null;
-  };
+/**
+ * The rows of the power table a battalion fights by as it stands apart, is at grips or strikes the broken;
+ * in any other phase, and in a siege, the side's phase is the row
+ */
+const SITUATIONS: Partial<Record<BattleType, Omit<Postures, "run">>> = {
+  field: { apart: "skirmish", close: "melee", chase: "pursue" },
+  naval: { apart: "shelling", close: "boarding", chase: "chase" },
+  air: { apart: "maneuvering", close: "dogfight", chase: "pursue" },
+  ambush: { apart: "melee", close: "melee", chase: "pursue" },
+  landing: { apart: "melee", close: "melee", chase: "pursue" }
+};
 
-  const field = (): [string, string] => {
-    const run = breaks();
-    if (run) return run;
-    const skirmishing = (prevA || "skirmish") === "skirmish" && (prevD || "skirmish") === "skirmish";
-    if (skirmishing && (P(input.rangedShare) || P(0.8 - i / 10))) return ["skirmish", "skirmish"];
-    return ["melee", "melee"];
-  };
-
-  const naval = (): [string, string] => {
-    const prev = prevA || "shelling";
-    if (prev === "withdrawal") return ["withdrawal", "chase"];
-    if (prev === "chase") return ["chase", "withdrawal"];
-    if (prev !== "boarding") {
-      if (powerRatio < 0.5 || (P(casualties[0]) && powerRatio < 1)) return ["withdrawal", "chase"];
-      if (powerRatio > 2 || (P(casualties[1]) && powerRatio > 1)) return ["chase", "withdrawal"];
-    }
-    if (prev === "boarding" || P(i / 10 - 0.1)) return ["boarding", "boarding"];
-    return ["shelling", "shelling"];
-  };
-
-  const siege = (): [string, string] => {
-    const prev: [string, string] = [prevA || "blockade", prevD || "sheltering"];
-    const phase: [string, string] = ["blockade", "sheltering"];
-    if (prev[0] === "retreat" || prev[0] === "looting") return prev;
-
-    if (P(1 - morale[0] / 30) && powerRatio < 1) return ["retreat", "pursue"];
-    if (P(1 - morale[1] / 15)) return ["looting", "surrendering"];
-    if (P((powerRatio - 1) / 2)) return ["storming", "defense"];
-
-    if (prev[0] !== "storming") {
-      if (i && machinery[0] && P(0.9)) phase[0] = "bombardment";
-      if (machinery[1] && P(0.9)) phase[1] = "bombardment";
-      if (i && prev[1] !== "sortie" && machinery[1] < machinery[0] && P(0.25) && P(morale[1] / 70)) phase[1] = "sortie";
-    }
-    return phase;
-  };
-
-  const ambush = (): [string, string] => {
-    if ((prevD || "surprise") === "surprise" && P(1 - (powerRatio * i) / 5)) return ["shock", "surprise"];
-    const run = breaks();
-    if (run) return run;
-    return ["melee", "melee"];
-  };
-
-  const landing = (): [string, string] => {
-    const prev = [prevA || "landing", prevD || "defense"];
-    if (prev[1] === "waiting") return ["flee", "waiting"];
-    if (prev[1] === "pursue") return ["flee", P(0.3) ? "pursue" : "waiting"];
-    if (prev[1] === "retreat") return ["pursue", "retreat"];
-
-    if (prev[0] === "landing") {
-      const attackers = P(i / 2) ? "melee" : "landing";
-      const defenders = i ? prev[1] : P(0.5) ? "defense" : "shock";
-      return [attackers, defenders];
-    }
-
-    if (P(1 - morale[0] / 40)) return ["flee", "pursue"];
-    if (P(1 - morale[1] / 25)) return ["pursue", "retreat"];
-    return ["melee", "melee"];
-  };
-
-  const air = (): [string, string] => {
-    const run = breaks();
-    if (run) return run;
-    if ((prevA || "maneuvering") === "maneuvering" && P(1 - i / 10)) return ["maneuvering", "maneuvering"];
-    return ["dogfight", "dogfight"];
-  };
-
-  if (input.type === "field" || input.type === "ambush" || input.type === "air")
-    return broken() ?? { field, ambush, air }[input.type]();
-  return { naval, siege, landing }[input.type]();
+export function getRow(type: BattleType, phase: string, atGrips: boolean, chasing: boolean): string {
+  const rows = SITUATIONS[type];
+  if (!rows || !Object.values(rows).includes(phase)) return phase;
+  return chasing ? rows.chase : atGrips ? rows.close : rows.apart;
 }
 
 /** Morale a side starts with: outmatched, far from base or badly ruled troops lose heart */
@@ -367,13 +292,13 @@ export function getInitialMorale(powerRatio: number, stability: number, distance
   return Math.min(100, powerFee * (0.75 + stability / 2) - distanceFee);
 }
 
-export function getBattleName(type: BattleType, place: string | null, random: BattleRandom): string {
+export function getBattleName(type: BattleType, place: string | null): string {
   if (type === "field") return `Battle of ${place}`;
   if (type === "naval") return `Naval Battle of ${place}`;
   if (type === "siege") return `Siege of ${place}`;
   if (type === "ambush") return `${place} Ambush`;
   if (type === "landing") return `${place} Landing`;
-  return `${place} ${random.P(0.8) ? "Air Battle" : "Dogfight"}`;
+  return `${place} Air Battle`;
 }
 
 export function getTypeName(type: BattleType): string {
@@ -383,12 +308,21 @@ export function getTypeName(type: BattleType): string {
   return type;
 }
 
-/** Outcome as the attackers and the defenders see it, by the share of all losses the defenders took */
-export function getBattleStatus(attackersLosses: number, defendersLosses: number): [string, string] {
+/**
+ * Outcome as the attackers and the defenders see it, by the share of all losses the defenders took;
+ * the side that holds the field has won, whatever it cost
+ */
+export function getBattleStatus(
+  attackersLosses: number,
+  defendersLosses: number,
+  winner?: Side | null
+): [string, string] {
   const total = attackersLosses + defendersLosses;
-  if (!total) return ["standoff", "standoff"];
-  if (Math.max(attackersLosses, defendersLosses) < 0.05) return ["minor skirmishes", "minor skirmishes"];
-  const relative = defendersLosses / total;
+  if (!total && !winner) return ["standoff", "standoff"];
+  if (Math.max(attackersLosses, defendersLosses) < 0.05 && !winner) return ["minor skirmishes", "minor skirmishes"];
+  let relative = total ? defendersLosses / total : 0.5;
+  if (winner === "attackers") relative = Math.max(relative, 0.61);
+  if (winner === "defenders") relative = Math.min(relative, 0.39);
   if (relative > 0.95) return ["attackers flawless victory", "disorderly retreat of defenders"];
   if (relative > 0.7) return ["attackers decisive victory", "defenders disastrous defeat"];
   if (relative > 0.6) return ["attackers victory", "defenders defeat"];

@@ -292,6 +292,23 @@ export const BATTLE_PHASE_LABELS: Record<string, string> = {
   dogfight: t("Dogfight")
 };
 
+export const BATTLE_TACTIC_LABELS: Record<string, string> = {
+  assault: t("Frontal assault"),
+  oblique: t("Oblique attack"),
+  envelopment: t("Envelopment"),
+  wedge: t("Wedge"),
+  harass: t("Harassing fire"),
+  stand: t("Defensive line"),
+  crescent: t("Refused flanks"),
+  crossing: t("Defence of a crossing"),
+  column: t("Column of march"),
+  ambuscade: t("Ambuscade on both sides"),
+  waylay: t("Ambuscade on one side"),
+  lines: t("Siege lines"),
+  garrison: t("Garrison on the walls"),
+  waves: t("Landing in waves")
+};
+
 export const BATTLE_ACTION_LABELS: Record<string, string> = {
   hold: t("Holding"),
   move: t("Moving"),

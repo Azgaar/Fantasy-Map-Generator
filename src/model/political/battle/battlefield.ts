@@ -1,4 +1,3 @@
-import Alea from "alea";
 import { Pack } from "@/model/graph/pack-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import type { Point } from "@/types/global";
@@ -45,9 +44,8 @@ export interface FieldBreach {
   burg: number;
 }
 
-/** Ground of a battle: the map around its cell as the layout, seeded detail on top */
+/** Ground of a battle: the map around its cell as the layout, with detail that is always the same for the place */
 export interface Battlefield {
-  seed: string;
   open: "sea" | "sky" | null; // no terrain: a naval or an air battle
   biome: number;
   // one value per grid node, row by row
@@ -92,10 +90,9 @@ const FORD = 36; // length of a ford along the river
 const WOODS: Record<number, number> = { 3: 0.15, 4: 0.2, 5: 0.5, 6: 0.55, 7: 0.7, 8: 0.65, 9: 0.55, 10: 0.05, 12: 0.2 };
 const FOREST_BIOMES = [5, 6, 7, 8, 9];
 
-export function createEmptyBattlefield(seed: string, open: Battlefield["open"] = null): Battlefield {
+export function createEmptyBattlefield(open: Battlefield["open"] = null): Battlefield {
   const grid = (): number[] => new Array(FIELD.cols * FIELD.rows).fill(0);
   return {
-    seed,
     open,
     biome: 4,
     height: grid(),
@@ -119,8 +116,9 @@ export function createEmptyBattlefield(seed: string, open: Battlefield["open"] =
 }
 
 /** @param clearing keep the middle open for the lines to meet; an ambush wants the cover */
-export function buildBattlefield(x: number, y: number, seed: string, clearing = true): Battlefield {
-  const field = createEmptyBattlefield(seed);
+export function buildBattlefield(x: number, y: number, clearing = true): Battlefield {
+  const field = createEmptyBattlefield();
+  const place: Point = [Math.round(x), Math.round(y)];
   const { cells } = pack;
   const { cols, rows, cell: step } = FIELD;
 
@@ -166,9 +164,9 @@ export function buildBattlefield(x: number, y: number, seed: string, clearing = 
   const land = elevation.filter(h => h >= 20);
   const low = land.length ? Math.min(...land) : 20;
   const range = Math.max((land.length ? Math.max(...land) : 20) - low, 10); // flat land stays flat
-  const bumps = createNoise(`${seed}_h`, 260);
-  const groves = createNoise(`${seed}_w`, 130);
-  const bogs = createNoise(`${seed}_m`, 110);
+  const bumps = createNoise(place, 1, 260);
+  const groves = createNoise(place, 2, 130);
+  const bogs = createNoise(place, 3, 110);
 
   for (let i = 0; i < elevation.length; i++) {
     const nx = ((i % cols) + 0.5) * step;
@@ -227,8 +225,9 @@ export function buildBattlefield(x: number, y: number, seed: string, clearing = 
 
   // a brook is waded anywhere, a river at a ford now and then, a great river nowhere: it wants a bridge
   const fords: { points: Point[]; width: number }[] = [];
-  const chance = Alea(`${seed}_f`);
-  for (const river of field.rivers) {
+  for (const [index, river] of field.rivers.entries()) {
+    let count = 0;
+    const chance = (): number => mix(place[0] + index, place[1], 4 + count++); // the same fords for the same place
     if (river.brook) fords.push(river);
     else if (river.width <= WADEABLE) {
       let next = 80 + chance() * 160;
@@ -485,12 +484,20 @@ function distanceToLine(point: Point, line: Point[]): number {
   return best;
 }
 
-/** Smooth seeded noise, 0 to 1 */
-function createNoise(seed: string, size: number): (x: number, y: number) => number {
-  const random = Alea(seed);
+/** A fixed number from 0 to 1 for three whole numbers: what makes the ground of a place the same every time */
+function mix(a: number, b: number, c: number): number {
+  let hash = (Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263) + Math.imul(c | 0, 1274126177)) | 0;
+  hash = Math.imul(hash ^ (hash >>> 13), 1103515245);
+  return ((hash ^ (hash >>> 16)) >>> 0) / 4294967296;
+}
+
+/** Smooth noise, 0 to 1, of a pattern fixed by the place on the map and the layer it is for */
+function createNoise(place: Point, layer: number, size: number): (x: number, y: number) => number {
   const cols = Math.ceil(FIELD.width / size) + 2;
   const rows = Math.ceil(FIELD.height / size) + 2;
-  const lattice = Array.from({ length: cols * rows }, () => random());
+  const lattice = Array.from({ length: cols * rows }, (_, i) =>
+    mix(place[0] * 31 + (i % cols), place[1] * 37 + ((i / cols) | 0), layer)
+  );
   const ease = (t: number): number => t * t * (3 - 2 * t);
 
   return (x, y) => {

@@ -1,0 +1,147 @@
+# Battles
+
+How a battle is fought on the battle plan. The user guide is the [Battle Simulator wiki page](../wiki/Battle-Simulator.md).
+
+A battle is a deterministic simulation of **battalions** on a 1000×600 plan. Two levels decide what happens:
+
+1. a **general** for each side, who reads the whole field once a round, picks a **tactic**, draws the troops up and gives every battalion an **order**;
+2. the **battalion** itself, which every tick weighs its order against what is around it: who threatens it, whom it can hurt, how shaken it is.
+
+Nothing in a battle is random: neither it nor its setup has a generator of chance. The battle type is picked by rules, and the ground details are a fixed pattern of the place on the map (`mix` in `battlefield.ts`), so the same spot always gives the same field. A side's **die** is a strength multiplier the user sets by hand, never rolled, and the generals do not reckon with it. The same setup always plays the same battle.
+
+## Modules
+
+| Module | Holds |
+| --- | --- |
+| [battle.ts](../../src/model/political/battle/battle.ts) | The battle: its state, the tick, blows and losses, morale, the end |
+| [movement.ts](../../src/model/political/battle/movement.ts) | What ground means to troops, walls, ways round obstacles, steps and collisions |
+| [general.ts](../../src/model/political/battle/general.ts) | The side level: appraisal, tactic, deployment, phase and orders each round |
+| [formations.ts](../../src/model/political/battle/formations.ts) | Places in a formation, by tactic |
+| [battalion.ts](../../src/model/political/battle/battalion.ts) | The battalion level: what one battalion does this tick |
+| [battle-rules.ts](../../src/model/political/battle/battle-rules.ts) | Phases, the power table, casualty rates, outcome names |
+| [battlefield.ts](../../src/model/political/battle/battlefield.ts), [pathfinding.ts](../../src/model/political/battle/pathfinding.ts) | The ground as a grid, and the cheapest way over it |
+
+`general.ts`, `formations.ts` and `battalion.ts` only read the battle and write orders and intents; `battle.ts` alone moves troops and takes lives.
+
+## The loop
+
+- **On setup** (`prepare`): both generals appraise, choose a tactic by scores and deploy; the defenders first, the attackers in sight of them. It is instant, so the screen has troops to show.
+- **Before the first tick** (`plan`): the generals think the battle through, see [Rehearsal](#rehearsal), and the same battalions take their final places. `tick` does it itself when nobody has, so every battle is planned however it is driven; the screen does it off a timer with the start and step buttons disabled. Budget: 1 s.
+- **Every round** (6 ticks, `command`): each general appraises anew, sets the side's phase, moves the formation and rewrites the orders. Budget: 100 ms.
+- **Every tick** (`act`): each battalion turns its order into an intent (go there, strike or shoot that foe, stand), then all move and blows are settled together.
+
+## The general
+
+### Appraisal
+
+What a general knows is what a general could see: the troops in order on both sides by kind (**line** troops that fight hand to hand, **shooters**, **riders**, **engines**), their power and morale, the losses so far, the ground. From it:
+
+- **odds**: own power in order to the foe's, each as the troops would fight where they stand (walls, town, high ground, a river in front);
+- **fire**: the same for what shoots;
+- **wings**: the foe's left, centre and right by power, and where its line ends;
+- **trend**: losses of the last rounds, own to the foe's.
+
+### Tactic
+
+The tactic is chosen once, before the start, by scoring every tactic the battle type allows against the appraisal; the best score wins, ties go to the first. A tactic is a set of numbers a single formation builder and a single order writer read, not code of its own.
+
+| Tactic | Formation | Chosen when |
+| --- | --- | --- |
+| Assault | Line troops in lines, shooters behind the first, riders on both wings, a reserve | stronger, nothing better |
+| Oblique | One wing massed two deep with all the riders, the other held back in steps | no stronger than the foe, or a foe's wing is weak or open |
+| Envelopment | A thin centre held back, riders massed on both wings | clearly more riders |
+| Wedge | A deep column in the centre, the wings trailing | the foe's line is longer and thinner, own line troops heavier |
+| Harass | Shooters forward in the first line, line troops behind them, riders ready | more fire, less weight |
+| Stand | A line on the best ground in reach, shooters behind it, a reserve, riders behind its ends | defending at fair odds |
+| Crescent | The ends of the line bent back | defending outnumbered or outridden |
+| Crossing | Round the far end of the ford or bridge the attackers come by | defending behind a river |
+| Column; Ambuscade, Waylay | The attackers of an ambush on the march; the ambushers on both sides of the road, or all on the better covered one | ambush |
+| Siege lines, Garrison | Out of bowshot with the engines in front; shooters towards the foe, line troops by the gates, riders in the middle | siege of a walled burg |
+| Waves | Line troops first, shooters and riders behind | the attackers of a landing |
+
+The scores are in `chooseTactic`, the numbers of each tactic in `TACTICS`. The defenders look for their ground first (`findGround`): lines across the attack at three depths and five shifts are scored by height, by what covers their ends (water, wood, a burg, the edge of the field) and by what the attackers must cross to reach them. Defenders ready for a landing stand a bowshot from the water. A formation is shifted as a whole to stay on the field: places are never clamped one by one, or they would end up on each other.
+
+**Who attacks** is `side.advancing`. Attackers do unless their odds are under 0.75 or their general settled on waiting (`side.waits`), and then they take a defender's tactic. Defenders do at odds of 1.25 with no crossing to hold. A side that waits goes over to the attack when the foe is spent (odds of 1.5 with the lines at grips), outshoots it two to one while it bleeds, or has not come for six rounds while being no stronger; not into twice its own fire, not when its general chose to wait, and never from behind a crossing until the foe runs. Only an advancing side enters a ford or a bridge.
+
+### Rehearsal
+
+Scores only rank the tactics. Before an open fight (field, naval, air) each general plays every option the scores allow him (`getOptions`) in a battle of his own (`rehearse`): a copy of the setup with even dice and nobody moved by hand, run to its end or for 360 ticks, the foe using the tactic the scores give him. An attacker weaker than the defenders has one option more: not to attack. He takes the tactic with the best outcome: holding the field first, then the difference in losses; of equal ones, the likelier by score. Both do it against the expected foe, not against what the other settled on: the second to choose would otherwise always win. Where water or walls make ticks dear only an attacker who is the weaker rehearses: his likeliest tactic against waiting.
+
+The other types have one choice each (`getOptions`): ambushers lie on both sides of the road or on one (`waylay`); defenders ready for a landing meet it at the shore or wait inland (`side.waits`); besiegers with two thirds of the odds the walls ask for storm at once (`side.storms`) or keep to the rule. A storm is played for 150 ticks and only with 28 battalions or fewer on the field: more cannot be reckoned within the second.
+
+A rehearsal is the real engine on a copy of the battle with `rehearsal` set and a copy of the field, so a storm in the mind breaches no walls; the regiments are shared. Changes of the armies or the type before the start call `rethink`. Measured on 2026-11-12 over 4 army sizes and 8 directions: up to 270 ms on open ground, a hill, a river or among woods.
+
+### Phase
+
+The phase is the general's standing order to the side, shown in the banner. It is decided from the appraisal with fixed thresholds and never rolled:
+
+- **stand off** (skirmish, shelling, maneuvering): close to shooting distance and no further. A general with the better fire keeps it up for 4 to 12 rounds, by his share of the fire; one with the worse fire closes at once when attacking, and when defending holds his ground unless he is the stronger.
+- **close** (melee, boarding, dogfight): the formation advances into contact; a defender takes this phase when the foe's line comes within a charge.
+- **chase** (pursue, chase): the foe retreats or has a quarter of its battalions left in order.
+- **run** (retreat, withdrawal, flee): the day is lost (`isLost`): odds under 1:3, under 2:3 with a quarter of the troops gone, under 1:1 with half of them gone, or morale under 25. Behind a river a side holds out at half these odds. It is final.
+- **ambush**: surprise and shock last 2 to 8 rounds of fighting, four divided by the attackers' odds; a shocked general gives no orders, his battalions fend for themselves.
+- **landing**: the fight for the shore lasts three rounds; the defenders are ready when their morale at the start is no lower than the attackers', else shocked.
+- **siege**: the besiegers storm at the odds the walls ask for, bombard with engines, else blockade; they call a storm off when it has lost a third of those odds and nobody is on the walls, and go back to their lines. The besieged shelter or bombard, sortie at engines whose guards the party outweighs, and surrender when their morale is spent.
+
+A phase ordered by hand stands for ten rounds; then the general decides again.
+
+### Orders
+
+Every battalion has a **place** in the formation, across and along its **frame** (a point and a heading), and a **mission**:
+
+| Mission | Meaning |
+| --- | --- |
+| line | keep the place; fight what comes to the front |
+| support | shooters: keep the place behind the line, shoot, stay out of reach |
+| battery | engines: stand and shoot |
+| guard | keep the place and go only for riders about, the foe pointed at, or what comes right at it: riders on a wing, the weak wing of an oblique attack |
+| reserve | wait behind until sent |
+| flank | go to a point, fighting only who bars the way: round the end of the foe's line, over the wall in a storm |
+| hunt | go for the foe worth most anywhere: riders come round, a reserve sent, stormers within the walls, ambushers, pursuers |
+| withdraw | leave the field |
+
+The general moves the frame, not the battalions (`moveFrame`): forward at the pace of the slowest battalion of the first line along the way its troops would take, turning to face the foe, and not at all while most of the line lags behind its places. So a river is crossed like an inchworm: the frame waits at the ford until the line is over. The shape of the formation is its timing: the massed wing of an oblique attack strikes first because the other wing stands further back, the wings of an envelopment meet the foe before its centre, a wedge leads with the centre.
+
+The **reserve** is sent, nearest battalion first:
+
+1. into the place of a battalion of the first line that broke with foes near: the second line counts as a reserve for this;
+2. against foes come round a flank or through the line, riders first;
+3. at a foe that wavers at grips (morale under 40), to break it;
+4. all of it, once the lines have fought for eight rounds: a reserve never used is wasted.
+
+A battalion sent comes back to its place when its foe is done for.
+
+A battalion moved by hand keeps the place it was put in.
+
+## The battalion
+
+Every tick a battalion looks at the foes in sight and at its friends beside it, and chooses, in this order:
+
+1. **Broken**: it runs for the edge of the field behind its side.
+2. **At grips**: it fights; with nobody to its front it turns on whoever has it by the flank.
+3. **Its own skin**: shooters step back from those who come for them within 80 units; a shaken battalion (morale under 30) does not attack.
+4. **Its order**, by mission. A line battalion goes for a foe within reach of its place and no further, so the line holds: 120 units when its side advances and closes, 45 when it waits. A foe a neighbour holds is within reach half as far again, to be taken in the flank.
+5. **Its target** (`getWorth`): of the foes its mission lets it reach, the nearest by the way there, made nearer by all that makes it a better prey: held by a friend and open to a blow in the flank or rear, shaken, hitting harder than it stands, pointed at by the general; for riders a shooter or an engine, and not formed line troops head on. Friends already going for it make it further, so the line spreads.
+
+The way to a point of the field is kept while the point stays (`getPointKey`), the way to a foe is found anew every round: thirty stormers finding their ways on one tick is what a round costs most.
+
+Battalions do not pass through each other, except friends packed within the walls of one burg, who are not in the way of one stepping in or out either: a garrison once jammed itself in its own gate. One hemmed in by friends goes round them by the side it took first (`block.detour`), which is why riders kept back stand behind the ends of the line.
+
+## Blows and losses
+
+A battalion strikes or shoots with `troops × attack × table row × upkeep × die`, and stands with the same of its defense. The row of the [power table](../wiki/Battle-Simulator.md#battle-types) is by what the battalion itself is doing where the battle type has rows for it (standing off, at grips, chasing, running), and the side's phase otherwise (ambush, landing, siege). Losses a tick are `initial × rate / 2 × hits that land ÷ (hits + own)`, carried in fractions, so they come to the same men every time.
+
+## Morale
+
+Morale is a battalion's own, 0 to 100, and moves only by what happens to it:
+
+- **losses** and **hits in the flank and rear** shake it, the less the steadier the unit;
+- **odds at hand**: each round it counts friends and foes in order within 130 units: badly outnumbered it loses heart, with the upper hand it takes heart;
+- **left alone**, with no foe near and not hit, it recovers;
+- a friend that **breaks or is destroyed** nearby shakes it, a foe's heartens it.
+
+Under 30 a battalion is **shaken**: it holds and defends but does not attack. At 15 it **breaks** and runs. Broken troops run only while a foe in order is within 200 units; then they halt, recover and **rally** at 35, as long as their side still fights: line troops and riders join the reserve, shooters and engines keep their role. Once only (`block.routs`): without that limit a lost fight went on for sixty rounds of breaking and rallying.
+
+## Tuning and checks
+
+Measure balance over several army sizes and all eight directions of attack: a battle is one fixed outcome, so a single size tells nothing. Measure on a hill, behind a ford, between woods and on a shore too: open ground alone hid a defender who waded into the ford he was winning at. The directions matter: a diagonal attack has other room than a straight one. Watch a battle with the Battles diagnostics on (Advanced options): they draw every battalion's mission, its place and its target over the plan, and each side's tactic and stance.

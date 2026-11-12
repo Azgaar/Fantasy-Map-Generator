@@ -1,4 +1,12 @@
-import { applyDue, type Battle, type Intervention, ROUND_TICKS, replay, tick } from "@/model/political/battle/battle";
+import {
+  applyDue,
+  type Battle,
+  type Intervention,
+  plan,
+  ROUND_TICKS,
+  replay,
+  tick
+} from "@/model/political/battle/battle";
 import { FIELD } from "@/model/political/battle/battlefield";
 import { drawBattlefield, drawBlocks, snapshot, updateBlocks } from "@/renderers/draw-battle-scene";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -178,6 +186,7 @@ async function recordBattle(
   const ground = markup([...svg.children]);
 
   applyDue(battle, script);
+  plan(battle); // the first frame shows the troops as the generals drew them up
   const icons = new Set<string>();
   let defs = "";
   const placeBlocks = (): void => {

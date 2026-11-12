@@ -1,5 +1,5 @@
 import { select, sum } from "d3";
-import { BATTLE_PHASE_LABELS, BATTLE_TYPE_LABELS } from "@/data/id-labels";
+import { BATTLE_PHASE_LABELS, BATTLE_TACTIC_LABELS, BATTLE_TYPE_LABELS } from "@/data/id-labels";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import {
@@ -16,6 +16,7 @@ import {
   type Intervention,
   intervene,
   type LogEntry,
+  plan,
   prepare,
   ROUND_TICKS,
   tick
@@ -23,7 +24,6 @@ import {
 import {
   BATTLE_TYPES,
   type BattleType,
-  createRandom,
   getBattleName,
   getRegimentStatus,
   getTypeName,
@@ -34,6 +34,7 @@ import {
 import { buildBattlefield, createEmptyBattlefield } from "@/model/political/battle/battlefield";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
+import { getUnitPower } from "@/model/political/military-units";
 import { Stability } from "@/model/political/stability";
 import { Names } from "@/model/society/names-generator";
 import type { Marker } from "@/model/story/markers-generator";
@@ -69,7 +70,6 @@ interface BattleLogFile {
   version: number;
   name: string;
   type: BattleType;
-  seed: string;
   attackers: { state: number; i: number }[];
   defenders: { state: number; i: number }[];
   interventions: Intervention[];
@@ -80,10 +80,10 @@ interface BattleLogFile {
 let battle: Battle | null = null;
 let regiments = new Map<string, Regiment>(); // the map's regiments in the battle, by state and id
 let script: Intervention[] = []; // changes of a loaded log still to come
-let rerolls = 0;
 let fileInput: HTMLInputElement | null = null;
 
 const player = { playing: false, speed: 1, frame: 0, tickStart: 0, previous: null as Positions | null };
+let planning = 0; // timer of the generals' thinking the battle through
 
 const regimentKey = (regiment: { state: number; i: number }): string => `${regiment.state}-${regiment.i}`;
 const scene = (): SVGSVGElement => document.getElementById("battleScene") as unknown as SVGSVGElement;
@@ -94,7 +94,6 @@ function open(attacker: Regiment, defender: Regiment): void {
   options.app.mode = "battle"; // an edit mode keeps other dialogs from opening
 
   renderDialog();
-  rerolls = pack.markers.filter(marker => marker.type === "battlefields").length;
   regiments = new Map([attacker, defender].map(regiment => [regimentKey(regiment), regiment]));
   script = [];
   setup([attacker], [defender]);
@@ -149,28 +148,25 @@ function fitDialog(): void {
 function setup(
   attackers: Regiment[],
   defenders: Regiment[],
-  from?: Partial<Pick<BattleLogFile, "seed" | "type" | "name">>
+  from?: Partial<Pick<BattleLogFile, "type" | "name">>
 ): void {
   const defender = defenders[0];
   const attacker = attackers[0];
   const { x, y } = battle ?? defender;
   const cell = Pack.findCell(x, y) ?? 0;
-  const seed = from?.seed ?? `${options.map.seed}_b${cell}_${rerolls}`;
-  const random = createRandom(`${seed}_n`);
-  const type = from?.type ?? defineType(attacker, defender, cell, random.P);
+  const type = from?.type ?? defineType(attacker, defender, cell);
   const place = definePlace(cell);
   const point = { x, y };
 
   battle = createBattle({
-    seed,
     type,
-    name: from?.name ?? battle?.name ?? getBattleName(type, place, random),
+    name: from?.name ?? battle?.name ?? getBattleName(type, place),
     place,
     x,
     y,
     cell,
     axis: Math.atan2(y - (attacker.py ?? attacker.y), x - (attacker.px ?? attacker.x)),
-    field: buildField(x, y, seed, type),
+    field: buildField(x, y, type),
     units: options.map.military.units,
     populationScale: options.map.units.population.scale,
     attackers: attackers.map(regiment => toBattleRegiment(regiment, point)),
@@ -184,10 +180,10 @@ function setup(
   refresh();
 }
 
-function buildField(x: number, y: number, seed: string, type: BattleType) {
-  if (type === "naval") return createEmptyBattlefield(seed, "sea");
-  if (type === "air") return createEmptyBattlefield(seed, "sky");
-  return buildBattlefield(x, y, seed, type !== "ambush");
+function buildField(x: number, y: number, type: BattleType) {
+  if (type === "naval") return createEmptyBattlefield("sea");
+  if (type === "air") return createEmptyBattlefield("sky");
+  return buildBattlefield(x, y, type !== "ambush");
 }
 
 function toBattleRegiment(regiment: Regiment, point: { x: number; y: number }): BattleRegiment {
@@ -204,7 +200,9 @@ function toBattleRegiment(regiment: Regiment, point: { x: number; y: number }): 
   };
 }
 
-function defineType(attacker: Regiment, defender: Regiment, cell: number, P: (p: number) => boolean): BattleType {
+const AMBUSH_ODDS = 0.75; // defenders weaker than that lie in ambush where the ground hides them
+
+function defineType(attacker: Regiment, defender: Regiment, cell: number): BattleType {
   const types = (regiment: Regiment): (string | undefined)[] =>
     Object.keys(regiment.u).map(name => options.map.military.units.find(u => u.name === name)?.type);
   const typesA = types(attacker);
@@ -214,7 +212,12 @@ function defineType(attacker: Regiment, defender: Regiment, cell: number, P: (p:
   if (typesA.every(type => type === "aviation") && types(defender).every(type => type === "aviation")) return "air";
   if (attacker.n && !defender.n && typesA.some(type => type !== "naval")) return "landing";
   if (!defender.n && (burg?.walls || burg?.citadel)) return "siege";
-  if (P(0.1) && [5, 6, 7, 8, 9, 12].includes(pack.cells.biome[cell])) return "ambush"; // forest or marsh
+  // as the ribbon above the plan counts it
+  const power = (regiment: Regiment): number =>
+    sum(options.map.military.units, unit => (regiment.u[unit.name] ?? 0) * getUnitPower(unit)) *
+    Military.getBattleUpkeep(regiment.state);
+  const hidden = [5, 6, 7, 8, 9, 12].includes(pack.cells.biome[cell]); // forest or marsh
+  if (hidden && power(defender) < power(attacker) * AMBUSH_ODDS) return "ambush";
   return "field";
 }
 
@@ -423,7 +426,7 @@ function renderDialog(): void {
                 ${BATTLE_TYPES.map(type => `<button data-tip="${typeTip(type)}" data-type="${type}" class="icon-button-${type}">${BATTLE_TYPE_LABELS[type]}</button>`).join("")}
               </div>
             </span>
-            <button id="battleRoll" data-tip="${t("Reroll the battlefield details and fortune. Only before the battle starts")}" class="icon-arrows-cw"></button>
+            <button id="battleRoll" data-tip="${t("Draw the troops up anew. Only before the battle starts")}" class="icon-arrows-cw"></button>
             <button id="battleAnimate" data-tip="${t("Save the battle as an animation, played from the start to the end")}" class="icon-button-screenshot"></button>
             <button id="battleLogToggle" data-tip="${t("Show the battle log")}" class="icon-list-bullet"></button>
             <button id="battleWiki" data-tip="${t("Open Battle Simulation Tutorial")}" class="icon-info"></button>
@@ -461,7 +464,7 @@ function renderDialog(): void {
   });
   ensureEl("battleType").addEventListener("click", event => togglePicker(event));
   ensureEl("battleType").nextElementSibling!.addEventListener("click", event => changeType(event));
-  ensureEl("battleRoll").addEventListener("click", () => reroll());
+  ensureEl("battleRoll").addEventListener("click", () => redeploy());
   ensureEl("battleAnimate").addEventListener("click", () => saveAnimation());
   ensureEl("battleLogToggle").addEventListener("click", () => toggleLog());
   ensureEl("battleLogClose").addEventListener("click", () => toggleLog(false));
@@ -523,9 +526,25 @@ function focusRegiment(key: string | null, onField = true): void {
 
 // the player
 
+/** The generals have not thought the battle through yet: it cannot start */
+const isPlanning = (): boolean => Boolean(battle && !battle.tick && !battle.planned);
+
+/** Let the generals think once the screen has shown that they do: it takes up to a second */
+function schedulePlan(): void {
+  const b = battle!;
+  if (planning || !isPlanning()) return;
+  planning = window.setTimeout(() => {
+    planning = 0;
+    if (battle !== b) return;
+    plan(b);
+    updateBlocks(scene(), b, null, 1);
+    refresh();
+  }, 30);
+}
+
 function play(): void {
   const b = battle!;
-  if (b.result) return;
+  if (b.result || isPlanning()) return;
   player.playing = true;
   player.tickStart = performance.now();
   if (!player.previous) advance();
@@ -543,7 +562,7 @@ function pause(): void {
 }
 
 function step(): void {
-  if (!battle || battle.result) return;
+  if (!battle || battle.result || isPlanning()) return;
   pause();
   advance();
   player.previous = null;
@@ -602,9 +621,11 @@ function turnBlock(block: Block, facing: number): void {
 /** Troops can be dragged while the battle stands still */
 function setEditable(): void {
   scene().classList.toggle("battleEditable", !player.playing && !battle?.result);
-  const run = ensureEl("battleRun");
+  const run = ensureEl<HTMLButtonElement>("battleRun");
+  run.disabled = isPlanning();
   run.className = player.playing ? "battlePause" : "icon-play";
-  run.textContent = player.playing ? t("Pause") : ` ${battle?.tick ? t("Continue") : t("Start battle")}`;
+  const idle = isPlanning() ? t("Generals are planning") : battle?.tick ? t("Continue") : t("Start battle");
+  run.textContent = player.playing ? t("Pause") : ` ${idle}`;
 }
 
 // the panels
@@ -628,6 +649,7 @@ const put = (root: Element, selector: string, text: string | number): void => {
 
 function refresh(): void {
   const b = battle!;
+  schedulePlan();
   for (const side of SIDES) refreshSide(side);
 
   // the scales: the power of the troops each side still has on the field, as the military screens count it
@@ -663,7 +685,7 @@ function refresh(): void {
 
   // setup only; nothing is hidden, so the controls never jump
   ensureEl<HTMLButtonElement>("battleRoll").disabled = started;
-  ensureEl<HTMLButtonElement>("battleStep").disabled = over;
+  ensureEl<HTMLButtonElement>("battleStep").disabled = over || isPlanning();
   ensureEl<HTMLButtonElement>("battleRestart").disabled = !started;
   ensureEl("battleRun").hidden = over;
   ensureEl("battleResultRestart").hidden = !over;
@@ -698,7 +720,7 @@ function refreshSide(side: Side): void {
 
   const die = ensureEl<SVGElement & HTMLElement>(`battleDie_${side}`);
   if (die.dataset.die !== String(data.die)) {
-    const factor = side === "attackers" ? t("Random factor for attackers") : t("Random factor for defenders");
+    const factor = side === "attackers" ? t("Attackers fortune") : t("Defenders fortune");
     die.dataset.die = String(data.die);
     die.dataset.tip = sentences(`${factor}: ×${+getFortune(data.die).toFixed(3)}`, t("Click to change"));
     die.innerHTML = dieFace(data.die);
@@ -869,24 +891,24 @@ function changeType(event: Event): void {
   const b = battle!;
   if (target.tagName !== "BUTTON" || target.dataset.type === b.type || b.tick) return;
   const type = target.dataset.type as BattleType;
-  const named = b.name === getBattleName(b.type, b.place, createRandom(`${b.seed}_n`));
+  const named = b.name === getBattleName(b.type, b.place);
 
   intervene(b, { tick: b.tick, kind: "type", type });
   if (!b.tick) {
     // the ground follows the type until the battle starts
-    b.field = buildField(b.x, b.y, b.seed, type);
+    b.field = buildField(b.x, b.y, type);
     prepare(b);
     drawBattlefield(scene(), b.field);
     drawScene();
   }
-  if (named) setName(getBattleName(type, b.place, createRandom(`${b.seed}_n`)));
+  if (named) setName(getBattleName(type, b.place));
   refresh();
 }
 
-function reroll(): void {
+/** Draw the troops up anew: the moves made by hand are dropped */
+function redeploy(): void {
   const b = battle!;
   if (b.tick) return;
-  rerolls += 1;
   const sides = SIDES.map(side => b[side].regiments.map(regiment => regiments.get(regimentKey(regiment))!));
   setup(sides[0], sides[1], { type: b.type, name: b.name });
   // what was done to the sides by hand stays done
@@ -908,7 +930,7 @@ function generateBattleName(type: "culture" | "random"): void {
     type === "culture"
       ? Names.getCulture(pack.cells.culture[b.cell], undefined, undefined, "")
       : Names.getBase(Math.floor(Math.random() * Names.nameBases.length));
-  setName(getBattleName(b.type, b.place, createRandom(`${b.seed}_n`)));
+  setName(getBattleName(b.type, b.place));
 }
 
 function addSide(side: Side): void {
@@ -1010,11 +1032,17 @@ function logText({ event, side, params }: LogEntry): string {
   if (event === "move") return t("{{block}} are moved", params);
   if (event === "turn") return t("{{block}} are turned", params);
   if (event === "die") {
-    return `${attackers ? t("Random factor for attackers") : t("Random factor for defenders")}: ${params!.die}`;
+    return `${attackers ? t("Attackers fortune") : t("Defenders fortune")}: ${params!.die}`;
   }
   if (event === "power") return `${attackers ? t("Attackers power") : t("Defenders power")}: ${params!.value}`;
   if (event === "morale") return `${attackers ? t("Attackers morale") : t("Defenders morale")}: ${params!.value}`;
+  if (event === "tactic") {
+    return `${attackers ? t("Attackers tactic") : t("Defenders tactic")}: ${BATTLE_TACTIC_LABELS[params!.tactic]}`;
+  }
+  if (event === "advance")
+    return attackers ? t("The attackers go over to the attack") : t("The defenders go over to the attack");
   if (event === "rout") return t("{{block}} break and run", params);
+  if (event === "rally") return t("{{block}} rally", params);
   if (event === "destroyed") return t("{{block}} are destroyed", params);
   if (event === "fled") return t("{{block}} leave the field", params);
   if (event === "breach") return t("The walls of {{burg}} are breached", params);
@@ -1053,7 +1081,6 @@ function buildLog(): BattleLogFile {
     version: LOG_VERSION,
     name: b.name,
     type: b.type,
-    seed: b.seed,
     attackers: ids("attackers"),
     defenders: ids("defenders"),
     interventions: [...b.interventions],
@@ -1069,7 +1096,6 @@ function downloadLog(): void {
 /** The battle from its start, untouched by the one on screen: every change made, and those of a loaded log to come */
 function startAnew(b: Battle): BattleStart {
   const battle = createBattle({
-    seed: b.seed,
     type: b.type,
     name: b.name,
     place: b.place,
@@ -1077,7 +1103,7 @@ function startAnew(b: Battle): BattleStart {
     y: b.y,
     cell: b.cell,
     axis: b.approach,
-    field: buildField(b.x, b.y, b.seed, b.type),
+    field: buildField(b.x, b.y, b.type),
     units: b.units,
     populationScale: b.populationScale,
     attackers: structuredClone(getInitialRegiments(b, "attackers")),
@@ -1236,7 +1262,7 @@ function applyResults(): void {
   };
   const getLossesShare = (casualties: number): number => Math.min(rn(casualties * 100), 100);
 
-  const status = battleStatus[+createRandom(`${b.seed}_r`).P(0.7)];
+  const status = battleStatus[getResult(b).winner === "defenders" ? 1 : 0]; // as the side that holds the field sees it
   const result = `The ${getTypeName(b.type)} ended in ${status}`;
   let legend = `${b.name} took place in ${year} ${eraShort}. It was fought between ${getSide("attackers", 1)} and ${getSide("defenders", 0)}. ${result}.
       <br>Attackers losses: ${getLossesShare(b.attackers.casualties)}%, defenders losses: ${getLossesShare(b.defenders.casualties)}%.`;
@@ -1266,6 +1292,8 @@ function leaveBattle(regiment: Regiment): void {
 
 function closeBattleScreen(): void {
   pause();
+  clearTimeout(planning);
+  planning = 0;
   for (const regiment of regiments.values()) leaveBattle(regiment);
   battle = null;
   regiments = new Map();

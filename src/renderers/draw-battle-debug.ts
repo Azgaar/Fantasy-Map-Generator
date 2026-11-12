@@ -2,8 +2,9 @@
 // For developers: its text is not translated.
 
 import { pointer, select } from "d3";
-import { type Battle, getWay } from "@/model/political/battle/battle";
+import type { Battle } from "@/model/political/battle/battle";
 import { type Battlefield, FIELD, nodeAt, terrainAt } from "@/model/political/battle/battlefield";
+import { getWay } from "@/model/political/battle/movement";
 import { log } from "@/utils/logger";
 import { escapeHtml } from "@/utils/string-utils";
 
@@ -137,15 +138,21 @@ function getDoings(battle: Battle, at: Places): string {
       html += `<path d="M${points}" fill="none" stroke="#c7128a" stroke-width="1.1"/>`;
       html += way.map(([wx, wy]) => `<circle cx="${wx}" cy="${wy}" r="1.6" fill="#c7128a"/>`).join("");
     }
-    const mark = block.status === "routed" ? "routed" : block.action;
+    // its place in the formation, or the point the general sent it round by
+    if (block.status === "ready" && Math.hypot(block.order.x - x, block.order.y - y) > 6) {
+      html += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}L${block.order.x.toFixed(1)} ${block.order.y.toFixed(1)}" stroke="#1a9e3a" stroke-width="0.6" stroke-opacity="0.7"/>`;
+      html += `<circle cx="${block.order.x.toFixed(1)}" cy="${block.order.y.toFixed(1)}" r="1.4" fill="#1a9e3a"/>`;
+    }
+    const sent = block.order.sent ? "!" : "";
+    const mark = block.status === "routed" ? "routed" : `${block.order.mission}${sent} ${block.action}`;
     // right over the block, whatever way it is turned
     const top = (Math.abs(Math.sin(facing)) * block.depth + Math.abs(Math.cos(facing)) * block.width) / 2;
     html += `<text x="${x.toFixed(1)}" y="${(y - top - 1.5).toFixed(1)}" font-size="7.5" text-anchor="middle" ${HALO}>${mark} ♥${Math.round(block.morale)}</text>`;
   }
 
   const side = (name: "attackers" | "defenders"): string => {
-    const { phase, morale, power, die, bonus } = battle[name];
-    return `${name}: ${phase}, morale ${morale.toFixed(0)}, power ${power.toFixed(1)}${bonus ? ` (${bonus > 0 ? "+" : ""}${bonus})` : ""}, die ${die}`;
+    const { phase, morale, power, die, bonus, plan, advancing } = battle[name];
+    return `${name}: ${plan.tactic}, ${advancing ? "advancing" : "holding"}, ${phase}, morale ${morale.toFixed(0)}, power ${power.toFixed(1)}${bonus ? ` (${bonus > 0 ? "+" : ""}${bonus})` : ""}, die ${die}`;
   };
   const held = battle.field.held === null ? "none" : escapeHtml(battle.field.burgs[battle.field.held].name);
   const state = [

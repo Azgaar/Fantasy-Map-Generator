@@ -13,12 +13,22 @@ async function startBattle(page: Page) {
   });
 }
 
-const stepToEnd = (page: Page) =>
-  page.evaluate(() => {
+const stepToEnd = async (page: Page) => {
+  await expect(page.locator("#battleStep")).toBeEnabled(); // the generals have planned
+  return page.evaluate(() => {
     const step = document.getElementById("battleStep") as HTMLButtonElement;
     for (let i = 0; i < 700 && !step.disabled; i++) step.click();
     return step.disabled;
   });
+};
+
+/** Order the attackers to close with the foe: a general may think better of attacking, and then nobody fights */
+async function orderAttack(page: Page) {
+  await page.locator("#battleBanner_attackers .battleOrdersButton").click();
+  await page.locator("#battleOrdersPhase").selectOption({ index: 1 });
+  await page.locator(".dialog-window:has(#battleOrdersScreen) button", { hasText: "Apply" }).click();
+  await expect(page.locator("#battleOrdersScreen")).toHaveCount(0);
+}
 
 async function pickType(page: Page, type: string) {
   await page.locator("#battleType").click();
@@ -40,9 +50,10 @@ test.describe("Battle simulator", () => {
 
     await pickType(page, "field");
     await expect(page.locator("#battleType")).toBeEnabled();
+    await orderAttack(page);
     expect(await stepToEnd(page)).toBe(true);
     await expect(page.locator("#battleType")).toBeDisabled(); // the type is set before the start
-    await expect(page.locator("#battleLogList > div").first()).toHaveText(/The battle begins/);
+    await expect(page.locator("#battleLogList")).toContainText("The battle begins");
     const left = await page.locator(".battleCount").allTextContents();
     expect(left.some(text => Number(text.split("/")[0]) < Number(text.split("/")[1]))).toBe(true);
     await expect(page.locator("#battleResult")).toBeVisible();
@@ -112,7 +123,7 @@ test.describe("Battle simulator", () => {
     await die.click();
     await expect(die).toHaveAttribute("data-die", String(((before + 1) % 6) + 1));
     await page.locator("#battleLogToggle").click();
-    await expect(page.locator("#battleLogList > div", { hasText: "Random factor for attackers" })).toHaveCount(1);
+    await expect(page.locator("#battleLogList > div", { hasText: "Attackers fortune" })).toHaveCount(1);
   });
 
   test("fits a narrow window: both sides stay above the battlefield, the armies under it", async ({ page }) => {
@@ -148,6 +159,7 @@ test.describe("Battle simulator", () => {
     const { attacker, defender, troops } = await startBattle(page);
     const markers = await page.evaluate(() => (window as any).pack.markers.length);
     await pickType(page, "field");
+    await orderAttack(page);
     await stepToEnd(page);
     await page.locator("#battleApply").click();
 
