@@ -42,7 +42,7 @@ const REFRESHABLE_EDITORS = [
 /** Close dialogs about one entity: after a regeneration their ids may name another */
 export function closeEntityDialogs(): void {
   const dialogs = document.querySelectorAll(
-    ".burgEconomyDialog, .economyOverviewDialog, .stabilityDialog, [id^='stateEconomy'][id$='Table'], #marketOverview, #marketDeals, #tradeDetails, #stateBudgetEditor, #tariffSelectorDialog"
+    ".burgEconomyDialog, .economyOverviewDialog, .stabilityDialog, [id^='stateEconomy'][id$='Table'], #marketOverview, #marketDeals, #tradeDetails, #stateBudgetEditor, #limitationPicker"
   );
   for (const { id } of dialogs) Dialog.close(id);
 }

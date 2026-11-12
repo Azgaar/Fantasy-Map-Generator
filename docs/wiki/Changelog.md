@@ -12,9 +12,20 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
-**[1.158.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.158.0) - 2026-11-22**:
+**[1.159.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.159.0) - 2026-11-22**:
 
 - Battle simulator: animated battles
+
+**[1.158.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.158.0) - 2026-11-12**:
+
+- Autosafe slots
+- Style: zoom size option for labels, markers and burg icons
+- Economy: tariffs and embargoes follow the burg's state
+- Economy: optional deposit yield multiplier
+- Economy: download the economy overview as CSV
+- Military: recalculate forces of a single state
+- Military: unit changes update troops without regenerating regiments
+- Limitation Picker: sort items alphabetically
 
 **[1.157.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.157.0) - 2026-11-09**:
 

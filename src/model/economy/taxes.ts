@@ -76,26 +76,26 @@ class TaxesModule {
     return paid;
   }
 
-  /** The states a deal's sales tax and tariff go to: the seller's, and the importer's market's */
+  /** The states a deal's sales tax and tariff go to: the seller's, and the importer's */
   getTaxStates(deal: Deal): { taxState: number; tariffState: number } {
-    const [burgId, , , kind] = deal;
-    const { own, market } = this.getMarketStates(deal);
-    return kind === DEAL_KINDS.sale
-      ? { taxState: pack.burgs[burgId]?.state || 0, tariffState: market }
-      : { taxState: market, tariffState: own };
+    const kind = deal[3];
+    const { burg, market } = this.getDealStates(deal);
+    return kind === DEAL_KINDS.sale ? { taxState: burg, tariffState: market } : { taxState: market, tariffState: burg };
   }
 
   /** Only an import may pay a tariff */
   isImport(deal: Deal): boolean {
-    const { own, market } = this.getMarketStates(deal);
-    return deal[7] > 0 || this.isForeign(own, market);
+    const { burg, market } = this.getDealStates(deal);
+    return deal[7] > 0 || this.isForeign(burg, market);
   }
 
   /** The rate of the deal's tariff: the importer's on goods from the other market's state */
   getDealTariffRate(deal: Deal): number {
     const [, , goodId, kind] = deal;
-    const { own, market } = this.getMarketStates(deal);
-    return kind === DEAL_KINDS.sale ? this.getTariffRate(market, own, goodId) : this.getTariffRate(own, market, goodId);
+    const { burg, market } = this.getDealStates(deal);
+    return kind === DEAL_KINDS.sale
+      ? this.getTariffRate(market, burg, goodId)
+      : this.getTariffRate(burg, market, goodId);
   }
 
   getSalesTax(burg?: { state?: number }): number {
@@ -137,14 +137,8 @@ class TaxesModule {
     return rate;
   }
 
-  /** A burg that lost its market since the run stays in its own state until the next one */
-  private getMarketStates([burgId, marketId]: Deal): { own: number; market: number } {
-    const burg = pack.burgs[burgId];
-    const own = burg && Markets.ofBurg(burg);
-    return {
-      own: own ? Markets.getState(own) : burg?.state || 0,
-      market: Markets.getState(Markets.get(marketId))
-    };
+  private getDealStates([burgId, marketId]: Deal): { burg: number; market: number } {
+    return { burg: pack.burgs[burgId]?.state || 0, market: Markets.getState(Markets.get(marketId)) };
   }
 }
 

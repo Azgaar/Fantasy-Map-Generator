@@ -75,7 +75,7 @@ The distributions used by the built-in goods, as a starting point for your own:
 | Wine | `biome(6) || (biome(4) && random(50) && river())` |
 | Olives | `biome(3) && shore(1, 2)` |
 | Honey | `biome(6, 8, 9)` |
-| Salt | `shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))` |
+| Salt | `shore(-1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))` |
 | Dates | `biome(1)` |
 | Horses | `biome(3) || (biome(2) && nth(4))` |
 | Ivory | `biome(1, 3, 5, 7)` |

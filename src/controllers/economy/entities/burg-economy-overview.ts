@@ -1,6 +1,6 @@
 import { DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
-import { DEAL_KINDS, Deals } from "@/model/economy/deals";
-import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "@/model/economy/demand";
+import { DEAL_KINDS } from "@/model/economy/deals";
+import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "@/model/economy/demand";
 import { EconomyDebug } from "@/model/economy/economy-debug";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
@@ -21,7 +21,11 @@ import {
   bindEconomyWiki,
   carriageDistance,
   EconomyTerms,
+  economyStyle,
   economyWikiButton,
+  getBalance,
+  getDemand,
+  getFlows,
   getTradeContext,
   money,
   mountAdjustments,
@@ -41,7 +45,6 @@ import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
-import { economyStyle } from "./economy-overview";
 
 type RowType = "LOCAL" | "BUY" | "MFG" | "SELL" | "KEEP" | "NEED";
 type HistoryRow = {
@@ -609,15 +612,8 @@ function renderStats(burg: Burg): void {
   const burgs = Production.getTurnOrder(pack.burgs.filter(b => b.i && !b.removed));
   const market = Markets.ofBurg(burg);
 
-  const targets = DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
-  const covered = DEMAND_PRIORITY.map(() => 0);
   const consumption = Prosperity.getConsumption(burg.i!);
-  consumption.forEach((units, goodId) => {
-    const coverage = Goods.get(goodId)?.demandCoverage ?? {};
-    DEMAND_PRIORITY.forEach((category, index) => {
-      covered[index] += units * (coverage[category] || 0);
-    });
-  });
+  const { covered, targets } = getDemand(burg);
   const living = Prosperity.getBurg(burg.i!);
 
   const product = Math.max(0, burg.product || 0);
@@ -661,17 +657,7 @@ const signed = (value: number) => {
 function renderBalance(burg: Burg): string {
   const market = Markets.ofBurg(burg);
   const isCenter = market?.centerBurgId === burg.i;
-  const fee = isCenter ? market.feePaid || 0 : 0;
-  const flows = { sales: 0, ingredients: 0, consumption: 0 };
-  let margin = isCenter ? market.rural?.margin || 0 : 0;
-  for (const deal of pack.deals) {
-    const [dealBurg, marketId, , kind, units, price, tax, tariff] = deal;
-    if (isCenter && marketId === market.i) margin += Deals.getMargin(deal);
-    if (dealBurg !== burg.i) continue;
-    if (kind === DEAL_KINDS.sale) flows.sales += units * price - tax - tariff;
-    else if (kind === DEAL_KINDS.input) flows.ingredients -= units * price;
-    else if (kind === DEAL_KINDS.demand) flows.consumption -= units * price; // a state order is the state's money
-  }
+  const { ingredients, sales, consumption, pollTax, license, margin } = getBalance(burg, getFlows());
   const treasury = burg.treasury || 0;
 
   const line = (label: string, tip: string, value: number, shown = value !== 0) =>
@@ -683,11 +669,11 @@ function renderBalance(burg: Burg): string {
     : EconomyTerms.treasury();
 
   return /* html */ `<h4><span>${t("Revenue and expenses")}</span><span>🟡</span></h4>
-    ${line(t("Ingredients"), t("Paid for goods bought to make others"), flows.ingredients)}
-    ${line(t("Sales"), t("Got for goods sold, carriage and sales tax taken off"), flows.sales, true)}
-    ${line(t("Consumption"), t("Paid for goods the people bought"), flows.consumption)}
-    ${line(t("Poll Tax"), t("Poll tax: {{rate}} a head", { rate: pack.states[burg.state || 0]?.economy.pollTax || 0 }), -(burg.pollTaxPaid || 0))}
-    ${line(t("Market License"), t("The license its state charges a market's center a day"), -fee)}
+    ${line(t("Ingredients"), t("Paid for goods bought to make others"), ingredients)}
+    ${line(t("Sales"), t("Got for goods sold, carriage and sales tax taken off"), sales, true)}
+    ${line(t("Consumption"), t("Paid for goods the people bought"), consumption)}
+    ${line(t("Poll Tax"), t("Poll tax: {{rate}} a head", { rate: pack.states[burg.state || 0]?.economy.pollTax || 0 }), pollTax)}
+    ${line(t("Market License"), t("The license its state charges a market's center a day"), license)}
     ${isCenter ? line(t("Market Margin"), t("Market margin: {{rate}}% of every trade at its market", { rate: rn(Markets.getMarginRate(market) * 100, 1) }), margin, true) : ""}
     <div id="${dialogId}Adjustments"></div>
     <div class="total">${line(t("Day Balance"), treasuryTip, treasury, true)}</div>`;

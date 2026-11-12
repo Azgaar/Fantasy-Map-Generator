@@ -37,20 +37,19 @@ Generation runs `Goods.generate()` early, before population ranking, which reads
 
 **The run changes only when the user asks for it.** One dialog, `openEconomyRegeneration(preset)`, ticks what to run, always in this order. Tools has one Economy button for it; each button only opens it with its own ticks:
 
-| Part          | Does                                                                                                         | Tools Economy | Goods Editor | Markets Overview |
-| ------------- | ------------------------------------------------------------------------------------------------------------ | ------------- | ------------ | ---------------- |
-| Restore goods | `Goods.restoreDefaults`, placing all deposits                                                                |               |              |                  |
-| Deposits      | `Goods.regenerate`                                                                                           |               | ✓            |                  |
-| Markets       | `Markets.regenerate`, drawing their areas                                                                    |               |              | ✓                |
-| Market areas  | `Markets.expand`, discarding hand-painted cells                                                              |               |              |                  |
-| Production    | `Production.regenerate`: gives new water deposits a market, clears deals and stock, runs the day, pays taxes | ✓             | ✓            | ✓                |
+| Part          | Does                                                                      | Tools Economy | Goods Editor | Markets Overview |
+| ------------- | ------------------------------------------------------------------------- | ------------- | ------------ | ---------------- |
+| Restore goods | `Goods.restoreDefaults`, placing all deposits                             |               |              |                  |
+| Deposits      | `Goods.regenerate`                                                        |               | ✓            |                  |
+| Markets       | `Markets.regenerate`, drawing their areas                                 |               |              | ✓                |
+| Market areas  | `Markets.expand`, discarding hand-painted cells                           |               |              |                  |
+| Production    | `Production.regenerate`: clears deals and stock, runs the day, pays taxes | ✓             | ✓            | ✓                |
 
 **Burgs** and **States** stay out of it, behind the plain confirmation: Burgs runs burgs, then Markets, then Production; States runs states, then Production, then the military, equipped from the new run.
 
 - **It always asks**, with no "Do not ask again": choosing is the point of it.
 - **Without Production**, new deposits or areas leave the run as it was; new markets or restored goods call `Production.clear()`, as the run named what is gone.
-- **Water deposits** join a market when production runs (`Markets.claimWaterDeposits`), as the flood skips water without goods. It keeps the land, so hand-painted cells survive.
-- **Removing** a good, a burg or a market prunes what names it from the run and reruns nothing, so the rest stays until the next run. A burg left without a market pays its tariffs to its own state until then; painting markets or states moves the taxes of the deals with them. The military roster outlives the map, so it keeps a removed good's id and units ignore it while the map lacks that good.
+- **Removing** a good, a burg or a market prunes what names it from the run and reruns nothing, so the rest stays until the next run. Painting markets or states moves the taxes of the deals with them. The military roster outlives the map, so it keeps a removed good's id and units ignore it while the map lacks that good.
 - **Painting deposits** by hand only changes the cells.
 - **Apply** in the good editor and the State budget dialog sets the changes, then opens the same dialog with Production ticked; cancelling leaves them for the next run. The good editor re-places a good whose distribution or deposit count changed either way.
 - **Locks** protect a state or burg, not its numbers: its production, prices and treasury are recomputed. A locked state keeps its taxes, license fee, budget, adjustments and tariffs, with rules on dropped states gone, and a locked burg its adjustments. Diplomacy is rebuilt for every state, so a locked state's tariffs may no longer match its relations.
@@ -91,7 +90,7 @@ Buyers **spread their spending** over every good covering a need, cheaper covera
 
 Burgs are scored by population (capitals, ports and crossroads score more, dear licenses less, then random noise) and walked best first. A burg becomes a market center when no other center on its landmass is within its **spacing** (`getSpacing`), and none on another landmass within half of it, so most inhabited islands get a market. Busy land and cheap licenses pack markets closer; steppes, deserts and greedy states spread them out (`MARKET_FEE_DETERRENCE`, `DENSITY_PULL`).
 
-Each market floods out from its center by cost: another state's land or another landmass costs extra, crossing into an enemy's land much more, water much more, and water cells join only when they hold a good. Each market then moves to the best-scored burg it serves and floods again (`recenter`). Every burg belongs to its cell's market (`Markets.ofBurg`). Users can add, relocate and remove markets and paint territories. Cells with no market (id 0) supply nothing, and their burgs sit out the run.
+Each market floods out from its center by cost: another state's land or another landmass costs extra, crossing into an enemy's land much more, and water much more. Water cells join too, so a market covers its sea and the deposits in it. Each market then moves to the best-scored burg it serves and floods again (`recenter`). Every burg belongs to its cell's market (`Markets.ofBurg`). Users can add, relocate and remove markets and paint territories. Cells with no market (id 0) supply nothing, and their burgs sit out the run.
 
 ### Stock and price
 
@@ -107,7 +106,7 @@ Each market expects to sell a day's demand of each good, its **depth** (`initial
 
 `Production.produce()`:
 
-1. **Rural supply** (`collectRuralProduction`). Every cell delivers to its market: population × biome output × multipliers × `RURAL_OUTPUT_FACTOR`, plus its deposit (`Output.getDeposit`: population up to `DEPOSIT_MAX_POPULATION` × `DEPOSIT_RICHNESS` × the map's cells ÷ `DEPOSIT_MAP_CELLS` × multipliers). A water cell counts its land neighbours' population.
+1. **Rural supply** (`collectRuralProduction`). Every cell delivers to its market: population × biome output × multipliers × `RURAL_OUTPUT_FACTOR`, plus its deposit (`Output.getDeposit`: population up to `DEPOSIT_MAX_POPULATION` × `DEPOSIT_RICHNESS` × the good's `depositYield` × the map's cells ÷ `DEPOSIT_MAP_CELLS` × multipliers). A water cell counts its land neighbours' population.
 2. **Opening prices and depth**, as above.
 3. **Routes.** One route search from every market center prices carriage for the run.
 4. **Burg turns.** Burgs go by √population × development, the most first (`getTurnOrder`). Round after round, each burg:
@@ -122,7 +121,7 @@ Each market expects to sell a day's demand of each good, its **depth** (`initial
 
 When rural stock is bought, rural people are paid the price less the margin (`takeStock`). Their purchases make no deals and pay no tax.
 
-A burg on a deposit gets nothing free: **working the deposit** is one more thing its workers can make, with no inputs (`getRecipes`), chosen by what it pays. A worker gets `DEPOSIT_OUTPUT` units a day from it, up to `MAX_DEPOSIT_VALUE` a day at base value, so a large burg cannot grind a gemstone mine. While the deposit lasts it replaces the good's recipes; once capped, they apply again at the usual output. A recipe taking the deposit's good is planned both with the good bought and with it worked (`getRecipeStocks`).
+A burg on a deposit gets nothing free: **working the deposit** is one more thing its workers can make, with no inputs (`getRecipes`), chosen by what it pays. A worker gets `DEPOSIT_OUTPUT` units a day from it, up to `MAX_DEPOSIT_VALUE` × `depositYield` a day at base value, so a large burg cannot grind a gemstone mine. While the deposit lasts it replaces the good's recipes; once capped, they apply again at the usual output. A recipe taking the deposit's good is planned both with the good bought and with it worked (`getRecipeStocks`).
 
 ### What a burg makes
 
@@ -134,17 +133,17 @@ Inputs are bought without a budget: a treasury can dip below zero mid-run and re
 
 ### Where a burg buys
 
-1. Its **own market**, while it stocks at least `MIN_LOCAL_STOCK`, even if another would be cheaper.
+1. Its **own market**, while it stocks at least `MIN_LOCAL_STOCK` and no embargo shuts it, even if another would be cheaper.
 2. Otherwise the market that delivers cheapest to its door (`quoteSource`), counting price, margin, sales tax, tariff and carriage. Quotes are cached per good for the burg's turn and dropped when it trades the good.
 3. With no other market stocking it, what its own market has left.
 
-A burg's own output in its own market is taken back for its people when that is cheaper than buying (`Trade.keep`): the sale and its tax shrink and a **kept** deal records the units at price 0. Markets never trade with each other.
+A burg's own output in its own market is taken back for its people when that is cheaper than buying (`Trade.keep`): the sale and its taxes shrink and a **kept** deal records the units at price 0. Markets never trade with each other.
 
 ## Carriage and routes
 
 - **The network** is `pack.cells.routes`. `TradeRoutes.search` is a Dijkstra with a land and a water state per cell; sea links are cheap (`WATER_COST`), and switching between land and water costs more away from a port.
 - **A decima** is a tenth of the map's diagonal, so carriage feels the same on any map size.
-- **Carriage per unit** = min(route cost in decimas, 10) × `good.carriage`, × `IMPORT_CARRIAGE_FACTOR` from another state's market.
+- **Carriage per unit** = min(route cost in decimas, 10) × `good.carriage`, × `IMPORT_CARRIAGE_FACTOR` from a market of another state than the burg's, other than its own.
 - **Who pays**: every deal carries the carriage between the market's center and the burg. A burg with no route to its own market pays the cap; another market with no route to the burg cannot trade with it.
 - **Traffic**: the Goods layer's Traffic group adds each deal's units to every link of the cheapest path. Summed only when drawn, never saved and never read by the model.
 
@@ -152,15 +151,15 @@ A burg's own output in its own market is taken back for its people when that is 
 
 Money exists only in `burg.treasury` and `state.economy.treasury`. Every amount is per day. A worker point works one recipe a day, making one unit before multipliers. Money is 🟡 (`formatPrice`), the **uncia** by default (`options.map.units.money.unit`); the name is words only. A market's state is its center burg's state.
 
-| Deal                                             | Sales tax goes to   | Tariff goes to                     | Paid by the burg   |
-| ------------------------------------------------ | ------------------- | ---------------------------------- | ------------------ |
-| Sale to a market of its own market's state       | the burg's state    | —                                  | out of its revenue |
-| Import: sale to a market of another state        | the burg's state    | that market's state                | out of its revenue |
-| Purchase from a market of its own market's state | the market's state  | —                                  | inside its price   |
-| Import: purchase from a market of another state  | that market's state | the state of the burg's own market | inside its price   |
-| Kept                                             | —                   | —                                  | nothing            |
-| Poll tax                                         | the burg's state    | —                                  | first, from sales  |
-| Market license, a market's center only           | the burg's state    | —                                  | from the margin    |
+| Deal                                            | Sales tax goes to   | Tariff goes to      | Paid by the burg   |
+| ----------------------------------------------- | ------------------- | ------------------- | ------------------ |
+| Sale to a market of the burg's state            | the burg's state    | —                   | out of its revenue |
+| Import: sale to a market of another state       | the burg's state    | that market's state | out of its revenue |
+| Purchase from a market of the burg's state      | the market's state  | —                   | inside its price   |
+| Import: purchase from a market of another state | that market's state | the burg's state    | inside its price   |
+| Kept                                            | —                   | —                   | nothing            |
+| Poll tax                                        | the burg's state    | —                   | first, from sales  |
+| Market license, a market's center only          | the burg's state    | —                   | from the margin    |
 
 Per unit, at the burg's door:
 
@@ -174,7 +173,7 @@ purchase: price = market price × (1 + margin rate) + tax + tariff + carriage
 
 **Rates** come from the state form (`DEFAULT_TAX_BY_FORM`), jittered per state. The license fee follows the state's sales tax roll (`States.defineMarketFee`), so the rest of generation keeps its random sequence. Neutrals never tax.
 
-**Tariffs** (`state.economy.tariffs`) are rules by state and good: any matching embargo applies, else the most specific tariff, seeded from diplomacy: a default on all states, none for allies, friends, vassals and suzerains, more for suspicion and rivals, an embargo for enemies. The importer is the state of the market the goods go to: the deal's market on a sale, the burg's own on a purchase. An embargo by either side rules that market out. Neutral lands levy nothing, and no rule reaches them.
+**Tariffs** (`state.economy.tariffs`) are rules by state and good: any matching embargo applies, else the most specific tariff, seeded from diplomacy: a default on all states, none for allies, friends, vassals and suzerains, more for suspicion and rivals, an embargo for enemies. The importer is the state the goods go to: the market's on a sale, the burg's on a purchase. Its own market is no exception: a burg in a market centered in another state imports at home. An embargo by either side rules that market out, its own included. Neutral lands levy nothing, and no rule reaches them.
 
 **Adjustments** (`burg.adjustments`, `state.economy.adjustments`) are named lines the user sets, income or costs a day besides trade. They come at dawn, count in income and are kept on regeneration.
 
@@ -214,7 +213,7 @@ purchase: price = market price × (1 + margin rate) + tax + tariff + carriage
 | `order`  | a state's purchase for an expense, delivered to the burg | the burg's own market, or a source market |
 
 - A burg's treasury change equals its adjustments and its deals, `order` deals aside, within a cent or two: sales minus purchases, plus, for a market's center, the margin on every deal at its market (`Deals.getMargin`) and on its rural people's trade (`market.rural.margin`).
-- An **import** is trade between the burg's own market and a market of another state, either way (`Taxes.isImport`). Trade with the neutral lands never is.
+- An **import** is trade between a burg and a market of another state, either way (`Taxes.isImport`). Trade with the neutral lands never is.
 - A deal's money to its market (`Deals.getMarketIncome`) only reports: the Markets overview sums it into Sales and Buys.
 - Rural purchases make no deals, so a market's stock falls by more than its deals explain.
 - With Economy checked under Debugging (`options.app.debug`), the run records each burg's steps in memory (`EconomyDebug`, never saved), and the Economy Overview shows that log.
@@ -273,23 +272,23 @@ What the economy should achieve, scored on ten maps with default options, averag
 
 | #   | KPI                      | What it means                                                                                                                  | How it is measured                                                                                                               | Target   | Tuner fee                                          | Master (v1.156.0) | Now      |
 | --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------- | ----------------- | -------- |
-| 1   | Made goods in proportion | Each made good is made about as much as its commonness says: beer and cloth by the cartload, jewelry and boats by the piece    | Share of made goods whose share of made units is within ½–2× of its commonness target ([reference](#goods-reference))            | ≥ 80%    | 0.10 per 1%, plus how far goods are off            | 50%               | 72.5% ✗  |
-| 2   | Raw goods in proportion  | Each raw good is gathered about as much as its commonness says: grain and wood by the wain, pearls and gold by the handful     | Share of raw goods whose share of raw units is within ½–2× of its commonness target ([reference](#goods-reference))              | ≥ 60%    | 0.02 per 1%, plus how far goods are off            | 39%               | 58% ✗    |
+| 1   | Made goods in proportion | Each made good is made about as much as its commonness says: beer and cloth by the cartload, jewelry and boats by the piece    | Share of made goods whose share of made units is within ½–2× of its commonness target ([reference](#goods-reference))            | ≥ 80%    | 0.10 per 1%, plus how far goods are off            | 50%               | 66% ✗    |
+| 2   | Raw goods in proportion  | Each raw good is gathered about as much as its commonness says: grain and wood by the wain, pearls and gold by the handful     | Share of raw goods whose share of raw units is within ½–2× of its commonness target ([reference](#goods-reference))              | ≥ 60%    | 0.02 per 1%, plus how far goods are off            | 39%               | 57% ✗    |
 | 3   | Prices make sense        | A good costs what a reader expects: grain and wood cheap, tools dear, jewelry and boats the dearest                            | Typical deviation of goods' values from their reference values: the geometric mean of each ratio ([reference](#goods-reference)) | 0%       | 0.1 per doubling a value lies from its reference   | 0%                | 0% ✓     |
 | 4   | Coverage makes sense     | A good meets the needs a reader expects, as much as expected: grain feeds, wood builds and warms, incense is a luxury          | Typical deviation of `demandCoverage` entries from their reference ([reference](#goods-reference))                               | 0%       | 0.05 per doubling an entry lies from its reference | 0%                | 0% ✓     |
-| 5   | All goods produced       | Most goods appear on a typical map. A map misses some: one with no hot climate has no spices, a backward one no artillery      | Share of the catalogue, raw and made, produced on a map                                                                          | ≥ 90%    | 0.10 per 1%                                        | 93.4%             | 93.9% ✓  |
-| 6   | Burgs in profit          | Burgs earn more than they spend                                                                                                | Share of burgs ending the day with a positive treasury                                                                           | ≥ 70%    | 0.02 per 1%                                        | 96.5%             | 75% ✓    |
+| 5   | All goods produced       | Most goods appear on a typical map. A map misses some: one with no hot climate has no spices, a backward one no artillery      | Share of the catalogue, raw and made, produced on a map                                                                          | ≥ 90%    | 0.10 per 1%                                        | 93.4%             | 93.8% ✓  |
+| 6   | Burgs in profit          | Burgs earn more than they spend                                                                                                | Share of burgs ending the day with a positive treasury                                                                           | ≥ 70%    | 0.02 per 1%                                        | 96.5%             | 77% ✓    |
 | 7   | Fast                     | Regenerating the economy feels instant                                                                                         | Economy run on a default map, best of five runs per map                                                                          | ≤ 200 ms | —                                                  | 121 ms            | 149 ms ✓ |
-| 8   | Rich and poor regions    | Some regions' towns are rich and some poor                                                                                     | A market's wealth is the average wealth of the burgs in its area. The richest tenth of markets ÷ the poorest tenth               | ≥ 5×     | 0.5 × log of the shortfall                         | 2.9×              | 6.4× ✓   |
-| 9   | Output apart from people | A region's output is not just its headcount: a market with 10% of the people may hold 30% of the output, or 5%                 | Share of markets whose share of the world's output is more than 50% above or below their share of its people                     | ≥ 30%    | 0.01 per 1%                                        | 2%                | 23% ✗    |
+| 8   | Rich and poor regions    | Some regions' towns are rich and some poor                                                                                     | A market's wealth is the average wealth of the burgs in its area. The richest tenth of markets ÷ the poorest tenth               | ≥ 5×     | 0.5 × log of the shortfall                         | 2.9×              | 6.5× ✓   |
+| 9   | Output apart from people | A region's output is not just its headcount: a market with 10% of the people may hold 30% of the output, or 5%                 | Share of markets whose share of the world's output is more than 50% above or below their share of its people                     | ≥ 30%    | 0.01 per 1%                                        | 2%                | 31% ✓    |
 | 10  | Specialization           | Markets differ in what they offer: 0% would be every market making the world's average mix, 100% no two markets sharing a good | The share of a typical market's output, by value, that would have to change to match the world's mix                             | ≥ 60%    | 0.02 per 1%                                        | 47%               | 70% ✓    |
-| 11  | States' cut              | Taxes take a moderate share of what the economy makes                                                                          | The world's state taxes ÷ its product, as the state accounts sum them                                                            | 10–40%   | 0.01 per 1%                                        | 64%               | 29% ✓    |
-| 12  | States benefit           | A state whose people are wealthier collects more per head: a developed economy pays its state                                  | Rank correlation across states between wealth and taxes per person (1: the wealthiest states always collect most; 0: no link)    | ≥ 0.2    | 0.01 per 0.01                                      | 0.19              | 0.26 ✓   |
-| 13  | Wealth spread            | Burgs differ in wealth, some far richer per person than others, without a few owning everything                                | Gini coefficient of burg wealth across burgs (0: all equal; 1: one burg has it all)                                              | 0.4–0.6  | 0.03 per 0.01                                      | 0.28              | 0.46 ✓   |
-| 14  | Treasury concentration   | Money is not hoarded by a handful of burgs                                                                                     | Share of all burg treasuries held by the tenth of burgs with the largest ones                                                    | ≤ 70%    | 0.01 per 1%                                        | 30%               | 76% ✗    |
+| 11  | States' cut              | Taxes take a moderate share of what the economy makes                                                                          | The world's state taxes ÷ its product, as the state accounts sum them                                                            | 10–40%   | 0.01 per 1%                                        | 64%               | 28% ✓    |
+| 12  | States benefit           | A state whose people are wealthier collects more per head: a developed economy pays its state                                  | Rank correlation across states between wealth and taxes per person (1: the wealthiest states always collect most; 0: no link)    | ≥ 0.2    | 0.01 per 0.01                                      | 0.19              | 0.35 ✓   |
+| 13  | Wealth spread            | Burgs differ in wealth, some far richer per person than others, without a few owning everything                                | Gini coefficient of burg wealth across burgs (0: all equal; 1: one burg has it all)                                              | 0.4–0.6  | 0.03 per 0.01                                      | 0.28              | 0.47 ✓   |
+| 14  | Treasury concentration   | Money is not hoarded by a handful of burgs                                                                                     | Share of all burg treasuries held by the tenth of burgs with the largest ones                                                    | ≤ 70%    | 0.01 per 1%                                        | 30%               | 77% ✗    |
 | 15  | Employment               | Workers find something worth making; they stay idle only when nothing pays                                                     | Share of workers who found work                                                                                                  | ≥ 90%    | —                                                  | 100%              | 100% ✓   |
-| 16  | Goods sold               | What is made finds a buyer the same day rather than piling up in a market                                                      | Share of made goods, by value, bought the same day by burgs, rural people or states                                              | ≥ 50%    | 0.02 per 1%                                        | 29%               | 43% ✗    |
-| 17  | Prosperity               | Townspeople live comfortably on average: some burgs thrive, others scrape by                                                   | Average prosperity of burgs, weighted by their people                                                                            | 40–60%   | 0.10 per 1%                                        | —                 | 46% ✓    |
+| 16  | Goods sold               | What is made finds a buyer the same day rather than piling up in a market                                                      | Share of made goods, by value, bought the same day by burgs, rural people or states                                              | ≥ 50%    | 0.02 per 1%                                        | 29%               | 42% ✗    |
+| 17  | Prosperity               | Townspeople live comfortably on average: some burgs thrive, others scrape by                                                   | Average prosperity of burgs, weighted by their people                                                                            | 40–60%   | 0.10 per 1%                                        | —                 | 47% ✓    |
 
 ### Goods reference
 
@@ -355,7 +354,7 @@ The catalogue as it should be, the source the tuner (`scripts/economy-tuner/cata
 | Sails          | Mfg  | 3          | 11    |      |           |              |          |        |
 | Boats          | Mfg  | 1          | 65    |      |           |              | 1        |        |
 | Boots          | Mfg  | 8          | 10    |      | 1         |              |          |        |
-| Harnesses      | Mfg  | 5          | 9     |      |           |              | 0.85     |        |
+| Tack           | Mfg  | 5          | 9     |      |           |              | 0.85     |        |
 | Barrels        | Mfg  | 7          | 12    |      |           |              |          |        |
 | Bronze         | Mfg  | 4          | 15    |      |           |              |          |        |
 | Tools          | Mfg  | 8          | 16    |      | 0.6       |              |          |        |

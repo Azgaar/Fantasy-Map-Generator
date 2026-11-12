@@ -1,4 +1,4 @@
-import { greatest, quadtree, sum } from "d3";
+import { greatest, least, quadtree, sum } from "d3";
 import { Accounts } from "@/model/economy/accounts";
 import { Goods } from "@/model/economy/goods-generator";
 import { Pack } from "@/model/graph/pack-generator";
@@ -54,166 +54,259 @@ export const UPKEEP_COST = 20; // military spending a day that keeps troops of p
 const MIN_UPKEEP = 0.05; // unpaid troops still fight, if barely
 const EQUIPMENT = 0.365; // population points of troops equipped by a unit a day a state consumes of their goods
 const FRONT_DEPTH = 2; // lines of cells behind the border a state at war deploys its regiments to
+const REACH = 150; // how far a platoon joins a regiment of another landmass, map units
 const REGIMENT_SIZE = 3; // regiment box height at the default style, map units; layout ignores the style
+// what the unit's forces are raised by: a change of any calls for raising them anew
+const RAISING = ["rural", "urban", "type", "separate", "biomes", "states", "cultures", "religions", "goods"] as const;
+
+const STATE_MODIFIER = {
+  melee: {
+    Nomadic: 0.5,
+    Highland: 1.2,
+    Lake: 1,
+    Naval: 0.7,
+    Hunting: 1.2,
+    River: 1.1
+  },
+  ranged: {
+    Nomadic: 0.9,
+    Highland: 1.3,
+    Lake: 1,
+    Naval: 0.8,
+    Hunting: 2,
+    River: 0.8
+  },
+  mounted: {
+    Nomadic: 2.3,
+    Highland: 0.6,
+    Lake: 0.7,
+    Naval: 0.3,
+    Hunting: 0.7,
+    River: 0.8
+  },
+  machinery: {
+    Nomadic: 0.8,
+    Highland: 1.4,
+    Lake: 1.1,
+    Naval: 1.4,
+    Hunting: 0.4,
+    River: 1.1
+  },
+  naval: {
+    Nomadic: 0.5,
+    Highland: 0.5,
+    Lake: 1.2,
+    Naval: 1.8,
+    Hunting: 0.7,
+    River: 1.2
+  },
+  armored: {
+    Nomadic: 1,
+    Highland: 0.5,
+    Lake: 1,
+    Naval: 1,
+    Hunting: 0.7,
+    River: 1.1
+  },
+  aviation: {
+    Nomadic: 0.5,
+    Highland: 0.5,
+    Lake: 1.2,
+    Naval: 1.2,
+    Hunting: 0.6,
+    River: 1.2
+  },
+  magical: {
+    Nomadic: 1,
+    Highland: 2,
+    Lake: 1,
+    Naval: 1,
+    Hunting: 1,
+    River: 1
+  }
+};
+
+const CELL_MODIFIER = {
+  nomadic: {
+    melee: 0.2,
+    ranged: 0.5,
+    mounted: 3,
+    machinery: 0.4,
+    naval: 0.3,
+    armored: 1.6,
+    aviation: 1,
+    magical: 0.5
+  },
+  wetland: {
+    melee: 0.8,
+    ranged: 2,
+    mounted: 0.3,
+    machinery: 1.2,
+    naval: 1.0,
+    armored: 0.2,
+    aviation: 0.5,
+    magical: 0.5
+  },
+  highland: {
+    melee: 1.2,
+    ranged: 1.6,
+    mounted: 0.3,
+    machinery: 3,
+    naval: 1.0,
+    armored: 0.8,
+    aviation: 0.3,
+    magical: 2
+  }
+};
+
+const BURG_MODIFIER = {
+  nomadic: {
+    melee: 0.3,
+    ranged: 0.8,
+    mounted: 3,
+    machinery: 0.4,
+    naval: 1.0,
+    armored: 1.6,
+    aviation: 1,
+    magical: 0.5
+  },
+  wetland: {
+    melee: 1,
+    ranged: 1.6,
+    mounted: 0.2,
+    machinery: 1.2,
+    naval: 1.0,
+    armored: 0.2,
+    aviation: 0.5,
+    magical: 0.5
+  },
+  highland: {
+    melee: 1.2,
+    ranged: 2,
+    mounted: 0.3,
+    machinery: 3,
+    naval: 1.0,
+    armored: 0.8,
+    aviation: 0.3,
+    magical: 2
+  }
+};
 
 class MilitaryModule {
-  regenerate(): void {
-    this.generate();
+  /** Raise every state's forces for a new map: the alerts follow the political situation */
+  generate(): void {
+    const states = this.livingStates();
+    for (const state of states) state.alert = States.defineAlert(state);
+    this.raise(states);
   }
 
-  generate() {
+  /** Raise forces anew at the alerts set: of the states named, or of every state */
+  regenerate(stateIds?: number[]): void {
+    const states = this.livingStates(stateIds);
+    for (const state of states) state.alert ??= States.defineAlert(state);
+    this.raise(states);
+  }
+
+  /** Raise the named units anew, and the levies their equipment leaves, in the states named or in all. Regiments keep all else: a platoon joins the nearest regiment of its landmass, those with none form new ones */
+  raiseUnits(names: string[], stateIds?: number[]): void {
+    const { cells } = pack;
+    const roster = options.map.military.units;
+    const raised = new Set(names);
+    const levy = roster.find(unit => unit.type === "levies");
+    if (levy && pack.deals?.length) raised.add(levy.name);
+    const separate = new Set(roster.filter(unit => unit.separate).map(unit => unit.name));
+    const featureOf = (cell: number, naval: number) => cells.f[naval && cells.h[cell] >= 20 ? cells.haven[cell] : cell];
+
+    const states = this.livingStates(stateIds);
+    const drafts = this.draft(states);
+    for (const state of states) {
+      this.recompose(state, military => {
+        const held = new Map(military.map(regiment => [regiment, new Set(Object.keys(regiment.u))]));
+        for (const regiment of military) for (const name of raised) delete regiment.u[name];
+        const troops = (regiment: Regiment) => sum(Object.values(regiment.u));
+        const platoons = drafts.get(state.i)!.filter(platoon => raised.has(platoon.u));
+        const stray: Platoon[] = [];
+        // separate units first, to their own regiments
+        for (const platoon of platoons.sort((a, b) => b.s - a.s)) {
+          const feature = featureOf(platoon.cell, platoon.n);
+          const distance = (regiment: Regiment) => (regiment.bx - platoon.x) ** 2 + (regiment.by - platoon.y) ** 2;
+          // on its landmass, or across the water as near as platoons merge
+          const fits = (regiment: Regiment) =>
+            regiment.n === platoon.n &&
+            (featureOf(regiment.cell, regiment.n) === feature || distance(regiment) < REACH ** 2) &&
+            Object.keys(regiment.u).every(name => name === platoon.u || (!platoon.s && !separate.has(name)));
+          const fitting = military.filter(fits);
+          const veterans = fitting.filter(regiment => held.get(regiment)!.has(platoon.u)); // had the unit before
+          // regiments based at one point share its platoons
+          const home = least(
+            veterans.length ? veterans : fitting,
+            (a, b) => distance(a) - distance(b) || troops(a) - troops(b)
+          );
+          if (home) home.u[platoon.u] = rn((home.u[platoon.u] || 0) + platoon.a, 3);
+          else stray.push(platoon);
+        }
+        military.push(...this.form(stray, state, military));
+      });
+    }
+  }
+
+  /** Replace the roster; `origins` names the unit each new one was, null for an added one. Regiments follow the renames and lose the removed units' troops. Returns the units whose forces are raised differently now */
+  setRoster(units: MilitaryUnit[], origins: (string | null)[]): string[] {
+    const previous = options.map.military.units;
+    const renamed = new Map<string, string>(); // by the old name
+    const stale: string[] = [];
+    units.forEach((unit, index) => {
+      const old = previous.find(({ name }) => name === origins[index]);
+      if (old) renamed.set(old.name, unit.name);
+      const changed = old
+        ? RAISING.some(key => JSON.stringify(old[key]) !== JSON.stringify(unit[key]))
+        : +unit.rural > 0 || +unit.urban > 0;
+      if (changed) stale.push(unit.name);
+    });
+    const removed = new Set(previous.map(({ name }) => name).filter(name => !renamed.has(name)));
+
+    options.map.military.units = units;
+    for (const state of pack.states ?? []) {
+      if (!state.military?.length) continue;
+      this.recompose(
+        state,
+        military => {
+          for (const regiment of military) {
+            const troops = Object.entries(regiment.u).filter(([name]) => !removed.has(name));
+            regiment.u = Object.fromEntries(troops.map(([name, points]) => [renamed.get(name) ?? name, points]));
+          }
+        },
+        previous
+      );
+    }
+    return stale;
+  }
+
+  private raise(states: State[]) {
+    const drafts = this.draft(states);
+    for (const state of states) state.military = this.form(drafts.get(state.i)!, state);
+    this.deployToFronts(states);
+  }
+
+  /** The platoons each state's cells and burgs raise, by state: those it cannot equip turned to levies */
+  private draft(valid: State[]): Map<number, Platoon[]> {
     const { cells, states } = pack;
     const { p } = cells;
-    const valid = states.filter(s => s.i && !s.removed); // valid states
-
-    const stateModifier = {
-      melee: {
-        Nomadic: 0.5,
-        Highland: 1.2,
-        Lake: 1,
-        Naval: 0.7,
-        Hunting: 1.2,
-        River: 1.1
-      },
-      ranged: {
-        Nomadic: 0.9,
-        Highland: 1.3,
-        Lake: 1,
-        Naval: 0.8,
-        Hunting: 2,
-        River: 0.8
-      },
-      mounted: {
-        Nomadic: 2.3,
-        Highland: 0.6,
-        Lake: 0.7,
-        Naval: 0.3,
-        Hunting: 0.7,
-        River: 0.8
-      },
-      machinery: {
-        Nomadic: 0.8,
-        Highland: 1.4,
-        Lake: 1.1,
-        Naval: 1.4,
-        Hunting: 0.4,
-        River: 1.1
-      },
-      naval: {
-        Nomadic: 0.5,
-        Highland: 0.5,
-        Lake: 1.2,
-        Naval: 1.8,
-        Hunting: 0.7,
-        River: 1.2
-      },
-      armored: {
-        Nomadic: 1,
-        Highland: 0.5,
-        Lake: 1,
-        Naval: 1,
-        Hunting: 0.7,
-        River: 1.1
-      },
-      aviation: {
-        Nomadic: 0.5,
-        Highland: 0.5,
-        Lake: 1.2,
-        Naval: 1.2,
-        Hunting: 0.6,
-        River: 1.2
-      },
-      magical: {
-        Nomadic: 1,
-        Highland: 2,
-        Lake: 1,
-        Naval: 1,
-        Hunting: 1,
-        River: 1
-      }
-    };
-
-    const cellTypeModifier = {
-      nomadic: {
-        melee: 0.2,
-        ranged: 0.5,
-        mounted: 3,
-        machinery: 0.4,
-        naval: 0.3,
-        armored: 1.6,
-        aviation: 1,
-        magical: 0.5
-      },
-      wetland: {
-        melee: 0.8,
-        ranged: 2,
-        mounted: 0.3,
-        machinery: 1.2,
-        naval: 1.0,
-        armored: 0.2,
-        aviation: 0.5,
-        magical: 0.5
-      },
-      highland: {
-        melee: 1.2,
-        ranged: 1.6,
-        mounted: 0.3,
-        machinery: 3,
-        naval: 1.0,
-        armored: 0.8,
-        aviation: 0.3,
-        magical: 2
-      }
-    };
-
-    const burgTypeModifier = {
-      nomadic: {
-        melee: 0.3,
-        ranged: 0.8,
-        mounted: 3,
-        machinery: 0.4,
-        naval: 1.0,
-        armored: 1.6,
-        aviation: 1,
-        magical: 0.5
-      },
-      wetland: {
-        melee: 1,
-        ranged: 1.6,
-        mounted: 0.2,
-        machinery: 1.2,
-        naval: 1.0,
-        armored: 0.2,
-        aviation: 0.5,
-        magical: 0.5
-      },
-      highland: {
-        melee: 1.2,
-        ranged: 2,
-        mounted: 0.3,
-        machinery: 3,
-        naval: 1.0,
-        armored: 0.8,
-        aviation: 0.3,
-        magical: 2
-      }
-    };
 
     // per state: the unit modifiers and the platoons that merge into its regiments
     const drafts = new Map<number, { modifiers: Record<string, number>; platoons: Platoon[] }>();
     valid.forEach(s => {
       const draft = { modifiers: {} as Record<string, number>, platoons: [] as Platoon[] };
       drafts.set(s.i, draft);
-      s.alert = States.defineAlert(s);
       // apply overall state modifiers for unit types based on state features
       for (const unit of options.map.military.units) {
         let modifier =
-          stateModifier[unit.type as keyof typeof stateModifier]?.[
-            s.type as keyof (typeof stateModifier)[keyof typeof stateModifier]
+          STATE_MODIFIER[unit.type as keyof typeof STATE_MODIFIER]?.[
+            s.type as keyof (typeof STATE_MODIFIER)[keyof typeof STATE_MODIFIER]
           ] || 1;
         if (unit.type === "mounted" && s.formName?.includes("Horde")) modifier *= 2;
         else if (unit.type === "naval" && s.form === "Republic") modifier *= 1.2;
-        draft.modifiers[unit.name] = modifier * s.alert;
+        draft.modifiers[unit.name] = modifier * (s.alert ?? 1);
       }
     });
 
@@ -262,8 +355,8 @@ class MilitaryModule {
         const cellTypeMod =
           type === "generic"
             ? 1
-            : (cellTypeModifier[type as keyof typeof cellTypeModifier][
-                unit.type as keyof (typeof cellTypeModifier)[keyof typeof cellTypeModifier]
+            : (CELL_MODIFIER[type as keyof typeof CELL_MODIFIER][
+                unit.type as keyof (typeof CELL_MODIFIER)[keyof typeof CELL_MODIFIER]
               ] ?? 1); // cell specific modifier
         const army = modifier * perc * cellTypeMod; // rural cell army
         const total = rn(army * draft.modifiers[unit.name], 3); // total troops
@@ -321,8 +414,8 @@ class MilitaryModule {
         const mod =
           type === "generic"
             ? 1
-            : (burgTypeModifier[type as keyof typeof burgTypeModifier][
-                unit.type as keyof (typeof burgTypeModifier)[keyof typeof burgTypeModifier]
+            : (BURG_MODIFIER[type as keyof typeof BURG_MODIFIER][
+                unit.type as keyof (typeof BURG_MODIFIER)[keyof typeof BURG_MODIFIER]
               ] ?? 1); // cell specific modifier
         const army = m * perc * mod; // urban cell army
         const total = rn(army * draft.modifiers[unit.name], 3); // total troops
@@ -377,9 +470,15 @@ class MilitaryModule {
       draft.platoons = draft.platoons.filter(platoon => platoon.a).concat([...raised.values()]);
     }
 
+    return new Map([...drafts].map(([stateId, draft]) => [stateId, draft.platoons]));
+  }
+
+  /** Merges a state's platoons into regiments, numbered and named after the `existing` ones */
+  private form(platoons: Platoon[], s: State, existing: Regiment[] = []): Regiment[] {
     const expected = 3; // expected regiment size
+    const first = Math.max(-1, ...existing.map(({ i }) => i)) + 1;
     const mergeable = (n0: { s: number; u: string }, n1: { s: number; u: string }) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
-    const createRegiments = (nodes: Platoon[], s: State): Regiment[] => {
+    const createRegiments = (nodes: Platoon[]): Regiment[] => {
       if (!nodes.length) return [];
       nodes.sort((a, b) => a.a - b.a); // form regiments starting from cells with fewest troops
       const tree = quadtree(
@@ -429,7 +528,7 @@ class MilitaryModule {
             u[n.u] = rn((u[n.u] ?? 0) + n.a, 3);
           });
           return {
-            i,
+            i: first + i,
             a: r.t,
             cell: r.cell,
             x: r.x,
@@ -447,7 +546,7 @@ class MilitaryModule {
 
       // generate name for regiments
       regiments.forEach((r: Omit<Regiment, "s" | "t" | "type">) => {
-        r.name = this.getName(r as Regiment, regiments as Regiment[]);
+        r.name = this.getName(r as Regiment, [...existing, ...(regiments as Regiment[])]);
         r.icon = this.getEmblem(r as Regiment);
         this.generateNote(r as Regiment, s);
       });
@@ -455,11 +554,19 @@ class MilitaryModule {
       return regiments as Regiment[];
     };
 
-    // get regiments for each state
-    valid.forEach(s => {
-      s.military = createRegiments(drafts.get(s.i)!.platoons, s);
-    });
-    this.deployToFronts(valid);
+    return createRegiments(platoons);
+  }
+
+  /** Runs a change of a state's regiments' troops: those on their default emblem follow it, those it empties are disbanded */
+  private recompose(state: State, change: (military: Regiment[]) => void, roster = options.map.military.units) {
+    state.military ??= [];
+    const military = state.military;
+    const emblemed = military.filter(regiment => regiment.icon === this.getEmblem(regiment, roster));
+    const manned = military.filter(regiment => regiment.a);
+    change(military);
+    for (const regiment of military) regiment.a = sum(Object.values(regiment.u));
+    state.military = military.filter(regiment => regiment.a || !manned.includes(regiment));
+    for (const regiment of emblemed) regiment.icon = this.getEmblem(regiment);
   }
 
   /** Moves regiments of states at war, largest first, to the foremost line's nearest free cell */
@@ -502,6 +609,8 @@ class MilitaryModule {
     const placed = quadtree<{ x: number; y: number }>()
       .x(d => d.x)
       .y(d => d.y);
+    const raised = new Set(states);
+    for (const state of this.livingStates()) if (!raised.has(state)) placed.addAll(state.military ?? []);
     const blocked = (x: number, y: number) =>
       findAllInQuadtree(x, y, width, placed).some(
         o => Math.abs(o.x - x) < width && Math.abs(o.y - y) < REGIMENT_SIZE * 3
@@ -821,6 +930,10 @@ class MilitaryModule {
     this.remove(stateId, regimentId);
   }
 
+  private livingStates(only?: number[]): State[] {
+    return pack.states.filter(state => state.i && !state.removed && (!only || only.includes(state.i)));
+  }
+
   private living(stateId: number, regimentId: number): Regiment {
     const state = pack.states[stateId];
     const regiment = state && !state.removed ? state.military?.find(({ i }) => i === regimentId) : undefined;
@@ -829,7 +942,7 @@ class MilitaryModule {
   }
 
   // get default regiment emblem
-  getEmblem(r: Regiment) {
+  getEmblem(r: Regiment, roster = options.map.military.units) {
     if (!r.n && !Object.values(r.u).length) return Icons.glyph("🔰"); // "Newbie" regiment without troops
     if (
       !r.n &&
@@ -838,7 +951,7 @@ class MilitaryModule {
       pack.burgs[pack.cells.burg[r.cell]].capital
     )
       return Icons.glyph("👑"); // "Royal" regiment based in capital
-    const units = options.map.military.units.filter(u => r.u[u.name]);
+    const units = roster.filter(u => r.u[u.name]);
     const unit = greatest(units, u => r.u[u.name] * getUnitPower(u)); // unit with the most power in the regiment
     return unit ? unit.icon : Icons.glyph("⚔️");
   }

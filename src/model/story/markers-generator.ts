@@ -803,8 +803,7 @@ class MarkersModule {
       traded[burgId] ??= new Set();
       traded[burgId].add(goodId);
       if (!tariff) continue;
-      const own = Markets.getState(Markets.ofBurg(burgs[burgId]));
-      const key = this.getStatePair(own, Markets.getState(Markets.get(marketId)));
+      const key = this.getStatePair(burgs[burgId]?.state || 0, Markets.getState(Markets.get(marketId)));
       tariffs.set(key, (tariffs.get(key) || 0) + tariff);
     }
     for (const { i, rural } of markets ?? []) {

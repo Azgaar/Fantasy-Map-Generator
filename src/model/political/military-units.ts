@@ -100,7 +100,7 @@ export function getDefaultMilitaryUnits(): MilitaryUnit[] {
       morale: 1,
       type: "mounted",
       separate: 0,
-      goods: ["Horses", "Camels", "Harnesses"]
+      goods: ["Horses", "Camels", "Tack"]
     },
     {
       icon: "💣",

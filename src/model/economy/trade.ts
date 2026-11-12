@@ -76,13 +76,14 @@ type GoodBook = {
 type RunIndex = { books: GoodBook[]; positions: number[] }; // books by good id, positions by market id
 
 type TradeCosts = { taxPerUnit: number; tariffPerUnit: number };
-type TradePair = {
-  taxRate: number;
-  exporterStateId: number;
-  importerStateId: number;
-  tariffs: TariffRate[]; // by good
-};
-export type TradeTerms = (source: Market, market: Market, good: Good, price: number) => TradeCosts | null;
+type TradePair = { taxRate: number; tariffs: TariffRate[] }; // tariffs by good
+/** Per-unit costs on goods from the exporter state to the importer, by burg and market states; null if embargoed */
+export type TradeTerms = (
+  exporterStateId: number,
+  importerStateId: number,
+  good: Good,
+  price: number
+) => TradeCosts | null;
 export type SourceQuote = { source: Market; stock: number; buyPrice: number; carriage: number };
 export type Outlet = { market: Market; price: number; carriage: number };
 /** A market as a source of a good for a burg, at the burg's door, or why it cannot sell it there */
@@ -94,7 +95,7 @@ export type SourceOption = {
   tariff: number;
   carriage: number;
   buyPrice: number;
-  isImport: boolean; // from another state than the burg's market: a tariff applies, even a zero one
+  isImport: boolean; // from another state than the burg's: a tariff applies, even a zero one
   excluded?: "stock" | "route" | "embargo";
 };
 
@@ -421,7 +422,6 @@ export class TradeModule {
   /** The best market to sell at, after carriage and the importer's tariff; none under an embargo */
   getOutlet(burg: Burg, good: Good, terms = this.getTradeTerms()): Outlet | null {
     const { atDecimas, atFactors, ownAt, nearestOther } = this.getCarriage(burg);
-    const own = Markets.ofBurg(burg);
     const { rows, sellPrices, bySell } = this.getBook(good);
     const markets = pack.markets;
     const leastCarriage = nearestOther * good.carriage;
@@ -442,7 +442,7 @@ export class TradeModule {
       const beforeTariff = sellPrices[at] - carriage;
       if (best && beforeTariff < bestPrice) continue; // a tariff only lowers it
       const market = markets[at];
-      const tariff = this.getSaleTariff(own, market, good, rows[at].price, terms);
+      const tariff = this.getSaleTariff(burg, market, good, rows[at].price, terms);
       if (tariff === null) continue;
       const price = beforeTariff - tariff;
       if (!best || price > bestPrice || (price === bestPrice && at < bestAt))
@@ -451,42 +451,54 @@ export class TradeModule {
     return best && { market: best, price: bestPrice, carriage: bestCarriage };
   }
 
-  /** Per-unit tariff another state's market levies on goods from the burg's; null under an embargo */
-  private getSaleTariff(own: Market | undefined, market: Market, good: Good, price: number, terms: TradeTerms) {
-    if (!own || own === market) return 0;
-    return terms(own, market, good, price)?.tariffPerUnit ?? null;
+  /** Per-unit tariff a market of another state levies on goods from the burg's; null under an embargo */
+  private getSaleTariff(burg: Burg, market: Market, good: Good, price: number, terms: TradeTerms) {
+    return terms(burg.state || 0, Markets.getState(market), good, price)?.tariffPerUnit ?? null;
   }
 
-  /** Prices at the burg's door: buying adds sales tax and carriage, selling pays carriage */
+  /** Costs of the burg buying from the market; null under an embargo */
+  private getPurchaseCosts(market: Market, burg: Burg, good: Good, price: number, terms: TradeTerms) {
+    return terms(Markets.getState(market), burg.state || 0, good, price);
+  }
+
+  /** Prices at the burg's door: buying adds taxes and carriage, selling pays tariff and carriage; 0 under an embargo */
   quoteMarket(
     market: Market,
     goodId: number,
-    burg: Burg
+    burg: Burg,
+    terms = this.getTradeTerms()
   ): { stock: number; buyPrice: number; sellPrice: number; carriage: number } {
     const good = Goods.get(goodId);
     if (!good) return { stock: 0, buyPrice: 0, sellPrice: 0, carriage: 0 };
     const row = this.getMarketGood(market, good);
     const carriage = this.getTransport(market, burg, good);
+    const costs = this.getPurchaseCosts(market, burg, good, row.price, terms);
+    if (!costs) return { stock: 0, buyPrice: 0, sellPrice: 0, carriage };
     return {
       stock: row.stock,
       buyPrice: this.priceAtDoor(
         this.customerBuyPrice(market, row.price),
-        this.getSalesTaxPerUnit(market, row.price),
-        0,
+        costs.taxPerUnit,
+        costs.tariffPerUnit,
         carriage
       ),
-      sellPrice: rn(Math.max(0, this.customerSellPrice(market, row.price) - carriage), 2),
+      sellPrice: this.quoteSale(market, good, burg, terms).sellPrice,
       carriage
     };
   }
 
-  /** What a unit fetches at the burg's door and the carriage in it */
-  quoteSale(market: Market, good: Good, burg: Burg): { sellPrice: number; carriage: number } {
+  /** What a unit fetches at the burg's door and the carriage in it; nothing under an embargo */
+  quoteSale(
+    market: Market,
+    good: Good,
+    burg: Burg,
+    terms = this.getTradeTerms()
+  ): { sellPrice: number; carriage: number } {
     const carriage = this.getTransport(market, burg, good);
-    const sellPrice = rn(
-      Math.max(0, this.customerSellPrice(market, this.getMarketGood(market, good).price) - carriage),
-      2
-    );
+    const price = this.getMarketGood(market, good).price;
+    const tariff = this.getSaleTariff(burg, market, good, price, terms);
+    if (tariff === null) return { sellPrice: 0, carriage };
+    const sellPrice = rn(Math.max(0, this.customerSellPrice(market, price) - tariff - carriage), 2);
     return { sellPrice, carriage };
   }
 
@@ -587,14 +599,14 @@ export class TradeModule {
     const atDecimas = new Float64Array(markets.length);
     const atFactors = new Float64Array(markets.length);
     const own = Markets.ofBurg(burg);
-    const ownState = Markets.getState(own);
+    const state = burg.state || 0;
     let ownAt = -1;
     let nearestOther = Infinity;
     for (let at = 0; at < markets.length; at++) {
       const market = markets[at];
       const distance = this.getDecimas(market, burg);
       const factor =
-        own && own !== market && Taxes.isForeign(Markets.getState(market), ownState) ? IMPORT_CARRIAGE_FACTOR : 1;
+        own && own !== market && Taxes.isForeign(Markets.getState(market), state) ? IMPORT_CARRIAGE_FACTOR : 1;
       decimas[market.i] = atDecimas[at] = distance;
       factors[market.i] = atFactors[at] = factor;
       if (market === own) ownAt = at;
@@ -611,7 +623,7 @@ export class TradeModule {
 
   private isImportFor(market: Market, burg: Burg): boolean {
     const own = Markets.ofBurg(burg);
-    return Boolean(own && own !== market && Taxes.isForeign(Markets.getState(market), Markets.getState(own)));
+    return Boolean(own && own !== market && Taxes.isForeign(Markets.getState(market), burg.state || 0));
   }
 
   /** Buys from a market, its own unless a source is given, paying margin, taxes and carriage */
@@ -639,7 +651,7 @@ export class TradeModule {
     const carriage = this.getTransport(source, burg, good);
     if (carriage === Infinity) return null;
     const quote = (lot: number) => {
-      const costs = terms(source, market, good, lot);
+      const costs = this.getPurchaseCosts(source, burg, good, lot, terms);
       return (
         costs && {
           costs,
@@ -674,15 +686,14 @@ export class TradeModule {
     return trade;
   }
 
-  /** Own market while it stocks enough, else `cheapest`, else what its own has left; null if none */
-  getSupplier(own: Market, good: Good, cheapest: () => Market | undefined): Market | null {
-    const local = own.goods[good.i]?.stock || 0;
+  /** Own market while it stocks enough, else `cheapest`, else what its own has left; null if none or embargoed */
+  getSupplier(burg: Burg, good: Good, cheapest: () => Market | undefined, terms: TradeTerms): Market | null {
+    const own = Markets.ofBurg(burg);
+    if (!own) return null;
+    const open = this.getPurchaseCosts(own, burg, good, 0, terms) !== null;
+    const local = open ? own.goods[good.i]?.stock || 0 : 0;
     if (local >= MIN_LOCAL_STOCK) return own;
     return cheapest() ?? (local > 0.01 ? own : null);
-  }
-
-  private getSalesTaxPerUnit(market: Market, price: number): number {
-    return Taxes.getSalesTax(pack.burgs[market.centerBurgId]) * price;
   }
 
   /** Units sold to its own market it can take back, at what each earned; rural stock is not its */
@@ -694,10 +705,10 @@ export class TradeModule {
     const rural = this.days[market.i]?.rural[good.i] || 0;
     const units = Math.min(sale[UNITS], this.getMarketGood(market, good).stock - rural);
     if (units < 0.01) return null;
-    return { units, price: sale[PRICE] - sale[TAX] / sale[UNITS] };
+    return { units, price: sale[PRICE] - (sale[TAX] + sale[TARIFF]) / sale[UNITS] };
   }
 
-  /** Takes back own sales to cover demand, as if never sold: the sale and its tax shrink */
+  /** Takes back own sales to cover demand, as if never sold: the sale and its taxes shrink */
   keep({
     burg,
     good,
@@ -718,9 +729,12 @@ export class TradeModule {
 
     const sale = this.findDeal(burg.i!, market.i, good.i, DEAL_KINDS.sale)!;
     this.payMargin(market, DEAL_KINDS.sale, { units: -kept, price: sale[PRICE], tax: 0, carriage: sale[CARRIAGE] }); // undone with the sale
-    const tax = rn(sale[TAX] * (1 - kept / sale[UNITS]), 2);
-    this.creditTaxes(sale, tax - sale[TAX], 0);
+    const left = 1 - kept / sale[UNITS];
+    const tax = rn(sale[TAX] * left, 2);
+    const tariff = rn(sale[TARIFF] * left, 2);
+    this.creditTaxes(sale, tax - sale[TAX], tariff - sale[TARIFF]);
     sale[TAX] = tax;
+    sale[TARIFF] = tariff;
     sale[UNITS] = rn(sale[UNITS] - kept, 2);
     this.recordDeal(burg.i!, market.i, good.i, DEAL_KINDS.kept, { units: kept, price: 0, tax: 0 });
 
@@ -759,7 +773,7 @@ export class TradeModule {
     if (!market || units <= 0) return null;
 
     const marketGood = this.getMarketGood(market, good);
-    const tariffRate = this.getSaleTariff(Markets.ofBurg(burg), market, good, 1, terms);
+    const tariffRate = this.getSaleTariff(burg, market, good, 1, terms);
     if (tariffRate === null) return null;
     const transport = this.getTransport(market, burg, good);
     const sold = rn(Math.min(units, this.getSellable(market, good, transport, tariffRate)), 2);
@@ -847,38 +861,24 @@ export class TradeModule {
     this.licenseDue = [];
   }
 
-  /** Per-unit sales tax and any tariff from a source market to another's burg; null if embargoed */
+  /** Per-unit sales tax and any tariff from one state to another; null if embargoed */
   getTradeTerms(): TradeTerms {
-    const pairs: (TradePair | null)[][] = []; // by source then buyer's market id, filled on first use
+    const pairs: TradePair[][] = []; // by exporter then importer state, filled on first use
 
-    const buildPair = (source: Market, market: Market): TradePair | null => {
-      const sourceCenter = pack.burgs[source.centerBurgId];
-      const marketCenter = pack.burgs[market.centerBurgId];
-      if (!sourceCenter || !marketCenter) return null;
-      return {
-        taxRate: Taxes.getSalesTax(sourceCenter),
-        exporterStateId: sourceCenter.state || 0,
-        importerStateId: marketCenter.state || 0,
-        tariffs: []
-      };
-    };
-
-    const resolvePolicy = (pair: TradePair, goodId: number): TariffRate => {
-      const importerPolicy = Taxes.findTariff(pair.importerStateId, pair.exporterStateId, goodId);
-      const exporterPolicy = Taxes.findTariff(pair.exporterStateId, pair.importerStateId, goodId);
+    const resolvePolicy = (exporter: number, importer: number, goodId: number): TariffRate => {
+      const importerPolicy = Taxes.findTariff(importer, exporter, goodId);
+      const exporterPolicy = Taxes.findTariff(exporter, importer, goodId);
       return importerPolicy === "embargo" || exporterPolicy === "embargo" ? "embargo" : importerPolicy;
     };
 
-    return (source, market, good, price) => {
-      pairs[source.i] ??= [];
-      const row = pairs[source.i];
-      if (row[market.i] === undefined) row[market.i] = buildPair(source, market);
-      const pair = row[market.i];
-      if (!pair) return null;
+    return (exporter, importer, good, price) => {
+      pairs[exporter] ??= [];
+      pairs[exporter][importer] ??= { taxRate: Taxes.getSalesTax({ state: exporter }), tariffs: [] };
+      const pair = pairs[exporter][importer];
 
       let tariffRate: TariffRate = 0;
-      if (Taxes.isForeign(pair.exporterStateId, pair.importerStateId)) {
-        pair.tariffs[good.i] ??= resolvePolicy(pair, good.i);
+      if (Taxes.isForeign(exporter, importer)) {
+        pair.tariffs[good.i] ??= resolvePolicy(exporter, importer, good.i);
         tariffRate = pair.tariffs[good.i];
         if (tariffRate === "embargo") return null;
       }
@@ -900,7 +900,7 @@ export class TradeModule {
       const stock = row?.stock ?? 0;
       const midPrice = row?.price ?? good.value;
       const carriage = this.getTransport(source, burg, good);
-      const costs = terms(source, own, good, midPrice);
+      const costs = this.getPurchaseCosts(source, burg, good, midPrice, terms);
       const excluded = stock <= 0.01 ? "stock" : carriage === Infinity ? "route" : !costs ? "embargo" : undefined;
       const option: SourceOption = {
         market: source.i,
@@ -908,7 +908,7 @@ export class TradeModule {
         price: this.customerBuyPrice(source, midPrice),
         tax: rn(costs?.taxPerUnit ?? 0, 2),
         tariff: rn(costs?.tariffPerUnit ?? 0, 2),
-        isImport: Taxes.isForeign(Markets.getState(source), Markets.getState(own)),
+        isImport: Taxes.isForeign(Markets.getState(source), burg.state || 0),
         carriage: carriage === Infinity ? 0 : rn(carriage, 2),
         buyPrice: 0
       };
@@ -944,7 +944,7 @@ export class TradeModule {
       const carriage = distance * good.carriage * atFactors[at];
       if (best && withMargin + carriage > best.buyPrice + 0.006) continue; // past 0.006 over the best nothing rounds back to it
       const row = rows[at];
-      const costs = terms(source, market, good, row.price);
+      const costs = this.getPurchaseCosts(source, burg, good, row.price, terms);
       if (!costs) continue;
       const buyPrice = this.priceAtDoor(withMargin, costs.taxPerUnit, costs.tariffPerUnit, carriage);
       if (!best || buyPrice < best.buyPrice || (buyPrice === best.buyPrice && at < bestAt)) {

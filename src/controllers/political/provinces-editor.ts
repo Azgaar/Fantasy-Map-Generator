@@ -40,7 +40,13 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
-import { EconomyTerms, prosperityTip, renderProsperityPercent } from "@/ui/economy-view";
+import {
+  EconomyTerms,
+  getProvinceFigures,
+  PROVINCE_FIGURES,
+  prosperityTip,
+  renderProsperityPercent
+} from "@/ui/economy-view";
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { createAnnexMode } from "@/ui/map/annex-mode";
 import { highlightElement, highlightOutline } from "@/ui/map/highlight";
@@ -1276,7 +1282,7 @@ function downloadProvincesData(): void {
   const unit =
     options.map.units.area.unit === "square" ? `${options.map.units.distance.unit}2` : options.map.units.area.unit;
   const { scale, urbanization } = options.map.units.population;
-  const headers = CSV_COLUMNS.map(column => (column === "Area" ? `Area ${unit}` : column));
+  const headers = [...CSV_COLUMNS, ...PROVINCE_FIGURES].map(column => (column === "Area" ? `Area ${unit}` : column));
   const rows = getProvincesData().map(province => [
     province.i,
     province.name,
@@ -1290,7 +1296,8 @@ function downloadProvincesData(): void {
     Math.round(province.rural! * scale),
     Math.round(province.urban! * scale * urbanization.rate),
     province.burgs!.length,
-    Tags.format(province.tags)
+    Tags.format(province.tags),
+    ...getProvinceFigures(province.i)
   ]);
   Csv.download("Provinces", headers, rows);
 }
@@ -1509,7 +1516,7 @@ async function uploadProvincesCsv(text: string): Promise<void> {
   const textColumns = ["Province", "Full Name", "Form", "Tags"];
   const updated = await Controllers.CsvUpload.update(
     text,
-    CSV_COLUMNS,
+    [...CSV_COLUMNS, ...PROVINCE_FIGURES],
     { find, units: ["Area"], text: textColumns },
     (id, row) => {
       const province = find(id)!;

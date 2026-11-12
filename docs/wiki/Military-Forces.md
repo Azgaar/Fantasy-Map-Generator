@@ -18,10 +18,14 @@ The footer sums up states number, total and average forces, average rate and ave
 
 Military units used for generation are customizable. To open the units editor click the _cog_ icon in the Military overview screen. Here you can add new units and specify their features. The number of units is not limited, but having many of them makes the overview screens hard to read. What a unit is in a battle is set by its own parameters; its _type_ defines the rules applied on generation, described in the next section, and the phases of a battle it is good in. Type variants are hard-coded.
 
+Applying the changes keeps the regiments. A renamed unit keeps its troops, a removed unit's troops are disbanded, and a new icon, crew or power applies at once. For a new unit, or one whose goods, limitations, rural or urban share, type or separate flag changed, the recalculation dialog opens. _Update_ raises the changed units again, with the levies their equipment leaves: the troops join the nearest regiment, so regiments keep their names, places, notes and other troops, and new regiments form only where a state has none nearby. _Regenerate_ rebuilds all regiments from scratch. _Keep_ changes nothing until the next recalculation.
+
+Every recalculate button (Tools, the Military overview, the Regiments overview) opens the same dialog; there _Update_ covers all units.
+
 Customizable parameters are:
 
 - **Icon** - unit symbol, chosen in the icon picker: an emoji or short text (the defaults), a built-in icon or a custom icon linked or uploaded to the map. Emoji look different in different systems and browsers. See [Icons](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons)
-- **Name** - a unique unit name. Renaming an existing unit replaces it
+- **Name** - a unique unit name. Regiments follow a renamed unit
 - **Goods** - goods that equip the unit, such as arms for infantry or horses for cavalry. Click the button to pick them; `none` means the unit needs no goods. A state fields only as many troops of the unit as its goods can equip, the rest serve as levies. See [Goods and levies](#goods-and-levies) below
 - **Biomes**, **States**, **Cultures**, **Religions** - optional limitations. By default a unit is generated everywhere (`all`); click a button to restrict the unit to selected biomes, states, cultures or religions (`some`). A cell or burg that fails any active limitation produces no troops of that unit
 - **Rural** - the most of the rural population, in percent, that can be raised to the unit. It defines how many troops of this unit are generated per cell population point at most: the number is then adjusted by the rules described in the next section, and a state lacking the unit's goods raises fewer. Set to 0 if you want the unit to be generated in burgs only
@@ -40,14 +44,14 @@ Any change has to be confirmed with _Apply_, which triggers a full military rege
 
 The default unit set is:
 
-| Icon | Name      | Goods                     | Rural % | Urban % | Crew | Attack | Defense | Speed | Range | Morale | Power | Type      | Separate |
-| ---- | --------- | ------------------------- | ------- | ------- | ---- | ------ | ------- | ----- | ----- | ------ | ----- | --------- | -------- |
-| 🪓   | levies    | none                      | 0       | 0       | 1    | 0.6    | 0.7     | 7     | 0     | 0.6    | 0.5   | levies    | no       |
-| ⚔️   | infantry  | Arms                      | 0.25    | 0.2     | 1    | 1      | 1       | 7     | 0     | 1      | 1     | melee     | no       |
-| 🏹   | archers   | Arms                      | 0.12    | 0.2     | 1    | 0.9    | 0.6     | 7     | 170   | 1      | 1     | ranged    | no       |
-| 🐴   | cavalry   | Horses, Camels, Harnesses | 0.12    | 0.03    | 1    | 1.7    | 1.2     | 20    | 0     | 1      | 2     | mounted   | no       |
-| 💣   | artillery | Artillery, Gunpowder      | 0       | 0.03    | 8    | 16     | 3.2     | 2     | 280   | 1      | 12    | machinery | no       |
-| 🌊   | fleet     | Boats                     | 0       | 0.015   | 100  | 46     | 31.2    | 5     | 200   | 1      | 50    | naval     | yes      |
+| Icon | Name      | Goods                | Rural % | Urban % | Crew | Attack | Defense | Speed | Range | Morale | Power | Type      | Separate |
+| ---- | --------- | -------------------- | ------- | ------- | ---- | ------ | ------- | ----- | ----- | ------ | ----- | --------- | -------- |
+| 🪓   | levies    | none                 | 0       | 0       | 1    | 0.6    | 0.7     | 7     | 0     | 0.6    | 0.5   | levies    | no       |
+| ⚔️   | infantry  | Arms                 | 0.25    | 0.2     | 1    | 1      | 1       | 7     | 0     | 1      | 1     | melee     | no       |
+| 🏹   | archers   | Arms                 | 0.12    | 0.2     | 1    | 0.9    | 0.6     | 7     | 170   | 1      | 1     | ranged    | no       |
+| 🐴   | cavalry   | Horses, Camels, Tack | 0.12    | 0.03    | 1    | 1.7    | 1.2     | 20    | 0     | 1      | 2     | mounted   | no       |
+| 💣   | artillery | Artillery, Gunpowder | 0       | 0.03    | 8    | 16     | 3.2     | 2     | 280   | 1      | 12    | machinery | no       |
+| 🌊   | fleet     | Boats                | 0       | 0.015   | 100  | 46     | 31.2    | 5     | 200   | 1      | 50    | naval     | yes      |
 
 A unit of a map saved before these parameters existed had a single power. On load it gets the speed, range and morale of its type, and its attack and defense are split so that the power stays what it was.
 
@@ -67,7 +71,7 @@ For each state a _War Alert_ is calculated. It shows how much the state is willi
 
 `Ally: -0.2, Friendly: -0.1, Neutral: 0, Suspicion: 0.1, Enemy: 1, Unknown: 0, Rival: 0.5, Vassal: 0.5, Suzerain: -0.5`
 
-War Alert can be overridden manually in the Military overview.
+War Alert can be overridden manually in the Military overview. Recalculating the forces keeps the alert set; regenerating states defines it anew.
 
 War Alert is not the only state-specific modifier. The other one depends on _State Type_ and getting applied based on hard-coded matrix:
 
@@ -136,11 +140,20 @@ Once the economy has run, a unit with goods is fielded only as far as the state 
 
 `Stock = daily consumption × 365 × military coverage`
 
-The state counts what it consumes, not what it makes: imported goods equip its troops, while goods it makes and sells abroad do not. A good several units need is split between them by their troops. A unit's equipped share is its goods' stock against its troops, at most 1:
+So one unit of a good a day equips 365 troops × its military coverage: 730 troops for arms (coverage 2), 329 for horses (0.9). The 365 holds at the default population rate of 1 000 people per point; troops scale with the rate, so at 2 000 one unit a day equips 730 troops × coverage. The good's military coverage is in its Demand Coverage, in the Goods editor.
+
+- **Any of the unit's goods will do, and they add up.** A unit listing several goods does not need all of them: cavalry is equipped by horses, camels or tack, and a state with some of each sums their stocks.
+- **Units share the stock.** A good several units need is split between them by their troops, so infantry and archers both drawing on arms are equipped in the same proportion. Goods are not unlimited per unit.
+- **Consumption counts, not production.** Imported goods equip the state's troops, while goods it makes and sells abroad do not. A state that makes no arms but buys them is equipped; one that exports all its arms is not.
+- **Equipping uses up nothing.** The army reads the state's consumption, it does not buy goods of its own, so the economy is the same with or without an army. Troops are paid for separately, by the state's military spending.
+
+A unit's equipped share is its goods' stock against its troops, at most 1:
 
 `Equipped = min(1, Σ goods stock / troops)`
 
-For example, a state consuming 4 horses a day has 4 × 365 × 0.6 = 876 horses' worth of mounts, so 2 000 conscripted cavalry are 44% equipped: 876 serve as cavalry and the other 1 124 as levies.
+For example, a state consuming 4 horses a day has 4 × 365 × 0.9 = 1 314 horses' worth of mounts, so 2 000 conscripted cavalry are 66% equipped: 1 314 serve as cavalry and the other 686 as levies.
+
+Equipment is worked out when troops are raised: on a new map, when the military is recalculated (Update or Regenerate in the recalculation dialog, or Recalculate in the Regiments Overview) and after regenerating states. Regenerating the economy alone leaves the regiments as they are, so recalculate the military to equip them from the new economy.
 
 Conscripts a state cannot equip are not lost: they serve as **levies** in the cell or burg where they were raised, joining its land regiments. Unequipped sailors become levies on land too. Levies have half an infantryman's power, and an army's starting morale follows its power, so a state short of arms, horses, cannons or boats fields an army as large but weaker. With the default units, where nobody is raised to levies directly, a well-supplied state has none. If no unit has the _levies_ type, unequipped conscripts are not raised.
 
@@ -156,7 +169,7 @@ A state at war marches its land regiments from their bases to the front: its own
 
 If you click on a regiment box, a Regiment Editor will pop up at the top left corner. Once editor is displayed, you can drag regiment boxes to move them around. A circle shows regiment's base and can be dragged as well.
 
-From the Regiment Editor screen you can rename the regiment or restore its original name, hear the name spoken, toggle its visibility on the map (eye icon), change the regiment emblem and edit the number of troops of each unit. Below the units it shows the regiment's _Power_, which is not editable: the number of each unit multiplied by its power and by the state's upkeep, as in the Military overview. The regiments overview has the same _Power_ column. You can also switch the regiment type between _land_ and _naval_. Naval regiments look almost the same as land ones, the only visual difference is the box size. Hidden regiments can also be toggled from the regiments overview table.
+From the Regiment Editor screen you can rename the regiment or restore its original name, hear the name spoken, toggle its visibility on the map (eye icon), change the regiment emblem and edit the number of troops of each unit. Below the units it shows the regiment's _Power_, which is not editable: the number of each unit multiplied by its power and by the state's upkeep, as in the Military overview. The regiments overview has the same _Power_ column, and its _Recalculate_ button recalculates the forces of the state selected in the filter, or of all states. You can also switch the regiment type between _land_ and _naval_. Naval regiments look almost the same as land ones, the only visual difference is the box size. Hidden regiments can also be toggled from the regiments overview table.
 
 The buttons at the bottom let you attack a foreign regiment (see [Battle Simulator](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Battle-Simulator) for the details), create a new regiment or fleet, split the regiment into two, attach it to another regiment, regenerate or edit the regiment legend, and remove the regiment.
 

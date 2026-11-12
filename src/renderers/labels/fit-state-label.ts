@@ -95,7 +95,7 @@ function splitName(name: string): string[] {
 }
 
 /** the css text-transform of a label group's inline style, as a function of the text */
-function applyTextTransform(style: string | null): (text: string) => string {
+export function applyTextTransform(style: string | null): (text: string) => string {
   const transform = style?.match(/(?:^|;)\s*text-transform\s*:\s*([a-z]+)/)?.[1];
   if (transform === "uppercase") return text => text.toUpperCase();
   if (transform === "lowercase") return text => text.toLowerCase();

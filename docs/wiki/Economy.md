@@ -41,7 +41,7 @@ Click a good in the editor to change it:
 | **Recipes**                       | What it is made from. A good can have several alternative recipes                                                                                                                                                                                                                                                                                                                                                               |
 | **Biome Baseline Production**     | How much rural people produce per population point in each biome                                                                                                                                                                                                                                                                                                                                                                |
 | **Multipliers**                   | Production bonuses or penalties by culture type, culture, state, religion, biome or zone. Make one culture famous for its wine, or one zone a mining district                                                                                                                                                                                                                                                                   |
-| **Distribution** and **Deposits** | Where deposits can appear, and how many the map gets, whatever its size. The Goods Editor can show how many are placed in its Deposits column, hidden by default and turned on from the column menu. Click a good's Produced value to see which states and provinces make it in their cells, and which burgs make it. See [Goods spread functions](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions) |
+| **Distribution** and **Deposits** | Where deposits can appear, and how many the map gets, whatever its size. **Deposit yield** multiplies what each deposit gives: 0.1 for a tenth, 4 for four times. The Goods Editor can show how many are placed in its Deposits column, hidden by default and turned on from the column menu. Click a good's Produced value to see which states and provinces make it in their cells, and which burgs make it. See [Goods spread functions](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions) |
 
 Your goods are saved with the map and in the browser, and a new map starts from them. Only multipliers set for one map's cultures, states, religions or zones are left behind. Opening a `.map` replaces your goods with that map's, and _Restore default goods_ in the **Economy Regeneration** dialog starts over, also bringing in changes to the default goods from newer versions. Changed goods affect where people settle, so the same seed gives a different map than with the default goods.
 
@@ -71,7 +71,7 @@ Every cell where people live has a technological development from 1 to 100, from
 
 # Trade and carriage
 
-A burg buys from **its own market** while it stocks at least one unit of the good. Otherwise, the burg buys from the other market where the good comes cheapest, counting the price there, that market's sales tax and the carriage. Buying from a market of another state is an **import**, and the state of the burg's own market may charge a tariff on it. A border burg whose market is centered in another state pays that state's tariff. A burg sells to whichever market pays it best after carriage; selling to a market of another state is an import there, and that state may charge its tariff.
+A burg buys from **its own market** while it stocks at least one unit of the good. Otherwise, the burg buys from the other market where the good comes cheapest, counting the price there, that market's sales tax and the carriage. Buying from a market of another state is an **import**, and the burg's state may charge a tariff on it. This holds for the burg's own market too: a border burg whose market is centered in another state imports at home. A burg sells to whichever market pays it best after carriage; selling to a market of another state is an import there, and that state may charge its tariff. An **embargo** by either state stops all trade between its burgs and the other state's markets, the burg's own market included.
 
 Goods travel along **routes**: roads, trails and sea lanes. The Trade layer draws exactly the path the goods take, and the carriage is paid for that path:
 
@@ -160,6 +160,8 @@ Below is the day in order:
 
 Each trade shows the net price, the carriage, tax and tariff per unit, the units and the revenue: green when the burg earned money, red when it spent it. Hover a cell to see how it adds up. With Economy checked under _Debugging_ in the Advanced options, the overview shows every step instead, with the options each decision weighed and a **NEED** row for each need the burg came to cover.
 
+The download button saves this burg's day as CSV. To compare burgs in a spreadsheet, download the _Burgs overview_ CSV: besides product, wealth, prosperity and balance it has each burg's prosperity parts, needs covered, sales, ingredients, consumption, poll tax, market license and margin, and the goods it made and consumed.
+
 # Prosperity
 
 **Prosperity** is how well a burg's people live, from 0% to 100%. It comes mostly from what they consume, not what they make:
@@ -187,6 +189,8 @@ A state's treasury only shows its cut. A trade republic with low taxes has a sma
 Provinces have their own economy dialog: open _Tools_ → _Provinces_ and click a province's **Prosperity** or **Corruption**. It is laid out like the state's: cards for its population, product, wealth, prosperity, taxes collected, corruption, infrastructure and stability, each ranked among its state's provinces and set against the state's; its sectors and how its people live; one block of the **taxes collected** there for its state, in red as its people pay them, and the **state orders** placed at its burgs, in green as they benefit from them (its capital's, and at the state's capital the court's and the army's), with the corruption officials took of its share; and its most valuable goods. Provinces have no budgets or taxes of their own: the state sets them.
 
 Open several states' dialogs to compare them side by side. The neutral lands have one too: click their Prosperity, Product or Wealth. The total line shows the average prosperity, and the average balance when the Balance column is shown. The bank button on the Revenue or Expenses card opens the state's taxes, budget and tariffs. In the States Editor's percent mode, product shows as a share of the world's, and wealth and prosperity against the world average.
+
+The download button in a state's or province's economy dialog saves its figures, its goods and, for a state, its trade partners as CSV. The _States Editor_ and _Provinces Editor_ CSVs have the same figures for every state or province, after the editable columns; an upload ignores them.
 
 # Shaping the economy for your world
 

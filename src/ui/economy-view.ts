@@ -1,11 +1,18 @@
 import { sum } from "d3";
-import type { Expense } from "@/data/expenses";
+import { EXPENSES, type Expense } from "@/data/expenses";
 import { PROSPERITY_LEVEL_LABELS } from "@/data/id-labels";
+import { Accounts, type ProvinceAccounts, type StateAccounts } from "@/model/economy/accounts";
+import { Corruption } from "@/model/economy/corruption";
+import { DEAL_KINDS, Deals } from "@/model/economy/deals";
+import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "@/model/economy/demand";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { type Living, Prosperity, type ProsperityLevel } from "@/model/economy/prosperity";
+import { StateOrders } from "@/model/economy/state-orders";
 import { Taxes } from "@/model/economy/taxes";
 import { Trade } from "@/model/economy/trade";
+import type { Burg } from "@/model/political/burgs-generator";
+import { Stability } from "@/model/political/stability";
 import { formatPrice, getDecima, getDistance } from "@/model/units";
 import type { Deal, DealKind, Good, Transaction } from "@/types/economy";
 import { wiki } from "@/utils/common-utils";
@@ -356,4 +363,318 @@ export function adjustmentsFromText(text: string): Adjustment[] {
       if (!Number.isFinite(value)) throw new Error(`Not an adjustment: ${part}`);
       return { name: colon < 0 ? "" : part.slice(0, colon).trim(), value };
     });
+}
+
+export const SECTORS = ["rural", "manufacturing", "trade"] as const;
+export type Sector = (typeof SECTORS)[number];
+export type Sectors = Record<Sector | "product", number>;
+type Population = Pick<StateAccounts, "people" | "urbanPeople">;
+export type ProvinceFigures = { corruption: number; infrastructure: number; stability: number | null };
+
+/** The state, province and burg economy dialogs' style */
+export const economyStyle = (dialog: string) => /* html */ `<style>
+  .${dialog} > div { width: auto }
+  .${dialog} .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5em, 1fr)); gap: 0.4em; margin-bottom: 0.8em }
+  .${dialog} .card { border: 1px solid #ccc; border-top: 3px solid var(--header); padding: 0.3em 0.5em; line-height: 1.3 }
+  .${dialog} .card .label { font-size: 0.8em; text-transform: uppercase; color: #666 }
+  .${dialog} .card .value { font-size: 1.25em; font-weight: bold; white-space: nowrap }
+  .${dialog} .card .note { font-size: 0.8em; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  .${dialog} h4 { margin: 0.8em 0 0.3em; border-bottom: 1px solid var(--dark-solid) }
+  .${dialog} .columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20em), 1fr)); column-gap: 1.2em }
+  .${dialog} .stack { display: flex; height: 1em }
+  .${dialog} .stack.small { display: flex; height: 0.85em; opacity: 0.8 }
+  .${dialog} .legend { display: flex; flex-wrap: wrap; justify-content: space-between; column-gap: 0.8em }
+  .${dialog} .legend span { font-size: 0.9em; white-space: nowrap }
+  .${dialog} .swatch { display: inline-block; width: 0.8em; height: 0.8em; margin-right: 0.25em; vertical-align: middle }
+  .${dialog} .row { display: grid; grid-template-columns: minmax(0, 8em) minmax(1em, 1fr) minmax(5em, max-content); align-items: center; column-gap: 0.4em; line-height: 1.5 }
+  .${dialog} .row.plain { grid-template-columns: minmax(0, 1fr) minmax(6em, max-content) }
+  .${dialog} .row.budget { grid-template-columns: minmax(0, 2fr) 2.5em minmax(1em, 1fr) minmax(5em, max-content) }
+  .${dialog} .row .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; gap: 0.2em }
+  .${dialog} .row.plain .name, .${dialog} .row.budget .name { white-space: normal }
+  .${dialog} .bar { height: 0.7em; background: #eee }
+  .${dialog} .bar > div { height: 100% }
+  .${dialog} .bar.stack { display: flex }
+  .${dialog} .right { text-align: right; white-space: nowrap }
+  .${dialog} .total { font-weight: bold; border-top: 1px solid #ccc }
+  .${dialog} .muted { font-size: 0.85em; color: #666 }
+  .${dialog} h4 { display: flex; justify-content: space-between; align-items: center }
+  .${dialog} h4 button[class^="icon-"] { padding: 0 3px; font-size: 0.75em; line-height: 1; margin: 2px 0; }
+  .${dialog} .group { line-height: 1.6 }
+</style>`;
+
+/** Corruption, infrastructure and stability of each of the state's provinces, by id */
+export function getStateProvinceFigures(stateId: number): Map<number, ProvinceFigures> {
+  const state = pack.states[stateId];
+  const figures = new Map<number, ProvinceFigures>();
+  if (!stateId || !state || state.removed) return figures;
+  const infrastructure = StateOrders.getInfrastructure(state);
+  for (const { province, stability } of Stability.getProvinces(stateId)) {
+    if (!province.id) continue;
+    figures.set(province.id, {
+      corruption: Corruption.ofProvince(state, province, state.economy.collected),
+      infrastructure: infrastructure.get(province.id) ?? 0,
+      stability
+    });
+  }
+  return figures;
+}
+
+export const sectorShare = (accounts: Sectors, sector: Sector) =>
+  accounts.product ? accounts[sector] / accounts.product : 0;
+
+export const taxesOf = ({ taxes }: ProvinceAccounts) =>
+  taxes.salesTax + taxes.tariffs + taxes.pollTax + taxes.marketFees;
+
+/** Population as people, from urban and rural population points */
+export function people(accounts: Population) {
+  const { scale, urbanization } = options.map.units.population;
+  const urban = accounts.urbanPeople * scale * urbanization.rate;
+  const rural = (accounts.people - accounts.urbanPeople) * scale;
+  return { urban, rural, total: urban + rural };
+}
+
+/** The good weighing most in its exports: its share² ÷ its world share */
+export function knownFor(stateId: number): string | null {
+  const { exported, exports } = Accounts.getTrade(stateId);
+  if (!exports) return null;
+  const world: number[] = [];
+  for (const state of pack.states) {
+    if (state.removed) continue;
+    Accounts.getTrade(state.i).exported.forEach((value, goodId) => {
+      world[goodId] = (world[goodId] || 0) + value;
+    });
+  }
+  const worldTotal = world.reduce((total, value) => total + value, 0);
+  let bestId = -1;
+  let bestLean = 0;
+  exported.forEach((value, goodId) => {
+    const lean = (value / exports) ** 2 / (world[goodId] / worldTotal);
+    if (lean > bestLean) [bestId, bestLean] = [goodId, lean];
+  });
+  return Goods.get(bestId)?.name ?? null;
+}
+
+/** The sector whose share of the product most exceeds its share of the world's */
+export function leaningSector(accounts: StateAccounts, world: StateAccounts): Sector | null {
+  if (!accounts.product) return null;
+  const lean = (sector: Sector) => sectorShare(accounts, sector) / (sectorShare(world, sector) || 1);
+  return SECTORS.reduce((best, next) => (lean(next) > lean(best) ? next : best));
+}
+
+export function economyType(accounts: StateAccounts, world: StateAccounts): string {
+  const sector = leaningSector(accounts, world);
+  return sector ? { rural: t("Agrarian"), manufacturing: t("Artisan"), trade: t("Mercantile") }[sector] : "—";
+}
+
+/** 0 when all are equal, 1 when one has it all */
+export function gini(values: number[]): number {
+  const sorted = values.map(value => Math.max(0, value)).sort((a, b) => a - b);
+  const total = sorted.reduce((sum, value) => sum + value, 0);
+  if (!total || sorted.length < 2) return 0;
+  const weighted = sorted.reduce((sum, value, index) => sum + (2 * (index + 1) - sorted.length - 1) * value, 0);
+  return weighted / (sorted.length * total);
+}
+
+type Cell = string | number;
+
+const percent = (value: number | null | undefined): Cell =>
+  value === null || value === undefined ? "" : rn(value * 100);
+const amount = (value: number) => rn(value, 2);
+const SECTOR_FIGURES = ["Rural Sector", "Manufacturing Sector", "Trade Sector"];
+const PROSPERITY_FIGURES = ["Prosperity %", "Urban Prosperity %", "Rural Prosperity %"];
+const TAX_FIGURES = ["Sales Tax Collected", "Tariffs Collected", "Poll Tax Collected", "Market Licenses Collected"];
+
+const sectorCells = (accounts: Sectors) => SECTORS.map(sector => amount(accounts[sector]));
+const prosperityCells = (accounts: Pick<StateAccounts, "living" | "prosperity">) => [
+  percent(accounts.prosperity),
+  percent(accounts.living.urban?.prosperity),
+  percent(accounts.living.rural?.prosperity)
+];
+
+/** The state's economy figures, in its economy dialog's CSV and the States Editor's */
+export const STATE_FIGURES = [
+  "Economy",
+  "Known For",
+  "Product",
+  ...SECTOR_FIGURES,
+  "Wealth",
+  "Inequality",
+  ...PROSPERITY_FIGURES,
+  "Exports",
+  "Imports",
+  "Trade Balance",
+  ...TAX_FIGURES,
+  "Taxes Collected",
+  "Tax Burden %",
+  ...EXPENSES.map(expense => `${expense[0].toUpperCase()}${expense.slice(1)} Spent`),
+  "Pocketed",
+  "Corruption %"
+];
+
+/** Values in the STATE_FIGURES order; blanks when the economy has not run */
+export function getStateFigures(stateId: number): Cell[] {
+  const state = pack.states[stateId];
+  const accounts = Accounts.ofState(stateId);
+  const world = Accounts.getWorld();
+  if (!state || !accounts || !world) return STATE_FIGURES.map(() => "");
+  const { economy } = state;
+  const { exports, imports } = Accounts.getTrade(stateId);
+  const budget = Accounts.getBudget(stateId);
+  const governed = (value: number) => (stateId ? amount(value) : "");
+  return [
+    economyType(accounts, world),
+    knownFor(stateId) ?? "",
+    amount(accounts.product),
+    ...sectorCells(accounts),
+    amount(accounts.wealth),
+    rn(gini(accounts.burgWealth), 2),
+    ...prosperityCells(accounts),
+    amount(exports),
+    amount(imports),
+    amount(exports - imports),
+    governed(budget.salesTax),
+    governed(budget.tariffs),
+    governed(budget.pollTax),
+    governed(budget.marketFees),
+    governed(economy.collected),
+    stateId && accounts.product ? rn((accounts.taxes / accounts.product) * 100, 1) : "",
+    ...EXPENSES.map(expense => governed(economy.spent[expense])),
+    governed(economy.pocketed),
+    stateId ? rn(Corruption.ofState(state, economy.collected), 1) : ""
+  ];
+}
+
+/** The province's economy figures, in its economy dialog's CSV and the Provinces Editor's */
+export const PROVINCE_FIGURES = [
+  "Product",
+  ...SECTOR_FIGURES,
+  "Wealth",
+  ...PROSPERITY_FIGURES,
+  ...TAX_FIGURES,
+  "Taxes Collected",
+  "Tax Burden %",
+  "State Orders",
+  "Pocketed",
+  "Corruption %",
+  "Infrastructure %",
+  "Stability %"
+];
+
+/** Values in the PROVINCE_FIGURES order; blanks when the economy has not run */
+export function getProvinceFigures(provinceId: number): Cell[] {
+  const province = pack.provinces[provinceId];
+  const accounts = Accounts.ofProvince(provinceId);
+  if (!province || !accounts) return PROVINCE_FIGURES.map(() => "");
+  const own = getStateProvinceFigures(province.state).get(provinceId);
+  const taxes = taxesOf(accounts);
+  return [
+    amount(accounts.product),
+    ...sectorCells(accounts),
+    amount(accounts.wealth),
+    ...prosperityCells(accounts),
+    amount(accounts.taxes.salesTax),
+    amount(accounts.taxes.tariffs),
+    amount(accounts.taxes.pollTax),
+    amount(accounts.taxes.marketFees),
+    amount(taxes),
+    accounts.product ? rn((taxes / accounts.product) * 100, 1) : "",
+    amount(accounts.spent),
+    amount(accounts.pocketed),
+    own ? rn(own.corruption, 1) : "",
+    percent(own?.infrastructure),
+    percent(own?.stability)
+  ];
+}
+
+/** Each demand category's units covered by what the burg consumed, and its need */
+export function getDemand(burg: Burg): { covered: number[]; targets: number[] } {
+  const population = burg.population || 0;
+  const targets = DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
+  const covered = DEMAND_PRIORITY.map(() => 0);
+  Prosperity.getConsumption(burg.i!).forEach((units, goodId) => {
+    const coverage = Goods.get(goodId)?.demandCoverage ?? {};
+    DEMAND_PRIORITY.forEach((category, index) => {
+      covered[index] += units * (coverage[category] || 0);
+    });
+  });
+  return { covered, targets };
+}
+
+type Flows = { sales: number; ingredients: number; consumption: number };
+
+/** The deals' money flows by burg id, and the margins by market id, in one pass */
+export function getFlows(): { burgs: Map<number, Flows>; margins: Map<number, number> } {
+  const burgs = new Map<number, Flows>();
+  const margins = new Map<number, number>();
+  for (const deal of pack.deals) {
+    const [burgId, marketId, , kind, units, price, tax, tariff] = deal;
+    margins.set(marketId, (margins.get(marketId) || 0) + Deals.getMargin(deal));
+    const flows = burgs.get(burgId) ?? { sales: 0, ingredients: 0, consumption: 0 };
+    burgs.set(burgId, flows);
+    if (kind === DEAL_KINDS.sale) flows.sales += units * price - tax - tariff;
+    else if (kind === DEAL_KINDS.input) flows.ingredients -= units * price;
+    else if (kind === DEAL_KINDS.demand) flows.consumption -= units * price; // a state order is the state's money
+  }
+  return { burgs, margins };
+}
+
+/** The burg's day in money: what it got positive, what it paid negative */
+export function getBalance(burg: Burg, { burgs, margins }: ReturnType<typeof getFlows>) {
+  const market = Markets.ofBurg(burg);
+  const isCenter = market?.centerBurgId === burg.i;
+  return {
+    ...(burgs.get(burg.i!) ?? { sales: 0, ingredients: 0, consumption: 0 }),
+    pollTax: -(burg.pollTaxPaid || 0),
+    license: isCenter ? -(market.feePaid || 0) : 0,
+    margin: isCenter ? (market.rural?.margin || 0) + (margins.get(market.i) || 0) : 0
+  };
+}
+
+/** The burg's economy columns in the Burgs overview's CSV, beside its product, wealth, prosperity and balance */
+export const BURG_FIGURES = [
+  "Market Center",
+  "Needs Met %",
+  "Comfort",
+  "Variety",
+  "Infrastructure %",
+  ...DEMAND_PRIORITY.map(category => `${category[0].toUpperCase()}${category.slice(1)} Covered %`),
+  "Sales",
+  "Ingredients",
+  "Consumption",
+  "Poll Tax Paid",
+  "Market License",
+  "Market Margin",
+  "Production",
+  "Consumed Goods"
+];
+
+/** Values in the BURG_FIGURES order; flows from getFlows, made once for all burgs */
+export function getBurgFigures(burg: Burg, flows = getFlows()): (string | number)[] {
+  if (!burg.production || !Markets.ofBurg(burg)) return BURG_FIGURES.map(() => "");
+  const living = Prosperity.getBurg(burg.i!);
+  const { covered, targets } = getDemand(burg);
+  const balance = getBalance(burg, flows);
+  const goodsList = (goods: [goodId: number, units: number][]) =>
+    goods
+      .flatMap(([goodId, units]) => {
+        const good = Goods.get(goodId);
+        return good && units ? [`${good.name}: ${rn(units, 2)}`] : [];
+      })
+      .join("; ");
+  return [
+    Markets.ofBurg(burg)?.centerBurgId === burg.i ? "center" : "",
+    percent(living?.needs),
+    living ? rn(living.comfort, 1) : "",
+    living ? rn(living.variety, 1) : "",
+    percent(living?.infrastructure),
+    ...targets.map((target, index) => (target ? rn(Math.min(1, covered[index] / target) * 100) : "")),
+    amount(balance.sales),
+    amount(balance.ingredients),
+    amount(balance.consumption),
+    amount(balance.pollTax),
+    amount(balance.license),
+    amount(balance.margin),
+    goodsList(burg.production),
+    goodsList(Prosperity.getConsumption(burg.i!).map((units, goodId) => [goodId, units]))
+  ];
 }

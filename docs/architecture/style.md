@@ -76,13 +76,14 @@ mirrors the DOM tree: every `groups` entry addresses one `data-group` child of i
   and keyed by the map's own group names — the editor's group select lists those.
 - **A font size is an attr**, in px on the layer (`legend.attrs["font-size"]: "13px"`), and its
   texts size by inheritance; a label group's is a `%` of the labels layer font size. The zoom sets
-  the font size of the layers in `ZOOM_CURVES` (renderers/viewport/viewport.ts), 100px at scale 1 and each on
-  its own curve between a map-fixed and a screen-fixed size: the labels on the arithmetic mean, the
-  markers on the geometric mean, the burg icons close to map-fixed. Anything under them sized in `%`
-  or `em` (label groups, markers, burg icons) follows the zoom, per frame or once it settles as
-  `viewportRedraw` says; every other layer keeps its sizes.
-  There is no switch for it: `labels.resizeOnZoom` and `markers.options.rescale` were retired with
-  v1.154. An `options` size (`markets.options.iconSize`, `military.options.boxSize`) is a renderer
+  the font size of the `ZOOMED_LAYERS` (renderers/viewport/viewport.ts) — labels, markers, burg icons —
+  100px at scale 1 and from there as the layer's `options.zoomSize` says: on a curve between a map-fixed
+  and a screen-fixed size (`arithmetic`, the labels default; `geometric`, the markers default; `natural`,
+  close to map-fixed, the burg icons default), map-fixed (`map`) or screen-fixed (`screen`). Anything
+  under them sized in `%` or `em` (label groups, markers, burg icons) follows, per frame or once the
+  zoom settles as `viewportRedraw` says; every other layer keeps its sizes.
+  `labels.resizeOnZoom` and `markers.options.rescale` were retired with v1.154.
+  An `options` size (`markets.options.iconSize`, `military.options.boxSize`) is a renderer
   input, not a font; the regiment font follows the box.
 - **A zoom-derived attr keeps its base in the store.** The zoom writes what it derives — the halo
   `stroke-width` scaled to the viewport, the coordinates `font-size` on redraw — over the stored
@@ -268,7 +269,9 @@ with a count of the things using it (labels per group, burgs and ports, routes, 
 `groups` record is not a selection: its entries render inline as collapsible cards under the
 element's own rows, so an element is seen whole. `burgIcons` is one user record whose entries hold
 their own `icons` and `anchors` groups, so one group select serves both and the anchor rows are a
-card inside the group.
+card inside the group. The attrs and options a grouped element carries above its groups (the `zoomSize`
+of labels and burg icons) render as a card of their own over the selected group's, titled by the
+element.
 
 `resolve` turns the selection into a store node, its schema subtree and a path
 (`["labels", "groups", "capital"]`); a group that no longer exists falls back to the first.

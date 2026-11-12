@@ -1,10 +1,12 @@
 // Fixes the broken links a loaded map can carry, then logs what was fixed and what is still broken
 
+import { Routes } from "@/model/economy/routes-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { type IntegrityViolation, MapIntegrity } from "@/model/map-integrity";
 import { Lakes } from "@/model/physical/lakes";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
+import type { Regiment } from "@/model/political/military-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
 import { last } from "@/utils/array-utils";
 import { log } from "@/utils/logger";
@@ -27,6 +29,7 @@ class MapRepairService {
       ...this.repairProvinces(),
       ...this.repairRoutes(),
       ...this.repairMarkers(),
+      ...this.repairRegiments(),
       ...this.findMissingTransports()
     ];
   }
@@ -198,6 +201,20 @@ class MapRepairService {
       return false;
     });
 
+    // a route left from another graph is relinked whole: its cells can be off by a neighbor only
+    const burgCells = new Map(pack.burgs.filter(burg => burg.i && !burg.removed).map(b => [`${b.x},${b.y}`, b.cell]));
+    let remapped = 0;
+    for (const route of pack.routes) {
+      if (!route.points.some(([x, y, cell]) => this.isMisplaced(x, y, cell))) continue;
+      for (const point of route.points)
+        point[2] = burgCells.get(`${point[0]},${point[1]}`) ?? Pack.findCell(point[0], point[1])!;
+      remapped++;
+    }
+    if (remapped) {
+      repairs.push(`${remapped} routes are linked to cells away from them. Relinking the routes`);
+      cells.routes = Routes.buildLinks(pack.routes);
+    }
+
     const routeIds = new Set(pack.routes.map(route => route.i));
     for (const from in cells.routes) {
       const links = cells.routes[+from];
@@ -220,8 +237,15 @@ class MapRepairService {
     const repairs: string[] = [];
     const markerIds = new Set<number>();
     let nextId = (last(pack.markers)?.i ?? -1) + 1 || 0;
+    let remapped = 0;
 
     for (const marker of pack.markers) {
+      const cell = Pack.findCell(marker.x, marker.y)!;
+      if (cell !== marker.cell) {
+        marker.cell = cell;
+        remapped++;
+      }
+
       if (!markerIds.has(marker.i)) {
         markerIds.add(marker.i);
         continue;
@@ -230,8 +254,29 @@ class MapRepairService {
       marker.i = nextId++;
     }
     pack.markers.sort((a, b) => a.i - b.i);
+    if (remapped) repairs.push(`${remapped} markers are not linked to the cell under them. Relinking them`);
 
     return repairs;
+  }
+
+  // only a missing cell: a valid one can lie away from the base, as the base moves and a fleet's cell is its port
+  private repairRegiments(): string[] {
+    let relinked = 0;
+    const repair = (regiment: Regiment) => {
+      if (!pack.cells.p[regiment.cell]) {
+        regiment.cell = Pack.findCell(regiment.bx, regiment.by)!;
+        relinked++;
+      }
+      regiment.children?.forEach(repair);
+    };
+    for (const state of pack.states) if (state.i && !state.removed) state.military?.forEach(repair);
+    return relinked ? [`${relinked} regiments are linked to invalid cells. Relinking them to their base`] : [];
+  }
+
+  /** a cell id left from another graph: missing, or over two spacings from its point (a sound map stays within ~1.2) */
+  private isMisplaced(x: number, y: number, cell: number): boolean {
+    const center = pack.cells.p[cell];
+    return !center || Math.hypot(center[0] - x, center[1] - y) > 2 * grid.spacing;
   }
 
   // segment transports with no transport type behind them fall back to air rules

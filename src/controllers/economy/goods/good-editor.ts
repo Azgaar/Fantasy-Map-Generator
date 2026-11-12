@@ -95,6 +95,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             +ensureEl<HTMLInputElement>("newGoodDepositsMin").value,
             +ensureEl<HTMLInputElement>("newGoodDepositsMax").value
           ];
+          const depositYield = +ensureEl<HTMLInputElement>("newGoodDepositYield").value;
           const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
           const color = ensureEl<HTMLInputElement>("newGoodColor").value;
           const distribution = ensureEl("newGoodDistribution").textContent?.trim() ?? "";
@@ -107,6 +108,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             errors.push(t("Development must be a whole number from 0 to 100"));
           if (deposits.some(count => !Number.isFinite(count) || count < 0) || deposits[0] > deposits[1])
             errors.push(t("Deposits must be a range of non-negative numbers, the minimum first"));
+          if (!Number.isFinite(depositYield) || depositYield < 0)
+            errors.push(t("Deposit yield must be a valid non-negative number"));
 
           if (distribution) {
             try {
@@ -165,6 +168,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             Goods.setUnit(id, unit);
             Goods.setProduction(id, {
               deposits: distribution ? deposits : null, // nothing to place otherwise
+              depositYield: distribution && depositYield !== 1 ? depositYield : null,
               demandCoverage: demandCoverageState,
               multipliers: buildFinalMultipliers() ?? null,
               biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : null,
@@ -195,6 +199,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
               carriage,
               development: development || undefined,
               deposits: distribution ? deposits : undefined, // nothing to place otherwise
+              depositYield: distribution && depositYield !== 1 ? depositYield : undefined,
               unit,
               demandCoverage: demandCoverageState,
               multipliers: buildFinalMultipliers(),
@@ -308,6 +313,10 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             <input id="newGoodDepositsMax" class="ge-num" type="number" min="0" step="1" value="${editedGood?.deposits?.[1] ?? 2}" />
             ${t("on the map")}
           </span>
+          <span></span>
+
+          <label for="newGoodDepositYield" data-tip="${t("Multiplier on each deposit's output: below 1 for poorer deposits, above 1 for richer")}">${t("Deposit yield")}</label>
+          <span class="ge-inline"><input id="newGoodDepositYield" class="ge-num" type="number" min="0" step="0.1" value="${editedGood?.depositYield ?? 1}" /> ×</span>
           <span></span>
         </div>
         <div id="newGoodRawNote" class="ge-note"></div>
@@ -594,6 +603,7 @@ function openMultiplierPopup(
       break;
   }
 
+  entities.sort((a, b) => a.name.localeCompare(b.name));
   const rows = entities.map(entity => {
     const val = currentValues[entity.id] ?? 1;
     const box = `<fill-box fill="${entity.color || getRandomColor()}" size="1em" disabled data-tip="${escapeHtml(entity.name)}"></fill-box>`;

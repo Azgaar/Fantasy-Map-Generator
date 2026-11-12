@@ -65,7 +65,7 @@ class OutputModule {
   getDeposit(good: Good, cellId: number): number {
     const pop = Math.min(this.getCellPopulation(cellId), DEPOSIT_MAX_POPULATION);
     const mapScale = pack.cells.i.length / DEPOSIT_MAP_CELLS;
-    return pop * DEPOSIT_RICHNESS * mapScale * this.getModifiers(good, cellId);
+    return pop * DEPOSIT_RICHNESS * (good.depositYield ?? 1) * mapScale * this.getModifiers(good, cellId);
   }
 
   /** A land cell's people, or a water cell's from the land around it */

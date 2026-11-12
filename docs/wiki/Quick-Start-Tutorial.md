@@ -48,7 +48,7 @@ If you like the current map you probably want to **Save** it for a later use. Th
 
 * _Save to dropbox_. Log into your Dropbox account and save the `.map` file there.
 
-* _Save to browser_. Save the `.map` file to the browser storage. Then it can be loaded as a fully-functional map. Press <kbd>F6</kbd> for a quick save and <kbd>F9</kbd> for a quick load. Please use it only for a quick safe, browser storage can be purged from time to time and you can lose your progress. Always keep `.map` file saved on your machine.
+* _Save to browser_. Save the `.map` file to the browser storage. Then it can be loaded as a fully-functional map. Press <kbd>F6</kbd> for a quick save and <kbd>F9</kbd> to load the most recent browser save. The quick save and the latest autosaves are listed in the _Load_ menu, where each can be loaded, downloaded or removed. Please use it only for a quick safe, browser storage can be purged from time to time and you can lose your progress. Always keep `.map` file saved on your machine.
 
 The only reliable method is to have a `.map` file saved on your machine, preferably with multiple copies on Cloud or other machines in case of your machine collapse. FMG doesn't store any of your data and cannot restore the map if you lost the file!
 
@@ -90,7 +90,7 @@ The Advanced Options dialog holds settings that are easy to misread. Hover a set
 * _Provinces ratio_: the percentage of burgs that will have their own province. Provinces are sub-units of states and can be edited via the _Provinces Editor_.
 * _Size variety_: defines how much states area should be different. The lower value, the more uniform state areas are.
 * _Growth rate_: defines how far states and cultures will expand into neutral lands on generation. The lower value you have, the more lands will stay politically neutral.
-* _Autosave interval_: number of minutes the map should be auto-saved to browser memory. Set to `0` to disable the autosave.
+* _Autosave interval_: number of minutes the map should be auto-saved to browser memory. Set to `0` to disable the autosave. The five latest autosaves are kept.
 * _On load_: define what should be done when Generator is opened: a new map generated or a previously saved map auto-opened.
 * _Speaker voice_: select the voice used to speak burg and other names. Voice synthesis is provided by the browser.
 * _Emblem shape_: defines shield shape used during emblems generation.

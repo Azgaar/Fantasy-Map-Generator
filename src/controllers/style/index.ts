@@ -29,7 +29,18 @@ class StyleEditorController {
   private glowTimer?: number;
   private baselineName = "";
   private current?: Resolved;
-  private decoration?: FormDecoration;
+  private layer?: Resolved; // the element's own node, shown above the group the form edits
+  // the two forms live in boxes that outlive every render, so a decoration's listeners never stack
+  private readonly layerBox = document.createElement("div");
+  private readonly nodeBox = document.createElement("div");
+  private readonly layerDecoration = new FormDecoration(this.layerBox, (relative, value) => {
+    this.change(relative, value, this.layer);
+    this.refresh();
+  });
+  private readonly decoration = new FormDecoration(this.nodeBox, (relative, value) => {
+    this.change(relative, value);
+    this.refresh();
+  });
   private readonly elementsDialog: ElementsDialog;
   private readonly presetsDialog = new PresetSelector();
 
@@ -72,7 +83,7 @@ class StyleEditorController {
   /** Empty the form and drop what the controls and the tab opened; called when the tab is left */
   close(): void {
     findEl("styleForm")?.replaceChildren();
-    this.decoration?.detach();
+    this.detach();
     this.current = undefined;
     destroyControlDialogs();
     this.elementsDialog.close();
@@ -95,10 +106,10 @@ class StyleEditorController {
     const name = StylePresetsService.current();
     if (name === this.baselineName) return;
     this.baselineName = name;
-    this.decoration?.setBaseline(undefined);
+    this.setBaseline(undefined);
     void Baseline.load(name).then(loaded => {
       if (this.baselineName !== name) return;
-      this.decoration?.setBaseline(loaded);
+      this.setBaseline(loaded);
     });
   }
 
@@ -141,33 +152,50 @@ class StyleEditorController {
     return { element, group, layer, path: [element, "groups", group], schema, value, entries };
   }
 
+  /** A grouped element's own attrs and options, the values all its groups share; undefined when it has none */
+  private layerOf(sel: Resolved): Resolved | undefined {
+    if (!sel.group) return undefined;
+    const schema = (stylesSchema.shape[sel.element] as z.ZodObject).omit({ groups: true });
+    if (!Object.keys(schema.shape).length) return undefined;
+    return { element: sel.element, layer: sel.layer, path: [sel.element], schema, value: styles[sel.element] };
+  }
+
   private renderForm(sel: Resolved): void {
     this.current = sel;
+    this.layer = this.layerOf(sel);
     const form = ensureEl("styleForm");
-    this.decoration?.detach(); // the rows below are about to be replaced
+    this.detach(); // the rows below are about to be replaced
     form.replaceChildren();
     destroyControlDialogs();
     if (!sel.value) return;
 
     if (sel.layer && !Layers.isOn(sel.layer)) form.append(this.banner(sel.layer));
 
-    const rootTitle = sel.group ? `${layerLabel(sel.element)}: ${sel.group}` : layerLabel(sel.element);
-    form.append(
-      SchemaForm.render(sel.schema, sel.value, {
+    const render = (target: Resolved, rootTitle: string) =>
+      SchemaForm.render(target.schema, target.value!, {
         meta: styleMeta,
         controls: CUSTOM_CONTROLS,
         rootTitle,
-        onChange: (relative, value) => this.change(relative, value, sel)
-      })
-    );
-    this.addExtraRows(form, sel);
+        onChange: (relative, value) => this.change(relative, value, target)
+      });
+    const title = layerLabel(sel.element);
+    if (this.layer) this.layerBox.append(render(this.layer, title));
+    this.nodeBox.append(render(sel, sel.group ? `${title}: ${sel.group}` : title));
+    form.append(this.layerBox, this.nodeBox);
+    this.addExtraRows(this.nodeBox, sel);
 
-    // one decoration per editor: the form element outlives every render, so its listeners must not stack
-    this.decoration ??= new FormDecoration(form, (relative, value) => {
-      this.change(relative, value);
-      if (this.current) this.renderForm(this.current);
-    });
+    if (this.layer) this.layerDecoration.attach(this.layer);
     this.decoration.attach(sel);
+  }
+
+  private detach(): void {
+    for (const decoration of [this.layerDecoration, this.decoration]) decoration.detach();
+    this.layerBox.replaceChildren();
+    this.nodeBox.replaceChildren();
+  }
+
+  private setBaseline(baseline: Baseline | undefined): void {
+    for (const decoration of [this.layerDecoration, this.decoration]) decoration.setBaseline(baseline);
   }
 
   /** Set one value on the store and run its effect; `relative` is a path below the selection's node.
@@ -187,7 +215,7 @@ class StyleEditorController {
     runEffect(sel, path);
     if (sel.element === "grid") updateGridSizeReadout();
     // a control whose dialog wrote the store fires no form event, so the previews follow the store
-    this.decoration?.refreshPreview();
+    (sel === this.layer ? this.layerDecoration : this.decoration).refreshPreview();
   }
 
   private banner(layer: LayerId): HTMLElement {

@@ -60,7 +60,7 @@ Goods need development to be gathered or made. A region below a good's level pro
 | 6     | Grain, cattle, salt, hemp, wine, dates, pearls, gemstones, tobacco, cloth, cheese, beer                                                    |
 | 9     | Gold, copper, silver, olives, wool, silk, coal, oil, ceramics, ropes, boots, jewelry                                                       |
 | 12    | Tin, horses, camels, marble, dyes, incense, slaves, mahogany, saltpeter, bronze, arms, sails, garments, ink, preserved food, vinegar, soap |
-| 15    | Spices, tools, boats, harnesses, perfume                                                                                                   |
+| 15    | Spices, tools, boats, Tack, perfume                                                                                                        |
 | 18    | Iron, coins, barrels                                                                                                                       |
 | 21    | Tea, paper, books, candles                                                                                                                 |
 | 24    | Glass, sugar                                                                                                                               |

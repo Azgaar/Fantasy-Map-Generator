@@ -1831,11 +1831,16 @@ input[type="checkbox"]:not(.native) {
   font-family: var(--monospace);
 }
 
-.checkbox:checked + .checkbox-label:before {
+.checkbox:checked + .checkbox-label:before,
+.checkbox:indeterminate + .checkbox-label:before {
   line-height: 0.8em;
   font-weight: bold;
   content: "✓";
   color: #333333;
+}
+
+.checkbox:indeterminate + .checkbox-label:before {
+  content: "–";
 }
 
 div.textual select,

@@ -177,9 +177,9 @@ describe("market placement", () => {
   });
 });
 
-describe("claiming water deposits", () => {
-  // water 1 and 2 beside a burg on land 0, land 3 painted to market 2
-  const setPack = (good: number[], market: number[]) => {
+describe("expanding markets", () => {
+  it("floods water whether or not it holds a deposit", () => {
+    // water 1 and 2 beside a burg on land 0, then land 3
     pack = {
       cells: {
         i: [0, 1, 2, 3],
@@ -187,23 +187,13 @@ describe("claiming water deposits", () => {
         h: [30, 10, 10, 30],
         f: [1, 2, 2, 1],
         state: [1, 0, 0, 1],
-        good: Uint16Array.from(good),
-        market: Uint16Array.from(market)
+        good: new Uint16Array(4)
       },
       burgs: [{}, { i: 1, cell: 0, state: 1, port: 2 }],
       markets: [{ i: 1, centerBurgId: 1, goods: {} }]
     } as never;
-  };
-
-  it("gives a new water deposit a market and keeps the land as painted", () => {
-    setPack([0, 0, 5, 0], [1, 0, 0, 2]);
-    new MarketsModule().claimWaterDeposits();
-    expect(Array.from(pack.cells.market)).toEqual([1, 0, 1, 2]);
-  });
-
-  it("drops the water cell a deposit has left", () => {
-    setPack([0, 0, 0, 0], [1, 1, 0, 2]);
-    new MarketsModule().claimWaterDeposits();
-    expect(Array.from(pack.cells.market)).toEqual([1, 0, 0, 2]);
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    new MarketsModule()["expandMarkets"](pack.markets);
+    expect(Array.from(pack.cells.market)).toEqual([1, 1, 1, 1]);
   });
 });
