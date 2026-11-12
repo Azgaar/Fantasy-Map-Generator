@@ -207,24 +207,61 @@ export const PHASE_CASUALTY_RATE: Record<string, number> = {
   dogfight: 0.2
 };
 
-/** What troops do on the battlefield in a phase */
-const PHASE_STANCE: Record<string, Stance> = {
-  skirmish: "shoot",
-  shelling: "shoot",
-  bombardment: "shoot",
-  maneuvering: "shoot",
+/** What a side is told to do: the user sees and gives orders, the phases carry them out */
+export type Command = "hold" | "skirmish" | "attack" | "defend" | "pursue" | "retreat" | "surrender";
+
+/** The order a phase carries out; any other phase is an attack */
+const PHASE_COMMAND: Record<string, Command> = {
   blockade: "hold",
   sheltering: "hold",
-  defense: "hold",
-  shock: "hold",
   waiting: "hold",
-  surrendering: "hold",
-  retreat: "flee",
-  withdrawal: "flee",
-  flee: "flee"
+  skirmish: "skirmish",
+  shelling: "skirmish",
+  bombardment: "skirmish",
+  maneuvering: "skirmish",
+  defense: "defend",
+  shock: "defend",
+  pursue: "pursue",
+  chase: "pursue",
+  looting: "pursue",
+  retreat: "retreat",
+  withdrawal: "retreat",
+  flee: "retreat",
+  surrendering: "surrender"
 };
 
-export const getStance = (phase: string): Stance => PHASE_STANCE[phase] ?? "advance";
+/** What troops do on the battlefield under an order */
+const COMMAND_STANCE: Record<Command, Stance> = {
+  hold: "hold",
+  defend: "hold",
+  surrender: "hold",
+  skirmish: "shoot",
+  attack: "advance",
+  pursue: "advance",
+  retreat: "flee"
+};
+
+export const getStance = (phase: string): Stance => COMMAND_STANCE[PHASE_COMMAND[phase] ?? "attack"];
+
+/** A battle of two lines: no walls, no ambush, no ships to land from */
+export const isOpen = (type: BattleType): boolean => type === "field" || type === "naval" || type === "air";
+
+/**
+ * The order a side is under, by its phase: one that waits for the foe holds where it would skirmish and defends where
+ * it would attack; in a siege the phase says it all
+ */
+export function getCommand(type: BattleType, phase: string, advancing: boolean): Command {
+  const command = PHASE_COMMAND[phase] ?? "attack";
+  if (advancing || type === "siege") return command;
+  return command === "skirmish" ? "hold" : command === "attack" ? "defend" : command;
+}
+
+/**
+ * In an ambush and a landing the phases are how the fight stands, not what a general picks: an order by hand changes
+ * what the troops do and leaves the phase to take its course, unless it is to pursue or to retreat
+ */
+export const keepsPhase = (type: BattleType, command: Command): boolean =>
+  (type === "ambush" || type === "landing") && command !== "pursue" && command !== "retreat";
 
 export const getPhasePower = (phase: string, unitType: string): number => {
   const scheme = PHASE_POWER[phase] ?? PHASE_POWER.melee;
@@ -264,6 +301,38 @@ export const POSTURES: Record<BattleType, Record<Side, Postures>> = {
     attackers: postures("maneuvering", "dogfight", "pursue", "retreat"),
     defenders: postures("maneuvering", "dogfight", "pursue", "retreat")
   }
+};
+
+type Commands = Partial<Record<Command, string>>;
+
+/** An ambush and a landing have no phase to stand off in: see keepsPhase */
+const inField = ({ apart, close, chase, run }: Postures, open = false): Commands => {
+  const off = open ? apart : close;
+  return { hold: off, skirmish: off, attack: close, defend: close, pursue: chase, retreat: run };
+};
+const forBoth = (type: BattleType): Record<Side, Commands> => ({
+  attackers: inField(POSTURES[type].attackers, isOpen(type)),
+  defenders: inField(POSTURES[type].defenders, isOpen(type))
+});
+
+/** The orders a side can be given by hand, each with the phase that carries it out */
+export const COMMANDS: Record<BattleType, Record<Side, Commands>> = {
+  field: forBoth("field"),
+  naval: forBoth("naval"),
+  siege: {
+    attackers: { hold: "blockade", skirmish: "bombardment", attack: "storming", pursue: "looting", retreat: "retreat" },
+    defenders: {
+      hold: "sheltering",
+      skirmish: "bombardment",
+      attack: "sortie",
+      defend: "defense",
+      pursue: "pursue",
+      surrender: "surrendering"
+    }
+  },
+  ambush: forBoth("ambush"),
+  landing: forBoth("landing"),
+  air: forBoth("air")
 };
 
 /**

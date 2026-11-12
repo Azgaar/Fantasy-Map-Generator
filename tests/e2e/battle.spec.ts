@@ -25,7 +25,7 @@ const stepToEnd = async (page: Page) => {
 /** Order the attackers to close with the foe: a general may think better of attacking, and then nobody fights */
 async function orderAttack(page: Page) {
   await page.locator("#battleBanner_attackers .battleOrdersButton").click();
-  await page.locator("#battleOrdersPhase").selectOption({ index: 1 });
+  await page.locator("#battleOrdersOrder").selectOption("attack");
   await page.locator(".dialog-window:has(#battleOrdersScreen) button", { hasText: "Apply" }).click();
   await expect(page.locator("#battleOrdersScreen")).toHaveCount(0);
 }
@@ -89,27 +89,27 @@ test.describe("Battle simulator", () => {
     await expect(page.locator("#battleLogList > div").last()).toContainText("are turned");
   });
 
-  test("changes a side by hand once: phase, power and morale, each written to the log", async ({ page }) => {
+  test("changes a side by hand once: order, power and morale, each written to the log", async ({ page }) => {
     await startBattle(page);
     const banner = page.locator("#battleBanner_attackers");
     const power = () => page.locator("#battleBalance > i").first().textContent();
     const before = await power();
 
     await banner.locator(".battleOrdersButton").click();
-    const phase = page.locator("#battleOrdersPhase");
-    const label = (await phase.locator("option").nth(1).textContent())!;
-    await phase.selectOption({ index: 1 });
+    const order = page.locator("#battleOrdersOrder");
+    await order.selectOption("retreat"); // attackers of every battle type can be told to, and none begins with it
+    const label = (await order.locator("option:checked").textContent())!;
     await page.locator("#battleOrdersPower").fill("5000");
     await page.locator("#battleOrdersMorale").fill("-10");
     await page.locator(".dialog-window:has(#battleOrdersScreen) button", { hasText: "Apply" }).click();
 
     await expect(page.locator("#battleOrdersScreen")).toHaveCount(0);
-    await expect(banner.locator(".battlePhase")).toHaveText(label);
+    await expect(banner.locator(".battleOrder")).toHaveText(label);
     expect(await power()).not.toBe(before);
 
     await page.locator("#battleLogToggle").click();
     const log = page.locator("#battleLogList");
-    await expect(log).toContainText(label);
+    await expect(log).toContainText(label, { ignoreCase: true });
     await expect(log).toContainText("+5000");
     await expect(log).toContainText("−10");
   });
@@ -123,7 +123,7 @@ test.describe("Battle simulator", () => {
     await die.click();
     await expect(die).toHaveAttribute("data-die", String(((before + 1) % 6) + 1));
     await page.locator("#battleLogToggle").click();
-    await expect(page.locator("#battleLogList > div", { hasText: "Attackers fortune" })).toHaveCount(1);
+    await expect(page.locator("#battleLogList > div.attackers", { hasText: "Fortune" })).toHaveCount(1);
   });
 
   test("fits a narrow window: both sides stay above the battlefield, the armies under it", async ({ page }) => {

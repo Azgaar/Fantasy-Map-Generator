@@ -24,6 +24,7 @@ import {
   openBreach,
   raiseWalls
 } from "./battlefield";
+import { getCommands } from "./general";
 
 const unit = (name: string, type: string, power: number): MilitaryUnit => ({
   icon: "",
@@ -335,7 +336,7 @@ describe("battle generals", () => {
       defenders: [regiment(2, big)]
     });
     plan(ordered); // the order comes after the generals have thought, or before: it is the same battle
-    intervene(ordered, { tick: 0, kind: "phase", side: "attackers", phase: "melee" });
+    intervene(ordered, { tick: 0, kind: "order", side: "attackers", order: "attack" });
     expect(ordered.planned).toBe(false);
     run(ordered);
     expect(ordered.attackers.casualties).toBeGreaterThan(0);
@@ -367,11 +368,71 @@ describe("battle generals", () => {
     expect(b.result!.winner).toBe("attackers");
   });
 
-  it("keeps to a phase ordered by hand for ten rounds, then decides again", () => {
+  it("keeps to an order given by hand for ten rounds, then decides again", () => {
     const b = battle([regiment(1, big)], [regiment(2, big)]);
-    intervene(b, { tick: 0, kind: "phase", side: "defenders", phase: "melee" });
+    intervene(b, { tick: 0, kind: "order", side: "defenders", order: "attack" });
     for (let i = 0; i < ROUND_TICKS * 5; i++) tick(b);
     expect(b.defenders.phase).toBe("melee");
+    expect(getCommands(b)[1]).toBe("attack");
+  });
+
+  it("puts every phase as an order: in the open the side that waits holds, then defends", () => {
+    const b = battle([regiment(1, big)], [regiment(2, big)]);
+    tick(b);
+    expect(getCommands(b)).toEqual(["skirmish", "hold"]);
+    const orders = b.log.filter(entry => entry.event === "order").map(entry => [entry.side, entry.params!.order]);
+    expect(orders).toEqual([
+      ["attackers", "skirmish"],
+      ["defenders", "hold"]
+    ]);
+    for (let i = 0; i < ROUND_TICKS * 40 && b.defenders.phase !== "melee"; i++) tick(b);
+    expect(getCommands(b)).toEqual(["attack", "defend"]);
+    expect(b.course.map(record => record.orders)).toContain("Attackers: attack, defenders: defend");
+  });
+
+  it("has a side told to hold stay where it stands, and one told to attack come on", () => {
+    const b = battle([regiment(1, big)], [regiment(2, big)]);
+    intervene(b, { tick: 0, kind: "order", side: "attackers", order: "hold" });
+    const gap = (): number => Math.min(...of(b, "attackers").map(block => Math.abs(of(b, "defenders")[0].x - block.x)));
+    const apart = gap();
+    for (let i = 0; i < ROUND_TICKS * 6; i++) tick(b);
+    expect(getCommands(b)).toEqual(["hold", "hold"]);
+    expect(gap()).toBeGreaterThan(apart - 20);
+    intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "attack" });
+    expect([b.attackers.phase, b.attackers.advancing]).toEqual(["melee", true]);
+    for (let i = 0; i < ROUND_TICKS * 6; i++) tick(b);
+    expect(gap()).toBeLessThan(apart / 2);
+  });
+
+  it("leaves the phase of an ambush to the fight: an order there changes what the troops do", () => {
+    const b = battle([regiment(1, big)], [regiment(2, big)], "ambush");
+    expect(getCommands(b)).toEqual(["defend", "attack"]); // the column is caught, the ambushers fall on it
+    intervene(b, { tick: 0, kind: "order", side: "attackers", order: "attack" });
+    expect([b.attackers.phase, getCommands(b)[0]]).toEqual(["shock", "attack"]); // it attacks, still in shock
+    intervene(b, { tick: 0, kind: "order", side: "attackers", order: "surrender" }); // no order for a column
+    expect(getCommands(b)[0]).toBe("attack");
+    intervene(b, { tick: 0, kind: "order", side: "attackers", order: "retreat" });
+    expect(b.attackers.phase).toBe("retreat");
+  });
+
+  it("has ambushers told to hold keep where they lie, and fall on the column once the order has stood its time", () => {
+    const b = battle([regiment(1, big)], [regiment(2, big)], "ambush");
+    intervene(b, { tick: 0, kind: "order", side: "defenders", order: "hold" });
+    tick(b); // the generals plan and the troops take their places
+    // the riders on the wings still go for the riders of the column that come near
+    const foot = (): Block[] => of(b, "defenders").filter(block => block.kind !== "rider");
+    const lain = new Map(foot().map(block => [block.id, [block.x, block.y]]));
+    const strayed = (): number =>
+      Math.max(...foot().map(block => Math.hypot(block.x - lain.get(block.id)![0], block.y - lain.get(block.id)![1])));
+    for (let i = 0; i < ROUND_TICKS * 8; i++) tick(b);
+    expect(getCommands(b)[1]).toBe("hold");
+    expect(strayed()).toBeLessThan(60);
+    for (let i = 0; i < ROUND_TICKS * 6 && !b.result; i++) tick(b);
+    expect(b.defenders.plan.order).toBeNull();
+    expect(b.log.filter(entry => entry.event === "order" && entry.side === "defenders").at(-1)!.params).toEqual({
+      order: "attack"
+    });
+    expect(strayed()).toBeGreaterThan(100);
   });
 
   it("has a defender who is shot at with nothing to answer with go for the shooters", () => {
@@ -479,6 +540,23 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     expect(front > 450).toBe(b.defenders.waits); // inland when he settled on waiting, at the shore when not
   });
 
+  it("keeps a landing a landing when the attackers are told to hold off the shore", () => {
+    const field = createEmptyBattlefield();
+    for (let row = 0; row < FIELD.rows; row++)
+      for (let col = 0; col < 30; col++) field.water[row * FIELD.cols + col] = 1;
+    const b = setup("landing", mixed, mixed, field);
+    intervene(b, { tick: 0, kind: "order", side: "attackers", order: "hold" });
+    tick(b);
+    const afloat = b.blocks.filter(block => block.side === "attackers").map(block => block.x);
+    for (let i = 0; i < ROUND_TICKS * 9; i++) tick(b);
+    expect(getCommands(b)[0]).toBe("hold");
+    expect(b.blocks.filter(block => block.side === "attackers").map(block => block.x)).toEqual(afloat);
+    // the fight for the shore has not begun: nobody is past it, and the defenders have not lost their readiness
+    expect([b.attackers.phase, b.defenders.phase]).toEqual(["landing", PHASES.landing.defenders[0]]);
+    for (let i = 0; i < ROUND_TICKS * 3; i++) tick(b);
+    expect(getCommands(b)[0]).toBe("attack"); // the order has stood its ten rounds
+  });
+
   it("has besiegers a little short of the odds weigh storming at once, and engines alone storm nothing", () => {
     const short = setup("siege", { infantry: 5200, archers: 800 }, { infantry: 900, archers: 600 }, walled());
     plan(short);
@@ -556,8 +634,8 @@ describe("battle morale", () => {
   it("has a battalion lose heart among foes and take heart among friends", () => {
     const b = battle([regiment(1, { infantry: 300 })], [regiment(2, { infantry: 1500 })]);
     const foes = (): Block[] => b.blocks.filter(block => block.side === "defenders");
-    intervene(b, { tick: 0, kind: "phase", side: "attackers", phase: "skirmish" }); // both stand
-    intervene(b, { tick: 0, kind: "phase", side: "defenders", phase: "skirmish" });
+    intervene(b, { tick: 0, kind: "order", side: "attackers", order: "hold" }); // both stand
+    intervene(b, { tick: 0, kind: "order", side: "defenders", order: "hold" });
     for (const [i, foe] of foes().entries())
       intervene(b, { tick: 0, kind: "move", block: foe.key, x: b.blocks[0].x + 100, y: 120 + i * 80 });
     const [lone] = b.blocks;
@@ -706,7 +784,7 @@ describe("battle ground", () => {
     // the infantry stands right in the way of the cavalry
     intervene(b, { tick: 0, kind: "move", block: of("cavalry").key, x: 400, y: 300 });
     intervene(b, { tick: 0, kind: "move", block: of("infantry").key, x: 360, y: 300 });
-    intervene(b, { tick: 0, kind: "phase", side: "attackers", phase: "retreat" });
+    intervene(b, { tick: 0, kind: "order", side: "attackers", order: "retreat" });
     for (let i = 0; i < 5; i++) tick(b);
     expect(of("cavalry").x).toBeLessThan(of("infantry").x);
     expect(of("cavalry").y).toBeCloseTo(300);
@@ -946,7 +1024,7 @@ describe("battle ways", () => {
         expect(within(b, block), `${block.key} at tick ${b.tick}`).toBe(block.side === "defenders");
     }
 
-    intervene(b, { tick: b.tick, kind: "phase", side: "attackers", phase: "storming" });
+    intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "attack" });
     let stormed = false;
     for (let i = 0; i < 240 && !b.result && !stormed; i++) {
       tick(b);
@@ -964,7 +1042,7 @@ describe("battle ways", () => {
     let out = false;
     for (let i = 0; i < 36; i++) {
       if (b.defenders.phase !== "sortie")
-        intervene(b, { tick: b.tick, kind: "phase", side: "defenders", phase: "sortie" });
+        intervene(b, { tick: b.tick, kind: "order", side: "defenders", order: "attack" });
       for (const block of b.blocks) was.set(block.id, [block.x, block.y]);
       tick(b);
       for (const block of b.blocks) {
@@ -1000,9 +1078,9 @@ describe("battle ways", () => {
         defenders: [regiment(2, { infantry: 1000 })]
       });
       for (let i = 0; i < 20 * 6; i++) {
-        intervene(b, { tick: b.tick, kind: "phase", side: "attackers", phase: "bombardment" });
+        intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "skirmish" });
         // the garrison is kept in: left to itself it would sally out at engines nobody guards
-        intervene(b, { tick: b.tick, kind: "phase", side: "defenders", phase: "sheltering" });
+        intervene(b, { tick: b.tick, kind: "order", side: "defenders", order: "hold" });
         tick(b);
         if (b.result) break;
       }

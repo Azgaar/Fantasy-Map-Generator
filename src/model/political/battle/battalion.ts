@@ -1,7 +1,7 @@
 // The battalion level: what one battalion does this tick, by its order and by what is around it. See docs/domain/battles.md.
 
 import type { Battle, Block } from "./battle";
-import { getStance, POSTURES } from "./battle-rules";
+import { type Command, getStance, keepsPhase, POSTURES, type Side } from "./battle-rules";
 import { getDistance, inContact, normalize, PACE, type Spot } from "./movement";
 
 export type Kind = "line" | "shooter" | "rider" | "engine";
@@ -41,6 +41,12 @@ export function getKind(unit: { range: number; speed: number }, open: boolean): 
   if (unit.range >= LONG_SHOT) return "engine";
   if (unit.range > 0) return "shooter";
   return unit.speed >= PACE * 2 ? "rider" : "line";
+}
+
+/** What an order by hand has the side do where the phase is not the order's to change: in an ambush, in a landing */
+export function getBearing(battle: Battle, side: Side): Command | null {
+  const { order } = battle[side].plan;
+  return order && keepsPhase(battle.type, order) ? order : null;
 }
 
 export function decide(battle: Battle, block: Block, sense: Sense): Intent {
@@ -88,7 +94,11 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
   }
 
   const shaken = block.morale < SHAKEN;
-  const bold = getStance(battle[block.side].phase) === "advance" && !shaken;
+  const { phase, advancing, plan } = battle[block.side];
+  const told = getBearing(battle, block.side);
+  const forward = told ? told === "attack" || told === "defend" : getStance(phase) === "advance";
+  const bold = forward && !shaken;
+  const keen = told === "skirmish"; // shooters go as far as it takes where the formation stays
   const inRange = (): Block[] => ready.filter(foe => far(foe) <= block.range);
 
   if (order.mission === "battery") {
@@ -109,7 +119,8 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
     const target = pick(inRange());
     if (target) return shoot(target);
     // nothing in range: a step forward from the place, no further than the leash
-    const next = bold ? pick(ready.filter(foe => far(foe, order) <= block.range + LEASH)) : null;
+    const leash = keen && plan.fixed ? Infinity : LEASH;
+    const next = bold || keen ? pick(ready.filter(foe => far(foe, order) <= block.range + leash)) : null;
     return next ? shoot(next, true) : goHome();
   }
 
@@ -131,7 +142,7 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
 
   // line, reserve and guard keep their place and go for what comes within reach of it
   const guard = order.mission === "guard";
-  const reach = order.mission === "line" && bold && battle[block.side].advancing ? CHARGE : COUNTER; // who waits, holds
+  const reach = order.mission === "line" && bold && advancing ? CHARGE : COUNTER; // who waits, holds
   const within = ready.filter(foe => {
     const distance = far(foe, order) - foe.width / 2;
     if (foe.id === order.target || distance <= reach) return true;

@@ -73,7 +73,7 @@ A rehearsal is the real engine on a copy of the battle with `rehearsal` set and 
 
 ### Phase
 
-The phase is the general's standing order to the side, shown in the banner. It is decided from the appraisal with fixed thresholds and never rolled:
+The phase is the state the general puts his side in. The screen does not show it: the user sees and gives [orders](#the-sides-order). It is decided from the appraisal with fixed thresholds and never rolled:
 
 - **stand off** (skirmish, shelling, maneuvering): close to shooting distance and no further. A general with the better fire keeps it up for 4 to 12 rounds, by his share of the fire; one with the worse fire closes at once when attacking, and when defending holds his ground unless he is the stronger.
 - **close** (melee, boarding, dogfight): the formation advances into contact; a defender takes this phase when the foe's line comes within a charge.
@@ -83,7 +83,13 @@ The phase is the general's standing order to the side, shown in the banner. It i
 - **landing**: the fight for the shore lasts three rounds; the defenders are ready when their morale at the start is no lower than the attackers', else shocked.
 - **siege**: the besiegers storm at the odds the walls ask for, bombard with engines, else blockade; they call a storm off when it has lost a third of those odds and nobody is on the walls, and go back to their lines. The besieged shelter or bombard, sortie at engines whose guards the party outweighs, and surrender when their morale is spent.
 
-A phase ordered by hand stands for ten rounds; then the general decides again.
+### The side's order
+
+The banner, the log and the marker legend (`battle.course`) show **orders** (`Command`: hold, skirmish, attack, defend, pursue, retreat, surrender), never phases. `getCommand` puts a phase as an order. In the open (`isOpen`) it also takes `side.advancing`: a side that waits holds where it would skirmish and defends where it would attack.
+
+`COMMANDS` lists the orders a side of each battle type can be given by hand and the phase each takes. `obey` stores the order in `plan.order`, sets `advancing` by it (not in a siege, where the phase does) and changes the phase when the current one does not carry the order out already. The order stands for ten rounds (`ORDER_ROUNDS`): meanwhile the general neither changes the phase nor goes over to the attack; then `release` hands the side back to him.
+
+In an ambush and a landing the phases are states of the fight (surprise, shock, landing, prepared defense), so an order to hold, skirmish, attack or defend leaves the phase alone (`keepsPhase`): `choosePhase` lets it take its course, short of running or chasing, and the battalions read the order instead of the phase (`getBearing`). Held off (`keepsOff`), ambushers keep their places instead of hunting, wings guard, the frame halts at shooting distance and the reserve is not thrown in; told to skirmish, shooters of a formation that does not move go as far as it takes. A side stood by an order has not begun: the round of the first blow (`battle.engaged`) is not set by nobody marching while an order stands, or a landing held off the shore would be over before it started.
 
 ### Orders
 

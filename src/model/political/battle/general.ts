@@ -1,15 +1,27 @@
 // The side level: a general appraises the field, picks a tactic, draws the troops up and, each round, sets the phase
 // and gives every battalion its order. Nothing here is rolled. See docs/domain/battles.md.
 
-import { CHARGE, COUNTER, SHAKEN } from "./battalion";
+import { CHARGE, COUNTER, getBearing, SHAKEN } from "./battalion";
 import type { Battle, Block, Order, Plan } from "./battle";
-import { enemyOf, getPhasePower, getStance, POSTURES, SIDES, type Side } from "./battle-rules";
+import {
+  COMMANDS,
+  type Command,
+  enemyOf,
+  getCommand,
+  getPhasePower,
+  getStance,
+  isOpen,
+  keepsPhase,
+  POSTURES,
+  SIDES,
+  type Side
+} from "./battle-rules";
 import { FIELD, nodeAt, nodeCentre, terrainAt } from "./battlefield";
 import { form, GAP, type Place, ROW_GAP, TACTICS, type TacticName } from "./formations";
 import { getPace, getTurn, hasWalls, isStorming, type Point, ROUND_TICKS, shuns, turn } from "./movement";
 import { spread, trace } from "./pathfinding";
 
-const ORDER_ROUNDS = 10; // a phase ordered by hand stands that long
+const ORDER_ROUNDS = 10; // an order given by hand stands that long
 const STORM_ODDS = [4, 2.5, 1.8, 1.4]; // besiegers to besieged it takes to storm walls, by the breaches in them
 const ASSAULT_ODDS = 1.25; // and a burg without walls
 const SORTIE_ROUNDS = 8;
@@ -78,14 +90,15 @@ const KEEN = 1.25; // and at which defenders come out to meet them
 
 /** Who comes to whom in the open: attackers unless much the weaker, defenders when much the stronger and behind no river */
 function isAttacking(battle: Battle, side: Side, crossing: boolean): boolean {
-  if (!isOpenFight(battle)) return side === "attackers";
+  if (!isOpenFight(battle)) return side === "attackers" || battle.type === "ambush"; // ambushers fall on the column
   if (battle[side].waits) return false; // its general thought it through and saw nothing to gain by it
   return side === "attackers" ? getOdds(battle, side) >= BOLD : getOdds(battle, side) >= KEEN && !crossing;
 }
 
-/** A battle of two lines: no walls, no ambush, no ships to land from */
-const isOpenFight = (battle: Battle): boolean =>
-  battle.type === "field" || battle.type === "naval" || battle.type === "air";
+const isOpenFight = (battle: Battle): boolean => isOpen(battle.type);
+
+/** Told by hand to hold or to skirmish where no phase says so */
+const keepsOff = (battle: Battle, side: Side): boolean => ["hold", "skirmish"].includes(getBearing(battle, side) ?? "");
 
 const getOdds = (battle: Battle, side: Side): number =>
   survey(battle, side).power / (survey(battle, enemyOf(side)).power || 1e-9);
@@ -101,6 +114,7 @@ function createPlan(tactic: TacticName, frame: Frame, fixed = false): Plan {
     halt: COUNTER * 2,
     since: 0,
     fired: null,
+    order: null,
     byHand: null,
     opening: 0,
     gap: Infinity,
@@ -295,7 +309,7 @@ export function getOptions(battle: Battle, side: Side): Option[] {
   const names = rateTactics(battle, side, blocks, battle[side].plan.tactic === "crossing")[0].map(([name]) => name);
   const options = (rough ? names.slice(0, 1) : names).map(name => option(name));
   // an attacker who is the weaker may think better of it; one who is not came to fight
-  const free = battle[side].plan.byHand === null; // not ordered what to do by hand
+  const free = !battle[side].plan.order; // not ordered what to do by hand
   const cautious = side === "attackers" && free && isAttacking(battle, side, false) && getOdds(battle, side) < 1;
   if (cautious) options.push(option(null, true));
   return options.length < 2 ? [] : options;
@@ -610,26 +624,49 @@ export function enlist(battle: Battle, side: Side, blocks: Block[]): void {
 export function command(battle: Battle): void {
   const views = { attackers: survey(battle, "attackers"), defenders: survey(battle, "defenders") };
   const gap = getGap(views.attackers.ready, views.defenders.ready);
+  const before = getCommands(battle);
+  for (const side of SIDES) release(battle, side);
   const phases = SIDES.map(side => choosePhase(battle, side, views[side], views[enemyOf(side)], gap));
   SIDES.forEach((side, i) => {
     if (phases[i] !== battle[side].phase) battle[side].plan.since = battle.round;
   });
-  if (phases[0] !== battle.attackers.phase || phases[1] !== battle.defenders.phase)
-    battle.log.push({ tick: battle.tick, event: "phases", params: { attackers: phases[0], defenders: phases[1] } });
   [battle.attackers.phase, battle.defenders.phase] = phases;
   for (const side of SIDES) direct(battle, side, views[side], views[enemyOf(side)], gap);
+  getCommands(battle).forEach((order, i) => {
+    if (!battle.tick || order !== before[i])
+      battle.log.push({ tick: battle.tick, event: "order", side: SIDES[i], params: { order } });
+  });
 }
 
-/** A phase ordered by hand: the general keeps to it for a while */
-export function obey(battle: Battle, side: Side): void {
+/** The order a side is under: the one given by hand while it stands, else what its phase comes to */
+export function getOrder(battle: Battle, side: Side): Command {
+  const { phase, advancing, plan } = battle[side];
+  return plan.order ?? getCommand(battle.type, phase, advancing);
+}
+
+export const getCommands = (battle: Battle): Command[] => SIDES.map(side => getOrder(battle, side));
+
+/** An order given by hand: the side goes over to the phase it takes, and its general keeps to it for a while */
+export function obey(battle: Battle, side: Side, command: Command): void {
   const data = battle[side];
-  data.plan.byHand = battle.round;
-  data.plan.since = battle.round;
-  // ordered to close with the foe, a general who meant to wait attacks
-  const { close, chase } = POSTURES[battle.type][side];
-  if (isOpenFight(battle) && (data.phase === close || data.phase === chase))
-    Object.assign(data, { advancing: true, waits: false });
+  const phase = COMMANDS[battle.type][side][command];
+  if (!phase) return; // not an order for such a battle
+  if (!keepsPhase(battle.type, command) && getOrder(battle, side) !== command) data.phase = phase;
+  Object.assign(data.plan, { order: command, byHand: battle.round, since: battle.round });
+  // the order also says who comes to whom; in a siege the phase does. Told to go for the foe, a general who meant to wait attacks
+  if (battle.type !== "siege" && command !== "retreat") {
+    data.advancing = command !== "hold" && command !== "defend";
+    if (data.advancing) data.waits = false;
+  }
   if (battle.tick) direct(battle, side, survey(battle, side), survey(battle, enemyOf(side)), battle[side].plan.gap);
+}
+
+/** An order given by hand has stood its time: the general decides again */
+function release(battle: Battle, side: Side): void {
+  const { plan } = battle[side];
+  if (plan.byHand === null || battle.round - plan.byHand < ORDER_ROUNDS) return;
+  Object.assign(plan, { order: null, byHand: null });
+  if (!isOpenFight(battle)) battle[side].advancing = isAttacking(battle, side, false);
 }
 
 /** The space between the nearest troops in order of the two sides, engines apart */
@@ -644,8 +681,18 @@ function getGap(own: Block[], foes: Block[]): number {
 
 function choosePhase(battle: Battle, side: Side, own: View, foe: View, gap: number): string {
   const { phase, plan } = battle[side];
+  if (!plan.order) return readPhase(battle, side, own, foe, gap);
+  if (!keepsPhase(battle.type, plan.order)) return phase; // the order is the phase
+  // the fight takes its course, but the side neither runs nor gives chase against its order
+  const next = readPhase(battle, side, own, foe, gap);
+  const { chase, run } = POSTURES[battle.type][side];
+  return next === chase || next === run ? phase : next;
+}
+
+/** The phase a general puts his side in, by how the fight stands */
+function readPhase(battle: Battle, side: Side, own: View, foe: View, gap: number): string {
+  const { phase, plan } = battle[side];
   const names = POSTURES[battle.type][side];
-  if (plan.byHand !== null && battle.round - plan.byHand < ORDER_ROUNDS) return phase;
   if (battle.type === "siege" && battle.field.held !== null)
     return side === "attackers" ? besiege(battle, own, foe) : withstand(battle, own, foe);
   if (phase === names.run) return phase; // a side that turned to run does not come back
@@ -810,19 +857,16 @@ function direct(battle: Battle, side: Side, own: View, foe: View, gap: number): 
   plan.gap = gap;
   plan.bled = own.losses > plan.losses && !own.ready.some(block => block.action === "fight") ? plan.bled + 1 : 0;
   plan.losses = own.losses;
+  const holds = plan.tactic === "crossing"; // who holds a crossing stays behind it till the foe runs
   if (siege) data.advancing = side === "attackers" || phase === "sortie" || phase === "pursue";
   else if (phase === names.chase) data.advancing = true;
-  else if (!data.advancing && isOpenFight(battle) && phase !== names.run && plan.tactic !== "crossing") {
-    // who holds a crossing stays behind it till the foe runs
+  else if (!data.advancing && !plan.order && isOpenFight(battle) && phase !== names.run && !holds) {
     const spent = phase === names.close && odds >= 1.5;
     // the foe does not come: a side no weaker goes for it, unless that is a march into fire it cannot answer
     const waited = plan.idle >= 6 && odds >= 1 && battle.round >= 6 && !data.waits && own.fire >= foe.fire / 2;
     // shot at with little to answer with, and better at grips: it will not stand there and take it
     const outshot = plan.bled >= 2 && own.fire < foe.fire / 2 && own.grip / (own.grip + foe.grip) > 1 / 3;
-    if (spent || waited || outshot) {
-      data.advancing = true;
-      battle.log.push({ tick: battle.tick, event: "advance", side });
-    }
+    if (spent || waited || outshot) data.advancing = true;
   }
 
   if (siege && side === "attackers" && !isStorming(battle))
@@ -893,7 +937,9 @@ function getMission(battle: Battle, side: Side, block: Block, own: View, foes: S
   const siege = battle.type === "siege" && battle.field.held !== null;
   const free = phase === names.chase || phase === "looting" || (siege && phase === "storming");
   if (role === "support" || role === "battery") return role;
-  if (plan.tactic === "ambuscade" || plan.tactic === "waylay") return "hunt";
+  const lying = plan.tactic === "ambuscade" || plan.tactic === "waylay";
+  const off = keepsOff(battle, side);
+  if (lying && advancing && !off) return "hunt"; // told to stand, ambushers keep where they lie
   if (free) return role === "line" && !siege && phase === names.chase && block.kind !== "rider" ? "line" : "hunt";
   if (role === "line") return "line";
   if (role === "reserve") return "reserve";
@@ -901,7 +947,7 @@ function getMission(battle: Battle, side: Side, block: Block, own: View, foes: S
   // riders on a wing go round the foe's line when the lines close, unless the foe's riders there outweigh them
   const sign = Math.sign(block.order.across) || 1;
   const launched = phase === names.close || (advancing && plan.gap < CHARGE); // to fall on the foe as the lines meet
-  if (!launched || block.morale < SHAKEN || siege) return "guard";
+  if (!launched || off || block.morale < SHAKEN || siege) return "guard";
   const there = (all: Block[], at: (block: Block) => number): number =>
     sum(all, block => (block.kind === "rider" && at(block) * sign > 0 ? strength(block) : 0));
   const mine = there(own.ready, other => other.order.across);
@@ -963,7 +1009,7 @@ function sendReserve(battle: Battle, side: Side, own: View, foe: View, foes: See
     send(nearest([...spare(), ...guards], threat), threat);
   }
 
-  if (phase !== names.close) return;
+  if (phase !== names.close || keepsOff(battle, side)) return;
   // 3. where a foe at grips wavers, to break it
   const held = new Set(own.ready.map(block => (block.action === "fight" ? block.target : null)));
   const wavering = foe.ready.filter(
@@ -994,7 +1040,8 @@ function moveFrame(battle: Battle, side: Side, own: View, foe: View, gap: number
     plan.heading = turn(plan.heading, bearing, straight ? 0.12 : 0.4);
   if (!data.advancing) return;
 
-  const want = phase === names.apart && isOpenFight(battle) ? plan.halt : -Infinity;
+  const apart = keepsOff(battle, side) || (phase === names.apart && isOpenFight(battle));
+  const want = apart ? plan.halt : -Infinity;
   const pace = Math.min(...first.map(block => getPace(battle, block, terrainAt(battle.field, block.x, block.y).water)));
   const advance = Math.min(pace * ROUND_TICKS, gap - want);
   const lags = first.map(block => toFrame(plan, block.order)[1] - toFrame(plan, block)[1]).sort((a, b) => a - b);

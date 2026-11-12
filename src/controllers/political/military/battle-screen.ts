@@ -1,5 +1,5 @@
 import { select, sum } from "d3";
-import { BATTLE_PHASE_LABELS, BATTLE_TACTIC_LABELS, BATTLE_TYPE_LABELS } from "@/data/id-labels";
+import { BATTLE_ORDER_LABELS, BATTLE_TACTIC_LABELS, BATTLE_TYPE_LABELS } from "@/data/id-labels";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import {
@@ -24,14 +24,16 @@ import {
 import {
   BATTLE_TYPES,
   type BattleType,
+  COMMANDS,
+  type Command,
   getBattleName,
   getRegimentStatus,
   getTypeName,
-  PHASES,
   SIDES,
   type Side
 } from "@/model/political/battle/battle-rules";
 import { buildBattlefield, createEmptyBattlefield } from "@/model/political/battle/battlefield";
+import { getOrder } from "@/model/political/battle/general";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
 import { getUnitPower } from "@/model/political/military-units";
@@ -250,7 +252,7 @@ const STYLE = /* css */ `
   #battleLayout .battleMenu > button.current { font-weight: bold; }
 
   /* who fights whom, and how the scales stand */
-  #battleHeader { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.3em 0.8em; margin-bottom: -0.5em; padding: 0.3em 0.6em; background: linear-gradient(90deg, transparent, ${SIDE_COLORS.attackers}40 25%, ${SIDE_COLORS.defenders}40 75%, transparent); }
+  #battleHeader { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.3em 0.8em; margin-bottom: -0.5em; padding: 0.3em 0.6em; background: linear-gradient(150deg, transparent, ${SIDE_COLORS.attackers}30 20%, transparent 45%, transparent 55%, ${SIDE_COLORS.defenders}30 80%, transparent); }
   .battleBanner { display: flex; align-items: center; gap: 0.7em; width: 100%; max-width: 30em; min-width: 0; }
   .battleBanner.defenders { justify-self: end; }
   .battleBanner.defenders, .battleBanner.defenders .battleBannerText > span { flex-direction: row-reverse; }
@@ -303,7 +305,7 @@ const STYLE = /* css */ `
   #battleLogList > div { display: grid; grid-template-columns: 1.8em 0.6em minmax(0, 1fr); gap: 0.4em; align-items: baseline; }
   #battleLogList > div > i { color: var(--muted); font-style: normal; font-variant-numeric: tabular-nums; text-align: right; }
   #battleLogList > div > u { width: 0.6em; height: 0.6em; background: var(--side, transparent); }
-  #battleLogList > div.phases { color: var(--muted); }
+  #battleLogList > div.order { color: var(--muted); }
   #battleLogList > div.start, #battleLogList > div.end { font-weight: bold; }
 
   #battleFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4em 1em; }
@@ -352,7 +354,7 @@ function renderDialog(): void {
       <span class="battleBannerText">
         <span>
           <b class="battleStates"></b>
-          <button class="battleOrdersButton" data-tip="${t("Change the phase, add power or morale. Each change is made once and written to the battle log")}"><span class="battlePhase"></span></button>
+          <button class="battleOrdersButton" data-tip="${t("Give an order, add power or morale. Each change is made once and written to the battle log")}"><span class="battleOrder"></span></button>
         </span>
         <span>
           <div class="battleBar battleMorale"><i></i></div>
@@ -680,7 +682,7 @@ function refresh(): void {
   if (b.result) {
     result.className = b.result.winner ?? "";
     result.dataset.tip = outcome(b);
-    put(ensureEl("battleFooter"), "#battleResult", logText(b.log.at(-1)!));
+    put(ensureEl("battleFooter"), "#battleResult", resultText(b));
   }
 
   // setup only; nothing is hidden, so the controls never jump
@@ -726,15 +728,14 @@ function refreshSide(side: Side): void {
     die.innerHTML = dieFace(data.die);
   }
 
-  const phase = banner.querySelector<HTMLElement>(".battlePhase")!;
-  phase.className = `battlePhase icon-button-${data.phase}`;
-  phase.dataset.tip = phaseTip(data.phase, b.type);
-  put(banner, ".battlePhase", phaseLabel(data.phase));
+  const order = getOrder(b, side);
+  const label = banner.querySelector<HTMLElement>(".battleOrder")!;
+  label.className = `battleOrder icon-button-${order}`;
+  label.dataset.tip = orderTip(order);
+  put(banner, ".battleOrder", BATTLE_ORDER_LABELS[order]);
 
   refreshRegiments(side);
 }
-
-const phaseLabel = (phase: string): string => BATTLE_PHASE_LABELS[phase] ?? capitalize(phase);
 
 /** The sheet's regiments: built when their set changes, then only the numbers move */
 function refreshRegiments(side: Side): void {
@@ -834,15 +835,18 @@ function openOrders(side: Side): void {
   if (b.result) return;
   findEl("battleOrdersScreen")?.remove();
   const amount = t("Amount to add; a negative one is taken away");
-  const phases = PHASES[b.type][side]
-    .map(phase => `<option value="${phase}" ${phase === b[side].phase ? "selected" : ""}>${phaseLabel(phase)}</option>`)
+  const current = getOrder(b, side);
+  const orders = (Object.keys(COMMANDS[b.type][side]) as Command[])
+    .map(
+      order => `<option value="${order}" ${order === current ? "selected" : ""}>${BATTLE_ORDER_LABELS[order]}</option>`
+    )
     .join("");
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="battleOrdersScreen" class="dialog">
       <div style="display: grid; grid-template-columns: auto 8em; align-items: center; gap: 0.5em 1em; width: auto">
-        <label for="battleOrdersPhase">${t("Phase")}</label>
-        <select id="battleOrdersPhase">${phases}</select>
+        <label for="battleOrdersOrder">${t("Orders")}</label>
+        <select id="battleOrdersOrder">${orders}</select>
         <label for="battleOrdersPower" data-tip="${amount}">${t("Power")}</label>
         <input id="battleOrdersPower" data-tip="${amount}" type="number" step="10" value="0" />
         <label for="battleOrdersMorale" data-tip="${amount}">${t("Morale")}</label>
@@ -852,10 +856,10 @@ function openOrders(side: Side): void {
   );
 
   const apply = (): void => {
-    const phase = ensureEl<HTMLSelectElement>("battleOrdersPhase").value;
+    const order = ensureEl<HTMLSelectElement>("battleOrdersOrder").value as Command;
     const power = +ensureEl<HTMLInputElement>("battleOrdersPower").value || 0;
     const morale = +ensureEl<HTMLInputElement>("battleOrdersMorale").value || 0;
-    if (phase !== b[side].phase) intervene(b, { tick: b.tick, kind: "phase", side, phase });
+    if (order !== current) intervene(b, { tick: b.tick, kind: "order", side, order });
     if (power) intervene(b, { tick: b.tick, kind: "power", side, value: power });
     if (morale) intervene(b, { tick: b.tick, kind: "morale", side, value: morale });
     Dialog.close("battleOrdersScreen");
@@ -863,7 +867,7 @@ function openOrders(side: Side): void {
   };
 
   Dialog.open("battleOrdersScreen", {
-    title: side === "attackers" ? t("Attackers") : t("Defenders"),
+    title: sideLabel(side),
     position: { my: "center", at: "center", of: "#battleScreen" },
     buttons: [
       { label: t("Apply"), onClick: apply },
@@ -1020,42 +1024,36 @@ function joinBattle(regiment: Regiment, side: Side): void {
 
 // the log
 
+/** A line of the log; whose it is the mark beside it shows */
 function logText({ event, side, params }: LogEntry): string {
-  const attackers = side === "attackers";
   if (event === "start") return t("The battle begins");
-  if (event === "phases") {
-    return t("Attackers: {{attackers}}, defenders: {{defenders}}", {
-      attackers: phaseLabel(params!.attackers),
-      defenders: phaseLabel(params!.defenders)
-    });
-  }
-  if (event === "move") return t("{{block}} are moved", params);
-  if (event === "turn") return t("{{block}} are turned", params);
-  if (event === "die") {
-    return `${attackers ? t("Attackers fortune") : t("Defenders fortune")}: ${params!.die}`;
-  }
-  if (event === "power") return `${attackers ? t("Attackers power") : t("Defenders power")}: ${params!.value}`;
-  if (event === "morale") return `${attackers ? t("Attackers morale") : t("Defenders morale")}: ${params!.value}`;
-  if (event === "tactic") {
-    return `${attackers ? t("Attackers tactic") : t("Defenders tactic")}: ${BATTLE_TACTIC_LABELS[params!.tactic]}`;
-  }
-  if (event === "advance")
-    return attackers ? t("The attackers go over to the attack") : t("The defenders go over to the attack");
-  if (event === "rout") return t("{{block}} break and run", params);
-  if (event === "rally") return t("{{block}} rally", params);
-  if (event === "destroyed") return t("{{block}} are destroyed", params);
-  if (event === "fled") return t("{{block}} leave the field", params);
+  if (event === "order") return `${t("Orders")}: ${BATTLE_ORDER_LABELS[params!.order as Command]}`;
+  if (event === "ordered")
+    return t("Ordered to {{order}}", { order: BATTLE_ORDER_LABELS[params!.order as Command].toLowerCase() });
+  if (event === "tactic") return `${t("Tactic")}: ${BATTLE_TACTIC_LABELS[params!.tactic]}`;
+  if (event === "die") return `${t("Fortune")}: ${params!.die}`;
+  if (event === "power") return `${t("Power")}: ${params!.value}`;
+  if (event === "morale") return `${t("Morale")}: ${params!.value}`;
+  if (event === "join") return t("{{regiment}} joins the battle", params);
   if (event === "breach") return t("The walls of {{burg}} are breached", params);
-  if (event === "join") {
-    return attackers ? t("{{regiment}} joins the attackers", params) : t("{{regiment}} joins the defenders", params);
-  }
-  if (event === "order") {
-    return attackers
-      ? t("Attackers are ordered to {{phase}}", { phase: phaseLabel(params!.phase) })
-      : t("Defenders are ordered to {{phase}}", { phase: phaseLabel(params!.phase) });
-  }
-  if (!side) return t("The battle dies down");
-  return attackers ? t("The attackers hold the field") : t("The defenders hold the field");
+  if (event === "end") return side ? t("Hold the field") : t("The battle dies down");
+
+  const block = { block: capitalize(params!.block) };
+  if (event === "move") return t("{{block}} are moved", block);
+  if (event === "turn") return t("{{block}} are turned", block);
+  if (event === "rout") return t("{{block}} break and run", block);
+  if (event === "rally") return t("{{block}} rally", block);
+  if (event === "destroyed") return t("{{block}} are destroyed", block);
+  return t("{{block}} leave the field", block);
+}
+
+const sideLabel = (side: Side): string => (side === "attackers" ? t("Attackers") : t("Defenders"));
+
+/** How the battle ended, where no mark shows the side */
+function resultText(b: Battle): string {
+  const winner = b.result?.winner;
+  if (!winner) return t("The battle dies down");
+  return winner === "attackers" ? t("The attackers hold the field") : t("The defenders hold the field");
 }
 
 function outcome(b: Battle): string {
@@ -1084,7 +1082,10 @@ function buildLog(): BattleLogFile {
     attackers: ids("attackers"),
     defenders: ids("defenders"),
     interventions: [...b.interventions],
-    log: b.log.map(entry => `${Math.floor(entry.tick / ROUND_TICKS) + 1}. ${logText(entry)}`),
+    log: b.log.map(entry => {
+      const whose = entry.side ? `${sideLabel(entry.side)}: ` : "";
+      return `${Math.floor(entry.tick / ROUND_TICKS) + 1}. ${whose}${logText(entry)}`;
+    }),
     result: b.result ? outcome(b) : null
   };
 }
@@ -1269,9 +1270,9 @@ function applyResults(): void {
   legend += forcesLegend("Attackers", "attackers");
   legend += forcesLegend("Defenders", "defenders");
 
-  if (b.phasesRecord.length) {
-    const phasesText = b.phasesRecord.map(r => (r.count > 1 ? `${r.phase} (x${r.count})` : r.phase)).join("<br>");
-    legend += `<br><br>${t("Engagement progression")}:<br>${phasesText}`;
+  if (b.course.length) {
+    const course = b.course.map(r => (r.count > 1 ? `${r.orders} (x${r.count})` : r.orders)).join("<br>");
+    legend += `<br><br>${t("Engagement progression")}:<br>${course}`;
   }
   marker.note = legend;
 
@@ -1315,38 +1316,14 @@ function typeTip(type: BattleType): string {
   return t("Air Battle: maneuring fight of avia units");
 }
 
-function phaseTip(phase: string, type: BattleType): string {
-  const reduced = t("Units strength reduced");
-  const increased = t("Units strength increased");
-  const tips: Record<string, () => string> = {
-    skirmish: () => t("Skirmish phase. Ranged units excel"),
-    melee: () => sentences(t("Melee phase"), t("Melee units excel")),
-    pursue: () => sentences(t("Pursue phase"), type === "air" ? increased : t("Mounted units excel")),
-    retreat: () => sentences(t("Retreat phase"), reduced),
-    shelling: () => t("Shelling phase. Naval artillery bombardment of enemy fleet"),
-    boarding: () => t("Boarding phase. Melee units go aboard"),
-    chase: () => t("Сhase phase. Naval units pursue and rarely shell enemy fleet"),
-    withdrawal: () => t("Withdrawal phase. Naval units try to escape enemy fleet"),
-    blockade: () => t("Blockade phase. Prepare or hold the blockade"),
-    bombardment: () => t("Bombardment phase. Attack enemy with machinery units"),
-    storming: () => sentences(t("Storming phase"), t("Storm enemy town"), t("Melee units excel")),
-    looting: () => sentences(t("Looting phase"), t("Plunder the town"), increased),
-    sheltering: () => t("Sheltering phase. Hide behind the walls and wait"),
-    sortie: () => sentences(t("Sortie phase"), t("Make a sortie from besieged town"), t("Melee units excel")),
-    defense: () =>
-      type === "siege"
-        ? sentences(t("Defense phase"), t("Ranged and melee units excel"))
-        : sentences(t("Defense phase"), t("Prepared defense"), increased),
-    surrendering: () => sentences(t("Surrendering phase"), t("Give up the defense"), reduced),
-    shock: () => sentences(t("Shock phase"), type === "landing" ? t("Units are not prepared for a defense") : reduced),
-    surprise: () => t("Surprice attack phase. Units strength increased, ranged units excel"),
-    landing: () => t("Landing phase. Amphibious attack. Units are vulnerable against prepared defense"),
-    flee: () => sentences(t("Flee phase"), reduced),
-    waiting: () => t("Waiting phase. Cannot pursue fleeing naval"),
-    maneuvering: () => sentences(t("Maneuvering phase"), reduced),
-    dogfight: () => sentences(t("Dogfight phase"), increased)
-  };
-  return tips[phase]?.() ?? phase;
+function orderTip(order: Command): string {
+  if (order === "hold") return t("Hold: stand the ground and shoot what comes within range");
+  if (order === "skirmish") return t("Skirmish: come within shot of the enemy and shoot");
+  if (order === "attack") return t("Attack: close with the enemy");
+  if (order === "defend") return t("Defend: stand the ground and fight what comes at it");
+  if (order === "pursue") return t("Pursue: chase the broken enemy");
+  if (order === "retreat") return t("Retreat: leave the field");
+  return t("Surrender: give up the defense");
 }
 
 export const BattleScreen = { open };

@@ -3,6 +3,7 @@ import type { MilitaryUnit } from "@/types/military";
 import { decide, getKind, type Kind, type Sense } from "./battalion";
 import {
   type BattleType,
+  type Command,
   enemyOf,
   getBattleStatus,
   getInitialMorale,
@@ -16,7 +17,19 @@ import {
 } from "./battle-rules";
 import { type Battlefield, FIELD, type FieldWall, getWallsBetween, openBreach, terrainAt } from "./battlefield";
 import type { TacticName } from "./formations";
-import { command, deploy, enlist, getBase, getOptions, type Option, obey, reach, settle, takePlace } from "./general";
+import {
+  command,
+  deploy,
+  enlist,
+  getBase,
+  getCommands,
+  getOptions,
+  type Option,
+  obey,
+  reach,
+  settle,
+  takePlace
+} from "./general";
 import {
   forgetWays,
   getFlight,
@@ -91,7 +104,8 @@ export interface Plan {
   halt: number; // how far from the foe the formation stops to shoot
   since: number; // round the phase was taken
   fired: number | null; // round its shooting began
-  byHand: number | null; // round a phase was ordered by hand
+  order: Command | null; // given by hand, while it stands
+  byHand: number | null; // the round it was given
   opening: number; // rounds the surprise of an ambush lasts
   gap: number; // between the sides, last round
   idle: number; // rounds it has not closed
@@ -166,7 +180,7 @@ export interface BattleSide {
 export type Intervention =
   | { tick: number; kind: "move"; block: string; x: number; y: number }
   | { tick: number; kind: "turn"; block: string; facing: number }
-  | { tick: number; kind: "phase"; side: Side; phase: string }
+  | { tick: number; kind: "order"; side: Side; order: Command }
   | { tick: number; kind: "power"; side: Side; value: number }
   | { tick: number; kind: "morale"; side: Side; value: number }
   | { tick: number; kind: "die"; side: Side; die: number }
@@ -175,8 +189,8 @@ export type Intervention =
 
 export type LogEvent =
   | "start"
-  | "phases"
   | "order"
+  | "ordered"
   | "move"
   | "turn"
   | "die"
@@ -184,7 +198,6 @@ export type LogEvent =
   | "morale"
   | "join"
   | "tactic"
-  | "advance"
   | "rout"
   | "rally"
   | "destroyed"
@@ -228,7 +241,7 @@ export interface Battle {
   brokenAt: number | null; // tick a side was left with no troops in order
   storm: number | null; // round the besiegers set out to storm the walls
   battered: number; // how far the engines are with the next breach, 0 to 1
-  phasesRecord: { phase: string; count: number }[];
+  course: { orders: string; count: number }[]; // the orders the sides were under, round by round
   interventions: Intervention[];
   log: LogEntry[];
   result: BattleResult | null;
@@ -283,7 +296,7 @@ export function createBattle(setup: BattleSetup): Battle {
     brokenAt: null,
     storm: null,
     battered: 0,
-    phasesRecord: [],
+    course: [],
     interventions: [],
     log: [],
     result: null,
@@ -325,7 +338,7 @@ function drawUp(battle: Battle): void {
   for (const change of battle.interventions) {
     if (change.kind === "move") moveBlock(battle, change.block, change.x, change.y);
     if (change.kind === "turn") turnBlock(battle, change.block, change.facing);
-    if (change.kind === "phase") order(battle, change.side, change.phase);
+    if (change.kind === "order") obey(battle, change.side, change.order);
   }
 }
 
@@ -374,7 +387,7 @@ function rehearse(battle: Battle, side: Side, option: Option): number {
     attackers: copy("attackers"),
     defenders: copy("defenders"),
     blocks: [],
-    phasesRecord: [],
+    course: [],
     interventions: [],
     log: [],
     result: null,
@@ -400,14 +413,14 @@ export function intervene(battle: Battle, change: Intervention): void {
       tick: battle.tick,
       event: change.kind,
       side: block.side,
-      params: { block: blockName(battle, block) }
+      params: { block: blockName(block) }
     });
     return;
   }
 
-  if (change.kind === "phase") {
-    order(battle, change.side, change.phase);
-    battle.log.push({ tick: battle.tick, event: "order", side: change.side, params: { phase: change.phase } });
+  if (change.kind === "order") {
+    obey(battle, change.side, change.order);
+    battle.log.push({ tick: battle.tick, event: "ordered", side: change.side, params: { order: change.order } });
   } else if (change.kind === "power") {
     battle[change.side].bonus += change.value;
     battle.log.push({ tick: battle.tick, event: "power", side: change.side, params: { value: signed(change.value) } });
@@ -419,7 +432,7 @@ export function intervene(battle: Battle, change: Intervention): void {
     battle.log.push({ tick: battle.tick, event: "die", side: change.side, params: { die: String(change.die) } });
   } else if (change.kind === "type") {
     battle.type = change.type;
-    battle.interventions = battle.interventions.filter(c => c.kind !== "phase" || c.tick); // phases of the old type
+    battle.interventions = battle.interventions.filter(c => c.kind !== "order" || c.tick); // orders for the old type
     for (const side of SIDES) battle[side].phase = PHASES[battle.type][side][0];
   } else {
     battle[change.side].regiments.push(change.regiment);
@@ -435,7 +448,7 @@ export function intervene(battle: Battle, change: Intervention): void {
   if (battle.tick) updatePower(battle);
   else {
     // what the generals settled on does not stand; a move or a turn of a battalion leaves it be
-    if (["power", "add", "type", "phase"].includes(change.kind)) rethink(battle);
+    if (["power", "add", "type", "order"].includes(change.kind)) rethink(battle);
     prepare(battle);
   }
 }
@@ -523,7 +536,8 @@ function startRound(battle: Battle): void {
     return block.action === "move" && Math.hypot(block.x - x, block.y - y) > 10;
   });
   places.set(battle, new Map(battle.blocks.map(block => [block.id, [block.x, block.y]])));
-  if (battle.engaged === null && battle.round && (fighting || !marching)) {
+  const held = SIDES.some(side => battle[side].plan.order); // stood by an order, a side has not begun
+  if (battle.engaged === null && battle.round && (fighting || (!marching && !held))) {
     battle.engaged = battle.round;
     battle.lastLoss = battle.tick;
   }
@@ -531,16 +545,11 @@ function startRound(battle: Battle): void {
   command(battle);
   batter(battle);
 
-  const phase = `Attackers: ${battle.attackers.phase}, defenders: ${battle.defenders.phase}`;
-  const last = battle.phasesRecord.at(-1);
-  if (last?.phase === phase) last.count += 1;
-  else battle.phasesRecord.push({ phase, count: 1 });
-}
-
-/** A phase ordered by hand: the general keeps to it */
-function order(battle: Battle, side: Side, phase: string): void {
-  battle[side].phase = phase;
-  obey(battle, side);
+  const [attackers, defenders] = getCommands(battle);
+  const orders = `Attackers: ${attackers}, defenders: ${defenders}`;
+  const last = battle.course.at(-1);
+  if (last?.orders === orders) last.count += 1;
+  else battle.course.push({ orders, count: 1 });
 }
 
 const strength = (block: Block): number => block.troops * block.unitPower * block.upkeep;
@@ -678,7 +687,7 @@ function flee(battle: Battle, block: Block, others: Block[]): void {
       tick: battle.tick,
       event: "fled",
       side: block.side,
-      params: { block: blockName(battle, block) }
+      params: { block: blockName(block) }
     });
   }
 }
@@ -799,7 +808,7 @@ function fight(battle: Battle): void {
         tick: battle.tick,
         event: "destroyed",
         side: block.side,
-        params: { block: blockName(battle, block) }
+        params: { block: blockName(block) }
       });
       shake(battle, block, 6);
     }
@@ -809,7 +818,7 @@ function fight(battle: Battle): void {
 function rout(battle: Battle, block: Block): void {
   block.status = "routed";
   block.routs += 1;
-  battle.log.push({ tick: battle.tick, event: "rout", side: block.side, params: { block: blockName(battle, block) } });
+  battle.log.push({ tick: battle.tick, event: "rout", side: block.side, params: { block: blockName(block) } });
   shake(battle, block, 8);
 }
 
@@ -821,7 +830,7 @@ function rally(battle: Battle, block: Block): void {
   const role: Role = block.kind === "shooter" ? "support" : block.kind === "engine" ? "battery" : "reserve";
   Object.assign(block.order, { role, mission: role, sent: false, target: null });
   takePlace(battle, block);
-  battle.log.push({ tick: battle.tick, event: "rally", side: block.side, params: { block: blockName(battle, block) } });
+  battle.log.push({ tick: battle.tick, event: "rally", side: block.side, params: { block: blockName(block) } });
 }
 
 /** A loss nearby unsettles friends and heartens foes */
@@ -1013,6 +1022,7 @@ const NO_PLAN: Plan = {
   halt: 0,
   since: 0,
   fired: null,
+  order: null,
   byHand: null,
   opening: 0,
   gap: Infinity,
@@ -1053,10 +1063,8 @@ function turnBlock(battle: Battle, key: string, facing: number): void {
   if (block) block.facing = block.order.facing = normalize(facing);
 }
 
-export function blockName(battle: Battle, block: Block): string {
-  const regiment = battle[block.side].regiments.find(r => r.state === block.state && r.i === block.regiment);
-  return `${regiment?.name ?? ""} ${block.unit.replace(/_/g, " ")} ${block.number || ""}`.trim();
-}
+/** A battalion in the log: the side is shown beside it, and the regiment's name would take the line */
+const blockName = (block: Block): string => `${block.unit.replace(/_/g, " ")} ${block.number || ""}`.trim();
 
 const total = (regiment: BattleRegiment): number => sum(Object.values(regiment.troops), troops => troops);
 

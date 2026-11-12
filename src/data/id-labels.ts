@@ -4,7 +4,7 @@ import type { Expense } from "@/data/expenses";
 import type { LabelType } from "@/model/annotations/labels-generator";
 import type { ProsperityLevel } from "@/model/economy/prosperity";
 import type { Sampling } from "@/model/graph/lattice";
-import type { BattleType } from "@/model/political/battle/battle-rules";
+import type { BattleType, Command } from "@/model/political/battle/battle-rules";
 import type { TransportDomain } from "@/model/story/journeys/transports-generator";
 import type { DemandCategory } from "@/types/economy";
 import { t } from "@/utils/i18n";
@@ -266,30 +266,14 @@ export const BATTLE_TYPE_LABELS: Record<BattleType, string> = {
   air: t("Air battle")
 };
 
-export const BATTLE_PHASE_LABELS: Record<string, string> = {
+export const BATTLE_ORDER_LABELS: Record<Command, string> = {
+  hold: t("Hold"),
   skirmish: t("Skirmish"),
-  melee: t("Melee"),
-  pursue: t("Pursuit"),
+  attack: t("Attack"),
+  defend: t("Defend"),
+  pursue: t("Pursue"),
   retreat: t("Retreat"),
-  shelling: t("Shelling"),
-  boarding: t("Boarding"),
-  chase: t("Chase"),
-  withdrawal: t("Withdrawal"),
-  blockade: t("Blockade"),
-  bombardment: t("Bombardment"),
-  storming: t("Storming"),
-  looting: t("Looting"),
-  sheltering: t("Sheltering"),
-  sortie: t("Sortie"),
-  defense: t("Defense"),
-  surrendering: t("Surrender"),
-  shock: t("Shock"),
-  surprise: t("Surprise attack"),
-  landing: t("Landing"),
-  flee: t("Flight"),
-  waiting: t("Waiting"),
-  maneuvering: t("Maneuvering"),
-  dogfight: t("Dogfight")
+  surrender: t("Surrender")
 };
 
 export const BATTLE_TACTIC_LABELS: Record<string, string> = {
