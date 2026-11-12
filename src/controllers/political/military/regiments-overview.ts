@@ -9,6 +9,7 @@ import { Tags } from "@/model/tags";
 import { drawRegiment } from "@/renderers/draw-military";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
+import { App } from "@/ui/app-commands";
 import { Dialog } from "@/ui/dialog/dialog";
 
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -88,6 +89,11 @@ function renderDialog(): void {
         ></button>
         <button id="regimentsAddNew" data-tip="${t("Add")}" class="icon-user-plus"></button>
         <button
+          id="regimentsRecalculate"
+          data-tip="${t("Recalculate military forces of the selected state, or of all states")}"
+          class="icon-retweet"
+        ></button>
+        <button
           id="regimentsExport"
           data-tip="${t("Save data as a CSV file")}"
           class="icon-download"
@@ -108,6 +114,7 @@ function renderDialog(): void {
   ensureEl("regimentsOverviewRefresh").addEventListener("click", refreshRegimentsOverview);
   ensureEl("regimentsPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("regimentsAddNew").addEventListener("click", toggleAdd);
+  ensureEl("regimentsRecalculate").addEventListener("click", recalculateRegiments);
   ensureEl("regimentsExport").addEventListener("click", downloadRegimentsData);
   ensureEl("regimentsSearch").addEventListener("input", event => {
     filterState.search = (event.target as HTMLInputElement).value;
@@ -404,6 +411,10 @@ function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   Military.generateNote(reg, pack.states[state]); // add legend
   drawRegiment(reg, state);
   toggleAdd();
+}
+
+function recalculateRegiments(): void {
+  App.openMilitaryRegeneration({ stateId: filterState.stateId === -1 ? undefined : filterState.stateId });
 }
 
 function downloadRegimentsData(): void {

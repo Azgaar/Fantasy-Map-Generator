@@ -6,7 +6,7 @@ import type { openTab } from "@/app/chrome/options-panel";
 import type { changeCellsDensity, syncOptionInputs } from "@/app/chrome/tabs/options-tab";
 import type { applyLayersPreset, applyURLLayers } from "@/app/layers-presets";
 import type { generate, regenerateMap, regeneratePrompt } from "@/app/lifecycle";
-import type { isLinkable, MAP_COMMANDS, openEconomyRegeneration } from "@/app/map-commands";
+import type { isLinkable, MAP_COMMANDS, openEconomyRegeneration, openMilitaryRegeneration } from "@/app/map-commands";
 
 interface AppCommands {
   generate: typeof generate;
@@ -21,6 +21,7 @@ interface AppCommands {
   applyURLLayers: typeof applyURLLayers;
   mapCommands: typeof MAP_COMMANDS;
   openEconomyRegeneration: typeof openEconomyRegeneration;
+  openMilitaryRegeneration: typeof openMilitaryRegeneration;
   isLinkable: typeof isLinkable;
 }
 

@@ -204,7 +204,7 @@ Saving to the dropbox account, if connected.
 
 #### Browser
 
-Saving to the browser's memory.
+Quick save (<kbd>F6</kbd>) to the browser's storage. It keeps one quick save, replaced on every save, next to the five latest autosaves. Browser storage is only a backup: the browser can clear it at any time, so keep `.map` files on your machine.
 
 #### View-only mode
 
@@ -214,7 +214,9 @@ Tick **View-only mode** to save a copy that opens for browsing only. It works fo
 
 Loading a previously saved map.
 
-The buttons correspond to those of the save window.
+Load from the machine, a URL or Dropbox.
+
+**Saved in the browser** lists the quick save and the autosaves with the map name, time and size. Each one can be loaded, downloaded as a `.map` file or removed. <kbd>F9</kbd> loads the most recent of them.
 
 ## Zoom out
 
@@ -597,7 +599,7 @@ Map settings, applied when you generate a new map:
 
 Interface settings, applied immediately:
 
-- Autosave interval: how often, in minutes, the map is saved to browser storage. 0 turns autosave off.
-- On load: generate a new map or open the last saved one when the page opens.
+- Autosave interval: how often, in minutes, the map is saved to browser storage. 0 turns autosave off. The five latest autosaves are kept, and the last autosave of a previous map is the last to go.
+- On load: generate a new map or open the most recent browser save when the page opens.
 - Speaker voice: the voice used by the speaker buttons next to names.
 - Emblem shape: the default coat of arms shield shape.

@@ -15,9 +15,12 @@ import {
   type TariffRule
 } from "@/model/political/states-generator";
 import { formatPrice } from "@/model/units";
+import { stateEmblemIcon } from "@/renderers/draw-emblems";
 import { goodBadge } from "@/renderers/draw-goods";
+import type { Good } from "@/types/economy";
 import { App } from "@/ui/app-commands";
 import { Dialog } from "@/ui/dialog/dialog";
+import { pickLimitation } from "@/ui/dialog/limitation-picker";
 import {
   bindEconomyWiki,
   budgetBackground,
@@ -26,7 +29,6 @@ import {
   mountAdjustments,
   tone
 } from "@/ui/economy-view";
-import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { minmax, rn } from "@/utils/number-utils";
@@ -53,7 +55,11 @@ const STYLE = /* css */ `
   #stateBudgetForm input[type="range"]::-moz-range-track { background: transparent }
   #stateBudgetForm select { width: 100%; margin: 0 }
   #stateBudgetForm .scroll { max-height: 13em; overflow-y: auto }
-  #stateBudgetForm .pick { width: 100%; text-align: left; overflow: hidden; text-overflow: ellipsis }
+  #stateBudgetForm .pick { width: 100%; white-space: nowrap; overflow: hidden; padding: 0 0.2em }
+  #stateBudgetForm .pick svg { vertical-align: middle; margin: -0.2em 0 }
+  #stateBudgetForm tr.columns th { border: 0; padding: 0.3em 0 0; font-weight: normal; color: #666 }
+  #stateBudgetForm #stateTariffRules td { padding: 0.1em 0.2em 0.1em 0 }
+  #stateBudgetForm #stateTariffRules input.rate { width: 3.2em }
 `;
 
 const dialogId = "stateBudgetEditor";
@@ -109,7 +115,7 @@ function addListeners(): void {
 
 /** Fills the form from the state, dropping unapplied edits */
 function render(): void {
-  Dialog.close("tariffSelectorDialog"); // its rule is about to be replaced
+  Dialog.close("limitationPicker"); // its rule is about to be replaced
   const state = pack.states[stateId];
   const taxes = Accounts.getBudget(stateId);
   edit = {
@@ -153,7 +159,7 @@ function apply(): void {
 }
 
 function cleanup(): void {
-  Dialog.destroy("tariffSelectorDialog");
+  Dialog.destroy("limitationPicker");
   Dialog.destroy(dialogId);
   stateId = 0;
   onApplied = undefined;
@@ -168,11 +174,11 @@ function renderForm(state: State): string {
   const { salesTax, tariffs, pollTax, pollTaxOwed, marketFees, markets, corruption } = Accounts.getBudget(state.i);
   const { budget } = state.economy;
   const percent = (id: string, value: number, step = 1, max = 100) =>
-    `<td><input id="${id}" type="number" min="0" max="${max}" step="${step}" value="${value}"/> %</td>`;
+    `<td><input id="${id}" type="number" min="0" max="${max}" step="${step}" value="${value}"/>%</td>`;
   const shareRow = (key: Expense | "corruption", label: string, tipText: string, value: number, last: string) =>
     `<tr class="${key === "corruption" ? "minor" : ""}"><td data-tip="${tipText}">${label}</td>
       <td><input class="share" data-key="${key}" type="range" min="0" max="100" step="1" value="${value}"/></td>
-      <td><input class="share" data-key="${key}" type="number" min="0" max="100" step="1" value="${value}"/> %</td>${last}</tr>`;
+      <td><input class="share" data-key="${key}" type="number" min="0" max="100" step="1" value="${value}"/>%</td>${last}</tr>`;
   const columns = `<colgroup><col style="width: 8.5em"/><col/><col style="width: 5.2em"/><col style="width: 6.5em"/></colgroup>`;
   const effect = (label: string, value: string, tipText: string) =>
     `<tr><td colspan="3" data-tip="${tipText}">${label}</td><td class="amount" data-tip="${tipText}">${value}</td></tr>`;
@@ -204,11 +210,13 @@ function renderForm(state: State): string {
         ${effect(t("Court and clergy served"), share(StateOrders.getProvision(state, "court")), EconomyTerms.expenseTip("court"))}
       </tbody>
     </table>
-    <table>
-      <colgroup><col/><col/><col style="width: 6.5em"/><col style="width: 5.2em"/><col style="width: 1.4em"/></colgroup>
-      <tbody><tr><th colspan="2" data-tip="${t("Specific rules override general ones")}">${t("Tariffs and Embargoes")}</th><th class="actions" colspan="3"><button id="stateTariffReset" type="button" class="icon-arrows-cw" data-tip="${t("Reset tariffs based on current diplomatic relations")}">${t("Reset")}</button> <button id="stateTariffAdd" type="button" class="icon-plus" data-tip="${t("Add tariff or embargo rule")}">${t("Add")}</button></th></tr></tbody>
+    <table>${TARIFF_COLUMNS}
+      <tbody>
+        <tr><th colspan="2" data-tip="${t("Specific rules override general ones")}">${t("Tariffs and Embargoes")}</th><th class="actions" colspan="3"><button id="stateTariffReset" type="button" class="icon-arrows-cw" data-tip="${t("Reset tariffs based on current diplomatic relations")}">${t("Reset")}</button> <button id="stateTariffAdd" type="button" class="icon-plus" data-tip="${t("Add tariff or embargo rule")}">${t("Add")}</button></th></tr>
+        <tr class="columns"><th>${t("States")}</th><th>${t("Goods")}</th><th>${t("Policy")}</th><th>${t("Rate")}</th><th></th></tr>
+      </tbody>
     </table>
-    <div class="scroll"><table><colgroup><col/><col/><col style="width: 6.5em"/><col style="width: 5.2em"/><col style="width: 1.4em"/></colgroup><tbody id="stateTariffRules"></tbody></table></div>`;
+    <div class="scroll"><table>${TARIFF_COLUMNS}<tbody id="stateTariffRules"></tbody></table></div>`;
 }
 
 /** Adjustments: the user's own lines, added to what the state collects */
@@ -234,20 +242,37 @@ function drawBudget(): void {
   ensureEl("stateBudgetBalance").innerHTML = `<span class="${tone(balance)}">${balance}%</span>`;
 }
 
+const TARIFF_COLUMNS = `<colgroup><col/><col/><col style="width: 6em"/><col style="width: 4.6em"/><col style="width: 1.2em"/></colgroup>`;
+const MAX_ICONS = 4;
+
+/** A pick button: the icons of the listed states or goods, "All" for no list, names in the tip */
+function pickButton(type: "states" | "goods", ids: number[] | "all"): string {
+  const name = (id: number) => (type === "states" ? pack.states[id]?.name : Goods.get(id)?.name) || String(id);
+  const icon = (id: number) => {
+    if (type === "states") return stateEmblemIcon(id);
+    const good = Goods.get(id);
+    return good ? `<svg width="1.2em" height="1.2em">${goodBadge(good)}</svg>` : "";
+  };
+  const all = !Array.isArray(ids);
+  const names = all ? t("All") : ids.map(name).join(", ") || t("None");
+  const content = all
+    ? t("All")
+    : ids.slice(0, MAX_ICONS).map(icon).join("") + (ids.length > MAX_ICONS ? ` +${ids.length - MAX_ICONS}` : "");
+  return `<button type="button" class="pick ${type}" data-tip="${sentences(escapeHtml(names), t("Click to select"))}">${content || t("None")}</button>`;
+}
+
 /** Tariffs: rules by states and goods, the most specific winning */
 function drawRules(): void {
   ensureEl("stateTariffRules").innerHTML =
     edit.rules
       .map((rule, index) => {
-        const states = listLabel(rule.states, id => pack.states[id]?.name, t("All states"));
-        const goods = listLabel(rule.goods, id => Goods.get(id)?.name, t("All goods"));
         const isEmbargo = rule.rate === "embargo";
         const rate = rn((rule.rate === "embargo" ? 0.1 : rule.rate) * 100, 2);
         return `<tr data-index="${index}">
-          <td><button type="button" class="pick states" data-tip="${sentences(escapeHtml(states.tip), t("Click to select"))}">${escapeHtml(states.label)}</button></td>
-          <td><button type="button" class="pick goods" data-tip="${sentences(escapeHtml(goods.tip), t("Click to select"))}">${escapeHtml(goods.label)}</button></td>
+          <td>${pickButton("states", rule.states)}</td>
+          <td>${pickButton("goods", rule.goods)}</td>
           <td><select class="policy"><option value="tariff" ${isEmbargo ? "" : "selected"}>${t("Tariff")}</option><option value="embargo" ${isEmbargo ? "selected" : ""}>${t("Embargo")}</option></select></td>
-          <td>${isEmbargo ? "" : `<input class="rate" type="number" min="0" max="1000" step="1" value="${rate}" data-tip="${t("Import tariff rate")}"/> %`}</td>
+          <td>${isEmbargo ? "" : `<input class="rate" type="number" min="0" max="1000" step="1" value="${rate}" data-tip="${t("Import tariff rate")}"/>%`}</td>
           <td><span class="icon-trash-empty pointer remove" data-tip="${t("Remove rule")}"></span></td></tr>`;
       })
       .join("") || `<tr><td colspan="5" class="muted"><i>${t("None")}</i></td></tr>`;
@@ -282,7 +307,7 @@ function onClick(event: MouseEvent): void {
     edit.rules.push({ states: "all", goods: "all", rate: 0.1 });
     drawRules();
   } else if (target.closest("#stateTariffReset")) {
-    Dialog.close("tariffSelectorDialog");
+    Dialog.close("limitationPicker");
     edit.rules = copyRules(States.defineTariffs(state));
     drawRules();
   } else {
@@ -290,7 +315,7 @@ function onClick(event: MouseEvent): void {
     const rule = row && edit.rules[+row.dataset.index!];
     if (!rule) return;
     if (target.classList.contains("remove")) {
-      Dialog.close("tariffSelectorDialog");
+      Dialog.close("limitationPicker");
       edit.rules.splice(+row.dataset.index!, 1);
       drawRules();
     } else if (target.classList.contains("states")) pickStates(rule);
@@ -303,131 +328,31 @@ const copyRules = (rules: TariffRule[]): TariffRule[] =>
 
 const copy = <T>(list: T[] | "all"): T[] | "all" => (Array.isArray(list) ? [...list] : "all");
 
-/** A short label for a list of states or goods, and all of them for the tip */
-function listLabel(ids: number[] | "all", name: (id: number) => string | undefined, allLabel: string) {
-  if (!Array.isArray(ids)) return { label: allLabel, tip: allLabel };
-  const names = ids.map(id => name(id) || String(id));
-  const label = names.length <= 2 ? names.join(", ") : `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
-  return { label: label || t("None"), tip: names.join(", ") || t("None") };
-}
-
 function pickStates(rule: TariffRule): void {
-  const foreign = pack.states.filter(s => s.i && !s.removed && s.i !== stateId);
-  const isAll = rule.states === "all";
-  const selected = new Set(Array.isArray(rule.states) ? rule.states : []);
-  openChecklist({
+  pickLimitation({
     title: t("Select States"),
-    allLabel: t("All states"),
-    isAll,
-    items: foreign.map(s => ({
-      id: s.i,
-      name: s.name,
-      badgeHtml: `<fill-box fill="${s.color || "#ccc"}" size=".8em" disabled></fill-box>`,
-      checked: isAll || selected.has(s.i)
-    })),
-    emptyWarning: t("Select at least one state"),
-    onSave: result => {
-      rule.states = result;
+    heading: t("States"),
+    items: pack.states.filter(state => state.i !== stateId),
+    allowed: Array.isArray(rule.states) ? rule.states : [],
+    badge: item => `<span style="color:${escapeHtml(item.color ?? "")}">⬤</span>${stateEmblemIcon(item.i)}`,
+    onApply: ids => {
+      rule.states = ids.length ? ids : "all";
       drawRules();
     }
   });
 }
 
 function pickGoods(rule: TariffRule): void {
-  const goods = options.map.goods;
-  const isAll = rule.goods === "all";
-  const selected = new Set(Array.isArray(rule.goods) ? rule.goods : []);
-  openChecklist({
+  pickLimitation({
     title: t("Select Goods"),
-    allLabel: t("All goods"),
-    isAll,
-    items: goods.map(g => ({
-      id: g.i,
-      name: g.name,
-      badgeHtml: g.icon
-        ? `<svg width="1.2em" height="1.2em" class="goodIcon" style="min-width: 1.2em; min-height: 1.2em; flex-shrink: 0;">${goodBadge(g)}</svg>`
-        : `<fill-box fill="${g.color || "#ccc"}" size=".8em" disabled></fill-box>`,
-      checked: isAll || selected.has(g.i)
-    })),
-    emptyWarning: t("Select at least one good"),
-    onSave: result => {
-      rule.goods = result;
+    heading: t("Goods"),
+    items: options.map.goods,
+    allowed: Array.isArray(rule.goods) ? rule.goods : [],
+    badge: item => `<svg width="1.4em" height="1.4em" style="vertical-align: middle">${goodBadge(item as Good)}</svg>`,
+    onApply: ids => {
+      rule.goods = ids.length ? ids : "all";
       drawRules();
     }
-  });
-}
-
-function openChecklist({
-  title,
-  allLabel,
-  isAll,
-  items,
-  emptyWarning,
-  onSave
-}: {
-  title: string;
-  allLabel: string;
-  isAll: boolean;
-  items: { id: number; name: string; badgeHtml?: string; checked: boolean }[];
-  emptyWarning: string;
-  onSave: (value: number[] | "all") => void;
-}): void {
-  Dialog.destroy("tariffSelectorDialog");
-  const itemsHtml = items
-    .map(
-      item =>
-        `<label style="display: flex; align-items: center; column-gap: 0.35em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><input type="checkbox" class="native tariffItemCheck" value="${item.id}" ${item.checked ? "checked" : ""} />${item.badgeHtml ?? ""}<span>${escapeHtml(item.name)}</span></label>`
-    )
-    .join("");
-  ensureEl("dialogs").insertAdjacentHTML(
-    "beforeend",
-    /* html */ `<div id="tariffSelectorDialog" class="dialog">
-      <div style="margin-bottom: 0.4em; padding-bottom: 0.3em; border-bottom: 1px solid #ccc;">
-        <label style="display: flex; align-items: center; column-gap: 0.3em;">
-          <input id="tariffAllCheck" type="checkbox" class="native" ${isAll ? "checked" : ""} />
-          <b>${allLabel}</b>
-        </label>
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.25em 0.5em; max-height: 16em; overflow-y: auto;">
-        ${itemsHtml}
-      </div>
-    </div>`
-  );
-
-  const dialogEl = ensureEl("tariffSelectorDialog");
-  const allCheck = ensureEl<HTMLInputElement>("tariffAllCheck");
-  const itemChecks = Array.from(dialogEl.querySelectorAll<HTMLInputElement>(".tariffItemCheck"));
-  allCheck.addEventListener("change", () => {
-    for (const check of itemChecks) check.checked = allCheck.checked;
-  });
-  dialogEl.addEventListener("change", event => {
-    const target = event.target as HTMLInputElement;
-    if (!target.classList.contains("tariffItemCheck")) return;
-    allCheck.checked = itemChecks.length > 0 && itemChecks.every(c => c.checked);
-  });
-
-  const close = () => Dialog.close("tariffSelectorDialog");
-  Dialog.open("tariffSelectorDialog", {
-    resizable: false,
-    title,
-    width: "24em",
-    onClose: () => Dialog.destroy("tariffSelectorDialog"),
-    buttons: [
-      {
-        label: t("Apply"),
-        onClick: () => {
-          if (allCheck.checked) {
-            onSave("all");
-            return close();
-          }
-          const checkedIds = itemChecks.filter(c => c.checked).map(c => +c.value);
-          if (!checkedIds.length) return tip(emptyWarning, false, "error");
-          onSave(checkedIds.length === itemChecks.length ? "all" : checkedIds);
-          close();
-        }
-      },
-      { label: t("Cancel"), onClick: close }
-    ]
   });
 }
 

@@ -401,6 +401,20 @@ describe("deposits", () => {
     expect(Output.getDeposit(catalogue[0], 0)).toBeCloseTo(8 * DEPOSIT_RICHNESS);
   });
 
+  it("yield their good's deposit yield times as much, to a burg and its land", () => {
+    pack.cells.good = Uint16Array.of(1);
+    catalogue[0].value = 50;
+    catalogue[0].depositYield = 0.1;
+    expect(prepare().day.depositLeft).toBeCloseTo((MAX_DEPOSIT_VALUE * 0.1) / 50);
+    globalThis.pack.cells = {
+      i: Array.from({ length: 5000 }, (_, i) => i),
+      h: [30],
+      pop: [4],
+      development: [1]
+    } as never;
+    expect(Output.getDeposit(catalogue[0], 0)).toBeCloseTo(0.4 * DEPOSIT_RICHNESS);
+  });
+
   it("are worked by a burg on them as a trade with no inputs, worth what its market pays", () => {
     pack.cells.good = Uint16Array.of(1); // oil
     const { index, day } = prepare();

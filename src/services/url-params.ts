@@ -6,7 +6,6 @@ import { Controllers } from "@/controllers";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
-import { LocalDB } from "@/services/local-db";
 import { getRequestedMapSize } from "@/services/map-size";
 import { App } from "@/ui/app-commands";
 import { toggleAssistant } from "@/ui/assistant-bubble";
@@ -47,7 +46,8 @@ export async function checkLoadParameters(): Promise<void> {
 
   if (options.app.onLoad === "lastSaved") {
     try {
-      const blob = await LocalDB.get("lastMap");
+      const latest = await Services.BrowserSaves.latest();
+      const blob = latest && (await Services.BrowserSaves.read(latest.id));
       if (blob) {
         log.warn("Loading last stored map");
         Services.Load.uploadMap(blob);

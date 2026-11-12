@@ -23,8 +23,8 @@ import { TradeAnimation } from "@/renderers/trade-animation";
 import { undraw } from "@/renderers/undraw";
 import { Services } from "@/services";
 import { declareFont, fonts } from "@/services/fonts";
+import { BrowserSaves } from "@/services/io/browser-saves";
 import { MapRepair } from "@/services/io/map-repair";
-import { LocalDB } from "@/services/local-db";
 import { focusOn, generateMapOnLoad } from "@/services/url-params";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { App } from "@/ui/app-commands";
@@ -40,13 +40,17 @@ import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { safeParseJSON } from "@/utils/string-utils";
 
+/** Load the most recent browser save, quick or auto */
 async function quickLoad(): Promise<void> {
-  const blob = await LocalDB.get("lastMap");
+  const latest = await BrowserSaves.latest();
+  if (latest) return loadFromBrowser(latest.id);
+  tip(t("No map stored. Save map to browser storage first"), true, "error", 2000);
+  log.error("No map stored");
+}
+
+async function loadFromBrowser(id: string): Promise<void> {
+  const blob = await BrowserSaves.read(id);
   if (blob) loadMapPrompt(blob);
-  else {
-    tip(t("No map stored. Save map to browser storage first"), true, "error", 2000);
-    log.error("No map stored");
-  }
 }
 
 async function loadFromDropbox(): Promise<void> {
@@ -400,6 +404,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (data[50]) Layers.restore(JSON.parse(data[50]));
     if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
 
+    const repairs = MapRepair.repair();
+
     Goods.sync();
     Markets.sync();
     Routes.sync();
@@ -413,8 +419,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     ]) {
       HeightmapColorSchemes.ensure(scheme);
     }
-
-    const repairs = MapRepair.repair();
 
     Layers.drawAll();
     Styles.writeAll();
@@ -478,6 +482,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
 export const Load = {
   quickLoad,
+  loadFromBrowser,
   loadFromDropbox,
   createSharableDropboxLink,
   loadMapFromURL,

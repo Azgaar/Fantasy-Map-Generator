@@ -9,7 +9,6 @@ import { restoreOceanVectors } from "@/renderers/ocean-cache";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { getFileName } from "@/services/io/file-name";
-import { LocalDB } from "@/services/local-db";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -25,7 +24,12 @@ import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 
 type Writer = () => Promise<void>;
 
-const toStorage = (): Promise<void> => save(() => writeToStorage(prepareMapData(), true));
+const toStorage = (): Promise<void> =>
+  save(async () => {
+    await writeToStorage(prepareMapData(), "quick");
+    tip(t("Map is saved to the browser storage"), false, "success");
+    void navigator.storage?.persist?.(); // ask the browser not to evict the saves; asked on a user gesture only
+  });
 const toMachine = (overwrite = false, viewOnly = false): Promise<void> =>
   save(() => writeToMachine(overwrite, viewOnly));
 const toDropbox = (viewOnly = false): Promise<void> =>
@@ -214,11 +218,11 @@ function prepareMapData(viewOnly = false): string {
   return mapData;
 }
 
-// save map file to indexedDB
-async function writeToStorage(mapData: string, showTip = false): Promise<void> {
-  const blob = new Blob([mapData], { type: "text/plain" });
-  await LocalDB.set("lastMap", blob);
-  showTip && tip(t("Map is saved to the browser storage"), false, "success");
+// a quick save has its own slot; autosaves rotate through theirs
+async function writeToStorage(mapData: string, kind: "quick" | "auto"): Promise<void> {
+  const mapId = mapHistory.at(-1)?.created ?? 0;
+  const snapshot = { name: options.map.lore.name, mapId, version: VERSION, data: mapData };
+  await (kind === "quick" ? Services.BrowserSaves.writeQuick(snapshot) : Services.BrowserSaves.writeAuto(snapshot));
 }
 
 // a view-only copy never becomes the file an overwrite updates: that is the author's editable map

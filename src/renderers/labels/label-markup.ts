@@ -1,8 +1,10 @@
 import { curveNatural, line } from "d3";
 import type { LabelData } from "@/renderers/labels/labels";
-import type { Point } from "@/types/global";
+import { rn } from "@/utils/number-utils";
+import { estimateLabelLength } from "./label-arc";
 
 const lineGen = line<[number, number]>().curve(curveNatural);
+const FIT_MARGIN = 1.7; // the length estimate is typeface-blind: a wide face runs up to half over it
 
 export function createLabelElements(label: LabelData, document: Document) {
   const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -58,6 +60,28 @@ function appendText(parent: SVGTextElement | SVGTextPathElement, value: string, 
   });
 }
 
-export function getLabelPath(label: { pathPoints?: Point[] }): string {
-  return lineGen(label.pathPoints || []) || "";
+type PathSource = Pick<LabelData, "pathPoints"> & Partial<Pick<LabelData, "text" | "type" | "group">>;
+
+/** The path a label's text runs along: its points, with straight tails when the text needs more room */
+export function getLabelPath(label: PathSource): string {
+  const points = label.pathPoints || [];
+  const d = lineGen(points) || "";
+  if (points.length < 2 || !label.text || !label.type || !label.group) return d;
+
+  const length = points.slice(1).reduce((sum, [x, y], i) => sum + Math.hypot(x - points[i][0], y - points[i][1]), 0);
+  const shortfall = estimateLabelLength(label as LabelData) * FIT_MARGIN - length;
+  return shortfall > 0 ? extendEnds(d, shortfall / 2) : d;
+}
+
+// text past the end of its path is not drawn, and the text is centered: equal tails keep it in place
+function extendEnds(d: string, extension: number): string {
+  const n = (d.match(/-?\d*\.?\d+(?:e-?\d+)?/g) || []).map(Number);
+  const tail = (fromX: number, fromY: number, x: number, y: number, fallback: number): string => {
+    const length = Math.hypot(x - fromX, y - fromY);
+    const [dx, dy] = length ? [(x - fromX) / length, (y - fromY) / length] : [fallback, 0]; // no direction: level
+    return `${rn(x + dx * extension, 2)},${rn(y + dy * extension, 2)}`;
+  };
+  const start = tail(n[2], n[3], n[0], n[1], -1);
+  const end = tail(n.at(-4)!, n.at(-3)!, n.at(-2)!, n.at(-1)!, 1);
+  return `M${start}L${d.slice(1)}L${end}`;
 }

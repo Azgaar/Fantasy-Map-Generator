@@ -40,4 +40,13 @@ async function set(key: string, value: unknown): Promise<void> {
   });
 }
 
-export const LocalDB = { isSupported, get, set };
+async function remove(key: string): Promise<void> {
+  const db = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const request = db.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME).delete(key);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export const LocalDB = { isSupported, get, set, remove };

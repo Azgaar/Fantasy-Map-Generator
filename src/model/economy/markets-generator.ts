@@ -173,17 +173,6 @@ export class MarketsModule {
     return cellMarket;
   }
 
-  /** Water cells join a market only for a deposit, and deposits move. Land stays: may be painted */
-  claimWaterDeposits(): void {
-    const { cells } = pack;
-    const claimed = cells.market;
-    const isWater = (cell: number) => cells.h[cell] < 20;
-    const unclaimed = cells.i.some(cell => isWater(cell) && cells.good[cell] && !claimed[cell]);
-    const flood = unclaimed ? this.expandMarkets(pack.markets) : claimed;
-    cells.market = claimed;
-    for (const cell of cells.i) if (isWater(cell)) claimed[cell] = cells.good[cell] ? claimed[cell] || flood[cell] : 0;
-  }
-
   sync(): void {
     this.marketById = [];
     for (const market of pack.markets) if (market) this.marketById[market.i] = market;
@@ -241,10 +230,6 @@ export class MarketsModule {
         if (!costs[neighborId] || totalCost < costs[neighborId] || nativeTie) {
           costs[neighborId] = totalCost;
           queue.push({ cellId: neighborId, marketId, burg, priority: totalCost }, totalCost);
-
-          const hasGood = Boolean(cells.good[neighborId]);
-          if (isWater && !hasGood) continue; // exclude water cells without goods
-
           cellMarket[neighborId] = marketId;
           nativeOwner[neighborId] = isNative ? 1 : 0;
         }

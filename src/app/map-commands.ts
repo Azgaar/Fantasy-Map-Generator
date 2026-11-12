@@ -45,6 +45,7 @@ import { isCtrlClick } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { gauss } from "@/utils/probability-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 export interface MapCommand {
   id: string;
@@ -584,7 +585,7 @@ export const MAP_COMMANDS: MapCommand[] = [
     id: "regenerateMilitary",
     name: `${t("Regenerate")}: ${t("Military")}`,
     aliases: "generate armies regiments",
-    run: () => confirmRegeneration("regenerateMilitary", regenerateMilitary)
+    run: () => openMilitaryRegeneration()
   },
   {
     id: "regeneratePopulation",
@@ -889,6 +890,51 @@ export function openEconomyRegeneration(preset: EconomyPart[]): void {
   }
 }
 
+/** Asks how to recalculate the forces, each time: of one state or of all, after the `units` changed or of every unit */
+export function openMilitaryRegeneration({ units, stateId }: { units?: string[]; stateId?: number } = {}): void {
+  const state = stateId ? pack.states[stateId] : undefined;
+  const stateIds = state ? [state.i] : undefined;
+  const run = (action: () => void) => () =>
+    applyRegeneration(() => {
+      action();
+      if (findEl("regimentEditor")) Dialog.close("regimentEditor"); // its regiment may be gone
+      Layers.draw("military");
+    });
+
+  const choices = [
+    {
+      label: t("Update"),
+      tip: t("Update troop numbers in existing regiments. New regiments form only where a state has none nearby"),
+      onClick: run(() => Military.raiseUnits(units ?? options.map.military.units.map(({ name }) => name), stateIds))
+    },
+    {
+      label: t("Regenerate"),
+      tip: t("Regenerate regiments from scratch. Manual changes to them will be lost"),
+      onClick: run(() => Military.regenerate(stateIds))
+    },
+    units
+      ? {
+          label: t("Keep"),
+          tip: t("Change nothing now. The new settings apply at the next recalculation")
+        }
+      : { label: t("Cancel"), tip: "" }
+  ];
+  const subject = units
+    ? t("Units are saved. Troops of changed units are not updated yet: {{units}}", { units: units.join(", ") })
+    : state
+      ? t("Recalculate military forces of {{state}}?", { state: escapeHtml(state.name) })
+      : t("Are you sure you want to recalculate military forces for all states?");
+
+  Dialog.message({
+    title: t("Recalculate military"),
+    message: [subject, ...choices.filter(({ tip }) => tip).map(({ label, tip }) => `<b>${label}</b>: ${tip}`)].join(
+      "<br><br>"
+    ),
+    width: "32em",
+    buttons: choices
+  });
+}
+
 function regenerateStateLabels(): void {
   for (const state of pack.states) {
     if (!state.i || state.removed) continue;
@@ -982,11 +1028,6 @@ function regenerateReligions(): void {
 function regenerateCultures(): void {
   Cultures.regenerate();
   Layers.draw("cultures", "goods");
-}
-
-function regenerateMilitary(): void {
-  Military.regenerate();
-  Layers.draw("military");
 }
 
 function regenerateIce(): void {

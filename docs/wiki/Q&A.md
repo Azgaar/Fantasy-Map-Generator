@@ -28,7 +28,7 @@ Open the menu with the upper-left triangle or press Tab. Click **Export** in the
 The **Save** dialog offers:
 * Save to machine: save file can be directly loaded to the Generator. Each save creates a new file, so earlier saves stay as backups; where the browser supports it, Shift-click overwrites the last saved file instead.
 * Save to Dropbox: save file can be directly loaded to the Generator.
-* Save to storage: save map data to the browser's internal database. File will be loaded automatically on page refresh. Bear in mind that saving to desktop is safer since browser storage can be accidentally cleared
+* Save to browser: a quick save to the browser's internal database, kept next to the five latest autosaves. All of them are listed in the Load menu, where each can be loaded, downloaded as a `.map` file or removed. Bear in mind that saving to machine is safer since browser storage can be accidentally cleared
 
 The **Export** dialog offers:
 

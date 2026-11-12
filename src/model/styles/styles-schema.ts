@@ -21,7 +21,9 @@ import {
   RELIEF_SET_LABELS,
   RELIEF_SETS,
   TEXT_DECORATIONS,
-  WAVE_TYPES
+  WAVE_TYPES,
+  ZOOM_SIZES,
+  type ZoomSize
 } from "@/data/style-choices";
 import type { StyleMeta } from "@/types/styles";
 import { sentences, t } from "@/utils/i18n";
@@ -354,6 +356,18 @@ const oceanWaves = meta(
   options: { render: false, type: "waves", density: 1, length: 1, reach: 4, halo: 0.25 }
 });
 
+// the options of a layer whose font size follows the zoom (renderers/viewport/viewport.ts)
+const zoomOptions = (zoomSize: ZoomSize) =>
+  z
+    .strictObject({
+      zoomSize: choice(ZOOM_SIZES, {
+        label: t("Zoom size"),
+        tip: t("Set how the size changes on zoom, from growing with the map to keeping the same pixel size"),
+        effect: "zoom"
+      }).default(zoomSize)
+    })
+    .default({ zoomSize });
+
 const burgGroup = z.strictObject({
   attrs: z.strictObject({
     opacity,
@@ -406,8 +420,6 @@ const padding = (side: string) =>
     tip: t("Background element padding in pixels")
   });
 
-// --- the record -------------------------------------------------------------------------------------
-// on change run scripts/convert-style-presets.mjs to automatically update style presets
 export const stylesSchema = z.strictObject({
   biomes: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
   borders: z.strictObject({
@@ -417,6 +429,7 @@ export const stylesSchema = z.strictObject({
     })
   }),
   burgIcons: z.strictObject({
+    options: zoomOptions("natural"),
     groups: z
       .record(
         z.string(),
@@ -650,6 +663,7 @@ export const stylesSchema = z.strictObject({
       .default({ arrows: false })
   }),
   labels: z.strictObject({
+    options: zoomOptions("arithmetic"),
     groups: z.record(
       z.string(),
       z.strictObject({
@@ -743,7 +757,7 @@ export const stylesSchema = z.strictObject({
       }).nullable()
     })
   }),
-  markers: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
+  markers: z.strictObject({ attrs: z.strictObject({ opacity, filter }), options: zoomOptions("geometric") }),
   markets: z.strictObject({
     attrs: z.strictObject({
       "fill-opacity": fillGroup["fill-opacity"],

@@ -14,7 +14,12 @@ const items = [
   { i: 2, name: "Removed", removed: true },
   { i: 3, name: "Taiga" }
 ];
-const boxes = () => Array.from(document.querySelectorAll<HTMLInputElement>("#limitationPicker input"));
+const boxes = () => Array.from(document.querySelectorAll<HTMLInputElement>("#limitationPicker .limitationList input"));
+const all = () => document.getElementById("limitationAll") as HTMLInputElement;
+const toggleAll = (checked: boolean) => {
+  all().checked = checked;
+  all().dispatchEvent(new Event("change"));
+};
 const pick = (allowed: number[]) => {
   const onApply = vi.fn();
   pickLimitation({ title: "Limit", heading: "Limit by biomes", items, allowed, onApply });
@@ -34,6 +39,17 @@ describe("pickLimitation", () => {
     ]);
   });
 
+  it("lists the entities alphabetically", () => {
+    pickLimitation({
+      title: "Limit",
+      heading: "Limit",
+      items: [...items, { i: 4, name: "Zz", fullName: "Arctic" }],
+      allowed: [],
+      onApply: vi.fn()
+    });
+    expect(boxes().map(box => box.dataset.i)).toEqual(["4", "1", "3"]);
+  });
+
   it("applies the checked ids, and an empty list when all are checked", () => {
     const onApply = pick([3]);
     expect(boxes().map(box => box.checked)).toEqual([false, true]);
@@ -42,8 +58,6 @@ describe("pickLimitation", () => {
     expect(document.getElementById("limitationPicker")).toBeNull();
 
     const again = pick([3]);
-    click("Invert");
-    click("Invert");
     boxes()[0].checked = true;
     click("Apply");
     expect(again).toHaveBeenLastCalledWith([]);
@@ -51,9 +65,24 @@ describe("pickLimitation", () => {
 
   it("refuses an empty selection", () => {
     const onApply = pick([]);
-    click("Invert");
+    toggleAll(false);
     click("Apply");
     expect(onApply).not.toHaveBeenCalled();
+  });
+
+  it("checks all or none from the All box, which reflects the list", () => {
+    pick([3]);
+    expect([all().checked, all().indeterminate]).toEqual([false, true]);
+    toggleAll(true);
+    expect(boxes().map(box => box.checked)).toEqual([true, true]);
+    toggleAll(false);
+    expect(boxes().map(box => box.checked)).toEqual([false, false]);
+    boxes()[0].checked = true;
+    boxes()[0].dispatchEvent(new Event("change"));
+    expect([all().checked, all().indeterminate]).toEqual([false, true]);
+    boxes()[1].checked = true;
+    boxes()[1].dispatchEvent(new Event("change"));
+    expect([all().checked, all().indeterminate]).toEqual([true, false]);
   });
 
   it("in exact mode checks only the allowed and applies any selection, none included", () => {

@@ -16,6 +16,7 @@ export const CONTOUR_INTERVALS = [10, 20, 50, 100, 200, 500, 1000, 2000] as cons
 export const HACHURE_MODES = { off: t("Off"), overlay: t("Over colors"), only: t("Strokes only") };
 
 export const LAKE_EMBELLISHMENTS = { none: t("None"), ripples: t("Ripples"), lines: t("Straight strokes") };
+
 export const RELIEF_SETS = ["simple", "colored", "gray", "illustrated", "stickers"] as const;
 export const RELIEF_SET_LABELS: Record<(typeof RELIEF_SETS)[number], string> = {
   simple: t("Simple"),
@@ -24,7 +25,18 @@ export const RELIEF_SET_LABELS: Record<(typeof RELIEF_SETS)[number], string> = {
   illustrated: t("Illustrated"),
   stickers: t("Stickers")
 };
+
 export const POPULATION_TYPES = { bars: t("Bars"), cells: t("Cells") };
+
+export const ZOOM_SIZES = {
+  map: t("Grow with zoom 1:1"),
+  arithmetic: t("Grow with zoom: arithmetic"),
+  geometric: t("Grow with zoom: geometric"),
+  natural: t("Grow with zoom: natural"),
+  screen: t("Constant pixel size")
+};
+export type ZoomSize = keyof typeof ZOOM_SIZES;
+
 export const WAVE_TYPES = { waves: t("Waves"), lines: t("Straight strokes") };
 
 export const MAP_FILTERS = {

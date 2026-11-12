@@ -60,8 +60,8 @@ To get a heightmap image that fits a square tile grid one cell per tile, generat
 
 These apply immediately and are kept in the browser:
 
-- **Autosave interval**: how often, in minutes, the map is saved to browser storage. 0 turns autosave off.
-- **On load**: generate a new map or open the last saved one when the page opens.
+- **Autosave interval**: how often, in minutes, the map is saved to browser storage. 0 turns autosave off. The five latest autosaves are kept, and the last autosave of a previous map is the last to go.
+- **On load**: generate a new map or open the most recent browser save when the page opens.
 - **Speaker voice**: the voice used by the speaker buttons next to names. The speaker icon plays a test phrase.
 - **Emblem shape**: the default coat of arms shield shape. Single emblems can still be changed in the Emblem Editor.
 

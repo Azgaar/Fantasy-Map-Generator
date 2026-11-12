@@ -133,6 +133,13 @@ export function drawEmblems(): void {
   });
 }
 
+/** Inline icon of a state emblem for dialogs, rendering the emblem if needed */
+export function stateEmblemIcon(i: number): string {
+  const coa = pack.states[i]?.coa;
+  if (coa) void EmblemRenderer.trigger(`stateCOA${i}`, coa);
+  return `<svg class="coaIcon" style="width: 1.2em; height: 1.2em" viewBox="0 0 200 200"><use href="#stateCOA${i}"></use></svg>`;
+}
+
 /** Reconcile an edited or newly-created emblem without rebuilding the collision scene. */
 export function redrawEmblem(type: EmblemType, i: number): void {
   redrawEmblems([[type, i]]);

@@ -16,10 +16,7 @@ export interface LimitationItem {
 }
 
 const DIALOG_ID = "limitationPicker";
-const ROWS_PER_COLUMN = 20; // longer lists, such as goods, flow into up to four columns
-
-/** the entities a limitation can name: id 0 (marine, neutrals, no religion) and removed ones never */
-const choices = (items: readonly LimitationItem[]) => items.filter(item => item.i && !item.removed);
+const ROWS_PER_COLUMN = 20;
 
 /** "all" for no limitation, else the allowed names */
 export function limitationTip(allowed: readonly number[] | undefined, items: readonly LimitationItem[]): string {
@@ -44,7 +41,10 @@ export function pickLimitation({
   exact?: boolean; // a selection, not a limitation: exactly the allowed are checked, and none is a valid choice
   badge?: (item: LimitationItem) => string; // markup drawn before the name instead of the color dot
 }): void {
-  const entries = choices(items);
+  const entries = items
+    .filter(item => item.i && !item.removed)
+    .sort((a, b) => (a.fullName || a.name).localeCompare(b.fullName || b.name));
+
   const rows = entries.map(
     item => /* html */ `<div style="break-inside: avoid; display: flex; align-items: center; gap: .2em">
       ${badge ? badge(item) : `<span style="color:${escapeHtml(item.color ?? "")}">⬤</span>`}
@@ -57,10 +57,25 @@ export function pickLimitation({
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="${DIALOG_ID}" class="dialog"><b>${escapeHtml(heading)}:</b>
-      <div style="margin-top: .3em; columns: ${columns}; column-gap: 1.5em">${rows.join("")}</div>
+      <div style="margin-top: .3em">
+        <input id="limitationAll" type="checkbox" class="checkbox">
+        <label for="limitationAll" class="checkbox-label">${t("All")}</label>
+      </div>
+      <div class="limitationList" style="margin-top: .3em; columns: ${columns}; column-gap: 1.5em">${rows.join("")}</div>
     </div>`
   );
-  const inputs = () => Array.from(ensureEl(DIALOG_ID).querySelectorAll<HTMLInputElement>("input"));
+  const all = ensureEl<HTMLInputElement>("limitationAll");
+  const inputs = () => Array.from(ensureEl(DIALOG_ID).querySelectorAll<HTMLInputElement>(".limitationList input"));
+  const syncAll = () => {
+    const checked = inputs().filter(input => input.checked).length;
+    all.checked = checked === inputs().length;
+    all.indeterminate = checked > 0 && checked < inputs().length;
+  };
+  syncAll();
+  all.addEventListener("change", () => {
+    for (const input of inputs()) input.checked = all.checked;
+  });
+  for (const input of inputs()) input.addEventListener("change", syncAll);
 
   Dialog.open(DIALOG_ID, {
     width: "fit-content",
@@ -68,12 +83,6 @@ export function pickLimitation({
     title,
     position: { my: "center", at: "center", of: "svg" },
     buttons: [
-      {
-        label: t("Invert"),
-        onClick: () => {
-          for (const input of inputs()) input.checked = !input.checked;
-        }
-      },
       {
         label: t("Apply"),
         onClick: () => {
