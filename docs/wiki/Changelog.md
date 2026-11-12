@@ -21,6 +21,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Economy: download the economy overview as CSV
 - Military: recalculate forces of a single state
 - Military: unit changes update troops without regenerating regiments
+- Limitation Picker: sort items alphabetically
 
 **[1.157.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.157.0) - 2026-11-09**:
 

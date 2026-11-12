@@ -8,6 +8,7 @@ import { getDefaultMilitaryUnits } from "@/model/political/military-units";
 import type { State } from "@/model/political/states-generator";
 import { goodBadge } from "@/renderers/draw-goods";
 import { drawRegiment } from "@/renderers/draw-military";
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
 import type { Good } from "@/types/economy";
@@ -468,7 +469,12 @@ function militaryCustomize(): void {
       selectLimitation(el, biomes);
       return;
     }
-    if (type === "states") return selectLimitation(el, pack.states);
+    if (type === "states")
+      return selectLimitation(
+        el,
+        pack.states,
+        item => `<span style="color:${escapeHtml(item.color ?? "")}">⬤</span>${stateEmblem(item.i)}`
+      );
     if (type === "cultures") return selectLimitation(el, pack.cultures);
     if (type === "religions") return selectLimitation(el, pack.religions);
     if (type === "goods") return selectGoods(el);
@@ -484,8 +490,15 @@ function militaryCustomize(): void {
     return attr?.join(",") || "";
   }
 
-  function getLimitText(attr?: number[]): string {
-    return attr?.length ? "some" : "all";
+  function getLimitText(attr: number[] | undefined, type: string): string {
+    if (!attr?.length) return "all";
+    return type === "states" ? attr.map(stateEmblem).join("") : "some";
+  }
+
+  function stateEmblem(i: number): string {
+    const coa = pack.states[i]?.coa;
+    if (coa) void EmblemRenderer.trigger(`stateCOA${i}`, coa);
+    return `<svg class="coaIcon" style="width: 1.2em; height: 1.2em" viewBox="0 0 200 200"><use href="#stateCOA${i}"></use></svg>`;
   }
 
   function getLimitTip(attr: number[] | undefined, items: readonly LimitationItem[]): string {
@@ -502,10 +515,11 @@ function militaryCustomize(): void {
       const data = pack[attr] as LimitationItem[];
       return `<button
           data-tip="${LIMIT_TIPS[attr]}"
+          style="white-space: nowrap"
           data-type="${attr}"
           title="${escapeHtml(getLimitTip(unit[attr], data))}"
           data-value="${getLimitValue(unit[attr])}">
-          ${getLimitText(unit[attr])}
+          ${getLimitText(unit[attr], attr)}
         </button>`;
     };
 
@@ -581,16 +595,17 @@ function militaryCustomize(): void {
     });
   }
 
-  function selectLimitation(el: HTMLElement, items: LimitationItem[]): void {
+  function selectLimitation(el: HTMLElement, items: LimitationItem[], badge?: (item: LimitationItem) => string): void {
     const type = el.dataset.type!;
     pickLimitation({
       title: t("Limit unit"),
       heading: t("Limit unit by {{type}}", { type }),
       items,
       allowed: el.dataset.value ? el.dataset.value.split(",").map(Number) : [],
+      badge,
       onApply: allowed => {
         el.dataset.value = allowed.join(",");
-        el.innerHTML = getLimitText(allowed);
+        el.innerHTML = getLimitText(allowed, type);
         el.setAttribute("title", getLimitTip(allowed, items));
       }
     });

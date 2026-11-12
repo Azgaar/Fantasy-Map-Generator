@@ -603,6 +603,7 @@ function openMultiplierPopup(
       break;
   }
 
+  entities.sort((a, b) => a.name.localeCompare(b.name));
   const rows = entities.map(entity => {
     const val = currentValues[entity.id] ?? 1;
     const box = `<fill-box fill="${entity.color || getRandomColor()}" size="1em" disabled data-tip="${escapeHtml(entity.name)}"></fill-box>`;
