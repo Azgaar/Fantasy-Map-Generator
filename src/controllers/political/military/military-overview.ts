@@ -6,9 +6,9 @@ import { Options } from "@/model/options/options-model";
 import { Military } from "@/model/political/military-generator";
 import { getDefaultMilitaryUnits } from "@/model/political/military-units";
 import type { State } from "@/model/political/states-generator";
+import { stateEmblemIcon } from "@/renderers/draw-emblems";
 import { goodBadge } from "@/renderers/draw-goods";
 import { drawRegiment } from "@/renderers/draw-military";
-import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
 import type { Good } from "@/types/economy";
@@ -473,7 +473,7 @@ function militaryCustomize(): void {
       return selectLimitation(
         el,
         pack.states,
-        item => `<span style="color:${escapeHtml(item.color ?? "")}">⬤</span>${stateEmblem(item.i)}`
+        item => `<span style="color:${escapeHtml(item.color ?? "")}">⬤</span>${stateEmblemIcon(item.i)}`
       );
     if (type === "cultures") return selectLimitation(el, pack.cultures);
     if (type === "religions") return selectLimitation(el, pack.religions);
@@ -492,13 +492,7 @@ function militaryCustomize(): void {
 
   function getLimitText(attr: number[] | undefined, type: string): string {
     if (!attr?.length) return "all";
-    return type === "states" ? attr.map(stateEmblem).join("") : "some";
-  }
-
-  function stateEmblem(i: number): string {
-    const coa = pack.states[i]?.coa;
-    if (coa) void EmblemRenderer.trigger(`stateCOA${i}`, coa);
-    return `<svg class="coaIcon" style="width: 1.2em; height: 1.2em" viewBox="0 0 200 200"><use href="#stateCOA${i}"></use></svg>`;
+    return type === "states" ? attr.map(stateEmblemIcon).join("") : "some";
   }
 
   function getLimitTip(attr: number[] | undefined, items: readonly LimitationItem[]): string {
