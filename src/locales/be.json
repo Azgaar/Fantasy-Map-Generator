@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Тавары на слоі тавараў",
   "Goods that could cover the need": "Тавары, што маглі б закрыць патрэбу",
   "Goods that equip the unit": "Тавары, што экіпіруюць род войскаў",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Тавары, што экіпіруюць род войскаў. Рэкруты, якіх дзяржава не можа экіпіраваць, служаць апалчэннем",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Тавары, што экіпіруюць род войскаў; падыходзіць любы, яны сумуюцца. Роды войскаў дзеляць запас дзяржавы. Улічваецца спажыванне дзяржавы, а не вытворчасць: 1 адзінка тавару ў дзень экіпіруе 365 воінаў × ваеннае пакрыццё. Рэкруты без экіпіроўкі прызываюцца ў апалчэнне",
   "Goods the state bought at the province's burgs": "Тавары, якія дзяржава купіла ў паселішчах правінцыі",
   "Google font": "Шрыфт Google",
   "Google font {{family}} is loading...": "Шрыфт Google {{family}} загружаецца...",

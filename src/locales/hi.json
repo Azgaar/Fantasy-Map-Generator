@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "वस्तु परत पर दिखाई गई वस्तुएँ",
   "Goods that could cover the need": "जो वस्तुएँ यह ज़रूरत पूरी कर सकती हैं",
   "Goods that equip the unit": "वे वस्तुएँ जो इकाई को सुसज्जित करती हैं",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "वे वस्तुएँ जो इकाई को सुसज्जित करती हैं. जिन भर्ती सैनिकों को राज्य सुसज्जित नहीं कर सकता वे लेवी के रूप में सेवा देते हैं",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "वे वस्तुएँ जो इकाई को सुसज्जित करती हैं; इनमें से कोई भी, जुड़कर. इकाइयाँ राज्य का भंडार बाँटती हैं. गिनती राज्य के उपभोग की होती है, उत्पादन की नहीं: प्रतिदिन वस्तु की 1 इकाई 365 सैनिकों × सैन्य पूर्ति को सुसज्जित करती है. बिना साज़ो-सामान के भर्ती सैनिक लेवी के रूप में उठाए जाते हैं",
   "Goods the state bought at the province's burgs": "राज्य ने प्रांत की बस्तियों में जो वस्तुएँ खरीदीं",
   "Google font": "Google फ़ॉन्ट",
   "Google font {{family}} is loading...": "Google फ़ॉन्ट {{family}} लोड हो रहा है...",

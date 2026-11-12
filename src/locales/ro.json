@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Bunuri afișate pe stratul Bunuri",
   "Goods that could cover the need": "Bunuri care ar putea acoperi nevoia",
   "Goods that equip the unit": "Bunuri care echipează unitatea",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Bunuri care echipează unitatea. Recruții pe care statul nu îi poate echipa servesc ca levă",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Bunuri care echipează unitatea; oricare dintre ele, însumate. Unitățile împart rezervele statului. Contează ce consumă statul, nu ce produce: 1 unitate de bun pe zi echipează 365 de soldați × acoperire militară. Recruții fără echipament sunt chemați ca levă",
   "Goods the state bought at the province's burgs": "Bunuri cumpărate de stat din așezările provinciei",
   "Google font": "Font Google",
   "Google font {{family}} is loading...": "Fontul Google {{family}} se încarcă...",

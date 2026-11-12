@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Mercadorias exibidas na camada de mercadorias",
   "Goods that could cover the need": "Mercadorias que poderiam atender à necessidade",
   "Goods that equip the unit": "Mercadorias que equipam a unidade",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Mercadorias que equipam a unidade. Os recrutas que o estado não pode equipar servem como tropas de reserva",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Mercadorias que equipam a unidade; qualquer uma delas, somadas. As unidades dividem o estoque do estado. Conta o que o estado consome, não o que produz: 1 unidade de mercadoria por dia equipa 365 soldados × cobertura militar. Os recrutas sem equipamento são convocados como tropas de reserva",
   "Goods the state bought at the province's burgs": "Mercadorias que o estado comprou nos povoados da província",
   "Google font": "Fonte do Google",
   "Google font {{family}} is loading...": "Carregando a fonte do Google {{family}}...",

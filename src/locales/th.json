@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "สินค้าที่แสดงบนเลเยอร์สินค้า",
   "Goods that could cover the need": "สินค้าที่ตอบสนองความจำเป็นนี้ได้",
   "Goods that equip the unit": "สินค้าที่ใช้ติดตั้งให้หน่วย",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "สินค้าที่ใช้ติดตั้งให้หน่วย ทหารเกณฑ์ที่รัฐติดตั้งให้ไม่ได้จะเป็นพลเรียกเกณฑ์",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "สินค้าที่ใช้ติดตั้งให้หน่วย ใช้อย่างใดก็ได้และนับรวมกัน หน่วยต่าง ๆ ใช้คลังของรัฐร่วมกัน นับสิ่งที่รัฐบริโภค ไม่ใช่สิ่งที่ผลิต: สินค้า 1 หน่วยต่อวันติดตั้งทหารได้ 365 นาย × ความครอบคลุมทางทหาร ทหารเกณฑ์ที่ไม่มีอุปกรณ์จะถูกเกณฑ์เป็นพลเรียกเกณฑ์",
   "Goods the state bought at the province's burgs": "สินค้าที่รัฐซื้อที่ชุมชนของจังหวัด",
   "Google font": "ฟอนต์ Google",
   "Google font {{family}} is loading...": "กำลังโหลดฟอนต์ Google {{family}}...",

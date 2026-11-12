@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Goods shown on the Goods layer",
   "Goods that could cover the need": "Goods that could cover the need",
   "Goods that equip the unit": "Goods that equip the unit",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Goods that equip the unit. Conscripts the state cannot equip serve as levies",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies",
   "Goods the state bought at the province's burgs": "Goods the state bought at the province's burgs",
   "Google font": "Google font",
   "Google font {{family}} is loading...": "Google font {{family}} is loading...",

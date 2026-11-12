@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Merci mostrate nel livello Merci",
   "Goods that could cover the need": "Merci che potrebbero coprire il bisogno",
   "Goods that equip the unit": "Merci che equipaggiano l'unità",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Merci che equipaggiano l'unità. I coscritti che lo Stato non può equipaggiare servono come milizie",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Merci che equipaggiano l'unità; una qualsiasi, sommate. Le unità si dividono le scorte dello Stato. Conta ciò che lo Stato consuma, non ciò che produce: 1 unità di merce al giorno equipaggia 365 soldati × copertura militare. I coscritti senza equipaggiamento vengono arruolati come milizie",
   "Goods the state bought at the province's burgs": "Merci acquistate dallo Stato nei borghi della provincia",
   "Google font": "Font Google",
   "Google font {{family}} is loading...": "Caricamento del font Google {{family}}…",

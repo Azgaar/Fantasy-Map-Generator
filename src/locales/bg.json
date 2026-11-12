@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Стоки, показани в слоя със стоки",
   "Goods that could cover the need": "Стоки, които могат да покрият нуждата",
   "Goods that equip the unit": "Стоки, които екипират частта",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Стоки, които екипират частта. Наборниците, които държавата не може да екипира, служат като опълчение",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Стоки, които екипират частта; всяка от тях, като се сумират. Частите си делят запаса на държавата. Брои се какво държавата потребява, а не какво произвежда: 1 единица стока на ден екипира 365 войници × военно покритие. Наборниците без екипировка се свикват като опълчение",
   "Goods the state bought at the province's burgs": "Стоки, купени от държавата в селищата на провинцията",
   "Google font": "Шрифт от Google",
   "Google font {{family}} is loading...": "Шрифтът от Google {{family}} се зарежда...",

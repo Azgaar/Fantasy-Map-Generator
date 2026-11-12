@@ -400,6 +400,38 @@ Open Heightmap editor in Erase or Risk mode and then add the new land using the 
 
 Yes. Unit types are edited in Tools -> Military -> Edit Military Units. Applying the changes keeps the regiments: a renamed unit keeps its troops, a removed unit's troops are disbanded, and a change of icon, crew or power applies at once. For a new unit, or one whose share, type, limits, goods or separate flag changed, a dialog offers to update just those units (their troops join the nearest regiments, which keep their names, places and other troops), regenerate all regiments from scratch, or keep the current troops. To recalculate one state's forces, select the state in the Regiments Overview and click Recalculate
 
+### What do a military unit's goods do?
+
+They equip it. Each unit in Tools -> Military -> Edit Military Units lists goods, such as arms for infantry or horses, camels and tack for cavalry. Once the economy has run, a state fields a unit only as far as its goods can equip it. The remaining conscripts are not lost: they are raised as levies, so the army keeps its size but is weaker. A unit with no goods is always fully equipped. If no unit has the levies type, unequipped conscripts are not raised at all
+
+### Does a unit need all of its goods, or any of them?
+
+Any of them, and they add up. Cavalry listing horses, camels and tack is equipped by horses alone, and a state with some of each sums them
+
+### Do units share goods, or does each unit get them separately?
+
+They share. A good several units list is split between them by their troops: infantry and archers both use arms, so a state with enough arms for half of them equips half of each. Goods are not unlimited per unit
+
+### Does the state have to produce the goods, or just have them?
+
+Just have them. What counts is what the state consumes: what its townspeople and rural people buy or keep from their own output, and what the state buys with its budget. Imports count, so a state that makes no arms but buys them is equipped. Exports do not count, so a state that sells all its arms abroad is not
+
+### Does the army use up the goods?
+
+No. The army only reads what the state consumes, it does not buy goods of its own, so the economy is the same with or without it. Troops are paid for separately, from the state's military spending
+
+### How many troops does one unit of a good equip?
+
+One unit a day equips 365 troops × the good's military coverage, shown in its Demand Coverage in the Goods editor. Arms have coverage 2, so one unit of arms a day equips 730 troops. Horses have 0.9, so 4 horses a day equip about 1 300 cavalry. This holds at the default population rate of 1 000 people per point; troops scale with the rate
+
+### How much is a unit of a good? If a burg makes 3 arms a day, is that 3 swords or 300?
+
+Neither exactly: a unit is an abstract lot, not a set number of items. Only the ratios between goods matter (their prices, what they cover, how far they travel, how common they are), so think of beer and cloth by the cartload, and jewelry and boats by the piece. For the army, one unit of a good a day keeps 365 troops × its military coverage equipped, so 3 arms a day equip about 2 200 troops
+
+### Why is my army mostly levies?
+
+The state does not consume enough of its units' goods, such as arms, horses, artillery, gunpowder or boats, to equip them. To field fewer levies, remove goods from a unit in Tools -> Military -> Edit Military Units. Equipment is worked out when troops are raised, so after regenerating the economy, recalculate the military in the Regiments Overview to equip them from the new economy
+
 ### Is there any way I can, after making a map, select a specific state and only work on that state as a seperate map?
 
 No, but you could visually fog the other states by pinning the State you want on the Sates Editor window, or make a submap that mostly encompasses the territory of the desired state (zoom in until your state is occupying most of the screen and then use the Submap tool)

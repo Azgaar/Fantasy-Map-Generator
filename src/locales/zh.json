@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "商品图层上显示的商品",
   "Goods that could cover the need": "可满足该需要的商品",
   "Goods that equip the unit": "装备该兵种的商品",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "装备该兵种的商品。国家无法装备的征召兵充当民兵",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "装备该兵种的商品；任一即可，可累加。各兵种共用国家的存量。计算的是国家的消费而非产量：每日1单位商品可装备365名士兵×军事满足率。缺乏装备的征召兵充当民兵",
   "Goods the state bought at the province's burgs": "国家在该省城镇购买的商品",
   "Google font": "Google 字体",
   "Google font {{family}} is loading...": "正在加载 Google 字体{{family}}…",

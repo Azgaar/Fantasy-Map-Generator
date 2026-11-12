@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Towary pokazane w warstwie towarów",
   "Goods that could cover the need": "Towary, które mogłyby pokryć potrzebę",
   "Goods that equip the unit": "Towary wyposażające jednostkę",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Towary wyposażające jednostkę. Poborowi, których państwo nie może wyposażyć, służą jako pospolite ruszenie",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Towary wyposażające jednostkę; dowolny z nich, sumują się. Jednostki dzielą zapasy państwa. Liczy się to, co państwo zużywa, a nie to, co wytwarza: 1 jednostka towaru dziennie wyposaża 365 żołnierzy × pokrycie wojskowe. Poborowi bez wyposażenia trafiają do pospolitego ruszenia",
   "Goods the state bought at the province's burgs": "Towary kupione przez państwo w osadach prowincji",
   "Google font": "Czcionka Google",
   "Google font {{family}} is loading...": "Wczytywanie czcionki Google {{family}}...",

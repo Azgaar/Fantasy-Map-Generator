@@ -404,6 +404,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (data[50]) Layers.restore(JSON.parse(data[50]));
     if (data[51]) GraphOverride.restore(JSON.parse(data[51]));
 
+    const repairs = MapRepair.repair();
+
     Goods.sync();
     Markets.sync();
     Routes.sync();
@@ -417,8 +419,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     ]) {
       HeightmapColorSchemes.ensure(scheme);
     }
-
-    const repairs = MapRepair.repair();
 
     Layers.drawAll();
     Styles.writeAll();

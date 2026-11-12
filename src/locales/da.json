@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Varer vist på varelaget",
   "Goods that could cover the need": "Varer, der kunne dække behovet",
   "Goods that equip the unit": "Varer, der udstyrer enheden",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Varer, der udstyrer enheden. Værnepligtige, staten ikke kan udstyre, gør tjeneste som lensfolk",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Varer, der udstyrer enheden; hvilken som helst af dem, lagt sammen. Enhederne deler statens beholdning. Det tæller, hvad staten forbruger, ikke hvad den producerer: 1 vareenhed om dagen udstyrer 365 soldater × militær dækning. Værnepligtige uden udstyr udskrives som lensfolk",
   "Goods the state bought at the province's burgs": "Varer, staten købte i provinsens bebyggelser",
   "Google font": "Google-skrifttype",
   "Google font {{family}} is loading...": "Google-skrifttypen {{family}} indlæses...",

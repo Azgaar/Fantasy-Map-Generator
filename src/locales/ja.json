@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "商品レイヤーに表示する商品",
   "Goods that could cover the need": "必要を満たせる商品",
   "Goods that equip the unit": "兵種を装備させる商品",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "兵種を装備させる商品。国家が装備させられない徴集兵は農民兵として従軍",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "兵種を装備させる商品。いずれか一つでよく、合算される。兵種は国家の備蓄を分け合う。数えるのは国家の生産量ではなく消費量：1日あたり商品1単位で兵士365人×軍事充足率を装備できる。装備のない徴集兵は農民兵として召集される",
   "Goods the state bought at the province's burgs": "国家が州の集落で購入した商品",
   "Google font": "Google フォント",
   "Google font {{family}} is loading...": "Google フォント {{family}} を読み込み中…",

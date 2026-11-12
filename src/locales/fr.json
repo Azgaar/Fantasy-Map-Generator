@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Marchandises affichées sur le calque Marchandises",
   "Goods that could cover the need": "Marchandises pouvant couvrir le besoin",
   "Goods that equip the unit": "Marchandises qui équipent l’unité",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Marchandises qui équipent l’unité. Les conscrits que l’État ne peut équiper servent de levées",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Marchandises qui équipent l’unité ; n’importe laquelle, cumulées. Les unités se partagent le stock de l’État. Compte ce que l’État consomme, non ce qu’il produit : 1 unité de marchandise par jour équipe 365 soldats × couverture militaire. Les conscrits sans équipement rejoignent les levées",
   "Goods the state bought at the province's burgs": "Marchandises que l’État a achetées dans les localités de la province",
   "Google font": "Police Google",
   "Google font {{family}} is loading...": "Chargement de la police Google {{family}}...",

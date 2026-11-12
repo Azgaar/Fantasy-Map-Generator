@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Αγαθά που εμφανίζονται στο επίπεδο Αγαθών",
   "Goods that could cover the need": "Αγαθά που θα μπορούσαν να καλύψουν την ανάγκη",
   "Goods that equip the unit": "Αγαθά που εξοπλίζουν τη μονάδα",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Αγαθά που εξοπλίζουν τη μονάδα. Οι κληρωτοί που το κράτος δεν μπορεί να εξοπλίσει υπηρετούν ως έκτακτες δυνάμεις",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Αγαθά που εξοπλίζουν τη μονάδα· οποιοδήποτε από αυτά, αθροιστικά. Οι μονάδες μοιράζονται το απόθεμα του κράτους. Μετράει ό,τι καταναλώνει το κράτος, όχι ό,τι παράγει: 1 μονάδα αγαθού την ημέρα εξοπλίζει 365 στρατιώτες × στρατιωτική κάλυψη. Οι κληρωτοί χωρίς εξοπλισμό συγκροτούν έκτακτες δυνάμεις",
   "Goods the state bought at the province's burgs": "Αγαθά που αγόρασε το κράτος στους οικισμούς της επαρχίας",
   "Google font": "Γραμματοσειρά Google",
   "Google font {{family}} is loading...": "Φόρτωση γραμματοσειράς Google {{family}}...",

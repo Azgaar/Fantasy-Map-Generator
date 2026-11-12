@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Товари, показані на шарі товарів",
   "Goods that could cover the need": "Товари, які могли б задовольнити потребу",
   "Goods that equip the unit": "Товари, що споряджають підрозділ",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Товари, що споряджають підрозділ. Рекрути, яких держава не може спорядити, служать як ополчення",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Товари, що споряджають підрозділ; підходить будь-який, вони сумуються. Підрозділи ділять запас держави. Враховується споживання держави, а не виробництво: 1 одиниця товару на день споряджає 365 вояків × військове покриття. Рекрутів без спорядження набирають до ополчення",
   "Goods the state bought at the province's burgs": "Товари, які держава купила в поселеннях провінції",
   "Google font": "Шрифт Google",
   "Google font {{family}} is loading...": "Завантажуємо шрифт Google {{family}}…",

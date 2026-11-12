@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Goederen getoond op de goederenlaag",
   "Goods that could cover the need": "Goederen die de behoefte kunnen dekken",
   "Goods that equip the unit": "Goederen die de eenheid uitrusten",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Goederen die de eenheid uitrusten. Dienstplichtigen die de staat niet kan uitrusten, dienen als lichte troepen",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Goederen die de eenheid uitrusten; elk ervan, opgeteld. Eenheden delen de voorraad van de staat. Wat de staat verbruikt telt, niet wat hij produceert: 1 eenheid goederen per dag rust 365 soldaten × militaire dekking uit. Dienstplichtigen zonder uitrusting worden als lichte troepen opgeroepen",
   "Goods the state bought at the province's burgs": "Goederen die de staat kocht in de nederzettingen van de provincie",
   "Google font": "Google-lettertype",
   "Google font {{family}} is loading...": "Google-lettertype {{family}} wordt geladen...",

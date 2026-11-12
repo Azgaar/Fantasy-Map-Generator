@@ -514,7 +514,7 @@ function militaryCustomize(): void {
         </td>
         <td><input data-tip="${t("Name")}" value="${name}" /></td>
         <td>
-          <button data-tip="${t("Goods that equip the unit. Conscripts the state cannot equip serve as levies")}" data-type="goods" title="${escapeHtml(getGoodsTitle(unit.goods))}" data-value="${getLimitValue(unit.goods)}">${getGoodsBadges(unit.goods)}</button>
+          <button data-tip="${t("Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies")}" data-type="goods" title="${escapeHtml(getGoodsTitle(unit.goods))}" data-value="${getLimitValue(unit.goods)}">${getGoodsBadges(unit.goods)}</button>
         </td>
         <td>${getLimitButton("biomes")}</td>
         <td>${getLimitButton("states")}</td>
@@ -674,7 +674,7 @@ function renderOptions(): void {
             <tr>
               <th data-tip="${t("Unit icon")}">${t("Icon")}</th>
               <th data-tip="${t("Name")}">${t("Name")}</th>
-              <th data-tip="${t("Goods that equip the unit. Conscripts the state cannot equip serve as levies")}">${t("Goods")}</th>
+              <th data-tip="${t("Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies")}">${t("Goods")}</th>
               <th style="width: 5em" data-tip="${t("Select allowed biomes")}">${t("Biomes")}</th>
               <th style="width: 5em" data-tip="${t("Select allowed states")}">${t("States")}</th>
               <th style="width: 5em" data-tip="${t("Select allowed cultures")}">${t("Cultures")}</th>

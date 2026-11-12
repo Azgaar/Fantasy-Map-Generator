@@ -133,11 +133,20 @@ Once the economy has run, a unit with goods is fielded only as far as the state 
 
 `Stock = daily consumption × 365 × military coverage`
 
-The state counts what it consumes, not what it makes: imported goods equip its troops, while goods it makes and sells abroad do not. A good several units need is split between them by their troops. A unit's equipped share is its goods' stock against its troops, at most 1:
+So one unit of a good a day equips 365 troops × its military coverage: 730 troops for arms (coverage 2), 329 for horses (0.9). The 365 holds at the default population rate of 1 000 people per point; troops scale with the rate, so at 2 000 one unit a day equips 730 troops × coverage. The good's military coverage is in its Demand Coverage, in the Goods editor.
+
+- **Any of the unit's goods will do, and they add up.** A unit listing several goods does not need all of them: cavalry is equipped by horses, camels or tack, and a state with some of each sums their stocks.
+- **Units share the stock.** A good several units need is split between them by their troops, so infantry and archers both drawing on arms are equipped in the same proportion. Goods are not unlimited per unit.
+- **Consumption counts, not production.** Imported goods equip the state's troops, while goods it makes and sells abroad do not. A state that makes no arms but buys them is equipped; one that exports all its arms is not.
+- **Equipping uses up nothing.** The army reads the state's consumption, it does not buy goods of its own, so the economy is the same with or without an army. Troops are paid for separately, by the state's military spending.
+
+A unit's equipped share is its goods' stock against its troops, at most 1:
 
 `Equipped = min(1, Σ goods stock / troops)`
 
-For example, a state consuming 4 horses a day has 4 × 365 × 0.6 = 876 horses' worth of mounts, so 2 000 conscripted cavalry are 44% equipped: 876 serve as cavalry and the other 1 124 as levies.
+For example, a state consuming 4 horses a day has 4 × 365 × 0.9 = 1 314 horses' worth of mounts, so 2 000 conscripted cavalry are 66% equipped: 1 314 serve as cavalry and the other 686 as levies.
+
+Equipment is worked out when troops are raised: on a new map, when the military is recalculated (Update or Regenerate in the recalculation dialog, or Recalculate in the Regiments Overview) and after regenerating states. Regenerating the economy alone leaves the regiments as they are, so recalculate the military to equip them from the new economy.
 
 Conscripts a state cannot equip are not lost: they serve as **levies** in the cell or burg where they were raised, joining its land regiments. Unequipped sailors become levies on land too. Levies have half an infantryman's power, and an army's starting morale follows its power, so a state short of arms, horses, cannons or boats fields an army as large but weaker. With the default units, where nobody is raised to levies directly, a well-supplied state has none. If no unit has the _levies_ type, unequipped conscripts are not raised.
 

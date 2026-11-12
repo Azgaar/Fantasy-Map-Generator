@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "상품 레이어에 표시되는 상품",
   "Goods that could cover the need": "필요를 충족할 수 있는 상품",
   "Goods that equip the unit": "병종을 무장시키는 상품",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "병종을 무장시키는 상품. 국가가 무장시키지 못한 징집병은 민병으로 복무합니다",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "병종을 무장시키는 상품. 어느 것이든 되며 합산됩니다. 병종들은 국가의 재고를 나눠 씁니다. 국가의 생산이 아닌 소비를 셉니다: 하루 상품 1단위는 병사 365명 × 군사 충족도를 무장시킵니다. 장비가 없는 징집병은 민병으로 징집됩니다",
   "Goods the state bought at the province's burgs": "국가가 주의 도시에서 구입한 상품",
   "Google font": "Google 글꼴",
   "Google font {{family}} is loading...": "Google 글꼴 {{family}} 불러오는 중...",

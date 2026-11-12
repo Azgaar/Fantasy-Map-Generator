@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "পণ্য স্তরে দেখানো পণ্য",
   "Goods that could cover the need": "যে পণ্য প্রয়োজন মেটাতে পারত",
   "Goods that equip the unit": "ইউনিট সজ্জিত করার পণ্য",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "ইউনিট সজ্জিত করার পণ্য। রাষ্ট্র যাদের সজ্জিত করতে পারে না সেই সৈন্যরা সাধারণ বাহিনী হিসেবে কাজ করে",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "ইউনিট সজ্জিত করার পণ্য; যেকোনোটি, যোগ হয়ে। ইউনিটগুলো রাষ্ট্রের মজুত ভাগ করে নেয়। রাষ্ট্র যা ভোগ করে তা গণনা হয়, যা উৎপাদন করে তা নয়: দিনে পণ্যের ১ একক ৩৬৫ জন সৈন্য × সামরিক পূরণ সজ্জিত করে। সরঞ্জামহীন সৈন্যরা সাধারণ বাহিনী হিসেবে তালিকাভুক্ত হয়",
   "Goods the state bought at the province's burgs": "প্রদেশের জনপদে রাষ্ট্রের কেনা পণ্য",
   "Google font": "Google ফন্ট",
   "Google font {{family}} is loading...": "Google ফন্ট {{family}} লোড হচ্ছে...",

@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Hàng hóa hiển thị trên lớp Hàng hóa",
   "Goods that could cover the need": "Hàng hóa có thể đáp ứng nhu cầu",
   "Goods that equip the unit": "Hàng hóa trang bị cho đơn vị",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Hàng hóa trang bị cho đơn vị. Lính nghĩa vụ mà quốc gia không trang bị được sẽ phục vụ như dân binh",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Hàng hóa trang bị cho đơn vị; bất kỳ loại nào, cộng dồn. Các đơn vị dùng chung kho của quốc gia. Tính theo lượng quốc gia tiêu thụ, không phải sản xuất: 1 đơn vị hàng mỗi ngày trang bị cho 365 binh sĩ × mức đáp ứng quân sự. Lính nghĩa vụ không có trang bị được tuyển làm dân binh",
   "Goods the state bought at the province's burgs": "Hàng hóa quốc gia mua tại các khu định cư của tỉnh",
   "Google font": "Phông chữ Google",
   "Google font {{family}} is loading...": "Đang tải phông chữ Google {{family}}...",

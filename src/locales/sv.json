@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Varor som visas i varulagret",
   "Goods that could cover the need": "Varor som kunde täcka behovet",
   "Goods that equip the unit": "Varor som utrustar förbandet",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Varor som utrustar förbandet. Rekryter som staten inte kan utrusta tjänstgör som uppbåd",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Varor som utrustar förbandet; vilken som helst av dem, sammanlagt. Förbanden delar på statens förråd. Det som räknas är vad staten förbrukar, inte vad den producerar: 1 varuenhet om dagen utrustar 365 soldater × militär täckning. Rekryter utan utrustning tas ut som uppbåd",
   "Goods the state bought at the province's burgs": "Varor som staten köpte i provinsens bosättningar",
   "Google font": "Google-typsnitt",
   "Google font {{family}} is loading...": "Google-typsnittet {{family}} läses in...",

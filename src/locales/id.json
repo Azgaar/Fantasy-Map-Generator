@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Barang yang ditampilkan di lapisan Barang",
   "Goods that could cover the need": "Barang yang dapat memenuhi kebutuhan",
   "Goods that equip the unit": "Barang yang melengkapi unit",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Barang yang melengkapi unit. Wajib militer yang tak dapat diperlengkapi negara bertugas sebagai pasukan wajib",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Barang yang melengkapi unit; salah satunya, dijumlahkan. Unit berbagi persediaan negara. Yang dihitung adalah konsumsi negara, bukan produksinya: 1 satuan barang per hari melengkapi 365 prajurit × cakupan militer. Wajib militer tanpa perlengkapan direkrut sebagai pasukan wajib",
   "Goods the state bought at the province's burgs": "Barang yang dibeli negara di permukiman provinsi",
   "Google font": "Fon Google",
   "Google font {{family}} is loading...": "Fon Google {{family}} sedang dimuat...",

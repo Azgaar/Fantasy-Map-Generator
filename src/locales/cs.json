@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Zboží zobrazené ve vrstvě Zboží",
   "Goods that could cover the need": "Zboží, které by mohlo pokrýt potřebu",
   "Goods that equip the unit": "Zboží vybavující jednotku",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Zboží vybavující jednotku. Branci, které stát nedokáže vybavit, slouží jako lidový odvod",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Zboží vybavující jednotku; kterékoli z nich, sčítá se. Jednotky sdílejí zásoby státu. Počítá se, co stát spotřebuje, ne co vyrobí: 1 jednotka zboží denně vybaví 365 vojáků × vojenské pokrytí. Branci bez výstroje jsou povoláni jako lidový odvod",
   "Goods the state bought at the province's burgs": "Zboží, které stát nakoupil v sídlech provincie",
   "Google font": "Písmo Google",
   "Google font {{family}} is loading...": "Písmo Google {{family}} se načítá...",

@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Az Áruk rétegen megjelenített áruk",
   "Goods that could cover the need": "Áruk, amelyek fedezhetnék a szükségletet",
   "Goods that equip the unit": "Az egységet felszerelő áruk",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Az egységet felszerelő áruk. Az állam által fel nem szerelhető sorkatonák népfelkelőként szolgálnak",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Az egységet felszerelő áruk; bármelyikük, összeadódva. Az egységek osztoznak az állam készletén. Az állam fogyasztása számít, nem a termelése: napi 1 egységnyi áru 365 katonát × katonai fedezet szerel fel. A felszerelés nélküli sorkatonákat népfelkelőként hívják be",
   "Goods the state bought at the province's burgs": "Áruk, amelyeket az állam a tartomány településein vásárolt",
   "Google font": "Google-betűtípus",
   "Google font {{family}} is loading...": "A(z) {{family}} Google-betűtípus betöltése...",

@@ -1313,7 +1313,7 @@
   "Goods shown on the Goods layer": "Mallar katmanında gösterilen mallar",
   "Goods that could cover the need": "İhtiyacı karşılayabilecek mallar",
   "Goods that equip the unit": "Birliği donatan mallar",
-  "Goods that equip the unit. Conscripts the state cannot equip serve as levies": "Birliği donatan mallar. Devletin donatamadığı askerler yedek kuvvet olarak görev yapar",
+  "Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies": "Birliği donatan mallar; herhangi biri, toplanarak. Birlikler devletin stokunu paylaşır. Devletin ürettiği değil tükettiği sayılır: günde 1 birim mal 365 asker × askerî karşılama donatır. Donanımsız askerler yedek kuvvet olarak toplanır",
   "Goods the state bought at the province's burgs": "Devletin eyaletin yerleşimlerinden satın aldığı mallar",
   "Google font": "Google yazı tipi",
   "Google font {{family}} is loading...": "Google yazı tipi {{family}} yükleniyor...",
