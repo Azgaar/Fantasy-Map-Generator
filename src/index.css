@@ -1748,28 +1748,24 @@ div.editorLine {
   stroke: #737373;
 }
 
-#militaryOptionsTable select {
-  border: 1px solid #d4d4d4;
+/* the units table is wide: a narrow screen scrolls it rather than cutting the last columns */
+#militaryOptionsBody {
+  max-width: 90vw;
+  overflow-x: auto;
 }
 
-#militaryOptionsTable input {
-  width: 9em;
-  border: 1px solid #d4d4d4;
+#militaryOptions .states .unset {
+  color: #999999;
 }
 
-#militaryOptionsTable input[type="number"] {
-  width: 5em;
+#militaryOptions .states > [data-col] {
+  overflow: hidden;
 }
 
-#militaryOptionsTable input[data-trait] {
-  width: 4em;
+#militaryOptions .states input.native {
+  margin: 0;
 }
 
-#militaryOptionsTable td[data-power] {
-  text-align: center;
-}
-
-#militaryOptionsTable button,
 #burgGroupsBody button {
   width: 100%;
 }

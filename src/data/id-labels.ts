@@ -291,3 +291,11 @@ export const BATTLE_PHASE_LABELS: Record<string, string> = {
   maneuvering: t("Maneuvering"),
   dogfight: t("Dogfight")
 };
+
+export const BATTLE_ACTION_LABELS: Record<string, string> = {
+  hold: t("Holding"),
+  move: t("Moving"),
+  shoot: t("Shooting"),
+  fight: t("Fighting"),
+  flee: t("Fleeing")
+};

@@ -110,11 +110,17 @@ function open(attacker: Regiment, defender: Regiment): void {
     onClose: cancelResults
   });
   fitDialog();
-  tip(t("Drag troops to change the deployment, hold one to turn it, then start the battle"), true, "info", 8000);
+  tip(
+    t("Drag troops to change the deployment, double-click one to turn it, then start the battle"),
+    true,
+    "info",
+    8000
+  );
 }
 
 const SCREEN_SHARE = 0.92; // of the viewport the window may take
-const SPARE = 6; // em left under the army sheets, for a regiment's units or a regiment more
+const SPARE = 2; // em left under the army sheets
+const FIELD_WIDTH = 77; // em the battlefield opens at, at most: the window can be dragged larger
 const POSITION = { my: "center", at: "center", of: "svg" };
 
 /** Size the window by what really stands around the battlefield: as large a plan as the screen has room for */
@@ -124,13 +130,13 @@ function fitDialog(): void {
   const stage = ensureEl("battleStage");
   const { width, height } = frame.getBoundingClientRect();
   const style = getComputedStyle(layout);
-  const rows = [...layout.children] as HTMLElement[];
-  const content = sum(rows, row => row.offsetHeight) + (parseFloat(style.rowGap) || 0) * (rows.length - 1);
+  const content =
+    layout.lastElementChild!.getBoundingClientRect().bottom - layout.firstElementChild!.getBoundingClientRect().top;
+  const em = parseFloat(style.fontSize) || 12;
   const aroundX = width - stage.offsetWidth;
-  const aroundY =
-    height - layout.clientHeight + content - stage.offsetHeight + SPARE * (parseFloat(style.fontSize) || 12);
+  const aroundY = height - layout.clientHeight + content - stage.offsetHeight + SPARE * em;
   const maxHeight = viewport.height * SCREEN_SHARE;
-  const room = Math.min(viewport.width * SCREEN_SHARE - aroundX, (maxHeight - aroundY) * (5 / 3));
+  const room = Math.min(viewport.width * SCREEN_SHARE - aroundX, (maxHeight - aroundY) * (5 / 3), FIELD_WIDTH * em);
   const field = Math.max(Math.floor(room / 5) * 5, 300); // a whole number of pixels both ways
   Dialog.update("battleScreen", {
     width: field + aroundX - (width - frame.clientWidth),
@@ -241,7 +247,7 @@ const STYLE = /* css */ `
   #battleLayout .battleMenu > button.current { font-weight: bold; }
 
   /* who fights whom, and how the scales stand */
-  #battleHeader { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.3em 1.2em; }
+  #battleHeader { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.3em 0.8em; margin-bottom: -0.5em; padding: 0.3em 0.6em; background: linear-gradient(90deg, transparent, ${SIDE_COLORS.attackers}40 25%, ${SIDE_COLORS.defenders}40 75%, transparent); }
   .battleBanner { display: flex; align-items: center; gap: 0.7em; width: 100%; max-width: 30em; min-width: 0; }
   .battleBanner.defenders { justify-self: end; }
   .battleBanner.defenders, .battleBanner.defenders .battleBannerText > span { flex-direction: row-reverse; }
@@ -249,11 +255,10 @@ const STYLE = /* css */ `
   .battleEmblems { display: flex; flex-shrink: 0; }
   .battleEmblems > svg { width: 3.2em; height: 3.2em; }
   .battleEmblems > svg + svg { margin-left: -1.9em; }
-  .battleBannerText { display: flex; flex: 1; flex-direction: column; gap: 0.1em; min-width: 0; }
+  .battleBannerText { display: flex; flex: 1; flex-direction: column; gap: 0.2em; min-width: 0; }
   .battleBannerText > span { display: flex; align-items: center; gap: 0.6em; }
-  .battleBannerText > span > b { font-size: 1.2em; }
   .battleBannerText .battleBar { flex: 1; }
-  .battleStates { flex: 1; min-width: 0; overflow: hidden; font-style: italic; text-overflow: ellipsis; white-space: nowrap; }
+  .battleStates { flex: 1; min-width: 0; overflow: hidden; font-size: 1.2em; text-overflow: ellipsis; white-space: nowrap; }
   .battleTroops { display: inline-flex; align-items: baseline; gap: 0.4em; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .battleCount > b { font-size: 1.2em; }
   .battleCount > span { color: var(--muted); }
@@ -266,19 +271,19 @@ const STYLE = /* css */ `
   .battleOrdersButton > i { color: var(--muted); }
   #battleTitle { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.7em; min-width: 0; }
   #battleTitle > div { display: flex; flex-direction: column; align-items: center; gap: 0.25em; min-width: 0; }
-  /* the die of the round, in the side's colour: a click rolls it again */
+  /* the die of the round, in the side's colour: a click turns it to the next face */
   .battleDie { width: 3em; height: 3em; cursor: pointer; }
   .battleDie > rect { fill: var(--side); }
   .battleDie > circle { fill: #fff; }
   .battleDie:hover > rect { stroke: #333; }
-  #battleName { position: relative; width: 22em; max-width: 100%; }
+  #battleName { position: relative; width: 16em; max-width: 100%; }
   #battleNameFull { width: 100%; padding: 0 0.4em; border-color: transparent; background: none; font-size: 1.15em; font-weight: bold; text-align: center; text-overflow: ellipsis; }
   #battleNameFull:hover, #battleNameFull:focus { border-color: #abadb3; background: #fff; }
   #battleNameTools { position: absolute; top: 0; right: 0; bottom: 0; display: none; background: #fff; }
   #battleName:hover > #battleNameTools, #battleName:focus-within > #battleNameTools { display: flex; }
 
   /* the scales: the power of each side, as its share of the ribbon */
-  #battleBalance { position: relative; display: flex; width: clamp(11em, 30cqw, 22em); height: 1.6em; color: #fff; font-weight: bold; font-variant-numeric: tabular-nums; }
+  #battleBalance { position: relative; display: flex; width: clamp(11em, 22cqw, 16em); height: 1.6em; color: #fff; font-weight: bold; font-variant-numeric: tabular-nums; }
   #battleBalance > i { display: flex; align-items: center; min-width: 4.2em; padding: 0 0.7em 0 1.2em; box-sizing: border-box; background: ${SIDE_COLORS.attackers}; font-style: normal; clip-path: polygon(0.7em 0, 100% 0, 100% 100%, 0.7em 100%, 0 50%); transition: width 0.25s ease-out; }
   #battleBalance > i + i { flex: 1; justify-content: flex-end; padding: 0 1.2em 0 0.7em; background: ${SIDE_COLORS.defenders}; clip-path: polygon(0 0, calc(100% - 0.7em) 0, 100% 50%, calc(100% - 0.7em) 100%, 0 100%); }
   #battleBalance > b { position: absolute; top: 50%; left: var(--at, 50%); width: 0.75em; height: 0.75em; border: 1px solid #333; background: #fff; transform: translate(-50%, -50%) rotate(45deg); transition: left 0.25s ease-out; }
@@ -343,12 +348,11 @@ function renderDialog(): void {
       <span class="battleEmblems"></span>
       <span class="battleBannerText">
         <span>
-          <b>${side === "attackers" ? t("Attackers") : t("Defenders")}</b>
-          <div class="battleBar battleMorale"><i></i></div>
+          <b class="battleStates"></b>
           <button class="battleOrdersButton" data-tip="${t("Change the phase, add power or morale. Each change is made once and written to the battle log")}"><span class="battlePhase"></span></button>
         </span>
         <span>
-          <span class="battleStates"></span>
+          <div class="battleBar battleMorale"><i></i></div>
           <span class="battleTroops">
             <span class="battleCount" data-tip="${t("Troops left")}"><b></b><span></span></span>
             <span class="battleLost" data-tip="${t("Casualties")}"></span>
@@ -483,7 +487,7 @@ function renderDialog(): void {
   for (const side of SIDES) {
     const el = ensureEl(`battleSide_${side}`);
     el.querySelector(".battleAddRegiment")!.addEventListener("click", () => addSide(side));
-    ensureEl(`battleDie_${side}`).addEventListener("click", () => rollDie(side));
+    ensureEl(`battleDie_${side}`).addEventListener("click", () => turnDie(side));
     ensureEl(`battleBanner_${side}`)
       .querySelector(".battleOrdersButton")!
       .addEventListener("click", () => openOrders(side));
@@ -696,7 +700,7 @@ function refreshSide(side: Side): void {
   if (die.dataset.die !== String(data.die)) {
     const factor = side === "attackers" ? t("Random factor for attackers") : t("Random factor for defenders");
     die.dataset.die = String(data.die);
-    die.dataset.tip = sentences(`${factor}: ×${+getFortune(data.die).toFixed(3)}`, t("Click to re-roll"));
+    die.dataset.tip = sentences(`${factor}: ×${+getFortune(data.die).toFixed(3)}`, t("Click to change"));
     die.innerHTML = dieFace(data.die);
   }
 
@@ -743,11 +747,6 @@ function renderRegiments(side: Side): void {
   const { regiments } = b[side];
 
   const states = [...new Set(regiments.map(regiment => regiment.state))];
-  const [only] = states;
-  const names =
-    states.length === 1
-      ? (pack.states[only].fullName ?? pack.states[only].name)
-      : list(states.map(s => pack.states[s].name));
   const banner = ensureEl(`battleBanner_${side}`);
   banner.querySelector(".battleEmblems")!.innerHTML = states
     .slice(0, 4)
@@ -757,8 +756,8 @@ function renderRegiments(side: Side): void {
     })
     .join("");
   const title = banner.querySelector<HTMLElement>(".battleStates")!;
-  title.textContent = names;
-  title.dataset.tip = names;
+  title.textContent = list(states.map(state => pack.states[state].name));
+  title.dataset.tip = list(states.map(state => pack.states[state].fullName ?? pack.states[state].name));
 
   const container = el.querySelector<HTMLElement>(".battleRegimentList")!;
   const opened = new Set([...container.querySelectorAll("details[open]")].map(details => details.id));
@@ -792,11 +791,17 @@ function renderRegiments(side: Side): void {
     .join("");
 }
 
-/** Another die for the side: it stands to the end of the battle */
-function rollDie(side: Side): void {
+/** The next face of the side's die: it stands to the end of the battle */
+function turnDie(side: Side): void {
   const b = battle!;
   if (b.result) return;
-  const die = ((b[side].die - 1 + 1 + Math.floor(Math.random() * 5)) % 6) + 1; // never the same face
+  const die = (b[side].die % 6) + 1;
+  const previous = b.interventions.at(-1);
+  if (previous?.kind === "die" && previous.side === side && previous.tick === b.tick) {
+    b.interventions.pop(); // clicks through the faces leave one line in the log
+    b.log.pop();
+    ensureEl("battleLogList").lastElementChild?.remove();
+  }
   intervene(b, { tick: b.tick, kind: "die", side, die });
   refresh();
 }

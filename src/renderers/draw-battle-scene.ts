@@ -1,10 +1,12 @@
 import { color, contours, curveBasisClosed, curveCatmullRom, drag, line, pointer, select } from "d3";
+import { BATTLE_ACTION_LABELS } from "@/data/id-labels";
 import { Icons } from "@/model/icons";
-import { type Battle, type Block, blockName } from "@/model/political/battle/battle";
+import type { Battle, Block } from "@/model/political/battle/battle";
 import { type Battlefield, FIELD } from "@/model/political/battle/battlefield";
 import { updateBattleDebug } from "@/renderers/draw-battle-debug";
 import type { Point } from "@/types/global";
-import { escapeHtml } from "@/utils/string-utils";
+import { t } from "@/utils/i18n";
+import { capitalize, escapeHtml } from "@/utils/string-utils";
 
 /** Where blocks stood a tick ago, to glide between ticks */
 export type Positions = Map<number, { x: number; y: number; facing: number }>;
@@ -265,47 +267,36 @@ export function drawBlocks(
         <use href="${escapeHtml(Icons.href(unit?.icon ?? ""))}" x="${-size / 2}" y="${-size / 2}" width="${size}" height="${size}"/>${flag}`;
     });
 
-  // a drag moves a battalion; held still, it turns until let go
-  let hold: { start: Point; facing: number; moved: boolean; turned: boolean; timer: number } | null = null;
-  groups.call(
-    drag<SVGGElement, Block>()
-      .filter(() => svg.classList.contains("battleEditable"))
-      .on("start", function (event, block) {
-        const held = { start: pointer(event, svg), facing: block.facing, moved: false, turned: false, timer: 0 };
-        const turn = (): void => {
-          if (hold !== held || held.moved) return;
-          held.turned = true;
-          held.facing += TURN_STEP;
-          setTransform(this, block.x, block.y, held.facing);
-          held.timer = window.setTimeout(turn, TURN_MS);
-        };
-        hold = held;
-        held.timer = window.setTimeout(turn, HOLD_MS);
-      })
-      .on("drag", function (event, block) {
-        if (!hold || hold.turned) return;
-        const [x, y] = pointer(event, svg);
-        if (!hold.moved && Math.hypot(x - hold.start[0], y - hold.start[1]) < 4) return; // a shaky hold
-        hold.moved = true;
-        clearTimeout(hold.timer);
-        setTransform(this, x, y, block.facing);
-      })
-      .on("end", (event, block) => {
-        const held = hold;
-        hold = null;
-        if (!held) return;
-        clearTimeout(held.timer);
-        if (held.turned) onTurn(block, held.facing);
-        else if (held.moved) onDrop(block, ...pointer(event, svg));
-      })
-  );
+  // a drag moves a battalion, a double click turns it
+  const editable = (): boolean => svg.classList.contains("battleEditable");
+  let start: Point = [0, 0];
+  let moved = false;
+  groups
+    .call(
+      drag<SVGGElement, Block>()
+        .filter(editable)
+        .on("start", event => {
+          start = pointer(event, svg);
+          moved = false;
+        })
+        .on("drag", function (event, block) {
+          const [x, y] = pointer(event, svg);
+          if (!moved && Math.hypot(x - start[0], y - start[1]) < 4) return; // a shaky click
+          moved = true;
+          setTransform(this, x, y, block.facing);
+        })
+        .on("end", (event, block) => {
+          if (moved) onDrop(block, ...pointer(event, svg));
+        })
+    )
+    .on("dblclick", (_event, block) => {
+      if (editable()) onTurn(block, block.facing + TURN_STEP);
+    });
 
   updateBlocks(svg, battle, null, 1);
 }
 
 const HEALTH_INSET = 1.5; // half the health line: it lies inside the block, against its outline
-const HOLD_MS = 400; // a press this long starts to turn the battalion
-const TURN_MS = 110;
 const TURN_STEP = Math.PI / 12;
 
 /** Put a block's group at a place; its icon stays upright whatever the block faces */
@@ -337,6 +328,7 @@ export function updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Posit
   root
     .select(".battleBlocks")
     .selectAll<SVGGElement, Block>("g.battleBlock")
+    .data(battle.blocks, block => block.key) // blocks are lined up anew at each change before the start
     .each(function (block) {
       const { x, y, facing } = at.get(block.id)!;
       setTransform(this, x, y, facing);
@@ -344,8 +336,9 @@ export function updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Posit
     .attr("display", block => (block.status === "fled" ? "none" : null))
     .attr("opacity", block => (block.status === "destroyed" ? 0.25 : block.status === "routed" ? 0.6 : 1))
     .attr("data-tip", block => {
-      const mood = block.status === "ready" ? `${Math.round(block.morale)}%` : block.status;
-      return `${blockName(battle, block)}: ${block.troops} / ${block.initial}, ${mood}`;
+      const troops = `${capitalize(block.unit.replace(/_/g, " "))}: ${block.troops} / ${block.initial}`;
+      if (block.status !== "ready") return `${troops}, ${block.status}`;
+      return `${troops}. ${t("Morale")}: ${Math.round(block.morale)}%. ${BATTLE_ACTION_LABELS[block.action]}`;
     })
     .each(function (block) {
       // the line inside the front edge is as long as the share of the troops alive

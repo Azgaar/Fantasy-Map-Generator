@@ -66,17 +66,13 @@ test.describe("Battle simulator", () => {
     expect(await block.getAttribute("transform")).not.toBe(before);
   });
 
-  test("turns a battalion held still and writes it to the log", async ({ page }) => {
+  test("turns a battalion by 15 degrees on a double click and writes it to the log", async ({ page }) => {
     await startBattle(page);
     const block = page.locator("#battleScene .battleBlock").first();
-    const rotation = async () => (await block.getAttribute("transform"))!.match(/rotate\(([-\d.]+)\)/)![1];
+    const rotation = async () => +(await block.getAttribute("transform"))!.match(/rotate\(([-\d.]+)\)/)![1];
     const before = await rotation();
-    const box = (await block.boundingBox())!;
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await page.mouse.down();
-    await page.waitForTimeout(800);
-    await page.mouse.up();
-    expect(await rotation()).not.toBe(before);
+    await block.dblclick();
+    expect((((await rotation()) - before) % 360 + 360) % 360).toBeCloseTo(15, 0);
 
     await page.locator("#battleLogToggle").click();
     await expect(page.locator("#battleLogList > div").last()).toContainText("are turned");
@@ -107,14 +103,16 @@ test.describe("Battle simulator", () => {
     await expect(log).toContainText("−10");
   });
 
-  test("rolls a side's die again on a click", async ({ page }) => {
+  test("turns a side's die to the next face on a click", async ({ page }) => {
     await startBattle(page);
     const die = page.locator("#battleDie_attackers");
-    const before = await die.getAttribute("data-die");
+    const before = Number(await die.getAttribute("data-die"));
     await die.click();
-    await expect(die).not.toHaveAttribute("data-die", before!);
+    await expect(die).toHaveAttribute("data-die", String((before % 6) + 1));
+    await die.click();
+    await expect(die).toHaveAttribute("data-die", String(((before + 1) % 6) + 1));
     await page.locator("#battleLogToggle").click();
-    await expect(page.locator("#battleLogList")).toContainText("Random factor for attackers");
+    await expect(page.locator("#battleLogList > div", { hasText: "Random factor for attackers" })).toHaveCount(1);
   });
 
   test("fits a narrow window: both sides stay above the battlefield, the armies under it", async ({ page }) => {

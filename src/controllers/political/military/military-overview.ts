@@ -1,22 +1,13 @@
 import { interpolateString, select, sum } from "d3";
 import { Controllers } from "@/controllers";
-import { Goods } from "@/model/economy/goods-generator";
-import { Icons } from "@/model/icons";
-import { Options } from "@/model/options/options-model";
 import { Military } from "@/model/political/military-generator";
-import { FOOT_SPEED, getDefaultMilitaryUnits, getUnitPower } from "@/model/political/military-units";
 import type { State } from "@/model/political/states-generator";
-import { stateEmblemIcon } from "@/renderers/draw-emblems";
-import { goodBadge } from "@/renderers/draw-goods";
 import { drawRegiment } from "@/renderers/draw-military";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
-import type { Good } from "@/types/economy";
-import type { MilitaryUnit } from "@/types/military";
 import { App } from "@/ui/app-commands";
 import { Dialog } from "@/ui/dialog/dialog";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
-import { type LimitationItem, limitationTip, pickLimitation } from "@/ui/dialog/limitation-picker";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
   type EditorColumn,
@@ -27,15 +18,14 @@ import {
   type TableView
 } from "@/ui/dialog/table";
 import { EconomyTerms } from "@/ui/economy-view";
-import { tip } from "@/ui/tooltips";
 import { wiki } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/node-utils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
-import { capitalize, escapeHtml, sanitizeId } from "@/utils/string-utils";
+import { capitalize } from "@/utils/string-utils";
+import { openMilitaryUnitsEditor } from "./military-units-editor";
 
 const dialogId = "militaryOverview" as const;
-const TRAITS = ["attack", "defense", "speed", "range", "morale"] as const; // what a unit is in battle
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 type MilitaryRow = {
   state: State;
@@ -126,7 +116,7 @@ function renderDialog(): void {
 
   ensureEl("militaryOverviewRefresh").addEventListener("click", refreshMilitaryOverview);
   ensureEl("militaryPercentage").addEventListener("click", togglePercentageMode);
-  ensureEl("militaryOptionsButton").addEventListener("click", militaryCustomize);
+  ensureEl("militaryOptionsButton").addEventListener("click", () => openMilitaryUnitsEditor(rebuildMilitaryColumns));
   ensureEl("militaryRegimentsList").addEventListener("click", () => openRegimentsOverview(-1));
   ensureEl("militaryOverviewRecalculate").addEventListener("click", () => App.openMilitaryRegeneration());
   ensureEl("militaryExport").addEventListener("click", downloadMilitaryData);
@@ -243,6 +233,7 @@ function bindMilitaryColumns(): void {
 }
 
 function rebuildMilitaryColumns(): void {
+  if (!findEl(dialogId)) return; // the units editor outlives the overview
   columns = getMilitaryColumns();
   ensureEl(`${dialogId}Header`).outerHTML = renderEditorHeader({ dialogId, columns });
   bindMilitaryColumns();
@@ -399,360 +390,6 @@ function togglePercentageMode(): void {
   militaryTable.refresh();
 }
 
-function militaryCustomize(): void {
-  renderOptions();
-  const types = ["levies", "melee", "ranged", "mounted", "machinery", "naval", "armored", "aviation", "magical"];
-  const tableBody = ensureEl("militaryOptions").querySelector("tbody")!;
-  const TRAIT_TIPS = getTraitTips();
-  const POWER_TIP = getPowerTip();
-  const LIMIT_TIPS = {
-    biomes: t("Select allowed biomes"),
-    states: t("Select allowed states"),
-    cultures: t("Select allowed cultures"),
-    religions: t("Select allowed religions")
-  };
-  removeUnitLines();
-  options.map.military.units.map(unit => addUnitLine(unit));
-
-  Dialog.open("militaryOptions", {
-    title: t("Edit Military Units"),
-    width: "fit-content",
-    position: { my: "center", at: "center", of: "svg" },
-    onClose: closeMilitaryOptions,
-    buttons: [
-      {
-        label: t("Apply"),
-        onClick: applyMilitaryOptions,
-        tip: t("Apply military units settings.")
-      },
-      {
-        label: t("Add"),
-        tip: t("Add"),
-        onClick: () =>
-          addUnitLine(
-            {
-              icon: Icons.glyph("🛡️"),
-              name: `custom${ensureEl<HTMLTableElement>("militaryOptionsTable").rows.length}`,
-              rural: 0.2,
-              urban: 0.5,
-              crew: 1,
-              attack: 1,
-              defense: 1,
-              speed: FOOT_SPEED,
-              range: 0,
-              morale: 1,
-              type: "melee",
-              separate: 0
-            },
-            false
-          )
-      },
-      { label: t("Restore"), onClick: restoreDefaultUnits, tip: t("Restore default military units and settings") },
-      {
-        label: t("Close"),
-        tip: t("Close"),
-        onClick: () => Dialog.close("militaryOptions")
-      }
-    ]
-  });
-
-  // renderOptions() rebuilds the dialog markup on every open, so the listener is bound to the fresh
-  // tbody each time. Do not guard this with a one-time flag: the old node is gone with its listener
-  tableBody.addEventListener("click", event => {
-    const el = (event.target as HTMLElement).closest<HTMLButtonElement>("button");
-    if (!el) return;
-    const type = el.dataset.type;
-
-    if (type === "icon") {
-      Controllers.IconPicker.open({
-        current: el.dataset.icon || "",
-        onPick: icon => setIconButton(el, icon)
-      });
-      return;
-    }
-
-    if (type === "biomes") {
-      const biomes = pack.biomes.filter(biome => !biome.removed).map(({ i, name, color }) => ({ i, name, color }));
-      selectLimitation(el, biomes);
-      return;
-    }
-    if (type === "states")
-      return selectLimitation(
-        el,
-        pack.states,
-        item => `<span style="color:${escapeHtml(item.color ?? "")}">⬤</span>${stateEmblemIcon(item.i)}`
-      );
-    if (type === "cultures") return selectLimitation(el, pack.cultures);
-    if (type === "religions") return selectLimitation(el, pack.religions);
-    if (type === "goods") return selectGoods(el);
-  });
-
-  function removeUnitLines(): void {
-    tableBody.querySelectorAll("tr").forEach(el => {
-      el.remove();
-    });
-  }
-
-  function getLimitValue(attr?: number[]): string {
-    return attr?.join(",") || "";
-  }
-
-  function getLimitText(attr: number[] | undefined, type: string): string {
-    if (!attr?.length) return "all";
-    return type === "states" ? attr.map(stateEmblemIcon).join("") : "some";
-  }
-
-  function getLimitTip(attr: number[] | undefined, items: readonly LimitationItem[]): string {
-    return attr?.length ? limitationTip(attr, items) : "";
-  }
-
-  function addUnitLine(unit: MilitaryUnit, saved = true): void {
-    const { type, icon, name, rural, urban, crew, separate } = unit;
-    const trait = (key: (typeof TRAITS)[number], step: number): string =>
-      `<td><input data-tip="${TRAIT_TIPS[key]}" data-trait="${key}" type="number" min="0" step="${step}" value="${unit[key]}" /></td>`;
-    const row = document.createElement("tr");
-    if (saved && options.map.military.units.some(known => known.name === name)) row.dataset.origin = name;
-    const typeOptions = types.map(t => `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`).join(" ");
-
-    const getLimitButton = (attr: "biomes" | "states" | "cultures" | "religions"): string => {
-      const data = pack[attr] as LimitationItem[];
-      return `<button
-          data-tip="${LIMIT_TIPS[attr]}"
-          style="white-space: nowrap"
-          data-type="${attr}"
-          title="${escapeHtml(getLimitTip(unit[attr], data))}"
-          data-value="${getLimitValue(unit[attr])}">
-          ${getLimitText(unit[attr], attr)}
-        </button>`;
-    };
-
-    row.innerHTML = /* html */ `<td>
-          <button data-type="icon" data-tip="${t("Click to select unit icon")}" translate="no"></button>
-        </td>
-        <td><input data-tip="${t("Name")}" value="${name}" /></td>
-        <td>
-          <button data-tip="${t("Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies")}" data-type="goods" title="${escapeHtml(getGoodsTitle(unit.goods))}" data-value="${getLimitValue(unit.goods)}">${getGoodsBadges(unit.goods)}</button>
-        </td>
-        <td>${getLimitButton("biomes")}</td>
-        <td>${getLimitButton("states")}</td>
-        <td>${getLimitButton("cultures")}</td>
-        <td>${getLimitButton("religions")}</td>
-        <td><input data-tip="${t("Most of the rural population that can be raised to the unit, in percent: fewer if the state lacks the unit's goods")}" type="number" min="0" max="100" step=".01" value="${rural}" /></td>
-        <td><input data-tip="${t("Most of the urban population that can be raised to the unit, in percent: fewer if the state lacks the unit's goods")}" type="number" min="0" max="100" step=".01" value="${urban}" /></td>
-        <td><input data-tip="${t("Average number of people in crew (used for total personnel calculation)")}" type="number" min="1" step="1" value="${crew}" /></td>
-        ${trait("attack", 0.1)}
-        ${trait("defense", 0.1)}
-        ${trait("speed", 1)}
-        ${trait("range", 10)}
-        ${trait("morale", 0.1)}
-        <td data-power data-tip="${POWER_TIP}">${showPower(unit)}</td>
-        <td>
-          <select data-tip="${t("Unit type to apply special rules on forces recalculation")}">
-            ${typeOptions}
-          </select>
-        </td>
-        <td data-tip="${t("Check if unit is separate and can be stacked only with units of the same type")}">
-          <input id="${name}Separate" type="checkbox" class="checkbox" ${separate ? "checked" : ""} />
-          <label for="${name}Separate" class="checkbox-label"></label>
-        </td>
-        <td data-tip="${t("Remove")}">
-          <span data-tip="${t("Remove")}" class="icon-trash-empty pointer"></span>
-        </td>`;
-    row.querySelector(".icon-trash-empty")!.addEventListener("click", () => row.remove());
-    row.addEventListener("input", () => {
-      const read = (key: string): number =>
-        +row.querySelector<HTMLInputElement>(`input[data-trait="${key}"]`)!.value || 0;
-      const [attack, defense, speed, range, morale] = TRAITS.map(read);
-      row.querySelector("td[data-power]")!.textContent = showPower({ attack, defense, speed, range, morale });
-    });
-    setIconButton(row.querySelector<HTMLButtonElement>("button[data-type='icon']")!, icon || "");
-    tableBody.appendChild(row);
-  }
-
-  // the button holds the canonical icon in a dataset attribute: its content is presentation only and
-  // may be rewritten by the browser or extensions (e.g. Google Translate wrapping text nodes in <font>)
-  function setIconButton(button: HTMLElement, icon: string): void {
-    button.dataset.icon = icon;
-    button.innerHTML = Icons.html(icon);
-  }
-
-  function restoreDefaultUnits(): void {
-    removeUnitLines();
-    getDefaultMilitaryUnits().map((unit: MilitaryUnit) => addUnitLine(unit));
-  }
-
-  function getGoodsTitle(goods?: number[]): string {
-    return goods?.length ? limitationTip(goods, options.map.goods) : t("none");
-  }
-
-  function getGoodsBadges(goods?: number[]): string {
-    const badges = (goods ?? [])
-      .flatMap(goodId => Goods.get(goodId) ?? [])
-      .map(good => `<svg width="1.4em" height="1.4em" style="vertical-align: middle">${goodBadge(good)}</svg>`);
-    return badges.length ? badges.join("") : t("none");
-  }
-
-  function selectGoods(el: HTMLElement): void {
-    pickLimitation({
-      title: t("Unit goods"),
-      heading: t("Goods that equip the unit"),
-      items: options.map.goods,
-      allowed: el.dataset.value ? el.dataset.value.split(",").map(Number) : [],
-      exact: true,
-      badge: item =>
-        `<svg width="1.4em" height="1.4em" style="vertical-align: middle">${goodBadge(item as Good)}</svg>`,
-      onApply: goods => {
-        el.dataset.value = goods.join(",");
-        el.innerHTML = getGoodsBadges(goods);
-        el.setAttribute("title", getGoodsTitle(goods));
-      }
-    });
-  }
-
-  function selectLimitation(el: HTMLElement, items: LimitationItem[], badge?: (item: LimitationItem) => string): void {
-    const type = el.dataset.type!;
-    pickLimitation({
-      title: t("Limit unit"),
-      heading: t("Limit unit by {{type}}", { type }),
-      items,
-      allowed: el.dataset.value ? el.dataset.value.split(",").map(Number) : [],
-      badge,
-      onApply: allowed => {
-        el.dataset.value = allowed.join(",");
-        el.innerHTML = getLimitText(allowed, type);
-        el.setAttribute("title", getLimitTip(allowed, items));
-      }
-    });
-  }
-
-  function applyMilitaryOptions(): void {
-    const unitLines = Array.from(tableBody.querySelectorAll("tr"));
-    const names = unitLines.map(r => sanitizeId(r.querySelector("input")!.value));
-    if (new Set(names).size !== names.length) {
-      tip(t("All units should have unique names"), false, "error");
-      return;
-    }
-
-    const units = unitLines.map((r, i) => {
-      const elements = Array.from(
-        r.querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>("input, button, select")
-      );
-      const values = elements.map(el => {
-        const { type, value } = (el as HTMLElement).dataset || {};
-        if (type === "icon") return (el as HTMLElement).dataset.icon ?? "";
-        if (type) return value ? value.split(",").map(v => parseInt(v, 10)) : null;
-        if ((el as HTMLInputElement).type === "number") return +(el as HTMLInputElement).value || 0;
-        if ((el as HTMLInputElement).type === "checkbox") return +(el as HTMLInputElement).checked || 0;
-        return (el as HTMLInputElement).value;
-      }) as [
-        string,
-        undefined,
-        number[] | null,
-        number[] | null,
-        number[] | null,
-        number[] | null,
-        number[] | null,
-        number,
-        number,
-        number,
-        number,
-        number,
-        number,
-        number,
-        number,
-        string,
-        number
-      ];
-      const [icon, , goods, biomes, states, cultures, religions, rural, urban, crew] = values;
-      const [attack, defense, speed, range, morale, type, separate] = values.slice(10) as [
-        number,
-        number,
-        number,
-        number,
-        number,
-        string,
-        number
-      ];
-
-      const unit: MilitaryUnit = {
-        icon,
-        name: names[i],
-        rural,
-        urban,
-        crew,
-        attack,
-        defense,
-        speed,
-        range,
-        morale,
-        type,
-        separate
-      };
-      if (biomes) unit.biomes = biomes;
-      if (states) unit.states = states;
-      if (cultures) unit.cultures = cultures;
-      if (religions) unit.religions = religions;
-      if (goods) unit.goods = goods;
-      return unit;
-    });
-    const stale = Military.setRoster(
-      units,
-      unitLines.map(r => r.dataset.origin ?? null)
-    );
-    Options.save(); // the roster is this map's, and what the next map starts from
-    rebuildMilitaryColumns();
-    Layers.draw("military");
-    unitLines.forEach((row, i) => {
-      row.dataset.origin = names[i]; // the dialog stays open: a later rename is of the saved unit
-    });
-    if (!stale.length) return void tip(t("Units are saved"), false, "success");
-
-    App.openMilitaryRegeneration({ units: stale });
-  }
-}
-
-function renderOptions(): void {
-  Dialog.destroy("militaryOptions");
-  const TRAIT_TIPS = getTraitTips();
-  const POWER_TIP = getPowerTip();
-  const optionsHtml = /* html */ `<div id="militaryOptions" class="dialog stable">
-      <div class="table">
-        <table id="militaryOptionsTable">
-          <thead>
-            <tr>
-              <th data-tip="${t("Unit icon")}">${t("Icon")}</th>
-              <th data-tip="${t("Name")}">${t("Name")}</th>
-              <th data-tip="${t("Goods that equip the unit; any of them, adding up. Units share the state's stock. Counts what the state consumes, not what it produces: 1 unit a day equips 365 troops × military coverage. Conscripts left without equipment are raised as levies")}">${t("Goods")}</th>
-              <th style="width: 5em" data-tip="${t("Select allowed biomes")}">${t("Biomes")}</th>
-              <th style="width: 5em" data-tip="${t("Select allowed states")}">${t("States")}</th>
-              <th style="width: 5em" data-tip="${t("Select allowed cultures")}">${t("Cultures")}</th>
-              <th style="width: 5em" data-tip="${t("Select allowed religions")}">${t("Religions")}</th>
-              <th data-tip="${t("Most of the rural population that can be raised to the unit, in percent: fewer if the state lacks the unit's goods")}">${t("Rural")}</th>
-              <th data-tip="${t("Most of the urban population that can be raised to the unit, in percent: fewer if the state lacks the unit's goods")}">${t("Urban")}</th>
-              <th data-tip="${t("Average number of people in crew (used for total personnel calculation)")}">${t("Crew")}</th>
-              <th data-tip="${TRAIT_TIPS.attack}">${t("Attack")}</th>
-              <th data-tip="${TRAIT_TIPS.defense}">${t("Defense")}</th>
-              <th data-tip="${TRAIT_TIPS.speed}">${t("Speed")}</th>
-              <th data-tip="${TRAIT_TIPS.range}">${t("Range")}</th>
-              <th data-tip="${TRAIT_TIPS.morale}">${t("Morale")}</th>
-              <th data-tip="${POWER_TIP}">${t("Power")}</th>
-              <th data-tip="${t("Unit type to apply special rules on forces recalculation")}">${t("Type")}</th>
-              <th data-tip="${t("Check if unit is separate and can be stacked only with units of the same type")}">
-                ${t("Separate")}
-              </th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>`;
-  ensureEl("dialogs").insertAdjacentHTML("beforeend", optionsHtml);
-}
-
-function closeMilitaryOptions(): void {
-  Dialog.destroy("militaryOptions");
-}
-
 function downloadMilitaryData(): void {
   const units = options.map.military.units.map(u => u.name);
   const headers = [
@@ -777,23 +414,5 @@ function downloadMilitaryData(): void {
   ]);
   Csv.download("Military", headers, rows);
 }
-
-const getTraitTips = (): Record<(typeof TRAITS)[number], string> => ({
-  attack: t("What a unit strikes and shoots with in battle"),
-  defense: t("What a unit stands blows and shots with in battle"),
-  speed: t("How far a unit moves in a battle tick: 7 on foot, 20 mounted. The battle plan is 1000 wide"),
-  range: t("How far a unit shoots on the battle plan, which is 1000 wide. Set 0 to fight hand to hand"),
-  morale: t("How steady a unit is in battle: 1 is ordinary, lower breaks sooner, at 2 it loses morale half as fast")
-});
-
-const showPower = (unit: Parameters<typeof getUnitPower>[0]): string => {
-  const power = getUnitPower(unit);
-  return String(rn(power, power < 1 ? 2 : 1));
-};
-
-const getPowerTip = (): string =>
-  t(
-    "Unit military power, worked out from its attack, defense, speed, range and morale. It sets the upkeep and the power of forces"
-  );
 
 export const MilitaryOverview = { open, exportCsv: downloadMilitaryData };
