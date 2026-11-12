@@ -348,7 +348,7 @@ test.describe("style persistence round trips", () => {
     expect(afterLoad.oceanOutline).toBe("-6,-4,-2");
     expect(afterLoad.geometryAttrs).toEqual([null, null, null, null]);
     expect(afterLoad.scaleBarSize).toBe(4);
-    expect(afterLoad.markersOptions).toBeUndefined(); // markers are sized in em since v1.154: rescale is gone
+    expect(afterLoad.markersOptions).toEqual({ zoomSize: "geometric" }); // rescale is gone since v1.154
     expect(afterLoad.haloWidth).toBe(7);
     expect(afterLoad.coordinatesSize).toBe("55px");
 
