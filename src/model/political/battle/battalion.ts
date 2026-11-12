@@ -22,6 +22,7 @@ export interface Intent {
   to: Spot | null; // where to go; none to stand
   stop: number; // how far from there to stop
   key: number; // of the way there: it is found anew when the key changes
+  shared: boolean; // many go to that point: the ways to it are found once for all
   shoot: boolean; // shoot the target once in range rather than close with it
   facing: number; // where to face with no foe at hand
   haste: number;
@@ -46,7 +47,16 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
   const { order } = block;
   const foes = sense.onField.filter(foe => foe.side !== block.side);
   const ready = foes.filter(foe => foe.status === "ready");
-  const stand: Intent = { target: null, to: null, stop: 0, key: -1, shoot: false, facing: order.facing, haste: 1 };
+  const stand: Intent = {
+    target: null,
+    to: null,
+    stop: 0,
+    key: -1,
+    shared: false,
+    shoot: false,
+    facing: order.facing,
+    haste: 1
+  };
   const far = (foe: Spot, from: Spot = block): number => Math.hypot(foe.x - from.x, foe.y - from.y);
   const pick = (among: Block[]): Block | null => {
     let best: Block | null = null;
@@ -107,7 +117,9 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
     // only who bars the way
     const barring = pick(ready.filter(foe => far(foe) <= COUNTER + foe.width / 2));
     if (barring && !shaken) return charge(barring);
-    return far(order) < ARRIVED ? stand : { ...stand, to: order, key: getPointKey(order) };
+    // stormers all make for the middle of the burg
+    const shared = battle.type === "siege";
+    return far(order) < ARRIVED ? stand : { ...stand, to: order, key: getPointKey(order), shared };
   }
 
   if (order.mission === "hunt") {

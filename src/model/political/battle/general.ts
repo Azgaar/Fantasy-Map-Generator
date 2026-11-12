@@ -691,8 +691,8 @@ function engage(battle: Battle, side: Side, own: View, foe: View, gap: number): 
   const gripShare = own.grip / (own.grip + foe.grip);
   if (gripShare > fireShare + 0.05) return names.close;
   if (own.ready.some(block => block.action === "shoot")) plan.fired ??= battle.round;
+  if (own.grip <= own.fire) return phase; // made for shooting: it closes to its range and no nearer
   if (plan.fired === null) return battle.round - battle.engaged >= 4 ? names.close : phase; // out of his range
-  if (own.grip <= own.fire) return phase; // made for shooting
   const patience = clamp(Math.round(4 + 16 * (fireShare - 0.5)), 4, 12);
   return battle.round - plan.fired >= patience ? names.close : phase;
 }
@@ -865,29 +865,14 @@ function direct(battle: Battle, side: Side, own: View, foe: View, gap: number): 
 }
 
 /**
- * Where a stormer goes in: straight over the wall before it, or by a breach when one is about as near.
- * The walls are stormed on a broad front, so the besieged cannot hold them all. None once it is within.
+ * Where a stormer goes: the middle of the burg, by the cheapest way from where it stands: over the wall before it, or by
+ * a breach or a gate when one is about as near. So the walls are stormed on a broad front. None once it is within.
  */
 function getEntry(battle: Battle, block: Block): Point | null {
   const { field } = battle;
   const burg = field.burgs[field.held!];
   const terrain = terrainAt(field, block.x, block.y);
-  if (terrain.walled === field.held! + 1 && !terrain.rampart) return null;
-  const inwards = (from: { x: number; y: number }, deep: number): Point => {
-    const distance = far(from, burg) || 1;
-    const share = Math.max(distance - deep, 0) / distance;
-    return [burg.x + (from.x - burg.x) * share, burg.y + (from.y - burg.y) * share];
-  };
-  const straight = inwards(block, far(block, burg) - burg.radius * 0.5);
-  const breach = field.breaches
-    .filter(breach => breach.burg === field.held)
-    .reduce<{ x: number; y: number } | null>(
-      (best, next) => (best && far(best, block) <= far(next, block) ? best : next),
-      null
-    );
-  if (breach && far(breach, block) < Math.hypot(straight[0] - block.x, straight[1] - block.y) + 60)
-    return inwards(breach, 25);
-  return straight;
+  return terrain.walled === field.held! + 1 && !terrain.rampart ? null : [burg.x, burg.y];
 }
 
 type Seen = { block: Block; at: [across: number, along: number] }[];

@@ -69,7 +69,7 @@ Scores only rank the tactics. Before an open fight (field, naval, air) each gene
 
 The other types have one choice each (`getOptions`): ambushers lie on both sides of the road or on one (`waylay`); defenders ready for a landing meet it at the shore or wait inland (`side.waits`); besiegers with two thirds of the odds the walls ask for storm at once (`side.storms`) or keep to the rule. A storm is played for 150 ticks and only with 28 battalions or fewer on the field: more cannot be reckoned within the second.
 
-A rehearsal is the real engine on a copy of the battle with `rehearsal` set and a copy of the field, so a storm in the mind breaches no walls; the regiments are shared. Changes of the armies or the type before the start call `rethink`. Measured on 2026-11-12 over 4 army sizes and 8 directions: up to 270 ms on open ground, a hill, a river or among woods.
+A rehearsal is the real engine on a copy of the battle with `rehearsal` set and a copy of the field, so a storm in the mind breaches no walls; the regiments are shared. Changes of the armies or the type before the start call `rethink`. Planning times are with the ways, under The battalion.
 
 ### Phase
 
@@ -123,7 +123,7 @@ Every tick a battalion looks at the foes in sight and at its friends beside it, 
 4. **Its order**, by mission. A line battalion goes for a foe within reach of its place and no further, so the line holds: 120 units when its side advances and closes, 45 when it waits. A foe a neighbour holds is within reach half as far again, to be taken in the flank.
 5. **Its target** (`getWorth`): of the foes its mission lets it reach, the nearest by the way there, made nearer by all that makes it a better prey: held by a friend and open to a blow in the flank or rear, shaken, hitting harder than it stands, pointed at by the general; for riders a shooter or an engine, and not formed line troops head on. Friends already going for it make it further, so the line spreads.
 
-The way to a point of the field is kept while the point stays (`getPointKey`), the way to a foe is found anew every round: thirty stormers finding their ways on one tick is what a round costs most.
+The way to a point of the field is kept while the point stays (`getPointKey`), the way to a foe is found anew every round. Stormers all make for the middle of the burg, so their ways are found once from there for each kind of troops (`getSharedHeading`), and besiegers pick their foes as the crow flies: forty stormers each finding their own way on one tick cost 150 ms. Measured on 2026-11-12 over every battle type, three passes: planning up to 331 ms, six ticks up to 64 ms, one tick up to 51 ms.
 
 Battalions do not pass through each other, except friends packed within the walls of one burg, who are not in the way of one stepping in or out either: a garrison once jammed itself in its own gate. One hemmed in by friends goes round them by the side it took first (`block.detour`), which is why riders kept back stand behind the ends of the line.
 

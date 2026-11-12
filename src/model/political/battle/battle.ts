@@ -22,6 +22,7 @@ import {
   getFlight,
   getFooting,
   getHeading,
+  getSharedHeading,
   hasWalls,
   inContact,
   isRunning,
@@ -604,7 +605,7 @@ function act(battle: Battle): void {
       continue;
     }
 
-    const { target, to, stop, key, shoot, facing, haste } = decide(battle, block, sense);
+    const { target, to, stop, key, shared, shoot, facing, haste } = decide(battle, block, sense);
     if (target && target.id !== block.target) sense.crowd.set(target.id, (sense.crowd.get(target.id) ?? 0) + 1);
     block.target = target?.id ?? null;
     if (shoot) shooting.add(block.id);
@@ -616,7 +617,7 @@ function act(battle: Battle): void {
     else if (to) {
       // to the place, or to the next turn of the way round the water and no further
       const whole = Math.hypot(to.x - block.x, to.y - block.y) - stop;
-      const [x, y] = getHeading(battle, block, to, key);
+      const [x, y] = shared ? getSharedHeading(battle, block, to) : getHeading(battle, block, to, key);
       const leg = x === to.x && y === to.y ? whole : Math.min(whole, Math.hypot(x - block.x, y - block.y));
       const moved = whole > 0 && step(battle, block, x - block.x, y - block.y, leg, onField, haste);
       block.action = moved ? "move" : "hold";

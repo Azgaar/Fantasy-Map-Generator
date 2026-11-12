@@ -162,6 +162,7 @@ interface Ways {
   reach: Map<number, { node: number; kind: string; reach: Reach }>; // the field as a block last saw it from where it stood
   routes: Map<number, { target: number; made: number; points: [number, number][] }>;
   flight: Map<string, Reach>; // the ways off the field, by the kind and the side
+  shared: Map<string, Reach>; // the ways to a point many go to, by the kind and the point
 }
 
 const ways = new WeakMap<Battlefield, Ways>();
@@ -182,7 +183,8 @@ function getWays(battle: Battle): Ways {
       closed: new Map(),
       reach: new Map(),
       routes: new Map(),
-      flight: new Map()
+      flight: new Map(),
+      shared: new Map()
     };
     ways.set(battle.field, known);
   }
@@ -281,6 +283,8 @@ function getGoal(reach: Reach, foe: Spot): number | null {
 export function getDistance(battle: Battle, block: Block, foe: Spot): number {
   const straight = Math.hypot(foe.x - block.x, foe.y - block.y);
   if (!getWays(battle).rough || isDry(battle, block, [block.x, block.y], [foe.x, foe.y])) return straight;
+  // besiegers pick their foes as the crow flies: the way over the walls is much the same to all of the garrison
+  if (battle.field.held !== null && block.side === "attackers") return straight;
   const reach = getReach(battle, block);
   const goal = getGoal(reach, foe);
   return goal === null ? straight : Math.max(reach.cost[goal] * FIELD.cell, straight);
@@ -331,6 +335,41 @@ export function getTurn(battle: Battle, like: Block, from: Point, to: Point): Po
   let next = 0;
   while (next + 1 < nodes.length && isDry(battle, like, from, nodes[next + 1])) next++;
   return nodes[next] ?? to;
+}
+
+/** The field as troops like the block would cross it to a node, found once for all of them and kept */
+function getSharedReach(battle: Battle, block: Block, goal: number): Reach {
+  const known = getWays(battle);
+  const key = `${getKind(battle, block)}|${goal}`;
+  let reach = known.shared.get(key);
+  if (!reach) {
+    if (known.shared.size > 200) known.shared.clear(); // of walls and phases long gone
+    reach = spread(FIELD.cols, FIELD.rows, [goal], getCosts(battle, block), getClosed(battle, block));
+    known.shared.set(key, reach);
+  }
+  return reach;
+}
+
+/**
+ * Where to step on the way to a point many go to, as stormers to the middle of a burg: the ways are found once from the
+ * point for all troops of a kind, not from every battalion apart
+ */
+export function getSharedHeading(battle: Battle, block: Block, to: Spot): Point {
+  const known = getWays(battle);
+  const here: Point = [block.x, block.y];
+  if (!known.rough || isDry(battle, block, here, [to.x, to.y])) return [to.x, to.y];
+  const reach = getSharedReach(battle, block, nodeAt(to.x, to.y));
+  // down the way to the point, as far as the block can walk straight
+  let node = nodeAt(block.x, block.y);
+  if (reach.cost[node] === Infinity) return [to.x, to.y];
+  let next: Point = [to.x, to.y];
+  for (let i = 0; i < 12 && reach.from[node] !== -1; i++) {
+    node = reach.from[node];
+    const turn = nodeCentre(node);
+    if (i && !isDry(battle, block, here, turn)) break;
+    next = turn;
+  }
+  return next;
 }
 
 /** The turns of the way to the target; none when the block can walk straight to it or cannot come to it at all */
