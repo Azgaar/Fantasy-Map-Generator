@@ -424,9 +424,8 @@ function marchColumn(battle: Battle, blocks: Block[]): void {
  */
 function layAmbush(battle: Battle, blocks: Block[]): void {
   const sorted = [...blocks].sort((a, b) => a.kind.localeCompare(b.kind) || a.id - b.id);
-  const at = (side: number): Frame => {
+  const lie = (side: number, distance: number): Frame => {
     const out = battle.axis + (side ? Math.PI / 2 : -Math.PI / 2);
-    const distance = Math.min(reach(out) * 0.75, 170);
     return {
       x: FIELD.width / 2 + Math.cos(out) * distance,
       y: FIELD.height / 2 + Math.sin(out) * distance,
@@ -439,6 +438,15 @@ function layAmbush(battle: Battle, blocks: Block[]): void {
       const { wood, height } = terrainAt(battle.field, ...toField(frame, across, 0));
       return +wood + height;
     });
+  const hidden = (frame: Frame): boolean =>
+    sum([-150, -75, 0, 75, 150], across => +terrainAt(battle.field, ...toField(frame, across, 0)).wood) >= 3;
+  /** Where they lie on a side: at the edge of the trees nearest the road, a short dash from it; a bowshot off in the open */
+  const at = (side: number): Frame => {
+    const far = Math.min(reach(battle.axis + Math.PI / 2) * 0.75, 170);
+    for (let distance = 80; distance < far; distance += FIELD.cell)
+      if (hidden(lie(side, distance))) return lie(side, distance);
+    return lie(side, far);
+  };
   const tactic: TacticName = battle.defenders.tactic === "waylay" ? "waylay" : "ambuscade";
   const wings =
     tactic === "waylay"

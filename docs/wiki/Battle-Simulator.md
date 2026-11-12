@@ -57,7 +57,7 @@ The first deployment on screen is the one the odds alone suggest; while the gene
 | Refused flanks | with the ends of the line bent back | by defenders outnumbered or with fewer riders |
 | Defence of a crossing | round the far end of the ford or bridge the attackers have to come by | by defenders behind a river |
 | Column of march | in a column on the road, riders ahead, engines last | by the attackers of an ambush: they are caught |
-| Ambuscade on both sides, Ambuscade on one side | along the road on both sides of it, or all on one, the better covered by trees and high ground | by the ambushers |
+| Ambuscade on both sides, Ambuscade on one side | along the road on both sides of it, or all on one, the better covered by trees and high ground; at the edge of the trees nearest the road where there are any, a bowshot off in the open | by the ambushers |
 | Siege lines, Garrison on the walls | out of bowshot with the engines in front; shooters towards the besiegers, the rest by the gates and in the middle | in a siege of a walled burg |
 | Landing in waves | line troops first, shooters and riders behind them | by the attackers of a landing |
 

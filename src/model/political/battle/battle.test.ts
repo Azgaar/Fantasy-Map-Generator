@@ -455,6 +455,9 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     expect(b.defenders.plan.tactic).toBe("ambuscade");
     plan(b);
     expect(["ambuscade", "waylay"]).toContain(b.defenders.tactic);
+    // in the wood they lie at its edge, a short dash from the road: nearer than a bowshot
+    const wooded = b.blocks.filter(block => block.side === "defenders" && block.y < 300 && block.order.rank === 0);
+    expect(Math.max(...wooded.map(block => block.y))).toBeGreaterThan(300 - 130);
     expect(b.attackers.tactic).toBeNull(); // the column is caught: its general has no plan
     if (b.defenders.tactic === "waylay") {
       const ambushers = b.blocks.filter(block => block.side === "defenders");
