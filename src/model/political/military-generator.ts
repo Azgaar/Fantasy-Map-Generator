@@ -1,4 +1,4 @@
-import { quadtree, sum } from "d3";
+import { greatest, quadtree, sum } from "d3";
 import { Accounts } from "@/model/economy/accounts";
 import { Goods } from "@/model/economy/goods-generator";
 import { Pack } from "@/model/graph/pack-generator";
@@ -9,6 +9,7 @@ import { rn, si } from "@/utils/number-utils";
 import { gauss, ra, rand } from "@/utils/probability-utils";
 import { findAllInQuadtree } from "@/utils/quadtree";
 import { requireName, requireOneOf } from "@/utils/validation-utils";
+import { getUnitPower } from "./military-units";
 import { levies, type State, States } from "./states-generator";
 
 export interface Regiment {
@@ -605,7 +606,7 @@ class MilitaryModule {
   }
 
   private getTroopsPower(regiment: Regiment): number {
-    return sum(options.map.military.units, unit => (regiment.u[unit.name] || 0) * (+unit.power || 0));
+    return sum(options.map.military.units, unit => (regiment.u[unit.name] || 0) * getUnitPower(unit));
   }
 
   /** The troops a number of population points stands for, rounded up: there is no half of an archer */
@@ -837,8 +838,8 @@ class MilitaryModule {
       pack.burgs[pack.cells.burg[r.cell]].capital
     )
       return Icons.glyph("👑"); // "Royal" regiment based in capital
-    const mainUnit = Object.entries(r.u).sort((a, b) => b[1] - a[1])[0][0]; // unit with more troops in regiment
-    const unit = options.map.military.units.find((u: { name: string; icon: string }) => u.name === mainUnit);
+    const units = options.map.military.units.filter(u => r.u[u.name]);
+    const unit = greatest(units, u => r.u[u.name] * getUnitPower(u)); // unit with the most power in the regiment
     return unit ? unit.icon : Icons.glyph("⚔️");
   }
 }

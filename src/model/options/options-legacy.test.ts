@@ -31,7 +31,9 @@ const restore = async () => {
   return { options: globalThis.options, defaults: Options.getDefaultOptions() };
 };
 
-const A_UNIT = { icon: "x", name: "legion", rural: 0.2, urban: 0.1, crew: 1, power: 1, type: "melee", separate: 0 };
+const BASE = { icon: "x", name: "legion", rural: 0.2, urban: 0.1, crew: 1, type: "melee", separate: 0 };
+const OLD_UNIT = { ...BASE, power: 1 };
+const A_UNIT = { ...BASE, attack: 1, defense: 1, speed: 7, range: 0, morale: 1 }; // a single power becomes the traits of the type
 const A_BURG_GROUP = { name: "My Ports", order: 1, active: true };
 const A_LABEL_GROUP = { name: "My States", type: "state", zoom: { min: 2, max: null } };
 
@@ -55,9 +57,9 @@ describe("adoptLegacyOptions", () => {
   });
 
   it("drops a set that is not valid JSON without losing the sets beside it", () => {
-    seed({ military: JSON.stringify([A_UNIT]), "burg-groups": "{not json" });
+    seed({ military: JSON.stringify([OLD_UNIT]), "burg-groups": "{not json" });
     const migrated = adoptLegacyOptions() as { map: Record<string, Record<string, unknown>> };
-    expect(migrated.map.military.units).toEqual([A_UNIT]);
+    expect(migrated.map.military.units).toEqual([OLD_UNIT]); // upgraded when the options are restored
     expect(migrated.map.burgs).toBeUndefined();
   });
 
@@ -88,7 +90,7 @@ describe("Options.restore, migrating", () => {
       tooltipSize: "22",
       onloadBehavior: "lastSaved",
       noReminder: "true",
-      military: JSON.stringify([A_UNIT]),
+      military: JSON.stringify([OLD_UNIT]),
       "burg-groups": JSON.stringify([A_BURG_GROUP]),
       "options-labels": JSON.stringify({ groups: [A_LABEL_GROUP] }),
       "coastline-settings": JSON.stringify({ ...Coastline.getDefaultSettings(), minEdge: 4 }),
@@ -129,7 +131,7 @@ describe("Options.restore, migrating", () => {
 
   it("drops the one unrepairable entry of a set, not the set around it", async () => {
     seed({
-      military: JSON.stringify([A_UNIT, { name: "broken" }]),
+      military: JSON.stringify([OLD_UNIT, { name: "broken" }]),
       "burg-groups": JSON.stringify([A_BURG_GROUP])
     });
     const { options } = await restore();
@@ -147,7 +149,7 @@ describe("Options.restore, migrating", () => {
   it("refuses a set of the wrong type without costing the sets or the preferences beside it", async () => {
     seed({
       "burg-groups": JSON.stringify({ not: "an array" }),
-      military: JSON.stringify([A_UNIT]),
+      military: JSON.stringify([OLD_UNIT]),
       themeColor: "#3366aa"
     });
     const { options, defaults } = await restore();
@@ -189,7 +191,7 @@ describe("Options.restore, migrating", () => {
   });
 
   it("persists what it migrated, so the next boot starts from the object", async () => {
-    seed({ themeColor: "#3366aa", military: JSON.stringify([A_UNIT]) });
+    seed({ themeColor: "#3366aa", military: JSON.stringify([OLD_UNIT]) });
     await restore();
     const persisted = JSON.parse(store.get("fmg-options") as string);
     expect(persisted.app.ui.themeColor).toBe("#3366aa");

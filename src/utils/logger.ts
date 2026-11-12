@@ -1,7 +1,7 @@
 // Console output by level. Switch a level off from the console: `FMG.log.enabled.time = false`
 
 /** Diagnostics from Advanced options: they may draw or record more, never change the map */
-export const DEBUG_MODES = ["economy", "temperature", "cloud"] as const;
+export const DEBUG_MODES = ["economy", "battle", "temperature", "cloud"] as const;
 export type DebugMode = (typeof DEBUG_MODES)[number];
 
 class Logger {

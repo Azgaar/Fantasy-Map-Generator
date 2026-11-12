@@ -4,7 +4,7 @@ import { Goods } from "@/model/economy/goods-generator";
 import { Icons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
 import { Military } from "@/model/political/military-generator";
-import { getDefaultMilitaryUnits } from "@/model/political/military-units";
+import { FOOT_SPEED, getDefaultMilitaryUnits, getUnitPower } from "@/model/political/military-units";
 import type { State } from "@/model/political/states-generator";
 import { goodBadge } from "@/renderers/draw-goods";
 import { drawRegiment } from "@/renderers/draw-military";
@@ -33,6 +33,7 @@ import { rn, si } from "@/utils/number-utils";
 import { capitalize, escapeHtml, sanitizeId } from "@/utils/string-utils";
 
 const dialogId = "militaryOverview" as const;
+const TRAITS = ["attack", "defense", "speed", "range", "morale"] as const; // what a unit is in battle
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 type MilitaryRow = {
   state: State;
@@ -400,6 +401,8 @@ function militaryCustomize(): void {
   renderOptions();
   const types = ["levies", "melee", "ranged", "mounted", "machinery", "naval", "armored", "aviation", "magical"];
   const tableBody = ensureEl("militaryOptions").querySelector("tbody")!;
+  const TRAIT_TIPS = getTraitTips();
+  const POWER_TIP = getPowerTip();
   const LIMIT_TIPS = {
     biomes: t("Select allowed biomes"),
     states: t("Select allowed states"),
@@ -430,7 +433,11 @@ function militaryCustomize(): void {
             rural: 0.2,
             urban: 0.5,
             crew: 1,
-            power: 1,
+            attack: 1,
+            defense: 1,
+            speed: FOOT_SPEED,
+            range: 0,
+            morale: 1,
             type: "melee",
             separate: 0
           })
@@ -489,7 +496,9 @@ function militaryCustomize(): void {
   }
 
   function addUnitLine(unit: MilitaryUnit): void {
-    const { type, icon, name, rural, urban, power, crew, separate } = unit;
+    const { type, icon, name, rural, urban, crew, separate } = unit;
+    const trait = (key: (typeof TRAITS)[number], step: number): string =>
+      `<td><input data-tip="${TRAIT_TIPS[key]}" data-trait="${key}" type="number" min="0" step="${step}" value="${unit[key]}" /></td>`;
     const row = document.createElement("tr");
     const typeOptions = types.map(t => `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`).join(" ");
 
@@ -518,7 +527,12 @@ function militaryCustomize(): void {
         <td><input data-tip="${t("Most of the rural population that can be raised to the unit, in percent: fewer if the state lacks the unit's goods")}" type="number" min="0" max="100" step=".01" value="${rural}" /></td>
         <td><input data-tip="${t("Most of the urban population that can be raised to the unit, in percent: fewer if the state lacks the unit's goods")}" type="number" min="0" max="100" step=".01" value="${urban}" /></td>
         <td><input data-tip="${t("Average number of people in crew (used for total personnel calculation)")}" type="number" min="1" step="1" value="${crew}" /></td>
-        <td><input data-tip="${t("Unit military power (used for battle simulation)")}" type="number" min="0" step=".1" value="${power}" /></td>
+        ${trait("attack", 0.1)}
+        ${trait("defense", 0.1)}
+        ${trait("speed", 1)}
+        ${trait("range", 10)}
+        ${trait("morale", 0.1)}
+        <td data-power data-tip="${POWER_TIP}">${showPower(unit)}</td>
         <td>
           <select data-tip="${t("Unit type to apply special rules on forces recalculation")}">
             ${typeOptions}
@@ -532,6 +546,12 @@ function militaryCustomize(): void {
           <span data-tip="${t("Remove")}" class="icon-trash-empty pointer"></span>
         </td>`;
     row.querySelector(".icon-trash-empty")!.addEventListener("click", () => row.remove());
+    row.addEventListener("input", () => {
+      const read = (key: string): number =>
+        +row.querySelector<HTMLInputElement>(`input[data-trait="${key}"]`)!.value || 0;
+      const [attack, defense, speed, range, morale] = TRAITS.map(read);
+      row.querySelector("td[data-power]")!.textContent = showPower({ attack, defense, speed, range, morale });
+    });
     setIconButton(row.querySelector<HTMLButtonElement>("button[data-type='icon']")!, icon || "");
     tableBody.appendChild(row);
   }
@@ -624,10 +644,23 @@ function militaryCustomize(): void {
         number,
         number,
         number,
+        number,
+        number,
+        number,
+        number,
         string,
         number
       ];
-      const [icon, , goods, biomes, states, cultures, religions, rural, urban, crew, power, type, separate] = values;
+      const [icon, , goods, biomes, states, cultures, religions, rural, urban, crew] = values;
+      const [attack, defense, speed, range, morale, type, separate] = values.slice(10) as [
+        number,
+        number,
+        number,
+        number,
+        number,
+        string,
+        number
+      ];
 
       const unit: MilitaryUnit = {
         icon,
@@ -635,7 +668,11 @@ function militaryCustomize(): void {
         rural,
         urban,
         crew,
-        power,
+        attack,
+        defense,
+        speed,
+        range,
+        morale,
         type,
         separate
       };
@@ -666,6 +703,8 @@ function militaryCustomize(): void {
 
 function renderOptions(): void {
   Dialog.destroy("militaryOptions");
+  const TRAIT_TIPS = getTraitTips();
+  const POWER_TIP = getPowerTip();
   const optionsHtml = /* html */ `<div id="militaryOptions" class="dialog stable">
       <div class="table">
         <table id="militaryOptionsTable">
@@ -681,7 +720,12 @@ function renderOptions(): void {
               <th data-tip="${t("Most of the rural population that can be raised to the unit, in percent: fewer if the state lacks the unit's goods")}">${t("Rural")}</th>
               <th data-tip="${t("Most of the urban population that can be raised to the unit, in percent: fewer if the state lacks the unit's goods")}">${t("Urban")}</th>
               <th data-tip="${t("Average number of people in crew (used for total personnel calculation)")}">${t("Crew")}</th>
-              <th data-tip="${t("Unit military power (used for battle simulation)")}">${t("Power")}</th>
+              <th data-tip="${TRAIT_TIPS.attack}">${t("Attack")}</th>
+              <th data-tip="${TRAIT_TIPS.defense}">${t("Defense")}</th>
+              <th data-tip="${TRAIT_TIPS.speed}">${t("Speed")}</th>
+              <th data-tip="${TRAIT_TIPS.range}">${t("Range")}</th>
+              <th data-tip="${TRAIT_TIPS.morale}">${t("Morale")}</th>
+              <th data-tip="${POWER_TIP}">${t("Power")}</th>
               <th data-tip="${t("Unit type to apply special rules on forces recalculation")}">${t("Type")}</th>
               <th data-tip="${t("Check if unit is separate and can be stacked only with units of the same type")}">
                 ${t("Separate")}
@@ -736,5 +780,23 @@ function downloadMilitaryData(): void {
   ]);
   Csv.download("Military", headers, rows);
 }
+
+const getTraitTips = (): Record<(typeof TRAITS)[number], string> => ({
+  attack: t("What a unit strikes and shoots with in battle"),
+  defense: t("What a unit stands blows and shots with in battle"),
+  speed: t("How far a unit moves in a battle tick: 7 on foot, 20 mounted. The battle plan is 1000 wide"),
+  range: t("How far a unit shoots on the battle plan, which is 1000 wide. Set 0 to fight hand to hand"),
+  morale: t("How steady a unit is in battle: 1 is ordinary, lower breaks sooner, at 2 it loses morale half as fast")
+});
+
+const showPower = (unit: Parameters<typeof getUnitPower>[0]): string => {
+  const power = getUnitPower(unit);
+  return String(rn(power, power < 1 ? 2 : 1));
+};
+
+const getPowerTip = (): string =>
+  t(
+    "Unit military power, worked out from its attack, defense, speed, range and morale. It sets the upkeep and the power of forces"
+  );
 
 export const MilitaryOverview = { open, exportCsv: downloadMilitaryData };

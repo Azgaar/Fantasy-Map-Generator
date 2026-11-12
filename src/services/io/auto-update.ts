@@ -2508,7 +2508,8 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
     for (const unit of migrated.military.units) {
       if (!unit || typeof unit !== "object") continue;
       if (!unit.icon) unit.icon = icons[unit.type] ?? "⚔️";
-      if (unit.power === undefined) unit.power = unit.crew;
+      const old = unit as { power?: number; crew: number; attack?: number }; // a single power, split into traits on restore
+      if (old.power === undefined && old.attack === undefined) old.power = old.crew;
     }
   }
 

@@ -2,6 +2,7 @@ import { color, contours, curveBasisClosed, curveCatmullRom, drag, line, pointer
 import { Icons } from "@/model/icons";
 import { type Battle, type Block, blockName } from "@/model/political/battle/battle";
 import { type Battlefield, FIELD } from "@/model/political/battle/battlefield";
+import { updateBattleDebug } from "@/renderers/draw-battle-debug";
 import type { Point } from "@/types/global";
 import { escapeHtml } from "@/utils/string-utils";
 
@@ -10,6 +11,22 @@ export type Positions = Map<number, { x: number; y: number; facing: number }>;
 
 /** Attackers are red and defenders blue whatever their states' colours, so the sides never look alike */
 export const SIDE_COLORS = { attackers: "#c8473d", defenders: "#3f72b3" };
+
+const FIRE_COLORS = {
+  attackers: color(SIDE_COLORS.attackers)!.darker(1).formatHex(),
+  defenders: color(SIDE_COLORS.defenders)!.darker(1).formatHex()
+};
+
+// what a unit type shoots, the rest are dotted arcs
+const MISSILES: Record<string, "arrows" | "shell"> = { ranged: "arrows", machinery: "shell", naval: "shell" };
+const VOLLEY_TICKS = 4; // arrows are in the air
+const VOLLEY = [
+  [0, 0],
+  [0.07, 4],
+  [0.04, -4]
+]; // how far behind the first arrow each one flies, and how far aside
+const SHELL_TICKS = 6; // from shot to shot
+const SHELL_FLIGHT = 0.6; // share of that the shell flies, then it bursts
 
 const GROUND: Record<number, string> = { 1: "#f6ecd2", 2: "#f1ecdf", 10: "#eef0ea", 11: "#f3f6f8" };
 const INK = "#3d3a33";
@@ -29,7 +46,11 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
       <pattern id="battleTown" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
         <rect width="6" height="6" fill="#f4f1ea"/><path d="M0 0v6" stroke="#77736b" stroke-width="2"/>
       </pattern>
+      <pattern id="battleFord" width="7" height="7" patternUnits="userSpaceOnUse">
+        <rect width="7" height="7" fill="#e4edf4"/><circle cx="2" cy="2" r="0.9" fill="#8ea5b8"/><circle cx="5.5" cy="5.2" r="0.7" fill="#8ea5b8"/>
+      </pattern>
       <clipPath id="battleFrame"><rect width="${FIELD.width}" height="${FIELD.height}"/></clipPath>
+      <mask id="battleRivers" maskUnits="userSpaceOnUse" x="0" y="0" width="${FIELD.width}" height="${FIELD.height}"></mask>
     </defs>
     <rect width="${FIELD.width}" height="${FIELD.height}" fill="${paper}"/>
     <g class="battleTerrain" clip-path="url(#battleFrame)"></g>
@@ -39,7 +60,8 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
     </g>
     <g class="battleFire" fill="none" stroke-width="1" stroke-dasharray="2 5" opacity="0.55"></g>
     <g class="battleBlocks"></g>
-    <g class="battleClashes" text-anchor="middle" dominant-baseline="central" font-size="13"></g>`;
+    <g class="battleMissiles" fill="none" stroke-linecap="round" pointer-events="none"></g>
+    <g class="battleClashes" text-anchor="middle" dominant-baseline="central" fill="#b3261e" pointer-events="none"></g>`;
 
   if (field.open) return;
   const terrain = select(svg).select<SVGGElement>(".battleTerrain");
@@ -65,44 +87,57 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
 
   // no outline: tributaries join without a seam, and the mouth covers the shore line
   const course = line<Point>().curve(curveCatmullRom.alpha(0.5));
+  const banks = select(svg).select("#battleRivers");
   for (const river of field.rivers) {
+    const d = course(river.points);
+    for (const [parent, stroke] of [
+      [terrain, WATER],
+      [banks, "#fff"]
+    ] as const) {
+      if (parent === banks && river.brook) continue; // a brook is waded anywhere: no fords to show on it
+      parent
+        .append("path")
+        .attr("d", d)
+        .attr("fill", "none")
+        .attr("stroke", stroke)
+        .attr("stroke-linecap", "round")
+        .attr("stroke-width", river.width);
+    }
+  }
+  // fords: a river shown shallow, with its stones, where it can be waded; kept within its banks
+  terrain
+    .append("path")
+    .attr("d", outline(field.ford, 0.3))
+    .attr("fill", "url(#battleFord)")
+    .attr("mask", "url(#battleRivers)");
+
+  // a bridge: its deck under the road, its parapets beside it
+  const span = (bridge: Battlefield["bridges"][number], d: string) =>
     terrain
       .append("path")
-      .attr("d", course(river.points))
-      .attr("fill", "none")
-      .attr("stroke", WATER)
-      .attr("stroke-linecap", "round")
-      .attr("stroke-width", river.width);
+      .attr("transform", `translate(${bridge.x} ${bridge.y}) rotate(${(bridge.angle * 180) / Math.PI})`)
+      .attr("d", d);
+  for (const bridge of field.bridges) {
+    span(bridge, `M${-bridge.length / 2} 0H${bridge.length / 2}`)
+      .attr("stroke", "#efe9da")
+      .attr("stroke-width", 9);
   }
   for (const road of field.roads) {
     const d = course(road);
     terrain.append("path").attr("d", d).attr("fill", "none").attr("stroke", "#a39d90").attr("stroke-width", 5);
     terrain.append("path").attr("d", d).attr("fill", "none").attr("stroke", "#fbf8f1").attr("stroke-width", 2.2);
   }
-
-  for (const burg of field.burgs) {
-    const blob = Array.from({ length: 9 }, (_, i): Point => {
-      const angle = (i / 9) * Math.PI * 2;
-      const radius = burg.radius * (0.8 + 0.25 * Math.sin(i * 2.4 + burg.x));
-      return [burg.x + Math.cos(angle) * radius, burg.y + Math.sin(angle) * radius * 0.85];
-    });
-    const shape = line<Point>().curve(curveBasisClosed)(blob);
-    if (burg.walled) {
-      // battlements: merlons stand out of the wall, the burg drawn over them hides their inner half
-      terrain
-        .append("path")
-        .attr("d", shape)
-        .attr("fill", "none")
-        .attr("stroke", "#55524b")
-        .attr("stroke-width", 7)
-        .attr("stroke-dasharray", "4 4");
-    }
-    terrain
-      .append("path")
-      .attr("d", shape)
-      .attr("fill", "url(#battleTown)")
+  for (const bridge of field.bridges) {
+    const half = bridge.length / 2;
+    span(bridge, `M${-half} -5H${half}M${-half} 5H${half}M${-half} -7v4M${half} -7v4M${-half} 7v-4M${half} 7v-4`)
+      .attr("fill", "none")
       .attr("stroke", "#55524b")
-      .attr("stroke-width", burg.walled ? 2.4 : 1.6);
+      .attr("stroke-width", 1.4);
+  }
+
+  terrain.append("g").attr("class", "battleBurgs");
+  drawBurgs(svg, field);
+  for (const burg of field.burgs) {
     // above the burg, or below it when the edge is too close
     const top = burg.y - burg.radius * 0.9 - 2;
     const y = top < 24 ? burg.y + burg.radius * 0.9 + 13 : top;
@@ -132,6 +167,72 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
   });
 }
 
+/** Burgs with what stands of their walls; drawn again when a breach is made */
+function drawBurgs(svg: SVGSVGElement, field: Battlefield): void {
+  const group = select(svg).select<SVGGElement>(".battleBurgs");
+  group.selectAll("*").remove();
+  svg.dataset.breaches = String(field.breaches.length);
+  const WALL = "#55524b";
+  const path = (points: Point[], closed = false): string =>
+    `M${points.map(p => p.map(v => v.toFixed(1))).join("L")}${closed ? "Z" : ""}`;
+
+  // battlements: merlons stand out of the wall, the burg drawn over them hides their inner half
+  const walls = field.walls.filter(wall => !wall.gate);
+  const stretches = walls.map(wall => path([wall.a, wall.b])).join("");
+  group
+    .append("path")
+    .attr("d", stretches)
+    .attr("fill", "none")
+    .attr("stroke", WALL)
+    .attr("stroke-width", 6)
+    .attr("stroke-dasharray", "3 11");
+  for (const burg of field.burgs) {
+    group
+      .append("path")
+      .attr("d", path(burg.outline, true))
+      .attr("fill", "url(#battleTown)")
+      .attr("stroke", burg.walled ? "none" : WALL)
+      .attr("stroke-width", 1.6);
+  }
+  group
+    .append("path")
+    .attr("d", stretches)
+    .attr("fill", "none")
+    .attr("stroke", WALL)
+    .attr("stroke-width", 2.4)
+    .attr("stroke-linecap", "round");
+
+  // a gate: a tower at each end of the gap
+  const isEnd = (point: Point, gate: boolean): boolean =>
+    field.walls.some(wall => wall.gate === gate && (wall.a === point || wall.b === point));
+  for (const wall of walls) {
+    for (const point of [wall.a, wall.b]) {
+      if (!isEnd(point, true)) continue;
+      group
+        .append("rect")
+        .attr("x", point[0] - 3.5)
+        .attr("y", point[1] - 3.5)
+        .attr("width", 7)
+        .attr("height", 7)
+        .attr("fill", WALL);
+    }
+  }
+  // a breach: rubble in the gap
+  for (const breach of field.breaches) {
+    const rubble = [0, 1, 2, 3, 4, 5, 6].map(i => {
+      const angle = i * 2.4 + breach.x;
+      const far = 2 + ((i * 5) % 9);
+      return `M${(breach.x + Math.cos(angle) * far).toFixed(1)} ${(breach.y + Math.sin(angle) * far).toFixed(1)}h0`;
+    });
+    group
+      .append("path")
+      .attr("d", rubble.join(""))
+      .attr("stroke", WALL)
+      .attr("stroke-width", 3.2)
+      .attr("stroke-linecap", "round");
+  }
+}
+
 /** Blocks, redrawn when their set changes; `onDrop` and `onTurn` let the user place them */
 export function drawBlocks(
   svg: SVGSVGElement,
@@ -153,7 +254,7 @@ export function drawBlocks(
       const dark = color(fill)!.darker(1.4).formatHex();
       const { width: w, depth: d } = block;
       const unit = battle.units.find(u => u.name === block.unit);
-      const size = Math.min(d, w) - 4;
+      const size = Math.min(d, w) * 0.6;
       // among allies a battalion flies the colour of its state from its rear corner
       const flag = flagged[block.side]
         ? `<path d="M${-d / 2} ${-w / 2}h-8l2.5 3l-2.5 3h8z" fill="${stateColor(block.state)}" stroke="${dark}" stroke-width="0.8"/>`
@@ -202,6 +303,7 @@ export function drawBlocks(
   updateBlocks(svg, battle, null, 1);
 }
 
+const HEALTH_INSET = 1.5; // half the health line: it lies inside the block, against its outline
 const HOLD_MS = 400; // a press this long starts to turn the battalion
 const TURN_MS = 110;
 const TURN_STEP = Math.PI / 12;
@@ -216,6 +318,7 @@ function setTransform(group: SVGGElement, x: number, y: number, facing: number):
 /** Put blocks where they are `progress` of the way through the tick */
 export function updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Positions | null, progress: number): void {
   const root = select(svg);
+  if (svg.dataset.breaches !== String(battle.field.breaches.length)) drawBurgs(svg, battle.field); // the walls came down
   const at = new Map<number, { x: number; y: number; facing: number }>();
   for (const block of battle.blocks) {
     const from = previous?.get(block.id);
@@ -245,9 +348,10 @@ export function updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Posit
       return `${blockName(battle, block)}: ${block.troops} / ${block.initial}, ${mood}`;
     })
     .each(function (block) {
-      // the front line is as long as the share of the troops alive
+      // the line inside the front edge is as long as the share of the troops alive
       const half = ((block.initial ? block.troops / block.initial : 0) * block.width) / 2;
-      (this.children[1] as SVGPathElement).setAttribute("d", `M${block.depth / 2} ${-half}V${half}`);
+      const x = block.depth / 2 - HEALTH_INSET;
+      (this.children[1] as SVGPathElement).setAttribute("d", `M${x} ${-half}V${half}`);
       (this.children[0] as SVGRectElement).setAttribute("stroke-dasharray", block.status === "routed" ? "3 2" : "");
     });
 
@@ -257,35 +361,108 @@ export function updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Posit
       .filter(block => block.action === action && block.target !== null && byId.has(block.target))
       .map(block => [block, byId.get(block.target!)!]);
 
+  const time = battle.tick + progress;
+  const bursts: { key: string; x: number; y: number; size: number; opacity: number }[] = [];
+  const shots = (battle.result ? [] : pairs("shoot")).map(([block, target]) => {
+    const a = at.get(block.id)!;
+    const b = at.get(target.id)!;
+    const missile = MISSILES[block.type];
+    const cycle = time / (missile === "shell" ? SHELL_TICKS : VOLLEY_TICKS) + block.id * 0.37; // each in its own time
+    const phase = cycle % 1;
+    // every shell lands a little off the last one
+    const scatter = missile === "shell" ? 9 : 0;
+    const to: Point = [
+      b.x + Math.sin(Math.floor(cycle) * 7 + block.id) * scatter,
+      b.y + Math.cos(Math.floor(cycle) * 11 + block.id) * scatter
+    ];
+    const lift = Math.hypot(to[0] - a.x, to[1] - a.y) / 5;
+    const top: Point = [(a.x + to[0]) / 2, (a.y + to[1]) / 2 - lift];
+    return { block, missile, phase, from: [a.x, a.y] as Point, top, to };
+  });
+
   root
     .select(".battleFire")
-    .selectAll<SVGPathElement, [Block, Block]>("path")
-    .data(battle.result ? [] : pairs("shoot"), ([block]) => block.key)
+    .selectAll<SVGPathElement, (typeof shots)[number]>("path")
+    .data(
+      shots.filter(shot => !shot.missile),
+      shot => shot.block.key
+    )
     .join("path")
-    .attr("stroke", ([block]) => color(SIDE_COLORS[block.side])!.darker(1).formatHex())
-    .attr("stroke-dashoffset", -battle.tick * 3 - progress * 3)
-    .attr("d", ([block, target]) => {
-      const a = at.get(block.id)!;
-      const b = at.get(target.id)!;
-      const lift = Math.hypot(b.x - a.x, b.y - a.y) / 5;
-      return `M${a.x.toFixed(1)} ${a.y.toFixed(1)}Q${((a.x + b.x) / 2).toFixed(1)} ${((a.y + b.y) / 2 - lift).toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
+    .attr("stroke", shot => FIRE_COLORS[shot.block.side])
+    .attr("stroke-dashoffset", -time * 3)
+    .attr("d", ({ from, top, to }) => `M${fixed(from)}Q${fixed(top)} ${fixed(to)}`);
+
+  root
+    .select(".battleMissiles")
+    .selectAll<SVGPathElement, (typeof shots)[number]>("path")
+    .data(
+      shots.filter(shot => shot.missile),
+      shot => shot.block.key
+    )
+    .join("path")
+    .attr("stroke", shot => FIRE_COLORS[shot.block.side])
+    .attr("stroke-width", shot => (shot.missile === "shell" ? 4.5 : 1.2))
+    .attr("d", ({ missile, phase, from, top, to }) => {
+      if (missile === "arrows") {
+        return VOLLEY.map(([lag, aside]) => {
+          const flown = phase * 1.07 - lag;
+          return flown > 0 && flown < 1 ? arrow(...arcAt(from, top, to, flown), aside) : "";
+        }).join("");
+      }
+      if (phase >= SHELL_FLIGHT) return "";
+      const [x, y] = arcAt(from, top, to, phase / SHELL_FLIGHT);
+      return `M${fixed([x, y])}h0.01`; // a dot
     });
+
+  // a shell bursts bigger than a melee
+  for (const { block, missile, phase, to } of shots) {
+    if (missile !== "shell" || phase < SHELL_FLIGHT) continue;
+    const spent = (phase - SHELL_FLIGHT) / (1 - SHELL_FLIGHT);
+    bursts.push({ key: block.key, x: to[0], y: to[1], size: 20 + spent * 16, opacity: 1 - spent });
+  }
+
+  if (!battle.result) {
+    const pulse = 0.55 + 0.45 * Math.sin(time * 2.2);
+    for (const [block, target] of pairs("fight")) {
+      if (block.id > target.id && target.target === block.id) continue; // one star for the two of them
+      const [a, b] = [at.get(block.id)!, at.get(target.id)!];
+      bursts.push({ key: block.key, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, size: 13, opacity: pulse });
+    }
+  }
 
   root
     .select(".battleClashes")
-    .selectAll<SVGTextElement, [Block, Block]>("text")
-    .data(
-      battle.result
-        ? []
-        : pairs("fight").filter(([block, target]) => block.id < target.id || target.target !== block.id),
-      ([block]) => block.key
-    )
+    .selectAll<SVGTextElement, (typeof bursts)[number]>("text")
+    .data(bursts, burst => burst.key)
     .join("text")
     .text("✸")
-    .attr("fill", "#b3261e")
-    .attr("opacity", 0.55 + 0.45 * Math.sin((battle.tick + progress) * 2.2))
-    .attr("x", ([block, target]) => (at.get(block.id)!.x + at.get(target.id)!.x) / 2)
-    .attr("y", ([block, target]) => (at.get(block.id)!.y + at.get(target.id)!.y) / 2);
+    .attr("font-size", burst => burst.size.toFixed(1))
+    .attr("opacity", burst => burst.opacity.toFixed(2))
+    .attr("x", burst => burst.x.toFixed(1))
+    .attr("y", burst => burst.y.toFixed(1));
+
+  updateBattleDebug(svg, battle, at);
+}
+
+const fixed = ([x, y]: Point): string => `${x.toFixed(1)} ${y.toFixed(1)}`;
+
+/** Point of the arc from one point over the top to another, and the way it runs there */
+function arcAt(from: Point, top: Point, to: Point, share: number): [number, number, number] {
+  const rest = 1 - share;
+  const at = (i: 0 | 1): number => rest * rest * from[i] + 2 * rest * share * top[i] + share * share * to[i];
+  const run = (i: 0 | 1): number => rest * (top[i] - from[i]) + share * (to[i] - top[i]);
+  return [at(0), at(1), Math.atan2(run(1), run(0))];
+}
+
+/** An arrow with its head at the point, `aside` of the course */
+function arrow(x: number, y: number, angle: number, aside: number): string {
+  const [cos, sin] = [Math.cos(angle), Math.sin(angle)];
+  const tip: Point = [x - sin * aside, y + cos * aside];
+  const back = (along: number, across: number): Point => [
+    tip[0] - cos * along - sin * across,
+    tip[1] - sin * along + cos * across
+  ];
+  return `M${fixed(back(9, 0))}L${fixed(tip)}M${fixed(back(3, 2))}L${fixed(tip)}L${fixed(back(3, -2))}`;
 }
 
 export const snapshot = (battle: Battle): Positions =>

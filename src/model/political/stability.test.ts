@@ -12,7 +12,7 @@ const army = (troops: number) => [{ a: points(troops), u: { infantry: points(tro
 beforeEach(() => {
   options.map.units.population.scale = 1000;
   options.map.units.population.urbanization.rate = 1;
-  options.map.military.units = [{ name: "infantry", power: 1 }] as any;
+  options.map.military.units = [{ name: "infantry", attack: 1, defense: 1, speed: 7, range: 0, morale: 1 }] as any;
   globalThis.pack = {
     deals: [[1]],
     burgs: [{ i: 0 }],

@@ -8,6 +8,7 @@ import {
   type BattleRegiment,
   type Block,
   createBattle,
+  getFortune,
   getLosses,
   getResult,
   getTroops,
@@ -59,6 +60,7 @@ import { getAdjective, list } from "@/utils/language-utils";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
+import { BattleAnimation, type BattleStart } from "./battle-animation";
 
 const TICK_MS = 170; // a tick at normal speed
 const LOG_VERSION = 1;
@@ -164,7 +166,7 @@ function setup(
     axis: Math.atan2(y - (attacker.py ?? attacker.y), x - (attacker.px ?? attacker.x)),
     field: buildField(x, y, seed, type),
     units: options.map.military.units,
-    powerScale: options.map.units.population.scale / 10, // blocks count troops, power goes by points
+    populationScale: options.map.units.population.scale,
     attackers: attackers.map(regiment => toBattleRegiment(regiment, point)),
     defenders: defenders.map(regiment => toBattleRegiment(regiment, point))
   });
@@ -418,6 +420,7 @@ function renderDialog(): void {
               </div>
             </span>
             <button id="battleRoll" data-tip="${t("Reroll the battlefield details and fortune. Only before the battle starts")}" class="icon-arrows-cw"></button>
+            <button id="battleAnimate" data-tip="${t("Save the battle as an animation, played from the start to the end")}" class="icon-button-screenshot"></button>
             <button id="battleLogToggle" data-tip="${t("Show the battle log")}" class="icon-list-bullet"></button>
             <button id="battleWiki" data-tip="${t("Open Battle Simulation Tutorial")}" class="icon-info"></button>
             <button id="battleApply" data-tip="${t("End battle: apply current results and close the screen")}" class="icon-check"></button>
@@ -455,6 +458,7 @@ function renderDialog(): void {
   ensureEl("battleType").addEventListener("click", event => togglePicker(event));
   ensureEl("battleType").nextElementSibling!.addEventListener("click", event => changeType(event));
   ensureEl("battleRoll").addEventListener("click", () => reroll());
+  ensureEl("battleAnimate").addEventListener("click", () => saveAnimation());
   ensureEl("battleLogToggle").addEventListener("click", () => toggleLog());
   ensureEl("battleLogClose").addEventListener("click", () => toggleLog(false));
   ensureEl("battleLogDownload").addEventListener("click", () => downloadLog());
@@ -692,7 +696,7 @@ function refreshSide(side: Side): void {
   if (die.dataset.die !== String(data.die)) {
     const factor = side === "attackers" ? t("Random factor for attackers") : t("Random factor for defenders");
     die.dataset.die = String(data.die);
-    die.dataset.tip = sentences(`${factor}: ×${(data.die / 10 + 0.4).toFixed(1)}`, t("Click to re-roll"));
+    die.dataset.tip = sentences(`${factor}: ×${+getFortune(data.die).toFixed(3)}`, t("Click to re-roll"));
     die.innerHTML = dieFace(data.die);
   }
 
@@ -788,7 +792,7 @@ function renderRegiments(side: Side): void {
     .join("");
 }
 
-/** Another die for the side: it stands for the round to come */
+/** Another die for the side: it stands to the end of the battle */
 function rollDie(side: Side): void {
   const b = battle!;
   if (b.result) return;
@@ -1008,6 +1012,7 @@ function logText({ event, side, params }: LogEntry): string {
   if (event === "rout") return t("{{block}} break and run", params);
   if (event === "destroyed") return t("{{block}} are destroyed", params);
   if (event === "fled") return t("{{block}} leave the field", params);
+  if (event === "breach") return t("The walls of {{burg}} are breached", params);
   if (event === "join") {
     return attackers ? t("{{regiment}} joins the attackers", params) : t("{{regiment}} joins the defenders", params);
   }
@@ -1025,14 +1030,20 @@ function outcome(b: Battle): string {
   return attackers === defenders ? capitalize(attackers) : `${capitalize(attackers)}, ${defenders}`;
 }
 
-function buildLog(): BattleLogFile {
-  const b = battle!;
-  // the regiments the battle began with: latecomers are in the interventions
+/** The regiments the battle began with: latecomers are in the interventions */
+function getInitialRegiments(b: Battle, side: Side): BattleRegiment[] {
   const late = new Set(
     b.interventions.flatMap(change => (change.kind === "add" ? [regimentKey(change.regiment)] : []))
   );
+  return b[side].regiments.filter(regiment => !late.has(regimentKey(regiment)));
+}
+
+const getFileName = (name: string): string => name.replace(/[^\p{L}\p{N}]+/gu, "-");
+
+function buildLog(): BattleLogFile {
+  const b = battle!;
   const ids = (side: Side): { state: number; i: number }[] =>
-    b[side].regiments.filter(regiment => !late.has(regimentKey(regiment))).map(({ state, i }) => ({ state, i }));
+    getInitialRegiments(b, side).map(({ state, i }) => ({ state, i }));
   return {
     version: LOG_VERSION,
     name: b.name,
@@ -1047,8 +1058,39 @@ function buildLog(): BattleLogFile {
 }
 
 function downloadLog(): void {
-  const name = `${battle!.name.replace(/[^\p{L}\p{N}]+/gu, "-")}-log.json`;
-  downloadFile(JSON.stringify(buildLog(), null, 2), name, "application/json");
+  downloadFile(JSON.stringify(buildLog(), null, 2), `${getFileName(battle!.name)}-log.json`, "application/json");
+}
+
+/** The battle from its start, untouched by the one on screen: every change made, and those of a loaded log to come */
+function startAnew(b: Battle): BattleStart {
+  const battle = createBattle({
+    seed: b.seed,
+    type: b.type,
+    name: b.name,
+    place: b.place,
+    x: b.x,
+    y: b.y,
+    cell: b.cell,
+    axis: b.approach,
+    field: buildField(b.x, b.y, b.seed, b.type),
+    units: b.units,
+    populationScale: b.populationScale,
+    attackers: structuredClone(getInitialRegiments(b, "attackers")),
+    defenders: structuredClone(getInitialRegiments(b, "defenders"))
+  });
+  return { battle, script: structuredClone([...b.interventions, ...script]) };
+}
+
+function saveAnimation(): void {
+  const b = battle!;
+  pause();
+  BattleAnimation.open({
+    fileName: getFileName(b.name),
+    start: () => startAnew(b),
+    tickMs: TICK_MS,
+    speed: player.speed,
+    screenWidth: scene().getBoundingClientRect().width * devicePixelRatio
+  });
 }
 
 function loadLog(data: string): void {

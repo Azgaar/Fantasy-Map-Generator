@@ -66,6 +66,7 @@
     "delaunator": "^5.1.0",
     "driver.js": "^1.10.2",
     "dropbox": "^10.47.0",
+    "gifenc": "^1.0.3",
     "jszip": "^3.10.2",
     "lineclip": "^2.0.0",
     "polylabel": "^2.1.0",

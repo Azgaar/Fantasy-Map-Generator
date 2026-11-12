@@ -154,6 +154,12 @@ const DEBUG_LABELS: Record<DebugMode, { label: string; tip: string }> = {
       "The Economy Overview shows every step of the burg's run: what it weighed before making each good, every market it could have bought from with the price at its door, and the goods that could cover each need. Recorded from the next production run, about three times slower"
     )
   },
+  battle: {
+    label: t("Battles"),
+    tip: t(
+      "The battle plan shows what the simulation sees: the grid the troops move on and what each node is to them, the walls and gates, where every battalion is going and what it is at, and the state of the battle"
+    )
+  },
   temperature: {
     label: t("Temperature"),
     tip: t("Log sea temperatures by latitude to the console when the climate is generated")

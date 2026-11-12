@@ -16,7 +16,8 @@ afterEach(() => {
   log.enabled.warn = false;
 });
 
-const UNIT = { icon: "u", name: "cavalry", rural: 0.2, urban: 0.1, crew: 2, power: 1, type: "melee", separate: 0 };
+const TRAITS = { attack: 1, defense: 1, speed: 7, range: 0, morale: 1 };
+const UNIT = { icon: "u", name: "cavalry", rural: 0.2, urban: 0.1, crew: 2, ...TRAITS, type: "melee", separate: 0 };
 
 async function boot() {
   vi.resetModules();

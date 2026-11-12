@@ -302,7 +302,7 @@ We have a Reddit community on https://www.reddit.com/r/FantasyMapGenerator
 
 ### Can I create a battle between armies?
 
-Yes, with the Battle Simulator. Click a regiment, press Attack foreign regiment and click a regiment of another state: the attacker moves to it and the battle opens. Unit power, set in the Military units editor, decides the strength. The battle is played on a battle plan drawn from the map around it: troops move, shoot and fight by themselves, and the ground, flanks and morale matter. It can be paused to move troops, add regiments or order another phase
+Yes, with the Battle Simulator. Click a regiment, press Attack foreign regiment and click a regiment of another state: the attacker moves to it and the battle opens. The attack, defense, speed, range and morale of the units, set in the Military units editor, decide how they fight. The battle is played on a battle plan drawn from the map around it: troops move, shoot and fight by themselves, and the ground, flanks and morale matter. It can be paused to move troops, add regiments or order another phase
 
 ### How can I upload a new icon for cities?
 

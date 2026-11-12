@@ -128,6 +128,24 @@ test.describe("Battle simulator", () => {
     expect(stage.x + stage.width).toBeLessThanOrEqual(420);
   });
 
+  test("shows what the simulation sees when the Battles diagnostics are on", async ({ page }) => {
+    await page.evaluate(() => (window as any).FMG.log.setDebug(["battle"]));
+    await startBattle(page);
+    await expect(page.locator("#battleScene .battleDebug.ground path").first()).toBeAttached();
+    await page.locator("#battleStep").click();
+    await expect(page.locator("#battleScene .battleDebug.doings")).toContainText("tick 1");
+    await expect(page.locator("#battleScene .battleDebug.doings")).toContainText("♥");
+
+    const stage = (await page.locator("#battleStage").boundingBox())!;
+    await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
+    await expect(page.locator("#battleScene .battleDebugGround")).toContainText("node 50,30");
+
+    // off again: the plan is clean at the next frame
+    await page.evaluate(() => (window as any).FMG.log.setDebug([]));
+    await page.locator("#battleStep").click();
+    await expect(page.locator("#battleScene .battleDebug")).toHaveCount(0);
+  });
+
   test("applies the losses to the regiments and marks the battlefield", async ({ page }) => {
     const { attacker, defender, troops } = await startBattle(page);
     const markers = await page.evaluate(() => (window as any).pack.markers.length);

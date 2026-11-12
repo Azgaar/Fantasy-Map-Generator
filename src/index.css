@@ -1761,6 +1761,14 @@ div.editorLine {
   width: 5em;
 }
 
+#militaryOptionsTable input[data-trait] {
+  width: 4em;
+}
+
+#militaryOptionsTable td[data-power] {
+  text-align: center;
+}
+
 #militaryOptionsTable button,
 #burgGroupsBody button {
   width: 100%;

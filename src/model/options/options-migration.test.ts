@@ -7,6 +7,7 @@ import { Layers } from "@/renderers/layers";
 import "@/model/graph/grid-generator";
 import { Grid } from "@/model/graph/grid-generator";
 import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
+import { getUnitPower } from "@/model/political/military-units";
 import { migrateLegacySettings } from "@/services/io/auto-update";
 import { safeParseJSON } from "@/utils/string-utils";
 import { Options } from "./options-model";
@@ -90,7 +91,8 @@ it("migrates definition sets before validating them", () => {
   expect(options.map.labels.groups.find(group => group.name === "My Rivers")).toMatchObject({
     layerDependency: "rivers"
   });
-  expect(options.map.military.units).toMatchObject([{ name: "Cavalry", icon: "🐴", power: 3 }]);
+  expect(options.map.military.units).toMatchObject([{ name: "Cavalry", icon: "🐴", speed: 20, range: 0, morale: 1 }]);
+  expect(getUnitPower(options.map.military.units[0])).toBeCloseTo(3, 1); // the power it had: its crew
 });
 
 it("preserves legacy burg groups with comma-separated biome filters through a reload", () => {

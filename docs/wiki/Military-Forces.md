@@ -16,7 +16,7 @@ The footer sums up states number, total and average forces, average rate and ave
 
 ![](https://cdn.discordapp.com/attachments/587406457725779968/720368676360028252/military_options.png)
 
-Military units used for generation are customizable. To open the units editor click the _cog_ icon in the Military overview screen. Here you can add new units and specify their features. The number of units is not limited, but having many of them makes the overview screens hard to read. The behaviour of a unit is defined by its _type_. Type variants are hard-coded and define the rules applied on generation, described in the next section.
+Military units used for generation are customizable. To open the units editor click the _cog_ icon in the Military overview screen. Here you can add new units and specify their features. The number of units is not limited, but having many of them makes the overview screens hard to read. What a unit is in a battle is set by its own parameters; its _type_ defines the rules applied on generation, described in the next section, and the phases of a battle it is good in. Type variants are hard-coded.
 
 Customizable parameters are:
 
@@ -27,7 +27,12 @@ Customizable parameters are:
 - **Rural** - the most of the rural population, in percent, that can be raised to the unit. It defines how many troops of this unit are generated per cell population point at most: the number is then adjusted by the rules described in the next section, and a state lacking the unit's goods raises fewer. Set to 0 if you want the unit to be generated in burgs only
 - **Urban** - the most of the urban population, in percent, that can be raised to the unit. Works the same as _rural_, but for burg population
 - **Crew** - average number of people in one unit. Like tank crew is usually 4. This number is used for total people calculation and does not affect unit _power_ at all
-- **Power** - damage dealt by unit. Used in battle simulation only
+- **Attack** - what one unit strikes and shoots with in a battle. It is per unit, not per man: a ship with a crew of a hundred has one attack
+- **Defense** - what one unit stands blows and shots with. Artillery hits hard and stands little, so in a battle it is struck first by those who can reach it
+- **Speed** - how far the unit moves in one step of a battle, on a battle plan 1000 wide: 7 on foot, 20 mounted, 2 for engines
+- **Range** - how far the unit shoots on the battle plan: 170 for archers, 280 for artillery. Set 0 for a unit that fights hand to hand
+- **Morale** - how steady the unit is: 1 is ordinary. The losses of morale are divided by it, so levies at 0.6 break first and an elite unit at 2 holds twice as long
+- **Power** - not set but worked out from the five above: `(attack + defense) / 2 × √((speed + 7) / 14) × (1 + range / 500) × √morale`. It is the weight of the unit outside battles: the upkeep it costs and its share in the power of forces
 - **Type** - a set of rules to be applied for the unit, see the details in the next section
 - **Sep.** - check if the unit is _separate_ and can only be stacked with the same unit. This is why e.g. the naval _fleet_ is not merged into a mixed land regiment by default
 
@@ -35,14 +40,16 @@ Any change has to be confirmed with _Apply_, which triggers a full military rege
 
 The default unit set is:
 
-| Icon | Name      | Goods                     | Rural % | Urban % | Crew | Power | Type      | Separate |
-| ---- | --------- | ------------------------- | ------- | ------- | ---- | ----- | --------- | -------- |
-| 🪓   | levies    | none                      | 0       | 0       | 1    | 0.5   | levies    | no       |
-| ⚔️   | infantry  | Arms                      | 0.25    | 0.2     | 1    | 1     | melee     | no       |
-| 🏹   | archers   | Arms                      | 0.12    | 0.2     | 1    | 1     | ranged    | no       |
-| 🐴   | cavalry   | Horses, Camels, Harnesses | 0.12    | 0.03    | 1    | 2     | mounted   | no       |
-| 💣   | artillery | Artillery, Gunpowder      | 0       | 0.03    | 8    | 12    | machinery | no       |
-| 🌊   | fleet     | Boats                     | 0       | 0.015   | 100  | 50    | naval     | yes      |
+| Icon | Name      | Goods                     | Rural % | Urban % | Crew | Attack | Defense | Speed | Range | Morale | Power | Type      | Separate |
+| ---- | --------- | ------------------------- | ------- | ------- | ---- | ------ | ------- | ----- | ----- | ------ | ----- | --------- | -------- |
+| 🪓   | levies    | none                      | 0       | 0       | 1    | 0.6    | 0.7     | 7     | 0     | 0.6    | 0.5   | levies    | no       |
+| ⚔️   | infantry  | Arms                      | 0.25    | 0.2     | 1    | 1      | 1       | 7     | 0     | 1      | 1     | melee     | no       |
+| 🏹   | archers   | Arms                      | 0.12    | 0.2     | 1    | 0.9    | 0.6     | 7     | 170   | 1      | 1     | ranged    | no       |
+| 🐴   | cavalry   | Horses, Camels, Harnesses | 0.12    | 0.03    | 1    | 1.7    | 1.2     | 20    | 0     | 1      | 2     | mounted   | no       |
+| 💣   | artillery | Artillery, Gunpowder      | 0       | 0.03    | 8    | 16     | 3.2     | 2     | 280   | 1      | 12    | machinery | no       |
+| 🌊   | fleet     | Boats                     | 0       | 0.015   | 100  | 46     | 31.2    | 5     | 200   | 1      | 50    | naval     | yes      |
+
+A unit of a map saved before these parameters existed had a single power. On load it gets the speed, range and morale of its type, and its attack and defense are split so that the power stays what it was.
 
 The available types are melee, ranged, mounted, machinery, naval, armored, aviation, magical and levies. Levies are a normal unit, just weak: poorly armed conscripts with half an infantryman's power. By default their rural and urban percentages are 0, so they only take in troops other units could not equip, but they can be raised directly like any other unit.
 
