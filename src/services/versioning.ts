@@ -26,7 +26,7 @@ import { isElectron } from "@/utils/environment";
 import { sentences, t } from "@/utils/i18n";
 import { findEl } from "@/utils/node-utils";
 
-export const VERSION = "1.157.0";
+export const VERSION = "1.158.0";
 
 export function parseMapVersion(version: string): string {
   let [major, minor, patch] = version.split(".");
