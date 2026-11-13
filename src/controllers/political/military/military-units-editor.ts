@@ -99,10 +99,10 @@ function renderDialog(): void {
 function getColumns(): EditorColumn<UnitRow>[] {
   const tips = getTips();
   const sortable = (tip: string) => sentences(tip, t("Click to sort"));
-  const number = (key: NumberField, label: string, width: string): EditorColumn<UnitRow> => ({
+  const number = (key: NumberField, label: string): EditorColumn<UnitRow> => ({
     key,
     label,
-    width,
+    width: "4.5em",
     tip: sortable(tips[key]),
     mobileHidden: key !== "rural" && key !== "urban",
     sortBy: row => row.unit[key]
@@ -110,7 +110,7 @@ function getColumns(): EditorColumn<UnitRow>[] {
   const limit = (key: Limit, label: string): EditorColumn<UnitRow> => ({
     key,
     label,
-    width: "5em",
+    width: "5.5em",
     tip: sortable(tips[key]),
     mobileHidden: true,
     sortBy: row => row.unit[key]?.length ?? 0
@@ -129,7 +129,7 @@ function getColumns(): EditorColumn<UnitRow>[] {
     {
       key: "goods",
       label: t("Goods"),
-      width: "5em",
+      width: "5.5em",
       tip: sortable(tips.goods),
       sortBy: row => row.unit.goods?.length ?? 0
     },
@@ -137,14 +137,14 @@ function getColumns(): EditorColumn<UnitRow>[] {
     limit("states", t("States")),
     limit("cultures", t("Cultures")),
     limit("religions", t("Religions")),
-    number("rural", t("Rural"), "4em"),
-    number("urban", t("Urban"), "4em"),
-    number("crew", t("Crew"), "3.5em"),
-    number("attack", t("Attack"), "4em"),
-    number("defense", t("Defense"), "4.5em"),
-    number("speed", t("Speed"), "4em"),
-    number("range", t("Range"), "4em"),
-    number("morale", t("Morale"), "4em"),
+    number("rural", t("Rural")),
+    number("urban", t("Urban")),
+    number("crew", t("Crew")),
+    number("attack", t("Attack")),
+    number("defense", t("Defense")),
+    number("speed", t("Speed")),
+    number("range", t("Range")),
+    number("morale", t("Morale")),
     {
       key: "power",
       label: t("Power"),
@@ -164,7 +164,7 @@ function getColumns(): EditorColumn<UnitRow>[] {
     {
       key: "separate",
       label: t("Separate"),
-      width: "5em",
+      width: "3em",
       tip: sortable(tips.separate),
       mobileHidden: true,
       sortBy: row => row.unit.separate

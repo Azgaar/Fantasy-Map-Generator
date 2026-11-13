@@ -289,6 +289,7 @@ export const BATTLE_TACTIC_LABELS: Record<string, string> = {
   ambuscade: t("Ambuscade on both sides"),
   waylay: t("Ambuscade on one side"),
   lines: t("Siege lines"),
+  ring: t("Ring round the walls"),
   garrison: t("Garrison on the walls"),
   waves: t("Landing in waves")
 };

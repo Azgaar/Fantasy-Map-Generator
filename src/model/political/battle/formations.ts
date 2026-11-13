@@ -44,6 +44,7 @@ export const TACTICS = {
   ambuscade: tactic(1, 0, 1, false, 0, 0, "behind", "wings"),
   waylay: tactic(1, 0, 1, false, 0, 0, "behind", "wings"),
   lines: tactic(1, 0.2, 1, false, 0, 0, "behind", "wings"),
+  ring: tactic(1, 0, 1, false, 0, 0, "behind", "behind"),
   garrison: tactic(1, 0, 1, false, 0, 0, "behind", "behind"),
   waves: tactic(2, 0, 0.8, false, 0, 0, "behind", "behind")
 } satisfies Record<string, Tactic>;

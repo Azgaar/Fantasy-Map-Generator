@@ -4,6 +4,8 @@ import {
   type Battlefield,
   FIELD,
   type FieldWall,
+  getElevation,
+  getSlope,
   getWallsBetween,
   nodeAt,
   nodeCentre,
@@ -29,6 +31,8 @@ const FORDING = 0.4; // and in a ford
 const SCALING = 0.25; // share of the pace kept climbing a wall or forcing a gate
 const RUBBLE = 0.5; // and over the rubble of a breach
 const SHIPPED = 5; // pace of troops carried over water
+const SIGHT = 0.01; // share of its range a shooter gains for each metre it stands above its target
+const POINT_BLANK = { shooter: 2, engine: 20 }; // metres under which they cannot shoot
 
 /** Move towards the point at the block's pace, around whoever stands in the way; false when hemmed in */
 export function step(
@@ -43,10 +47,13 @@ export function step(
   const length = Math.hypot(dx, dy);
   if (!length) return false;
   const terrain = terrainAt(battle.field, block.x, block.y);
-  const pace = getPace(battle, block, terrain.water) * haste * getGoing(battle, block, terrain);
-  const distance = Math.min(pace, limit);
   const heading = Math.atan2(dy, dx);
-  const wading = shuns(battle, block, block.x, block.y); // may wade out
+  const climb = isAfloat(battle, block, terrain.water || 2)
+    ? 1
+    : getClimb(getSlope(battle.field, block.x, block.y, heading));
+  const pace = getPace(battle, block, terrain.water) * haste * getGoing(battle, block, terrain) * climb;
+  const distance = Math.min(pace, limit);
+  const wading = !isMoored(battle, block) && shuns(battle, block, block.x, block.y); // may wade out; a ship aground stays
   // a step aside ends in the water only midstream, when the way ahead is water too
   const ahead: [number, number] = [block.x + Math.cos(heading) * distance, block.y + Math.sin(heading) * distance];
   const midstream = isWet(battle, block, block.x, block.y) && isWet(battle, block, ...ahead);
@@ -71,6 +78,8 @@ export function step(
     if (swing && !midstream && isWet(battle, block, x, y)) continue;
     block.x = x;
     block.y = y;
+    block.vx = Math.cos(heading + swing) * pace;
+    block.vy = Math.sin(heading + swing) * pace;
     block.detour = swing ? Math.sign(swing) : share === 1 ? 0 : block.detour;
     return true;
   }
@@ -87,6 +96,27 @@ export function getGoing(battle: Battle, block: Block, terrain: Terrain): number
   return terrain.marsh ? 0.5 : 1;
 }
 
+/**
+ * Share of its pace a block keeps on a slope, by Tobler's hiking function: a fifth quicker 3° downhill,
+ * a tenth slower 2° uphill, a quarter of the pace 20° uphill and two fifths 20° downhill
+ */
+export const getClimb = (slope: number): number => Math.max(Math.exp(-3.5 * Math.abs(slope + 0.05) + 0.175), 0.1);
+
+/** How far a block shoots at a target: further from above, shorter from below */
+export function getRange(battle: Battle, block: Block, target: Block): number {
+  const { field } = battle;
+  const above = (getElevation(field, block.x, block.y) - getElevation(field, target.x, target.y)) * field.metres;
+  return block.range * (1 + Math.min(Math.max(above * SIGHT, -0.3), 0.3));
+}
+
+/** In range and not too close to load and aim */
+export function canShoot(battle: Battle, block: Block, target: Block): boolean {
+  if (!block.range || Math.hypot(target.x - block.x, target.y - block.y) > getRange(battle, block, target))
+    return false;
+  const gap = getGap(block, target)[0] * battle.field.metres;
+  return gap >= (block.kind === "engine" ? POINT_BLANK.engine : POINT_BLANK.shooter);
+}
+
 /** Ships carry the attackers of a landing to the shore */
 const isShipped = (battle: Battle, block: Block, water: number): boolean =>
   battle.type === "landing" && block.side === "attackers" && water === 1;
@@ -101,12 +131,16 @@ export function isWet(battle: Battle, block: Block, x: number, y: number): boole
   return Boolean(water) && !isAfloat(battle, block, water);
 }
 
+/** Ships on the ground of a land battle: they keep to the water, on the run too */
+export const isMoored = (battle: Battle, block: Block): boolean => block.type === "naval" && !battle.field.open;
+
 /**
  * Troops in order keep out of lakes, the sea and a river out of its fords;
  * at a ford and at a bridge a side that does not advance holds its bank
  */
 export function shuns(battle: Battle, block: Block, x: number, y: number): boolean {
   const { water, ford, deck } = terrainAt(battle.field, x, y);
+  if (isMoored(battle, block)) return !water;
   if ((!water && !deck) || isRunning(block) || isAfloat(battle, block, water || 2)) return false;
   return (!ford && !deck) || !battle[block.side].advancing;
 }

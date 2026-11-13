@@ -8,6 +8,7 @@ import {
   type BattleRegiment,
   type Block,
   createBattle,
+  getCaptured,
   getFortune,
   getLosses,
   getResult,
@@ -15,6 +16,7 @@ import {
   getUnitsPower,
   type Intervention,
   intervene,
+  isWithdrawn,
   type LogEntry,
   plan,
   prepare,
@@ -32,7 +34,7 @@ import {
   SIDES,
   type Side
 } from "@/model/political/battle/battle-rules";
-import { buildBattlefield, createEmptyBattlefield } from "@/model/political/battle/battlefield";
+import { createEmptyBattlefield, createMapField } from "@/model/political/battle/battlefield";
 import { getOrder } from "@/model/political/battle/general";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
@@ -185,7 +187,7 @@ function setup(
 function buildField(x: number, y: number, type: BattleType) {
   if (type === "naval") return createEmptyBattlefield("sea");
   if (type === "air") return createEmptyBattlefield("sky");
-  return buildBattlefield(x, y, type !== "ambush");
+  return createMapField(x, y); // built to the scale of the battalions
 }
 
 function toBattleRegiment(regiment: Regiment, point: { x: number; y: number }): BattleRegiment {
@@ -268,6 +270,8 @@ const STYLE = /* css */ `
   .battleCount > b { font-size: 1.2em; }
   .battleCount > span { color: var(--muted); }
   .battleLost { color: var(--loss); font-style: italic; }
+  .battleCaptured { color: var(--muted); font-style: italic; white-space: nowrap; }
+  .battleCaptured:empty::before { display: none; }
   .battleBar { height: 0.5em; border: 1px solid #999; border-radius: 0.3em; overflow: hidden; }
   .battleBar > i { display: block; height: 100%; background: #3f9b3f; transition: width 0.15s linear; }
   .battleBar.mid > i { background: #e0a920; }
@@ -297,6 +301,7 @@ const STYLE = /* css */ `
   #battleStage { position: relative; aspect-ratio: 5 / 3; margin: 1px; outline: 1px solid #999; overflow: hidden; }
   #battleScene { display: block; width: 100%; height: 100%; font-family: var(--serif); }
   #battleScene.battleEditable .battleBlock { cursor: grab; }
+  #battleScene.battlePlanning .battleBlocks { display: none; }
   #battleScene.battleFocus .battleBlock:not(.battleFocused) { opacity: 0.3; }
   #battleLog { position: absolute; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; width: 21em; max-width: 100%; border-left: 1px solid #999; background: #fffffff0; }
   #battleLog > header { display: flex; align-items: center; gap: 0.2em; padding: 0.3em 0.3em 0.3em 0.6em; border-bottom: 1px solid var(--line); }
@@ -308,6 +313,33 @@ const STYLE = /* css */ `
   #battleLogList > div.order { color: var(--muted); }
   #battleLogList > div.start, #battleLogList > div.end { font-weight: bold; }
 
+  /* the end of the battle, over the field: who won and at what cost */
+  #battleSummary { position: absolute; inset: 0; z-index: 3; display: flex; padding: 0.8em; overflow-y: auto; background: #000000a0; animation: battleSummaryFade 0.3s ease-out; }
+  #battleSummary > div { --side: #666; position: relative; display: flex; flex-direction: column; gap: 0.6em; width: min(44em, 100%); margin: auto; padding: 0.8em 1em 1em; box-sizing: border-box; border-top: 4px solid var(--side); background: #fff; box-shadow: 0 0.4em 2em #000a; animation: battleSummaryRise 0.35s ease-out; }
+  #battleSummary > div > header { text-align: center; }
+  #battleSummary h2 { margin: 0.1em 0; color: var(--side); font-family: var(--serif); font-size: 2.2em; letter-spacing: 0.08em; text-transform: uppercase; }
+  #battleSummary h2 + span, .battleSummaryKicker { color: var(--muted); }
+  .battleSummaryKicker { font-family: var(--serif); font-size: 1.1em; }
+  .battleSummaryClose { position: absolute; top: 0.4em; right: 0.4em; }
+  .battleSummarySides { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.8em; }
+  .battleSummarySide { display: flex; flex-direction: column; gap: 0.4em; min-width: 0; padding: 0.5em 0.6em; border: 1px solid var(--line); border-top: 3px solid var(--side); }
+  .battleSummarySide.won { background: color-mix(in srgb, var(--side) 8%, #fff); }
+  .battleSummarySide > header { display: flex; align-items: center; gap: 0.6em; min-width: 0; }
+  .battleSummarySide > header > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+  .battleSummarySide > header b { overflow: hidden; font-size: 1.15em; text-overflow: ellipsis; white-space: nowrap; }
+  .battleSummarySide > header i { color: var(--side); font-style: normal; font-weight: bold; }
+  .battleSummaryStats { display: grid; grid-auto-flow: column; grid-template-rows: auto auto; gap: 0 0.6em; text-align: center; font-variant-numeric: tabular-nums; }
+  .battleSummaryStats > span { color: var(--muted); font-size: 0.9em; }
+  .battleSummaryStats > b { font-size: 1.3em; }
+  .battleSummaryUnits { display: grid; grid-template-columns: 1.3em minmax(0, 1fr) auto auto; gap: 0.1em 0.6em; align-items: center; padding-top: 0.3em; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .battleSummaryUnits.withCaptured { grid-template-columns: 1.3em minmax(0, 1fr) auto auto auto; }
+  .battleSummaryUnits > .n { text-align: right; }
+  .battleSummaryUnits > .head { color: var(--muted); font-size: 0.9em; }
+  #battleSummary > div > footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4em; }
+  #battleSummary > div > footer > button { min-width: 10em; height: 2em; }
+  @keyframes battleSummaryFade { from { opacity: 0; } }
+  @keyframes battleSummaryRise { from { opacity: 0; transform: translateY(1.5em) scale(0.96); } }
+
   #battleFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4em 1em; }
   #battleFooter > div { display: flex; align-items: center; gap: 0.3em; min-width: 0; }
   #battleFooter button { height: 2em; box-sizing: border-box; } /* one height, whatever the icon */
@@ -315,20 +347,21 @@ const STYLE = /* css */ `
   #battleRun.battlePause::before { content: "❚❚"; margin-right: 0.5em; font-size: 0.7em; vertical-align: 0.15em; }
   #battleSpeed { margin: 0 0.5em; }
   #battleClock { font-variant-numeric: tabular-nums; white-space: nowrap; }
-  #battleResult { overflow: hidden; margin-left: 0.6em; color: var(--side); font-weight: bold; text-overflow: ellipsis; white-space: nowrap; }
 
   /* army sheets: the orders of each side and its regiments */
   #battleSides { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 0.8em; }
   .battleSide { display: flex; flex-direction: column; gap: 0.3em; min-width: 0; padding: 0.4em 0.6em; border: 1px solid var(--line); border-top: 3px solid var(--side); }
   .battleSectionHead { display: flex; align-items: center; justify-content: space-between; }
   .battleRegiment.battleFocused { background: #eee; }
-  .battleRegiment > summary { display: grid; grid-template-columns: 1.3em minmax(0, 1fr) 4em 3.6em; align-items: center; gap: 0.5em; padding: 0.2em 0; cursor: pointer; font-variant-numeric: tabular-nums; list-style: none; }
+  .battleRegiment.battleLeaving { opacity: 0.5; }
+  #battleLayout .battleWithdraw { width: 1.6em; height: 1.5em; padding: 0; }
+  .battleRegiment > summary { display: grid; grid-template-columns: 1.3em minmax(0, 1fr) 4em 3.6em auto 1.6em; align-items: center; gap: 0.5em; padding: 0.2em 0; cursor: pointer; font-variant-numeric: tabular-nums; list-style: none; }
   .battleRegiment > summary::-webkit-details-marker { display: none; }
   .battleRegiment > summary:hover { background: #eee; }
   .battleRegiment > summary > svg { width: 1.3em; height: 1.3em; }
-  .battleRegiment .battleLeft, .battleRegiment .battleLost { text-align: right; }
+  .battleRegiment .battleLeft, .battleRegiment .battleLost, .battleRegiment .battleCaptured { text-align: right; }
   .battleRegimentName { overflow: hidden; font-weight: bold; text-overflow: ellipsis; white-space: nowrap; }
-  .battleUnits { display: grid; grid-template-columns: 1.3em minmax(0, 1fr) 4em 3.6em; gap: 0.1em 0.5em; align-items: center; padding: 0 0 0.2em 1.8em; font-variant-numeric: tabular-nums; }
+  .battleUnits { display: grid; grid-template-columns: 1.3em minmax(0, 1fr) 4em 3.6em auto 1.6em; gap: 0.1em 0.5em; align-items: center; padding: 0 0 0.2em 1.8em; font-variant-numeric: tabular-nums; }
   .battleUnits > div { display: contents; }
   .battleUnits .battleLeft { color: #2e7d32; font-style: italic; }
   .battleRegimentInfo { padding: 0 0 0.4em 1.8em; font-style: italic; }
@@ -340,7 +373,8 @@ const STYLE = /* css */ `
     #battleFooter { justify-content: center; }
   }
   @container battle (width < 42em) {
-    #battleSides { grid-template-columns: minmax(0, 1fr); }
+    #battleSides, .battleSummarySides { grid-template-columns: minmax(0, 1fr); }
+    #battleSummary h2 { font-size: 1.6em; }
     .battleEmblems > svg { width: 2.4em; height: 2.4em; }
   }
 `;
@@ -361,6 +395,7 @@ function renderDialog(): void {
           <span class="battleTroops">
             <span class="battleCount" data-tip="${t("Troops left")}"><b></b><span></span></span>
             <span class="battleLost" data-tip="${t("Casualties")}"></span>
+            <span class="battleCaptured icon-flag-empty" data-tip="${t("Captured")}"></span>
           </span>
         </span>
       </span>
@@ -408,6 +443,7 @@ function renderDialog(): void {
             </header>
             <div id="battleLogList"></div>
           </div>
+          <div id="battleSummary" hidden></div>
         </div>
         <div id="battleFooter">
           <div>
@@ -419,7 +455,6 @@ function renderDialog(): void {
               ${[0.5, 1, 2, 4].map(speed => `<button data-speed="${speed}" class="${speed === 1 ? "pressed" : ""}">×${speed === 0.5 ? "½" : speed}</button>`).join("")}
             </div>
             <span id="battleClock"></span>
-            <span id="battleResult" hidden></span>
           </div>
           <div>
             <span class="battlePicker">
@@ -480,6 +515,13 @@ function renderDialog(): void {
   ensureEl("battleApply").addEventListener("click", () => applyResults());
   ensureEl("battleCancel").addEventListener("click", () => cancelResults());
   ensureEl("battleWiki").addEventListener("click", () => wiki("Battle-Simulator"));
+  ensureEl("battleSummary").addEventListener("click", event => {
+    const target = event.target as HTMLElement;
+    const action = target.closest<HTMLElement>("[data-action]")?.dataset.action;
+    if (action === "restart") restart();
+    else if (action === "apply") applyResults();
+    else if (action === "close" || target.id === "battleSummary") ensureEl("battleSummary").hidden = true;
+  });
 
   // a block under the pointer shows its regiment in the sheet
   scene().addEventListener("pointerover", event => {
@@ -503,6 +545,12 @@ function renderDialog(): void {
       focusRegiment((event.target as Element).closest<HTMLElement>(".battleRegiment")?.dataset.key ?? null);
     });
     list.addEventListener("pointerleave", () => focusRegiment(null));
+    list.addEventListener("click", event => {
+      const button = (event.target as Element).closest(".battleWithdraw");
+      if (!button) return;
+      event.preventDefault(); // the row stays as it is
+      withdrawRegiment(button.closest<HTMLElement>(".battleRegiment")!.dataset.key!);
+    });
   }
 
   fileInput = createFileInput(".json");
@@ -598,7 +646,7 @@ function advance(): void {
   if (b.blocks.length !== blocks) drawScene(); // a recorded reinforcement
   tick(b);
   refresh();
-  if (b.result) tip(sentences(t("{{battle}} is over", { battle: b.name }), outcome(b)), true, "success", 4000);
+  if (b.result) showSummary();
 }
 
 function drawScene(): void {
@@ -623,11 +671,12 @@ function turnBlock(block: Block, facing: number): void {
 /** Troops can be dragged while the battle stands still */
 function setEditable(): void {
   scene().classList.toggle("battleEditable", !player.playing && !battle?.result);
+  scene().classList.toggle("battlePlanning", isPlanning()); // no troops till they are drawn up
   const run = ensureEl<HTMLButtonElement>("battleRun");
-  run.disabled = isPlanning();
+  run.disabled = isPlanning(); // the label stays, so the controls do not jump
+  run.dataset.tip = isPlanning() ? t("Generals are planning") : t("Start or pause the battle");
   run.className = player.playing ? "battlePause" : "icon-play";
-  const idle = isPlanning() ? t("Generals are planning") : battle?.tick ? t("Continue") : t("Start battle");
-  run.textContent = player.playing ? t("Pause") : ` ${idle}`;
+  run.textContent = player.playing ? t("Pause") : ` ${battle?.tick ? t("Continue") : t("Start battle")}`;
 }
 
 // the panels
@@ -654,7 +703,7 @@ function refresh(): void {
   schedulePlan();
   for (const side of SIDES) refreshSide(side);
 
-  // the scales: the power of the troops each side still has on the field, as the military screens count it
+  // the scales: the power of the troops each side still has in order, as the military screens count it
   const power = SIDES.map(side => getUnitsPower(b, side));
   const share = power[0] + power[1] ? (power[0] / (power[0] + power[1])) * 100 : 50;
   const balance = ensureEl("battleBalance");
@@ -677,13 +726,7 @@ function refresh(): void {
   if (document.activeElement !== name) name.value = b.name;
 
   put(ensureEl("battleFooter"), "#battleClock", t("Round {{round}}", { round: Math.floor(b.tick / ROUND_TICKS) + 1 }));
-  const result = ensureEl("battleResult");
-  result.hidden = !over;
-  if (b.result) {
-    result.className = b.result.winner ?? "";
-    result.dataset.tip = outcome(b);
-    put(ensureEl("battleFooter"), "#battleResult", resultText(b));
-  }
+  if (!over) ensureEl("battleSummary").hidden = true;
 
   // setup only; nothing is hidden, so the controls never jump
   ensureEl<HTMLButtonElement>("battleRoll").disabled = started;
@@ -714,7 +757,9 @@ function refreshSide(side: Side): void {
 
   put(banner, ".battleCount > b", troops.left);
   put(banner, ".battleCount > span", ` / ${troops.initial}`);
-  put(banner, ".battleTroops > .battleLost", troops.left < troops.initial ? `−${troops.initial - troops.left}` : "");
+  const fallen = troops.initial - troops.left - troops.captured;
+  put(banner, ".battleTroops > .battleLost", fallen ? `−${fallen}` : "");
+  put(banner, ".battleTroops > .battleCaptured", troops.captured ? String(troops.captured) : "");
   const moraleBar = banner.querySelector<HTMLElement>(".battleMorale")!;
   moraleBar.className = `battleBar battleMorale ${morale < 33 ? "low" : morale < 66 ? "mid" : ""}`;
   moraleBar.dataset.tip = `${side === "attackers" ? t("Attackers morale") : t("Defenders morale")}: ${morale}`;
@@ -749,17 +794,28 @@ function refreshRegiments(side: Side): void {
     renderRegiments(side);
   }
 
+  const fighting = regiments.filter(regiment => !isWithdrawn(b, regiment)).length;
   for (const regiment of regiments) {
     const row = ensureEl(`battleRegiment_${regimentKey(regiment)}`);
+    const leaving = isWithdrawn(b, regiment);
+    const withdraw = row.querySelector<HTMLButtonElement>(".battleWithdraw")!;
+    row.classList.toggle("battleLeaving", leaving);
+    row.dataset.tip = leaving ? t("The regiment is withdrawn and leaves the field") : "";
+    withdraw.hidden = leaving;
+    withdraw.disabled = Boolean(b.result) || fighting < 2; // a side keeps a regiment
     const losses = getLosses(b, regiment);
+    const captured = getCaptured(b, regiment);
     const initial = sum(Object.values(regiment.troops));
     const lost = sum(Object.values(losses));
-    put(row, ".battleLeft", initial - lost);
+    const taken = sum(Object.values(captured));
+    put(row, ".battleLeft", initial - lost - taken);
     put(row, "summary > .battleLost", lost ? `−${lost}` : "");
+    put(row, "summary > .battleCaptured", taken ? String(taken) : "");
     for (const unit of row.querySelectorAll<HTMLElement>("[data-unit]")) {
       const name = unit.dataset.unit!;
-      put(unit, ".battleLeft", regiment.troops[name] - (losses[name] ?? 0));
+      put(unit, ".battleLeft", regiment.troops[name] - (losses[name] ?? 0) - (captured[name] ?? 0));
       put(unit, ".battleLost", losses[name] ? `−${losses[name]}` : "");
+      put(unit, ".battleCaptured", captured[name] ? captured[name] : "");
     }
   }
 }
@@ -771,13 +827,7 @@ function renderRegiments(side: Side): void {
 
   const states = [...new Set(regiments.map(regiment => regiment.state))];
   const banner = ensureEl(`battleBanner_${side}`);
-  banner.querySelector(".battleEmblems")!.innerHTML = states
-    .slice(0, 4)
-    .map(state => {
-      void EmblemRenderer.trigger(`stateCOA${state}`, pack.states[state].coa);
-      return `<svg data-tip="${escapeHtml(pack.states[state].fullName ?? "")}" viewBox="0 0 200 200"><use href="#stateCOA${state}"></use></svg>`;
-    })
-    .join("");
+  banner.querySelector(".battleEmblems")!.innerHTML = emblems(states);
   const title = banner.querySelector<HTMLElement>(".battleStates")!;
   title.textContent = list(states.map(state => pack.states[state].name));
   title.dataset.tip = list(states.map(state => pack.states[state].fullName ?? pack.states[state].name));
@@ -793,7 +843,7 @@ function renderRegiments(side: Side): void {
         .map(
           unit => /* html */ `<div data-unit="${escapeHtml(unit.name)}">
             <span>${Icons.html(unit.icon)}</span><span>${escapeHtml(capitalize(unit.name.replace(/_/g, " ")))}</span>
-            <span class="battleLeft"></span><span class="battleLost"></span>
+            <span class="battleLeft"></span><span class="battleLost"></span><span class="battleCaptured icon-flag-empty"></span><span></span>
           </div>`
         )
         .join("");
@@ -805,6 +855,8 @@ function renderRegiments(side: Side): void {
             <span class="battleRegimentName" data-tip="${escapeHtml(regiment.name)}">${escapeHtml(regiment.name)}</span>
             <span class="battleLeft" data-tip="${t("Survivors")}"></span>
             <span class="battleLost" data-tip="${t("Casualties")}"></span>
+            <span class="battleCaptured icon-flag-empty" data-tip="${t("Captured")}"></span>
+            <button class="battleWithdraw icon-user-times" data-tip="${t("Withdraw the regiment: before the start it leaves the battle, after it marches off the field")}"></button>
           </summary>
           <div class="battleUnits">${units}</div>
           <div class="battleRegimentInfo">${escapeHtml(state.fullName ?? "")} <span class="${upkeep < 100 ? "negative" : ""}" data-tip="${t("Troops fight with this share of their power")}">(${t("upkeep {{upkeep}}%", { upkeep })})</span><br>
@@ -812,6 +864,89 @@ function renderRegiments(side: Side): void {
         </details>`;
     })
     .join("");
+}
+
+function emblems(states: number[]): string {
+  return states
+    .slice(0, 4)
+    .map(state => {
+      void EmblemRenderer.trigger(`stateCOA${state}`, pack.states[state].coa);
+      return `<svg data-tip="${escapeHtml(pack.states[state].fullName ?? "")}" viewBox="0 0 200 200"><use href="#stateCOA${state}"></use></svg>`;
+    })
+    .join("");
+}
+
+/** The end of the battle over the field, as games show it: who won and at what cost */
+function showSummary(): void {
+  const b = battle!;
+  if (!b.result) return;
+  const { winner, status } = b.result;
+  const headline = winner ? (winner === "attackers" ? t("Attackers win") : t("Defenders win")) : t("No victor");
+
+  const el = ensureEl("battleSummary");
+  el.innerHTML = /* html */ `<div class="${winner ?? ""}">
+      <button class="battleSummaryClose icon-cancel" data-action="close" data-tip="${t("Close the summary to look at the battlefield")}"></button>
+      <header>
+        <span class="battleSummaryKicker">${escapeHtml(b.name)}</span>
+        <h2>${headline}</h2>
+        <span>${escapeHtml(resultText(b))}</span>
+      </header>
+      <div class="battleSummarySides">${SIDES.map((side, i) => summarySide(b, side, status[i])).join("")}</div>
+      <footer>
+        <button data-action="restart" class="icon-ccw" data-tip="${t("Play the same battle again from the start")}"> ${t("Play again")}</button>
+        <button data-action="apply" class="icon-check" data-tip="${t("End battle: apply current results and close the screen")}"> ${t("Apply results")}</button>
+      </footer>
+    </div>`;
+  el.hidden = false;
+}
+
+function summarySide(b: Battle, side: Side, status: string): string {
+  const { regiments } = b[side];
+  const states = [...new Set(regiments.map(regiment => regiment.state))];
+  const { initial, left, captured } = getTroops(b, side);
+  const share = rn(b[side].casualties * 100);
+
+  const had: Record<string, number> = {};
+  const lost: Record<string, number> = {};
+  const taken: Record<string, number> = {};
+  for (const regiment of regiments) {
+    const losses = getLosses(b, regiment);
+    const prisoners = getCaptured(b, regiment);
+    for (const unit in regiment.troops) {
+      had[unit] = (had[unit] ?? 0) + regiment.troops[unit];
+      lost[unit] = (lost[unit] ?? 0) + (losses[unit] ?? 0);
+      taken[unit] = (taken[unit] ?? 0) + (prisoners[unit] ?? 0);
+    }
+  }
+  const units = b.units
+    .filter(unit => had[unit.name])
+    .map(({ name, icon }) => {
+      const prisoners = captured ? `<span class="n battleCaptured">${taken[name] || ""}</span>` : "";
+      return /* html */ `<span>${Icons.html(icon)}</span><span>${escapeHtml(capitalize(name.replace(/_/g, " ")))}</span>
+        <span class="n">${had[name] - lost[name] - taken[name]}</span><span class="n battleLost">${lost[name] ? `−${lost[name]}` : ""}</span>${prisoners}`;
+    })
+    .join("");
+
+  return /* html */ `<section class="battleSummarySide ${side} ${b.result?.winner === side ? "won" : ""}">
+      <header>
+        <span class="battleEmblems">${emblems(states)}</span>
+        <span>
+          <b>${escapeHtml(list(states.map(state => pack.states[state].name)))}</b>
+          <i>${escapeHtml(capitalize(status.replace(/^(attackers|defenders) | of (attackers|defenders)$/, "")))}</i>
+        </span>
+      </header>
+      <div class="battleSummaryStats">
+        <span>${t("Troops left")}</span><b>${left} <small>/ ${initial}</small></b>
+        <span>${t("Casualties")}</span><b class="battleLost">${share}%</b>
+        ${captured ? `<span>${t("Captured")}</span><b class="battleCaptured">${captured}</b>` : ""}
+        <span>${t("Morale")}</span><b>${b[side].morale | 0}</b>
+      </div>
+      <div class="battleSummaryUnits ${captured ? "withCaptured" : ""}">
+        <span class="head"></span><span class="head">${t("Unit")}</span><span class="head n">${t("Survivors")}</span><span class="head n">${t("Casualties")}</span>
+        ${captured ? `<span class="head n">${t("Captured")}</span>` : ""}
+        ${units}
+      </div>
+    </section>`;
 }
 
 /** The next face of the side's die: it stands to the end of the battle */
@@ -997,11 +1132,13 @@ function addSide(side: Side): void {
     }
 
     Dialog.close("regimentSelectorScreen");
+    const { field } = b;
     selected.forEach(line => {
       const regiment = pack.states[+line.dataset.s!].military!.find(r => r.i === +line.dataset.i!)!;
       joinBattle(regiment, side);
       intervene(b, { tick: b.tick, kind: "add", side, regiment: toBattleRegiment(regiment, b) });
     });
+    if (b.field !== field) drawBattlefield(scene(), b.field); // more troops, a larger field
     drawScene();
     refresh();
   }
@@ -1010,6 +1147,23 @@ function addSide(side: Side): void {
     body.innerHTML = "";
     body.removeEventListener("click", selectLine);
   }
+}
+
+/** Take a regiment out: before the start it goes back to where it stood on the map, after it it marches off the field */
+function withdrawRegiment(key: string): void {
+  const b = battle!;
+  const data = SIDES.flatMap(side => b[side].regiments).find(regiment => regimentKey(regiment) === key);
+  if (!data || b.result) return;
+  const { field, tick } = b;
+  intervene(b, { tick, kind: "withdraw", state: data.state, regiment: data.i });
+  if (!tick) {
+    const regiment = regiments.get(key);
+    if (regiment) leaveBattle(regiment);
+    regiments.delete(key);
+    if (b.field !== field) drawBattlefield(scene(), b.field); // fewer troops, a smaller field
+    drawScene();
+  }
+  refresh();
 }
 
 /** Bring a regiment to the battle on the map */
@@ -1035,7 +1189,10 @@ function logText({ event, side, params }: LogEntry): string {
   if (event === "power") return `${t("Power")}: ${params!.value}`;
   if (event === "morale") return `${t("Morale")}: ${params!.value}`;
   if (event === "join") return t("{{regiment}} joins the battle", params);
+  if (event === "withdraw") return t("{{regiment}} is withdrawn", params);
   if (event === "breach") return t("The walls of {{burg}} are breached", params);
+  if (event === "cut") return t("{{burg}} is cut off", params);
+  if (event === "supplied") return t("Supplies reach {{burg}}", params);
   if (event === "end") return side ? t("Hold the field") : t("The battle dies down");
 
   const block = { block: capitalize(params!.block) };
@@ -1043,6 +1200,7 @@ function logText({ event, side, params }: LogEntry): string {
   if (event === "turn") return t("{{block}} are turned", block);
   if (event === "rout") return t("{{block}} break and run", block);
   if (event === "rally") return t("{{block}} rally", block);
+  if (event === "surrender") return t("{{block}} surrender", block);
   if (event === "destroyed") return t("{{block}} are destroyed", block);
   return t("{{block}} leave the field", block);
 }
@@ -1203,15 +1361,19 @@ function applyResults(): void {
   const forcesLegend = (label: string, side: Side): string => {
     const initial: Record<string, number> = {};
     const casualties: Record<string, number> = {};
+    const taken: Record<string, number> = {};
     for (const regiment of b[side].regiments) {
       const losses = getLosses(b, regiment);
+      const captured = getCaptured(b, regiment);
       for (const unit in regiment.troops) {
         initial[unit] = (initial[unit] || 0) + regiment.troops[unit];
         casualties[unit] = (casualties[unit] || 0) + (losses[unit] ?? 0);
+        taken[unit] = (taken[unit] || 0) + (captured[unit] ?? 0);
       }
     }
     let text = sum(Object.values(initial)) ? `<br>${label} initial forces: ${unitsText(initial)}.` : "";
     if (sum(Object.values(casualties))) text += ` Casualties: ${unitsText(casualties)}.`;
+    if (sum(Object.values(taken))) text += ` Captured: ${unitsText(taken)}.`;
     return text;
   };
 
@@ -1220,18 +1382,20 @@ function applyResults(): void {
       const regiment = regiments.get(regimentKey(data));
       if (!regiment) continue;
       const losses = getLosses(b, data);
+      const captured = getCaptured(b, data);
       const initial = sum(Object.values(data.troops));
 
       if (regiment.note) {
         const share = initial ? sum(Object.values(losses)) / initial : 1;
         const initialText = initial ? ` Initial forces: ${unitsText(data.troops)}.` : "";
         const casualtiesText = sum(Object.values(losses)) ? ` Casualties: ${unitsText(losses)}.` : "";
-        regiment.note += `<br><br>${b.name} (${year} ${eraShort}): ${battleStatus[sideIndex]}. The regiment ${getRegimentStatus(share)}.${initialText}${casualtiesText}`;
+        const capturedText = sum(Object.values(captured)) ? ` Captured: ${unitsText(captured)}.` : "";
+        regiment.note += `<br><br>${b.name} (${year} ${eraShort}): ${battleStatus[sideIndex]}. The regiment ${getRegimentStatus(share)}.${initialText}${casualtiesText}${capturedText}`;
       }
 
       const { scale } = options.map.units.population;
       for (const unit in regiment.u) {
-        const died = losses[unit] ?? 0;
+        const died = (losses[unit] ?? 0) + (captured[unit] ?? 0); // prisoners are lost to the regiment too
         regiment.u[unit] = (data.troops[unit] ?? 0) > died ? regiment.u[unit] - died / scale : 0;
       }
       regiment.a = sum(Object.values(regiment.u));
@@ -1267,6 +1431,8 @@ function applyResults(): void {
   const result = `The ${getTypeName(b.type)} ended in ${status}`;
   let legend = `${b.name} took place in ${year} ${eraShort}. It was fought between ${getSide("attackers", 1)} and ${getSide("defenders", 0)}. ${result}.
       <br>Attackers losses: ${getLossesShare(b.attackers.casualties)}%, defenders losses: ${getLossesShare(b.defenders.casualties)}%.`;
+  if (b.attackers.captured || b.defenders.captured)
+    legend += ` Captured: attackers ${getLossesShare(b.attackers.captured)}%, defenders ${getLossesShare(b.defenders.captured)}%.`;
   legend += forcesLegend("Attackers", "attackers");
   legend += forcesLegend("Defenders", "defenders");
 
@@ -1323,7 +1489,7 @@ function orderTip(order: Command): string {
   if (order === "defend") return t("Defend: stand the ground and fight what comes at it");
   if (order === "pursue") return t("Pursue: chase the broken enemy");
   if (order === "retreat") return t("Retreat: leave the field");
-  return t("Surrender: give up the defense");
+  return t("Surrender: lay down arms");
 }
 
 export const BattleScreen = { open };

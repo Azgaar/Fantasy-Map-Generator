@@ -91,7 +91,7 @@ it("migrates definition sets before validating them", () => {
   expect(options.map.labels.groups.find(group => group.name === "My Rivers")).toMatchObject({
     layerDependency: "rivers"
   });
-  expect(options.map.military.units).toMatchObject([{ name: "Cavalry", icon: "🐴", speed: 20, range: 0, morale: 1 }]);
+  expect(options.map.military.units).toMatchObject([{ name: "Cavalry", icon: "🐴", speed: 20, range: 0, morale: 1.2 }]);
   expect(getUnitPower(options.map.military.units[0])).toBeCloseTo(3, 1); // the power it had: its crew
 });
 

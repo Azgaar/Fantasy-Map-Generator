@@ -34,6 +34,19 @@ const GROUND: Record<number, string> = { 1: "#f6ecd2", 2: "#f1ecdf", 10: "#eef0e
 const INK = "#3d3a33";
 const WATER = "#b4cbe2";
 
+/** A round length near a sixth of the plan, ticked at its ends and middle, by the North arrow */
+function getScaleBar(metres: number): string {
+  const most = (FIELD.width / 6) * metres;
+  const power = 10 ** Math.floor(Math.log10(most));
+  const length = [5, 2, 1].map(k => k * power).find(size => size <= most) ?? power;
+  const span = length / metres;
+  const label = length >= 1000 ? `${length / 1000} km` : `${length} m`;
+  return /* html */ `<g class="battleScale" transform="translate(${FIELD.width - 52 - span} 46)" fill="none" stroke="${INK}" stroke-width="1.5">
+      <path d="M0 -5V0H${span}V-5M${span / 2} 0V-3"/>
+      <text x="${span / 2}" y="-9" text-anchor="middle" font-size="12" fill="${INK}" stroke="none" font-family="Georgia, serif">${label}</text>
+    </g>`;
+}
+
 export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
   const paper =
     field.open === "sea" ? "#d3e0ea" : field.open === "sky" ? "#eaf1f7" : (GROUND[field.biome] ?? "#fbf5e9");
@@ -60,6 +73,7 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
     <g class="battleNorth" transform="translate(${FIELD.width - 28} 34)" fill="none" stroke="${INK}" stroke-width="1.5">
       <path d="M0 16V-16M-5 -8L0 -16L5 -8"/><text y="30" text-anchor="middle" font-size="13" fill="${INK}" stroke="none" font-family="Georgia, serif" font-weight="bold">N</text>
     </g>
+    ${getScaleBar(field.metres)}
     <g class="battleFire" fill="none" stroke-width="1" stroke-dasharray="2 5" opacity="0.55"></g>
     <g class="battleBlocks"></g>
     <g class="battleMissiles" fill="none" stroke-linecap="round" pointer-events="none"></g>
@@ -69,8 +83,15 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
   const terrain = select(svg).select<SVGGElement>(".battleTerrain");
   const labels = select(svg).select<SVGGElement>(".battleLabels");
 
-  for (const level of [0.4, 0.58, 0.76]) {
-    terrain.append("path").attr("d", outline(field.height, level)).attr("fill", "#c99b6a").attr("opacity", 0.16);
+  // a contour every so many metres, four at most: a plain stays plain
+  const rise = field.relief * field.metres;
+  const interval = [5, 10, 20, 50].find(step => rise / step <= 4) ?? 100;
+  for (let level = interval; level < rise; level += interval) {
+    terrain
+      .append("path")
+      .attr("d", outline(field.height, level / rise))
+      .attr("fill", "#c99b6a")
+      .attr("opacity", 0.16);
   }
   terrain.append("path").attr("d", outline(field.marsh, 0.5)).attr("fill", "url(#battleMarsh)");
   const wood = outline(field.wood, 0.5);
@@ -261,10 +282,11 @@ export function drawBlocks(
       const flag = flagged[block.side]
         ? `<path d="M${-d / 2} ${-w / 2}h-8l2.5 3l-2.5 3h8z" fill="${stateColor(block.state)}" stroke="${dark}" stroke-width="0.8"/>`
         : "";
-      // the body, the health line along its front edge, the unit icon
+      // the body, the health line along its front edge, the unit icon and the white flag of surrender, both upright
       return /* html */ `<rect x="${-d / 2}" y="${-w / 2}" width="${d}" height="${w}" rx="1.5" fill="${fill}" stroke="${dark}" stroke-width="1.4"/>
         <path class="battleHealth" stroke="${dark}" stroke-width="3"/>
-        <use href="${escapeHtml(Icons.href(unit?.icon ?? ""))}" x="${-size / 2}" y="${-size / 2}" width="${size}" height="${size}"/>${flag}`;
+        <g><use href="${escapeHtml(Icons.href(unit?.icon ?? ""))}" x="${-size / 2}" y="${-size / 2}" width="${size}" height="${size}"/>
+          <g class="battleWhiteFlag" display="none" stroke="#333" stroke-width="0.8">${WHITE_FLAG}</g></g>${flag}`;
     });
 
   // a drag moves a battalion, a double click turns it
@@ -296,6 +318,7 @@ export function drawBlocks(
   updateBlocks(svg, battle, null, 1);
 }
 
+const WHITE_FLAG = `<path d="M0 6V-14" stroke-width="1.2"/><path d="M0 -14q3 -1.5 6 0t6 0v7q-3 1.5 -6 0t-6 0z" fill="#fff"/>`;
 const HEALTH_INSET = 1.5; // half the health line: it lies inside the block, against its outline
 const TURN_STEP = Math.PI / 12;
 
@@ -306,24 +329,53 @@ function setTransform(group: SVGGElement, x: number, y: number, facing: number):
   group.children[2].setAttribute("transform", `rotate(${-Number(angle)})`);
 }
 
-/** Put blocks where they are `progress` of the way through the tick */
+const LAG = 0.8; // ticks the shown place trails the battle by: it evens out the jostle of a crowd
+const LEAP = 100; // a move further than this is shown at once
+const shown = new WeakMap<SVGSVGElement, { time: number; at: Positions }>();
+
+const FADE = 12; // ticks a destroyed battalion takes to fade away
+const fallen = new WeakMap<Block, number>(); // when a battalion was first drawn destroyed
+
+function getOpacity(block: Block, time: number): number {
+  if (block.status === "routed" || block.status === "surrendered") return 0.7;
+  if (block.status !== "destroyed") return 1;
+  if (!fallen.has(block)) fallen.set(block, time);
+  return +Math.min(Math.max(1 - (time - fallen.get(block)!) / FADE, 0), 1).toFixed(2);
+}
+
+const swing = (from: number, to: number): number => Math.atan2(Math.sin(to - from), Math.cos(to - from));
+
+/** Put blocks where they are `progress` of the way through the tick, eased; with no `previous` right where they are */
 export function updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Positions | null, progress: number): void {
   const root = select(svg);
   if (svg.dataset.breaches !== String(battle.field.breaches.length)) drawBurgs(svg, battle.field); // the walls came down
-  const at = new Map<number, { x: number; y: number; facing: number }>();
+  const time = battle.tick + progress;
+  const last = shown.get(svg);
+  const elapsed = previous && last ? time - last.time : -1;
+  const ease = 1 - Math.exp(-elapsed / LAG);
+  const at: Positions = new Map();
   for (const block of battle.blocks) {
     const from = previous?.get(block.id);
-    if (!from || progress >= 1) {
-      at.set(block.id, block);
+    const to =
+      !from || progress >= 1
+        ? block
+        : {
+            x: from.x + (block.x - from.x) * progress,
+            y: from.y + (block.y - from.y) * progress,
+            facing: from.facing + swing(from.facing, block.facing) * progress
+          };
+    const was = elapsed >= 0 ? last!.at.get(block.id) : undefined;
+    if (!was || Math.hypot(to.x - was.x, to.y - was.y) > LEAP) {
+      at.set(block.id, { x: to.x, y: to.y, facing: to.facing });
       continue;
     }
-    const swing = Math.atan2(Math.sin(block.facing - from.facing), Math.cos(block.facing - from.facing));
     at.set(block.id, {
-      x: from.x + (block.x - from.x) * progress,
-      y: from.y + (block.y - from.y) * progress,
-      facing: from.facing + swing * progress
+      x: was.x + (to.x - was.x) * ease,
+      y: was.y + (to.y - was.y) * ease,
+      facing: was.facing + swing(was.facing, to.facing) * ease
     });
   }
+  shown.set(svg, { time, at });
 
   root
     .select(".battleBlocks")
@@ -333,8 +385,8 @@ export function updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Posit
       const { x, y, facing } = at.get(block.id)!;
       setTransform(this, x, y, facing);
     })
-    .attr("display", block => (block.status === "fled" ? "none" : null))
-    .attr("opacity", block => (block.status === "destroyed" ? 0.25 : block.status === "routed" ? 0.6 : 1))
+    .attr("display", block => (block.status === "fled" || getOpacity(block, time) === 0 ? "none" : null))
+    .attr("opacity", block => getOpacity(block, time))
     .attr("data-tip", block => {
       const troops = `${capitalize(block.unit.replace(/_/g, " "))}: ${block.troops} / ${block.initial}`;
       if (block.status !== "ready") return `${troops}, ${block.status}`;
@@ -346,6 +398,10 @@ export function updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Posit
       const x = block.depth / 2 - HEALTH_INSET;
       (this.children[1] as SVGPathElement).setAttribute("d", `M${x} ${-half}V${half}`);
       (this.children[0] as SVGRectElement).setAttribute("stroke-dasharray", block.status === "routed" ? "3 2" : "");
+      this.querySelector(".battleWhiteFlag")!.setAttribute(
+        "display",
+        block.status === "surrendered" ? "inline" : "none"
+      );
     });
 
   const byId = new Map(battle.blocks.map(block => [block.id, block]));
@@ -354,7 +410,6 @@ export function updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Posit
       .filter(block => block.action === action && block.target !== null && byId.has(block.target))
       .map(block => [block, byId.get(block.target!)!]);
 
-  const time = battle.tick + progress;
   const bursts: { key: string; x: number; y: number; size: number; opacity: number }[] = [];
   const shots = (battle.result ? [] : pairs("shoot")).map(([block, target]) => {
     const a = at.get(block.id)!;

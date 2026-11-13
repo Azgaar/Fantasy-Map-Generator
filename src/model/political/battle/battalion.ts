@@ -1,8 +1,8 @@
 // The battalion level: what one battalion does this tick, by its order and by what is around it. See docs/domain/battles.md.
 
 import type { Battle, Block } from "./battle";
-import { type Command, getStance, keepsPhase, POSTURES, type Side } from "./battle-rules";
-import { getDistance, inContact, normalize, PACE, type Spot } from "./movement";
+import { type Command, getStance, isBeaten, keepsPhase, type Side } from "./battle-rules";
+import { canShoot, getDistance, getRange, inContact, normalize, PACE, type Spot } from "./movement";
 
 export type Kind = "line" | "shooter" | "rider" | "engine";
 
@@ -11,7 +11,7 @@ export const CHARGE = 120; // how far from its place a battalion goes for a foe 
 export const COUNTER = 45; // and when it holds
 export const SHAKEN = 30; // morale under which a battalion does not attack
 const WATCH = 220; // how far a guard goes for riders
-const EVADE = 80; // shooters step back from foes this near
+const EVADE = 40; // shooters step back from foes this near
 const LEASH = 60; // how far shooters step from their place to get in range
 const ARRIVED = 3; // how near its place a battalion stops: closer, neighbours would only jostle it
 const PRIZE = 0.3; // how much nearer a foe that only hits looks to who picks a target
@@ -26,6 +26,7 @@ export interface Intent {
   shoot: boolean; // shoot the target once in range rather than close with it
   facing: number; // where to face with no foe at hand
   haste: number;
+  keep: boolean; // to its place in the formation: there by the end of the round, not in a dash and a wait
 }
 
 /** What every battalion sees this tick */
@@ -61,7 +62,8 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
     shared: false,
     shoot: false,
     facing: order.facing,
-    haste: 1
+    haste: 1,
+    keep: false
   };
   const far = (foe: Spot, from: Spot = block): number => Math.hypot(foe.x - from.x, foe.y - from.y);
   const pick = (among: Block[]): Block | null => {
@@ -73,13 +75,14 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
     }
     return best;
   };
-  const goHome = (): Intent => (far(order) < ARRIVED ? stand : { ...stand, to: order, key: getPointKey(order) });
+  const goHome = (): Intent =>
+    far(order) < ARRIVED ? stand : { ...stand, to: order, key: getPointKey(order), keep: true };
   const charge = (target: Block): Intent => ({ ...stand, target, to: target, key: target.id });
   const shoot = (target: Block, approach = false): Intent => ({
     ...stand,
     target,
     to: approach ? target : null,
-    stop: block.range * 0.85,
+    stop: getRange(battle, block, target) * 0.85,
     key: target.id,
     shoot: true
   });
@@ -99,7 +102,7 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
   const forward = told ? told === "attack" || told === "defend" : getStance(phase) === "advance";
   const bold = forward && !shaken;
   const keen = told === "skirmish"; // shooters go as far as it takes where the formation stays
-  const inRange = (): Block[] => ready.filter(foe => far(foe) <= block.range);
+  const inRange = (): Block[] => ready.filter(foe => canShoot(battle, block, foe));
 
   if (order.mission === "battery") {
     const target = pick(inRange());
@@ -166,7 +169,7 @@ const getPointKey = (point: Spot): number => -1 - (Math.round(point.x) * 2000 + 
 function getWorth(battle: Battle, block: Block, foe: Block, sense: Sense): number {
   let score = getDistance(battle, block, foe);
   const chasing =
-    getStance(battle[block.side].phase) === "advance" && battle[foe.side].phase === POSTURES[battle.type][foe.side].run;
+    getStance(battle[block.side].phase) === "advance" && isBeaten(battle.type, foe.side, battle[foe.side].phase);
   if (foe.status === "routed") score = chasing || block.order.mission === "hunt" ? score * 0.9 : score + 400;
   if (foe.id === block.target) score *= 0.75;
   else if (!block.range) score += (sense.crowd.get(foe.id) ?? 0) * 45; // spread along the line
