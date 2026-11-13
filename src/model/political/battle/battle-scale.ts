@@ -7,7 +7,8 @@ export const COLS = 100; // the grid of a field of any size: a node is 1% of its
 export const ROWS = 60;
 
 const FRONTS = 1000 / 44; // battalion fronts across the field
-const SIEGE_LAND = 500; // metres of land round a besieged burg, and two battalion fronts more: the ring and room behind it
+const SIEGE_LAND = 340; // metres of land round a besieged burg, the ring at most, and a battalion front more behind it
+const SIEGE_ZOOM = 1.5; // a siege field is at most so many times as wide as its battalions or its ring ask for
 const MIN_WIDTH = 250;
 const MAX_WIDTH = 10000;
 
@@ -22,10 +23,19 @@ export interface FieldSize {
 export function getFieldSize(men: number, siegeRadius = Infinity): FieldSize {
   const front = men / RANKS;
   const army = front * FRONTS;
-  const siege = Number.isFinite(siegeRadius) ? (2 * (siegeRadius + SIEGE_LAND + 2 * front) * COLS) / ROWS : 0;
+  const ring = SIEGE_LAND + front;
+  const siege = Number.isFinite(siegeRadius)
+    ? Math.min(toWidth(ring + siegeRadius), Math.max(army, toWidth(ring)) * SIEGE_ZOOM)
+    : 0;
   const width = Math.min(Math.max(army, siege, MIN_WIDTH), MAX_WIDTH);
   return { width, height: (width * ROWS) / COLS, cell: width / COLS, front };
 }
+
+/** The radius a besieged burg is drawn with: its own, smaller where its field is too small for it */
+export const fitSiegeBurg = (radius: number, size: FieldSize): number =>
+  Math.min(radius, size.height / 2 - SIEGE_LAND - size.front);
+
+const toWidth = (halfHeight: number): number => (2 * halfHeight * COLS) / ROWS;
 
 export const toMetresPerTick = (kmh: number): number => (kmh / 3.6) * TICK_SECONDS;
 export const toMetresPerSecond = (metresPerTick: number): number => metresPerTick / TICK_SECONDS;

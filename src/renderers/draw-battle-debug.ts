@@ -259,7 +259,15 @@ function describe(field: Battlefield, x: number, y: number): string {
   const node = nodeAt(field, x, y);
   const terrain = terrainAt(field, x, y);
   const what = [
-    terrain.water === 1 ? "sea or lake" : terrain.water === 2 ? (terrain.ford ? "ford" : "deep river") : "",
+    terrain.water === 1
+      ? terrain.shallow
+        ? "shallows"
+        : "sea or lake"
+      : terrain.water === 2
+        ? terrain.ford
+          ? "ford"
+          : "deep river"
+        : "",
     terrain.deck ? "bridge" : "",
     terrain.road ? "road" : "",
     terrain.wood ? "wood" : "",

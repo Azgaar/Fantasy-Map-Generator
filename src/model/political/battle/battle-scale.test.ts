@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatClock, getFieldSize, minutesToTicks, toMetresPerSecond, toMetresPerTick } from "./battle-scale";
+import {
+  fitSiegeBurg,
+  formatClock,
+  getFieldSize,
+  minutesToTicks,
+  toMetresPerSecond,
+  toMetresPerTick
+} from "./battle-scale";
 
 describe("battle scale", () => {
   it("stands a battalion a metre a man across five ranks", () => {
@@ -23,16 +30,24 @@ describe("battle scale", () => {
   });
 
   it("takes a besieged burg and the land about it in, top to bottom", () => {
-    expect(getFieldSize(300, 60).width).toBeCloseTo(2267, 0); // a village: the ring and room about it
-    expect(getFieldSize(300, 800).width).toBeCloseTo(4733, 0); // a city
-    expect(getFieldSize(300, 800).height / 2).toBeGreaterThan(800 + 340); // the ring fits above and below
+    expect(getFieldSize(300, 60).width).toBeCloseTo(1533, 0); // a village: the ring and room about it
+    expect(getFieldSize(300, 200).width).toBeCloseTo(2000, 0); // a town
+    expect(fitSiegeBurg(200, getFieldSize(300, 200))).toBe(200); // at its true size
     expect(getFieldSize(1000, 60).width).toBeCloseTo(4545, 0); // big battalions keep their field
     expect(getFieldSize(300, 60).front).toBe(60); // battalions keep their real size
   });
 
+  it("zooms out for a siege at most 1.5 times, drawing a burg too big for it smaller", () => {
+    const city = getFieldSize(300, 800);
+    expect(city.width).toBeCloseTo(1.5 * getFieldSize(300).width, 0);
+    const radius = fitSiegeBurg(800, city);
+    expect(radius).toBeCloseTo(214, 0);
+    expect(city.height / 2).toBeCloseTo(radius + 340 + 60, 5); // the ring fits above and below
+    expect(getFieldSize(300, 5000).width).toBe(city.width);
+  });
+
   it("keeps the field between 250 m and 10 km wide", () => {
     expect(getFieldSize(20).width).toBe(250);
-    expect(getFieldSize(300, 5000).width).toBe(10000);
     expect(getFieldSize(5000).width).toBe(10000);
   });
 

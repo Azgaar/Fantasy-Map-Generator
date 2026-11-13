@@ -15,7 +15,7 @@ export interface Tactic {
   refuse: number; // how far back the other wing ends up
   bow: number; // how far ahead of the centre the ends of the line stand; behind when negative
   shooters: "behind" | "front" | "wings";
-  riders: "wings" | "strike" | "behind";
+  riders: "wings" | "strike" | "behind" | "wedge"; // a wedge of their own, apart from the line
   ring?: boolean; // a ring facing out, the riders and the reserve inside
 }
 
@@ -37,6 +37,7 @@ export const TACTICS = {
   envelopment: tactic(1, 0.1, 0.8, false, 0, 1, "behind", "wings"),
   wedge: tactic(2, 0.15, 0.6, false, 0, -1.6, "wings", "behind"),
   harass: tactic(1, 0, 1, false, 0, 0, "front", "wings"),
+  flying: tactic(1, 0.2, 1, false, 0, 0, "behind", "wedge"),
   // defence
   stand: tactic(1, 0.2, 1, false, 0, 0, "behind", "behind"),
   crescent: tactic(1, 0.15, 0.8, false, 0, -1.35, "behind", "behind"),
@@ -176,7 +177,8 @@ export function form(blocks: Block[], tactic: Tactic, strike: number, room: numb
     const [right, left] = split(shooters);
     ends = [flank(left, -1, ends[0], 0), flank(right, 1, ends[1], 0)];
   }
-  if (tactic.riders !== "behind") {
+  if (tactic.riders === "wedge") places.push(...formWedge(riders, front));
+  else if (tactic.riders !== "behind") {
     // in a column of twos on each wing, a little back
     const all = tactic.massed || tactic.riders === "strike";
     const [right, left] = all ? (strike > 0 ? [riders, []] : [[], riders]) : split(riders);
@@ -197,8 +199,9 @@ export function form(blocks: Block[], tactic: Tactic, strike: number, room: numb
   }
 
   // the shape: the ends ahead of the centre or behind it, the weak wing held back
-  const reach = Math.max(...places.map(place => Math.abs(place.across)), 1);
-  for (const place of places) {
+  const shaped = places.filter(place => place.role !== "wedge");
+  const reach = Math.max(...shaped.map(place => Math.abs(place.across)), 1);
+  for (const place of shaped) {
     place.along += tactic.bow * front * (place.across / reach) ** 2;
     if (tactic.massed) {
       const fromStrike = (strike * reach - place.across * strike) / (reach * 2); // 0 at the massed end, 1 at the other
@@ -214,8 +217,28 @@ const MISSIONS: Record<Role, Mission> = {
   support: "support",
   battery: "battery",
   wing: "guard",
-  reserve: "reserve"
+  reserve: "reserve",
+  wedge: "flank"
 };
+
+/**
+ * Riders in a wedge, its point the best battalion: rows of one, two, three and so on, each behind the gaps of the one
+ * before. Places are about the point, not the formation: the wedge has a frame of its own
+ */
+function formWedge(riders: Block[], front: number): Place[] {
+  const pitch = Math.max(...riders.map(block => block.width), 0) + GAP * front;
+  const places: Place[] = [];
+  for (let row = 0, seated = 0; seated < riders.length; row++) {
+    const count = Math.min(row + 1, riders.length - seated);
+    for (let i = 0; i < count; i++) {
+      const block = riders[seated + i];
+      const across = (i - (count - 1) / 2) * pitch;
+      places.push({ block, role: "wedge", mission: "flank", rank: 0, across, along: -row * ROW_GAP * front });
+    }
+    seated += count;
+  }
+  return places;
+}
 
 /**
  * A ring round the middle of the formation, facing out: line troops and shooters on it with the engines among them,

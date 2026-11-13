@@ -13,6 +13,7 @@ import {
   getPace,
   getRange,
   inContact,
+  isAboard,
   normalize,
   ROUND_TICKS,
   type Spot
@@ -198,7 +199,7 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
       distance <= reach ||
       (guard && foe.kind === "rider" && distance <= WATCH * front) ||
       (sense.held.has(foe.id) && distance <= reach * 1.5); // the flank of a foe a neighbour holds
-    return near && !over(foe);
+    return near && !over(foe) && !isAboard(battle, foe); // the boats are let come: who wades out of them is the prey
   });
   // ships and fliers close when their side does, shooting from their place till then; others who shoot do not close
   const boarding = Boolean(battle.field.open) && bold;

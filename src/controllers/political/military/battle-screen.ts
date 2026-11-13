@@ -1074,9 +1074,9 @@ function redeploy(): void {
   if (b.tick) return;
   const sides = SIDES.map(side => b[side].regiments.map(regiment => regiments.get(regimentKey(regiment))!));
   setup(sides[0], sides[1], { type: b.type, name: b.name });
-  // what was done to the sides by hand stays done
+  // what was done to the sides by hand stays done, and the ground prepared before the battle
   for (const change of b.interventions) {
-    if (change.kind === "power" || change.kind === "morale") intervene(battle!, change);
+    if (change.kind === "power" || change.kind === "morale" || change.kind === "dig") intervene(battle!, change);
   }
   refresh();
 }

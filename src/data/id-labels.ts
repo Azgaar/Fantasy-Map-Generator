@@ -283,6 +283,7 @@ export const BATTLE_TACTIC_LABELS: Record<string, string> = {
   envelopment: t("Envelopment"),
   wedge: t("Wedge"),
   harass: t("Harassing fire"),
+  flying: t("Flying wedge"),
   stand: t("Defensive line"),
   crescent: t("Refused flanks"),
   crossing: t("Defence of a crossing"),

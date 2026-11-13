@@ -11,6 +11,7 @@ import {
   getUnitsPower,
   intervene,
   plan,
+  prepare,
   ROUND_TICKS,
   replay,
   resetDeployment,
@@ -33,9 +34,10 @@ import {
   raiseWalls,
   type WorkKind
 } from "./battlefield";
+import { ROW_GAP } from "./formations";
 import { getCommands, isDugIn } from "./general";
-import { CONTACT, canShoot, forgetWays, getClimb, getDistance, getGap, getRange, step } from "./movement";
-import { findStretch, getStretchLine, isBuilder } from "./works";
+import { CONTACT, canShoot, forgetWays, getClimb, getDistance, getGap, getRange, inContact, step } from "./movement";
+import { breakWagons, findStretch, getStretchLine, isBuilder, isDigging } from "./works";
 
 // speed in km/h and range in metres, as the default units have them
 const TRAITS: Record<string, { speed: number; range: number }> = {
@@ -596,7 +598,7 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     for (let row = 0; row < ROWS; row++) for (let col = 0; col < 30; col++) field.water[row * COLS + col] = 1;
     const b = setup("landing", mixed, mixed, field);
     const shore = Math.min(...b.blocks.filter(block => block.side === "defenders").map(block => block.x));
-    expect(shore).toBeLessThan(614); // by the rule: a bowshot from the water
+    expect(shore).toBeLessThan(614); // by the rule: at the water's edge
     plan(b);
     const front = Math.min(...b.blocks.filter(block => block.side === "defenders").map(block => block.x));
     expect(front > 614).toBe(b.defenders.waits); // inland when he settled on waiting, at the shore when not
@@ -631,6 +633,55 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     for (let i = 0; i < ROUND_TICKS * 30 && !guns.result; i++) {
       tick(guns);
       expect(guns.attackers.phase).not.toBe("storming");
+    }
+  });
+
+  it("draws the engines of siege lines up behind the first line, in range of the walls", () => {
+    const b = setup(
+      "siege",
+      { infantry: 2400, archers: 400, artillery: 200 },
+      { infantry: 900, archers: 600 },
+      walled()
+    );
+    plan(b);
+    expect(b.attackers.plan.tactic).toBe("lines");
+    const burg = b.field.burgs[b.field.held!];
+    const fromBurg = (block: Block): number => Math.hypot(block.x - burg.x, block.y - burg.y);
+    const own = b.blocks.filter(block => block.side === "attackers");
+    const engines = own.filter(block => block.kind === "engine");
+    const first = own.filter(block => block.order.rank === 0 && block.order.role === "line");
+    expect(engines.length).toBeGreaterThan(0);
+    for (const engine of engines) {
+      expect(fromBurg(engine)).toBeGreaterThan(Math.max(...first.map(fromBurg)));
+      expect(fromBurg(engine)).toBeLessThanOrEqual(engine.range + burg.radius);
+    }
+  });
+
+  it("draws the engines of a ring up behind its battalions, in range of the walls", () => {
+    const b = setup(
+      "siege",
+      { infantry: 4400, archers: 800, artillery: 200 },
+      { infantry: 600, archers: 300 },
+      walled()
+    );
+    plan(b);
+    expect(b.attackers.plan.tactic).toBe("ring");
+    const burg = b.field.burgs[b.field.held!];
+    const fromBurg = (block: Block): number => Math.hypot(block.x - burg.x, block.y - burg.y);
+    const own = b.blocks.filter(block => block.side === "attackers");
+    const engines = own.filter(block => block.kind === "engine");
+    const fighters = own.filter(block => block.kind !== "engine");
+    expect(engines.length).toBeGreaterThan(0);
+    for (const engine of engines) {
+      expect(fromBurg(engine)).toBeLessThanOrEqual(engine.range + burg.radius);
+      // a battalion on the way from the engine to the walls
+      const [dx, dy] = [burg.x - engine.x, burg.y - engine.y];
+      const guard = fighters.some(block => {
+        const t = ((block.x - engine.x) * dx + (block.y - engine.y) * dy) / (dx * dx + dy * dy);
+        const off = Math.hypot(engine.x + dx * t - block.x, engine.y + dy * t - block.y);
+        return t > 0 && t * Math.hypot(dx, dy) < ROW_GAP * b.field.front * 1.5 && off < b.field.front / 2;
+      });
+      expect(guard).toBe(true);
     }
   });
 
@@ -776,16 +827,16 @@ describe("battle generals of an ambush, a landing and a siege", () => {
 });
 
 describe("battle morale", () => {
-  it("rallies a battalion once: broken a second time it is gone", () => {
+  it("rallies a battalion as often as it gets away while its side fights on", () => {
     const b = battle([regiment(1, { infantry: 2400 })], [regiment(2, { infantry: 2400 })]);
     for (let i = 0; i < ROUND_TICKS; i++) tick(b);
     const twice = b.blocks.find(block => block.side === "attackers")!;
-    for (const expected of [1, 2]) {
+    for (let time = 0; time < 2; time++) {
       twice.morale = 10;
       for (let i = 0; i < ROUND_TICKS && twice.status !== "routed"; i++) tick(b);
-      expect(twice.routs).toBe(expected);
+      expect(twice.status).toBe("routed");
       for (let i = 0; i < ROUND_TICKS * 12 && twice.status === "routed"; i++) tick(b);
-      expect(twice.status).toBe(expected === 1 ? "ready" : "fled");
+      expect(twice.status).toBe("ready");
     }
   });
 
@@ -824,8 +875,8 @@ describe("battle morale", () => {
 });
 
 describe("battle surrender", () => {
-  it("has a shaken battalion at grips, outmatched on a losing side, give itself up: it fights and is struck no more", () => {
-    const b = battle([regiment(1, { infantry: 1500 })], [regiment(2, { infantry: 2400 })]);
+  it("has a battalion that gave itself up fight and be struck no more", () => {
+    const b = battle([regiment(1, { infantry: 900, archers: 300, cavalry: 150 })], [regiment(2, even)]);
     const taken = new Map<number, number>();
     while (!b.result) {
       tick(b);
@@ -833,9 +884,6 @@ describe("battle surrender", () => {
         if (block.target !== null) expect(b.blocks[block.target].status).not.toBe("surrendered");
         if (block.status !== "surrendered" || taken.has(block.id)) continue;
         taken.set(block.id, block.troops);
-        if (b[block.side].phase !== "melee") continue; // left behind by a side that runs or gives itself up
-        expect(block.morale).toBeGreaterThan(15);
-        expect(block.morale).toBeLessThan(30);
       }
     }
     expect(b.log.some(entry => entry.event === "surrender")).toBe(true);
@@ -843,7 +891,7 @@ describe("battle surrender", () => {
   });
 
   it("leaves behind those of a retreating side held at grips by stronger foes: they are captured, not fallen", () => {
-    const b = run(battle([regiment(1, { infantry: 780, archers: 260, cavalry: 130 })], [regiment(2, even)]));
+    const b = run(battle([regiment(1, { infantry: 900, archers: 300, cavalry: 150 })], [regiment(2, even)]));
     expect([b.result!.winner, b.defenders.phase]).toEqual(["attackers", "retreat"]);
     const [defenders] = b.defenders.regiments;
     const captured = sum(Object.values(getCaptured(b, defenders)));
@@ -854,11 +902,29 @@ describe("battle surrender", () => {
     expect(b.defenders.captured).toBeCloseTo(captured / initial);
   });
 
-  it("has a side whose day is lost lay down its arms when every battalion it has left is held at grips", () => {
-    const b = run(battle([regiment(1, { infantry: 1200 })], [regiment(2, { infantry: 1800, cavalry: 300 })]));
-    expect(b.attackers.phase).toBe("surrendering");
-    expect(b.result!.winner).toBe("defenders");
-    expect(getTroops(b, "attackers").captured).toBeGreaterThan(0);
+  it("has a battalion about to break give itself up with water all round but the foe, and hold on with a way out", () => {
+    const pocket = (water: boolean): Block => {
+      const b = battle([regiment(1, { infantry: 300 })], [regiment(2, { infantry: 600 })]);
+      intervene(b, { tick: 0, kind: "order", side: "attackers", order: "hold" });
+      intervene(b, { tick: 0, kind: "order", side: "defenders", order: "hold" });
+      const [own] = b.blocks.filter(block => block.side === "attackers");
+      const foes = b.blocks.filter(block => block.side === "defenders");
+      foes.forEach((foe, i) => {
+        intervene(b, { tick: 0, kind: "move", block: foe.key, x: own.x + 45, y: own.y + (i - 0.5) * 50 });
+      });
+      if (water) {
+        const { cell } = b.field;
+        b.field.water = b.field.water.map((_, node) => {
+          const [x, y] = [((node % COLS) + 0.5) * cell, (Math.floor(node / COLS) + 0.5) * cell];
+          return x < own.x - 40 || Math.abs(y - own.y) > 60 ? 2 : 0; // a river behind it and on both sides
+        });
+      }
+      own.morale = 18;
+      for (let i = 0; i <= ROUND_TICKS; i++) tick(b); // morale is read as the next round begins
+      return b.blocks.find(block => block.key === own.key)!;
+    };
+    expect(pocket(true).status).toBe("surrendered");
+    expect(pocket(false).status).not.toBe("surrendered");
   });
 
   it("lays down a side's arms by order, for good once the battle is on", () => {
@@ -1031,8 +1097,10 @@ describe("battle ground", () => {
   });
 
   const duel = (): Battle => battle([regiment(1, { infantry: 100 })], [regiment(2, { infantry: 100 })]);
+  // the node and those round it: water by the land is the shallows of a landing
   const flood = (b: Battle, block: Block, water: number): void => {
-    b.field.water[nodeAt(b.field, block.x, block.y)] = water;
+    const node = nodeAt(b.field, block.x, block.y);
+    for (const row of [-1, 0, 1]) for (const col of [-1, 0, 1]) b.field.water[node + row * COLS + col] = water;
   };
 
   it("bogs troops down in water", () => {
@@ -1045,8 +1113,8 @@ describe("battle ground", () => {
       return attacker.x - from;
     };
     expect(march(0)).toBeGreaterThan(5);
-    expect(march(2)).toBeLessThan(1); // a river
-    expect(march(1)).toBeLessThan(1); // a lake or the sea
+    expect(march(2)).toBeLessThan(2); // a river: an eighth of the pace
+    expect(march(1)).toBeLessThan(2); // a lake or the sea
   });
 
   it("has the defenders hold the bank of a river and the attackers cross it", () => {
@@ -1488,24 +1556,28 @@ describe("battle ways", () => {
     const engines = [unit("infantry", "melee", 1), unit("archers", "ranged", 1), unit("artillery", "machinery", 6)];
     const field = createEmptyBattlefield();
     burg(field);
-    const b = createBattle({
-      type: "siege",
-      name: "Test",
-      place: null,
-      x: 0,
-      y: 0,
-      cell: 0,
-      axis: 0,
-      field,
-      units: engines,
-      populationScale: 1000,
-      // too few to storm, with engines enough for the walls
-      attackers: [0, 1, 2, 3, 4].map(i => regiment(1, { infantry: 40, artillery: 30 }, i)),
-      defenders: [regiment(2, { infantry: 400, archers: 100 })]
-    });
-    while (!b.result && !b.field.breaches.length) tick(b);
-    // five battalions of engines do a fifth of a breach a round
-    expect(b.round).toBe(4);
+    const bombard = (guns: number): Battle => {
+      const b = createBattle({
+        type: "siege",
+        name: "Test",
+        place: null,
+        x: 0,
+        y: 0,
+        cell: 0,
+        axis: 0,
+        field: structuredClone(field),
+        units: engines,
+        populationScale: 1000,
+        // too few to storm, with engines for the walls
+        attackers: [0, 1, 2, 3, 4].map(i => regiment(1, { infantry: 40, artillery: guns }, i)),
+        defenders: [regiment(2, { infantry: 400, archers: 100 })]
+      });
+      while (!b.result && !b.field.breaches.length) tick(b);
+      return b;
+    };
+    // a breach takes so many blows: five half batteries of attack 6 make a sixteenth of one a round
+    const b = bombard(30);
+    expect(b.round).toBe(16);
     expect(b.log.some(entry => entry.event === "breach")).toBe(true);
     const { x, y } = b.field.breaches[0];
     expect(b.field.rampart[nodeAt(b.field, x, y)]).toBe(3);
@@ -2028,5 +2100,90 @@ describe("battle works", () => {
     timed(foot, foot, true); // a ditch
     timed({ infantry: 10000, archers: 3000, cavalry: 6000 }, { infantry: 12000, archers: 4000, cavalry: 3000 }, true); // stakes
     timed({ infantry: 5000, archers: 1500, cavalry: 9000 }, { infantry: 14000, archers: 5000 }, false); // a laager
+    // a laager on ground with water: the defenders do not think it through, a weaker attacker does, briefly
+    const field = createEmptyBattlefield();
+    for (let row = 0; row < 6; row++) for (let col = 0; col < 6; col++) field.water[row * COLS + col] = 1;
+    const started = performance.now();
+    const pond = setup("field", { infantry: 3000, cavalry: 11000 }, { infantry: 24000, archers: 9000 }, field);
+    expect(pond.defenders.plan.tactic).toBe("laager");
+    plan(pond);
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it("has defenders of a landing who wait inland dig in all the same", () => {
+    const field = createEmptyBattlefield();
+    for (let row = 0; row < ROWS; row++) for (let col = 0; col < 30; col++) field.water[row * COLS + col] = 1;
+    const b = setup("landing", big, big, field);
+    b.defenders.waits = true; // their general chose to meet the landing inland, not to keep out of the fight
+    prepare(b);
+    b.planned = true;
+    expect(isDugIn(b, "defenders")).toBe(false);
+    ticks(b, ROUND_TICKS * 3 + 1);
+    expect(worksOf(b, "defenders").filter(work => work.up).length).toBeGreaterThan(3);
+  });
+
+  it("lets the riders of a wagon fort fight foot over its wagons, and keeps the foe's riders off them", () => {
+    const b = battle([regiment(1, even)], [regiment(2, even)]);
+    b.planned = true;
+    const holder = builders(b, "defenders")[0];
+    lay(b, holder, "wagons");
+    const { x, y, facing } = holder.order;
+    const [cos, sin] = [Math.cos(facing), Math.sin(facing)];
+    const at = (side: Side, kind: Block["kind"], ahead: number): Block => ({
+      ...b.blocks.find(block => block.side === side && block.kind === kind)!,
+      x: x + cos * ahead,
+      y: y + sin * ahead,
+      facing
+    });
+    // a battalion of each side either side of the wagons, close enough to fight
+    const gap = holder.depth + 10; // the wagons 6 m before the holders, 10 m between the two
+    expect(inContact(b, at("defenders", "rider", 0), at("attackers", "line", gap))).toBe(true);
+    expect(inContact(b, at("defenders", "line", 0), at("attackers", "line", gap))).toBe(true);
+    expect(inContact(b, at("defenders", "line", 0), at("attackers", "rider", gap))).toBe(false);
+  });
+
+  it("stops counting as digging a ditch left half built when its side goes over to the attack", () => {
+    const b = battle([regiment(1, noRiders)], [regiment(2, { infantry: 2000, archers: 700 })]);
+    order(b, "attackers", "hold");
+    order(b, "defenders", "fortify");
+    b.planned = true;
+    ticks(b, ROUND_TICKS * 2);
+    expect(isDigging(b, "defenders")).toBe(true);
+    order(b, "defenders", "attack");
+    ticks(b, ROUND_TICKS);
+    expect(worksOf(b, "defenders").some(work => !work.up)).toBe(true); // left behind
+    expect(isDigging(b, "defenders")).toBe(false);
+  });
+
+  it("has a laager left with too few battalions on its ring for wagons give up fortifying", () => {
+    const b = battle([regiment(1, { infantry: 900, archers: 300, cavalry: 1600 })], [regiment(2, noRiders)]);
+    expect(b.defenders.plan.tactic).toBe("laager");
+    b.planned = true;
+    for (const block of of(b, "defenders")
+      .filter(block => block.order.rank === 0)
+      .slice(2))
+      block.status = "destroyed";
+    tick(b);
+    expect(worksOf(b, "defenders")).toEqual([]);
+    expect(b.defenders.plan.fortify).toBe(false);
+    expect(getCommands(b)[1]).not.toBe("fortify");
+  });
+
+  it("has engines of a side that runs leave the foe's wagons be", () => {
+    const b = setup("field", { infantry: 900, cavalry: 1600, artillery: 40 }, noRiders);
+    b.planned = true;
+    ticks(b, ROUND_TICKS * 6 + 1); // the wagons stand
+    const wagons = worksOf(b, "defenders");
+    expect(wagons.every(work => work.up)).toBe(true);
+    // the engines as near the ring as can be
+    const [work] = wagons;
+    for (const engine of of(b, "attackers").filter(block => block.kind === "engine"))
+      [engine.x, engine.y] = [(work.a[0] + work.b[0]) / 2 - 100, (work.a[1] + work.b[1]) / 2];
+    b.attackers.phase = "retreat";
+    expect(breakWagons(b)).toBe(false);
+    expect(wagons.every(wagon => wagon.harm === 0)).toBe(true);
+    b.attackers.phase = "melee";
+    breakWagons(b);
+    expect(wagons.some(wagon => wagon.harm > 0)).toBe(true);
   });
 });

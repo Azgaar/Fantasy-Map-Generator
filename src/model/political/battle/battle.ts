@@ -1,6 +1,6 @@
 import { getUnitPower } from "@/model/political/military-units";
 import type { MilitaryUnit } from "@/types/military";
-import { decide, getKind, type Kind, type Sense, SHAKEN } from "./battalion";
+import { decide, getKind, type Kind, type Sense } from "./battalion";
 import {
   type BattleType,
   type Command,
@@ -52,10 +52,9 @@ import {
   getPace,
   getRange,
   getSharedHeading,
-  hasWalls,
+  hasWayOut,
   inContact,
   isRunning,
-  isStorming,
   isWet,
   normalize,
   openCrossing,
@@ -92,12 +91,10 @@ const REST = 4; // morale a round a battalion left alone recovers
 const BREAK = 15; // morale at which it breaks and runs
 const RALLY = 35; // and at which a broken one that got away stands again
 const HUNGER = 1; // morale a round a garrison cut off loses, down to STARVED
-const HEART = 2; // morale every battalion of a side takes when it breaks a foe's
-const CORNERED = 1 / 4.5; // share of the strength at hand (foes three and a half to one) under which a shaken battalion at grips on a losing side gives itself up
+const YIELD = 20; // morale under which a battalion with no way out gives itself up
 
-const BREACHES = 3; // most that are made in the walls of a burg
-const TOWN = 1.25; // how much stronger troops in a burg defend
-const WALLS = 3; // how many times weaker a blow or a shot is from without the walls at those within
+const WALLS = 4; // how many times weaker a blow or a shot is from without the walls at those within
+const BREACH = 125; // the blows that open a breach: what would cut down so many men of defense 1
 const COVER = 0.6; // share of the shots that tell on troops in a wood or a burg
 
 // a hundred men of attack 1 cut down or shoot down one and a quarter men of defense 1 a round
@@ -113,7 +110,7 @@ const SPENT = 0.85; // share of a charge's impetus left after each tick at grips
 
 export type BlockStatus = "ready" | "routed" | "surrendered" | "fled" | "destroyed";
 export type BlockAction = "hold" | "move" | "shoot" | "fight" | "flee" | "build";
-export type Role = "line" | "support" | "battery" | "wing" | "reserve";
+export type Role = "line" | "support" | "battery" | "wing" | "reserve" | "wedge";
 export type Mission = "line" | "support" | "battery" | "guard" | "reserve" | "flank" | "hunt" | "withdraw";
 
 /** What the general tells a battalion: its place in the formation and what to do there */
@@ -152,6 +149,17 @@ export interface Plan {
   bled: number; // rounds in a row it lost men to shots alone
   fortify: boolean; // the side builds works
   arrival: number; // ticks till the foe is upon it, as the general reckons it this round; Infinity when it does not come
+  wedge: Wedge | null; // the riders' own formation, when they fight apart
+}
+
+/** Riders drawn up in a wedge of their own: where its point is, and the foe it falls on once it charges */
+export interface Wedge {
+  x: number;
+  y: number;
+  heading: number;
+  launched: boolean; // gone from beside the line on its way round the foe
+  charging: boolean; // it fell on the foe: the wedge broke up, every battalion of it hunts
+  target: number | null; // the foe it fell on, while it stands
 }
 
 /** A battalion: troops of one unit of a regiment that stand, move and fight together */
@@ -188,7 +196,6 @@ export interface Block {
   target: number | null;
   hit: boolean; // took losses this round
   harm: number; // the part of a man lost so far
-  routs: number; // times it broke: it gathers itself once, the second time it is gone
   leaving: boolean; // its regiment was taken out of the battle: it marches off the field
   detour: number; // the side it goes round what is in its way by: -1, 1, or 0 on a clear way
   order: Order;
@@ -412,7 +419,7 @@ export function plan(battle: Battle): void {
   if (battle.rehearsal) return;
   // each against the foe as the odds make him expect it: neither knows what the other has settled on
   const options = SIDES.map(side => getOptions(battle, side));
-  const laager = options.flat().some(option => option.tactic === "laager");
+  const laager = [...options.flat(), ...SIDES.map(side => battle[side].plan)].some(({ tactic }) => tactic === "laager");
   const ticks = battle.type === "siege" || laager ? STORM_TICKS : REHEARSAL_TICKS;
   const settled = SIDES.map((side, i) => {
     let best: Option | null = null;
@@ -698,7 +705,7 @@ function steady(battle: Battle): void {
 
     const hungry = isHungry(battle, block);
     if (block.status === "routed") {
-      if (nearest < SAFE * battle.field.front || block.routs > 1 || !isFighting(battle, block.side) || hungry) continue;
+      if (nearest < SAFE * battle.field.front || !isFighting(battle, block.side) || hungry) continue;
       block.morale += REST;
       if (block.morale >= RALLY) rally(battle, block);
       continue;
@@ -710,8 +717,8 @@ function steady(battle: Battle): void {
     } else if (!block.hit && !hungry) block.morale += REST;
     if (hungry) block.morale = Math.max(block.morale - HUNGER / block.steadiness, Math.min(block.morale, STARVED));
     block.morale = Math.min(Math.max(block.morale, 0), 100);
-    if (block.morale <= BREAK) rout(battle, block);
-    else if (isCornered(battle, block, friends / (friends + foes || 1))) surrender(battle, block);
+    if (block.morale < YIELD && foes && isCornered(battle, block)) surrender(battle, block);
+    else if (block.morale <= BREAK) rout(battle, block);
     block.hit = false;
   }
 }
@@ -805,7 +812,7 @@ function flee(battle: Battle, block: Block, others: Block[]): void {
   const chased = others.some(
     foe => foe.side !== block.side && foe.status === "ready" && Math.hypot(foe.x - block.x, foe.y - block.y) < safe
   );
-  if (block.status === "routed" && !chased && block.routs < 2 && isFighting(battle, block.side)) {
+  if (block.status === "routed" && !chased && isFighting(battle, block.side)) {
     block.action = "hold";
     return;
   }
@@ -838,13 +845,13 @@ function getHeld(battle: Battle): number | null {
   return burgs.indexOf((named.length ? named : burgs).reduce((a, b) => (middle(a) < middle(b) ? a : b)));
 }
 
-/** Engines in range of a besieged burg work a breach into its wall, where it is nearest to them: the more of them the sooner */
+/** Engines in range of a besieged burg work a breach into its wall, where it is nearest to them: by the weight of their blows */
 function batter(battle: Battle): void {
   const { field } = battle;
   const { phase } = battle.attackers;
   if (field.held === null || (phase !== "bombardment" && phase !== "storming")) return; // engines cover a storm too
   const burg = field.burgs[field.held];
-  if (!burg.walled || field.breaches.filter(breach => breach.burg === field.held).length >= BREACHES) return;
+  if (!burg.walled) return;
   const engines = battle.blocks.filter(
     block =>
       block.side === "attackers" &&
@@ -854,7 +861,7 @@ function batter(battle: Battle): void {
   );
   if (!engines.length) return;
   battle.lastLoss = battle.tick; // no lull while the engines are at the walls
-  battle.battered += Math.min(engines.length * 0.04, 0.2);
+  battle.battered += sum(engines, engine => getPower(battle, engine, engine.attack)) * (KILL_RATE / BREACH);
   if (battle.battered < 1) return;
 
   battle.battered -= 1;
@@ -873,7 +880,6 @@ function fight(battle: Battle): void {
 
   const landed = new Map<number, number>(); // men it would cut down of defense 1, past the cover of those hit
   const pressed = new Map<number, number>(); // morale lost to hits in the flank and rear
-  const struck = new Set<number>(); // those hit hand to hand
   for (const block of strikers) {
     const target = byId.get(block.target!)!;
     const from = terrainAt(battle.field, block.x, block.y);
@@ -881,17 +887,12 @@ function fight(battle: Battle): void {
     const shot = block.action === "shoot";
     let power =
       getPower(battle, block, block.attack) * getImpetus(battle, block, target) * getFooting(battle, block, from);
-    if (block.type === "mounted" && (from.wood || to.wood)) power *= 0.6;
     // cover takes its share of the losses: walls from without, woods and houses from shots
     const besieging = to.walled > 0 && from.walled !== to.walled;
     const cover =
       (besieging ? 1 / WALLS : shot && (to.wood || to.town) ? COVER : 1) * getShelter(battle, block, target, shot);
-    if (shot && from.walled && !to.walled) power *= 1.25; // from the walls
 
-    if (!shot) {
-      block.impetus = 1 + (block.impetus - 1) * SPENT;
-      struck.add(target.id);
-    }
+    if (!shot) block.impetus = 1 + (block.impetus - 1) * SPENT;
     const bearing = Math.atan2(block.y - target.y, block.x - target.x);
     const angle = Math.abs(normalize(bearing - target.facing));
     const side = angle > 2.1 ? 2 : angle > 1.05 ? 1 : 0; // rear, flank, front
@@ -906,8 +907,7 @@ function fight(battle: Battle): void {
     const block = byId.get(id)!;
     const ground = terrainAt(battle.field, block.x, block.y);
     // what each man stands with: the harder the blows and the weaker the man, the more fall; counted in fractions
-    const stands =
-      getPower(battle, block, block.defense, 1, true) * (ground.town ? TOWN : 1) * getFooting(battle, block, ground);
+    const stands = getPower(battle, block, block.defense, 1, true) * getFooting(battle, block, ground);
     const fallen = blows / Math.max(stands, 0.01) / ROUND_TICKS;
     const share = fallen / block.initial;
     block.harm += fallen;
@@ -916,8 +916,7 @@ function fight(battle: Battle): void {
     block.troops -= died;
     const shaken = share * MORALE_LOSS + 1 / ROUND_TICKS + (pressed.get(id) ?? 0);
     block.morale = Math.max(block.morale - shaken / block.steadiness, 0);
-    // shots over the walls of a besieged burg do not keep a battle going: a storm, a sortie or a breach does
-    if (share && (!hasWalls(battle) || struck.has(id) || isStorming(battle))) battle.lastLoss = battle.tick;
+    if (share) battle.lastLoss = battle.tick;
     block.hit = true;
 
     if (!block.troops) {
@@ -930,35 +929,26 @@ function fight(battle: Battle): void {
         params: { block: blockName(block) }
       });
       shake(battle, block, 6);
-      hearten(battle, enemyOf(block.side));
     }
   }
 }
 
 function rout(battle: Battle, block: Block): void {
   block.status = "routed";
-  block.routs += 1;
   battle.log.push({ tick: battle.tick, event: "rout", side: block.side, params: { block: blockName(block) } });
   shake(battle, block, 8);
-  hearten(battle, enemyOf(block.side));
 }
 
 /**
- * Shaken, at grips, outmatched at hand and on the losing side: the battalion gives itself up. It stays where it is,
- * in the way of all, strikes no blow and takes none; its men are lost to its side unless the side holds the field
+ * About to break with no way off the field round deep water and walls, past no foe: it gives itself up. It stays where
+ * it is, in the way of all, strikes no blow and takes none; its men are lost to its side unless the side holds the field
  */
-function isCornered(battle: Battle, block: Block, share: number): boolean {
-  if (block.morale >= SHAKEN || block.action !== "fight" || share >= CORNERED) return false;
-  const own = battle[block.side];
-  const foe = battle[enemyOf(block.side)];
-  return own.power < foe.power && getLost(own) > getLost(foe);
-}
+const isCornered = (battle: Battle, block: Block): boolean => !hasWayOut(battle, block);
 
 function surrender(battle: Battle, block: Block): void {
   yieldBlock(block);
   battle.log.push({ tick: battle.tick, event: "surrender", side: block.side, params: { block: blockName(block) } });
   shake(battle, block, 6);
-  hearten(battle, enemyOf(block.side));
 }
 
 const yieldBlock = (block: Block): void => {
@@ -966,18 +956,18 @@ const yieldBlock = (block: Block): void => {
 };
 
 /**
- * A side that gives itself up lays down its arms all at once: its order says so in the log.
- * A side that turns to run leaves behind who cannot break off: those held at grips by stronger foes
+ * A side that gives itself up lays down its arms all at once, and its runners with nowhere to run with it: its order
+ * says so in the log. A side that turns to run leaves behind who cannot break off: those at grips with no way out
  */
 function capitulate(battle: Battle): void {
   for (const block of battle.blocks) {
-    if (block.status !== "ready" || block.leaving) continue;
+    if (block.leaving) continue;
     const { phase } = battle[block.side];
+    if (block.status === "routed" && phase === SURRENDER && isCornered(battle, block)) yieldBlock(block);
+    if (block.status !== "ready") continue;
     if (phase === SURRENDER) yieldBlock(block);
-    else if (block.action === "fight" && isBeaten(battle.type, block.side, phase)) {
-      const { friends, foes } = getHand(battle, block);
-      if (foes > friends) surrender(battle, block);
-    }
+    else if (block.action === "fight" && isBeaten(battle.type, block.side, phase) && isCornered(battle, block))
+      surrender(battle, block);
   }
 }
 
@@ -1019,27 +1009,16 @@ function shake(battle: Battle, lost: Block, morale: number): void {
   }
 }
 
-/** A foe broken or cut down heartens the whole side a little, not only who saw it */
-function hearten(battle: Battle, side: Side): void {
-  for (const block of battle.blocks)
-    if (block.side === side && block.status === "ready" && !isHungry(battle, block))
-      block.morale = Math.min(block.morale + HEART, 100);
-}
-
 /** A garrison cut off goes hungry: it takes heart from nothing, and only food coming in ends it */
 const isHungry = (battle: Battle, block: Block): boolean => battle.cutOff && block.side === "defenders";
 
 /** Power multiplier of a die: 0.375 for ⚀ to 1.125 for ⚅, 0.75 on average */
 export const getFortune = (die: number): number => 0.75 + (die - 3.5) * 0.15;
 
-/** Troops on the run, and a side in retreat: they hardly strike */
-const isBroken = (battle: Battle, block: Block): boolean =>
-  isRunning(block) || isBeaten(battle.type, block.side, battle[block.side].phase);
-
-/** What a battalion strikes with, or stands with when `standing` */
+/** What a battalion strikes with, or stands with when `standing`; troops on the run hardly strike */
 function getPower(battle: Battle, block: Block, of: number, troops = block.troops, standing = false): number {
   const side = battle[block.side];
-  const state = !standing && isBroken(battle, block) ? BROKEN : side.phase === "shock" ? SHOCK : 1;
+  const state = !standing && isRunning(block) ? BROKEN : side.phase === "shock" ? SHOCK : 1;
   return troops * block.upkeep * of * state * getFortune(side.die) * side.boost;
 }
 
@@ -1130,7 +1109,14 @@ function setScale(battle: Battle): void {
   const radius = battle.type === "siege" && field.site ? getSiegeRadius(field.site) : Infinity;
   const size = getFieldSize(battle.battalion, radius);
   if (field.width === size.width && field.front === size.front) return;
-  if (field.site) battle.field = buildBattlefield(field.site[0], field.site[1], size, battle.type !== "ambush");
+  if (field.site)
+    battle.field = buildBattlefield(
+      field.site[0],
+      field.site[1],
+      size,
+      battle.type !== "ambush",
+      battle.type === "siege"
+    );
   else {
     Object.assign(field, size);
     if (field.burgs.length) raiseWalls(field); // their grid of the new nodes
@@ -1194,7 +1180,6 @@ function addBlocks(battle: Battle, side: Side, regiment: BattleRegiment): Block[
         target: null,
         hit: false,
         harm: 0.5, // losses are rounded to the nearest man, or ship
-        routs: 0,
         leaving: false,
         detour: 0,
         order: { ...NO_ORDER }
@@ -1244,7 +1229,8 @@ const NO_PLAN: Plan = {
   losses: 0,
   bled: 0,
   fortify: false,
-  arrival: Infinity
+  arrival: Infinity,
+  wedge: null
 };
 
 /** The approach, turned as little as it takes for the attackers to form up on land */

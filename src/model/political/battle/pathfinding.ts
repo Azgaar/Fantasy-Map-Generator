@@ -110,6 +110,46 @@ export function spread(
   return { cost, from };
 }
 
+/**
+ * The nodes the sources can come to: what `spread` reaches, found without the costs.
+ * `open` marks the nodes that can be entered.
+ */
+export function flood(
+  cols: number,
+  rows: number,
+  sources: number[],
+  open: Uint8Array,
+  closed?: ArrayLike<number>
+): Uint8Array {
+  const reached = new Uint8Array(cols * rows);
+  const queue = new Int32Array(cols * rows);
+  let length = 0;
+  for (const source of sources) {
+    if (reached[source]) continue;
+    reached[source] = 1;
+    queue[length++] = source;
+  }
+  for (let i = 0; i < length; i++) {
+    const node = queue[i];
+    const col = node % cols;
+    const row = (node - col) / cols;
+    const shut = closed ? closed[node] : 0;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const x = col + dx;
+        const y = row + dy;
+        if ((!dx && !dy) || x < 0 || y < 0 || x >= cols || y >= rows) continue;
+        const next = y * cols + x;
+        if (reached[next] || !open[next] || shut & getStepBit(dx, dy)) continue;
+        if (dx && dy && (!open[row * cols + x] || !open[y * cols + col])) continue; // no cutting a closed corner
+        reached[next] = 1;
+        queue[length++] = next;
+      }
+    }
+  }
+  return reached;
+}
+
 /** The bit of a step to a neighbour in the `closed` mask of a node */
 export const getStepBit = (dx: number, dy: number): number => 1 << ((dy + 1) * 3 + dx + 1);
 

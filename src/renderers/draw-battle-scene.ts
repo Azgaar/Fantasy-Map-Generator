@@ -3,7 +3,7 @@ import { BATTLE_ACTION_LABELS } from "@/data/id-labels";
 import { Icons } from "@/model/icons";
 import type { Battle, Block } from "@/model/political/battle/battle";
 import { COLS, ROWS } from "@/model/political/battle/battle-scale";
-import type { Battlefield, FieldWork, WorkKind } from "@/model/political/battle/battlefield";
+import { type Battlefield, type FieldWork, getQuays, type WorkKind } from "@/model/political/battle/battlefield";
 import { convertSpeed, formatLength, getLengthUnit, getSpeedUnit } from "@/model/units";
 import { updateBattleDebug } from "@/renderers/draw-battle-debug";
 import type { Point } from "@/types/global";
@@ -227,6 +227,11 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
 }
 
 const TOWER_SPACING = 40; // points between the towers of a wall
+const PIER = "#8f877a";
+const PIER_REACH = 0.25; // of a burg's radius a pier goes out into the water
+const PIER_LONGEST = 300; // metres
+const PIER_SHORTEST = 24; // points: legible on any field
+const PIER_WIDTH = 12; // metres
 
 /** Burgs with what stands of their walls; drawn again when a breach is made */
 function drawBurgs(svg: SVGSVGElement, field: Battlefield): void {
@@ -247,6 +252,38 @@ function drawBurgs(svg: SVGSVGElement, field: Battlefield): void {
       .attr("stroke", burg.walled ? "none" : WALL)
       .attr("stroke-width", 1.6 * pt);
   }
+  // a stone pier from every sea gate out into the water, its head wider; under the wall it leaves by
+  const middle = (wall: { a: Point; b: Point }): Point => [(wall.a[0] + wall.b[0]) / 2, (wall.a[1] + wall.b[1]) / 2];
+  field.burgs.forEach((burg, index) => {
+    const reach = Math.max(Math.min(burg.radius * PIER_REACH, PIER_LONGEST), PIER_SHORTEST * pt);
+    const width = Math.max(PIER_WIDTH, 4 * pt);
+    for (const quay of getQuays(field, burg)) {
+      const { away, dry } = quay;
+      // in the middle of the gate by it
+      const opening = field.walls.filter(wall => {
+        const [mx, my] = middle(wall);
+        const span = Math.hypot(wall.b[0] - wall.a[0], wall.b[1] - wall.a[1]);
+        return wall.gate && wall.burg === index && Math.hypot(mx - quay.at[0], my - quay.at[1]) <= span * 1.5;
+      });
+      const at: Point = opening.length
+        ? ([0, 1].map(axis => opening.reduce((sum, wall) => sum + middle(wall)[axis], 0) / opening.length) as Point)
+        : quay.at;
+      const length = dry + reach; // over the strand, then out into the water
+      group
+        .append("path")
+        .attr(
+          "d",
+          `M${-width} ${-width / 2}H${length - width}V${-width * 1.3}H${length}V${width * 1.3}H${length - width}V${width / 2}H${-width}Z`
+        )
+        .attr(
+          "transform",
+          `translate(${at[0].toFixed(1)} ${at[1].toFixed(1)}) rotate(${((away * 180) / Math.PI).toFixed(1)})`
+        )
+        .attr("fill", PIER)
+        .attr("stroke", WALL)
+        .attr("stroke-width", 0.6 * pt);
+    }
+  });
   group
     .append("path")
     .attr("d", walls.map(wall => path([wall.a, wall.b])).join(""))

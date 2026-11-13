@@ -17,7 +17,7 @@ import {
   type Terrain,
   terrainAt
 } from "./battlefield";
-import { getStepBit, isClear, type Reach, spread, trace } from "./pathfinding";
+import { flood, getStepBit, isClear, type Reach, spread, trace } from "./pathfinding";
 import { bars, isBarredByWorks, isRider, isStaked } from "./works";
 
 export type Point = [number, number];
@@ -33,7 +33,6 @@ export const ROUND_TICKS = 6;
 export const PACE = toMetresPerTick(FOOT_SPEED); // of troops on foot
 const WADING = 0.12; // share of the pace kept in deep water
 const FORDING = 0.4; // and in a ford
-const SCALING = 0.25; // share of the pace kept climbing a wall or forcing a gate
 const RUBBLE = 0.5; // and over the rubble of a breach
 const SIGHT = 0.01; // share of its range a shooter gains for each metre it stands above its target
 const POINT_BLANK = { shooter: 2, engine: 20 }; // under which they cannot shoot
@@ -57,10 +56,8 @@ export function step(
   if (!length) return false;
   const terrain = terrainAt(battle.field, block.x, block.y);
   const heading = Math.atan2(dy, dx);
-  const climb = isAfloat(battle, block, terrain.water || 2)
-    ? 1
-    : getClimb(getSlope(battle.field, block.x, block.y, heading));
-  const pace = getPace(battle, block, terrain.water) * haste * getGoing(battle, block, terrain) * climb;
+  const climb = isAfloat(battle, block, terrain) ? 1 : getClimb(getSlope(battle.field, block.x, block.y, heading));
+  const pace = getPace(battle, block, terrain) * haste * getGoing(battle, block, terrain) * climb;
   const distance = Math.min(pace, limit);
   const wading = !isMoored(battle, block) && shuns(battle, block, block.x, block.y); // may wade out; a ship aground stays
   // a step aside ends in the water only midstream, when the way ahead is water too
@@ -68,6 +65,9 @@ export function step(
   const midstream = isWet(battle, block, block.x, block.y) && isWet(battle, block, ...ahead);
 
   const from: Point = [block.x, block.y];
+  // only who can be in the way: from any further off every point of the step is clear (a metre to spare for rounding)
+  const reach = NEAR * battle.field.front + distance + 1;
+  const nearby = others.filter(other => Math.abs(other.x - from[0]) <= reach && Math.abs(other.y - from[1]) <= reach);
   const works = battle.field.works.length ? battle.field.works.filter(work => bars(work, block)) : NO_WORKS;
   /** How far the block goes before its front meets works that bar it */
   const short = (cos: number, sin: number): number => {
@@ -86,7 +86,7 @@ export function step(
     for (let i = 1; i <= samples; i++) {
       const along = (end * i) / samples;
       const [x, y] = [from[0] + cos * along, from[1] + sin * along];
-      if (!isFree(battle, block, x, y, others) || (!wading && shuns(battle, block, x, y))) break;
+      if (!isFree(battle, block, x, y, nearby) || (!wading && shuns(battle, block, x, y))) break;
       if (swing && !midstream && isWet(battle, block, x, y)) break;
       if (isBarred(battle, block, from, [x, y])) break;
       open = along;
@@ -112,9 +112,8 @@ export function step(
 /** Share of its pace a block keeps on the ground */
 export function getGoing(battle: Battle, block: Block, terrain: Terrain): number {
   if (terrain.rampart === 3) return RUBBLE;
-  if (terrain.rampart && isClimbing(battle, block)) return SCALING;
   if (terrain.road) return 1.2;
-  if (terrain.water) return isAfloat(battle, block, terrain.water) ? 1 : terrain.ford ? FORDING : WADING;
+  if (terrain.water) return isAfloat(battle, block, terrain) ? 1 : terrain.ford || terrain.shallow ? FORDING : WADING;
   if (terrain.wood) return block.type === "mounted" ? 0.4 : 0.65;
   return terrain.marsh ? 0.5 : 1;
 }
@@ -129,47 +128,61 @@ export const getClimb = (slope: number): number => Math.max(Math.exp(-3.5 * Math
 export function getRange(battle: Battle, block: Block, target: Block): number {
   const { field } = battle;
   const above = getElevation(field, block.x, block.y) - getElevation(field, target.x, target.y);
-  return block.range * (1 + Math.min(Math.max(above * SIGHT, -0.3), 0.3));
+  return block.range * (1 + Math.min(Math.max(above * SIGHT, -LIFT), LIFT));
 }
+
+const LIFT = 0.3; // the most height adds to the range or takes from it
 
 /** In range and not too close to load and aim */
 export function canShoot(battle: Battle, block: Block, target: Block): boolean {
-  if (!block.range || Math.hypot(target.x - block.x, target.y - block.y) > getRange(battle, block, target))
-    return false;
+  if (!block.range) return false;
+  const distance = Math.hypot(target.x - block.x, target.y - block.y);
+  // beyond the longest range there are no heights to read
+  if (distance > block.range * (1 + LIFT) || distance > getRange(battle, block, target)) return false;
   return getGap(block, target)[0] >= (block.kind === "engine" ? POINT_BLANK.engine : POINT_BLANK.shooter);
 }
 
-/** Ships carry the attackers of a landing to the shore */
-const isShipped = (battle: Battle, block: Block, water: number): boolean =>
-  battle.type === "landing" && block.side === "attackers" && water === 1;
+type Waters = Pick<Terrain, "water" | "shallow">;
+
+/** Ships carry the attackers of a landing to the shallows; from there they wade ashore */
+const isShipped = (battle: Battle, block: Block, { water, shallow }: Waters): boolean =>
+  battle.type === "landing" && block.side === "attackers" && water === 1 && !shallow;
+
+/** Attackers of a landing still in their boats where they are: they fight nobody hand to hand */
+export const isAboard = (battle: Battle, block: Block): boolean =>
+  battle.type === "landing" &&
+  block.side === "attackers" &&
+  isShipped(battle, block, terrainAt(battle.field, block.x, block.y));
 
 /** Water is no trouble for those who fly, sail or are shipped */
-export const isAfloat = (battle: Battle, block: Block, water: number): boolean =>
-  block.type === "aviation" || block.type === "naval" || isShipped(battle, block, water);
+export const isAfloat = (battle: Battle, block: Block, terrain: Waters): boolean =>
+  block.type === "aviation" || block.type === "naval" || isShipped(battle, block, terrain);
 
 /** Water under the feet of troops that neither fly, sail nor are shipped */
 export function isWet(battle: Battle, block: Block, x: number, y: number): boolean {
-  const { water } = terrainAt(battle.field, x, y);
-  return Boolean(water) && !isAfloat(battle, block, water);
+  const terrain = terrainAt(battle.field, x, y);
+  return Boolean(terrain.water) && !isAfloat(battle, block, terrain);
 }
 
 /** Ships on the ground of a land battle: they keep to the water, on the run too */
 export const isMoored = (battle: Battle, block: Block): boolean => block.type === "naval" && !battle.field.open;
 
 /**
- * Troops in order keep out of lakes, the sea and a river out of its fords;
- * at a ford and at a bridge a side that does not advance holds its bank
+ * Troops in order keep out of lakes, the sea and a river out of its fords, and out of the shallows but in a landing;
+ * at a ford, a bridge and a beach a side that does not advance holds its bank
  */
 export function shuns(battle: Battle, block: Block, x: number, y: number): boolean {
-  const { water, ford, deck } = terrainAt(battle.field, x, y);
+  const terrain = terrainAt(battle.field, x, y);
+  const { water, ford, deck } = terrain;
   if (isMoored(battle, block)) return !water;
-  if ((!water && !deck) || isRunning(block) || isAfloat(battle, block, water || 2)) return false;
-  return (!ford && !deck) || !battle[block.side].advancing;
+  if ((!water && !deck) || isRunning(block) || isAfloat(battle, block, terrain)) return false;
+  const shallow = terrain.shallow && battle.type === "landing";
+  return (!ford && !shallow && !deck) || !battle[block.side].advancing;
 }
 
 /** Metres a tick; all but the fliers go as fast as their ships on the open sea and when shipped */
-export function getPace(battle: Battle, block: Block, water = 0): number {
-  const sailing = battle.field.open === "sea" || isShipped(battle, block, water);
+export function getPace(battle: Battle, block: Block, terrain?: Waters): number {
+  const sailing = battle.field.open === "sea" || (terrain !== undefined && isShipped(battle, block, terrain));
   if (sailing && block.type !== "aviation" && block.type !== "naval") return getShipPace(battle.units) ?? block.speed;
   return block.speed;
 }
@@ -188,7 +201,7 @@ function getShipPace(units: MilitaryUnit[]): number | null {
 /** Share of its strength a block has on the ground it stands on, in attack and in defence */
 export function getFooting(battle: Battle, block: Block, terrain: Terrain): number {
   if (terrain.rampart && terrain.rampart < 3 && isClimbing(battle, block)) return 0.5;
-  if (terrain.water && !isAfloat(battle, block, terrain.water)) return terrain.water === 1 ? 0.25 : 0.5;
+  if (terrain.water && !isAfloat(battle, block, terrain)) return terrain.water === 1 && !terrain.shallow ? 0.25 : 0.5;
   return terrain.marsh ? 0.75 : 1;
 }
 
@@ -229,7 +242,7 @@ interface Ways {
   rough: boolean; // the field has water or walls at all
   wagons: Side[]; // the sides holding wagons: the ways are rough for their foes
   staked: Side[]; // and holding stakes: rough for their foes' riders
-  near: Uint8Array; // nodes by works that bar somebody
+  near: Uint8Array; // nodes by walls and by works that bar somebody
 
   costs: Map<string, Float32Array>; // what a kind of troops pays for a node, by the kind
   closed: Map<string, Uint16Array>; // the steps walls shut to a kind of troops
@@ -237,6 +250,7 @@ interface Ways {
   routes: Map<number, { target: number; made: number; points: [number, number][] }>;
   flight: Map<string, Reach>; // the ways off the field, by the kind and the side
   shared: Map<string, Reach>; // the ways to a point many go to, by the kind and the point
+  from: Map<string, Reach>; // the ways from a node, by the kind and the node
 }
 
 const ways = new WeakMap<Battlefield, Ways>();
@@ -260,23 +274,24 @@ function getWays(battle: Battle): Ways {
       rough: field.water.some(Boolean) || field.walls.length > 0,
       wagons: holders("wagons"),
       staked: holders("stakes"),
-      near: markWorks(field, barring),
+      near: markStretches(field, [...field.walls, ...barring]),
       costs: new Map(),
       closed: new Map(),
       reach: new Map(),
       routes: new Map(),
       flight: new Map(),
-      shared: new Map()
+      shared: new Map(),
+      from: new Map()
     };
     ways.set(battle.field, known);
   }
   return known;
 }
 
-/** Nodes about the stretches: the steps between them are the ones works may shut */
-function markWorks(field: Battlefield, works: FieldWork[]): Uint8Array {
+/** Nodes about the stretches: the steps between them are the ones walls and works may shut */
+function markStretches(field: Battlefield, stretches: { a: Point; b: Point }[]): Uint8Array {
   const near = new Uint8Array(COLS * ROWS);
-  for (const { a, b } of works) {
+  for (const { a, b } of stretches) {
     const samples = Math.max(Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / (field.cell / 2)), 1);
     for (let i = 0; i <= samples; i++) {
       const node = nodeAt(field, a[0] + ((b[0] - a[0]) * i) / samples, a[1] + ((b[1] - a[1]) * i) / samples);
@@ -302,14 +317,21 @@ const getKind = (battle: Battle, block: Block): string =>
   `${block.type}|${block.kind}|${block.side}|${isRunning(block)}|${battle.type}|${battle[block.side].advancing}|${isStorming(battle)}|${battle.field.breaches.length}`;
 
 /** The steps from node to node that walls shut to the block: a bit a neighbour */
-function getClosed(battle: Battle, block: Block): Uint16Array {
+function getClosed(battle: Battle, block: Block, kind = getKind(battle, block)): Uint16Array {
   const known = getWays(battle);
-  const kind = getKind(battle, block);
   let closed = known.closed.get(kind);
   if (!closed) {
     const { field } = battle;
-    closed = new Uint16Array(COLS * ROWS);
-    for (let node = 0; node < closed.length; node++) {
+    const marked = (node: number): boolean => known.near[node] === 1; // a wall or works by it
+    const shut = (from: number, to: number, bit: number): void => {
+      if (isBarred(battle, block, nodeCentre(field, from), nodeCentre(field, to))) {
+        closed ??= new Uint16Array(COLS * ROWS);
+        closed[from] |= bit;
+      }
+    };
+    // only the steps from or to a node with a wall or works near can be shut
+    for (let node = 0; node < COLS * ROWS; node++) {
+      if (!marked(node)) continue;
       const col = node % COLS;
       const row = (node - col) / COLS;
       for (let dy = -1; dy <= 1; dy++) {
@@ -318,21 +340,22 @@ function getClosed(battle: Battle, block: Block): Uint16Array {
           const y = row + dy;
           if ((!dx && !dy) || x < 0 || y < 0 || x >= COLS || y >= ROWS) continue;
           const next = y * COLS + x;
-          if (!field.rampart[node] && !field.rampart[next] && !known.near[node] && !known.near[next]) continue; // no wall near
-          if (isBarred(battle, block, nodeCentre(field, node), nodeCentre(field, next)))
-            closed[node] |= getStepBit(dx, dy);
+          shut(node, next, getStepBit(dx, dy));
+          if (!marked(next)) shut(next, node, getStepBit(-dx, -dy)); // the step back, once
         }
       }
     }
+    closed ??= OPEN_STEPS;
     known.closed.set(kind, closed);
   }
   return closed;
 }
 
+const OPEN_STEPS = new Uint16Array(COLS * ROWS); // no step is shut: never written to
+
 /** What a node's width of the way costs the block, node by node: the slower the going the dearer, no way where it keeps out */
-function getCosts(battle: Battle, block: Block): Float32Array {
+function getCosts(battle: Battle, block: Block, kind = getKind(battle, block)): Float32Array {
   const known = getWays(battle);
-  const kind = getKind(battle, block);
   let costs = known.costs.get(kind);
   if (!costs) {
     costs = new Float32Array(COLS * ROWS);
@@ -350,9 +373,21 @@ const WET = 3; // a node's cost from which it is water to wade through or to kee
 /** Whether the block can walk straight from one point to another: no water to wet its feet, no wall in the way */
 export function isDry(battle: Battle, block: Block, from: [number, number], to: [number, number]): boolean {
   const costs = getCosts(battle, block);
-  if (!isClear(COLS, ROWS, battle.field.cell, from, to, node => costs[node] > WET)) return false;
+  if (isWading(costs) && !isClear(COLS, ROWS, battle.field.cell, from, to, node => costs[node] > WET)) return false;
   return !isBarred(battle, block, from, to);
 }
+
+/** Whether there is a node to wade through or keep out of at all */
+function isWading(costs: Float32Array): boolean {
+  let wet = wading.get(costs);
+  if (wet === undefined) {
+    wet = costs.some(cost => cost > WET);
+    wading.set(costs, wet);
+  }
+  return wet;
+}
+
+const wading = new WeakMap<Float32Array, boolean>();
 
 /** The field from where the block stands; for distances it is kept while the block stays about the place */
 function getReach(battle: Battle, block: Block, exact = false): Reach {
@@ -365,8 +400,22 @@ function getReach(battle: Battle, block: Block, exact = false): Reach {
     ? Math.max(Math.abs((last.node % COLS) - (node % COLS)), Math.abs(row(last.node) - row(node)))
     : Infinity;
   if (last && last.kind === kind && moved < (exact ? 1 : 3)) return last.reach;
-  const reach = spread(COLS, ROWS, [node], getCosts(battle, block), getClosed(battle, block));
+  const reach = spreadFrom(battle, block, node);
   known.reach.set(block.id, { node, kind, reach });
+  return reach;
+}
+
+/** The field from a node for troops like the block: found once for all of them standing there */
+function spreadFrom(battle: Battle, block: Block, node: number): Reach {
+  const known = getWays(battle);
+  const kind = getKind(battle, block);
+  const key = `${kind}|${node}`;
+  let reach = known.from.get(key);
+  if (!reach) {
+    if (known.from.size >= 128) known.from.clear();
+    reach = spread(COLS, ROWS, [node], getCosts(battle, block, kind), getClosed(battle, block, kind));
+    known.from.set(key, reach);
+  }
   return reach;
 }
 
@@ -389,9 +438,9 @@ function getGoal(field: Battlefield, reach: Reach, foe: Spot): number | null {
 /** How far a foe is: as the block would walk, round the water or through it; straight when there is no way at all */
 export function getDistance(battle: Battle, block: Block, foe: Spot): number {
   const straight = Math.hypot(foe.x - block.x, foe.y - block.y);
-  if (!isRough(battle, block) || isDry(battle, block, [block.x, block.y], [foe.x, foe.y])) return straight;
   // besiegers pick their foes as the crow flies: the way over the walls is much the same to all of the garrison
   if (battle.field.held !== null && block.side === "attackers") return straight;
+  if (!isRough(battle, block) || isDry(battle, block, [block.x, block.y], [foe.x, foe.y])) return straight;
   const reach = getReach(battle, block);
   const goal = getGoal(battle.field, reach, foe);
   return goal === null ? straight : Math.max(reach.cost[goal] * battle.field.cell, straight);
@@ -436,7 +485,7 @@ export function getHeading(battle: Battle, block: Block, target: Spot, key: numb
 export function getTurn(battle: Battle, like: Block, from: Point, to: Point): Point {
   if (!isRough(battle, like) || isDry(battle, like, from, to)) return to;
   const { field } = battle;
-  const reach = spread(COLS, ROWS, [nodeAt(field, ...from)], getCosts(battle, like), getClosed(battle, like));
+  const reach = spreadFrom(battle, like, nodeAt(field, ...from));
   const goal = getGoal(field, reach, { x: to[0], y: to[1] });
   if (goal === null) return to;
   const nodes = trace(reach, goal)
@@ -450,11 +499,12 @@ export function getTurn(battle: Battle, like: Block, from: Point, to: Point): Po
 /** The field as troops like the block would cross it to a node, found once for all of them and kept */
 function getSharedReach(battle: Battle, block: Block, goal: number): Reach {
   const known = getWays(battle);
-  const key = `${getKind(battle, block)}|${goal}`;
+  const kind = getKind(battle, block);
+  const key = `${kind}|${goal}`;
   let reach = known.shared.get(key);
   if (!reach) {
     if (known.shared.size > 200) known.shared.clear(); // of walls and phases long gone
-    reach = spread(COLS, ROWS, [goal], getCosts(battle, block), getClosed(battle, block));
+    reach = spread(COLS, ROWS, [goal], getCosts(battle, block, kind), getClosed(battle, block, kind));
     known.shared.set(key, reach);
   }
   return reach;
@@ -504,6 +554,88 @@ function findWay(battle: Battle, block: Block, target: Spot): [number, number][]
   return turns;
 }
 
+/** The ground open to a side's troops this tick, and the edge nodes they get off by: shared while its foes stay as they are */
+interface Exits {
+  tick: number;
+  out: Map<string, Uint8Array>; // the ground that leads off the field, by the kind
+  ground: Map<Side, { foes: number[]; open: Uint8Array; edges: number[]; out: Map<Uint16Array, Uint8Array> }>;
+}
+
+const exits = new WeakMap<Battle, Exits>();
+const EDGES = Array.from({ length: COLS * ROWS }, (_, node) => node).filter(node => {
+  const col = node % COLS;
+  const row = (node - col) / COLS;
+  return !col || !row || col === COLS - 1 || row === ROWS - 1;
+});
+
+/**
+ * Whether a block can get off the field by any edge: round deep water and walls, past no foe in order.
+ * The ground open to it is found once a tick for troops like it, from the edges in: it is out when it stands on it or
+ * can step onto it
+ */
+export function hasWayOut(battle: Battle, block: Block): boolean {
+  const { field } = battle;
+  let known = exits.get(battle);
+  if (known?.tick !== battle.tick) {
+    known = { tick: battle.tick, out: new Map(), ground: new Map() };
+    exits.set(battle, known);
+  }
+  const kind = getKind(battle, block);
+  const closed = getClosed(battle, block, kind);
+  let out = known.out.get(kind);
+  if (!out) {
+    const ground = getOpenGround(battle, known, block.side);
+    out = ground.out.get(closed);
+    if (!out) {
+      out = flood(COLS, ROWS, ground.edges, ground.open, closed);
+      ground.out.set(closed, out);
+    }
+    known.out.set(kind, out);
+  }
+  const node = nodeAt(field, block.x, block.y);
+  if (out[node]) return true;
+  const col = node % COLS;
+  const row = (node - col) / COLS;
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const [x, y] = [col + dx, row + dy];
+      if (x < 0 || y < 0 || x >= COLS || y >= ROWS || closed[node] & getStepBit(dx, dy)) continue;
+      if (out[y * COLS + x]) return true;
+    }
+  }
+  return false;
+}
+
+/** The ground a side's troops can enter: no deep water, nothing a foe in order stands on and holds */
+function getOpenGround(battle: Battle, known: Exits, side: Side) {
+  const { field } = battle;
+  const ready = battle.blocks.filter(foe => foe.side !== side && foe.status === "ready");
+  const foes = ready.flatMap(foe => [foe.id, foe.x, foe.y, foe.width, foe.depth]);
+  const last = known.ground.get(side);
+  if (last && last.foes.length === foes.length && last.foes.every((value, i) => value === foes[i])) return last;
+
+  const open = new Uint8Array(COLS * ROWS);
+  for (let node = 0; node < open.length; node++) {
+    const water = field.water[node];
+    open[node] = water === 1 || (water === 2 && !field.ford[node] && !field.deck[node]) ? 0 : 1;
+  }
+  for (const foe of ready) {
+    const reach = Math.max(foe.width, foe.depth) / 2 + CONTACT; // the ground it stands on and holds
+    const [col, row] = [Math.floor(foe.x / field.cell), Math.floor(foe.y / field.cell)];
+    const span = Math.ceil(reach / field.cell);
+    for (let y = Math.max(row - span, 0); y <= Math.min(row + span, ROWS - 1); y++) {
+      for (let x = Math.max(col - span, 0); x <= Math.min(col + span, COLS - 1); x++) {
+        const [nx, ny] = nodeCentre(field, y * COLS + x);
+        if (Math.hypot(nx - foe.x, ny - foe.y) <= reach) open[y * COLS + x] = 0;
+      }
+    }
+  }
+  const edges = EDGES.filter(node => open[node]);
+  const ground = { foes, open, edges, out: new Map<Uint16Array, Uint8Array>() };
+  known.ground.set(side, ground);
+  return ground;
+}
+
 /** The way off the field for troops on the run: to the nearest edge behind their side, round the water */
 export function getFlight(battle: Battle, block: Block): number | null {
   const known = getWays(battle);
@@ -521,7 +653,7 @@ export function getFlight(battle: Battle, block: Block): number | null {
       const [x, y] = nodeCentre(field, node);
       if ((x - field.width / 2) * Math.cos(away) + (y - field.height / 2) * Math.sin(away) > 0) edge.push(node);
     }
-    reach = spread(COLS, ROWS, edge, getCosts(battle, block), getClosed(battle, block));
+    reach = spread(COLS, ROWS, edge, getCosts(battle, block, kind), getClosed(battle, block, kind));
     known.flight.set(kind, reach);
   }
 
@@ -597,18 +729,46 @@ function getDiscs(block: Block, x = block.x, y = block.y): [number, number][] {
 const getLeastGap = (a: Block, b: Block, x = a.x, y = a.y): number =>
   Math.hypot(b.x - x, b.y - y) - Math.max(a.width, a.depth) / 2 - Math.max(b.width, b.depth) / 2;
 
+/** The discs of a block where it stands, kept till it moves, turns or changes its shape */
+function getStandingDiscs(block: Block): [number, number][] {
+  const last = discs.get(block);
+  const { x, y, facing, width, depth } = block;
+  if (last && last.x === x && last.y === y && last.facing === facing && last.width === width && last.depth === depth)
+    return last.discs;
+  const made = getDiscs(block);
+  discs.set(block, { x, y, facing, width, depth, discs: made });
+  return made;
+}
+
+const discs = new WeakMap<
+  Block,
+  Pick<Block, "x" | "y" | "facing" | "width" | "depth"> & { discs: [number, number][] }
+>();
+
 /** Space between two blocks, negative when they overlap, and the way from the first to the second there */
-export function getGap(a: Block, b: Block, discsA = getDiscs(a), discsB = getDiscs(b)): [number, number, number] {
-  let best: [number, number, number] = [Infinity, 0, 0];
+export function getGap(
+  a: Block,
+  b: Block,
+  discsA = getStandingDiscs(a),
+  discsB = getStandingDiscs(b)
+): [number, number, number] {
   const reach = (a.depth + b.depth) / 2;
+  let least = Infinity;
+  let dx = 0;
+  let dy = 0;
+  let distance = 1;
   for (const [ax, ay] of discsA) {
     for (const [bx, by] of discsB) {
-      const distance = Math.hypot(bx - ax, by - ay);
-      if (distance - reach < best[0])
-        best = [distance - reach, (bx - ax) / (distance || 1), (by - ay) / (distance || 1)];
+      const between = Math.hypot(bx - ax, by - ay);
+      if (between - reach < least) {
+        least = between - reach;
+        dx = bx - ax;
+        dy = by - ay;
+        distance = between || 1;
+      }
     }
   }
-  return best;
+  return [least, dx / distance, dy / distance];
 }
 
 /** Troops on the run are no obstacle and nobody holds them up */
@@ -627,7 +787,9 @@ export const inContact = (battle: Battle, a: Block, b: Block): boolean =>
   !getWallsBetween(battle.field, [a.x, a.y], [b.x, b.y]).some(
     wall => !canCross(battle, a, wall) && !canCross(battle, b, wall)
   ) &&
-  !isStaked(battle, a, b);
+  !isStaked(battle, a, b) &&
+  !isAboard(battle, a) &&
+  !isAboard(battle, b);
 
 /** Whether the block would stand clear of all the others at the point */
 function isFree(battle: Battle, block: Block, x: number, y: number, others: Block[]): boolean {
@@ -668,13 +830,18 @@ function isPacked(battle: Battle, a: Block, b: Block): boolean {
 /** Push overlapping blocks apart; those in a fight give less ground */
 export function separate(battle: Battle, blocks: Block[]): void {
   const clearance = CLEARANCE * battle.field.front;
+  const near = NEAR * battle.field.front;
+  // what pushing does not change: as `getLeastGap` and `isRunning` read it
+  const radius = blocks.map(block => Math.max(block.width, block.depth) / 2);
+  const running = blocks.map(isRunning);
   for (let pass = 0; pass < 3; pass++) {
     for (let i = 0; i < blocks.length; i++) {
+      const a = blocks[i];
       for (let j = i + 1; j < blocks.length; j++) {
-        const a = blocks[i];
         const b = blocks[j];
-        if (!isNear(battle, a, b) || getLeastGap(a, b) >= clearance) continue;
-        if (isRunning(a) || isRunning(b) || isPacked(battle, a, b)) continue;
+        if (!(Math.abs(a.x - b.x) < near && Math.abs(a.y - b.y) < near) || a === b) continue; // as `isNear`
+        if (Math.hypot(b.x - a.x, b.y - a.y) - radius[i] - radius[j] >= clearance) continue;
+        if (running[i] || running[j] || isPacked(battle, a, b)) continue;
         const [gap, dx, dy] = getGap(a, b);
         if (gap >= clearance) continue;
         const heavyA = a.action === "fight" ? 3 : 1;

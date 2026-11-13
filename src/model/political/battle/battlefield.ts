@@ -6,7 +6,7 @@ import { Rivers } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { getKmInDistanceUnit, getPeople, heightToMeters } from "@/model/units";
 import type { Point } from "@/types/global";
-import { COLS, DEFAULT_BATTALION, type FieldSize, getFieldSize, ROWS } from "./battle-scale";
+import { COLS, DEFAULT_BATTALION, type FieldSize, fitSiegeBurg, getFieldSize, ROWS } from "./battle-scale";
 
 type Box = [number, number, number, number]; // x0, y0, x1, y1
 
@@ -35,7 +35,8 @@ export interface FieldBurg {
   name: string;
   group: string; // capital, city, town…
   walled: boolean;
-  outline: Point[]; // its edge as drawn, closed; set by `raiseWalls`
+  outline: Point[]; // its edge as drawn, closed; `raiseWalls` sets a blob where none is given
+  piers?: number; // on the sea or a lake: by its true size, the drawn one being fitted into a siege field
 }
 
 /** A stretch of a burg's wall; a gate lets through those the burg is open to */
@@ -100,6 +101,7 @@ export interface Terrain {
   wood: boolean;
   marsh: boolean;
   water: number;
+  shallow: boolean; // sea or lake by the land: who comes ashore wades it
   ford: boolean;
   deck: boolean; // on a bridge
   road: boolean;
@@ -156,8 +158,9 @@ export function createMapField(x: number, y: number): Battlefield {
  * The map round a point at true scale: lines and coasts as the map draws them, the ground as it lies between the cell centres.
  * What the map is too coarse to show, hills, copses, bogs, the meanders of a river, comes from noise fixed by the place.
  * @param clearing keep the middle open for the lines to meet; an ambush wants the cover
+ * @param siege the besieged burg at the site is fitted into the field
  */
-export function buildBattlefield(x: number, y: number, size: FieldSize, clearing = true): Battlefield {
+export function buildBattlefield(x: number, y: number, size: FieldSize, clearing = true, siege = false): Battlefield {
   const field: Battlefield = { ...createEmptyBattlefield(), site: [x, y], ...size };
   const place: Point = [Math.round(x), Math.round(y)];
   const { cells } = pack;
@@ -167,16 +170,18 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, clearing
   field.biome = cells.biome[cell];
 
   const pixel = options.map.units.distance.scale * (getKmInDistanceUnit() || 1) * 1000; // metres in a map pixel
-  const [sx, sy] = findSite(cell, place, pixel);
+  const held = cells.burg[cell] ? pack.burgs[cells.burg[cell]] : null;
+  const heldRadius = held ? getBurgRadius(held) : 0;
+  const drawnRadius = siege ? fitSiegeBurg(heldRadius, size) : heldRadius;
+  const [sx, sy] = findSite(cell, place, pixel, drawnRadius);
   const toField = (mx: number, my: number): Point => [(mx - sx) * pixel + width / 2, (my - sy) * pixel + height / 2];
   const inView = ([fx, fy]: Point, margin = 0): boolean =>
     fx > -margin && fx < width + margin && fy > -margin && fy < height + margin;
   const spacing = getSpacing();
   // a port moved onto its shore takes the ends of its roads and rivers along, less and less over a cell
-  const port = cells.burg[cell] ? pack.burgs[cells.burg[cell]] : null;
-  const [ox, oy] = port ? [sx - port.x, sy - port.y] : [0, 0];
+  const [ox, oy] = held ? [sx - held.x, sy - held.y] : [0, 0];
   const lineToField = (mx: number, my: number): Point => {
-    const pull = port ? Math.max(1 - Math.hypot(mx - port.x, my - port.y) / spacing, 0) : 0;
+    const pull = held ? Math.max(1 - Math.hypot(mx - held.x, my - held.y) / spacing, 0) : 0;
     return toField(mx + ox * pull, my + oy * pull);
   };
   const nearby = Pack.findAll(sx, sy, spacing * 2 + width / pixel);
@@ -295,9 +300,11 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, clearing
 
   for (const burg of pack.burgs) {
     if (!burg.i || burg.removed) continue;
-    const [bx, by] = burg.i === cells.burg[cell] ? toField(sx, sy) : toField(burg.x, burg.y); // a port on its shore
-    const radius = getBurgRadius(burg);
+    const atSite = burg === held;
+    const [bx, by] = atSite ? toField(sx, sy) : toField(burg.x, burg.y); // a port on its shore
+    const radius = atSite ? drawnRadius : getBurgRadius(burg);
     if (!inView([bx, by], radius)) continue;
+    const polygon = cells.v[burg.cell].map(v => pack.vertices.p[v]);
     field.burgs.push({
       x: bx,
       y: by,
@@ -305,7 +312,8 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, clearing
       name: burg.name ?? "",
       group: burg.group ?? "",
       walled: Boolean(burg.walls || burg.citadel),
-      outline: []
+      piers: countPiers(getBurgRadius(burg)),
+      outline: getOutline({ x: bx, y: by, radius }, polygon, point => !isLand(point))
     });
   }
 
@@ -378,29 +386,110 @@ const VIEW_MARGIN = 0.2; // of the field's width, lines are kept beyond its edge
 const GATE = 0.5; // width of a gate, in battalion fronts: a battalion gets through
 const BREACH = 0.7; // and of a breach
 const RAMPART = 11; // how far from a wall its foot reaches
+const WALL_HEIGHT = 15; // of the walls and towers of a burg, in metres
 
-/** The edge of a burg: a rounded blob, as points close enough to draw and to bar the way */
-function getOutline(burg: FieldBurg): Point[] {
-  const knots = Array.from({ length: 9 }, (_, i): Point => {
-    const angle = (i / 9) * Math.PI * 2;
-    const radius = burg.radius * (0.8 + 0.25 * Math.sin(i * 2.4 + burg.x));
-    return [burg.x + Math.cos(angle) * radius, burg.y + Math.sin(angle) * radius * 0.85];
+const EVEN = 0.75; // of how much farther or nearer than the mean a corner of the cell is, the walls keep: no sliver of a town
+const SHORT = 0.15; // of the radius, a side of the cell shorter than that is no side of the walls
+const BLUNT = (110 * Math.PI) / 180; // a corner sharper than that is cut off: a tower stands across it
+const RUN = 0.3; // of the radius, a stretch of wall between two towers at most
+const BOW = 0.06; // a side of the walls bows out by so much of its length
+const BEND = 0.08; // and every tower stands off the line by up to so much of a stretch, either way
+
+/**
+ * The walls of a burg as a medieval town has them: its cell's corners for the plan, evened out about the burg, with no
+ * corner sharper than a tower holds; every side a run of straight stretches from tower to tower, bowing out a little and
+ * bending with the ground, the same for the same burg. Laid with its farthest point at the radius; on the sea or a lake the
+ * walls keep to the shore
+ */
+function getOutline(
+  burg: Pick<FieldBurg, "x" | "y" | "radius">,
+  polygon?: Point[],
+  isWet: (point: Point) => boolean = () => false
+): Point[] {
+  const knots =
+    polygon ??
+    Array.from({ length: 9 }, (_, i): Point => {
+      const angle = (i / 9) * Math.PI * 2;
+      const radius = 0.8 + 0.25 * Math.sin(i * 2.4 + burg.x);
+      return [Math.cos(angle) * radius, Math.sin(angle) * radius * 0.85];
+    });
+  const [seedX, seedY] = (polygon?.[0] ?? [burg.x, burg.y]).map(v => Math.round(v * 10));
+  const random = (i: number): number => mix(seedX, seedY, i);
+
+  const [cx, cy] = [0, 1].map(axis => knots.reduce((total, point) => total + point[axis], 0) / knots.length);
+  const far = knots.map(([x, y]) => Math.hypot(x - cx, y - cy) || 1);
+  const mean = far.reduce((total, d) => total + d, 0) / far.length;
+  let corners = knots.map(([x, y], i): Point => {
+    const keep = (mean + (far[i] - mean) * EVEN) / far[i];
+    return [((x - cx) * keep * burg.radius) / mean, ((y - cy) * keep * burg.radius) / mean];
   });
-  // a closed cubic B-spline through the knots, four points a span
+  corners = corners.filter((point, i) => {
+    const next = corners[(i + 1) % corners.length];
+    return corners.length <= 4 || Math.hypot(next[0] - point[0], next[1] - point[1]) >= burg.radius * SHORT;
+  });
+  corners = corners.flatMap((point, i): Point[] => {
+    const before = corners[(i + corners.length - 1) % corners.length];
+    const after = corners[(i + 1) % corners.length];
+    const [u, w] = [before, after].map(([x, y]): Point => [x - point[0], y - point[1]]);
+    const [lu, lw] = [Math.hypot(...u), Math.hypot(...w)];
+    const cos = (u[0] * w[0] + u[1] * w[1]) / (lu * lw);
+    if (Math.acos(Math.min(Math.max(cos, -1), 1)) >= BLUNT) return [point];
+    const cut = Math.min(lu, lw) * 0.2;
+    return [u, w].map(([x, y], k): Point => {
+      const length = k ? lw : lu;
+      return [point[0] + (x / length) * cut, point[1] + (y / length) * cut];
+    });
+  });
+
   const outline: Point[] = [];
-  for (let i = 0; i < knots.length; i++) {
-    const [p0, p1, p2, p3] = [0, 1, 2, 3].map(shift => knots[(i + shift) % knots.length]);
-    for (let step = 0; step < 4; step++) {
-      const t = step / 4;
-      const weights = [(1 - t) ** 3, 3 * t ** 3 - 6 * t ** 2 + 4, -3 * t ** 3 + 3 * t ** 2 + 3 * t + 1, t ** 3];
-      outline.push(
-        [0, 1].map(
-          axis => (weights[0] * p0[axis] + weights[1] * p1[axis] + weights[2] * p2[axis] + weights[3] * p3[axis]) / 6
-        ) as Point
-      );
+  corners.forEach(([ax, ay], i) => {
+    const [bx, by] = corners[(i + 1) % corners.length];
+    const length = Math.hypot(bx - ax, by - ay);
+    const runs = Math.max(Math.ceil(length / (burg.radius * RUN)), 1);
+    // outward: away from the middle of the burg
+    let [nx, ny] = [(by - ay) / length, -(bx - ax) / length];
+    if (nx * (ax + bx) + ny * (ay + by) < 0) [nx, ny] = [-nx, -ny];
+    outline.push([ax, ay]);
+    for (let step = 1; step < runs; step++) {
+      const t = step / runs;
+      const off = length * BOW * 4 * t * (1 - t) + (length / runs) * BEND * (random(i * 64 + step) * 2 - 1);
+      outline.push([ax + (bx - ax) * t + nx * off, ay + (by - ay) * t + ny * off]);
     }
-  }
-  return outline;
+  });
+  const scale = burg.radius / Math.max(...outline.map(([x, y]) => Math.hypot(x, y)));
+  const points = outline.map(([x, y]): Point => [burg.x + x * scale, burg.y + y * scale]);
+  const origin = findDry(burg, isWet);
+  if (!origin) return points;
+  return points.map(point => {
+    if (!isWet(point)) return point;
+    // the farthest dry point on the way out
+    const along = (share: number): Point => [
+      origin[0] + (point[0] - origin[0]) * share,
+      origin[1] + (point[1] - origin[1]) * share
+    ];
+    let [dry, wet] = [0, 1];
+    for (let i = 0; i < 8; i++) {
+      const share = (dry + wet) / 2;
+      if (isWet(along(share))) wet = share;
+      else dry = share;
+    }
+    return along(dry);
+  });
+}
+
+/** The burg's middle, or the dry ground nearest to it: a port stands on its shore */
+function findDry(
+  { x, y, radius }: Pick<FieldBurg, "x" | "y" | "radius">,
+  isWet: (point: Point) => boolean
+): Point | null {
+  if (!isWet([x, y])) return [x, y];
+  for (let ring = 1; ring <= 16; ring++)
+    for (let k = 0; k < 16; k++) {
+      const angle = (k / 16) * Math.PI * 2;
+      const point: Point = [x + (Math.cos(angle) * radius * ring) / 16, y + (Math.sin(angle) * radius * ring) / 16];
+      if (!isWet(point)) return point;
+    }
+  return null;
 }
 
 function isInside([x, y]: Point, polygon: Point[]): boolean {
@@ -421,11 +510,12 @@ export function raiseWalls(field: Battlefield): void {
   field.walls = [];
   field.walled.fill(0);
   field.rampart.fill(0);
+  const [gate, breach] = [getOpening(field, GATE), getOpening(field, BREACH)];
 
   field.burgs.forEach((burg, index) => {
     if (!burg.outline.length) burg.outline = getOutline(burg);
     const { outline } = burg;
-    const stretches = outline.map((point, i): [Point, Point] => [point, outline[(i + 1) % outline.length]]);
+    const stretches = getStretches(outline, gate / 2);
 
     // nodes within the burg
     const reach = burg.radius * 1.1 + field.cell;
@@ -442,7 +532,6 @@ export function raiseWalls(field: Battlefield): void {
 
     // a gate where a road or a river comes in, one on the quay of a port, and one towards the middle of the field
     // when there is none of them
-    const [gate, breach] = [GATE * field.front, BREACH * field.front];
     const gates: { at: Point; water: number }[] = [];
     const addGate = (at: Point, water: number): void => {
       if (!gates.some(other => Math.hypot(other.at[0] - at[0], other.at[1] - at[1]) < gate * 2))
@@ -460,8 +549,7 @@ export function raiseWalls(field: Battlefield): void {
         }
       }
     }
-    const quay = getQuay(field, burg, stretches);
-    if (quay) addGate(quay, 1);
+    for (const quay of getQuays(field, burg)) addGate(quay.at, 1);
     if (!gates.length) {
       const middle = (point: Point): number => Math.hypot(point[0] - field.width / 2, point[1] - field.height / 2);
       gates.push({ at: outline.reduce((best, point) => (middle(point) < middle(best) ? point : best)), water: 0 });
@@ -498,24 +586,69 @@ export function raiseWalls(field: Battlefield): void {
       );
     }
   }
-  for (const breach of field.breaches) mark([breach.x, breach.y], (BREACH * field.front) / 2, 3);
+  for (const gap of field.breaches) mark([gap.x, gap.y], breach / 2, 3);
 }
 
-/** Where the quay of a burg on the sea or a lake is: on the stretch of its wall that looks out on the most water */
-function getQuay(field: Battlefield, burg: FieldBurg, stretches: [Point, Point][]): Point | null {
-  let best: Point | null = null;
-  let most = 0;
-  for (const [a, b] of stretches) {
-    const mid: Point = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-    const away = Math.atan2(mid[1] - burg.y, mid[0] - burg.x);
-    let water = 0;
-    for (let i = 0; i < 8; i++) {
-      const [x, y] = [mid[0] + Math.cos(away) * field.cell * i, mid[1] + Math.sin(away) * field.cell * i];
-      if (x >= 0 && y >= 0 && x < field.width && y < field.height && field.water[nodeAt(field, x, y)] === 1) water++;
-    }
-    if (water > most) [best, most] = [mid, water];
+/** How wide a gate or a breach is: so many battalion fronts, and two grid nodes at least for the ways to go through */
+const getOpening = (field: Battlefield, fronts: number): number => Math.max(fronts * field.front, 2 * field.cell);
+
+/** The stretches of a closed outline, none longer than so much, sharing their ends: a gate or a breach takes in the ones about it */
+function getStretches(outline: Point[], most: number): [Point, Point][] {
+  const points = outline.flatMap((a, i) => {
+    const b = outline[(i + 1) % outline.length];
+    const parts = Math.max(Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / most), 1);
+    return Array.from(
+      { length: parts },
+      (_, k): Point => [a[0] + ((b[0] - a[0]) * k) / parts, a[1] + ((b[1] - a[1]) * k) / parts]
+    );
+  });
+  return points.map((point, i): [Point, Point] => [point, points[(i + 1) % points.length]]);
+}
+
+const PIER_SPAN = 400; // metres of a burg's radius for each pier it has, three at most
+const countPiers = (radius: number): number => Math.min(Math.max(Math.round(radius / PIER_SPAN), 1), 3);
+const QUAY_WATER = 4; // grid nodes of the sea or a lake straight out from a stretch of wall that make it a waterfront
+
+/**
+ * Where a burg on the sea or a lake has its piers, a sea gate in its wall by each: on the stretches of its edge that look
+ * out on the most water, apart from each other, more of them the larger the burg. Each with the way out to the water and
+ * how far it is dry that way
+ */
+export function getQuays(field: Battlefield, burg: FieldBurg): { at: Point; away: number; dry: number }[] {
+  const count = burg.piers ?? countPiers(burg.radius);
+  const apart = burg.radius * 0.5;
+  const fronts = getStretches(burg.outline, getOpening(field, GATE) / 2)
+    .map(([a, b]) => {
+      const at: Point = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      // square to the wall, on its water side
+      const square = Math.atan2(b[1] - a[1], b[0] - a[0]) + Math.PI / 2;
+      const wet = (angle: number): number => {
+        let water = 0;
+        for (let i = 0; i < 8; i++) {
+          const [x, y] = [at[0] + Math.cos(angle) * field.cell * i, at[1] + Math.sin(angle) * field.cell * i];
+          if (x >= 0 && y >= 0 && x < field.width && y < field.height && field.water[nodeAt(field, x, y)] === 1)
+            water++;
+        }
+        return water;
+      };
+      const [out, back] = [wet(square), wet(square + Math.PI)];
+      return out >= back ? { at, away: square, water: out } : { at, away: square + Math.PI, water: back };
+    })
+    .filter(front => front.water >= QUAY_WATER)
+    .sort((a, b) => b.water - a.water);
+  const quays: { at: Point; away: number; dry: number }[] = [];
+  for (const { at, away } of fronts) {
+    if (quays.length === count) break;
+    if (quays.some(quay => Math.hypot(quay.at[0] - at[0], quay.at[1] - at[1]) < apart)) continue;
+    let dry = 0;
+    const isWater = (): boolean => {
+      const [x, y] = [at[0] + Math.cos(away) * dry, at[1] + Math.sin(away) * dry];
+      return x < 0 || y < 0 || x >= field.width || y >= field.height || field.water[nodeAt(field, x, y)] === 1;
+    };
+    while (dry < field.cell * 8 && !isWater()) dry += field.cell / 4;
+    quays.push({ at, away, dry });
   }
-  return most >= 4 ? best : null;
+  return quays;
 }
 
 /** Knock a gap into the wall of a burg at the point */
@@ -588,9 +721,11 @@ export const nodeCentre = ({ cell }: Battlefield, node: number): [number, number
   (Math.floor(node / COLS) + 0.5) * cell
 ];
 
-/** Height of a point above the lowest ground, between the nodes as well */
+/** Height of a point above the lowest ground, between the nodes as well; who is within walls stands on them */
 export function getElevation(field: Battlefield, x: number, y: number): number {
-  if (!field.relief) return 0;
+  const node = nodeAt(field, x, y);
+  const walls = field.walled[node] && field.rampart[node] !== 3 ? WALL_HEIGHT : 0; // a breach is no higher than its rubble
+  if (!field.relief) return walls;
   const { cell } = field;
   const fx = Math.min(Math.max(x / cell - 0.5, 0), COLS - 1);
   const fy = Math.min(Math.max(y / cell - 0.5, 0), ROWS - 1);
@@ -599,12 +734,12 @@ export function getElevation(field: Battlefield, x: number, y: number): number {
   const at = (col: number, row: number): number => field.elevation[row * COLS + col];
   const top = at(c, r) * (1 - dx) + at(c + 1, r) * dx;
   const bottom = at(c, r + 1) * (1 - dx) + at(c + 1, r + 1) * dx;
-  return (top * (1 - dy) + bottom * dy) * field.relief;
+  return (top * (1 - dy) + bottom * dy) * field.relief + walls;
 }
 
 /** Rise over run of the ground at a point in the direction of the heading: uphill positive */
 export function getSlope(field: Battlefield, x: number, y: number, heading: number): number {
-  if (!field.relief) return 0;
+  if (!field.relief && !field.walls.length) return 0;
   const [dx, dy] = [Math.cos(heading) * field.cell, Math.sin(heading) * field.cell];
   return (getElevation(field, x + dx, y + dy) - getElevation(field, x - dx, y - dy)) / (field.cell * 2);
 }
@@ -616,6 +751,7 @@ export function terrainAt(field: Battlefield, x: number, y: number): Terrain {
     wood: field.wood[i] === 1,
     marsh: field.marsh[i] === 1,
     water: field.water[i],
+    shallow: field.water[i] === 1 && isByLand(field, i),
     ford: field.ford[i] === 1,
     deck: field.deck[i] === 1,
     road: field.road[i] === 1,
@@ -623,6 +759,15 @@ export function terrainAt(field: Battlefield, x: number, y: number): Terrain {
     walled: field.walled[i],
     rampart: field.rampart[i]
   };
+}
+
+/** A node next to one of dry land, corners too */
+function isByLand(field: Battlefield, node: number): boolean {
+  const [col, row] = [node % COLS, Math.floor(node / COLS)];
+  for (let y = Math.max(row - 1, 0); y <= Math.min(row + 1, ROWS - 1); y++)
+    for (let x = Math.max(col - 1, 0); x <= Math.min(col + 1, COLS - 1); x++)
+      if (!field.water[y * COLS + x]) return true;
+  return false;
 }
 
 /** The point where two segments cross */
@@ -677,11 +822,11 @@ const nearestIndex = (points: Point[], [x, y]: Point): number =>
  * Where in its cell a battle is fought, in map pixels: at the burg or by the river it is named after,
  * on the crossing of a road over the river if there is one
  */
-function findSite(cell: number, place: Point, pixel: number): Point {
+function findSite(cell: number, place: Point, pixel: number, burgRadius: number): Point {
   const { cells } = pack;
   if (cells.burg[cell]) {
     const burg = pack.burgs[cells.burg[cell]];
-    return burg.port ? getHarbour(burg, pixel) : [burg.x, burg.y];
+    return burg.port ? getHarbour(burg, pixel, burgRadius) : [burg.x, burg.y];
   }
   const river = cells.r[cell] && pack.rivers.find(river => river.i === cells.r[cell]);
   if (!river) return place;
@@ -730,7 +875,7 @@ export function getSiegeRadius([x, y]: Point): number {
 const getBurgRadius = (burg: Burg): number => 10 * Math.sqrt(Math.max(getPeople(0, burg.population), 10) / Math.PI);
 
 /** Where a port stands on the map at true scale: the map draws it a few km off the shore, the plan right on it */
-function getHarbour(burg: Burg, pixel: number): Point {
+function getHarbour(burg: Burg, pixel: number, radius: number): Point {
   const water = pack.features[burg.port!];
   const coast = water?.type === "lake" ? water : pack.features[pack.cells.f[burg.cell]];
   const shore = coast && Coastline.getFeatureShape(coast).points;
@@ -740,8 +885,16 @@ function getHarbour(burg: Burg, pixel: number): Point {
   );
   const away = Math.hypot(burg.x - cx, burg.y - cy) || 1;
   if (away > getSpacing() / 2) return [burg.x, burg.y]; // a river port, its sea far off
-  const inland = (getBurgRadius(burg) * 0.8) / pixel; // its edge at the water
-  return [cx + ((burg.x - cx) / away) * inland, cy + ((burg.y - cy) / away) * inland];
+  const inland = (radius * 0.8) / pixel; // its edge at the water
+  const at = (share: number): Point => [
+    cx + ((burg.x - cx) / away) * inland * share,
+    cy + ((burg.y - cy) / away) * inland * share
+  ];
+  // no further than the land goes, as the coast is drawn: a small island has its burg on it
+  const isLand = (point: Point): boolean => isInside(point, shore as Point[]) !== (coast.type === "lake");
+  let share = 1;
+  while (share > 0 && !isLand(at(share))) share -= 0.125;
+  return at(Math.max(share, 0));
 }
 
 /** The part of a line whose segments pass the test, two points more each way to keep its curve; empty when none do */

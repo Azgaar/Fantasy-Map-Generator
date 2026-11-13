@@ -2,7 +2,7 @@
 // and gives every battalion its order. Nothing here is rolled. See docs/domain/battles.md.
 
 import { CHARGE, COUNTER, getBearing, LONG_SHOT, SHAKEN } from "./battalion";
-import type { Battle, Block, Order, Plan } from "./battle";
+import type { Battle, Block, Order, Plan, Wedge } from "./battle";
 import {
   COMMANDS,
   type Command,
@@ -22,6 +22,7 @@ import { COLS, minutesToTicks, ROWS } from "./battle-scale";
 import {
   type Battlefield,
   type FieldWall,
+  getElevation,
   getWorksBetween,
   isStanding,
   nodeAt,
@@ -42,7 +43,17 @@ import {
   turn
 } from "./movement";
 import { spread, trace } from "./pathfinding";
-import { chooseKind, hasWorkLeft, holdsWorks, isDigging, isHolding, isRider, layWorks, mayBuild } from "./works";
+import {
+  chooseKind,
+  hasWorkLeft,
+  holdsWorks,
+  isBuilder,
+  isDigging,
+  isHolding,
+  isRider,
+  layWorks,
+  mayBuild
+} from "./works";
 
 const ORDER_ROUNDS = minutesToTicks(8) / ROUND_TICKS; // an order given by hand stands that long
 const STORM_ODDS = [4, 2.5, 1.8, 1.4]; // besiegers to besieged it takes to storm walls, by the breaches in them
@@ -55,7 +66,7 @@ const RING_BATTALIONS = 6; // and battalions at the least, a stretch of the ring
 const BOWSHOT = 205; // what the besiegers keep out of when the garrison has no shooters
 const RING = 340; // and how far out of the walls they stand at most
 const WATCH = 70; // how much further than the ring stands from the walls a besieger keeps a gate shut
-const SHORE = 150; // ready defenders stand that far from where a landing comes out of the water
+const BROW = 1; // how much better the ground has to be for a place of a line to bend to it
 const AMBUSH = [110, 230]; // how far from the road ambushers lie, at the nearest and the furthest
 const SORTIE = 400; // how far from the burg a sortie goes
 
@@ -69,14 +80,23 @@ const LEVEL = 0.7; // so near the line or the place, a battalion counts as level
 const APART = 0.7; // garrison battalions keep so far apart in the streets
 const BEYOND = 1.15; // the ground beyond the ends of a line that covers them
 const BANK = 1.7; // a line holding a crossing stands so far behind its bank
+const EDGE = 0.5; // and one holding the water's edge, its middle a battalion deep from it: who comes at it is still wading
+const BEND = 1.5; // how far a line bent to the ground goes ahead of its frame or back
+const KINK = 0.35; // and how much further than its neighbour, a front along a front across
+const CLIMB = 1.5; // the slope below a line the foe charges up
 const FILE = 0.6; // between the battalions of a column, besides their depth
 const COVER = [-3.4, -1.7, 0, 1.7, 3.4]; // where along their line ambushers look for cover
 const ROUND_END = 2; // riders going round the foe's line pass its end by so much
 const FOES_NEAR = 3.6; // a gap in the line with foes so near is filled
 const THREAT = 9; // foes come round further than that from the formation are no threat to it
 const WHEEL = 1.8; // a formation wheels to face a foe no nearer than that
+const POST = 2; // the point of a wedge waits so far beyond the end of the line
+const WIDE = 3; // and a wedge by so much: out of reach of the end of his line till it falls on him
 const ROUND_SIDE = 0.9; // so far beyond the end of the line and no further ahead than that, a foe has come round a flank
 const ROUND_AHEAD = 0.45;
+
+const WEDGE_TURN = 0.5; // radians a round a wedge wheels
+const DOWNHILL = 10; // what a lane down a slope of one in ten is worth, as against one all over bad ground
 
 // of a pace a tick
 const CLOSING = 0.7; // how much nearer the foe has to come in a round for the side to be closing
@@ -183,7 +203,8 @@ function createPlan(tactic: TacticName, frame: Frame, fixed = false): Plan {
     losses: 0,
     bled: 0,
     fortify: false,
-    arrival: Infinity
+    arrival: Infinity,
+    wedge: null
   };
 }
 
@@ -230,12 +251,18 @@ function keepOnField(field: Battlefield, frame: Frame, places: { across: number;
 function seat(battle: Battle, side: Side, plan: Plan, places: Place[]): void {
   const { field } = battle;
   const { front } = field;
-  if (!plan.fixed) keepOnField(field, plan, places);
+  const line = places.filter(place => place.role !== "wedge");
+  const wedge = places.filter(place => place.role === "wedge");
+  if (!plan.fixed) keepOnField(field, plan, line);
   plan.camp = [plan.x, plan.y];
   plan.half = Math.max(
-    ...places.filter(place => place.rank === 0).map(place => Math.abs(place.across)),
+    ...line.filter(place => place.rank === 0).map(place => Math.abs(place.across)),
     front * LEAST_HALF
   );
+  if (wedge.length) {
+    plan.wedge = { ...getPost(battle, plan), launched: false, charging: false, target: null };
+    keepOnField(field, plan.wedge, wedge);
+  }
   // shooters stop where their shots reach the foe's front
   const shooters = places.filter(place => place.block.range && place.block.kind !== "engine");
   const shot = shooters.length
@@ -250,11 +277,13 @@ function seat(battle: Battle, side: Side, plan: Plan, places: Place[]): void {
       return wood || marsh;
     };
     const shift = front * STEP_IN;
-    for (let i = 0; i < 12 && place.block.kind === "rider" && Math.abs(place.across) > shift && bad(); i++)
+    const wing = place.block.kind === "rider" && place.role !== "wedge";
+    for (let i = 0; i < 12 && wing && Math.abs(place.across) > shift && bad(); i++)
       place.across -= Math.sign(place.across) * shift;
     const { block, role, mission, rank, across, along } = place;
-    const [x, y] = onField(field, toField(plan, across, along));
-    const facing = plan.heading + (place.facing ?? 0);
+    const frame = frameOf(plan, role);
+    const [x, y] = onField(field, toField(frame, across, along));
+    const facing = frame.heading + (place.facing ?? 0);
     block.order = { role, mission, rank, across, along, x, y, facing, target: null, sent: false };
     [block.x, block.y, block.facing] = [x, y, facing];
   }
@@ -282,12 +311,16 @@ function drawUp(battle: Battle, side: Side, blocks: Block[]): void {
   const crossing = side === "defenders" ? findCrossing(battle) : null;
   const [tactic, strike] = chooseTactic(battle, side, blocks, crossing !== null);
   const places = form(blocks, TACTICS[tactic], strike, getRoom(battle), battle.field.front);
-  // defenders ready for a landing meet it at the shore, unless their general would rather fight inland
-  const meets = battle.type === "landing" && side === "defenders" && isReady(battle) && !battle[side].waits;
+  // defenders ready for a landing meet it at the water's edge, unless their general would rather fight inland
+  const meets = battle.type === "landing" && side === "defenders" && !battle[side].waits;
   const shore = meets ? findShore(battle) : null;
   const frame = crossing ?? shore ?? findGround(battle, side, places, forward)[0];
+  // a line that holds follows the ground: the water's edge, or the brow of the slope the foe has to come up
+  if (shore) bend(places, battle.field.front, place => getShoreOffset(battle, frame, place));
+  else if (tactic === "stand" || tactic === "crescent")
+    bend(places, battle.field.front, place => getBrowOffset(battle, side, frame, place));
   const plan = createPlan(tactic, frame);
-  plan.strike = strike;
+  plan.strike = TACTICS[tactic].riders === "wedge" ? chooseLane(battle, side, frame, places) : strike;
   seat(battle, side, plan, places);
   plan.fixed = Boolean(TACTICS[tactic].ring); // a laager stands where it formed
 }
@@ -339,7 +372,13 @@ function rateTactics(
         ["oblique", line >= 4 ? 1 + (1 - odds) * 0.8 + Math.abs(wing(1) - wing(-1)) / (foe.power || 1) + ends : 0],
         ["envelopment", riders >= 2 ? 0.6 + Math.min(riderOdds - 1, 1.5) * 0.5 + (odds - 1) * 0.3 + ends : 0],
         ["wedge", line >= 5 ? 0.7 + (width(foeBlocks) / (width(blocks) || 1) - 1) * 0.8 + (heavier ? 0.25 : 0) : 0],
-        ["harass", shooters >= Math.max(line, 2) ? 0.5 + (fireShare - gripShare) * 3 + ring : 0]
+        ["harass", shooters >= Math.max(line, 2) ? 0.5 + (fireShare - gripShare) * 3 + ring : 0],
+        [
+          "flying",
+          riders >= 2 && own.riders >= own.power * 0.2
+            ? 0.55 + Math.min(riderOdds - 1, 1.5) * 0.5 + (odds - 1) * 0.3
+            : 0
+        ]
       ]
     : [
         ["stand", 1],
@@ -388,8 +427,7 @@ const option = (tactic: TacticName | null, waits = false, storms = false): Optio
 export function getOptions(battle: Battle, side: Side): Option[] {
   const { type, field } = battle;
   if (type === "ambush") return side === "defenders" ? [option("ambuscade"), option("waylay")] : [];
-  if (type === "landing")
-    return side === "defenders" && isReady(battle) && findShore(battle) ? [option(null), option(null, true)] : [];
+  if (type === "landing") return side === "defenders" && findShore(battle) ? [option(null), option(null, true)] : [];
   if (type === "siege") {
     // a storm of many battalions is too slow to play through in the time there is
     if (side === "defenders" || field.held === null || battle.blocks.length > 28) return [];
@@ -431,6 +469,8 @@ function findGround(battle: Battle, side: Side, places: Place[], forward: number
   const depth = -Math.min(...places.map(place => place.along), 0);
   const defending = side === "defenders";
   if (defending && field.held !== null) return [{ ...field.burgs[field.held], heading: forward }, 2];
+  const foe = survey(battle, enemyOf(side));
+  const climb = 0.3 * (1 + foe.riders / (foe.power || 1)); // a slope before the line, the more worth the more riders come
 
   const at = (deep: number, shift: number): Frame => ({
     x: field.width / 2 + Math.cos(axis) * along * deep + Math.cos(axis + Math.PI / 2) * width * shift,
@@ -461,7 +501,7 @@ function findGround(battle: Battle, side: Side, places: Place[], forward: number
       for (const ahead of [0.07, 0.13].map(share => share * field.width)) {
         const before = terrainAt(field, ...toField(frame, share * half, ahead));
         if (before.water || before.marsh) value += 0.15;
-        value += (terrain.height - before.height) * 0.3;
+        value += (terrain.height - before.height) * climb;
       }
     }
     if (defending) value += getEnds(frame) * 0.3;
@@ -511,10 +551,7 @@ function findCrossing(battle: Battle): Frame | null {
   return { x: x - Math.cos(heading) * back, y: y - Math.sin(heading) * back, heading };
 }
 
-/** The defenders of a landing are ready for it when they are no less steady than the attackers at the outset */
-const isReady = (battle: Battle): boolean => battle.defenders.morale >= battle.attackers.morale;
-
-/** Defenders ready for a landing stand a bowshot from where the attackers come out of the water */
+/** Defenders ready for a landing hold the water's edge where the attackers come out of it */
 function findShore(battle: Battle): Frame | null {
   const { axis, field } = battle;
   const along = reach(field, axis);
@@ -523,11 +560,78 @@ function findShore(battle: Battle): Frame | null {
     field.height / 2 + Math.sin(axis) * deep
   ];
   let shore: number | null = null;
-  for (let deep = -along * 0.8; deep < along * 0.35 - SHORE; deep += field.cell)
+  for (let deep = -along * 0.8; deep < along * 0.35; deep += field.cell)
     if (terrainAt(field, ...at(deep)).water === 1) shore = deep;
   if (shore === null) return null;
-  const [x, y] = at(shore + SHORE);
+  const [x, y] = at(shore + field.cell / 2 + field.front * EDGE);
   return { x, y, heading: axis + Math.PI };
+}
+
+/**
+ * Bend a formation to a line on the ground, as `bow` bends it to a shape: each place goes ahead or back by the line
+ * where it stands across, the lines behind with the first, so neighbours stay closed and nobody stands on another.
+ * `wish` is how far ahead a place of the first line would rather stand, null where the ground does not say; a place
+ * goes back rather than ahead of what its neighbours allow
+ */
+function bend(places: Place[], front: number, wish: (place: Place) => number | null): void {
+  const first = places
+    .filter(place => place.rank === 0 && (place.role === "line" || place.role === "support"))
+    .sort((a, b) => a.across - b.across);
+  if (!first.length) return;
+  const limit = BEND * front;
+  const wished = first.map(place => clamp(wish(place) ?? 0, -limit, limit));
+  const offsets = wished.map((offset, i) =>
+    Math.min(offset, ...wished.map((other, j) => other + KINK * Math.abs(first[i].across - first[j].across)))
+  );
+  const at = (across: number): number => {
+    const next = first.findIndex(place => place.across >= across);
+    if (next <= 0) return offsets[next < 0 ? offsets.length - 1 : 0];
+    const [a, b] = [first[next - 1].across, first[next].across];
+    return offsets[next - 1] + ((offsets[next] - offsets[next - 1]) * (across - a)) / (b - a || 1);
+  };
+  for (const place of places) place.along += at(place.across);
+}
+
+/** How far ahead a place stands best at the water's edge: those who come at it wade the shallows as they meet it */
+function getShoreOffset(battle: Battle, frame: Frame, place: Place): number | null {
+  const { field } = battle;
+  const limit = BEND * field.front;
+  const step = field.cell / 2;
+  for (let ahead = -limit; ahead <= limit + field.front * EDGE; ahead += step) {
+    if (terrainAt(field, ...toField(frame, place.across, place.along + ahead)).water !== 1) continue;
+    return ahead === -limit ? null : ahead - step / 2 - field.front * EDGE;
+  }
+  return null;
+}
+
+/**
+ * How far ahead a place stands best on a slope: high, and above what the foe has to come up, the more so the more
+ * riders he has, whose charge the climb takes the speed out of; none where the ground is no better than a metre
+ */
+function getBrowOffset(battle: Battle, side: Side, frame: Frame, place: Place): number | null {
+  const { field } = battle;
+  if (!field.relief) return null;
+  const foe = survey(battle, enemyOf(side));
+  const riders = foe.riders / (foe.power || 1);
+  const value = (ahead: number): number => {
+    const point = toField(frame, place.across, place.along + ahead);
+    const terrain = terrainAt(field, ...point);
+    if (terrain.water || terrain.marsh) return -Infinity;
+    const height = getElevation(field, ...point);
+    const below = getElevation(field, ...toField(frame, place.across, place.along + ahead + field.front * CLIMB));
+    return height + (height - below) * (1 + riders);
+  };
+  const here = value(0);
+  let best: number | null = null;
+  let most = here + BROW;
+  const limit = BEND * field.front;
+  for (let step = field.cell / 2; step <= limit; step += field.cell / 2) {
+    for (const ahead of [step, -step]) {
+      const worth = value(ahead);
+      if (worth > most) [best, most] = [ahead, worth];
+    }
+  }
+  return best;
 }
 
 /** An ambush: the attackers are caught on the march, in a column along the road */
@@ -592,7 +696,7 @@ function layAmbush(battle: Battle, blocks: Block[]): void {
   battle.defenders.plan.half = 0;
 }
 
-/** The besiegers stand out of bowshot of the walls, their engines before them in range */
+/** The besiegers stand out of bowshot of the walls, their engines a row behind the first line, still in range */
 function layLines(battle: Battle, blocks: Block[]): void {
   const { field } = battle;
   const { front } = field;
@@ -605,11 +709,13 @@ function layLines(battle: Battle, blocks: Block[]): void {
     getRoom(battle),
     front
   );
+  const rowGap = ROW_GAP * front;
   if (engines.length) {
-    for (const place of places) place.along -= ROW_GAP * front;
+    for (const place of places) if (place.rank > 0) place.along -= rowGap;
     let offset = -sum(engines, block => block.width + GAP * front) / 2;
     for (const block of engines) {
-      places.push({ block, role: "battery", mission: "battery", rank: 0, across: offset + block.width / 2, along: 0 });
+      const across = offset + block.width / 2;
+      places.push({ block, role: "battery", mission: "battery", rank: 1, across, along: -rowGap });
       offset += block.width + GAP * front;
     }
   }
@@ -620,7 +726,9 @@ function layLines(battle: Battle, blocks: Block[]): void {
     const [x, y] = [burg.x + Math.cos(away) * distance, burg.y + Math.sin(away) * distance];
     return x >= margin && y >= margin && x <= field.width - margin && y <= field.height - margin;
   };
-  let distance = burg.radius + getRingDistance(battle); // the engines reach the middle of the burg from there
+  // the line comes nearer than the ring where the engines behind it would not reach the walls
+  const reach = Math.min(...engines.map(block => block.range)) - rowGap - 14;
+  let distance = burg.radius + Math.min(getRingDistance(battle), Math.max(reach, 80));
   while (distance > burg.radius + 80 && !inside(distance + depth)) distance -= 14;
   const frame = { x: burg.x + Math.cos(away) * distance, y: burg.y + Math.sin(away) * distance, heading: battle.axis };
   seat(battle, "attackers", createPlan("lines", frame), places);
@@ -643,7 +751,7 @@ const canRing = (battle: Battle, blocks: Block[]): boolean =>
 
 /**
  * The besiegers ring the burg in out of bowshot: the strongest battalions by its gates, the rest spread round between,
- * ships off its quay and on the water about it
+ * the engines behind them, ships off its quay and on the water about it
  */
 function ringIn(battle: Battle, blocks: Block[]): void {
   const { field } = battle;
@@ -655,13 +763,15 @@ function ringIn(battle: Battle, blocks: Block[]): void {
   battle.attackers.plan = plan;
 
   // spots round the walls, on the field: on land for troops, on the water for ships
-  const spots = Array.from({ length: 72 }, (_, i): Point => {
-    const angle = (i / 72) * Math.PI * 2;
-    return onField(field, [
-      burg.x + Math.cos(angle) * (burg.radius + distance),
-      burg.y + Math.sin(angle) * (burg.radius * 0.85 + distance)
-    ]);
-  });
+  const around = (distance: number): Point[] =>
+    Array.from({ length: 72 }, (_, i): Point => {
+      const angle = (i / 72) * Math.PI * 2;
+      return onField(field, [
+        burg.x + Math.cos(angle) * (burg.radius + distance),
+        burg.y + Math.sin(angle) * (burg.radius * 0.85 + distance)
+      ]);
+    });
+  const spots = around(distance);
   const wet = (point: Point): boolean => terrainAt(field, ...point).water > 0;
   const taken: Point[] = [];
   /** The spot nearest the point, or the one furthest from the others taken when there is no point */
@@ -695,14 +805,38 @@ function ringIn(battle: Battle, blocks: Block[]): void {
     places.set(block, spot ?? near ?? [burg.x, burg.y]);
   };
   for (const gate of gates) put(gate.water === 1 ? ships.shift() : fighters.shift(), mid(gate));
-  for (const block of [...fighters, ...engines, ...ships]) put(block, null);
+  for (const block of [...fighters, ...ships]) put(block, null);
+
+  // the engines a row behind the ring, each behind a battalion and spread round, still in reach of the walls
+  const reach = Math.min(...engines.map(block => block.range)) - 14;
+  const back = around(Math.max(Math.min(distance + ROW_GAP * field.front, reach), distance));
+  const guarded = [...places]
+    .filter(([block]) => !isMoored(battle, block))
+    .map(([, spot]) => spots.indexOf(spot))
+    .filter(i => i >= 0 && !wet(back[i]));
+  const dry = back.map((_, i) => i).filter(i => !wet(back[i]));
+  const sited: Point[] = [];
+  for (const block of engines) {
+    const free = (list: number[]): number[] => list.filter(i => !sited.includes(back[i]));
+    const choice = [free(guarded), free(dry), dry].find(list => list.length);
+    if (!choice) {
+      places.set(block, [burg.x, burg.y]);
+      continue;
+    }
+    const apart = (i: number): number =>
+      Math.min(...sited.map(other => Math.hypot(other[0] - back[i][0], other[1] - back[i][1])), Infinity);
+    const best = choice.reduce((a, b) => (apart(b) > apart(a) ? b : a));
+    sited.push(back[best]);
+    places.set(block, back[best]);
+  }
 
   for (const [block, [x, y]] of places) {
     const role = ROLES[block.kind];
     const [across, along] = toFrame(frame, { x, y });
     const facing = Math.atan2(burg.y - y, burg.x - x);
     const mission = role === "wing" ? "guard" : role;
-    block.order = { role, mission, rank: 0, across, along, x, y, facing, target: null, sent: false };
+    const rank = block.kind === "engine" ? 1 : 0;
+    block.order = { role, mission, rank, across, along, x, y, facing, target: null, sent: false };
     [block.x, block.y, block.facing] = [x, y, facing];
   }
 }
@@ -770,7 +904,7 @@ function manWalls(battle: Battle, blocks: Block[]): void {
   }
 }
 
-const ROLES: Record<Block["kind"], Order["role"]> = {
+const ROLES: Record<Block["kind"], Exclude<Order["role"], "wedge">> = {
   line: "line",
   shooter: "support",
   rider: "wing",
@@ -809,7 +943,7 @@ export function settle(battle: Battle): void {
 /** A battalion moved by hand, or off the ground it could not stand on, keeps the place it is in now */
 export function takePlace(battle: Battle, block: Block): void {
   const plan = battle[block.side].plan;
-  [block.order.across, block.order.along] = toFrame(plan, block);
+  [block.order.across, block.order.along] = toFrame(frameOf(plan, block.order.role), block);
   [block.order.x, block.order.y] = [block.x, block.y];
 }
 
@@ -823,7 +957,7 @@ export function enlist(battle: Battle, side: Side, blocks: Block[]): void {
   const places = form(blocks, TACTICS.assault, 1, getRoom(battle), battle.field.front);
   for (const { block, role, rank, across, along } of places) {
     const [x, y] = onField(battle.field, toField(plan, across, rear + along));
-    const mission = role === "line" ? "reserve" : role === "wing" ? "guard" : role;
+    const mission = role === "line" ? "reserve" : role === "wing" || role === "wedge" ? "guard" : role;
     block.order = {
       role: role === "line" ? "reserve" : role,
       mission,
@@ -928,11 +1062,18 @@ function choosePhase(battle: Battle, side: Side, own: View, foe: View, gap: numb
   const { chase, run } = POSTURES[battle.type][side];
   // the fight takes its course, but the side neither runs nor gives chase against its order
   if (plan.order && (next === chase || next === run)) return phase;
-  return next === run && isTrapped(own) ? SURRENDER : next;
+  return next;
 }
 
-/** The day is lost and nobody can get away: every battalion left in order is held at grips. It lays down its arms */
-const isTrapped = (own: View): boolean => own.ready.length > 0 && own.ready.every(block => block.action === "fight");
+/** Attackers of a landing still on the water, ships apart: they keep to it */
+const isAfloat = (battle: Battle): boolean =>
+  battle.blocks.some(
+    block =>
+      block.side === "attackers" &&
+      block.status === "ready" &&
+      !isMoored(battle, block) &&
+      terrainAt(battle.field, block.x, block.y).water === 1
+  );
 
 /** The phase a general puts his side in, by how the fight stands */
 function readPhase(battle: Battle, side: Side, own: View, foe: View, gap: number): string {
@@ -946,7 +1087,7 @@ function readPhase(battle: Battle, side: Side, own: View, foe: View, gap: number
   if (battle.type === "ambush" && fought < plan.opening && !isLost(own, foe)) return names.apart; // surprise and shock
   if (battle.type === "landing") {
     const landing = battle.attackers.phase === "landing";
-    if (side === "attackers" && landing && fought < 3 && !isLost(own, foe)) return phase; // the fight for the shore
+    if (side === "attackers" && landing && isAfloat(battle) && !isLost(own, foe)) return phase; // the fight for the shore
     if (side === "defenders") {
       if (battle.attackers.phase === "flee") {
         const ashore = battle.blocks.some(
@@ -954,7 +1095,7 @@ function readPhase(battle: Battle, side: Side, own: View, foe: View, gap: number
         );
         return ashore ? "pursue" : "waiting";
       }
-      if (landing && !isLost(own, foe)) return battle.round ? phase : isReady(battle) ? "defense" : "shock";
+      if (landing && !isLost(own, foe)) return battle.round ? phase : "defense";
     }
   }
   return engage(battle, side, own, foe, gap);
@@ -962,10 +1103,10 @@ function readPhase(battle: Battle, side: Side, own: View, foe: View, gap: number
 
 const isOnField = (block: Block): boolean => block.status === "ready" || block.status === "routed";
 
-/** The day is lost: too few are left in order to go on; behind a river a side holds out at half the odds */
-function isLost(own: View, foe: View, grit = 1): boolean {
+/** The day is lost: too few are left in order to go on */
+function isLost(own: View, foe: View): boolean {
   if (!own.ready.length) return true;
-  const odds = (own.power / (foe.power || 1e-9)) * grit;
+  const odds = own.power / (foe.power || 1e-9);
   const bled = own.losses >= 1 / 2 ? 1 : own.losses >= 1 / 4 ? 2 / 3 : 1 / 3; // the more is lost the better odds it takes to go on
   return odds < bled || own.morale < 25;
 }
@@ -975,7 +1116,7 @@ function engage(battle: Battle, side: Side, own: View, foe: View, gap: number): 
   const data = battle[side];
   const { phase, plan } = data;
   const names = POSTURES[battle.type][side];
-  if (isLost(own, foe, plan.tactic === "crossing" && !data.advancing ? 2 : 1)) return names.run;
+  if (isLost(own, foe)) return names.run;
   if (isBeaten(battle.type, enemyOf(side), battle[enemyOf(side)].phase) || foe.share <= 0.25) return names.chase;
   if (phase === names.close || phase === names.chase) return names.close;
   if (!isOpenFight(battle)) return names.close;
@@ -1141,6 +1282,7 @@ function direct(battle: Battle, side: Side, own: View, foe: View, gap: number): 
     [plan.x, plan.y] = plan.camp; // back to the lines
   else if (!plan.fixed && (data.advancing || !(plan.fortify || sheltered))) moveFrame(battle, side, own, foe, gap); // the formation stays with its works till it advances
   const frameFoes = foe.ready.map(block => ({ block, at: toFrame(plan, block) }));
+  if (plan.wedge && stance !== "flee") moveWedge(battle, side, own, frameFoes, gap);
 
   for (const block of own.ready) {
     const order = block.order;
@@ -1156,14 +1298,16 @@ function direct(battle: Battle, side: Side, own: View, foe: View, gap: number): 
     }
     // engines of a siege stay where they were set up
     if (!plan.fixed && !(siege && order.role === "battery")) {
-      [order.x, order.y] = onField(field, toField(plan, order.across, order.along));
-      order.facing = plan.heading;
+      const frame = frameOf(plan, order.role);
+      [order.x, order.y] = onField(field, toField(frame, order.across, order.along));
+      order.facing = frame.heading;
     }
     order.mission = getMission(battle, side, block, own, frameFoes);
+    if (order.role === "wedge") order.target = plan.wedge?.target ?? null; // the foe it falls on
     if (siege && side === "attackers" && phase === "storming" && order.mission === "hunt") {
       const entry = getEntry(battle, block);
       if (entry) [order.mission, order.x, order.y] = ["flank", ...entry];
-    } else if (order.mission === "flank") {
+    } else if (order.mission === "flank" && order.role !== "wedge") {
       // round the end of the foe's line on its own wing, and a little beyond
       const sign = Math.sign(order.across) || plan.strike;
       const end = frameFoes
@@ -1213,6 +1357,7 @@ function getMission(battle: Battle, side: Side, block: Block, own: View, foes: S
   const off = keepsOff(battle, side);
   if (lying && advancing && !off) return "hunt"; // told to stand, ambushers keep where they lie
   if (free) return role === "line" && !siege && phase === names.chase && block.kind !== "rider" ? "line" : "hunt";
+  if (role === "wedge") return plan.wedge?.charging ? "hunt" : "flank"; // on its way, or charging
   if (role === "line") return "line";
   if (role === "reserve") return "reserve";
 
@@ -1323,6 +1468,7 @@ function guardWards(
       const free = own.ready.filter(
         block =>
           (block.kind === "line" || block.kind === "rider") &&
+          block.order.role !== "wedge" &&
           !block.order.sent &&
           block.action !== "fight" &&
           block.morale >= SHAKEN &&
@@ -1341,7 +1487,9 @@ function moveFrame(battle: Battle, side: Side, own: View, foe: View, gap: number
   const data = battle[side];
   const { plan, phase } = data;
   const names = POSTURES[battle.type][side];
-  const first = own.ready.filter(block => block.order.rank === 0 && !block.order.sent && block.order.role !== "wing");
+  const first = own.ready.filter(
+    block => block.order.rank === 0 && !block.order.sent && block.order.role !== "wing" && block.order.role !== "wedge"
+  );
   const lead = first.find(block => block.kind === "line") ?? first[0];
   if (!lead || !foe.ready.length) return;
 
@@ -1358,7 +1506,7 @@ function moveFrame(battle: Battle, side: Side, own: View, foe: View, gap: number
 
   const apart = keepsOff(battle, side) || (phase === names.apart && isOpenFight(battle));
   const want = apart ? plan.halt : -Infinity;
-  const pace = Math.min(...first.map(block => getPace(battle, block, terrainAt(battle.field, block.x, block.y).water)));
+  const pace = Math.min(...first.map(block => getPace(battle, block, terrainAt(battle.field, block.x, block.y))));
   const advance = Math.min(pace * ROUND_TICKS, gap - want);
   const lags = first.map(block => toFrame(plan, block.order)[1] - toFrame(plan, block)[1]).sort((a, b) => a - b);
   if (advance <= 0 || lags[lags.length >> 1] > field.front * LEVEL) return; // most of the line is behind
@@ -1367,24 +1515,182 @@ function moveFrame(battle: Battle, side: Side, own: View, foe: View, gap: number
   keepOnField(
     field,
     plan,
-    own.ready.filter(block => !block.order.sent).map(block => block.order)
+    own.ready.filter(block => !block.order.sent && block.order.role !== "wedge").map(block => block.order)
   );
+}
+
+// The wedge
+
+/** The frame a place is about: the wedge's for its riders, the formation's for the rest */
+const frameOf = (plan: Plan, role: Order["role"]): Frame => (role === "wedge" && plan.wedge ? plan.wedge : plan);
+
+/** Where the wedge waits: beyond the end of the line on its wing, a little back */
+function getPost(battle: Battle, plan: Plan): Frame {
+  const { front } = battle.field;
+  const [x, y] = toField(plan, plan.strike * (plan.half + front * POST), -ROW_GAP * front);
+  return { x, y, heading: plan.heading };
+}
+
+/** The end of the foe's line on a wing, foot before riders, as the formation sees it */
+function getEnd(foes: Seen, sign: number): Seen[number] | null {
+  const foot = foes.filter(({ block }) => block.kind !== "rider");
+  return (foot.length ? foot : foes).reduce<Seen[number] | null>(
+    (best, seen) => (!best || seen.at[0] * sign > best.at[0] * sign ? seen : best),
+    null
+  );
+}
+
+/**
+ * Where the wedge goes round the end of the foe's line to fall on its flank: beyond the end and level with its rear,
+ * on the higher and the more open ground of the few spots there are
+ */
+function getVia(battle: Battle, frame: Frame, end: Seen[number], sign: number): Point {
+  const { field } = battle;
+  const { front } = field;
+  let best: Point | null = null;
+  let most = -Infinity;
+  for (const shift of [0, 1, -1]) {
+    const via = onField(field, toField(frame, end.at[0] + sign * front * WIDE, end.at[1] + front * (LEVEL + shift)));
+    const worth = getLaneWorth(battle, via, [end.block.x, end.block.y]);
+    if (worth > most) [best, most] = [via, worth];
+  }
+  return best!;
+}
+
+/** How good the ground is for a charge from one point to another: open, and down the slope */
+function getLaneWorth(battle: Battle, [x, y]: Point, [tx, ty]: Point): number {
+  const { field } = battle;
+  const length = Math.hypot(tx - x, ty - y) || 1;
+  const samples = Math.max(Math.ceil(length / field.cell), 1);
+  let bad = 0;
+  for (let i = 0; i <= samples; i++) {
+    const terrain = terrainAt(field, x + ((tx - x) * i) / samples, y + ((ty - y) * i) / samples);
+    if (terrain.water || terrain.wood || terrain.marsh) bad += 1;
+  }
+  const fall = getElevation(field, x, y) - getElevation(field, tx, ty);
+  return -bad / (samples + 1) + (fall / length) * DOWNHILL;
+}
+
+/** The wing the wedge goes round: the better ground for the ride and the charge, and the weaker foe */
+function chooseLane(battle: Battle, side: Side, frame: Frame, places: Place[]): number {
+  const { front } = battle.field;
+  const foe = survey(battle, enemyOf(side));
+  const foes: Seen = foe.ready.map(block => ({ block, at: toFrame(frame, block) }));
+  const half = Math.max(
+    ...places.filter(place => place.rank === 0 && place.role !== "wedge").map(place => Math.abs(place.across)),
+    0
+  );
+  const worth = (sign: number): number => {
+    const end = getEnd(foes, sign);
+    if (!end) return 0;
+    const post = toField(frame, sign * (half + front * POST), -ROW_GAP * front);
+    const via = getVia(battle, frame, end, sign);
+    const wing = sum(foes, ({ block, at }) => (at[0] * sign > front * WING ? strength(block) : 0));
+    return (
+      getLaneWorth(battle, post, via) + getLaneWorth(battle, via, [end.block.x, end.block.y]) - wing / (foe.power || 1)
+    );
+  };
+  return worth(-1) > worth(1) ? -1 : 1;
+}
+
+/**
+ * The wedge waits beside the line till the ride round the foe takes as long as the walk of the line to him, then
+ * goes round the end of his line at the pace of its slowest and falls on his flank. Once it charges it is a wedge no more
+ */
+function moveWedge(battle: Battle, side: Side, own: View, foes: Seen, gap: number): void {
+  const data = battle[side];
+  const { plan } = data;
+  const wedge = plan.wedge!;
+  const riders = own.ready.filter(block => block.order.role === "wedge" && !block.order.sent);
+  if (wedge.charging) {
+    if (wedge.target !== null && battle.blocks[wedge.target].status !== "ready") wedge.target = null; // the riders hunt on
+    return;
+  }
+  const sign = plan.strike;
+  const end = getEnd(foes, sign);
+  if (!riders.length || !end) return;
+  const { front } = battle.field;
+  const target = end.block;
+  const via = getVia(battle, plan, end, sign);
+  if (!wedge.launched) {
+    Object.assign(wedge, getPost(battle, plan));
+    if (!isWedgeDue(battle, side, wedge, riders, via, target, gap)) return;
+    wedge.launched = true;
+  }
+  const outside = toFrame(plan, wedge)[0] * sign >= end.at[0] * sign + front; // beyond the end of the line: at its flank
+  if (outside && Math.hypot(target.x - wedge.x, target.y - wedge.y) <= CHARGE * front) {
+    // it falls on him once the line has him at grips, so he cannot turn to meet it
+    if (target.action === "fight" || !data.advancing) [wedge.charging, wedge.target] = [true, target.id];
+    return;
+  }
+  // it goes on as fast as its slowest, and waits for those left behind
+  const lags = riders.map(block => far(block, block.order)).sort((a, b) => a - b);
+  if (lags[lags.length >> 1] > front * LEVEL) {
+    // held up by a fight before its time, it breaks up into it
+    if (riders.some(block => block.action === "fight")) [wedge.charging, wedge.target] = [true, target.id];
+    return;
+  }
+  const goal: Point = outside ? [target.x, target.y] : via;
+  const bearing = Math.atan2(goal[1] - wedge.y, goal[0] - wedge.x);
+  const pace = Math.min(...riders.map(block => getPace(battle, block)));
+  const advance = Math.min(pace * ROUND_TICKS, Math.hypot(goal[0] - wedge.x, goal[1] - wedge.y));
+  wedge.heading = turn(wedge.heading, bearing, WEDGE_TURN);
+  wedge.x += Math.cos(bearing) * advance;
+  wedge.y += Math.sin(bearing) * advance;
+  [wedge.x, wedge.y] = onField(battle.field, [wedge.x, wedge.y]);
+}
+
+/** Time to go: the ride round the foe takes no less than the walk of the line up to him, or the lines meet already */
+function isWedgeDue(
+  battle: Battle,
+  side: Side,
+  wedge: Wedge,
+  riders: Block[],
+  via: Point,
+  target: Block,
+  gap: number
+): boolean {
+  const { phase, advancing } = battle[side];
+  if (phase === POSTURES[battle.type][side].close) return true;
+  if (!advancing || keepsOff(battle, side)) return false;
+  const pace = Math.min(...riders.map(block => getPace(battle, block)));
+  const ride =
+    (Math.hypot(via[0] - wedge.x, via[1] - wedge.y) + Math.hypot(target.x - via[0], target.y - via[1])) / pace;
+  const walk = Math.max(gap - CHARGE * battle.field.front, 0) / PACE;
+  return ride >= walk;
 }
 
 // Works
 
 /**
  * Whether the side builds works this round. It begins when it holds, may build, and some kind is done before the foe
- * comes, unless its general chose to wait rather than fight; a laager from the first tick. Once begun it goes on till the works stand or it advances; an order by hand
- * stands for its time
+ * comes, unless its general chose to wait rather than fight; a laager from the first tick. Once begun it goes on till the works stand,
+ * it advances or the foe is upon its line; an order by hand stands for its time
  */
 function fortifies(battle: Battle, side: Side): boolean {
   const { plan } = battle[side];
   if (!mayBuild(battle, side) || !isHolding(battle, side) || !hasWorkLeft(battle, side)) return false;
   if (plan.order) return plan.order === "fortify";
-  if (plan.fortify || plan.tactic === "laager") return true;
-  if (battle[side].waits) return false; // a general who chose not to fight here does not dig in: both would, till the lull
+  if (plan.tactic === "laager") return true;
+  if (isFoeUpon(battle, side)) return false; // no battalion of the line could build: it fights
+  if (plan.fortify) return true;
+  // a general who chose not to fight here does not dig in: both would, till the lull. In a landing `waits` is to stand inland
+  if (battle[side].waits && isOpenFight(battle)) return false;
   return chooseKind(battle, side, 1, plan.arrival) !== null;
+}
+
+/** A foe in order could be upon a battalion of the side's line within a round: none of them would build */
+function isFoeUpon(battle: Battle, side: Side): boolean {
+  const reach = CHARGE * battle.field.front;
+  const builders = battle.blocks.filter(
+    block => block.side === side && block.status === "ready" && isBuilder(battle, block)
+  );
+  return battle.blocks.some(
+    foe =>
+      foe.side !== side &&
+      foe.status === "ready" &&
+      builders.some(block => Math.hypot(foe.x - block.x, foe.y - block.y) < getPace(battle, foe) * ROUND_TICKS + reach)
+  );
 }
 
 /**
@@ -1396,7 +1702,7 @@ export function isDugIn(battle: Battle, side: Side): boolean {
   const set = battle.interventions.findLast(change => change.kind === "dig" && change.side === side);
   if (set?.kind === "dig") return set.on;
   if (battle.type === "siege") return battle.attackers.plan.tactic === "ring";
-  return battle.type === "landing" && isReady(battle) && !battle.defenders.waits && findShore(battle) !== null;
+  return battle.type === "landing" && !battle.defenders.waits && findShore(battle) !== null;
 }
 
 /** Sides dug in have their works laid at their places, finished; laid anew whenever the troops are drawn up */
