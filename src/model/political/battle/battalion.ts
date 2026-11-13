@@ -3,6 +3,7 @@
 import { FOOT_SPEED } from "@/model/political/military-units";
 import type { Battle, Block } from "./battle";
 import { type Command, getStance, isBeaten, keepsPhase, type Side } from "./battle-rules";
+import { getWorksBetween } from "./battlefield";
 import {
   ARRIVED,
   CHARGE_HASTE,
@@ -13,8 +14,10 @@ import {
   getRange,
   inContact,
   normalize,
+  ROUND_TICKS,
   type Spot
 } from "./movement";
+import { findStretch, isBarredByWorks, isBuilder, isHolding } from "./works";
 
 export type Kind = "line" | "shooter" | "rider" | "engine";
 
@@ -32,6 +35,7 @@ export const COUNTER = 1; // and when it holds
 const WATCH = 5; // how far a guard goes for riders
 const CROWD = 1; // what each friend going for a foe adds to the way to it: they spread along the line
 const ROUTED = 9; // and a foe on the run, to who does not chase
+const AT_WORK = 0.21; // so near its place a battalion builds its stretch
 
 /** What a battalion means to do this tick */
 export interface Intent {
@@ -44,6 +48,7 @@ export interface Intent {
   facing: number; // where to face with no foe at hand
   haste: number;
   keep: boolean; // to its place in the formation: there by the end of the round, not in a dash and a wait
+  build: boolean; // to work on its stretch of the works
 }
 
 /** What every battalion sees this tick */
@@ -80,7 +85,8 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
     shoot: false,
     facing: order.facing,
     haste: 1,
-    keep: false
+    keep: false,
+    build: false
   };
   const { front } = battle.field;
   const far = (foe: Spot, from: Spot = block): number => Math.hypot(foe.x - from.x, foe.y - from.y);
@@ -117,8 +123,16 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
     return { ...stand, target };
   }
 
+  // at work on its stretch while no foe can be upon it within a round; the work is kept for when the foe is gone
+  const { plan } = battle[block.side];
+  if (plan.fortify && isBuilder(battle, block) && far(order) < AT_WORK * front) {
+    const work = findStretch(battle, block);
+    const near = ready.some(foe => far(foe) < getPace(battle, foe) * ROUND_TICKS + CHARGE * front);
+    if ((!work || work.done < 1) && !near) return { ...stand, build: true };
+  }
+
   const shaken = block.morale < SHAKEN;
-  const { phase, advancing, plan } = battle[block.side];
+  const { phase, advancing } = battle[block.side];
   const told = getBearing(battle, block.side);
   const forward = told ? told === "attack" || told === "defend" : getStance(phase) === "advance";
   const bold = forward && !shaken;
@@ -133,7 +147,13 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
   if (order.mission === "support") {
     // out of reach of those who come for it
     const threat = ready
-      .filter(foe => !foe.range && !sense.held.has(foe.id) && far(foe) < EVADE)
+      .filter(
+        foe =>
+          !foe.range &&
+          !sense.held.has(foe.id) &&
+          far(foe) < EVADE &&
+          !isBarredByWorks(battle, foe, [foe.x, foe.y], [block.x, block.y]) // riders before stakes, foes outside wagons
+      )
       .reduce<Block | null>((a, b) => (a && far(a) <= far(b) ? a : b), null);
     if (threat) {
       const away = Math.atan2(block.y - threat.y, block.x - threat.x);
@@ -167,11 +187,18 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
   // line, reserve and guard keep their place and go for what comes within reach of it
   const guard = order.mission === "guard";
   const reach = (order.mission === "line" && bold && advancing ? CHARGE : COUNTER) * front; // who waits, holds
+  // behind its own works, a side that holds lets the foe come over them rather than lose them
+  const behind = battle.field.works.length > 0 && isHolding(battle, block.side);
+  const over = (foe: Block): boolean =>
+    behind && getWorksBetween(battle.field, [block.x, block.y], [foe.x, foe.y], block.side).length > 0;
   const within = ready.filter(foe => {
     const distance = far(foe, order) - foe.width / 2;
-    if (foe.id === order.target || distance <= reach) return true;
-    if (guard && foe.kind === "rider" && distance <= WATCH * front) return true;
-    return sense.held.has(foe.id) && distance <= reach * 1.5; // the flank of a foe a neighbour holds
+    const near =
+      foe.id === order.target ||
+      distance <= reach ||
+      (guard && foe.kind === "rider" && distance <= WATCH * front) ||
+      (sense.held.has(foe.id) && distance <= reach * 1.5); // the flank of a foe a neighbour holds
+    return near && !over(foe);
   });
   // ships and fliers close when their side does, shooting from their place till then; others who shoot do not close
   const boarding = Boolean(battle.field.open) && bold;

@@ -16,6 +16,7 @@ export interface Tactic {
   bow: number; // how far ahead of the centre the ends of the line stand; behind when negative
   shooters: "behind" | "front" | "wings";
   riders: "wings" | "strike" | "behind";
+  ring?: boolean; // a ring facing out, the riders and the reserve inside
 }
 
 const tactic = (
@@ -40,6 +41,7 @@ export const TACTICS = {
   stand: tactic(1, 0.2, 1, false, 0, 0, "behind", "behind"),
   crescent: tactic(1, 0.15, 0.8, false, 0, -1.35, "behind", "behind"),
   crossing: tactic(1, 0.25, 0.7, false, 0, 0.9, "behind", "behind"),
+  laager: { ...tactic(1, 0.2, 1, false, 0, 0, "behind", "behind"), ring: true },
   // of a battle type
   column: tactic(1, 0, 1, false, 0, 0, "behind", "wings"),
   ambuscade: tactic(1, 0, 1, false, 0, 0, "behind", "wings"),
@@ -60,6 +62,7 @@ export interface Place {
   rank: number; // the line it stands in, 0 the first
   across: number;
   along: number;
+  facing?: number; // turned from the heading of the formation, when it does not face its way
 }
 
 /**
@@ -68,6 +71,7 @@ export interface Place {
  * @param front metres a full battalion stands wide
  */
 export function form(blocks: Block[], tactic: Tactic, strike: number, room: number, front: number): Place[] {
+  if (tactic.ring) return formRing(blocks, tactic, front);
   const [gap, rowGap, row] = [GAP * front, ROW_GAP * front, ROW * front];
   const strength = (block: Block): number => block.troops * block.unitPower;
   const of = (kind: Block["kind"]): Block[] =>
@@ -212,3 +216,52 @@ const MISSIONS: Record<Role, Mission> = {
   wing: "guard",
   reserve: "reserve"
 };
+
+/**
+ * A ring round the middle of the formation, facing out: line troops and shooters on it with the engines among them,
+ * the riders and a reserve inside
+ */
+function formRing(blocks: Block[], tactic: Tactic, front: number): Place[] {
+  const [gap, rowGap] = [GAP * front, ROW_GAP * front];
+  const strength = (block: Block): number => block.troops * block.unitPower;
+  const of = (kind: Block["kind"]): Block[] =>
+    blocks.filter(block => block.kind === kind).sort((a, b) => strength(b) - strength(a) || a.id - b.id);
+  const line = of("line");
+  const kept = line.length >= 4 ? Math.round(line.length * tactic.reserve) : 0;
+  const reserve = kept ? line.splice(line.length - kept) : [];
+  // shooters and engines spread evenly among the line troops
+  const spread = (row: Block[]): { block: Block; at: number }[] =>
+    row.map((block, i) => ({ block, at: (i + 0.5) / row.length }));
+  const ring = [...spread(line), ...spread([...of("shooter"), ...of("engine")])]
+    .sort((a, b) => a.at - b.at || a.block.id - b.block.id)
+    .map(({ block }) => block);
+  const inside = [...of("rider"), ...reserve];
+
+  const around = ring.reduce((sum, block) => sum + block.width + gap, 0);
+  const radius = Math.max(around / (Math.PI * 2), front * (0.8 + 0.6 * Math.sqrt(inside.length)));
+  const places: Place[] = [];
+  let walked = 0;
+  for (const block of ring) {
+    const angle = ((walked + (block.width + gap) / 2) / around) * Math.PI * 2;
+    walked += block.width + gap;
+    const role = ROLES[block.kind];
+    const [across, along] = [Math.sin(angle) * radius, Math.cos(angle) * radius];
+    places.push({ block, role, mission: MISSIONS[role], rank: 0, across, along, facing: angle });
+  }
+  // inside: rows about the middle, facing the way the formation does
+  const rows: Block[][] = [];
+  for (const block of inside) {
+    const last = rows.at(-1);
+    if (last && last.reduce((sum, other) => sum + other.width + gap, block.width) <= radius) last.push(block);
+    else rows.push([block]);
+  }
+  rows.forEach((row, i) => {
+    let offset = -row.reduce((sum, block) => sum + block.width + gap, -gap) / 2;
+    const along = ((rows.length - 1) / 2 - i) * rowGap;
+    for (const block of row) {
+      places.push({ block, role: "reserve", mission: "reserve", rank: 1, across: offset + block.width / 2, along });
+      offset += block.width + gap;
+    }
+  });
+  return places;
+}

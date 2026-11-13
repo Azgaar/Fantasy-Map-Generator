@@ -30,6 +30,7 @@ import type { TacticName } from "./formations";
 import {
   command,
   deploy,
+  digIn,
   enlist,
   getBase,
   getCommands,
@@ -64,13 +65,14 @@ import {
   step,
   turn
 } from "./movement";
+import { breakWagons, buildWorks, getShelter, isBarredByWorks, isSheltered, raiseWorks } from "./works";
 
 export { ROUND_TICKS };
 
 const MAX_TICKS = minutesToTicks(8 * 60); // a backstop for a battle that neither ends nor dies down, not a length
 const IDLE_ROUNDS = 12; // rounds without losses that end a battle: ten minutes or so
 const REHEARSAL_TICKS = 360; // how far ahead a general plays a battle through in his mind
-const STORM_TICKS = 150; // and a storm of walls, slow to reckon: long enough to see it carried or thrown back
+const STORM_TICKS = 150; // and a storm of walls or of a wagon ring, slow to reckon: long enough to see it carried or thrown back
 
 // in battalion fronts
 const BLOCK_DEPTH = 0.5;
@@ -110,7 +112,7 @@ const MAX_IMPETUS = 5;
 const SPENT = 0.85; // share of a charge's impetus left after each tick at grips
 
 export type BlockStatus = "ready" | "routed" | "surrendered" | "fled" | "destroyed";
-export type BlockAction = "hold" | "move" | "shoot" | "fight" | "flee";
+export type BlockAction = "hold" | "move" | "shoot" | "fight" | "flee" | "build";
 export type Role = "line" | "support" | "battery" | "wing" | "reserve";
 export type Mission = "line" | "support" | "battery" | "guard" | "reserve" | "flank" | "hunt" | "withdraw";
 
@@ -148,6 +150,8 @@ export interface Plan {
   idle: number; // rounds it has not closed
   losses: number; // share of the troops lost by the last round
   bled: number; // rounds in a row it lost men to shots alone
+  fortify: boolean; // the side builds works
+  arrival: number; // ticks till the foe is upon it, as the general reckons it this round; Infinity when it does not come
 }
 
 /** A battalion: troops of one unit of a regiment that stand, move and fight together */
@@ -228,7 +232,8 @@ export type Intervention =
   | { tick: number; kind: "die"; side: Side; die: number }
   | { tick: number; kind: "add"; side: Side; regiment: BattleRegiment }
   | { tick: number; kind: "withdraw"; state: number; regiment: number }
-  | { tick: number; kind: "type"; type: BattleType };
+  | { tick: number; kind: "type"; type: BattleType }
+  | { tick: number; kind: "dig"; side: Side; on: boolean }; // before the start: the side starts behind its works
 
 export type LogEvent =
   | "start"
@@ -250,6 +255,9 @@ export type LogEvent =
   | "breach"
   | "cut"
   | "supplied"
+  | "dig"
+  | "fortified"
+  | "gap"
   | "end";
 
 /** What happened; the screen words it */
@@ -389,6 +397,8 @@ function drawUp(battle: Battle): void {
     if (change.kind === "turn") turnBlock(battle, change.block, change.facing);
     if (change.kind === "order") obey(battle, change.side, change.order);
   }
+  digIn(battle);
+  forgetWays(battle.field);
 }
 
 /**
@@ -401,11 +411,14 @@ export function plan(battle: Battle): void {
   battle.planned = true;
   if (battle.rehearsal) return;
   // each against the foe as the odds make him expect it: neither knows what the other has settled on
-  const settled = SIDES.map(side => {
+  const options = SIDES.map(side => getOptions(battle, side));
+  const laager = options.flat().some(option => option.tactic === "laager");
+  const ticks = battle.type === "siege" || laager ? STORM_TICKS : REHEARSAL_TICKS;
+  const settled = SIDES.map((side, i) => {
     let best: Option | null = null;
     let most = -Infinity;
-    for (const option of getOptions(battle, side)) {
-      const outcome = rehearse(battle, side, option);
+    for (const option of options[i]) {
+      const outcome = rehearse(battle, side, option, ticks);
       if (outcome > most) [best, most] = [option, outcome];
     }
     return best;
@@ -422,7 +435,7 @@ export function plan(battle: Battle): void {
 }
 
 /** How a battle goes for a side that does as its general has in mind: who holds the field, then whose losses are the lighter */
-function rehearse(battle: Battle, side: Side, option: Option): number {
+function rehearse(battle: Battle, side: Side, option: Option, ticks: number): number {
   const copy = (name: Side): BattleSide => ({
     ...createSide(battle[name].regiments, battle[name].phase),
     bonus: battle[name].bonus,
@@ -437,14 +450,13 @@ function rehearse(battle: Battle, side: Side, option: Option): number {
     defenders: copy("defenders"),
     blocks: [],
     course: [],
-    interventions: [],
+    interventions: battle.interventions.filter(change => change.kind === "dig"), // the ground as prepared
     log: [],
     result: null,
     planned: true,
     rehearsal: true
   };
   prepare(trial);
-  const ticks = battle.type === "siege" ? STORM_TICKS : REHEARSAL_TICKS;
   for (let i = 0; i < ticks && !trial.result; i++) tick(trial);
   const winner = trial.result?.winner;
   const held = winner === side ? 1 : winner ? -1 : 0;
@@ -458,6 +470,10 @@ export function intervene(battle: Battle, change: Intervention): void {
     if (!block) return;
     if (change.kind === "move") moveBlock(battle, change.block, change.x, change.y);
     else turnBlock(battle, change.block, change.facing);
+    if (!battle.tick) {
+      digIn(battle); // the works prepared before the battle stand before the battalion where it is now
+      forgetWays(battle.field);
+    }
     battle.log.push({
       tick: battle.tick,
       event: change.kind,
@@ -485,6 +501,8 @@ export function intervene(battle: Battle, change: Intervention): void {
     for (const side of SIDES) battle[side].phase = PHASES[battle.type][side][0];
   } else if (change.kind === "withdraw") {
     withdraw(battle, change.state, change.regiment);
+  } else if (change.kind === "dig") {
+    battle.log.push({ tick: battle.tick, event: "dig", side: change.side, params: { on: String(change.on) } });
   } else {
     battle[change.side].regiments.push(change.regiment);
     battle.log.push({
@@ -499,7 +517,7 @@ export function intervene(battle: Battle, change: Intervention): void {
   if (battle.tick) updatePower(battle);
   else {
     // what the generals settled on does not stand; a move or a turn of a battalion leaves it be
-    if (["power", "add", "withdraw", "type", "order"].includes(change.kind)) rethink(battle);
+    if (["power", "add", "withdraw", "type", "order", "dig"].includes(change.kind)) rethink(battle);
     prepare(battle);
   }
 }
@@ -608,6 +626,7 @@ export function tick(battle: Battle): void {
   if (battle.tick % ROUND_TICKS === 0) startRound(battle);
   capitulate(battle);
   act(battle);
+  buildWorks(battle, battle.tick % ROUND_TICKS);
   fight(battle);
   battle.tick += 1;
   updatePower(battle);
@@ -629,6 +648,7 @@ function startRound(battle: Battle): void {
     battle.log.push({ tick: battle.tick, event: cutOff ? "cut" : "supplied", side: "attackers", params: { burg } });
   }
   battle.cutOff = cutOff;
+  const raised = raiseWorks(battle); // what was finished last round stands now
   if (battle.round) {
     steady(battle);
     updatePower(battle);
@@ -651,6 +671,7 @@ function startRound(battle: Battle): void {
 
   command(battle);
   batter(battle);
+  if (breakWagons(battle) || raised) forgetWays(battle.field); // the troops go round what bars them, or in by a gap
 
   const [attackers, defenders] = getCommands(battle);
   const orders = `Attackers: ${attackers}, defenders: ${defenders}`;
@@ -715,14 +736,15 @@ function act(battle: Battle): void {
       continue;
     }
 
-    const { target, to, stop, key, shared, shoot, facing, haste, keep } = decide(battle, block, sense);
+    const { target, to, stop, key, shared, shoot, facing, haste, keep, build } = decide(battle, block, sense);
     if (target && target.id !== block.target) sense.crowd.set(target.id, (sense.crowd.get(target.id) ?? 0) + 1);
     block.target = target?.id ?? null;
     const fires = shoot && !isIdle(battle[block.side].phase);
     if (fires) shooting.add(block.id);
     const bearing = target ? Math.atan2(target.y - block.y, target.x - block.x) : facing;
 
-    if (target && inContact(battle, block, target)) block.action = "fight";
+    if (build) block.action = "build";
+    else if (target && inContact(battle, block, target)) block.action = "fight";
     else if (target && fires && canShoot(battle, block, target)) block.action = "shoot";
     else if (to) {
       // to the place, or to the next turn of the way round the water and no further
@@ -753,7 +775,8 @@ function act(battle: Battle): void {
     const pushed =
       (dry && isWet(battle, block, block.x, block.y)) ||
       (safe && shuns(battle, block, block.x, block.y)) ||
-      getWallsBetween(battle.field, [x, y], [block.x, block.y]).length > 0; // not even by a gate
+      getWallsBetween(battle.field, [x, y], [block.x, block.y]).length > 0 || // not even by a gate
+      isBarredByWorks(battle, block, [x, y], [block.x, block.y]);
     if (pushed) [block.x, block.y] = [x, y];
   });
 
@@ -764,6 +787,8 @@ function act(battle: Battle): void {
     if (target && inContact(battle, block, target)) block.action = "fight";
     else if (target && shooting.has(block.id) && canShoot(battle, block, target)) block.action = "shoot";
     if (!target || block.action !== "fight") block.impetus = 0;
+    else if (!block.impetus && isSheltered(battle, block, target))
+      block.impetus = 1; // a charge breaks on the works
     else if (!block.impetus) {
       // a charge strikes with the speed it closed at; who stood has none
       const distance = Math.hypot(target.x - block.x, target.y - block.y) || 1;
@@ -859,7 +884,8 @@ function fight(battle: Battle): void {
     if (block.type === "mounted" && (from.wood || to.wood)) power *= 0.6;
     // cover takes its share of the losses: walls from without, woods and houses from shots
     const besieging = to.walled > 0 && from.walled !== to.walled;
-    const cover = besieging ? 1 / WALLS : shot && (to.wood || to.town) ? COVER : 1;
+    const cover =
+      (besieging ? 1 / WALLS : shot && (to.wood || to.town) ? COVER : 1) * getShelter(battle, block, target, shot);
     if (shot && from.walled && !to.walled) power *= 1.25; // from the walls
 
     if (!shot) {
@@ -1216,7 +1242,9 @@ const NO_PLAN: Plan = {
   gap: Infinity,
   idle: 0,
   losses: 0,
-  bled: 0
+  bled: 0,
+  fortify: false,
+  arrival: Infinity
 };
 
 /** The approach, turned as little as it takes for the attackers to form up on land */

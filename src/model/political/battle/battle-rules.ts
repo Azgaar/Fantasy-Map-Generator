@@ -38,7 +38,7 @@ export const PHASES: Record<BattleType, Record<Side, string[]>> = {
 };
 
 /** What a side is told to do: the user sees and gives orders, the phases carry them out */
-export type Command = "hold" | "skirmish" | "attack" | "defend" | "pursue" | "retreat" | "surrender";
+export type Command = "hold" | "fortify" | "skirmish" | "attack" | "defend" | "pursue" | "retreat" | "surrender";
 
 /** The order a phase carries out; any other phase is an attack */
 const PHASE_COMMAND: Record<string, Command> = {
@@ -63,6 +63,7 @@ const PHASE_COMMAND: Record<string, Command> = {
 /** What troops do on the battlefield under an order */
 const COMMAND_STANCE: Record<Command, Stance> = {
   hold: "hold",
+  fortify: "hold",
   defend: "hold",
   surrender: "hold",
   skirmish: "shoot",
@@ -94,7 +95,7 @@ export function getCommand(type: BattleType, phase: string, advancing: boolean):
  * what the troops do and leaves the phase to take its course, unless it is to pursue or to retreat
  */
 export const keepsPhase = (type: BattleType, command: Command): boolean =>
-  (type === "ambush" || type === "landing") && ["hold", "skirmish", "attack", "defend"].includes(command);
+  (type === "ambush" || type === "landing") && ["hold", "fortify", "skirmish", "attack", "defend"].includes(command);
 
 /** A side that turned to run or laid down its arms: it neither fights on nor holds the field */
 export const isBeaten = (type: BattleType, side: Side, phase: string): boolean =>
@@ -147,13 +148,20 @@ const forBoth = (type: BattleType): Record<Side, Commands> => ({
   defenders: inField(POSTURES[type].defenders, isOpen(type))
 });
 
+/** A side that may build works is told to in its holding phase */
+const withWorks = (commands: Commands): Commands => {
+  const { hold, ...rest } = commands;
+  return { hold, fortify: hold, ...rest };
+};
+
 /** The orders a side can be given by hand, each with the phase that carries it out */
 export const COMMANDS: Record<BattleType, Record<Side, Commands>> = {
-  field: forBoth("field"),
+  field: { attackers: withWorks(forBoth("field").attackers), defenders: withWorks(forBoth("field").defenders) },
   naval: forBoth("naval"),
   siege: {
     attackers: {
       hold: "blockade",
+      fortify: "blockade",
       skirmish: "bombardment",
       attack: "storming",
       pursue: "looting",
@@ -170,7 +178,7 @@ export const COMMANDS: Record<BattleType, Record<Side, Commands>> = {
     }
   },
   ambush: forBoth("ambush"),
-  landing: forBoth("landing"),
+  landing: { attackers: forBoth("landing").attackers, defenders: withWorks(forBoth("landing").defenders) },
   air: forBoth("air")
 };
 

@@ -3,7 +3,7 @@ import { BATTLE_ACTION_LABELS } from "@/data/id-labels";
 import { Icons } from "@/model/icons";
 import type { Battle, Block } from "@/model/political/battle/battle";
 import { COLS, ROWS } from "@/model/political/battle/battle-scale";
-import type { Battlefield } from "@/model/political/battle/battlefield";
+import type { Battlefield, FieldWork, WorkKind } from "@/model/political/battle/battlefield";
 import { convertSpeed, formatLength, getLengthUnit, getSpeedUnit } from "@/model/units";
 import { updateBattleDebug } from "@/renderers/draw-battle-debug";
 import type { Point } from "@/types/global";
@@ -62,6 +62,7 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
   const { width, height } = field;
   const pt = getPoint(field);
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  delete svg.dataset.works; // the works layer is drawn empty: `updateBlocks` fills it
 
   svg.innerHTML = /* html */ `<defs>
       <pattern id="battleWood" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="scale(${pt})">
@@ -86,6 +87,10 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
       <path d="M0 16V-16M-5 -8L0 -16L5 -8"/><text y="30" text-anchor="middle" font-size="13" fill="${INK}" stroke="none" font-family="Georgia, serif" font-weight="bold">N</text>
     </g>
     ${getScaleBar(field)}
+    <g class="battleWorks" fill="none" stroke-width="${1.6 * pt}" pointer-events="none">${WORK_PATHS.map(
+      ([kind, state]) =>
+        `<path data-work="${kind} ${state}" ${kind === "wagons" ? `fill="${WORK_COLORS.wagons}"` : `stroke="${WORK_COLORS[kind]}"`} ${state === "building" ? `opacity="0.5"` : ""}/>`
+    ).join("")}</g>
     <g class="battleFire" fill="none" stroke-width="${pt}" stroke-dasharray="${2 * pt} ${5 * pt}" opacity="0.55"></g>
     <g class="battleBlocks"></g>
     <g class="battleMissiles" fill="none" stroke-linecap="round" pointer-events="none"></g>
@@ -293,6 +298,79 @@ function drawBurgs(svg: SVGSVGElement, field: Battlefield): void {
   }
 }
 
+// Works as old battle plans draw them: flat, one colour a kind, in the plan's ink; sizes in points
+const WORK_COLORS: Record<WorkKind, string> = { ditch: "#8a6d4b", stakes: "#6b4f32", wagons: "#55524b" };
+const WORK_PATHS: [WorkKind, "standing" | "building" | "down"][] = [
+  ["ditch", "standing"],
+  ["ditch", "building"],
+  ["stakes", "standing"],
+  ["stakes", "building"],
+  ["wagons", "standing"],
+  ["wagons", "building"],
+  ["wagons", "down"]
+];
+const HACHURE = [3, 5]; // long, apart
+const STAKE = [4, 3];
+const WAGON = [5, 2.4, 0.8]; // long, wide, apart
+
+/** What the works look like now: they are drawn again when it changes */
+const getWorksKey = (field: Battlefield): string => {
+  const down = field.works.filter(work => work.harm >= 1).length;
+  const done = field.works.reduce((sum, work) => sum + work.done, 0);
+  return `${field.works.length}|${down}|${done.toFixed(1)}`;
+};
+
+/** Works on the plan, all of a kind and state in one path: a stretch being built grows along its line from `a` */
+function drawWorks(svg: SVGSVGElement, field: Battlefield): void {
+  svg.dataset.works = getWorksKey(field);
+  const pt = getPoint(field);
+  const paths: Record<string, string> = {};
+  for (const work of field.works) {
+    const state = work.harm >= 1 ? "down" : work.done >= 1 ? "standing" : "building";
+    const key = `${work.kind} ${state}`;
+    paths[key] = (paths[key] ?? "") + drawStretch(work, state === "down", pt);
+  }
+  // an empty path is drawn as a point of nothing: an empty "d" would not animate in an exported SVG
+  for (const path of svg.querySelectorAll<SVGPathElement>(".battleWorks > path"))
+    path.setAttribute("d", paths[path.dataset.work!] || "M0 0");
+}
+
+/** The path of a stretch, its front on the left of `a` → `b`: hachures and stakes on the foe's side */
+function drawStretch(work: FieldWork, down: boolean, pt: number): string {
+  const [ax, ay] = work.a;
+  const full = Math.hypot(work.b[0] - ax, work.b[1] - ay) || 1;
+  const [ux, uy] = [(work.b[0] - ax) / full, (work.b[1] - ay) / full];
+  const [fx, fy] = [uy, -ux];
+  const length = full * Math.min(work.done, 1);
+  const at = (along: number, ahead = 0): string =>
+    `${(ax + ux * along + fx * ahead).toFixed(1)} ${(ay + uy * along + fy * ahead).toFixed(1)}`;
+  let d = "";
+  if (work.kind === "ditch") {
+    d += `M${at(0)}L${at(length)}`;
+    for (let along = (HACHURE[1] * pt) / 2; along < length; along += HACHURE[1] * pt)
+      d += `M${at(along)}L${at(along, HACHURE[0] * pt)}`;
+  } else if (work.kind === "stakes") {
+    const lean = (STAKE[0] * pt) / Math.SQRT2; // out to the front at 45°
+    for (let along = (STAKE[1] * pt) / 2; along < length; along += STAKE[1] * pt)
+      d += `M${at(along)}L${at(along + lean, lean)}`;
+  } else {
+    const [long, wide, apart] = WAGON.map(size => size * pt);
+    const oblong = (along: number, ahead: number, turn: number): string => {
+      const [cos, sin] = [Math.cos(turn), Math.sin(turn)];
+      const corner = (x: number, y: number): string => at(along + x * cos - y * sin, ahead + x * sin + y * cos);
+      return `M${corner(-long / 2, -wide / 2)}L${corner(long / 2, -wide / 2)}L${corner(long / 2, wide / 2)}L${corner(-long / 2, wide / 2)}Z`;
+    };
+    if (down) {
+      // three wagons askew in the gap, as a breach leaves rubble
+      return [0.3, 0.5, 0.72].map((share, i) => oblong(full * share, (i - 1) * wide, [0.7, -0.5, 1.1][i])).join("");
+    }
+    const count = Math.max(Math.floor((full + apart) / (long + apart)), 1);
+    const pitch = full / count; // end to end along the whole stretch
+    for (let i = 0; (i + 0.5) * pitch <= length; i++) d += oblong((i + 0.5) * pitch, 0, 0);
+  }
+  return d;
+}
+
 /** Blocks, redrawn when their set changes; `onDrop` and `onTurn` let the user place them */
 export function drawBlocks(
   svg: SVGSVGElement,
@@ -387,6 +465,7 @@ const swing = (from: number, to: number): number => Math.atan2(Math.sin(to - fro
 export function updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Positions | null, progress: number): void {
   const root = select(svg);
   if (svg.dataset.breaches !== String(battle.field.breaches.length)) drawBurgs(svg, battle.field); // the walls came down
+  if (svg.dataset.works !== getWorksKey(battle.field)) drawWorks(svg, battle.field); // works grow and fall
   const pt = getPoint(battle.field);
   const time = battle.tick + progress;
   const last = shown.get(svg);

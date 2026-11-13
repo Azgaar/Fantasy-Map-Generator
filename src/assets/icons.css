@@ -260,6 +260,7 @@
 
 .icon-button-melee:before {content:'⚔️'; padding-right: .4em;}
 .icon-button-hold:before {content:'✋'; padding-right: .4em;}
+.icon-button-fortify:before {content:'⛏️'; padding-right: .4em;}
 .icon-button-skirmish:before {content:'🎯'; padding-right: .4em;}
 .icon-button-attack:before {content:'⚔️'; padding-right: .4em;}
 .icon-button-defend:before {content:'🛡️'; padding-right: .4em;}

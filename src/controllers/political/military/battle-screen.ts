@@ -35,8 +35,9 @@ import {
   type Side
 } from "@/model/political/battle/battle-rules";
 import { formatClock } from "@/model/political/battle/battle-scale";
-import { createEmptyBattlefield, createMapField } from "@/model/political/battle/battlefield";
-import { getOrder } from "@/model/political/battle/general";
+import { createEmptyBattlefield, createMapField, type WorkKind } from "@/model/political/battle/battlefield";
+import { getOrder, isDugIn } from "@/model/political/battle/general";
+import { mayBuild } from "@/model/political/battle/works";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
 import { getUnitPower } from "@/model/political/military-units";
@@ -987,6 +988,10 @@ function openOrders(side: Side): void {
   findEl("battleOrdersScreen")?.remove();
   const amount = t("Amount to add; a negative one is taken away");
   const current = getOrder(b, side);
+  // before the start a side that may build can stand behind works prepared the night before
+  const digs = !b.tick && mayBuild(b, side);
+  const dug = isDugIn(b, side);
+  const digTip = t("Start the battle behind finished works: a ditch, or stakes against a foe strong in riders");
   const orders = (Object.keys(COMMANDS[b.type][side]) as Command[])
     .map(
       order => `<option value="${order}" ${order === current ? "selected" : ""}>${BATTLE_ORDER_LABELS[order]}</option>`
@@ -1002,6 +1007,7 @@ function openOrders(side: Side): void {
         <input id="battleOrdersPower" data-tip="${amount}" type="number" step="10" value="0" />
         <label for="battleOrdersMorale" data-tip="${amount}">${t("Morale")}</label>
         <input id="battleOrdersMorale" data-tip="${amount}" type="number" step="5" min="-100" max="100" value="0" />
+        ${digs ? `<label for="battleOrdersDig" data-tip="${digTip}">${t("Dug in")}</label><input id="battleOrdersDig" data-tip="${digTip}" type="checkbox" class="native" ${dug ? "checked" : ""} />` : ""}
       </div>
     </div>`
   );
@@ -1010,6 +1016,8 @@ function openOrders(side: Side): void {
     const order = ensureEl<HTMLSelectElement>("battleOrdersOrder").value as Command;
     const power = +ensureEl<HTMLInputElement>("battleOrdersPower").value || 0;
     const morale = +ensureEl<HTMLInputElement>("battleOrdersMorale").value || 0;
+    const dig = digs && ensureEl<HTMLInputElement>("battleOrdersDig").checked;
+    if (digs && dig !== dug) intervene(b, { tick: b.tick, kind: "dig", side, on: dig });
     if (order !== current) intervene(b, { tick: b.tick, kind: "order", side, order });
     if (power) intervene(b, { tick: b.tick, kind: "power", side, value: power });
     if (morale) intervene(b, { tick: b.tick, kind: "morale", side, value: morale });
@@ -1209,6 +1217,9 @@ function logText({ event, side, params }: LogEntry): string {
   if (event === "breach") return t("The walls of {{burg}} are breached", params);
   if (event === "cut") return t("{{burg}} is cut off", params);
   if (event === "supplied") return t("Supplies reach {{burg}}", params);
+  if (event === "dig") return params!.on === "true" ? t("Dug in") : t("Not dug in");
+  if (event === "fortified") return `${t("Works stand")}: ${WORK_LABELS[params!.kind as WorkKind]}`;
+  if (event === "gap") return t("The wagons are broken through");
   if (event === "end") return side ? t("Hold the field") : t("The battle dies down");
 
   const block = { block: capitalize(params!.block) };
@@ -1498,8 +1509,11 @@ function typeTip(type: BattleType): string {
   return t("Air Battle: maneuring fight of avia units");
 }
 
+const WORK_LABELS: Record<WorkKind, string> = { stakes: t("Stakes"), ditch: t("Ditch"), wagons: t("Wagons") };
+
 function orderTip(order: Command): string {
   if (order === "hold") return t("Hold: stand the ground and shoot what comes within range");
+  if (order === "fortify") return t("Fortify: dig in before the first line and hold behind the works");
   if (order === "skirmish") return t("Skirmish: come within shot of the enemy and shoot");
   if (order === "attack") return t("Attack: close with the enemy");
   if (order === "defend") return t("Defend: stand the ground and fight what comes at it");

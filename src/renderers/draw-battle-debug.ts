@@ -4,12 +4,30 @@
 import { pointer, select } from "d3";
 import type { Battle } from "@/model/political/battle/battle";
 import { COLS, formatClock, ROWS } from "@/model/political/battle/battle-scale";
-import { type Battlefield, nodeAt, terrainAt } from "@/model/political/battle/battlefield";
+import {
+  type Battlefield,
+  distanceToLine,
+  type FieldWork,
+  getWorksBetween,
+  isStanding,
+  nodeAt,
+  terrainAt
+} from "@/model/political/battle/battlefield";
 import { getWay } from "@/model/political/battle/movement";
+import { findStretch, getShelter, holdsWorks } from "@/model/political/battle/works";
 import { log } from "@/utils/logger";
 import { escapeHtml } from "@/utils/string-utils";
 
 type Places = Map<number, { x: number; y: number; facing: number }>;
+
+// works by what they do
+const WORKS: [name: string, color: string, is: (work: FieldWork) => boolean][] = [
+  ["bars all (wagons)", "#d0342c", work => work.kind === "wagons" && work.harm < 1],
+  ["bars riders (stakes)", "#e08a1a", work => work.kind === "stakes"],
+  ["shelters (ditch)", "#1f5fbf", work => work.kind === "ditch"],
+  ["down", "#888", work => work.harm >= 1]
+];
+const getWorkColor = (work: FieldWork): string => WORKS.find(([, , is]) => is(work))![1];
 
 // what a node is to the troops, the later ones drawn over the earlier
 const GROUND: [name: string, color: string, is: (field: Battlefield, node: number) => boolean][] = [
@@ -63,7 +81,9 @@ export function updateBattleDebug(svg: SVGSVGElement, battle: Battle, at: Places
       .attr("font-family", "Arial, sans-serif");
     svg.onpointermove = event => {
       const text = svg.querySelector(".battleDebugGround");
-      if (text && shown) text.textContent = describe(shown.field, ...pointer(event, svg));
+      if (!text || !shown) return;
+      const [x, y] = pointer(event, svg);
+      text.textContent = [describe(shown.field, x, y), describeWork(shown.field, x, y)].filter(Boolean).join(" · ");
     };
   }
 
@@ -124,10 +144,36 @@ function getGround(field: Battlefield, pt: number): string {
   return html;
 }
 
+/** Stretches of works as the simulation has them: by what they do, thin while built, a tick on the front side */
+function getWorks(battle: Battle, pt: number): string {
+  const HALO = halo(pt);
+  let html = "";
+  for (const work of battle.field.works) {
+    const color = getWorkColor(work);
+    const standing = isStanding(work);
+    const [a, b] = [work.a, work.b];
+    const [mx, my] = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    const length = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    const [fx, fy] = [(b[1] - a[1]) / length, -(b[0] - a[0]) / length]; // the front is on the left of a → b
+    const dash = work.harm >= 1 ? ` stroke-dasharray="${2 * pt} ${2 * pt}"` : "";
+    html += `<path d="M${a.map(v => v.toFixed(1))}L${b.map(v => v.toFixed(1))}M${mx.toFixed(1)} ${my.toFixed(1)}l${(fx * 4 * pt).toFixed(1)} ${(fy * 4 * pt).toFixed(1)}" fill="none" stroke="${color}" stroke-width="${(standing || work.harm >= 1 ? 2 : 0.8) * pt}"${dash}/>`;
+    if (!work.up)
+      html += `<text x="${mx.toFixed(1)}" y="${(my - 2 * pt).toFixed(1)}" font-size="${6.5 * pt}" text-anchor="middle" fill="${color}" ${HALO}>${Math.floor(work.done * 100)}%</text>`;
+  }
+  if (!battle.field.works.length) return html;
+  WORKS.forEach(([name, color], i) => {
+    const y = battle.field.height - (8 + (WORKS.length - 1 - i) * 11) * pt;
+    const x = battle.field.width - 110 * pt;
+    html += `<path d="M${x} ${y - 3 * pt}h${10 * pt}" stroke="${color}" stroke-width="${2 * pt}"/>`;
+    html += `<text x="${x + 14 * pt}" y="${y}" font-size="${8 * pt}" ${HALO}>${name}</text>`;
+  });
+  return html;
+}
+
 /** Where every battalion is going and what it is at, and the state of the battle */
 function getDoings(battle: Battle, at: Places, pt: number): string {
   const HALO = halo(pt);
-  let html = "";
+  let html = getWorks(battle, pt);
   const byId = new Map(battle.blocks.map(block => [block.id, block]));
 
   for (const block of battle.blocks) {
@@ -136,7 +182,21 @@ function getDoings(battle: Battle, at: Places, pt: number): string {
     const target = block.target === null ? null : byId.get(block.target);
     if (target) {
       const to = at.get(target.id) ?? target;
-      html += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}L${to.x.toFixed(1)} ${to.y.toFixed(1)}" stroke="#000" stroke-width="${0.5 * pt}" stroke-opacity="0.45" stroke-dasharray="${pt} ${3 * pt}"/>`;
+      // a blow or a shot the target's works weaken is drawn in their colour
+      const striking = block.action === "fight" || block.action === "shoot";
+      const sheltered = striking && getShelter(battle, block, target, block.action === "shoot") < 1;
+      const works = sheltered
+        ? getWorksBetween(battle.field, [block.x, block.y], [target.x, target.y], target.side)
+        : [];
+      const color = works.length ? getWorkColor(works[0]) : "#000";
+      html += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}L${to.x.toFixed(1)} ${to.y.toFixed(1)}" stroke="${color}" stroke-width="${(works.length ? 1 : 0.5) * pt}" stroke-opacity="${works.length ? 0.9 : 0.45}" stroke-dasharray="${pt} ${3 * pt}"/>`;
+    }
+    if (block.action === "build") {
+      const work = findStretch(battle, block);
+      if (work) {
+        const [mx, my] = [(work.a[0] + work.b[0]) / 2, (work.a[1] + work.b[1]) / 2];
+        html += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}L${mx.toFixed(1)} ${my.toFixed(1)}" stroke="${getWorkColor(work)}" stroke-width="${0.5 * pt}"/>`;
+      }
     }
     const way = getWay(battle, block);
     if (way.length) {
@@ -158,8 +218,18 @@ function getDoings(battle: Battle, at: Places, pt: number): string {
 
   const side = (name: "attackers" | "defenders"): string => {
     const { phase, morale, power, die, bonus, plan, advancing } = battle[name];
-    return `${name}: ${plan.tactic}, ${advancing ? "advancing" : "holding"}, ${phase}, morale ${morale.toFixed(0)}, power ${power.toFixed(1)}${bonus ? ` (${bonus > 0 ? "+" : ""}${bonus})` : ""}, die ${die}`;
+    const own = battle.field.works.filter(work => work.side === name);
+    const arrives = Number.isFinite(plan.arrival) ? (plan.arrival / 6).toFixed(1) : "∞";
+    const works = [
+      plan.fortify ? "fortify" : "",
+      holdsWorks(battle, name) ? "holds works" : "",
+      `arrives ${arrives}`,
+      own.length ? `works ${own.filter(isStanding).length}/${own.length}` : ""
+    ].filter(Boolean);
+    return `${name}: ${plan.tactic}, ${advancing ? "advancing" : "holding"}, ${phase}, morale ${morale.toFixed(0)}, power ${power.toFixed(1)}${bonus ? ` (${bonus > 0 ? "+" : ""}${bonus})` : ""}, die ${die}, ${works.join(", ")}`;
   };
+  const { works } = battle.field;
+  const down = works.filter(work => work.harm >= 1).length;
   const held = battle.field.held === null ? "none" : escapeHtml(battle.field.burgs[battle.field.held].name);
   const state = [
     `tick ${battle.tick}`,
@@ -170,6 +240,7 @@ function getDoings(battle: Battle, at: Places, pt: number): string {
     `storm ${battle.storm ?? "no"}`,
     `held ${held}`,
     `breaches ${battle.field.breaches.length}`,
+    `works ${works.filter(isStanding).length} standing, ${works.filter(work => !work.up).length} building, ${down} down`,
     `blocks ${battle.blocks.length}`
   ].join(" · ");
   const lines = [state, side("attackers"), side("defenders")];
@@ -198,4 +269,11 @@ function describe(field: Battlefield, x: number, y: number): string {
     ["", "wall foot", "gateway", "breach"][terrain.rampart]
   ].filter(Boolean);
   return `node ${node % COLS},${Math.floor(node / COLS)} at ${x.toFixed(0)},${y.toFixed(0)} · height ${terrain.height.toFixed(2)} · ${what.join(", ") || "open ground"}`;
+}
+
+/** A stretch of works under the pointer, within 6 m */
+function describeWork(field: Battlefield, x: number, y: number): string {
+  const work = field.works.find(work => distanceToLine([x, y], [work.a, work.b]) <= 6);
+  if (!work) return "";
+  return `${work.kind} of the ${work.side}, done ${Math.floor(work.done * 100)}%${work.up ? " (stands)" : ""}, harm ${Math.round(work.harm * 100)}%`;
 }

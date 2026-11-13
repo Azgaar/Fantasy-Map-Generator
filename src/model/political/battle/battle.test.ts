@@ -13,23 +13,29 @@ import {
   plan,
   ROUND_TICKS,
   replay,
+  resetDeployment,
   tick
 } from "./battle";
-import { type BattleType, getBattleStatus, PHASES, POSTURES } from "./battle-rules";
+import { type BattleType, getBattleStatus, PHASES, POSTURES, type Side } from "./battle-rules";
 import { COLS, ROWS } from "./battle-scale";
 import {
   type Battlefield,
   createEmptyBattlefield,
+  distanceToLine,
   type FieldWall,
+  type FieldWork,
   getElevation,
   getSlope,
   getWallsBetween,
+  getWorksBetween,
   nodeAt,
   openBreach,
-  raiseWalls
+  raiseWalls,
+  type WorkKind
 } from "./battlefield";
-import { getCommands } from "./general";
-import { canShoot, getClimb, getRange, step } from "./movement";
+import { getCommands, isDugIn } from "./general";
+import { CONTACT, canShoot, forgetWays, getClimb, getDistance, getGap, getRange, step } from "./movement";
+import { findStretch, getStretchLine, isBuilder } from "./works";
 
 // speed in km/h and range in metres, as the default units have them
 const TRAITS: Record<string, { speed: number; range: number }> = {
@@ -405,11 +411,11 @@ describe("battle generals", () => {
   it("puts every phase as an order: in the open the side that waits holds, then defends", () => {
     const b = battle([regiment(1, big)], [regiment(2, big)]);
     tick(b);
-    expect(getCommands(b)).toEqual(["skirmish", "hold"]);
+    expect(getCommands(b)).toEqual(["skirmish", "fortify"]); // the defenders dig in while the attack comes on
     const orders = b.log.filter(entry => entry.event === "order").map(entry => [entry.side, entry.params!.order]);
     expect(orders).toEqual([
       ["attackers", "skirmish"],
-      ["defenders", "hold"]
+      ["defenders", "fortify"]
     ]);
     for (let i = 0; i < ROUND_TICKS * 40 && b.defenders.phase !== "melee"; i++) tick(b);
     expect(getCommands(b)).toEqual(["attack", "defend"]);
@@ -423,7 +429,7 @@ describe("battle generals", () => {
     const gap = (): number => Math.min(...of(b, "attackers").map(block => Math.abs(of(b, "defenders")[0].x - block.x)));
     const apart = gap();
     for (let i = 0; i < ROUND_TICKS * 6; i++) tick(b);
-    expect(getCommands(b)).toEqual(["hold", "hold"]);
+    expect(getCommands(b)).toEqual(["hold", "fortify"]);
     expect(gap()).toBeGreaterThan(apart - 27);
     intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "attack" });
     expect([b.attackers.phase, b.attackers.advancing]).toEqual(["melee", true]);
@@ -819,7 +825,7 @@ describe("battle morale", () => {
 
 describe("battle surrender", () => {
   it("has a shaken battalion at grips, outmatched on a losing side, give itself up: it fights and is struck no more", () => {
-    const b = battle([regiment(1, { infantry: 1200 })], [regiment(2, { infantry: 3000 })]);
+    const b = battle([regiment(1, { infantry: 1500 })], [regiment(2, { infantry: 2400 })]);
     const taken = new Map<number, number>();
     while (!b.result) {
       tick(b);
@@ -1503,5 +1509,524 @@ describe("battle ways", () => {
     expect(b.log.some(entry => entry.event === "breach")).toBe(true);
     const { x, y } = b.field.breaches[0];
     expect(b.field.rampart[nodeAt(b.field, x, y)]).toBe(3);
+  });
+});
+
+describe("battle works", () => {
+  const of = (b: Battle, side: Side): Block[] => b.blocks.filter(block => block.side === side);
+  const builders = (b: Battle, side: Side): Block[] =>
+    of(b, side)
+      .filter(block => isBuilder(b, block))
+      .sort((x, y) => x.order.across - y.order.across);
+  const worksOf = (b: Battle, side: Side): FieldWork[] => b.field.works.filter(work => work.side === side);
+  const ticks = (b: Battle, count: number): void => {
+    for (let i = 0; i < count && !b.result; i++) tick(b);
+  };
+  const dig = (b: Battle, side: Side): void => intervene(b, { tick: 0, kind: "dig", side, on: true });
+  const order = (b: Battle, side: Side, command: "hold" | "fortify" | "attack" | "defend" | "skirmish"): void =>
+    intervene(b, { tick: b.tick, kind: "order", side, order: command });
+  /** A stretch laid by hand before the battalion's place, finished or not, moved along its line by shares of it */
+  const lay = (b: Battle, block: Block, kind: WorkKind, done = 1, shift = 0): FieldWork => {
+    const [a, c] = getStretchLine(b, block);
+    const [dx, dy] = [(c[0] - a[0]) * shift, (c[1] - a[1]) * shift];
+    const work: FieldWork = {
+      a: [a[0] + dx, a[1] + dy],
+      b: [c[0] + dx, c[1] + dy],
+      kind,
+      side: block.side,
+      builder: null,
+      done,
+      up: done >= 1,
+      harm: 0
+    };
+    b.field.works.push(work);
+    forgetWays(b.field);
+    return work;
+  };
+  const inside = ([x, y]: [number, number], works: FieldWork[]): boolean => {
+    let within = false;
+    for (const { a, b } of works)
+      if (a[1] > y !== b[1] > y && x < ((b[0] - a[0]) * (y - a[1])) / (b[1] - a[1]) + a[0]) within = !within;
+    return within;
+  };
+  const noRiders = { infantry: 2400, archers: 900 };
+  const big = { infantry: 2400, archers: 900, cavalry: 600 };
+  const ARTILLERY = unit("artillery", "machinery", 6);
+  const walled = (): Battlefield => {
+    const field = createEmptyBattlefield();
+    field.roads.push([
+      [0, 409],
+      [1364, 409]
+    ]);
+    field.burgs.push({ x: 682.2, y: 409, radius: 95, name: "Burg", group: "city", walled: true, outline: [] });
+    raiseWalls(field);
+    return field;
+  };
+  const setup = (
+    type: BattleType,
+    attackers: Record<string, number>,
+    defenders: Record<string, number>,
+    field = createEmptyBattlefield()
+  ): Battle =>
+    createBattle({
+      type,
+      name: "Test",
+      place: null,
+      x: 0,
+      y: 0,
+      cell: 0,
+      axis: 0,
+      field,
+      units: [...UNITS, ARTILLERY],
+      populationScale: 1000,
+      attackers: [regiment(1, attackers)],
+      defenders: [regiment(2, defenders)]
+    });
+
+  it("has a line told to fortify with no foe near plant its stakes in 15 ticks, the stretches joined along it", () => {
+    const b = battle([regiment(1, { infantry: 1500, cavalry: 600 })], [regiment(2, { ...big, cavalry: 450 })]);
+    order(b, "attackers", "hold"); // the foe keeps away
+    order(b, "defenders", "fortify");
+    b.planned = true;
+    ticks(b, 15);
+    const line = builders(b, "defenders");
+    const works = line.map(block => findStretch(b, block)!);
+    expect(works.length).toBeGreaterThan(3);
+    expect(works.every(work => work?.kind === "stakes" && work.done === 1)).toBe(true); // against a foe strong in riders
+    expect(works.some(work => work.up)).toBe(false); // it counts from the next round
+    ticks(b, 4);
+    expect(works.every(work => work.up)).toBe(true);
+    expect(b.log.filter(entry => entry.event === "fortified")).toEqual([
+      { tick: 18, event: "fortified", side: "defenders", params: { kind: "stakes" } }
+    ]);
+    for (let i = 1; i < works.length; i++)
+      expect(distanceToLine(works[i].a, [works[i - 1].b, works[i - 1].b])).toBeLessThan(1);
+    // before the battalions, on the foe's side
+    for (const block of line) expect(findStretch(b, block)!.a[0]).toBeLessThan(block.x);
+  });
+
+  it("digs a ditch while the foe holds off, and plants stakes when it comes on too fast for one", () => {
+    const held = battle([regiment(1, noRiders)], [regiment(2, { infantry: 2000, archers: 700 })]);
+    order(held, "attackers", "hold");
+    held.planned = true;
+    expect(getCommands(held)[1]).toBe("hold");
+    for (let i = 0; i < 126; i++) {
+      if (i === 54) order(held, "attackers", "hold"); // and it keeps off
+      tick(held);
+      if (i === 0) expect(getCommands(held)[1]).toBe("fortify"); // the general sees there is time for it
+    }
+    expect(worksOf(held, "defenders").length).toBeGreaterThan(3);
+    expect(worksOf(held, "defenders").every(work => work.kind === "ditch" && work.up)).toBe(true);
+    expect(getCommands(held)[1]).toBe("hold");
+
+    const coming = battle([regiment(1, noRiders)], [regiment(2, { infantry: 2000, archers: 700 })]);
+    coming.planned = true;
+    ticks(coming, ROUND_TICKS * 3 + 1);
+    expect(worksOf(coming, "defenders").length).toBeGreaterThan(3);
+    expect(worksOf(coming, "defenders").every(work => work.kind === "stakes" && work.up)).toBe(true);
+  });
+
+  it("has besiegers in blockade dig siege lines, and a laager ring its wagons with the horse bearing down", () => {
+    const siege = setup("siege", { infantry: 2000, archers: 400 }, { infantry: 900, archers: 600 }, walled());
+    expect(siege.attackers.plan.tactic).toBe("lines");
+    expect(isDugIn(siege, "attackers")).toBe(false); // they do not ring the burg in: no lines laid in advance
+    let fortified = false;
+    for (let i = 0; i < ROUND_TICKS * 25 && !siege.result; i++) {
+      tick(siege);
+      fortified ||= getCommands(siege)[0] === "fortify";
+    }
+    expect(fortified).toBe(true);
+    expect(worksOf(siege, "attackers").filter(work => work.up).length).toBeGreaterThan(3);
+    expect(worksOf(siege, "defenders")).toEqual([]); // the besieged have walls
+
+    const laager = battle([regiment(1, { infantry: 900, archers: 300, cavalry: 1600 })], [regiment(2, noRiders)]);
+    expect(laager.defenders.plan.tactic).toBe("laager");
+    const horse = (): number =>
+      Math.min(
+        ...of(laager, "attackers")
+          .filter(block => block.kind === "rider")
+          .map(block => Math.hypot(block.x - laager.defenders.plan.x, block.y - laager.defenders.plan.y))
+      );
+    const far = horse();
+    ticks(laager, 36);
+    expect(horse()).toBeLessThan(far * 0.6);
+    const wagons = worksOf(laager, "defenders");
+    expect(wagons.length).toBe(of(laager, "defenders").filter(block => block.order.rank === 0).length);
+    expect(wagons.every(work => work.kind === "wagons" && work.up && work.builder === null)).toBe(true);
+    // a closed ring round the whole army
+    for (const work of wagons) expect(wagons.filter(other => other.a === work.b)).toHaveLength(1);
+    for (const block of of(laager, "defenders")) expect(inside([block.x, block.y], wagons), block.key).toBe(true);
+  });
+
+  it("has a side behind its ditch come out when it is shot at with nothing to answer, and stay when it is not", () => {
+    const shot = battle(
+      [regiment(1, { infantry: 900, archers: 2400 })],
+      [regiment(2, { infantry: 3000, cavalry: 600 })]
+    );
+    dig(shot, "defenders");
+    shot.planned = true;
+    expect(worksOf(shot, "defenders").every(work => work.kind === "ditch" && work.up)).toBe(true);
+    while (!shot.result && !shot.defenders.advancing) tick(shot);
+    expect(shot.defenders.advancing).toBe(true);
+    expect(shot.defenders.casualties).toBeGreaterThan(0);
+
+    const stays = (dug: boolean): boolean => {
+      const b = battle(
+        [regiment(1, { infantry: 1800, cavalry: 300 })],
+        [regiment(2, { infantry: 2400, cavalry: 300 })]
+      );
+      if (dug) dig(b, "defenders");
+      order(b, "attackers", "hold");
+      b.planned = true;
+      ticks(b, ROUND_TICKS * 9);
+      return !b.defenders.advancing;
+    };
+    expect(stays(false)).toBe(false); // a side no weaker goes for a foe that does not come
+    expect(stays(true)).toBe(true); // behind its works it lets it be
+  });
+
+  it("has line troops behind their ditch wait for the foe, and go for one that came round its end", () => {
+    // how far the battalion at the right end of the line leaves its place for archers a short dash from it
+    const strays = (dug: boolean, round: boolean): number => {
+      const b = battle([regiment(1, { infantry: 1500, archers: 300 })], [regiment(2, noRiders)]);
+      if (dug) dig(b, "defenders");
+      order(b, "attackers", "hold");
+      order(b, "defenders", "hold");
+      const end = builders(b, "defenders").at(-1)!;
+      const { x, y, facing } = end.order;
+      const archers = of(b, "attackers").find(block => block.kind === "shooter")!;
+      const [dx, dy] = round ? [-Math.sin(facing), Math.cos(facing)] : [Math.cos(facing), Math.sin(facing)];
+      intervene(b, { tick: 0, kind: "move", block: archers.key, x: x + dx * 75, y: y + dy * 75 });
+      b.planned = true;
+      const block = b.blocks.find(other => other.key === end.key)!;
+      let most = 0;
+      for (let i = 0; i < 6; i++) {
+        tick(b);
+        most = Math.max(most, Math.hypot(block.x - block.order.x, block.y - block.order.y));
+      }
+      return most;
+    };
+    expect(strays(false, false)).toBeGreaterThan(15); // in the open it charges out
+    expect(strays(true, false)).toBeLessThan(3); // behind its ditch it waits
+    expect(strays(true, true)).toBeGreaterThan(15); // the foe came round the end of the ditch
+  });
+
+  it("has a battalion stop building when a foe comes near, fight, and take the work up again once it is gone", () => {
+    const b = battle([regiment(1, noRiders)], [regiment(2, { infantry: 2000, archers: 700 })]);
+    order(b, "attackers", "hold");
+    order(b, "defenders", "fortify");
+    b.planned = true;
+    ticks(b, 12);
+    const builder = builders(b, "defenders")[1];
+    const work = findStretch(b, builder)!;
+    expect([work.kind, builder.action]).toEqual(["ditch", "build"]);
+    const begun = work.done;
+    expect(begun).toBeGreaterThan(0.08);
+    const foe = of(b, "attackers").find(block => block.kind === "line")!;
+    const camp = [foe.x, foe.y];
+    const { x, y, facing } = builder.order;
+    intervene(b, {
+      tick: b.tick,
+      kind: "move",
+      block: foe.key,
+      x: x + Math.cos(facing) * 50,
+      y: y + Math.sin(facing) * 50
+    });
+    let fought = false;
+    for (let i = 0; i < ROUND_TICKS; i++) {
+      tick(b);
+      expect(builder.action).not.toBe("build");
+      fought ||= builder.action === "fight";
+    }
+    expect(fought).toBe(true);
+    expect(work.done).toBe(begun); // the work is kept
+    intervene(b, { tick: b.tick, kind: "move", block: foe.key, x: camp[0], y: camp[1] });
+    ticks(b, ROUND_TICKS * 2);
+    expect(builder.action).toBe("build");
+    expect(work.done).toBeGreaterThan(begun);
+    expect(findStretch(b, builder)).toBe(work);
+  });
+
+  it("has a charge over a ditch strike with no impetus, and as on open ground round its end or over half a ditch", () => {
+    const charge = (work: "none" | "half" | "ditch" | "end"): { impetus: number; losses: number } => {
+      const b = createBattle({
+        type: "field",
+        name: "Test",
+        place: null,
+        x: 0,
+        y: 0,
+        cell: 0,
+        axis: 0,
+        field: createEmptyBattlefield(),
+        units: [unit("foot", "melee", 1), { ...unit("infantry", "melee", 1), morale: 10 }], // steady: it stands whatever comes
+        populationScale: 1000,
+        attackers: [regiment(1, { foot: 100 })],
+        defenders: [regiment(2, { infantry: 100 })]
+      });
+      const [attacker, defender] = b.blocks;
+      intervene(b, { tick: 0, kind: "move", block: attacker.key, x: defender.x - 136, y: defender.y });
+      intervene(b, { tick: 0, kind: "order", side: "attackers", order: "attack" }); // head on at it
+      intervene(b, { tick: 0, kind: "order", side: "defenders", order: "defend" });
+      plan(b);
+      const target = b.blocks.find(block => block.side === "defenders")!;
+      if (work !== "none") lay(b, target, "ditch", work === "half" ? 0.5 : 1, work === "end" ? 1 : 0);
+      while (!b.result && !b.blocks.some(block => block.action === "fight")) tick(b);
+      const impetus = b.blocks.find(block => block.side === "attackers")!.impetus;
+      const fallen = (): number => target.initial - target.troops + target.harm; // to the fraction of a man
+      const before = fallen();
+      ticks(b, ROUND_TICKS);
+      return { impetus, losses: fallen() - before };
+    };
+    const open = charge("none");
+    expect(open.impetus).toBeGreaterThan(1.4); // foot at the charge
+    expect(charge("half")).toEqual(open); // a half-built work gives nothing
+    expect(charge("end")).toEqual(open); // nor one that is not between them
+    const ditch = charge("ditch");
+    expect(ditch.impetus).toBe(1);
+    expect(ditch.losses).toBeLessThan(open.losses * 0.6);
+  });
+
+  it("keeps riders off a line over its stakes, under the fire of its shooters", () => {
+    const b = battle([regiment(1, { infantry: 600, cavalry: 1500 })], [regiment(2, { ...big, cavalry: 900 })]);
+    dig(b, "defenders");
+    order(b, "attackers", "attack");
+    // the horse right before the middle of the line
+    const middle = builders(b, "defenders")[2];
+    const { x, y, facing } = middle.order;
+    for (const [i, rider] of of(b, "attackers")
+      .filter(block => block.kind === "rider")
+      .slice(0, 2)
+      .entries()) {
+      const aside = (i - 0.5) * 80;
+      intervene(b, {
+        tick: 0,
+        kind: "move",
+        block: rider.key,
+        x: x + Math.cos(facing) * 50 - Math.sin(facing) * aside,
+        y: y + Math.sin(facing) * 50 + Math.cos(facing) * aside
+      });
+    }
+    b.planned = true;
+    expect(worksOf(b, "defenders").every(work => work.kind === "stakes" && work.up)).toBe(true);
+    let before = false;
+    let shot = false;
+    for (let i = 0; i < ROUND_TICKS * 6 && !b.result; i++) {
+      tick(b);
+      for (const rider of of(b, "attackers").filter(block => block.kind === "rider" && block.status === "ready")) {
+        if (rider.action === "fight") {
+          const foe = b.blocks[rider.target!];
+          expect(getWorksBetween(b.field, [rider.x, rider.y], [foe.x, foe.y], foe.side)).toEqual([]);
+        }
+        // close enough to fight, but for the stakes between
+        before ||= of(b, "defenders").some(
+          foe =>
+            foe.status === "ready" &&
+            getGap(rider, foe)[0] <= CONTACT &&
+            getWorksBetween(b.field, [rider.x, rider.y], [foe.x, foe.y], foe.side).length > 0
+        );
+      }
+      shot ||= of(b, "defenders").some(block => block.action === "shoot" && b.blocks[block.target!].kind === "rider");
+    }
+    expect(before).toBe(true); // it stood before the stakes
+    expect(shot).toBe(true);
+  });
+
+  it("has shots over a ditch kill fewer, and the same shots from a flank as many", () => {
+    const shot = (dug: boolean, flank: boolean): number => {
+      const b = battle([regiment(1, { archers: 200 })], [regiment(2, { infantry: 1000 })]);
+      if (dug) dig(b, "defenders");
+      order(b, "attackers", "skirmish");
+      order(b, "defenders", "hold");
+      const end = builders(b, "defenders").at(-1)!;
+      const { x, y, facing } = end.order;
+      const [dx, dy] = flank
+        ? [-Math.sin(facing) * 130, Math.cos(facing) * 130]
+        : [Math.cos(facing) * 120, Math.sin(facing) * 120];
+      intervene(b, { tick: 0, kind: "move", block: of(b, "attackers")[0].key, x: x + dx, y: y + dy });
+      b.planned = true;
+      ticks(b, ROUND_TICKS * 2);
+      return b.defenders.casualties;
+    };
+    const head = shot(false, false);
+    expect(head).toBeGreaterThan(0);
+    expect(shot(true, false)).toBeLessThan(head * 0.75);
+    expect(shot(true, true)).toBe(shot(false, true));
+  });
+
+  it("lets a side pass its own works anywhere, and stops its foes at its wagons", () => {
+    const b = battle([regiment(1, even)], [regiment(2, even)]);
+    b.planned = true;
+    const own = builders(b, "defenders")[0];
+    const { x, y, facing } = own.order;
+    const [cos, sin] = [Math.cos(facing), Math.sin(facing)];
+    /** How far the block gets in a few steps forward from where it stands */
+    const walk = (block: Block, angle: number): number => {
+      const walker = { ...block };
+      for (let i = 0; i < 6; i++) step(b, walker, Math.cos(angle), Math.sin(angle), Infinity, []);
+      return Math.hypot(walker.x - block.x, walker.y - block.y);
+    };
+    const open = walk(own, facing);
+    lay(b, own, "wagons");
+    expect(walk(own, facing)).toBe(open); // it went over the wagons as if they were not there
+    expect(open).toBeGreaterThan(own.depth / 2 + 10);
+    // a foe a dash before them is stopped at them, its front short of the line
+    const foe = { ...of(b, "attackers")[0], x: x + cos * 70, y: y + sin * 70, facing: facing + Math.PI };
+    const line = 70 - own.depth / 2 - 6; // from the foe to the wagons
+    const got = walk(foe, facing + Math.PI);
+    expect(got).toBeLessThan(line - foe.depth / 2 + 5); // it may slide along them, it does not cross
+    expect(got).toBeGreaterThan(line - foe.depth / 2 - 12);
+  });
+
+  it("has foot fight a wagon ring over the wagons, and get in by the gap engines knock into it", () => {
+    const b = setup("field", { infantry: 900, cavalry: 1600, artillery: 40 }, noRiders);
+    expect(b.defenders.plan.tactic).toBe("laager");
+    let over = false;
+    let gap: number | null = null;
+    let within = false;
+    while (!b.result) {
+      tick(b);
+      const wagons = worksOf(b, "defenders");
+      for (const block of of(b, "attackers")) {
+        if (block.status !== "ready") continue;
+        const target = block.target === null ? null : b.blocks[block.target];
+        if (block.action === "fight" && target && block.kind === "line")
+          over ||= getWorksBetween(b.field, [block.x, block.y], [target.x, target.y], "defenders").length > 0;
+        if (gap !== null && block.kind !== "engine") within ||= inside([block.x, block.y], wagons);
+      }
+      gap ??= b.log.find(entry => entry.event === "gap")?.tick ?? null;
+    }
+    expect(over).toBe(true);
+    expect(gap).not.toBeNull();
+    expect(within).toBe(true);
+    expect(worksOf(b, "defenders").filter(work => work.harm >= 1).length).toBeGreaterThan(0); // the wreck stays drawn
+  });
+
+  it("starts a side dug in behind finished works, laid anew before battalions moved by hand and on a reset", () => {
+    const b = battle([regiment(1, even)], [regiment(2, even)]);
+    expect([isDugIn(b, "attackers"), isDugIn(b, "defenders")]).toEqual([false, false]); // a field battle has no time for it
+    dig(b, "defenders");
+    expect(worksOf(b, "defenders")).toHaveLength(builders(b, "defenders").length);
+    expect(worksOf(b, "defenders").every(work => work.up && work.done === 1)).toBe(true);
+    expect(b.log.at(-1)).toEqual({ tick: 0, event: "dig", side: "defenders", params: { on: "true" } });
+
+    const moved = builders(b, "defenders")[0];
+    const [x, y] = [moved.x + 100, moved.y];
+    intervene(b, { tick: 0, kind: "move", block: moved.key, x, y });
+    const there = b.blocks.find(block => block.key === moved.key)!;
+    expect([there.x, there.y]).toEqual([x, y]);
+    expect(findStretch(b, there)?.up).toBe(true);
+    resetDeployment(b);
+    const back = b.blocks.find(block => block.key === moved.key)!;
+    expect(back.x).toBeLessThan(x - 50);
+    expect(findStretch(b, back)?.up).toBe(true);
+    expect(worksOf(b, "defenders")).toHaveLength(builders(b, "defenders").length);
+
+    // besiegers who ring a burg in stand behind their lines, and defenders ready for a landing behind works on the shore;
+    // set by hand, it holds either way
+    const siege = setup("siege", { infantry: 4400, archers: 800 }, { infantry: 900, archers: 600 }, walled());
+    expect(siege.attackers.plan.tactic).toBe("ring");
+    const lines = worksOf(siege, "attackers");
+    expect(lines.length).toBeGreaterThan(4);
+    const burg = siege.field.burgs[0];
+    for (const work of lines) {
+      const [mx, my] = [(work.a[0] + work.b[0]) / 2, (work.a[1] + work.b[1]) / 2];
+      const front: [number, number] = [work.b[1] - work.a[1], work.a[0] - work.b[0]]; // on the left of a → b
+      expect(front[0] * (burg.x - mx) + front[1] * (burg.y - my)).toBeGreaterThan(0); // facing the walls
+    }
+    intervene(siege, { tick: 0, kind: "dig", side: "attackers", on: false });
+    expect(worksOf(siege, "attackers")).toEqual([]);
+    const field = createEmptyBattlefield();
+    for (let row = 0; row < ROWS; row++) for (let col = 0; col < 30; col++) field.water[row * COLS + col] = 1;
+    const landing = setup("landing", big, big, field);
+    expect(worksOf(landing, "defenders").length).toBeGreaterThan(3);
+  });
+
+  it("has a side no weaker come on when the foe begins a ditch, but not when it plants stakes", () => {
+    const comes = (army: Record<string, number>): [WorkKind, boolean] => {
+      const b = battle([regiment(1, army)], [regiment(2, army)]);
+      order(b, "attackers", "fortify");
+      b.planned = true;
+      ticks(b, ROUND_TICKS * 2 + 1);
+      return [worksOf(b, "attackers")[0].kind, b.defenders.advancing];
+    };
+    expect(comes(noRiders)).toEqual(["ditch", true]);
+    expect(comes({ infantry: 2000, archers: 600, cavalry: 900 })).toEqual(["stakes", false]);
+  });
+
+  it("has a weaker attacker think better of an assault on a foe dug in: both stand and the battle dies down", () => {
+    const weaker = { infantry: 1900, archers: 700, cavalry: 500 };
+    const b = battle([regiment(1, weaker)], [regiment(2, big)]);
+    dig(b, "defenders");
+    expect(b.attackers.advancing).toBe(true); // by the odds he would attack
+    plan(b);
+    expect(b.attackers.waits).toBe(true);
+    run(b);
+    expect(b.result!.winner).toBeNull();
+    expect(b.attackers.casualties + b.defenders.casualties).toBe(0);
+    expect(b.round).toBeLessThan(45); // once the works stand and nobody comes
+  });
+
+  it("replays a battle with works the same, the interventions with it", () => {
+    const live = battle([regiment(1, even)], [regiment(2, even)]);
+    dig(live, "defenders");
+    ticks(live, 12);
+    order(live, "attackers", "fortify");
+    while (!live.result) tick(live);
+    expect(live.log.some(entry => entry.event === "ordered" && entry.params!.order === "fortify")).toBe(true);
+    expect(live.field.works.some(work => work.side === "attackers")).toBe(true);
+    const again = battle([regiment(1, even)], [regiment(2, even)]);
+    replay(again, live.interventions);
+    expect(again.blocks).toEqual(live.blocks);
+    expect(again.field.works).toEqual(live.field.works);
+    expect(again.log).toEqual(live.log);
+  });
+
+  it("shuts the way over stakes to the foe's riders only, leaving their ends open", () => {
+    const b = battle([regiment(1, even)], [regiment(2, even)]);
+    b.planned = true;
+    const height = b.field.height;
+    b.field.works.push({
+      a: [455, height * 0.2],
+      b: [455, height * 0.8],
+      kind: "stakes",
+      side: "defenders",
+      builder: null,
+      done: 1,
+      up: true,
+      harm: 0
+    });
+    forgetWays(b.field);
+    const at = (side: Side, kind: Block["kind"]): Block => ({
+      ...b.blocks.find(block => block.side === side && block.kind === kind)!,
+      x: 400,
+      y: height / 2
+    });
+    const to = { x: 510, y: height / 2 };
+    expect(getDistance(b, at("attackers", "line"), to)).toBe(110); // foot go over them
+    expect(getDistance(b, at("defenders", "rider"), to)).toBe(110); // and riders of their own side
+    const round = getDistance(b, at("attackers", "rider"), to);
+    expect(round).toBeGreaterThan(110 * 2.5); // the foe's riders go round an end
+    expect(round).toBeLessThan(Infinity);
+  });
+
+  it("plans within its time behind works too: a ditch, stakes before riders, a wagon ring", () => {
+    const timed = (attackers: Record<string, number>, defenders: Record<string, number>, dug: boolean): void => {
+      const started = performance.now();
+      const b = battle([regiment(1, attackers)], [regiment(2, defenders)]);
+      if (dug) dig(b, "defenders");
+      plan(b);
+      expect(performance.now() - started).toBeLessThan(1000);
+      let slowest = 0;
+      while (!b.result) {
+        const from = performance.now();
+        for (let i = 0; i < ROUND_TICKS && !b.result; i++) tick(b);
+        slowest = Math.max(slowest, performance.now() - from);
+      }
+      expect(slowest).toBeLessThan(100);
+    };
+    const foot = { infantry: 15000, archers: 4000 };
+    timed(foot, foot, true); // a ditch
+    timed({ infantry: 10000, archers: 3000, cavalry: 6000 }, { infantry: 12000, archers: 4000, cavalry: 3000 }, true); // stakes
+    timed({ infantry: 5000, archers: 1500, cavalry: 9000 }, { infantry: 14000, archers: 5000 }, false); // a laager
   });
 });

@@ -47,6 +47,21 @@ export interface FieldWall {
   water: number; // what a gate opens on: 0 a road, 1 the sea or a lake, 2 a river
 }
 
+/** What a side can build on the field before its first line: see works.ts */
+export type WorkKind = "stakes" | "ditch" | "wagons";
+
+/** A stretch of works, its front on the left of the way from `a` to `b` */
+export interface FieldWork {
+  a: Point;
+  b: Point;
+  kind: WorkKind;
+  side: "attackers" | "defenders"; // who holds it
+  builder: number | null; // the battalion building it; null for wagons and for works laid in advance
+  done: number; // 0 to 1
+  up: boolean; // finished by the start of this round: only then it counts
+  harm: number; // 0 to 1: engines knocking down a stretch of wagons; at 1 it is down, kept for the drawing
+}
+
 export interface FieldBreach {
   x: number;
   y: number;
@@ -76,6 +91,7 @@ export interface Battlefield extends FieldSize {
   burgs: FieldBurg[];
   walls: FieldWall[]; // what stands of them
   breaches: FieldBreach[];
+  works: FieldWork[];
   held: number | null; // the burg the defenders of a siege hold
 }
 
@@ -126,6 +142,7 @@ export function createEmptyBattlefield(open: Battlefield["open"] = null): Battle
     burgs: [],
     walls: [],
     breaches: [],
+    works: [],
     held: null
   };
 }
@@ -526,6 +543,36 @@ export function getWallsBetween(field: Battlefield, from: Point, to: Point): Fie
 
 const NO_WALLS: FieldWall[] = [];
 
+/** Stretches of works that stand and that the straight way between two points crosses; of one side's when given */
+export function getWorksBetween(field: Battlefield, from: Point, to: Point, side?: FieldWork["side"]): FieldWork[] {
+  if (!field.works.length) return NO_WORKS;
+  let crossed = NO_WORKS;
+  for (const work of field.works) {
+    if (!isStanding(work) || (side && work.side !== side) || !cross(from, to, work.a, work.b)) continue;
+    if (crossed === NO_WORKS) crossed = [];
+    crossed.push(work);
+  }
+  return crossed;
+}
+
+const NO_WORKS: FieldWork[] = [];
+
+/** A stretch that counts: finished and not knocked down */
+export const isStanding = (work: FieldWork): boolean => work.up && work.harm < 1;
+
+/** How far along the way from a point, as a share of it, it first meets one of the stretches; null when it meets none */
+export function getCrossing(works: FieldWork[], from: Point, to: Point): number | null {
+  let first: number | null = null;
+  for (const work of works) {
+    const point = cross(from, to, work.a, work.b);
+    if (!point) continue;
+    const length = Math.hypot(to[0] - from[0], to[1] - from[1]) || 1;
+    const share = Math.hypot(point[0] - from[0], point[1] - from[1]) / length;
+    if (first === null || share < first) first = share;
+  }
+  return first;
+}
+
 export const isForest = (biome: number): boolean => FOREST_BIOMES.includes(biome);
 
 /** The grid node a point of the field lies in */
@@ -589,7 +636,7 @@ function cross(a: Point, b: Point, c: Point, d: Point): Point | null {
   return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? [a[0] + rx * t, a[1] + ry * t] : null;
 }
 
-function distanceToLine([x, y]: Point, line: Point[]): number {
+export function distanceToLine([x, y]: Point, line: Point[]): number {
   let best = Infinity;
   for (let i = 1; i < line.length; i++) {
     const [ax, ay] = line[i - 1];

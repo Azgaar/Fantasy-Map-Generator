@@ -27,7 +27,7 @@ type Format = "gif" | "svg";
 type Quality = "low" | "medium" | "high";
 const FRAME_MS = 50; // aimed at: GIF delays are in hundredths of a second, short ones play slower
 const END_MS = 3000; // the outcome stands before the loop starts again
-const MOVING = [".battleFire", ".battleBlocks", ".battleMissiles", ".battleClashes"]; // layers above the ground
+const MOVING = [".battleWorks", ".battleFire", ".battleBlocks", ".battleMissiles", ".battleClashes"]; // layers above the ground
 export const SPEEDS = [0.5, 1, 2, 4]; // playback, ×1 the speed a tick is drawn at
 
 /** How many times as fast as the battle it plays at a speed */

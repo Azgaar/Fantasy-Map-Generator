@@ -19,16 +19,22 @@ export function spread(
   costs: ArrayLike<number>,
   closed?: ArrayLike<number>
 ): Reach {
-  const cost = new Float64Array(cols * rows).fill(Infinity);
-  const from = new Int32Array(cols * rows).fill(-1);
+  const size = cols * rows;
+  const cost = new Float64Array(size).fill(Infinity);
+  const from = new Int32Array(size).fill(-1);
 
   // a binary heap of nodes by cost; a node may be in it more than once, the dearer copies are skipped
-  const heapCost: number[] = [];
-  const heapNode: number[] = [];
+  let heapCost = new Float64Array(size);
+  let heapNode = new Int32Array(size);
+  let length = 0;
   const push = (value: number, node: number): void => {
-    let i = heapCost.length;
-    heapCost.push(value);
-    heapNode.push(node);
+    if (length === heapCost.length) {
+      const [costs, nodes] = [new Float64Array(length * 2), new Int32Array(length * 2)];
+      costs.set(heapCost);
+      nodes.set(heapNode);
+      [heapCost, heapNode] = [costs, nodes];
+    }
+    let i = length++;
     while (i) {
       const parent = (i - 1) >> 1;
       if (heapCost[parent] <= value) break;
@@ -39,17 +45,18 @@ export function spread(
     heapCost[i] = value;
     heapNode[i] = node;
   };
-  const pop = (): [number, number] => {
-    const top: [number, number] = [heapCost[0], heapNode[0]];
-    const value = heapCost.pop()!;
-    const node = heapNode.pop()!;
-    const size = heapCost.length;
-    if (size) {
+  /** Take the cheapest node off the heap; its cost is read before */
+  const pop = (): number => {
+    const top = heapNode[0];
+    length--;
+    const value = heapCost[length];
+    const node = heapNode[length];
+    if (length) {
       let i = 0;
       for (;;) {
         let child = i * 2 + 1;
-        if (child >= size) break;
-        if (child + 1 < size && heapCost[child + 1] < heapCost[child]) child++;
+        if (child >= length) break;
+        if (child + 1 < length && heapCost[child + 1] < heapCost[child]) child++;
         if (heapCost[child] >= value) break;
         heapCost[i] = heapCost[child];
         heapNode[i] = heapNode[child];
@@ -66,12 +73,14 @@ export function spread(
     push(0, source);
   }
 
-  while (heapCost.length) {
-    const [reached, node] = pop();
+  while (length) {
+    const reached = heapCost[0];
+    const node = pop();
     if (reached > cost[node]) continue;
     const col = node % cols;
     const row = (node - col) / cols;
     const here = costs[node];
+    const shut = closed ? closed[node] : 0;
 
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
@@ -82,7 +91,7 @@ export function spread(
         const next = y * cols + x;
         const there = costs[next];
         if (there === Infinity) continue;
-        if (closed && closed[node] & getStepBit(dx, dy)) continue;
+        if (shut & getStepBit(dx, dy)) continue;
         // no cutting the corner of a node dearer than both ends of the step, nor of one that cannot be entered
         if (dx && dy) {
           const worst = Math.max(here === Infinity ? there : here, there);

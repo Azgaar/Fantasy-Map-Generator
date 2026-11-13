@@ -268,6 +268,7 @@ export const BATTLE_TYPE_LABELS: Record<BattleType, string> = {
 
 export const BATTLE_ORDER_LABELS: Record<Command, string> = {
   hold: t("Hold"),
+  fortify: t("Fortify"),
   skirmish: t("Skirmish"),
   attack: t("Attack"),
   defend: t("Defend"),
@@ -285,6 +286,7 @@ export const BATTLE_TACTIC_LABELS: Record<string, string> = {
   stand: t("Defensive line"),
   crescent: t("Refused flanks"),
   crossing: t("Defence of a crossing"),
+  laager: t("Wagon fort"),
   column: t("Column of march"),
   ambuscade: t("Ambuscade on both sides"),
   waylay: t("Ambuscade on one side"),
@@ -299,5 +301,6 @@ export const BATTLE_ACTION_LABELS: Record<string, string> = {
   move: t("Moving"),
   shoot: t("Shooting"),
   fight: t("Fighting"),
-  flee: t("Fleeing")
+  flee: t("Fleeing"),
+  build: t("Building")
 };
