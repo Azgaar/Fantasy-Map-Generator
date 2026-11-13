@@ -22,16 +22,17 @@ describe("battle scale", () => {
     expect(getFieldSize(1000).cell).toBeCloseTo(45.45, 2);
   });
 
-  it("zooms a siege in on its burg: its radius is at least 12% of the width", () => {
-    expect(getFieldSize(300, 60).width).toBe(500); // a small burg
-    expect(getFieldSize(300, 160).width).toBeCloseTo(1333, 0);
-    expect(getFieldSize(300, 400).width).toBeCloseTo(1364, 0); // a large one leaves the field as it is
+  it("takes a besieged burg and the land about it in, top to bottom", () => {
+    expect(getFieldSize(300, 60).width).toBeCloseTo(2267, 0); // a village: the ring and room about it
+    expect(getFieldSize(300, 800).width).toBeCloseTo(4733, 0); // a city
+    expect(getFieldSize(300, 800).height / 2).toBeGreaterThan(800 + 340); // the ring fits above and below
+    expect(getFieldSize(1000, 60).width).toBeCloseTo(4545, 0); // big battalions keep their field
     expect(getFieldSize(300, 60).front).toBe(60); // battalions keep their real size
   });
 
   it("keeps the field between 250 m and 10 km wide", () => {
     expect(getFieldSize(20).width).toBe(250);
-    expect(getFieldSize(300, 10).width).toBe(250);
+    expect(getFieldSize(300, 5000).width).toBe(10000);
     expect(getFieldSize(5000).width).toBe(10000);
   });
 

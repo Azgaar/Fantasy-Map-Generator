@@ -4,7 +4,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import { Coastline } from "@/model/physical/coastline-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
-import { getKmInDistanceUnit, heightToMeters } from "@/model/units";
+import { getKmInDistanceUnit, getPeople, heightToMeters } from "@/model/units";
 import type { Point } from "@/types/global";
 import { COLS, DEFAULT_BATTALION, type FieldSize, getFieldSize, ROWS } from "./battle-scale";
 
@@ -679,8 +679,8 @@ export function getSiegeRadius([x, y]: Point): number {
   return burg ? getBurgRadius(pack.burgs[burg]) : Infinity;
 }
 
-/** A burg's radius in metres, by its people */
-const getBurgRadius = (burg: Burg): number => Math.min(Math.max(32 + Math.sqrt(burg.population ?? 1) * 16, 48), 160);
+/** A burg's radius in metres: 100 m² a dweller, as in a walled town of the Middle Ages; ten dwellers at least */
+const getBurgRadius = (burg: Burg): number => 10 * Math.sqrt(Math.max(getPeople(0, burg.population), 10) / Math.PI);
 
 /** Where a port stands on the map at true scale: the map draws it a few km off the shore, the plan right on it */
 function getHarbour(burg: Burg, pixel: number): Point {

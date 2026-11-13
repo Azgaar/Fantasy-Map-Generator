@@ -84,7 +84,7 @@ const MARCHING = 0.7; // further from its place a battalion faces the way it mar
 const MARCH = 1.4; // the way a battalion makes in a round to be on the march
 
 // morale
-const MORALE_LOSS = 180; // morale a block loses when all its troops fall
+const MORALE_LOSS = 300; // morale a block loses when all its troops fall
 const NERVE = 12; // morale a round the odds at hand give or take, at most half of it
 const REST = 4; // morale a round a battalion left alone recovers
 const BREAK = 15; // morale at which it breaks and runs
@@ -98,10 +98,12 @@ const TOWN = 1.25; // how much stronger troops in a burg defend
 const WALLS = 3; // how many times weaker a blow or a shot is from without the walls at those within
 const COVER = 0.6; // share of the shots that tell on troops in a wood or a burg
 
-// blows: a hundred men of attack 1 cut down five men of defense 1 a round hand to hand, and shoot down three and a half
-const BLOW_RATE = 0.05;
-const SHOT_RATE = 0.035;
-const BROKEN = 0.1; // strength of troops on the run or giving themselves up
+// a hundred men of attack 1 cut down or shoot down one and a quarter men of defense 1 a round
+const KILL_RATE = 0.0125;
+const BROKEN = 0.1; // strike of troops on the run or giving themselves up; they stand as well as ever
+const FLANK = 1.25; // how much harder a blow or a shot lands in the flank
+const REAR = 1.8; // and in the rear
+const FLIGHT = 1.2; // of its pace, how fast a broken battalion runs
 const SHOCK = 0.5; // strength of a side taken by surprise
 const IMPETUS = 6.2; // closing speed in m/s that adds a whole blow again: riders at the gallop strike 2.7 times, foot at the charge 1.6
 const MAX_IMPETUS = 5;
@@ -283,7 +285,6 @@ export interface Battle {
   round: number;
   engaged: number | null; // round of the first blow: phases count from it, however long the approach
   lastLoss: number; // tick of the last casualty
-  brokenAt: number | null; // tick a side was left with no troops in order
   storm: number | null; // round the besiegers set out to storm the walls
   cutOff: boolean; // the besieged burg is ringed in by land and water: nothing comes in
   battered: number; // how far the engines are with the next breach, 0 to 1
@@ -340,7 +341,6 @@ export function createBattle(setup: BattleSetup): Battle {
     round: 0,
     engaged: null,
     lastLoss: 0,
-    brokenAt: null,
     storm: null,
     cutOff: false,
     battered: 0,
@@ -787,7 +787,7 @@ function flee(battle: Battle, block: Block, others: Block[]): void {
   block.action = "flee";
   const away = getFlight(battle, block) ?? (block.side === "attackers" ? battle.axis + Math.PI : battle.axis);
   block.facing = turn(block.facing, away, 1.2);
-  step(battle, block, Math.cos(away), Math.sin(away), Infinity, others, 1.3);
+  step(battle, block, Math.cos(away), Math.sin(away), Infinity, others, FLIGHT);
   const off = block.x < 0 || block.x > battle.field.width || block.y < 0 || block.y > battle.field.height;
   if (off) {
     block.status = "fled";
@@ -865,15 +865,15 @@ function fight(battle: Battle): void {
     if (!shot) {
       block.impetus = 1 + (block.impetus - 1) * SPENT;
       struck.add(target.id);
-      const bearing = Math.atan2(block.y - target.y, block.x - target.x);
-      const angle = Math.abs(normalize(bearing - target.facing));
-      const side = angle > 2.1 ? 2 : angle > 1.05 ? 1 : 0; // rear, flank, front
-      if (side) {
-        power *= side === 2 ? 1.6 : 1.3;
-        pressed.set(target.id, (pressed.get(target.id) ?? 0) + side / 2);
-      }
     }
-    landed.set(target.id, (landed.get(target.id) ?? 0) + power * cover * (shot ? SHOT_RATE : BLOW_RATE));
+    const bearing = Math.atan2(block.y - target.y, block.x - target.x);
+    const angle = Math.abs(normalize(bearing - target.facing));
+    const side = angle > 2.1 ? 2 : angle > 1.05 ? 1 : 0; // rear, flank, front
+    if (side) {
+      power *= side === 2 ? REAR : FLANK;
+      pressed.set(target.id, (pressed.get(target.id) ?? 0) + side / 2);
+    }
+    landed.set(target.id, (landed.get(target.id) ?? 0) + power * cover * KILL_RATE);
   }
 
   for (const [id, blows] of landed) {
@@ -881,7 +881,7 @@ function fight(battle: Battle): void {
     const ground = terrainAt(battle.field, block.x, block.y);
     // what each man stands with: the harder the blows and the weaker the man, the more fall; counted in fractions
     const stands =
-      getPower(battle, block, block.defense, 1) * (ground.town ? TOWN : 1) * getFooting(battle, block, ground);
+      getPower(battle, block, block.defense, 1, true) * (ground.town ? TOWN : 1) * getFooting(battle, block, ground);
     const fallen = blows / Math.max(stands, 0.01) / ROUND_TICKS;
     const share = fallen / block.initial;
     block.harm += fallen;
@@ -1006,13 +1006,14 @@ const isHungry = (battle: Battle, block: Block): boolean => battle.cutOff && blo
 /** Power multiplier of a die: 0.375 for ⚀ to 1.125 for ⚅, 0.75 on average */
 export const getFortune = (die: number): number => 0.75 + (die - 3.5) * 0.15;
 
-/** Troops on the run, and a side in retreat: they hardly strike or stand */
+/** Troops on the run, and a side in retreat: they hardly strike */
 const isBroken = (battle: Battle, block: Block): boolean =>
   isRunning(block) || isBeaten(battle.type, block.side, battle[block.side].phase);
 
-function getPower(battle: Battle, block: Block, of: number, troops = block.troops): number {
+/** What a battalion strikes with, or stands with when `standing` */
+function getPower(battle: Battle, block: Block, of: number, troops = block.troops, standing = false): number {
   const side = battle[block.side];
-  const state = isBroken(battle, block) ? BROKEN : side.phase === "shock" ? SHOCK : 1;
+  const state = !standing && isBroken(battle, block) ? BROKEN : side.phase === "shock" ? SHOCK : 1;
   return troops * block.upkeep * of * state * getFortune(side.die) * side.boost;
 }
 
@@ -1076,15 +1077,10 @@ function checkEnd(battle: Battle): void {
   const ready = SIDES.map(side => battle.blocks.some(block => block.side === side && isInOrder(block)));
   const onField = SIDES.map(side => standing(side, ["ready", "routed"]));
 
-  // a side with nobody left in order: the rest is over in a few rounds
-  if (!ready[0] || !ready[1]) battle.brokenAt ??= battle.tick;
-  const pursued = battle.brokenAt !== null && battle.tick - battle.brokenAt >= ROUND_TICKS * 3; // the rest get away
-
   const over =
     !onField[0] ||
     !onField[1] ||
     (!ready[0] && !ready[1]) ||
-    pursued ||
     battle.tick >= MAX_TICKS ||
     (battle.engaged !== null && !battle.cutOff && battle.tick - battle.lastLoss > IDLE_ROUNDS * ROUND_TICKS); // a long way round is no lull, nor a blockade
   if (!over) return;

@@ -221,6 +221,8 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
   });
 }
 
+const TOWER_SPACING = 40; // points between the towers of a wall
+
 /** Burgs with what stands of their walls; drawn again when a breach is made */
 function drawBurgs(svg: SVGSVGElement, field: Battlefield): void {
   const group = select(svg).select<SVGGElement>(".battleBurgs");
@@ -231,16 +233,7 @@ function drawBurgs(svg: SVGSVGElement, field: Battlefield): void {
   const path = (points: Point[], closed = false): string =>
     `M${points.map(p => p.map(v => v.toFixed(1))).join("L")}${closed ? "Z" : ""}`;
 
-  // battlements: merlons stand out of the wall, the burg drawn over them hides their inner half
   const walls = field.walls.filter(wall => !wall.gate);
-  const stretches = walls.map(wall => path([wall.a, wall.b])).join("");
-  group
-    .append("path")
-    .attr("d", stretches)
-    .attr("fill", "none")
-    .attr("stroke", WALL)
-    .attr("stroke-width", 6 * pt)
-    .attr("stroke-dasharray", `${3 * pt} ${11 * pt}`);
   for (const burg of field.burgs) {
     group
       .append("path")
@@ -251,28 +244,38 @@ function drawBurgs(svg: SVGSVGElement, field: Battlefield): void {
   }
   group
     .append("path")
-    .attr("d", stretches)
+    .attr("d", walls.map(wall => path([wall.a, wall.b])).join(""))
     .attr("fill", "none")
     .attr("stroke", WALL)
-    .attr("stroke-width", 2.4 * pt)
+    .attr("stroke-width", 3.5 * pt)
     .attr("stroke-linecap", "round");
 
-  // a gate: a tower at each end of the gap
-  const isEnd = (point: Point, gate: boolean): boolean =>
-    field.walls.some(wall => wall.gate === gate && (wall.a === point || wall.b === point));
-  for (const wall of walls) {
-    for (const point of [wall.a, wall.b]) {
-      if (!isEnd(point, true)) continue;
-      group
-        .append("rect")
-        .attr("transform", markAt(...point, pt))
-        .attr("x", -3.5)
-        .attr("y", -3.5)
-        .attr("width", 7)
-        .attr("height", 7)
-        .attr("fill", WALL);
+  // square towers flank a gate; round ones stand along the curtain, legible apart at any size
+  const isGateEnd = (point: Point): boolean =>
+    field.walls.some(wall => wall.gate && (wall.a === point || wall.b === point));
+  const gates = walls.flatMap(wall => [wall.a, wall.b].filter(isGateEnd));
+  const spacing = Math.max(TOWER_SPACING * pt, 50);
+  const rounds: Point[] = [];
+  let run = spacing / 2;
+  walls.forEach((wall, i) => {
+    if (walls[i - 1]?.burg !== wall.burg) run = spacing / 2;
+    const length = Math.hypot(wall.b[0] - wall.a[0], wall.b[1] - wall.a[1]);
+    for (run += length; run >= spacing; run -= spacing) {
+      const share = 1 - (run - spacing) / length;
+      const at: Point = [wall.a[0] + (wall.b[0] - wall.a[0]) * share, wall.a[1] + (wall.b[1] - wall.a[1]) * share];
+      if (gates.every(gate => Math.hypot(gate[0] - at[0], gate[1] - at[1]) > spacing / 2)) rounds.push(at);
     }
-  }
+  });
+  const tower = (at: Point, d: string) =>
+    group
+      .append("path")
+      .attr("d", d)
+      .attr("transform", markAt(...at, pt))
+      .attr("fill", WALL)
+      .attr("stroke", "#fbf8f1")
+      .attr("stroke-width", 0.8);
+  for (const at of rounds) tower(at, "M-4 0a4 4 0 1 0 8 0a4 4 0 1 0-8 0");
+  for (const at of gates) tower(at, "M-4.5-4.5h9v9h-9Z");
   // a breach: rubble in the gap
   for (const breach of field.breaches) {
     const rubble = [0, 1, 2, 3, 4, 5, 6].map(i => {

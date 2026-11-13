@@ -278,8 +278,10 @@ const STYLE = /* css */ `
   .battleBar > i { display: block; height: 100%; background: #3f9b3f; transition: width 0.15s linear; }
   .battleBar.mid > i { background: #e0a920; }
   .battleBar.low > i { background: var(--loss); }
-  .battleOrdersButton { display: inline-flex; align-items: center; gap: 0.4em; }
-  .battleOrdersButton > i { color: var(--muted); }
+  /* the side's order, or its tactic before the start: a chip in the side's colour */
+  #battleLayout .battleOrdersButton { flex: none; max-width: 14em; padding: 0.1em 0.6em; border: 1px solid color-mix(in srgb, var(--side) 45%, transparent); border-radius: 1em; background: color-mix(in srgb, var(--side) 10%, #fff); color: #333; cursor: pointer; }
+  #battleLayout .battleOrdersButton:hover { border-color: var(--side); background: color-mix(in srgb, var(--side) 20%, #fff); }
+  .battleOrder { display: block; overflow: hidden; text-overflow: ellipsis; }
   #battleTitle { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.7em; min-width: 0; }
   #battleTitle > div { display: flex; flex-direction: column; align-items: center; gap: 0.25em; min-width: 0; }
   /* the die of the round, in the side's colour: a click turns it to the next face */
@@ -780,11 +782,18 @@ function refreshSide(side: Side): void {
     die.innerHTML = dieFace(data.die);
   }
 
-  const order = getOrder(b, side);
   const label = banner.querySelector<HTMLElement>(".battleOrder")!;
-  label.className = `battleOrder icon-button-${order}`;
-  label.dataset.tip = orderTip(order);
-  put(banner, ".battleOrder", BATTLE_ORDER_LABELS[order]);
+  if (!b.tick && !data.plan.order) {
+    const tactic = isPlanning() ? "" : BATTLE_TACTIC_LABELS[data.plan.tactic];
+    label.className = "battleOrder icon-button-tactic";
+    label.dataset.tip = tactic ? `${t("Tactic")}: ${tactic}` : t("Generals are planning");
+    put(banner, ".battleOrder", tactic || "…");
+  } else {
+    const order = getOrder(b, side);
+    label.className = `battleOrder icon-button-${order}`;
+    label.dataset.tip = orderTip(order);
+    put(banner, ".battleOrder", BATTLE_ORDER_LABELS[order]);
+  }
 
   refreshRegiments(side);
 }

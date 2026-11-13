@@ -7,7 +7,7 @@ export const COLS = 100; // the grid of a field of any size: a node is 1% of its
 export const ROWS = 60;
 
 const FRONTS = 1000 / 44; // battalion fronts across the field
-const SIEGE_SHARE = 0.12; // of the field's width a besieged burg's radius is, at least
+const SIEGE_LAND = 500; // metres of land round a besieged burg, and two battalion fronts more: the ring and room behind it
 const MIN_WIDTH = 250;
 const MAX_WIDTH = 10000;
 
@@ -18,10 +18,12 @@ export interface FieldSize {
   front: number; // a full battalion's
 }
 
-/** The field for battalions of so many men; a siege narrows it to its burg */
+/** The field for battalions of so many men; a siege takes in its whole burg and the land about it, top to bottom */
 export function getFieldSize(men: number, siegeRadius = Infinity): FieldSize {
   const front = men / RANKS;
-  const width = Math.min(Math.max(Math.min(front * FRONTS, siegeRadius / SIEGE_SHARE), MIN_WIDTH), MAX_WIDTH);
+  const army = front * FRONTS;
+  const siege = Number.isFinite(siegeRadius) ? (2 * (siegeRadius + SIEGE_LAND + 2 * front) * COLS) / ROWS : 0;
+  const width = Math.min(Math.max(army, siege, MIN_WIDTH), MAX_WIDTH);
   return { width, height: (width * ROWS) / COLS, cell: width / COLS, front };
 }
 

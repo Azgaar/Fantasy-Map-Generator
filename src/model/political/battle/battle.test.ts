@@ -819,7 +819,7 @@ describe("battle morale", () => {
 
 describe("battle surrender", () => {
   it("has a shaken battalion at grips, outmatched on a losing side, give itself up: it fights and is struck no more", () => {
-    const b = battle([regiment(1, { infantry: 1200 })], [regiment(2, { infantry: 2400 })]);
+    const b = battle([regiment(1, { infantry: 1200 })], [regiment(2, { infantry: 3000 })]);
     const taken = new Map<number, number>();
     while (!b.result) {
       tick(b);
@@ -837,7 +837,7 @@ describe("battle surrender", () => {
   });
 
   it("leaves behind those of a retreating side held at grips by stronger foes: they are captured, not fallen", () => {
-    const b = run(battle([regiment(1, { infantry: 840, archers: 280, cavalry: 140 })], [regiment(2, even)]));
+    const b = run(battle([regiment(1, { infantry: 780, archers: 260, cavalry: 130 })], [regiment(2, even)]));
     expect([b.result!.winner, b.defenders.phase]).toEqual(["attackers", "retreat"]);
     const [defenders] = b.defenders.regiments;
     const captured = sum(Object.values(getCaptured(b, defenders)));
@@ -1462,7 +1462,8 @@ describe("battle ways", () => {
         attackers: [regiment(1, { artillery: 200 })],
         defenders: [regiment(2, { infantry: 1000 })]
       });
-      for (let i = 0; i < 20 * 6; i++) {
+      for (let i = 0; i < 4 * 6; i++) {
+        // before anybody breaks: a battalion breaks at the same losses wherever it stands
         intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "skirmish" });
         // the garrison is kept in: left to itself it would sally out at engines nobody guards
         intervene(b, { tick: b.tick, kind: "order", side: "defenders", order: "hold" });
