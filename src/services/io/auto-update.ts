@@ -2323,6 +2323,11 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     }
     migrateEconomyRun();
   }
+
+  if (isOlderThan("1.159.0")) {
+    // TODO: v1.159.0 reworks battles, migrate old data as a separate effort before the release
+    // don't update during development, as the battles are not yet in the release format
+  }
 }
 
 // rendered for the geometry the steps measure, in a shadow root so its ids never meet the live map's

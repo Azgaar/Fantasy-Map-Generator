@@ -34,6 +34,7 @@ import {
   SIDES,
   type Side
 } from "@/model/political/battle/battle-rules";
+import { formatClock } from "@/model/political/battle/battle-scale";
 import { createEmptyBattlefield, createMapField } from "@/model/political/battle/battlefield";
 import { getOrder } from "@/model/political/battle/general";
 import type { Regiment } from "@/model/political/military-generator";
@@ -42,6 +43,7 @@ import { getUnitPower } from "@/model/political/military-units";
 import { Stability } from "@/model/political/stability";
 import { Names } from "@/model/society/names-generator";
 import type { Marker } from "@/model/story/markers-generator";
+import { formatLength, getLengthUnit } from "@/model/units";
 import {
   drawBattlefield,
   drawBlocks,
@@ -65,10 +67,10 @@ import { getAdjective, list } from "@/utils/language-utils";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
-import { BattleAnimation, type BattleStart } from "./battle-animation";
+import { BattleAnimation, type BattleStart, getPlayback, SPEEDS } from "./battle-animation";
 
-const TICK_MS = 170; // a tick at normal speed
-const LOG_VERSION = 1;
+const TICK_MS = 160; // a tick at normal speed: fifty times as fast as the battle
+const LOG_VERSION = 2;
 
 interface BattleLogFile {
   version: number;
@@ -307,7 +309,7 @@ const STYLE = /* css */ `
   #battleLog > header { display: flex; align-items: center; gap: 0.2em; padding: 0.3em 0.3em 0.3em 0.6em; border-bottom: 1px solid var(--line); }
   #battleLog > header > b { flex: 1; }
   #battleLogList { flex: 1; padding: 0.3em 0.6em; overflow-y: auto; line-height: 1.4; user-select: text; }
-  #battleLogList > div { display: grid; grid-template-columns: 1.8em 0.6em minmax(0, 1fr); gap: 0.4em; align-items: baseline; }
+  #battleLogList > div { display: grid; grid-template-columns: 2.6em 0.6em minmax(0, 1fr); gap: 0.4em; align-items: baseline; }
   #battleLogList > div > i { color: var(--muted); font-style: normal; font-variant-numeric: tabular-nums; text-align: right; }
   #battleLogList > div > u { width: 0.6em; height: 0.6em; background: var(--side, transparent); }
   #battleLogList > div.order { color: var(--muted); }
@@ -347,6 +349,7 @@ const STYLE = /* css */ `
   #battleRun.battlePause::before { content: "❚❚"; margin-right: 0.5em; font-size: 0.7em; vertical-align: 0.15em; }
   #battleSpeed { margin: 0 0.5em; }
   #battleClock { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #battleFieldSize { color: var(--muted); white-space: nowrap; }
 
   /* army sheets: the orders of each side and its regiments */
   #battleSides { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 0.8em; }
@@ -452,9 +455,10 @@ function renderDialog(): void {
             <button id="battleStep" data-tip="${t("Advance the battle by a single step")}" class="icon-right-open"></button>
             <button id="battleRestart" data-tip="${t("Play the same battle again from the start")}" class="icon-ccw"></button>
             <div id="battleSpeed" class="battleGroup" data-tip="${t("Battle speed")}">
-              ${[0.5, 1, 2, 4].map(speed => `<button data-speed="${speed}" class="${speed === 1 ? "pressed" : ""}">×${speed === 0.5 ? "½" : speed}</button>`).join("")}
+              ${SPEEDS.map(speed => `<button data-speed="${speed}" class="${speed === 1 ? "pressed" : ""}">×${getPlayback(TICK_MS, speed)}</button>`).join("")}
             </div>
             <span id="battleClock"></span>
+            <span id="battleFieldSize" data-tip="${t("Field size")}"></span>
           </div>
           <div>
             <span class="battlePicker">
@@ -725,7 +729,11 @@ function refresh(): void {
   const name = ensureEl<HTMLInputElement>("battleNameFull");
   if (document.activeElement !== name) name.value = b.name;
 
-  put(ensureEl("battleFooter"), "#battleClock", t("Round {{round}}", { round: Math.floor(b.tick / ROUND_TICKS) + 1 }));
+  const footer = ensureEl("battleFooter");
+  put(footer, "#battleClock", formatClock(b.tick));
+  ensureEl("battleClock").dataset.tip = t("Round {{round}}", { round: Math.floor(b.tick / ROUND_TICKS) + 1 });
+  const unit = getLengthUnit(b.field.width); // both lengths in one unit
+  put(footer, "#battleFieldSize", `${formatLength(b.field.width, unit)} × ${formatLength(b.field.height, unit)}`);
   if (!over) ensureEl("battleSummary").hidden = true;
 
   // setup only; nothing is hidden, so the controls never jump
@@ -739,10 +747,9 @@ function refresh(): void {
   const list = ensureEl("battleLogList");
   if (list.childElementCount > b.log.length) list.innerHTML = "";
   for (const entry of b.log.slice(list.childElementCount)) {
-    const round = Math.floor(entry.tick / ROUND_TICKS) + 1;
     list.insertAdjacentHTML(
       "beforeend",
-      `<div class="${entry.event} ${entry.side ?? ""}"><i>${round}</i><u></u><span>${escapeHtml(logText(entry))}</span></div>`
+      `<div class="${entry.event} ${entry.side ?? ""}"><i>${formatClock(entry.tick)}</i><u></u><span>${escapeHtml(logText(entry))}</span></div>`
     );
     list.scrollTop = list.scrollHeight;
   }
@@ -1242,7 +1249,7 @@ function buildLog(): BattleLogFile {
     interventions: [...b.interventions],
     log: b.log.map(entry => {
       const whose = entry.side ? `${sideLabel(entry.side)}: ` : "";
-      return `${Math.floor(entry.tick / ROUND_TICKS) + 1}. ${whose}${logText(entry)}`;
+      return `${formatClock(entry.tick)} ${whose}${logText(entry)}`;
     }),
     result: b.result ? outcome(b) : null
   };

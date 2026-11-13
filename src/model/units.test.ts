@@ -2,10 +2,13 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   convertSpeed,
   convertTemperature,
+  formatLength,
   formatSpeed,
   getDistance,
   getDistanceUnitRatio,
   getHeight,
+  getLengthUnit,
+  getSpeedUnit,
   heightToMeters,
   metersToHeight,
   parseSpeed
@@ -68,6 +71,24 @@ describe("distance unit conversion", () => {
     setDistanceUnit("Marches");
     expect(getDistanceUnitRatio()).toBe(1);
     expect(formatSpeed(6)).toBe("6 Marches/h");
+  });
+
+  it("shows short lengths in the height unit and long ones in the distance unit, metric for a custom unit", () => {
+    const height = options.map.units.height.unit;
+    setDistanceUnit("mi");
+    options.map.units.height.unit = "ft";
+    expect(formatLength(200)).toBe("656 ft");
+    expect(formatLength(2200)).toBe("1.4 mi");
+    expect(getSpeedUnit()).toBe("mi/h");
+    options.map.units.height.unit = "m";
+    expect(formatLength(200)).toBe("200 m");
+    setDistanceUnit("Marches");
+    options.map.units.height.unit = "ft";
+    expect(formatLength(200)).toBe("200 m");
+    expect(formatLength(1400)).toBe("1.4 km");
+    expect(formatLength(800, getLengthUnit(1400))).toBe("0.8 km"); // in the unit of a longer one
+    expect(getSpeedUnit()).toBe("km/h");
+    options.map.units.height.unit = height;
   });
 
   it("formats a map length in the user distance unit", () => {

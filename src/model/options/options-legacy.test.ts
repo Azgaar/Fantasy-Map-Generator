@@ -33,7 +33,7 @@ const restore = async () => {
 
 const BASE = { icon: "x", name: "legion", rural: 0.2, urban: 0.1, crew: 1, type: "melee", separate: 0 };
 const OLD_UNIT = { ...BASE, power: 1 };
-const A_UNIT = { ...BASE, attack: 1, defense: 1, speed: 7, range: 0, morale: 1 }; // a single power becomes the traits of the type
+const A_UNIT = { ...BASE, attack: 1, defense: 1, speed: 4.3, range: 0, morale: 1 }; // a single power becomes the traits of the type
 const A_BURG_GROUP = { name: "My Ports", order: 1, active: true };
 const A_LABEL_GROUP = { name: "My States", type: "state", zoom: { min: 2, max: null } };
 

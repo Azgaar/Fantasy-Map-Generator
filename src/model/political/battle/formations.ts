@@ -1,9 +1,10 @@
-// Places in a formation, by tactic. See docs/domain/battles.md.
+// Places in a formation, by tactic. Lengths are in battalion fronts. See docs/domain/battles.md.
 
 import type { Block, Mission, Role } from "./battle";
 
-export const ROW_GAP = 40; // between the lines of a formation
-export const GAP = 10; // between neighbours in a line
+export const ROW_GAP = 0.9; // between the lines of a formation
+export const GAP = 0.23; // between neighbours in a line
+const ROW = 2.7; // a row of shooters, reserves or engines is at least so long
 
 /** How a general draws his troops up; every number is read by the one builder below */
 export interface Tactic {
@@ -31,14 +32,14 @@ const tactic = (
 export const TACTICS = {
   // attack
   assault: tactic(1, 0.2, 1, false, 0, 0, "behind", "wings"),
-  oblique: tactic(1, 0.15, 1, true, 110, 0, "behind", "strike"),
-  envelopment: tactic(1, 0.1, 0.8, false, 0, 45, "behind", "wings"),
-  wedge: tactic(2, 0.15, 0.6, false, 0, -70, "wings", "behind"),
+  oblique: tactic(1, 0.15, 1, true, 2.5, 0, "behind", "strike"),
+  envelopment: tactic(1, 0.1, 0.8, false, 0, 1, "behind", "wings"),
+  wedge: tactic(2, 0.15, 0.6, false, 0, -1.6, "wings", "behind"),
   harass: tactic(1, 0, 1, false, 0, 0, "front", "wings"),
   // defence
   stand: tactic(1, 0.2, 1, false, 0, 0, "behind", "behind"),
-  crescent: tactic(1, 0.15, 0.8, false, 0, -60, "behind", "behind"),
-  crossing: tactic(1, 0.25, 0.7, false, 0, 40, "behind", "behind"),
+  crescent: tactic(1, 0.15, 0.8, false, 0, -1.35, "behind", "behind"),
+  crossing: tactic(1, 0.25, 0.7, false, 0, 0.9, "behind", "behind"),
   // of a battle type
   column: tactic(1, 0, 1, false, 0, 0, "behind", "wings"),
   ambuscade: tactic(1, 0, 1, false, 0, 0, "behind", "wings"),
@@ -62,10 +63,12 @@ export interface Place {
 }
 
 /**
- * Draw the battalions up by the tactic in the room across the field
+ * Draw the battalions up by the tactic in the room across the field; places are in metres
  * @param strike the massed wing: -1 the left, 1 the right
+ * @param front metres a full battalion stands wide
  */
-export function form(blocks: Block[], tactic: Tactic, strike: number, room: number): Place[] {
+export function form(blocks: Block[], tactic: Tactic, strike: number, room: number, front: number): Place[] {
+  const [gap, rowGap, row] = [GAP * front, ROW_GAP * front, ROW * front];
   const strength = (block: Block): number => block.troops * block.unitPower;
   const of = (kind: Block["kind"]): Block[] =>
     blocks.filter(block => block.kind === kind).sort((a, b) => strength(b) - strength(a) || a.id - b.id);
@@ -84,14 +87,14 @@ export function form(blocks: Block[], tactic: Tactic, strike: number, room: numb
   if (tactic.shooters === "front" && shooters.length) [line, shooters] = [shooters, line];
 
   const places: Place[] = [];
-  const widthOf = (row: Block[]): number => row.reduce((sum, block) => sum + block.width + GAP, -GAP);
+  const widthOf = (row: Block[]): number => row.reduce((sum, block) => sum + block.width + gap, -gap);
   /** A row side by side, its middle at `centre`; listed left to right */
   const seat = (row: Block[], rank: number, along: number, centre = 0, role?: Role): void => {
     let offset = centre - widthOf(row) / 2;
     for (const block of row) {
       const own: Role = role ?? ROLES[block.kind];
       places.push({ block, role: own, mission: MISSIONS[own], rank, across: offset + block.width / 2, along });
-      offset += block.width + GAP;
+      offset += block.width + gap;
     }
   };
   /** The best in the middle, or at the massed wing */
@@ -116,7 +119,7 @@ export function form(blocks: Block[], tactic: Tactic, strike: number, room: numb
   const kept = line.length >= 4 ? Math.round(line.length * tactic.reserve) : 0;
   const reserve = kept ? line.splice(line.length - kept) : [];
   // riders stand beyond the room of the line, where they have the way round
-  const wings = tactic.shooters === "wings" && shooters.length ? widthOf(shooters) + GAP * 2 : 0;
+  const wings = tactic.shooters === "wings" && shooters.length ? widthOf(shooters) + gap * 2 : 0;
   const span = Math.max(room * tactic.span - wings, room * 0.4);
 
   // the lines: as many as the room asks for, the first the longest and the best
@@ -130,35 +133,35 @@ export function form(blocks: Block[], tactic: Tactic, strike: number, room: numb
   let along = 0;
   const next = (): void => {
     rank += 1;
-    along -= ROW_GAP;
+    along -= rowGap;
   };
   seat(arrange(lines[0]), 0, 0);
   if (tactic.shooters !== "wings") {
-    for (const row of wrap(shooters, Math.max(half * 2, 120))) {
+    for (const shot of wrap(shooters, Math.max(half * 2, row))) {
       next();
-      seat(row, rank, along);
+      seat(shot, rank, along);
     }
   }
-  for (const row of lines.slice(1)) {
+  for (const rest of lines.slice(1)) {
     next();
-    seat(arrange(row), rank, along, aside(row));
+    seat(arrange(rest), rank, along, aside(rest));
   }
-  for (const row of wrap(reserve, Math.max(half * 2, 120))) {
+  for (const kept of wrap(reserve, Math.max(half * 2, row))) {
     next();
-    seat(row, rank, along, aside(row), "reserve");
+    seat(kept, rank, along, aside(kept), "reserve");
   }
   const back = along; // of the troops on foot
-  for (const row of wrap(engines, Math.max(half * 2, 120))) {
+  for (const guns of wrap(engines, Math.max(half * 2, row))) {
     next();
-    seat(row, rank, along);
+    seat(guns, rank, along);
   }
 
   // the wings: shooters at the ends of the line, riders beyond them and a little back
-  const flank = (row: Block[], side: number, from: number, back: number, role?: Role): number => {
-    if (!row.length) return from;
-    const width = widthOf(row);
-    seat(side > 0 ? row : [...row].reverse(), 0, back, side * (from + GAP + width / 2), role);
-    return from + GAP + width;
+  const flank = (wing: Block[], side: number, from: number, back: number, role?: Role): number => {
+    if (!wing.length) return from;
+    const width = widthOf(wing);
+    seat(side > 0 ? wing : [...wing].reverse(), 0, back, side * (from + gap + width / 2), role);
+    return from + gap + width;
   };
   const split = (row: Block[]): [Block[], Block[]] => [
     row.filter((_, i) => i % 2 === 0),
@@ -174,28 +177,28 @@ export function form(blocks: Block[], tactic: Tactic, strike: number, room: numb
     const all = tactic.massed || tactic.riders === "strike";
     const [right, left] = all ? (strike > 0 ? [riders, []] : [[], riders]) : split(riders);
     for (let i = 0; i < left.length; i += 2)
-      flank(left.slice(i, i + 2), -1, ends[0] + GAP, -ROW_GAP * (i / 2 + 0.5), "wing");
+      flank(left.slice(i, i + 2), -1, ends[0] + gap, -rowGap * (i / 2 + 0.5), "wing");
     for (let i = 0; i < right.length; i += 2)
-      flank(right.slice(i, i + 2), 1, ends[1] + GAP, -ROW_GAP * (i / 2 + 0.5), "wing");
+      flank(right.slice(i, i + 2), 1, ends[1] + gap, -rowGap * (i / 2 + 0.5), "wing");
   } else {
     // kept back behind the ends of the line, where nobody stands in their way out
     const [right, left] = split(riders);
-    const inside = (row: Block[]): number => Math.max(half - (row[0]?.width ?? 0) - GAP * 2, 0);
+    const inside = (wing: Block[]): number => Math.max(half - (wing[0]?.width ?? 0) - gap * 2, 0);
     left.forEach((block, i) => {
-      flank([block], -1, inside(left), back - ROW_GAP * (i + 1), "reserve");
+      flank([block], -1, inside(left), back - rowGap * (i + 1), "reserve");
     });
     right.forEach((block, i) => {
-      flank([block], 1, inside(right), back - ROW_GAP * (i + 1), "reserve");
+      flank([block], 1, inside(right), back - rowGap * (i + 1), "reserve");
     });
   }
 
   // the shape: the ends ahead of the centre or behind it, the weak wing held back
   const reach = Math.max(...places.map(place => Math.abs(place.across)), 1);
   for (const place of places) {
-    place.along += tactic.bow * (place.across / reach) ** 2;
+    place.along += tactic.bow * front * (place.across / reach) ** 2;
     if (tactic.massed) {
       const fromStrike = (strike * reach - place.across * strike) / (reach * 2); // 0 at the massed end, 1 at the other
-      place.along -= tactic.refuse * Math.max(fromStrike - 0.35, 0);
+      place.along -= tactic.refuse * front * Math.max(fromStrike - 0.35, 0);
     }
   }
   return places;

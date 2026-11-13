@@ -3,7 +3,8 @@
 
 import { pointer, select } from "d3";
 import type { Battle } from "@/model/political/battle/battle";
-import { type Battlefield, FIELD, nodeAt, terrainAt } from "@/model/political/battle/battlefield";
+import { COLS, formatClock, ROWS } from "@/model/political/battle/battle-scale";
+import { type Battlefield, nodeAt, terrainAt } from "@/model/political/battle/battlefield";
 import { getWay } from "@/model/political/battle/movement";
 import { log } from "@/utils/logger";
 import { escapeHtml } from "@/utils/string-utils";
@@ -25,11 +26,13 @@ const GROUND: [name: string, color: string, is: (field: Battlefield, node: numbe
   ["breach", "#e6cf1c", (field, node) => field.rampart[node] === 3]
 ];
 
-const HALO = `paint-order="stroke" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"`;
+const halo = (pt: number): string =>
+  `paint-order="stroke" stroke="#fff" stroke-width="${2.5 * pt}" stroke-linejoin="round"`;
 let shown: Battle | null = null; // the battle the pointer reads the ground of
 
 /** Draw or clear the diagnostics; called with the blocks, at the places they are drawn */
-export function updateBattleDebug(svg: SVGSVGElement, battle: Battle, at: Places): void {
+/** `pt`: what a mark's point is in metres, as the scene sizes its marks */
+export function updateBattleDebug(svg: SVGSVGElement, battle: Battle, at: Places, pt: number): void {
   const root = select(svg);
   if (!log.debug.battle) {
     if (!svg.querySelector(".battleDebug")) return;
@@ -51,7 +54,7 @@ export function updateBattleDebug(svg: SVGSVGElement, battle: Battle, at: Places
       .attr("class", "battleDebug ground")
       .attr("pointer-events", "none")
       .attr("data-key", key)
-      .html(getGround(field))
+      .html(getGround(field, pt))
       .node()!;
     root
       .append("g")
@@ -64,12 +67,14 @@ export function updateBattleDebug(svg: SVGSVGElement, battle: Battle, at: Places
     };
   }
 
-  root.select(".battleDebug.doings").html(getDoings(battle, at));
+  root.select(".battleDebug.doings").html(getDoings(battle, at, pt));
 }
 
 /** The grid, what each node is, and the walls as the simulation has them */
-function getGround(field: Battlefield): string {
-  const { cell, cols, rows, width, height } = FIELD;
+function getGround(field: Battlefield, pt: number): string {
+  const { cell, width, height } = field;
+  const [cols, rows] = [COLS, ROWS];
+  const HALO = halo(pt);
   let html = "";
 
   for (const [, color, is] of GROUND) {
@@ -86,13 +91,13 @@ function getGround(field: Battlefield): string {
     for (let y = 0; y <= height; y += step) d += `M0 ${y}H${width}`;
     return d;
   };
-  html += `<path d="${lines(cell)}" fill="none" stroke="#000" stroke-width="0.3" stroke-opacity="0.16"/>`;
-  html += `<path d="${lines(cell * 10)}" fill="none" stroke="#000" stroke-width="0.5" stroke-opacity="0.4"/>`;
+  html += `<path d="${lines(cell)}" fill="none" stroke="#000" stroke-width="${0.3 * pt}" stroke-opacity="0.16"/>`;
+  html += `<path d="${lines(cell * 10)}" fill="none" stroke="#000" stroke-width="${0.5 * pt}" stroke-opacity="0.4"/>`;
   for (let col = 10; col < cols; col += 10) {
-    html += `<text x="${col * cell + 2}" y="8" font-size="7" font-family="Arial, sans-serif" ${HALO}>${col}</text>`;
+    html += `<text x="${col * cell + 2 * pt}" y="${8 * pt}" font-size="${7 * pt}" font-family="Arial, sans-serif" ${HALO}>${col}</text>`;
   }
   for (let row = 10; row < rows; row += 10) {
-    html += `<text x="2" y="${row * cell + 8}" font-size="7" font-family="Arial, sans-serif" ${HALO}>${row}</text>`;
+    html += `<text x="${2 * pt}" y="${row * cell + 8 * pt}" font-size="${7 * pt}" font-family="Arial, sans-serif" ${HALO}>${row}</text>`;
   }
 
   // walls bar the way, gates let through whom the burg is open to
@@ -101,26 +106,27 @@ function getGround(field: Battlefield): string {
       .filter(wall => wall.gate === gate)
       .map(wall => `M${wall.a.map(v => v.toFixed(1))}L${wall.b.map(v => v.toFixed(1))}`)
       .join("");
-  html += `<path d="${stretch(false)}" fill="none" stroke="#d0342c" stroke-width="1.6"/>`;
-  html += `<path d="${stretch(true)}" fill="none" stroke="#1a9e3a" stroke-width="2.6"/>`;
+  html += `<path d="${stretch(false)}" fill="none" stroke="#d0342c" stroke-width="${1.6 * pt}"/>`;
+  html += `<path d="${stretch(true)}" fill="none" stroke="#1a9e3a" stroke-width="${2.6 * pt}"/>`;
   field.burgs.forEach((burg, index) => {
     if (index === field.held)
-      html += `<circle cx="${burg.x}" cy="${burg.y}" r="5" fill="none" stroke="#7b4bb5" stroke-width="1.5"/>`;
+      html += `<circle cx="${burg.x}" cy="${burg.y}" r="${5 * pt}" fill="none" stroke="#7b4bb5" stroke-width="${1.5 * pt}"/>`;
   });
 
   // what the colors stand for
   const used = GROUND.filter(([, , is]) => field.water.some((_, node) => is(field, node)));
   const legend = [...used.map(([name, color]) => [name, color]), ["wall line", "#d0342c"], ["gate line", "#1a9e3a"]];
   legend.forEach(([name, color], i) => {
-    const y = height - 8 - (legend.length - 1 - i) * 11;
-    html += `<rect x="6" y="${y - 7}" width="8" height="8" fill="${color}" fill-opacity="0.6" stroke="#000" stroke-width="0.3"/>`;
-    html += `<text x="18" y="${y}" font-size="8" font-family="Arial, sans-serif" ${HALO}>${name}</text>`;
+    const y = height - (8 + (legend.length - 1 - i) * 11) * pt;
+    html += `<rect x="${6 * pt}" y="${y - 7 * pt}" width="${8 * pt}" height="${8 * pt}" fill="${color}" fill-opacity="0.6" stroke="#000" stroke-width="${0.3 * pt}"/>`;
+    html += `<text x="${18 * pt}" y="${y}" font-size="${8 * pt}" font-family="Arial, sans-serif" ${HALO}>${name}</text>`;
   });
   return html;
 }
 
 /** Where every battalion is going and what it is at, and the state of the battle */
-function getDoings(battle: Battle, at: Places): string {
+function getDoings(battle: Battle, at: Places, pt: number): string {
+  const HALO = halo(pt);
   let html = "";
   const byId = new Map(battle.blocks.map(block => [block.id, block]));
 
@@ -130,24 +136,24 @@ function getDoings(battle: Battle, at: Places): string {
     const target = block.target === null ? null : byId.get(block.target);
     if (target) {
       const to = at.get(target.id) ?? target;
-      html += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}L${to.x.toFixed(1)} ${to.y.toFixed(1)}" stroke="#000" stroke-width="0.5" stroke-opacity="0.45" stroke-dasharray="1 3"/>`;
+      html += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}L${to.x.toFixed(1)} ${to.y.toFixed(1)}" stroke="#000" stroke-width="${0.5 * pt}" stroke-opacity="0.45" stroke-dasharray="${pt} ${3 * pt}"/>`;
     }
     const way = getWay(battle, block);
     if (way.length) {
       const points = [[x, y], ...way].map(point => point.map(v => v.toFixed(1)).join(" ")).join("L");
-      html += `<path d="M${points}" fill="none" stroke="#c7128a" stroke-width="1.1"/>`;
-      html += way.map(([wx, wy]) => `<circle cx="${wx}" cy="${wy}" r="1.6" fill="#c7128a"/>`).join("");
+      html += `<path d="M${points}" fill="none" stroke="#c7128a" stroke-width="${1.1 * pt}"/>`;
+      html += way.map(([wx, wy]) => `<circle cx="${wx}" cy="${wy}" r="${1.6 * pt}" fill="#c7128a"/>`).join("");
     }
     // its place in the formation, or the point the general sent it round by
-    if (block.status === "ready" && Math.hypot(block.order.x - x, block.order.y - y) > 6) {
-      html += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}L${block.order.x.toFixed(1)} ${block.order.y.toFixed(1)}" stroke="#1a9e3a" stroke-width="0.6" stroke-opacity="0.7"/>`;
-      html += `<circle cx="${block.order.x.toFixed(1)}" cy="${block.order.y.toFixed(1)}" r="1.4" fill="#1a9e3a"/>`;
+    if (block.status === "ready" && Math.hypot(block.order.x - x, block.order.y - y) > 6 * pt) {
+      html += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}L${block.order.x.toFixed(1)} ${block.order.y.toFixed(1)}" stroke="#1a9e3a" stroke-width="${0.6 * pt}" stroke-opacity="0.7"/>`;
+      html += `<circle cx="${block.order.x.toFixed(1)}" cy="${block.order.y.toFixed(1)}" r="${1.4 * pt}" fill="#1a9e3a"/>`;
     }
     const sent = block.order.sent ? "!" : "";
     const mark = block.status === "routed" ? "routed" : `${block.order.mission}${sent} ${block.action}`;
     // right over the block, whatever way it is turned
     const top = (Math.abs(Math.sin(facing)) * block.depth + Math.abs(Math.cos(facing)) * block.width) / 2;
-    html += `<text x="${x.toFixed(1)}" y="${(y - top - 1.5).toFixed(1)}" font-size="7.5" text-anchor="middle" ${HALO}>${mark} ♥${Math.round(block.morale)}</text>`;
+    html += `<text x="${x.toFixed(1)}" y="${(y - top - 1.5 * pt).toFixed(1)}" font-size="${7.5 * pt}" text-anchor="middle" ${HALO}>${mark} ♥${Math.round(block.morale)}</text>`;
   }
 
   const side = (name: "attackers" | "defenders"): string => {
@@ -158,6 +164,8 @@ function getDoings(battle: Battle, at: Places): string {
   const state = [
     `tick ${battle.tick}`,
     `round ${Math.floor(battle.tick / 6) + 1}`,
+    formatClock(battle.tick),
+    `field ${Math.round(battle.field.width)} m, front ${Math.round(battle.field.front)} m`,
     `engaged ${battle.engaged ?? "no"}`,
     `storm ${battle.storm ?? "no"}`,
     `held ${held}`,
@@ -165,8 +173,10 @@ function getDoings(battle: Battle, at: Places): string {
     `blocks ${battle.blocks.length}`
   ].join(" · ");
   const lines = [state, side("attackers"), side("defenders")];
-  html += lines.map((text, i) => `<text x="58" y="${20 + i * 11}" font-size="8.5" ${HALO}>${text}</text>`).join("");
-  html += `<text class="battleDebugGround" x="58" y="${20 + lines.length * 11}" font-size="8.5" ${HALO}>${escapeHtml(
+  html += lines
+    .map((text, i) => `<text x="${58 * pt}" y="${(20 + i * 11) * pt}" font-size="${8.5 * pt}" ${HALO}>${text}</text>`)
+    .join("");
+  html += `<text class="battleDebugGround" x="${58 * pt}" y="${(20 + lines.length * 11) * pt}" font-size="${8.5 * pt}" ${HALO}>${escapeHtml(
     document.querySelector(".battleDebugGround")?.textContent ?? "point at the ground to read a node"
   )}</text>`;
   return html;
@@ -174,8 +184,8 @@ function getDoings(battle: Battle, at: Places): string {
 
 /** A node as the simulation has it */
 function describe(field: Battlefield, x: number, y: number): string {
-  if (x < 0 || y < 0 || x >= FIELD.width || y >= FIELD.height) return "";
-  const node = nodeAt(x, y);
+  if (x < 0 || y < 0 || x >= field.width || y >= field.height) return "";
+  const node = nodeAt(field, x, y);
   const terrain = terrainAt(field, x, y);
   const what = [
     terrain.water === 1 ? "sea or lake" : terrain.water === 2 ? (terrain.ford ? "ford" : "deep river") : "",
@@ -187,5 +197,5 @@ function describe(field: Battlefield, x: number, y: number): string {
     terrain.walled ? `within walls of ${field.burgs[terrain.walled - 1].name}` : "",
     ["", "wall foot", "gateway", "breach"][terrain.rampart]
   ].filter(Boolean);
-  return `node ${node % FIELD.cols},${Math.floor(node / FIELD.cols)} at ${x.toFixed(0)},${y.toFixed(0)} · height ${terrain.height.toFixed(2)} · ${what.join(", ") || "open ground"}`;
+  return `node ${node % COLS},${Math.floor(node / COLS)} at ${x.toFixed(0)},${y.toFixed(0)} · height ${terrain.height.toFixed(2)} · ${what.join(", ") || "open ground"}`;
 }

@@ -1,13 +1,6 @@
-import {
-  applyDue,
-  type Battle,
-  type Intervention,
-  plan,
-  ROUND_TICKS,
-  replay,
-  tick
-} from "@/model/political/battle/battle";
-import { FIELD } from "@/model/political/battle/battlefield";
+import { applyDue, type Battle, type Intervention, plan, replay, tick } from "@/model/political/battle/battle";
+import { formatClock, TICK_SECONDS } from "@/model/political/battle/battle-scale";
+import type { Battlefield } from "@/model/political/battle/battlefield";
 import { drawBattlefield, drawBlocks, snapshot, updateBlocks } from "@/renderers/draw-battle-scene";
 import { Dialog } from "@/ui/dialog/dialog";
 import { downloadFile } from "@/utils/file-utils";
@@ -35,8 +28,13 @@ type Quality = "low" | "medium" | "high";
 const FRAME_MS = 50; // aimed at: GIF delays are in hundredths of a second, short ones play slower
 const END_MS = 3000; // the outcome stands before the loop starts again
 const MOVING = [".battleFire", ".battleBlocks", ".battleMissiles", ".battleClashes"]; // layers above the ground
-const SPEEDS = [0.5, 1, 2, 4];
+export const SPEEDS = [0.5, 1, 2, 4]; // playback, ×1 the speed a tick is drawn at
+
+/** How many times as fast as the battle it plays at a speed */
+export const getPlayback = (tickMs: number, speed: number): number =>
+  Math.round((TICK_SECONDS * 1000 * speed) / tickMs);
 const WIDTHS: Record<Exclude<Quality, "high">, number> = { low: 600, medium: 1000 }; // high is as sharp as the screen
+const MAX_WIDTH = 2000; // pixels
 
 const STYLE = /* css */ `
   #battleAnimationForm { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.4em 0.8em; margin: 0; padding: 0; border: 0; }
@@ -70,7 +68,7 @@ function open(source: Source): void {
         </label>
         <label>${t("Speed")}
           <select name="speed">
-            ${SPEEDS.map(speed => option(String(speed), `×${speed === 0.5 ? "½" : speed}`, speed === source.speed)).join("")}
+            ${SPEEDS.map(speed => option(String(speed), `×${getPlayback(source.tickMs, speed)}`, speed === source.speed)).join("")}
           </select>
         </label>
       </fieldset>
@@ -113,13 +111,13 @@ async function save(source: Source): Promise<void> {
   const quality = field("quality").value as Quality;
   const tickMs = source.tickMs / +field("speed").value;
   const width =
-    quality === "high" ? Math.min(Math.max(Math.round(source.screenWidth), 1000), FIELD.width * 2) : WIDTHS[quality];
+    quality === "high" ? Math.min(Math.max(Math.round(source.screenWidth), 1000), MAX_WIDTH) : WIDTHS[quality];
 
   // a quick run to the end tells how long the battle is
   const probe = source.start();
   replay(probe.battle, probe.script);
   const ticks = Math.max(probe.battle.tick, 1);
-  const rounds = Math.floor(ticks / ROUND_TICKS) + 1;
+  const end = formatClock(ticks);
 
   recording = new AbortController();
   const signal = recording.signal;
@@ -134,10 +132,7 @@ async function save(source: Source): Promise<void> {
       width,
       tickMs,
       signal,
-      onTick: tick => {
-        const round = Math.floor(tick / ROUND_TICKS) + 1;
-        showProgress(tick / ticks, t("Round {{round}} of {{rounds}}", { round, rounds }));
-      }
+      onTick: tick => showProgress(tick / ticks, `${formatClock(tick)} / ${end}`)
     });
     if (!file) {
       showProgress(0, t("Cancelled"));
@@ -201,7 +196,7 @@ async function recordBattle(
   const layers = MOVING.map(layer => svg.querySelector(layer)!);
   const recorder = new SvgRecorder(layers);
   const addFrame = gif
-    ? await createRasterSink(gif, width, ground, () => defs + markup(layers))
+    ? await createRasterSink(gif, battle.field, width, ground, () => defs + markup(layers))
     : async (delay: number) => recorder.capture(delay);
 
   const frames = Math.max(1, Math.round(tickMs / FRAME_MS));
@@ -223,21 +218,31 @@ async function recordBattle(
   }
 
   if (gif) return gif.finish(END_MS);
-  const svgFile = `<svg xmlns="http://www.w3.org/2000/svg" ${viewBox(FIELD.width)}>${ground}${defs}${recorder.write(END_MS)}</svg>`;
+  const svgFile = `<svg xmlns="http://www.w3.org/2000/svg" ${viewBox(battle.field, SVG_WIDTH)}>${ground}${defs}${recorder.write(END_MS)}</svg>`;
   return new Blob([svgFile], { type: "image/svg+xml" });
 }
 
-const viewBox = (width: number): string =>
-  `viewBox="0 0 ${FIELD.width} ${FIELD.height}" width="${width}" height="${Math.round((FIELD.height * width) / FIELD.width)}" font-family="Georgia, serif"`;
+const SVG_WIDTH = 1000; // pixels an animated drawing opens at
+const getHeight = (field: Battlefield, width: number): number => Math.round((field.height * width) / field.width);
+
+/** The field in metres, shown so many pixels wide */
+const viewBox = (field: Battlefield, width: number): string =>
+  `viewBox="0 0 ${field.width} ${field.height}" width="${width}" height="${getHeight(field, width)}" font-family="Georgia, serif"`;
 
 /** Draws a frame as the ground under the moving layers and adds it to the GIF */
-async function createRasterSink(gif: GifWriter, width: number, ground: string, moving: () => string) {
+async function createRasterSink(
+  gif: GifWriter,
+  field: Battlefield,
+  width: number,
+  ground: string,
+  moving: () => string
+) {
   const toImage = (content: string): Promise<HTMLImageElement> =>
-    loadImage(`<svg xmlns="http://www.w3.org/2000/svg" ${viewBox(width)}>${content}</svg>`);
+    loadImage(`<svg xmlns="http://www.w3.org/2000/svg" ${viewBox(field, width)}>${content}</svg>`);
   const groundImage = await toImage(ground); // drawn once, under every frame
   const canvas = document.createElement("canvas");
   canvas.width = width;
-  canvas.height = Math.round((FIELD.height * width) / FIELD.width);
+  canvas.height = getHeight(field, width);
   const context = canvas.getContext("2d", { willReadFrequently: true })!;
   return async (delay: number): Promise<void> => {
     context.drawImage(groundImage, 0, 0);

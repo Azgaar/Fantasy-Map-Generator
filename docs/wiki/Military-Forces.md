@@ -33,10 +33,10 @@ Customizable parameters are:
 - **Crew** - average number of people in one unit. Like tank crew is usually 4. This number is used for total people calculation and does not affect unit _power_ at all
 - **Attack** - what one unit strikes and shoots with in a battle. It is per unit, not per man: a ship with a crew of a hundred has one attack
 - **Defense** - what one unit stands blows and shots with. Artillery hits hard and stands little, so in a battle it is struck first by those who can reach it
-- **Speed** - how far the unit moves in one step of a battle, on a battle plan 1000 wide: 7 on foot, 20 mounted, 2 for engines. The faster a unit charges, the more men its blows cut down
-- **Range** - how far the unit shoots on the battle plan: 120 for archers, 280 for artillery. Further from higher ground. Set 0 for a unit that fights hand to hand
+- **Speed** - how fast the unit marches in battle, in km/h: 4.3 on foot, 12.6 mounted, 1.8 for engines. It charges at three times its speed, and the faster a unit charges, the more men its blows cut down
+- **Range** - how far the unit shoots in battle, in metres: 160 for archers, 380 for artillery, 270 for fleets. Further from higher ground. Set 0 for a unit that fights hand to hand
 - **Morale** - how steady the unit is: 1 is ordinary. Its losses of morale in a battle are divided by it, its gains are not, and it does not change the morale a battle starts with: levies at 0.5 lose heart twice as fast and crumble under pressure, an elite unit at 2 holds twice as long
-- **Power** - not set but worked out from the five above: `(attack + defense) / 2 × √((speed + 7) / 14) × (1 + range / 500) × √morale`. It is the weight of the unit outside battles: the upkeep it costs and its share in the power of forces
+- **Power** - not set but worked out from the five above: `(attack + defense) / 2 × √((speed + 4.3) / 8.6) × (1 + range / 680) × √morale`, speed in km/h and range in metres. It is the weight of the unit outside battles: the upkeep it costs and its share in the power of forces
 - **Type** - a set of rules to be applied for the unit, see the details in the next section
 - **Sep.** - check if the unit is _separate_ and can only be stacked with the same unit. This is why e.g. the naval _fleet_ is not merged into a mixed land regiment by default
 
@@ -46,14 +46,16 @@ The default unit set is:
 
 | Icon | Name      | Goods                | Rural % | Urban % | Crew | Attack | Defense | Speed | Range | Morale | Power | Type      | Separate |
 | ---- | --------- | -------------------- | ------- | ------- | ---- | ------ | ------- | ----- | ----- | ------ | ----- | --------- | -------- |
-| 🪓   | levies    | none                 | 0       | 0       | 1    | 0.5    | 0.5     | 7     | 0     | 0.5    | 0.35  | levies    | no       |
-| ⚔️   | infantry  | Arms                 | 0.25    | 0.2     | 1    | 1      | 1       | 7     | 0     | 1      | 1     | melee     | no       |
-| 🏹   | archers   | Arms                 | 0.12    | 0.2     | 1    | 1.1    | 0.4     | 7     | 120   | 0.8    | 0.83  | ranged    | no       |
-| 🐴   | cavalry   | Horses, Camels, Tack | 0.12    | 0.03    | 1    | 1.5    | 1.4     | 20    | 0     | 1.2    | 2.2   | mounted   | no       |
-| 💣   | artillery | Artillery, Gunpowder | 0       | 0.03    | 8    | 16     | 3.2     | 2     | 280   | 0.8    | 10.7  | machinery | no       |
-| 🌊   | fleet     | Boats                | 0       | 0.015   | 100  | 46     | 31.2    | 5     | 200   | 1      | 50    | naval     | yes      |
+| 🪓   | levies    | none                 | 0       | 0       | 1    | 0.5    | 0.5     | 4.3   | 0     | 0.5    | 0.35  | levies    | no       |
+| ⚔️   | infantry  | Arms                 | 0.25    | 0.2     | 1    | 1      | 1       | 4.3   | 0     | 1      | 1     | melee     | no       |
+| 🏹   | archers   | Arms                 | 0.12    | 0.2     | 1    | 1.1    | 0.4     | 4.3   | 160   | 0.8    | 0.83  | ranged    | no       |
+| 🐴   | cavalry   | Horses, Camels, Tack | 0.12    | 0.03    | 1    | 1.5    | 1.4     | 12.6  | 0     | 1.2    | 2.2   | mounted   | no       |
+| 💣   | artillery | Artillery, Gunpowder | 0       | 0.03    | 8    | 16     | 3.2     | 1.8   | 380   | 0.8    | 11.3  | machinery | no       |
+| 🌊   | fleet     | Boats                | 0       | 0.015   | 100  | 46     | 31.2    | 3.1   | 270   | 1      | 50    | naval     | yes      |
 
-A unit of a map saved before these parameters existed had a single power. On load it gets the speed, range and morale of its type, and its attack and defense are split so that the power stays what it was.
+Speeds are in km/h and ranges in metres, whatever the map's units; the tooltip of a value shows it in the map's units when they differ.
+
+A unit of a map saved before these parameters existed had a single power. On load it gets the speed, range and morale of the default unit of its type (of infantry for armored, aviation and magical units), and its attack and defense are split in that unit's proportion so that the power stays what it was.
 
 The available types are melee, ranged, mounted, machinery, naval, armored, aviation, magical and levies. Levies are a normal unit, just weak: poorly armed conscripts with a third of an infantryman's power, who lose heart twice as fast. By default their rural and urban percentages are 0, so they only take in troops other units could not equip, but they can be raised directly like any other unit.
 

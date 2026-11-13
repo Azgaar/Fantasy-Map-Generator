@@ -18,20 +18,62 @@ import {
   STARVED,
   SURRENDER
 } from "./battle-rules";
-import { FIELD, type FieldWall, nodeAt, nodeCentre, terrainAt } from "./battlefield";
+import { COLS, minutesToTicks, ROWS } from "./battle-scale";
+import { type Battlefield, type FieldWall, nodeAt, nodeCentre, terrainAt } from "./battlefield";
 import { form, GAP, type Place, ROW_GAP, TACTICS, type TacticName } from "./formations";
-import { getPace, getTurn, hasWalls, isMoored, isStorming, type Point, ROUND_TICKS, shuns, turn } from "./movement";
+import {
+  getPace,
+  getTurn,
+  hasWalls,
+  isMoored,
+  isStorming,
+  PACE,
+  type Point,
+  ROUND_TICKS,
+  shuns,
+  turn
+} from "./movement";
 import { spread, trace } from "./pathfinding";
 
-const ORDER_ROUNDS = 10; // an order given by hand stands that long
+const ORDER_ROUNDS = minutesToTicks(8) / ROUND_TICKS; // an order given by hand stands that long
 const STORM_ODDS = [4, 2.5, 1.8, 1.4]; // besiegers to besieged it takes to storm walls, by the breaches in them
 const ASSAULT_ODDS = 1.25; // and a burg without walls
 const SORTIE_ROUNDS = 8;
 const RING_ODDS = 3; // besiegers to besieged it takes to ring a walled burg in
 const RING_BATTALIONS = 6; // and battalions at the least, a stretch of the ring each
-const WATCH = 50; // how much further than the ring stands from the walls a besieger keeps a gate shut
-const WARD = 150; // how near the shooters or engines it goes for a foe has to be for friends to come to their aid
-const MARGIN = 20; // troops keep that far from the edge of the field
+
+// in metres
+const BOWSHOT = 205; // what the besiegers keep out of when the garrison has no shooters
+const RING = 340; // and how far out of the walls they stand at most
+const WATCH = 70; // how much further than the ring stands from the walls a besieger keeps a gate shut
+const SHORE = 150; // ready defenders stand that far from where a landing comes out of the water
+const AMBUSH = [110, 230]; // how far from the road ambushers lie, at the nearest and the furthest
+const SORTIE = 400; // how far from the burg a sortie goes
+
+// in battalion fronts
+const WARD = 3.4; // how near the shooters or engines it goes for a foe has to be for friends to come to their aid
+const LEAST_HALF = 0.45; // half the first line, at the least
+const STEP_IN = 0.45; // riders kept off trees and bogs close in to the line by so much at a time
+const AHEAD = 0.45; // what a place ahead costs a battalion put out of water it shuns: rather back than forward
+const WING = 0.7; // a foe so far from the middle of the line is on a wing
+const LEVEL = 0.7; // so near the line or the place, a battalion counts as level with it
+const APART = 0.7; // garrison battalions keep so far apart in the streets
+const BEYOND = 1.15; // the ground beyond the ends of a line that covers them
+const BANK = 1.7; // a line holding a crossing stands so far behind its bank
+const FILE = 0.6; // between the battalions of a column, besides their depth
+const COVER = [-3.4, -1.7, 0, 1.7, 3.4]; // where along their line ambushers look for cover
+const ROUND_END = 2; // riders going round the foe's line pass its end by so much
+const FOES_NEAR = 3.6; // a gap in the line with foes so near is filled
+const THREAT = 9; // foes come round further than that from the formation are no threat to it
+const WHEEL = 1.8; // a formation wheels to face a foe no nearer than that
+const ROUND_SIDE = 0.9; // so far beyond the end of the line and no further ahead than that, a foe has come round a flank
+const ROUND_AHEAD = 0.45;
+
+// of a pace a tick
+const CLOSING = 0.7; // how much nearer the foe has to come in a round for the side to be closing
+
+// in shares of the field's width
+const MARGIN = 0.02; // troops keep that far from the edge of the field
 
 /** What a general sees of a side */
 interface View {
@@ -120,7 +162,7 @@ function createPlan(tactic: TacticName, frame: Frame, fixed = false): Plan {
     camp: [frame.x, frame.y],
     fixed,
     half: 0,
-    halt: COUNTER * 2,
+    halt: 0,
     since: 0,
     fired: null,
     order: null,
@@ -150,20 +192,23 @@ const toFrame = ({ x, y, heading }: Frame, point: { x: number; y: number }): [ac
 };
 
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
-const onField = ([x, y]: Point): Point => [
-  clamp(x, MARGIN, FIELD.width - MARGIN),
-  clamp(y, MARGIN, FIELD.height - MARGIN)
-];
+const getMargin = (field: Battlefield): number => MARGIN * field.width;
+/** The point, moved off the edge of the field into it */
+export const onField = (field: Battlefield, [x, y]: Point): Point => {
+  const margin = getMargin(field);
+  return [clamp(x, margin, field.width - margin), clamp(y, margin, field.height - margin)];
+};
 
 /** Shift the formation so that every place of it is on the field, as far as it fits there */
-function keepOnField(frame: Frame, places: { across: number; along: number }[]): void {
+function keepOnField(field: Battlefield, frame: Frame, places: { across: number; along: number }[]): void {
   if (!places.length) return;
   const points = places.map(({ across, along }) => toField(frame, across, along));
+  const margin = getMargin(field);
   for (const axis of [0, 1] as const) {
-    const size = axis ? FIELD.height : FIELD.width;
+    const size = axis ? field.height : field.width;
     const low = Math.min(...points.map(point => point[axis]));
     const high = Math.max(...points.map(point => point[axis]));
-    const shift = Math.max(MARGIN - low, 0) - Math.max(high - (size - MARGIN), 0);
+    const shift = Math.max(margin - low, 0) - Math.max(high - (size - margin), 0);
     if (axis) frame.y += shift;
     else frame.x += shift;
   }
@@ -171,54 +216,59 @@ function keepOnField(frame: Frame, places: { across: number; along: number }[]):
 
 /** Give the battalions their places and stand them there */
 function seat(battle: Battle, side: Side, plan: Plan, places: Place[]): void {
-  if (!plan.fixed) keepOnField(plan, places);
+  const { field } = battle;
+  const { front } = field;
+  if (!plan.fixed) keepOnField(field, plan, places);
   plan.camp = [plan.x, plan.y];
-  plan.half = Math.max(...places.filter(place => place.rank === 0).map(place => Math.abs(place.across)), 20);
+  plan.half = Math.max(
+    ...places.filter(place => place.rank === 0).map(place => Math.abs(place.across)),
+    front * LEAST_HALF
+  );
   // shooters stop where their shots reach the foe's front
   const shooters = places.filter(place => place.block.range && place.block.kind !== "engine");
-  if (shooters.length)
-    plan.halt = Math.max(
-      Math.min(...shooters.map(({ block, along }) => block.range * 0.9 + along)) - places[0].block.depth,
-      COUNTER * 2
-    );
+  const shot = shooters.length
+    ? Math.min(...shooters.map(({ block, along }) => block.range * 0.9 + along)) - places[0].block.depth
+    : 0;
+  plan.halt = Math.max(shot, COUNTER * 2 * front);
   battle[side].plan = plan;
   for (const place of places) {
     // riders do not stand among trees or in a bog: they close in to the line till the ground is open
     const bad = (): boolean => {
-      const { wood, marsh } = terrainAt(battle.field, ...onField(toField(plan, place.across, place.along)));
+      const { wood, marsh } = terrainAt(field, ...onField(field, toField(plan, place.across, place.along)));
       return wood || marsh;
     };
-    for (let i = 0; i < 12 && place.block.kind === "rider" && Math.abs(place.across) > 20 && bad(); i++)
-      place.across -= Math.sign(place.across) * 20;
+    const shift = front * STEP_IN;
+    for (let i = 0; i < 12 && place.block.kind === "rider" && Math.abs(place.across) > shift && bad(); i++)
+      place.across -= Math.sign(place.across) * shift;
     const { block, role, mission, rank, across, along } = place;
-    const [x, y] = onField(toField(plan, across, along));
+    const [x, y] = onField(field, toField(plan, across, along));
     block.order = { role, mission, rank, across, along, x, y, facing: plan.heading, target: null, sent: false };
     [block.x, block.y, block.facing] = [x, y, plan.heading];
   }
 }
 
 /** Distance from the middle of the field towards its edge, with a margin */
-export function reach(angle: number): number {
-  return 1 / Math.hypot(Math.cos(angle) / (FIELD.width / 2 - 60), Math.sin(angle) / (FIELD.height / 2 - 50));
+export function reach({ width, height }: Battlefield, angle: number): number {
+  return 1 / Math.hypot(Math.cos(angle) / (width * 0.44), Math.sin(angle) / (height / 2 - width * 0.05));
 }
 
 /** About where a side forms up, before its ground is chosen: the attackers where they came from, the defenders at the battle point */
 export function getBase(battle: Battle, side: Side): Point {
   const { field, axis } = battle;
   if (side === "defenders" && field.held !== null) return [field.burgs[field.held].x, field.burgs[field.held].y];
-  const deep = reach(axis) * (side === "attackers" ? -0.8 : 0.35);
-  return [FIELD.width / 2 + Math.cos(axis) * deep, FIELD.height / 2 + Math.sin(axis) * deep];
+  const deep = reach(field, axis) * (side === "attackers" ? -0.8 : 0.35);
+  return [field.width / 2 + Math.cos(axis) * deep, field.height / 2 + Math.sin(axis) * deep];
 }
 
 /** The room a line has across the attack */
-const getRoom = (battle: Battle): number => reach(battle.axis + Math.PI / 2) * 1.7;
+const getRoom = (battle: Battle): number => reach(battle.field, battle.axis + Math.PI / 2) * 1.7;
 
 /** The usual way: a tactic by the odds, a formation by the tactic, on the best ground in reach */
 function drawUp(battle: Battle, side: Side, blocks: Block[]): void {
   const forward = side === "attackers" ? battle.axis : battle.axis + Math.PI;
   const crossing = side === "defenders" ? findCrossing(battle) : null;
   const [tactic, strike] = chooseTactic(battle, side, blocks, crossing !== null);
-  const places = form(blocks, TACTICS[tactic], strike, getRoom(battle));
+  const places = form(blocks, TACTICS[tactic], strike, getRoom(battle), battle.field.front);
   // defenders ready for a landing meet it at the shore, unless their general would rather fight inland
   const meets = battle.type === "landing" && side === "defenders" && isReady(battle) && !battle[side].waits;
   const shore = meets ? findShore(battle) : null;
@@ -244,18 +294,20 @@ function rateTactics(
   const fireShare = own.fire / (own.fire + foe.fire || 1);
   const gripShare = own.grip / (own.grip + foe.grip || 1);
   const foeBlocks = battle.blocks.filter(block => block.side !== side);
-  const width = (all: Block[]): number => sum(all, block => (block.kind === "line" ? block.width + GAP : 0));
+  const { field } = battle;
+  const width = (all: Block[]): number =>
+    sum(all, block => (block.kind === "line" ? block.width + GAP * field.front : 0));
   const weight = (all: Block[]): number => sum(all, block => (block.kind === "line" ? strength(block) : 0));
   const heavier = weight(blocks) / (width(blocks) || 1) > (weight(foeBlocks) / (width(foeBlocks) || 1)) * 1.15;
 
   // the wing to mass against: the foe's weaker one when it is in sight, else the right
   const frame = {
-    x: FIELD.width / 2,
-    y: FIELD.height / 2,
+    x: field.width / 2,
+    y: field.height / 2,
     heading: side === "attackers" ? battle.axis : battle.axis + Math.PI
   };
   const wing = (sign: number): number =>
-    sum(foe.ready, block => (block.x && toFrame(frame, block)[0] * sign > 30 ? strength(block) : 0));
+    sum(foe.ready, block => (block.x && toFrame(frame, block)[0] * sign > field.front * WING ? strength(block) : 0));
   const strike = wing(-1) < wing(1) ? -1 : 1;
 
   if (battle.type === "landing" && side === "attackers") return [[["waves", 1]], strike];
@@ -328,15 +380,19 @@ export function getOptions(battle: Battle, side: Side): Option[] {
 /** Where a side forms up: the attackers where they came from, the defenders on the best ground about the battle point */
 function findGround(battle: Battle, side: Side, places: Place[], forward: number): Frame {
   const { axis, field } = battle;
-  const [along, width] = [reach(axis), reach(axis + Math.PI / 2)];
-  const half = Math.max(...places.filter(place => place.rank === 0).map(place => Math.abs(place.across)), 20);
+  const { front } = field;
+  const [along, width] = [reach(field, axis), reach(field, axis + Math.PI / 2)];
+  const half = Math.max(
+    ...places.filter(place => place.rank === 0).map(place => Math.abs(place.across)),
+    front * LEAST_HALF
+  );
   const depth = -Math.min(...places.map(place => place.along), 0);
   const defending = side === "defenders";
   if (defending && field.held !== null) return { ...field.burgs[field.held], heading: forward };
 
   const at = (deep: number, shift: number): Frame => ({
-    x: FIELD.width / 2 + Math.cos(axis) * along * deep + Math.cos(axis + Math.PI / 2) * width * shift,
-    y: FIELD.height / 2 + Math.sin(axis) * along * deep + Math.sin(axis + Math.PI / 2) * width * shift,
+    x: field.width / 2 + Math.cos(axis) * along * deep + Math.cos(axis + Math.PI / 2) * width * shift,
+    y: field.height / 2 + Math.sin(axis) * along * deep + Math.sin(axis + Math.PI / 2) * width * shift,
     heading: forward
   });
   // a line is worth the ground under it, what covers its ends and what the foe has to cross to come at it
@@ -348,7 +404,7 @@ function findGround(battle: Battle, side: Side, places: Place[], forward: number
       if (terrain.wood || terrain.marsh) value -= 0.2;
       if (!defending) continue;
       value += terrain.height + (terrain.town ? 0.2 : 0);
-      for (const ahead of [70, 130]) {
+      for (const ahead of [0.07, 0.13].map(share => share * field.width)) {
         const before = terrainAt(field, ...toField(frame, share * half, ahead));
         if (before.water || before.marsh) value += 0.15;
         value += (terrain.height - before.height) * 0.3;
@@ -356,9 +412,10 @@ function findGround(battle: Battle, side: Side, places: Place[], forward: number
     }
     if (defending) {
       for (const sign of [-1, 1]) {
-        const [x, y] = toField(frame, sign * (half + 50), 0);
+        const [x, y] = toField(frame, sign * (half + front * BEYOND), 0);
         const beyond = terrainAt(field, x, y);
-        const off = x < MARGIN || y < MARGIN || x > FIELD.width - MARGIN || y > FIELD.height - MARGIN;
+        const margin = getMargin(field);
+        const off = x < margin || y < margin || x > field.width - margin || y > field.height - margin;
         if (off || beyond.water || beyond.wood || beyond.town) value += 0.3;
       }
     }
@@ -376,9 +433,10 @@ function findGround(battle: Battle, side: Side, places: Place[], forward: number
   }
   // the last line stands on the field too
   const frame = best!;
+  const [margin, step] = [getMargin(field) + field.cell, field.cell];
   const inside = ([x, y]: Point): boolean =>
-    x >= MARGIN + 10 && y >= MARGIN + 10 && x <= FIELD.width - MARGIN - 10 && y <= FIELD.height - MARGIN - 10;
-  for (let i = 0; i < 30 && !inside(toField(frame, 0, -depth)); i++) [frame.x, frame.y] = toField(frame, 0, 10);
+    x >= margin && y >= margin && x <= field.width - margin && y <= field.height - margin;
+  for (let i = 0; i < 30 && !inside(toField(frame, 0, -depth)); i++) [frame.x, frame.y] = toField(frame, 0, step);
   return frame;
 }
 
@@ -389,21 +447,22 @@ function findGround(battle: Battle, side: Side, places: Place[], forward: number
 function findCrossing(battle: Battle): Frame | null {
   const { field, axis } = battle;
   if (field.open || battle.type !== "field" || !field.water.some(Boolean)) return null;
-  const along = reach(axis);
+  const along = reach(field, axis);
   const point = (deep: number): Point => [
-    FIELD.width / 2 + Math.cos(axis) * along * deep,
-    FIELD.height / 2 + Math.sin(axis) * along * deep
+    field.width / 2 + Math.cos(axis) * along * deep,
+    field.height / 2 + Math.sin(axis) * along * deep
   ];
   const passable = (node: number): boolean => !field.water[node] || field.ford[node] === 1;
   const costs = Float32Array.from(field.water, (_, node) => (passable(node) ? (field.water[node] ? 3 : 1) : Infinity));
-  const way = trace(spread(FIELD.cols, FIELD.rows, [nodeAt(...point(-0.8))], costs), nodeAt(...point(0.35)));
+  const way = trace(spread(COLS, ROWS, [nodeAt(field, ...point(-0.8))], costs), nodeAt(field, ...point(0.35)));
   const wet = (node: number): boolean => field.water[node] > 0 || field.deck[node] === 1;
   const last = way.findLastIndex(wet);
   if (last < way.length * 0.4 || last >= way.length - 2) return null;
-  const [x, y] = nodeCentre(way[last]);
-  const [bx, by] = nodeCentre(way[Math.min(last + 8, way.length - 1)]); // the way on from the crossing
+  const [x, y] = nodeCentre(field, way[last]);
+  const [bx, by] = nodeCentre(field, way[Math.min(last + 8, way.length - 1)]); // the way on from the crossing
   const heading = Math.atan2(y - by, x - bx);
-  return { x: x - Math.cos(heading) * 75, y: y - Math.sin(heading) * 75, heading };
+  const back = field.front * BANK;
+  return { x: x - Math.cos(heading) * back, y: y - Math.sin(heading) * back, heading };
 }
 
 /** The defenders of a landing are ready for it when they are no less steady than the attackers at the outset */
@@ -412,30 +471,31 @@ const isReady = (battle: Battle): boolean => battle.defenders.morale >= battle.a
 /** Defenders ready for a landing stand a bowshot from where the attackers come out of the water */
 function findShore(battle: Battle): Frame | null {
   const { axis, field } = battle;
-  const along = reach(axis);
+  const along = reach(field, axis);
   const at = (deep: number): Point => [
-    FIELD.width / 2 + Math.cos(axis) * deep,
-    FIELD.height / 2 + Math.sin(axis) * deep
+    field.width / 2 + Math.cos(axis) * deep,
+    field.height / 2 + Math.sin(axis) * deep
   ];
   let shore: number | null = null;
-  for (let deep = -along * 0.8; deep < along * 0.35 - 110; deep += FIELD.cell)
+  for (let deep = -along * 0.8; deep < along * 0.35 - SHORE; deep += field.cell)
     if (terrainAt(field, ...at(deep)).water === 1) shore = deep;
   if (shore === null) return null;
-  const [x, y] = at(shore + 110);
+  const [x, y] = at(shore + SHORE);
   return { x, y, heading: axis + Math.PI };
 }
 
 /** An ambush: the attackers are caught on the march, in a column along the road */
 function marchColumn(battle: Battle, blocks: Block[]): void {
   const order = ["rider", "line", "shooter", "engine"];
+  const { field } = battle;
   const column = [...blocks].sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind) || a.id - b.id);
-  const pitch = blocks[0]?.depth + 26;
-  const files = Math.max(Math.ceil((column.length * pitch) / (reach(battle.axis) * 1.8)), 1);
-  const frame = { x: FIELD.width / 2, y: FIELD.height / 2, heading: battle.axis };
+  const pitch = blocks[0]?.depth + field.front * FILE;
+  const files = Math.max(Math.ceil((column.length * pitch) / (reach(field, battle.axis) * 1.8)), 1);
+  const frame = { x: field.width / 2, y: field.height / 2, heading: battle.axis };
   const places = column.map((block, i): Place => {
     const role = ROLES[block.kind];
     const row = Math.floor(i / files);
-    const across = ((i % files) - (files - 1) / 2) * (block.width + GAP);
+    const across = ((i % files) - (files - 1) / 2) * (block.width + GAP * field.front);
     const along = ((Math.ceil(column.length / files) - 1) / 2 - row) * pitch;
     return { block, role, mission: role === "wing" ? "guard" : role, rank: 0, across, along };
   });
@@ -447,27 +507,29 @@ function marchColumn(battle: Battle, blocks: Block[]): void {
  * the better covered, when their general thinks that ends better
  */
 function layAmbush(battle: Battle, blocks: Block[]): void {
+  const { field } = battle;
   const sorted = [...blocks].sort((a, b) => a.kind.localeCompare(b.kind) || a.id - b.id);
   const lie = (side: number, distance: number): Frame => {
     const out = battle.axis + (side ? Math.PI / 2 : -Math.PI / 2);
     return {
-      x: FIELD.width / 2 + Math.cos(out) * distance,
-      y: FIELD.height / 2 + Math.sin(out) * distance,
+      x: field.width / 2 + Math.cos(out) * distance,
+      y: field.height / 2 + Math.sin(out) * distance,
       heading: out + Math.PI
     };
   };
-  // trees and high ground hide those who lie in wait
+  // trees and high ground hide those who lie in wait, along the stretch of road their line looks over
+  const along = COVER.map(share => share * field.front);
   const cover = (frame: Frame): number =>
-    sum([-150, -75, 0, 75, 150], across => {
-      const { wood, height } = terrainAt(battle.field, ...toField(frame, across, 0));
+    sum(along, across => {
+      const { wood, height } = terrainAt(field, ...toField(frame, across, 0));
       return +wood + height;
     });
   const hidden = (frame: Frame): boolean =>
-    sum([-150, -75, 0, 75, 150], across => +terrainAt(battle.field, ...toField(frame, across, 0)).wood) >= 3;
+    sum(along, across => +terrainAt(field, ...toField(frame, across, 0)).wood) >= 3;
   /** Where they lie on a side: at the edge of the trees nearest the road, a short dash from it; a bowshot off in the open */
   const at = (side: number): Frame => {
-    const far = Math.min(reach(battle.axis + Math.PI / 2) * 0.75, 170);
-    for (let distance = 80; distance < far; distance += FIELD.cell)
+    const far = Math.min(reach(field, battle.axis + Math.PI / 2) * 0.75, AMBUSH[1]);
+    for (let distance = AMBUSH[0]; distance < far; distance += field.cell)
       if (hidden(lie(side, distance))) return lie(side, distance);
     return lie(side, far);
   };
@@ -477,7 +539,7 @@ function layAmbush(battle: Battle, blocks: Block[]): void {
       ? [{ troops: sorted, frame: cover(at(1)) > cover(at(0)) ? at(1) : at(0) }]
       : [0, 1].map(side => ({ troops: sorted.filter((_, i) => i % 2 === side), frame: at(side) }));
   for (const { troops, frame } of wings) {
-    const places = form(troops, TACTICS[tactic], 1, reach(battle.axis) * 1.7);
+    const places = form(troops, TACTICS[tactic], 1, reach(field, battle.axis) * 1.7, field.front);
     for (const place of places) if (place.role !== "support" && place.role !== "battery") place.mission = "hunt";
     seat(battle, "defenders", createPlan(tactic, frame, true), places);
   }
@@ -486,39 +548,42 @@ function layAmbush(battle: Battle, blocks: Block[]): void {
 
 /** The besiegers stand out of bowshot of the walls, their engines before them in range */
 function layLines(battle: Battle, blocks: Block[]): void {
-  const burg = battle.field.burgs[battle.field.held!];
-  const bowshot = Math.max(...battle.blocks.map(block => (block.side === "defenders" ? block.range : 0)), 150);
+  const { field } = battle;
+  const { front } = field;
+  const burg = field.burgs[field.held!];
   const engines = blocks.filter(block => block.kind === "engine");
   const places = form(
     blocks.filter(block => block.kind !== "engine"),
     TACTICS.lines,
     1,
-    getRoom(battle)
+    getRoom(battle),
+    front
   );
   if (engines.length) {
-    for (const place of places) place.along -= ROW_GAP;
-    let offset = -sum(engines, block => block.width + GAP) / 2;
+    for (const place of places) place.along -= ROW_GAP * front;
+    let offset = -sum(engines, block => block.width + GAP * front) / 2;
     for (const block of engines) {
       places.push({ block, role: "battery", mission: "battery", rank: 0, across: offset + block.width / 2, along: 0 });
-      offset += block.width + GAP;
+      offset += block.width + GAP * front;
     }
   }
   const away = battle.axis + Math.PI;
   const depth = -Math.min(...places.map(place => place.along), 0);
+  const margin = getMargin(field);
   const inside = (distance: number): boolean => {
     const [x, y] = [burg.x + Math.cos(away) * distance, burg.y + Math.sin(away) * distance];
-    return x >= MARGIN && y >= MARGIN && x <= FIELD.width - MARGIN && y <= FIELD.height - MARGIN;
+    return x >= margin && y >= margin && x <= field.width - margin && y <= field.height - margin;
   };
-  let distance = burg.radius + Math.min(bowshot + 10, 250); // the engines reach the middle of the burg from there
-  while (distance > burg.radius + 60 && !inside(distance + depth)) distance -= 10;
+  let distance = burg.radius + getRingDistance(battle); // the engines reach the middle of the burg from there
+  while (distance > burg.radius + 80 && !inside(distance + depth)) distance -= 14;
   const frame = { x: burg.x + Math.cos(away) * distance, y: burg.y + Math.sin(away) * distance, heading: battle.axis };
   seat(battle, "attackers", createPlan("lines", frame), places);
 }
 
-/** How far out of the walls a ring stands: out of bowshot */
+/** How far out of the walls the besiegers stand: out of bowshot */
 function getRingDistance(battle: Battle): number {
-  const bowshot = Math.max(...battle.blocks.map(block => (block.side === "defenders" ? block.range : 0)), 150);
-  return Math.min(bowshot + 10, 250);
+  const bowshot = Math.max(...battle.blocks.map(block => (block.side === "defenders" ? block.range : 0)), BOWSHOT);
+  return Math.min(bowshot + 14, RING);
 }
 
 /** Whether a besieger keeps the gate shut: near it, with the ring all but at the gate; neighbours a battalion along do too */
@@ -546,7 +611,7 @@ function ringIn(battle: Battle, blocks: Block[]): void {
   // spots round the walls, on the field: on land for troops, on the water for ships
   const spots = Array.from({ length: 72 }, (_, i): Point => {
     const angle = (i / 72) * Math.PI * 2;
-    return onField([
+    return onField(field, [
       burg.x + Math.cos(angle) * (burg.radius + distance),
       burg.y + Math.sin(angle) * (burg.radius * 0.85 + distance)
     ]);
@@ -623,13 +688,14 @@ function manWalls(battle: Battle, blocks: Block[]): void {
   if (!nodes.length) return;
 
   const taken: Point[] = [];
+  const apart = field.front * APART;
   /** The free spot that scores best, apart from those taken */
   const take = (score: (point: Point) => number): Point => {
-    let best = nodeCentre(nodes[0]);
+    let best = nodeCentre(field, nodes[0]);
     let most = -Infinity;
     for (const node of nodes) {
-      const point = nodeCentre(node);
-      const crowd = sum(taken, other => Math.max(30 - Math.hypot(other[0] - point[0], other[1] - point[1]), 0));
+      const point = nodeCentre(field, node);
+      const crowd = sum(taken, other => Math.max(apart - Math.hypot(other[0] - point[0], other[1] - point[1]), 0));
       const value = score(point) - crowd * 4;
       if (value > most) [best, most] = [point, value];
     }
@@ -670,21 +736,22 @@ const ROLES: Record<Block["kind"], Order["role"]> = {
  * Ships put out to the nearest water, however far
  */
 export function settle(battle: Battle): void {
+  const { field } = battle;
   for (const block of battle.blocks) {
     if (!shuns(battle, block, block.x, block.y)) continue;
     const forward = block.side === "attackers" ? battle.axis : battle.axis + Math.PI;
-    const node = nodeAt(block.x, block.y);
-    const col = node % FIELD.cols;
-    const row = (node - col) / FIELD.cols;
-    const span = isMoored(battle, block) ? FIELD.cols : 8;
+    const node = nodeAt(field, block.x, block.y);
+    const col = node % COLS;
+    const row = (node - col) / COLS;
+    const span = isMoored(battle, block) ? COLS : 8;
     let best: Point | null = null;
     let least = Infinity;
-    for (let y = Math.max(row - span, 0); y <= Math.min(row + span, FIELD.rows - 1); y++) {
-      for (let x = Math.max(col - span, 0); x <= Math.min(col + span, FIELD.cols - 1); x++) {
-        const [nx, ny] = nodeCentre(y * FIELD.cols + x);
+    for (let y = Math.max(row - span, 0); y <= Math.min(row + span, ROWS - 1); y++) {
+      for (let x = Math.max(col - span, 0); x <= Math.min(col + span, COLS - 1); x++) {
+        const [nx, ny] = nodeCentre(field, y * COLS + x);
         if (shuns(battle, block, nx, ny)) continue;
         const ahead = (nx - block.x) * Math.cos(forward) + (ny - block.y) * Math.sin(forward) > 0;
-        const score = Math.hypot(nx - block.x, ny - block.y) + (ahead ? 20 : 0);
+        const score = Math.hypot(nx - block.x, ny - block.y) + (ahead ? field.front * AHEAD : 0);
         if (score < least) [best, least] = [[nx, ny], score];
       }
     }
@@ -706,10 +773,10 @@ export function enlist(battle: Battle, side: Side, blocks: Block[]): void {
   const friends = battle.blocks.filter(
     block => block.side === side && block.status === "ready" && !blocks.includes(block)
   );
-  const rear = Math.min(...friends.map(block => toFrame(plan, block)[1]), 0) - ROW_GAP;
-  const places = form(blocks, TACTICS.assault, 1, getRoom(battle));
+  const rear = Math.min(...friends.map(block => toFrame(plan, block)[1]), 0) - ROW_GAP * battle.field.front;
+  const places = form(blocks, TACTICS.assault, 1, getRoom(battle), battle.field.front);
   for (const { block, role, rank, across, along } of places) {
-    const [x, y] = onField(toField(plan, across, rear + along));
+    const [x, y] = onField(battle.field, toField(plan, across, rear + along));
     const mission = role === "line" ? "reserve" : role === "wing" ? "guard" : role;
     block.order = {
       role: role === "line" ? "reserve" : role,
@@ -850,7 +917,7 @@ function engage(battle: Battle, side: Side, own: View, foe: View, gap: number): 
 
   // standing off
   const atGrips = own.ready.some(block => block.action === "fight");
-  if (atGrips || gap <= COUNTER * 1.5) return names.close; // the foe is upon us
+  if (atGrips || gap <= COUNTER * 1.5 * battle.field.front) return names.close; // the foe is upon us
   if (!data.advancing || battle.engaged === null) return phase; // a defender waits; an attacker is still coming up
   if (!own.fire) return names.close;
 
@@ -948,7 +1015,7 @@ function getSortiePrey(battle: Battle, own: View, foe: View): Block | null {
   const burg = field.burgs[field.held!];
   const party = own.ready.filter(block => block.kind === "rider" || block.kind === "line");
   const might = sum(party, strength) / 2 + sum(party, block => (block.kind === "rider" ? strength(block) / 2 : 0));
-  const ashore = foe.ready.filter(block => !isMoored(battle, block) && far(block, burg) < burg.radius + 300);
+  const ashore = foe.ready.filter(block => !isMoored(battle, block) && far(block, burg) < burg.radius + SORTIE);
   const gates = battle.cutOff
     ? field.walls.filter(wall => wall.burg === field.held && wall.gate && wall.water !== 1)
     : [];
@@ -958,7 +1025,7 @@ function getSortiePrey(battle: Battle, own: View, foe: View): Block | null {
   for (const prey of preys) {
     // the engines themselves are a quarter of their worth hand to hand
     const guards = sum(foe.ready, block =>
-      far(block, prey) < CHARGE ? strength(block) * (block.kind === "engine" ? 0.25 : 1) : 0
+      far(block, prey) < CHARGE * field.front ? strength(block) * (block.kind === "engine" ? 0.25 : 1) : 0
     );
     if (might > guards * (prey.kind === "engine" ? 1.5 : 1)) return prey;
   }
@@ -976,10 +1043,12 @@ function direct(battle: Battle, side: Side, own: View, foe: View, gap: number): 
   const siege = battle.type === "siege" && battle.field.held !== null;
   const stance = getStance(phase);
   const odds = own.power / (foe.power || 1e-9);
+  const { field } = battle;
 
   // who comes to whom: a defender goes over when the attack is spent or does not come at all
-  if (data.advancing && gap < plan.gap - 5) battle.lastLoss = battle.tick; // no lull while a side comes on
-  plan.idle = gap < plan.gap - 5 || gap < CHARGE ? 0 : plan.idle + 1;
+  const closing = gap < plan.gap - PACE * CLOSING;
+  if (data.advancing && closing) battle.lastLoss = battle.tick; // no lull while a side comes on
+  plan.idle = closing || gap < CHARGE * field.front ? 0 : plan.idle + 1;
   plan.gap = gap;
   plan.bled = own.losses > plan.losses && !own.ready.some(block => block.action === "fight") ? plan.bled + 1 : 0;
   plan.losses = own.losses;
@@ -1014,7 +1083,7 @@ function direct(battle: Battle, side: Side, own: View, foe: View, gap: number): 
     }
     // engines of a siege stay where they were set up
     if (!plan.fixed && !(siege && order.role === "battery")) {
-      [order.x, order.y] = onField(toField(plan, order.across, order.along));
+      [order.x, order.y] = onField(field, toField(plan, order.across, order.along));
       order.facing = plan.heading;
     }
     order.mission = getMission(battle, side, block, own, frameFoes);
@@ -1027,7 +1096,11 @@ function direct(battle: Battle, side: Side, own: View, foe: View, gap: number): 
       const end = frameFoes
         .filter(({ block }) => block.kind !== "rider")
         .reduce<[number, number] | null>((best, { at }) => (!best || at[0] * sign > best[0] * sign ? at : best), null);
-      if (end) [order.x, order.y] = onField(toField(plan, end[0] + sign * 90, end[1] + 30));
+      if (end)
+        [order.x, order.y] = onField(
+          field,
+          toField(plan, end[0] + sign * field.front * ROUND_END, end[1] + field.front * LEVEL)
+        );
     }
   }
 
@@ -1072,7 +1145,7 @@ function getMission(battle: Battle, side: Side, block: Block, own: View, foes: S
 
   // riders on a wing go round the foe's line when the lines close, unless the foe's riders there outweigh them
   const sign = Math.sign(block.order.across) || 1;
-  const launched = phase === names.close || (advancing && plan.gap < CHARGE); // to fall on the foe as the lines meet
+  const launched = phase === names.close || (advancing && plan.gap < CHARGE * battle.field.front); // to fall on the foe as the lines meet
   if (!launched || off || block.morale < SHAKEN || siege) return "guard";
   const there = (all: Block[], at: (block: Block) => number): number =>
     sum(all, block => (block.kind === "rider" && at(block) * sign > 0 ? strength(block) : 0));
@@ -1081,7 +1154,7 @@ function getMission(battle: Battle, side: Side, block: Block, own: View, foes: S
   if (theirs * 0.7 > mine) return "guard";
   const [, along] = toFrame(plan, block);
   const end = Math.min(...foes.filter(({ at }) => at[0] * sign > -plan.half).map(({ at }) => at[1]), Infinity);
-  return along >= end - 30 ? "hunt" : "flank"; // level with the foe's line: it is round
+  return along >= end - battle.field.front * LEVEL ? "hunt" : "flank"; // level with the foe's line: it is round
 }
 
 /** Send those kept behind where they are needed, the nearest first */
@@ -1099,7 +1172,8 @@ function sendReserve(battle: Battle, side: Side, own: View, foe: View, foes: See
     if (block) Object.assign(block.order, { mission: "hunt", sent: true, target: target?.id ?? null });
   };
 
-  if (plan.tactic !== "garrison") guardWards(own, foe, spare, nearest, send);
+  const { front } = battle.field;
+  if (plan.tactic !== "garrison") guardWards(own, foe, WARD * front, spare, nearest, send);
   if (plan.fixed && plan.tactic !== "garrison") return;
 
   if (plan.tactic === "garrison") {
@@ -1118,7 +1192,7 @@ function sendReserve(battle: Battle, side: Side, own: View, foe: View, foes: See
     const { order } = lost;
     if (lost.side !== side || lost.status === "ready" || order.role !== "line" || order.rank !== 0) continue;
     order.rank = -1; // seen to
-    if (!foe.ready.some(block => far(block, order) < 160)) continue;
+    if (!foe.ready.some(block => far(block, order) < front * FOES_NEAR)) continue;
     const behind = own.ready.filter(block => block.order.role === "line" && block.order.rank > 0 && !block.order.sent);
     const heir = nearest([...behind, ...spare()], order);
     if (heir)
@@ -1129,8 +1203,9 @@ function sendReserve(battle: Battle, side: Side, own: View, foe: View, foes: See
   const answered = new Set(own.ready.map(block => block.order.target));
   const urgent = ({ block, at }: Seen[number]): number => (block.kind === "rider" ? -1000 : 0) + at[1]; // riders, then the deepest
   for (const { block: threat, at } of [...foes].sort((a, b) => urgent(a) - urgent(b))) {
-    const round = at[1] < -ROW_GAP / 2 || (Math.abs(at[0]) > plan.half + 40 && at[1] < 20);
-    if (!round || answered.has(threat.id) || far(threat, plan) > 400) continue;
+    const flank = Math.abs(at[0]) > plan.half + front * ROUND_SIDE && at[1] < front * ROUND_AHEAD;
+    const round = at[1] < (-ROW_GAP * front) / 2 || flank;
+    if (!round || answered.has(threat.id) || far(threat, plan) > front * THREAT) continue;
     const guards = own.ready.filter(
       block => block.order.mission === "guard" && !block.order.sent && block.kind === "rider"
     );
@@ -1156,6 +1231,7 @@ function sendReserve(battle: Battle, side: Side, own: View, foe: View, foes: See
 function guardWards(
   own: View,
   foe: View,
+  ward: number,
   spare: () => Block[],
   nearest: (among: Block[], to: Block) => Block | undefined,
   send: (block: Block | undefined, target: Block) => void
@@ -1164,16 +1240,16 @@ function guardWards(
     .filter(block => block.kind === "shooter" || block.kind === "engine")
     .sort((a, b) => +(b.kind === "engine") - +(a.kind === "engine"));
   const answered = new Set(own.ready.map(block => (block.order.sent ? block.order.target : null)));
-  for (const ward of wards) {
+  for (const shot of wards) {
     for (const threat of foe.ready) {
-      if (threat.range || answered.has(threat.id) || threat.target !== ward.id || far(threat, ward) > WARD) continue;
+      if (threat.range || answered.has(threat.id) || threat.target !== shot.id || far(threat, shot) > ward) continue;
       const free = own.ready.filter(
         block =>
           (block.kind === "line" || block.kind === "rider") &&
           !block.order.sent &&
           block.action !== "fight" &&
           block.morale >= SHAKEN &&
-          far(block, threat) < WARD * 2
+          far(block, threat) < ward * 2
       );
       const guard = nearest([...spare(), ...free], threat);
       if (!guard) continue;
@@ -1197,8 +1273,9 @@ function moveFrame(battle: Battle, side: Side, own: View, foe: View, gap: number
   const bearing = Math.atan2(ty - plan.y, tx - plan.x);
   const straight = tx === there[0] && ty === there[1];
   // it wheels to face the foe, not for a trifle
+  const { field } = battle;
   const off = Math.abs(Math.atan2(Math.sin(bearing - plan.heading), Math.cos(bearing - plan.heading)));
-  if (Math.hypot(foe.x - plan.x, foe.y - plan.y) > 80 && off > (data.advancing ? 0.15 : 0.35))
+  if (Math.hypot(foe.x - plan.x, foe.y - plan.y) > field.front * WHEEL && off > (data.advancing ? 0.15 : 0.35))
     plan.heading = turn(plan.heading, bearing, straight ? 0.12 : 0.4);
   if (!data.advancing) return;
 
@@ -1207,10 +1284,11 @@ function moveFrame(battle: Battle, side: Side, own: View, foe: View, gap: number
   const pace = Math.min(...first.map(block => getPace(battle, block, terrainAt(battle.field, block.x, block.y).water)));
   const advance = Math.min(pace * ROUND_TICKS, gap - want);
   const lags = first.map(block => toFrame(plan, block.order)[1] - toFrame(plan, block)[1]).sort((a, b) => a - b);
-  if (advance <= 0 || lags[lags.length >> 1] > 30) return; // most of the line is behind
+  if (advance <= 0 || lags[lags.length >> 1] > field.front * LEVEL) return; // most of the line is behind
   plan.x += Math.cos(bearing) * advance;
   plan.y += Math.sin(bearing) * advance;
   keepOnField(
+    field,
     plan,
     own.ready.filter(block => !block.order.sent).map(block => block.order)
   );

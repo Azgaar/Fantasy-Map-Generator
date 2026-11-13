@@ -304,6 +304,10 @@ We have a Reddit community on https://www.reddit.com/r/FantasyMapGenerator
 
 Yes, with the Battle Simulator. Click a regiment, press Attack foreign regiment and click a regiment of another state: the attacker moves to it and the battle opens. The attack, defense, speed, range and morale of the units, set in the Military units editor, decide how they fight. The battle is played on a battle plan drawn from the map around it: troops move, shoot and fight by themselves, and the ground, flanks and morale matter. It can be paused to move troops, add regiments or order another phase
 
+### How big is a battle and how long does it last?
+
+The battle plan is in real lengths: a battalion stands a metre a man across five ranks, 60 m wide for 300 men, and the plan is about 23 battalion fronts wide, 1.4 × 0.8 km for battalions of 300 and up to 10 km for the biggest battles; a siege narrows it to the burg. The screen shows the field's size and a scale bar in the map's units. A step of the battle is 8 seconds and a round 48 seconds: the clock under the plan and the battle log show the time. Units march at their real speed, 4.3 km/h on foot and 12.6 km/h mounted by default, and charge at three times it for the last 30 to 85 m; bows shoot about 160 m, artillery 380 m. A battle of the default size takes some 15 to 25 minutes. The speed buttons play it 25 to 200 times as fast as real time. Speeds are set in km/h and ranges in metres in the Military units editor
+
 ### How can I upload a new icon for cities?
 
 Open Style -> Icons, select the burg group (city, town and so on) and click its icon. Pick a bundled icon or emoji, or open Custom to upload or link your own image. All burgs of the group use it. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons

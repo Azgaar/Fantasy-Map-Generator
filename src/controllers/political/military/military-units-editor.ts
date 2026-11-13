@@ -4,6 +4,7 @@ import { Icons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
 import { Military } from "@/model/political/military-generator";
 import { FOOT_SPEED, getDefaultMilitaryUnits, getUnitPower } from "@/model/political/military-units";
+import { convertSpeed, formatLength, getLengthUnits, getSpeedUnit } from "@/model/units";
 import { stateEmblemIcon } from "@/renderers/draw-emblems";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
@@ -187,7 +188,7 @@ function renderUnitsPage(view: TableView<UnitRow>): void {
 
 function getUnitLine({ id, unit }: UnitRow, tips: ReturnType<typeof getTips>): string {
   const number = (key: NumberField, attributes: string): string =>
-    `<div data-col="${key}"><input data-field="${key}" data-tip="${tips[key]}" type="number" ${attributes} value="${unit[key]}" /></div>`;
+    `<div data-col="${key}"><input data-field="${key}" data-tip="${getValueTip(tips, key, unit[key])}" type="number" ${attributes} value="${unit[key]}" /></div>`;
   const limit = (key: Limit): string => {
     const title = unit[key]?.length ? escapeHtml(limitationTip(unit[key], pack[key] as LimitationItem[])) : "";
     return `<div data-col="${key}" data-tip="${tips[key]}" title="${title}" class="pointer">${getLimitText(unit[key], key)}</div>`;
@@ -204,7 +205,7 @@ function getUnitLine({ id, unit }: UnitRow, tips: ReturnType<typeof getTips>): s
       ${number("crew", `min="1" step="1"`)}
       ${number("attack", `min="0" step=".1"`)}
       ${number("defense", `min="0" step=".1"`)}
-      ${number("speed", `min="0" step="1"`)}
+      ${number("speed", `min="0" step=".1"`)}
       ${number("range", `min="0" step="10"`)}
       ${number("morale", `min="0" step=".1"`)}
       <div data-col="power" data-tip="${tips.power}">${showPower(unit)}</div>
@@ -224,7 +225,10 @@ function onFieldInput(event: Event): void {
 
   if (field === "name" || field === "type") row.unit[field] = el.value;
   else if (field === "separate") row.unit.separate = +(el as HTMLInputElement).checked;
-  else row.unit[field as NumberField] = +el.value || 0;
+  else {
+    row.unit[field as NumberField] = +el.value || 0;
+    el.dataset.tip = getValueTip(getTips(), field as NumberField, row.unit[field as NumberField]);
+  }
 
   el.closest(".states")!.querySelector('[data-col="power"]')!.textContent = showPower(row.unit);
 }
@@ -356,6 +360,15 @@ const toRow = (unit: MilitaryUnit): UnitRow => ({
 
 const getRow = (el: HTMLElement): UnitRow | undefined => rows.find(row => row.id === getRowId(el));
 
+/** A speed (km/h) or range (m) is typed as stored; the tip gives it in the map's units when they differ */
+function getValueTip(tips: ReturnType<typeof getTips>, key: NumberField, value: number): string {
+  if (key === "speed" && getSpeedUnit() !== "km/h")
+    return sentences(tips.speed, `${value} km/h = ${convertSpeed(value)} ${getSpeedUnit()}`);
+  if (key === "range" && value && getLengthUnits().short.name !== "m")
+    return sentences(tips.range, `${value} m = ${formatLength(value)}`);
+  return tips[key];
+}
+
 const getLimitText = (allowed: number[] | undefined, type: Limit): string => {
   if (!allowed?.length) return `<span class="unset">all</span>`;
   return type === "states" ? allowed.map(stateEmblemIcon).join("") : String(allowed.length);
@@ -394,12 +407,12 @@ const getTips = () => ({
   crew: t("Average number of people in crew (used for total personnel calculation)"),
   attack: t("What a unit strikes and shoots with in battle"),
   defense: t("What a unit stands blows and shots with in battle"),
-  speed: t("How far a unit moves in a battle tick: 7 on foot, 20 mounted. The battle plan is 1000 wide"),
-  range: t("How far a unit shoots on the battle plan, which is 1000 wide. Set 0 to fight hand to hand"),
-  morale: t("How steady a unit is in battle: 1 is ordinary, lower breaks sooner, at 2 it loses morale half as fast"),
-  power: t(
-    "Unit military power, worked out from its attack, defense, speed, range and morale. It sets the upkeep and the power of forces"
-  ),
-  type: t("Unit type to apply special rules on forces recalculation"),
-  separate: t("Check if unit is separate and can be stacked only with units of the same type")
+  speed: t("Combat speed in km/h, melee attack charge is at {{times}} of that speed", { times: "3×" }),
+  range: t("Range attack max distance in metres. Set to 0 for melee-only units"),
+  morale: t("Steadiness in battle: 1 is ordinary, lower breaks sooner, at 2 it loses morale {{times}} slower", {
+    times: "2×"
+  }),
+  power: t("Calculated from attack, defense, speed, range and morale. It sets the upkeep and the power of forces"),
+  type: t("Type to apply special rules on forces recalculation"),
+  separate: t("If unit can be stacked only with units of the same type")
 });

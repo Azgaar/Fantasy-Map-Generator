@@ -6,12 +6,12 @@ import { Rivers } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { getKmInDistanceUnit, heightToMeters } from "@/model/units";
 import type { Point } from "@/types/global";
+import { COLS, DEFAULT_BATTALION, type FieldSize, getFieldSize, ROWS } from "./battle-scale";
 
 type Box = [number, number, number, number]; // x0, y0, x1, y1
 
-// the plan and its grid: a node is smaller than a battalion is deep, so the ways round the terrain follow what is drawn
-export const FIELD = { width: 1000, height: 600, cell: 10, cols: 100, rows: 60 };
-const SITE_SHIFT = 300; // metres a battle by a river is fought off it, at most
+// a grid node is smaller than a battalion is deep, so the ways round the terrain follow what is drawn
+const SITE_SHIFT = 300; // a battle by a river is fought off it, at most
 
 export interface FieldRiver {
   points: Point[];
@@ -54,14 +54,13 @@ export interface FieldBreach {
 }
 
 /** Ground of a battle: the map around its cell as the layout, with detail that is always the same for the place */
-export interface Battlefield {
+export interface Battlefield extends FieldSize {
   open: "sea" | "sky" | null; // no terrain: a naval or an air battle
   site: Point | null; // the map point a field of the map is built at
-  metres: number; // a field unit stands for, by the size of the battalions
   biome: number;
   // one value per grid node, row by row
-  height: number[]; // the lie of the land, 0 the lowest to 1 the highest
-  relief: number; // field units from height 0 to height 1
+  elevation: number[]; // the lie of the land, 0 the lowest to 1 the highest
+  relief: number; // metres from height 0 to height 1
   wood: number[];
   marsh: number[];
   water: number[]; // 1 sea or lake, 2 river
@@ -93,7 +92,7 @@ export interface Terrain {
   rampart: number; // by a wall 1, by a gate 2, in a breach 3
 }
 
-// a river by its width in metres: a brook is waded anywhere, a wider one at its fords, the widest only bridged
+// a river by its width: a brook is waded anywhere, a wider one at its fords, the widest only bridged
 const BROOK = 20;
 const WADEABLE = 40;
 const FORD = 72; // length of a ford along the river
@@ -102,14 +101,15 @@ const FORD = 72; // length of a ford along the river
 const WOODS: Record<number, number> = { 3: 0.15, 4: 0.2, 5: 0.5, 6: 0.55, 7: 0.7, 8: 0.65, 9: 0.55, 10: 0.05, 12: 0.2 };
 const FOREST_BIOMES = [5, 6, 7, 8, 9];
 
+/** A field with no ground, of the size for battalions of the default size; `prepare` sizes it to its battle */
 export function createEmptyBattlefield(open: Battlefield["open"] = null): Battlefield {
-  const grid = (): number[] => new Array(FIELD.cols * FIELD.rows).fill(0);
+  const grid = (): number[] => new Array(COLS * ROWS).fill(0);
   return {
     open,
     site: null,
-    metres: 2,
+    ...getFieldSize(DEFAULT_BATTALION),
     biome: 4,
-    height: grid(),
+    elevation: grid(),
     relief: 0,
     wood: grid(),
     marsh: grid(),
@@ -130,36 +130,30 @@ export function createEmptyBattlefield(open: Battlefield["open"] = null): Battle
   };
 }
 
-/** A field of the map not built yet: `prepare` builds it once the size of the battalions sets its scale */
+/** A field of the map not built yet: `prepare` builds it once the size of the battalions sets its size */
 export function createMapField(x: number, y: number): Battlefield {
-  return { ...createEmptyBattlefield(), site: [x, y], metres: 0 };
+  return { ...createEmptyBattlefield(), site: [x, y], width: 0 };
 }
 
 /**
  * The map round a point at true scale: lines and coasts as the map draws them, the ground as it lies between the cell centres.
  * What the map is too coarse to show, hills, copses, bogs, the meanders of a river, comes from noise fixed by the place.
- * @param metres a field unit stands for
  * @param clearing keep the middle open for the lines to meet; an ambush wants the cover
  */
-export function buildBattlefield(x: number, y: number, metres: number, clearing = true): Battlefield {
-  const field: Battlefield = { ...createEmptyBattlefield(), site: [x, y], metres };
+export function buildBattlefield(x: number, y: number, size: FieldSize, clearing = true): Battlefield {
+  const field: Battlefield = { ...createEmptyBattlefield(), site: [x, y], ...size };
   const place: Point = [Math.round(x), Math.round(y)];
   const { cells } = pack;
-  const { cols, rows, cell: step } = FIELD;
+  const { width, height, cell: step } = size;
   const cell = Pack.findCell(x, y);
   if (cell === undefined) return field;
   field.biome = cells.biome[cell];
 
-  const u = (length: number): number => length / metres; // field units in a length in metres
   const pixel = options.map.units.distance.scale * (getKmInDistanceUnit() || 1) * 1000; // metres in a map pixel
-  const scale = pixel / metres; // field units in a map pixel
   const [sx, sy] = findSite(cell, place, pixel);
-  const toField = (mx: number, my: number): Point => [
-    (mx - sx) * scale + FIELD.width / 2,
-    (my - sy) * scale + FIELD.height / 2
-  ];
+  const toField = (mx: number, my: number): Point => [(mx - sx) * pixel + width / 2, (my - sy) * pixel + height / 2];
   const inView = ([fx, fy]: Point, margin = 0): boolean =>
-    fx > -margin && fx < FIELD.width + margin && fy > -margin && fy < FIELD.height + margin;
+    fx > -margin && fx < width + margin && fy > -margin && fy < height + margin;
   const spacing = getSpacing();
   // a port moved onto its shore takes the ends of its roads and rivers along, less and less over a cell
   const port = cells.burg[cell] ? pack.burgs[cells.burg[cell]] : null;
@@ -168,12 +162,9 @@ export function buildBattlefield(x: number, y: number, metres: number, clearing 
     const pull = port ? Math.max(1 - Math.hypot(mx - port.x, my - port.y) / spacing, 0) : 0;
     return toField(mx + ox * pull, my + oy * pull);
   };
-  const nearby = Pack.findAll(sx, sy, spacing * 2 + FIELD.width / scale);
+  const nearby = Pack.findAll(sx, sy, spacing * 2 + width / pixel);
   if (!nearby.includes(cell)) nearby.push(cell);
-  const nodes = Array.from(
-    { length: cols * rows },
-    (_, i): Point => [((i % cols) + 0.5) * step, (Math.floor(i / cols) + 0.5) * step]
-  );
+  const nodes = Array.from({ length: COLS * ROWS }, (_, i) => nodeCentre(field, i));
 
   // land and water by the coasts as drawn
   const shapes = [...new Set(nearby.map(i => cells.f[i]))]
@@ -183,7 +174,7 @@ export function buildBattlefield(x: number, y: number, metres: number, clearing 
       land: feature.land,
       outline: clipPolygon(
         Coastline.getFeatureShape(feature).points.map(([px, py]) => toField(px, py)),
-        [-step, -step, FIELD.width + step, FIELD.height + step]
+        [-step, -step, width + step, height + step]
       )
     }))
     .filter(shape => shape.outline.length > 2);
@@ -216,10 +207,10 @@ export function buildBattlefield(x: number, y: number, metres: number, clearing 
     .filter(c => cells.h[c] >= 20)
     .map(c => Math.abs(heightToMeters(cells.h[c]) - heightToMeters(cells.h[cell])));
   const roughness = Math.min(Math.max(Math.max(0, ...rise) / 10, 4), 100);
-  const hills = createNoise(place, 1, u(520));
-  const knolls = createNoise(place, 7, u(230)); // off the lattice of the hills, so they do not stand in rows
-  const groves = createNoise(place, 2, u(260));
-  const bogs = createNoise(place, 3, u(220));
+  const hills = createNoise(field, place, 1, 520);
+  const knolls = createNoise(field, place, 7, 230); // off the lattice of the hills, so they do not stand in rows
+  const groves = createNoise(field, place, 2, 260);
+  const bogs = createNoise(field, place, 3, 220);
 
   const ground = nodes.map(node => {
     if (!isLand(node)) return null;
@@ -233,15 +224,15 @@ export function buildBattlefield(x: number, y: number, metres: number, clearing 
   const land = ground.filter(g => g !== null).map(g => g.height);
   const low = land.length ? Math.min(...land) : 0;
   const high = land.length ? Math.max(...land) : 0;
-  field.relief = u(high - low);
+  field.relief = high - low;
   ground.forEach((g, i) => {
     if (!g) {
       field.water[i] = 1;
       return;
     }
     const [nx, ny] = nodes[i];
-    field.height[i] = high > low ? (g.height - low) / (high - low) : 0;
-    const fromCentre = Math.hypot((nx - FIELD.width / 2) / FIELD.width, (ny - FIELD.height / 2) / FIELD.height);
+    field.elevation[i] = high > low ? (g.height - low) / (high - low) : 0;
+    const fromCentre = Math.hypot((nx - width / 2) / width, (ny - height / 2) / height);
     const open = clearing ? Math.min(0.35 + fromCentre * 2.2, 1.15) : 1.15;
     if (groves(nx, ny) < g.trees * open) field.wood[i] = 1;
     else if (bogs(nx, ny) < g.wet * 0.6) field.marsh[i] = 1;
@@ -249,12 +240,13 @@ export function buildBattlefield(x: number, y: number, metres: number, clearing 
 
   // roads and rivers on the curves the map draws them with
   const near = new Set(nearby);
-  const box: Box = [-200, -200, FIELD.width + 200, FIELD.height + 200];
+  const margin = width * VIEW_MARGIN;
+  const box: Box = [-margin, -margin, width + margin, height + margin];
   const touches = (a: Point, b: Point): boolean => clipSegment(a, b, box) !== null;
   for (const route of pack.routes) {
     if (route.group === "searoutes" || !route.points.some(p => near.has(p[2]))) continue;
     const course = route.points.map(p => lineToField(p[0], p[1]));
-    const points = clipToView(smooth(sliceAround(course, touches), 5, box));
+    const points = clipToView(smooth(sliceAround(course, touches), step / 2, box), box);
     if (points.length) field.roads.push(points);
   }
 
@@ -262,27 +254,32 @@ export function buildBattlefield(x: number, y: number, metres: number, clearing 
     if (!river.cells.some(c => near.has(c))) return;
     const course = Rivers.addMeandering(river.cells, river.points ?? null);
     const points = course.map(p => lineToField(p[0], p[1]));
-    const middle = nearestIndex(points, [FIELD.width / 2, FIELD.height / 2]);
+    const middle = nearestIndex(points, [width / 2, height / 2]);
     if (inView(points[0]) && points.length > 1) {
       // a spring on the field would look cut off: the river comes from beyond the edge
       const [px, py] = points[0];
       const [nx, ny] = points[Math.min(3, points.length - 1)];
       const length = Math.hypot(px - nx, py - ny) || 1;
-      const reach = FIELD.width + FIELD.height;
+      const reach = width + height;
       points.unshift([px + ((px - nx) / length) * reach, py + ((py - ny) / length) * reach]);
     }
-    const line = clipToView(smooth(sliceAround(points, touches), 5, box));
+    const line = clipToView(smooth(sliceAround(points, touches), step / 2, box), box);
     if (!line.length) return;
-    const width = u(Math.min(Math.max(12 + (Math.sqrt(course[middle][2]) * 2) / 3, 16), 52));
+    const wide = Math.min(Math.max(12 + (Math.sqrt(course[middle][2]) * 2) / 3, 16), 52);
     // meanders some twelve widths long, too small for the map to show
-    const winding = bend(line, width * 12, width * 2.5, place, 1000 + index);
-    field.rivers.push({ points: winding, width, name: `${river.name} ${river.type}`.trim(), brook: width <= u(BROOK) });
+    const winding = bend(line, wide * 12, wide * 2.5, place, 1000 + index);
+    field.rivers.push({
+      points: winding,
+      width: wide,
+      name: `${river.name} ${river.type}`.trim(),
+      brook: wide <= BROOK
+    });
   });
 
   for (const burg of pack.burgs) {
     if (!burg.i || burg.removed) continue;
     const [bx, by] = burg.i === cells.burg[cell] ? toField(sx, sy) : toField(burg.x, burg.y); // a port on its shore
-    const radius = u(getBurgRadius(burg));
+    const radius = getBurgRadius(burg);
     if (!inView([bx, by], radius)) continue;
     field.burgs.push({
       x: bx,
@@ -301,19 +298,19 @@ export function buildBattlefield(x: number, y: number, metres: number, clearing 
     let count = 0;
     const chance = (): number => mix(place[0] + index, place[1], 4 + count++); // the same fords for the same place
     if (river.brook) fords.push(river);
-    else if (river.width <= u(WADEABLE)) {
-      let next = u(160 + chance() * 320);
+    else if (river.width <= WADEABLE) {
+      let next = 160 + chance() * 320;
       let walked = 0;
       for (let i = 1; i < river.points.length; i++) {
         const [ax, ay] = river.points[i - 1];
         const [bx, by] = river.points[i];
         const length = Math.hypot(bx - ax, by - ay);
-        for (; next < walked + length; next += u(480 + chance() * 400)) {
+        for (; next < walked + length; next += 480 + chance() * 400) {
           const at = (shift: number): Point => {
             const t = Math.min(Math.max((next - walked + shift) / (length || 1), 0), 1);
             return [ax + (bx - ax) * t, ay + (by - ay) * t];
           };
-          if (inView(at(0))) fords.push({ points: [at(-u(FORD) / 2), at(u(FORD) / 2)], width: river.width });
+          if (inView(at(0))) fords.push({ points: [at(-FORD / 2), at(FORD / 2)], width: river.width });
         }
         walked += length;
       }
@@ -327,28 +324,28 @@ export function buildBattlefield(x: number, y: number, metres: number, clearing 
         for (let j = 1; j < river.points.length; j++) {
           const point = cross(road[i - 1], road[i], river.points[j - 1], river.points[j]);
           if (!point || !inView(point)) continue;
-          if (field.bridges.some(b => Math.hypot(b.x - point[0], b.y - point[1]) < 12)) continue; // the same crossing
+          if (field.bridges.some(b => Math.hypot(b.x - point[0], b.y - point[1]) < 16)) continue; // the same crossing
           const angle = Math.atan2(road[i][1] - road[i - 1][1], road[i][0] - road[i - 1][0]);
-          field.bridges.push({ x: point[0], y: point[1], angle, length: river.width + u(28) });
+          field.bridges.push({ x: point[0], y: point[1], angle, length: river.width + 28 });
         }
       }
     }
   }
 
-  // features onto the grid: a road cuts the wood and bridges the river where it crosses it
+  // features onto the grid: a road cuts the wood and bridges the river where it crosses it; thin ones mark the nodes they touch
   nodes.forEach((node, i) => {
     if (field.burgs.some(b => Math.hypot(b.x - node[0], b.y - node[1]) < b.radius)) {
       field.town[i] = 1;
       field.wood[i] = field.marsh[i] = 0;
     }
     if (field.water[i] === 1) return;
-    if (field.rivers.some(r => distanceToLine(node, r.points) < r.width / 2 + 3)) {
+    if (field.rivers.some(r => distanceToLine(node, r.points) < r.width / 2 + step * 0.3)) {
       field.water[i] = 2;
       field.wood[i] = field.marsh[i] = 0;
-      if (fords.some(f => distanceToLine(node, f.points) < f.width / 2 + 3)) field.ford[i] = 1;
+      if (fords.some(f => distanceToLine(node, f.points) < f.width / 2 + step * 0.3)) field.ford[i] = 1;
     }
-    if (field.roads.some(r => distanceToLine(node, r) < 8)) {
-      const bridged = field.bridges.some(b => Math.hypot(b.x - node[0], b.y - node[1]) < b.length / 2 + 4);
+    if (field.roads.some(r => distanceToLine(node, r) < step * 0.8)) {
+      const bridged = field.bridges.some(b => Math.hypot(b.x - node[0], b.y - node[1]) < b.length / 2 + step * 0.4);
       if (field.water[i] && !bridged) return; // a road along a river is no causeway
       if (field.water[i] === 2) field.deck[i] = 1;
       field.road[i] = 1;
@@ -360,9 +357,10 @@ export function buildBattlefield(x: number, y: number, metres: number, clearing 
   return field;
 }
 
-const GATE = 22; // width of a gate
-const BREACH = 30; // and of a breach
-const RAMPART = 8; // how far from a wall its foot reaches
+const VIEW_MARGIN = 0.2; // of the field's width, lines are kept beyond its edge
+const GATE = 0.5; // width of a gate, in battalion fronts: a battalion gets through
+const BREACH = 0.7; // and of a breach
+const RAMPART = 11; // how far from a wall its foot reaches
 
 /** The edge of a burg: a rounded blob, as points close enough to draw and to bar the way */
 function getOutline(burg: FieldBurg): Point[] {
@@ -413,12 +411,12 @@ export function raiseWalls(field: Battlefield): void {
     const stretches = outline.map((point, i): [Point, Point] => [point, outline[(i + 1) % outline.length]]);
 
     // nodes within the burg
-    const reach = burg.radius * 1.1 + FIELD.cell;
-    for (let y = burg.y - reach; y <= burg.y + reach; y += FIELD.cell) {
-      for (let x = burg.x - reach; x <= burg.x + reach; x += FIELD.cell) {
-        if (x < 0 || y < 0 || x >= FIELD.width || y >= FIELD.height) continue;
-        const node = nodeAt(x, y);
-        if (!isInside(nodeCentre(node), outline)) continue;
+    const reach = burg.radius * 1.1 + field.cell;
+    for (let y = burg.y - reach; y <= burg.y + reach; y += field.cell) {
+      for (let x = burg.x - reach; x <= burg.x + reach; x += field.cell) {
+        if (x < 0 || y < 0 || x >= field.width || y >= field.height) continue;
+        const node = nodeAt(field, x, y);
+        if (!isInside(nodeCentre(field, node), outline)) continue;
         field.town[node] = 1;
         if (burg.walled) field.walled[node] = index + 1;
       }
@@ -427,9 +425,11 @@ export function raiseWalls(field: Battlefield): void {
 
     // a gate where a road or a river comes in, one on the quay of a port, and one towards the middle of the field
     // when there is none of them
+    const [gate, breach] = [GATE * field.front, BREACH * field.front];
     const gates: { at: Point; water: number }[] = [];
     const addGate = (at: Point, water: number): void => {
-      if (!gates.some(gate => Math.hypot(gate.at[0] - at[0], gate.at[1] - at[1]) < GATE * 2)) gates.push({ at, water });
+      if (!gates.some(other => Math.hypot(other.at[0] - at[0], other.at[1] - at[1]) < gate * 2))
+        gates.push({ at, water });
     };
     const lines = [
       ...field.roads.map(points => ({ points, water: 0 })),
@@ -446,7 +446,7 @@ export function raiseWalls(field: Battlefield): void {
     const quay = getQuay(field, burg, stretches);
     if (quay) addGate(quay, 1);
     if (!gates.length) {
-      const middle = (point: Point): number => Math.hypot(point[0] - FIELD.width / 2, point[1] - FIELD.height / 2);
+      const middle = (point: Point): number => Math.hypot(point[0] - field.width / 2, point[1] - field.height / 2);
       gates.push({ at: outline.reduce((best, point) => (middle(point) < middle(best) ? point : best)), water: 0 });
     }
 
@@ -454,19 +454,19 @@ export function raiseWalls(field: Battlefield): void {
       Math.hypot(point[0] - x, point[1] - y) < distance;
     for (const [a, b] of stretches) {
       const mid: Point = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-      if (field.breaches.some(breach => breach.burg === index && near(mid, [breach.x, breach.y], BREACH / 2))) continue;
-      const gate = gates.find(gate => near(mid, gate.at, GATE / 2));
-      field.walls.push({ a, b, burg: index, gate: Boolean(gate), water: gate?.water ?? 0 });
+      if (field.breaches.some(gap => gap.burg === index && near(mid, [gap.x, gap.y], breach / 2))) continue;
+      const by = gates.find(other => near(mid, other.at, gate / 2));
+      field.walls.push({ a, b, burg: index, gate: Boolean(by), water: by?.water ?? 0 });
     }
   });
 
   // the foot of the walls: where they are climbed, where a gate is forced, where the rubble of a breach lies
   const mark = (point: Point, reach: number, value: number): void => {
-    for (let y = point[1] - reach; y <= point[1] + reach; y += FIELD.cell / 2) {
-      for (let x = point[0] - reach; x <= point[0] + reach; x += FIELD.cell / 2) {
-        if (x < 0 || y < 0 || x >= FIELD.width || y >= FIELD.height) continue;
-        const node = nodeAt(x, y);
-        const [nx, ny] = nodeCentre(node);
+    for (let y = point[1] - reach; y <= point[1] + reach; y += field.cell / 2) {
+      for (let x = point[0] - reach; x <= point[0] + reach; x += field.cell / 2) {
+        if (x < 0 || y < 0 || x >= field.width || y >= field.height) continue;
+        const node = nodeAt(field, x, y);
+        const [nx, ny] = nodeCentre(field, node);
         if (Math.hypot(nx - point[0], ny - point[1]) <= reach)
           field.rampart[node] = Math.max(field.rampart[node], value);
       }
@@ -481,7 +481,7 @@ export function raiseWalls(field: Battlefield): void {
       );
     }
   }
-  for (const breach of field.breaches) mark([breach.x, breach.y], BREACH / 2, 3);
+  for (const breach of field.breaches) mark([breach.x, breach.y], (BREACH * field.front) / 2, 3);
 }
 
 /** Where the quay of a burg on the sea or a lake is: on the stretch of its wall that looks out on the most water */
@@ -493,8 +493,8 @@ function getQuay(field: Battlefield, burg: FieldBurg, stretches: [Point, Point][
     const away = Math.atan2(mid[1] - burg.y, mid[0] - burg.x);
     let water = 0;
     for (let i = 0; i < 8; i++) {
-      const [x, y] = [mid[0] + Math.cos(away) * FIELD.cell * i, mid[1] + Math.sin(away) * FIELD.cell * i];
-      if (x >= 0 && y >= 0 && x < FIELD.width && y < FIELD.height && field.water[nodeAt(x, y)] === 1) water++;
+      const [x, y] = [mid[0] + Math.cos(away) * field.cell * i, mid[1] + Math.sin(away) * field.cell * i];
+      if (x >= 0 && y >= 0 && x < field.width && y < field.height && field.water[nodeAt(field, x, y)] === 1) water++;
     }
     if (water > most) [best, most] = [mid, water];
   }
@@ -529,27 +529,27 @@ const NO_WALLS: FieldWall[] = [];
 export const isForest = (biome: number): boolean => FOREST_BIOMES.includes(biome);
 
 /** The grid node a point of the field lies in */
-export function nodeAt(x: number, y: number): number {
-  const col = Math.min(Math.max(Math.floor(x / FIELD.cell), 0), FIELD.cols - 1);
-  const row = Math.min(Math.max(Math.floor(y / FIELD.cell), 0), FIELD.rows - 1);
-  return row * FIELD.cols + col;
+export function nodeAt({ cell }: Battlefield, x: number, y: number): number {
+  const col = Math.min(Math.max(Math.floor(x / cell), 0), COLS - 1);
+  const row = Math.min(Math.max(Math.floor(y / cell), 0), ROWS - 1);
+  return row * COLS + col;
 }
 
 /** The middle of a grid node */
-export const nodeCentre = (node: number): [number, number] => [
-  ((node % FIELD.cols) + 0.5) * FIELD.cell,
-  (Math.floor(node / FIELD.cols) + 0.5) * FIELD.cell
+export const nodeCentre = ({ cell }: Battlefield, node: number): [number, number] => [
+  ((node % COLS) + 0.5) * cell,
+  (Math.floor(node / COLS) + 0.5) * cell
 ];
 
-/** Height of a point above the lowest ground, in field units, between the nodes as well */
+/** Height of a point above the lowest ground, between the nodes as well */
 export function getElevation(field: Battlefield, x: number, y: number): number {
   if (!field.relief) return 0;
-  const { cell, cols, rows } = FIELD;
-  const fx = Math.min(Math.max(x / cell - 0.5, 0), cols - 1);
-  const fy = Math.min(Math.max(y / cell - 0.5, 0), rows - 1);
-  const [c, r] = [Math.min(Math.floor(fx), cols - 2), Math.min(Math.floor(fy), rows - 2)];
+  const { cell } = field;
+  const fx = Math.min(Math.max(x / cell - 0.5, 0), COLS - 1);
+  const fy = Math.min(Math.max(y / cell - 0.5, 0), ROWS - 1);
+  const [c, r] = [Math.min(Math.floor(fx), COLS - 2), Math.min(Math.floor(fy), ROWS - 2)];
   const [dx, dy] = [fx - c, fy - r];
-  const at = (col: number, row: number): number => field.height[row * cols + col];
+  const at = (col: number, row: number): number => field.elevation[row * COLS + col];
   const top = at(c, r) * (1 - dx) + at(c + 1, r) * dx;
   const bottom = at(c, r + 1) * (1 - dx) + at(c + 1, r + 1) * dx;
   return (top * (1 - dy) + bottom * dy) * field.relief;
@@ -558,14 +558,14 @@ export function getElevation(field: Battlefield, x: number, y: number): number {
 /** Rise over run of the ground at a point in the direction of the heading: uphill positive */
 export function getSlope(field: Battlefield, x: number, y: number, heading: number): number {
   if (!field.relief) return 0;
-  const [dx, dy] = [Math.cos(heading) * FIELD.cell, Math.sin(heading) * FIELD.cell];
-  return (getElevation(field, x + dx, y + dy) - getElevation(field, x - dx, y - dy)) / (FIELD.cell * 2);
+  const [dx, dy] = [Math.cos(heading) * field.cell, Math.sin(heading) * field.cell];
+  return (getElevation(field, x + dx, y + dy) - getElevation(field, x - dx, y - dy)) / (field.cell * 2);
 }
 
 export function terrainAt(field: Battlefield, x: number, y: number): Terrain {
-  const i = nodeAt(x, y);
+  const i = nodeAt(field, x, y);
   return {
-    height: field.height[i],
+    height: field.elevation[i],
     wood: field.wood[i] === 1,
     marsh: field.marsh[i] === 1,
     water: field.water[i],
@@ -672,13 +672,11 @@ function findSite(cell: number, place: Point, pixel: number): Point {
 /** The mean distance between cell centres in map pixels */
 const getSpacing = (): number => Math.sqrt((options.map.graph.width * options.map.graph.height) / pack.cells.i.length);
 
-const SIEGE_RADIUS = 120; // field units a besieged burg is drawn in radius, at least
-
-/** Metres a field unit stands for to zoom a siege in on the burg of the place, Infinity where it has none */
-export function getSiegeMetres([x, y]: Point): number {
+/** The radius of the burg a siege of the place is for, Infinity where it has none */
+export function getSiegeRadius([x, y]: Point): number {
   const cell = Pack.findCell(x, y);
   const burg = cell === undefined ? 0 : pack.cells.burg[cell];
-  return burg ? getBurgRadius(pack.burgs[burg]) / SIEGE_RADIUS : Infinity;
+  return burg ? getBurgRadius(pack.burgs[burg]) : Infinity;
 }
 
 /** A burg's radius in metres, by its people */
@@ -754,9 +752,8 @@ function getBarycentric([x, y]: Point, [[ax, ay], [bx, by], [cx, cy]]: Point[]):
   return a < -1e-9 || b < -1e-9 || c < -1e-9 ? null : [a, b, c];
 }
 
-/** The stretch of a line over the plan and a margin round it, cut at the margin; empty when it passes by */
-function clipToView(line: Point[], margin = 200): Point[] {
-  const box: Box = [-margin, -margin, FIELD.width + margin, FIELD.height + margin];
+/** The stretch of a line within the box, cut at its edge; empty when it passes by */
+function clipToView(line: Point[], box: Box): Point[] {
   const at = (i: number, t: number): Point => [
     line[i - 1][0] + (line[i][0] - line[i - 1][0]) * t,
     line[i - 1][1] + (line[i][1] - line[i - 1][1]) * t
@@ -832,9 +829,9 @@ function mix(a: number, b: number, c: number): number {
 }
 
 /** Smooth noise, 0 to 1, of a pattern fixed by the place on the map and the layer it is for */
-function createNoise(place: Point, layer: number, size: number): (x: number, y: number) => number {
-  const cols = Math.ceil(FIELD.width / size) + 2;
-  const rows = Math.ceil(FIELD.height / size) + 2;
+function createNoise(field: Battlefield, place: Point, layer: number, size: number): (x: number, y: number) => number {
+  const cols = Math.ceil(field.width / size) + 2;
+  const rows = Math.ceil(field.height / size) + 2;
   const lattice = Array.from({ length: cols * rows }, (_, i) =>
     mix(place[0] * 31 + (i % cols), place[1] * 37 + ((i / cols) | 0), layer)
   );

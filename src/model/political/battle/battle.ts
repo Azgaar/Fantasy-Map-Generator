@@ -15,14 +15,15 @@ import {
   STARVED,
   SURRENDER
 } from "./battle-rules";
+import { getFieldSize, minutesToTicks, toMetresPerSecond, toMetresPerTick } from "./battle-scale";
 import {
   type Battlefield,
   buildBattlefield,
-  FIELD,
   type FieldWall,
-  getSiegeMetres,
+  getSiegeRadius,
   getWallsBetween,
   openBreach,
+  raiseWalls,
   terrainAt
 } from "./battlefield";
 import type { TacticName } from "./formations";
@@ -36,6 +37,7 @@ import {
   isCutOff,
   type Option,
   obey,
+  onField,
   reach,
   settle,
   takePlace
@@ -46,6 +48,7 @@ import {
   getFlight,
   getFooting,
   getHeading,
+  getPace,
   getRange,
   getSharedHeading,
   hasWalls,
@@ -64,22 +67,28 @@ import {
 
 export { ROUND_TICKS };
 
-const MAX_TICKS = 600;
-const IDLE_ROUNDS = 12; // rounds without losses that end a battle
+const MAX_TICKS = minutesToTicks(8 * 60); // a backstop for a battle that neither ends nor dies down, not a length
+const IDLE_ROUNDS = 12; // rounds without losses that end a battle: ten minutes or so
 const REHEARSAL_TICKS = 360; // how far ahead a general plays a battle through in his mind
 const STORM_TICKS = 150; // and a storm of walls, slow to reckon: long enough to see it carried or thrown back
-const BLOCK_DEPTH = 22;
-const BATTALION_WIDTH = 44; // field units a full battalion stands wide
-const RANKS = 5; // it stands so deep, a metre a man along its front
+
+// in battalion fronts
+const BLOCK_DEPTH = 0.5;
+const BLOCK_WIDTH = [0.41, 1.32]; // the least and the most, by its men
+const NEAR = 2.95; // how far a battalion counts friends and foes to take or lose heart
+const SAFE = 4.5; // a broken one gathers itself with no foe in order that near
+const SHAKE = 3.6; // how far a battalion broken or lost unsettles friends
+const MARCHING = 0.7; // further from its place a battalion faces the way it marches
+
+// of a pace a tick
+const MARCH = 1.4; // the way a battalion makes in a round to be on the march
 
 // morale
 const MORALE_LOSS = 180; // morale a block loses when all its troops fall
-const NEAR = 130; // how far a battalion counts friends and foes to take or lose heart
 const NERVE = 12; // morale a round the odds at hand give or take, at most half of it
 const REST = 4; // morale a round a battalion left alone recovers
 const BREAK = 15; // morale at which it breaks and runs
 const RALLY = 35; // and at which a broken one that got away stands again
-const SAFE = 200; // with no foe in order that near
 const HUNGER = 1; // morale a round a garrison cut off loses, down to STARVED
 const HEART = 2; // morale every battalion of a side takes when it breaks a foe's
 const CORNERED = 1 / 4.5; // share of the strength at hand (foes three and a half to one) under which a shaken battalion at grips on a losing side gives itself up
@@ -94,7 +103,7 @@ const BLOW_RATE = 0.05;
 const SHOT_RATE = 0.035;
 const BROKEN = 0.1; // strength of troops on the run or giving themselves up
 const SHOCK = 0.5; // strength of a side taken by surprise
-const IMPETUS = 12; // closing pace that adds a whole blow again: riders at full tilt strike 2.7 times, foot at the charge 1.6
+const IMPETUS = 6.2; // closing speed in m/s that adds a whole blow again: riders at the gallop strike 2.7 times, foot at the charge 1.6
 const MAX_IMPETUS = 5;
 const SPENT = 0.85; // share of a charge's impetus left after each tick at grips
 
@@ -153,7 +162,7 @@ export interface Block {
   unitPower: number;
   attack: number; // of a unit
   defense: number;
-  speed: number; // field units a tick
+  speed: number; // metres a tick
   range: number; // it shoots over, 0 to fight hand to hand
   steadiness: number; // the unit's morale: what its losses of morale are divided by
   upkeep: number; // share of the power ill-kept troops fight with
@@ -161,7 +170,7 @@ export interface Block {
   troops: number;
   x: number;
   y: number;
-  vx: number; // the way it went this tick and how fast, field units a tick
+  vx: number; // the way it went this tick and how fast, metres a tick
   vy: number;
   impetus: number; // what its charge adds to its blows at grips: 1 none, 0 while not at grips
   facing: number; // radians
@@ -631,7 +640,7 @@ function startRound(battle: Battle): void {
   const stood = places.get(battle) ?? new Map<number, [number, number]>();
   const marching = battle.blocks.some(block => {
     const [x, y] = stood.get(block.id) ?? [block.x, block.y];
-    return block.action === "move" && Math.hypot(block.x - x, block.y - y) > 10;
+    return block.action === "move" && Math.hypot(block.x - x, block.y - y) > getPace(battle, block) * MARCH;
   });
   places.set(battle, new Map(battle.blocks.map(block => [block.id, [block.x, block.y]])));
   const held = SIDES.some(side => battle[side].plan.order); // stood by an order, a side has not begun
@@ -668,7 +677,7 @@ function steady(battle: Battle): void {
 
     const hungry = isHungry(battle, block);
     if (block.status === "routed") {
-      if (nearest < SAFE || block.routs > 1 || !isFighting(battle, block.side) || hungry) continue;
+      if (nearest < SAFE * battle.field.front || block.routs > 1 || !isFighting(battle, block.side) || hungry) continue;
       block.morale += REST;
       if (block.morale >= RALLY) rally(battle, block);
       continue;
@@ -723,7 +732,7 @@ function act(battle: Battle): void {
       const leg = Math.min(due, x === to.x && y === to.y ? whole : Math.hypot(x - block.x, y - block.y));
       const moved = whole > 0 && step(battle, block, x - block.x, y - block.y, leg, present, haste);
       block.action = moved ? "move" : "hold";
-      if (moved && !target && whole > 30) {
+      if (moved && !target && whole > MARCHING * battle.field.front) {
         block.facing = turn(block.facing, Math.atan2(y - block.y, x - block.x), 0.7); // it marches
         continue;
       }
@@ -756,10 +765,10 @@ function act(battle: Battle): void {
     else if (target && shooting.has(block.id) && canShoot(battle, block, target)) block.action = "shoot";
     if (!target || block.action !== "fight") block.impetus = 0;
     else if (!block.impetus) {
-      // a charge strikes with the pace it closed at; who stood has none
+      // a charge strikes with the speed it closed at; who stood has none
       const distance = Math.hypot(target.x - block.x, target.y - block.y) || 1;
       const closing = (block.vx * (target.x - block.x) + block.vy * (target.y - block.y)) / distance;
-      block.impetus = Math.min(1 + Math.max(closing, 0) / IMPETUS, MAX_IMPETUS);
+      block.impetus = Math.min(1 + toMetresPerSecond(Math.max(closing, 0)) / IMPETUS, MAX_IMPETUS);
     }
   }
 }
@@ -767,8 +776,9 @@ function act(battle: Battle): void {
 /** Run for the edge of the field; the broken stop once no foe in order is near, to gather themselves, while their side fights on */
 function flee(battle: Battle, block: Block, others: Block[]): void {
   block.target = null;
+  const safe = SAFE * battle.field.front;
   const chased = others.some(
-    foe => foe.side !== block.side && foe.status === "ready" && Math.hypot(foe.x - block.x, foe.y - block.y) < SAFE
+    foe => foe.side !== block.side && foe.status === "ready" && Math.hypot(foe.x - block.x, foe.y - block.y) < safe
   );
   if (block.status === "routed" && !chased && block.routs < 2 && isFighting(battle, block.side)) {
     block.action = "hold";
@@ -778,7 +788,7 @@ function flee(battle: Battle, block: Block, others: Block[]): void {
   const away = getFlight(battle, block) ?? (block.side === "attackers" ? battle.axis + Math.PI : battle.axis);
   block.facing = turn(block.facing, away, 1.2);
   step(battle, block, Math.cos(away), Math.sin(away), Infinity, others, 1.3);
-  const off = block.x < 0 || block.x > FIELD.width || block.y < 0 || block.y > FIELD.height;
+  const off = block.x < 0 || block.x > battle.field.width || block.y < 0 || block.y > battle.field.height;
   if (off) {
     block.status = "fled";
     battle.log.push({
@@ -797,8 +807,8 @@ function flee(battle: Battle, block: Block, others: Block[]): void {
 function getHeld(battle: Battle): number | null {
   const { burgs } = battle.field;
   if (battle.type !== "siege" || !burgs.length) return null;
-  const middle = (burg: { x: number; y: number }): number =>
-    Math.hypot(burg.x - FIELD.width / 2, burg.y - FIELD.height / 2);
+  const { width, height } = battle.field;
+  const middle = (burg: { x: number; y: number }): number => Math.hypot(burg.x - width / 2, burg.y - height / 2);
   const named = burgs.filter(burg => burg.name === battle.place);
   return burgs.indexOf((named.length ? named : burgs).reduce((a, b) => (middle(a) < middle(b) ? a : b)));
 }
@@ -950,11 +960,12 @@ function getHand(battle: Battle, block: Block): { friends: number; foes: number;
   let friends = 0;
   let foes = 0;
   let nearest = Infinity;
+  const near = NEAR * battle.field.front;
   for (const other of battle.blocks) {
     if (other.status !== "ready") continue;
     const distance = Math.hypot(other.x - block.x, other.y - block.y);
     if (other.side !== block.side) nearest = Math.min(nearest, distance);
-    if (distance > NEAR) continue;
+    if (distance > near) continue;
     if (other.side === block.side) friends += strength(other);
     else foes += strength(other);
   }
@@ -974,8 +985,9 @@ function rally(battle: Battle, block: Block): void {
 
 /** A loss nearby unsettles friends and heartens foes */
 function shake(battle: Battle, lost: Block, morale: number): void {
+  const reach = SHAKE * battle.field.front;
   for (const block of battle.blocks) {
-    if (block.status !== "ready" || Math.hypot(block.x - lost.x, block.y - lost.y) > 160) continue;
+    if (block.status !== "ready" || Math.hypot(block.x - lost.x, block.y - lost.y) > reach) continue;
     const change = block.side === lost.side ? -morale / block.steadiness : isHungry(battle, block) ? 0 : morale;
     block.morale = Math.min(Math.max(block.morale + change, 0), 100);
   }
@@ -1090,18 +1102,20 @@ function checkEnd(battle: Battle): void {
 
 const getMen = (unit: MilitaryUnit, troops: number): number => troops * Math.max(unit.crew, 1);
 
-/** Men in a battalion: 0.3 to 1 population point, the least that makes no more than forty battalions of all the troops; 0.2 when 0.3 makes fewer than ten */
-/** The field at the scale of the battalions: a full one's front fills its width. A field of the map is built anew to it */
+/** The field sized by the battalions; a siege is about the walls. A field of the map is built anew to it */
 function setScale(battle: Battle): void {
   const { field } = battle;
-  const troops = battle.battalion / RANKS / BATTALION_WIDTH;
-  const zoom = battle.type === "siege" && field.site ? getSiegeMetres(field.site) : Infinity; // a siege is about the walls
-  const metres = Math.min(Math.max(Math.min(troops, zoom), 0.25), 10);
-  if (field.metres === metres) return;
-  if (field.site) battle.field = buildBattlefield(field.site[0], field.site[1], metres, battle.type !== "ambush");
-  else field.metres = metres;
+  const radius = battle.type === "siege" && field.site ? getSiegeRadius(field.site) : Infinity;
+  const size = getFieldSize(battle.battalion, radius);
+  if (field.width === size.width && field.front === size.front) return;
+  if (field.site) battle.field = buildBattlefield(field.site[0], field.site[1], size, battle.type !== "ambush");
+  else {
+    Object.assign(field, size);
+    if (field.burgs.length) raiseWalls(field); // their grid of the new nodes
+  }
 }
 
+/** Men in a battalion: 0.3 to 1 population point, the least that makes no more than forty battalions of all the troops; 0.2 when 0.3 makes fewer than ten */
 function getBattalionSize(battle: Battle): number {
   let men = 0;
   for (const side of SIDES) {
@@ -1117,6 +1131,7 @@ function getBattalionSize(battle: Battle): number {
 /** Split the regiment into battalions: a unit ten times as numerous fields ten times as many */
 function addBlocks(battle: Battle, side: Side, regiment: BattleRegiment): Block[] {
   const added: Block[] = [];
+  const { front } = battle.field;
   for (const unit of battle.units) {
     const troops = regiment.troops[unit.name];
     if (!troops) continue;
@@ -1137,7 +1152,7 @@ function addBlocks(battle: Battle, side: Side, regiment: BattleRegiment): Block[
         unitPower: getUnitPower(unit),
         attack: unit.attack,
         defense: unit.defense,
-        speed: unit.speed,
+        speed: toMetresPerTick(unit.speed),
         range: unit.range,
         steadiness: Math.max(unit.morale, 0.1),
         upkeep: regiment.upkeep,
@@ -1149,8 +1164,8 @@ function addBlocks(battle: Battle, side: Side, regiment: BattleRegiment): Block[
         vy: 0,
         impetus: 0,
         facing: 0,
-        width: Math.min(Math.max((getMen(unit, share) / battle.battalion) * BATTALION_WIDTH, 18), 58), // by its men
-        depth: BLOCK_DEPTH,
+        width: Math.min(Math.max(getMen(unit, share) / battle.battalion, BLOCK_WIDTH[0]), BLOCK_WIDTH[1]) * front,
+        depth: BLOCK_DEPTH * front,
         morale: battle[side].morale,
         status: "ready",
         action: "hold",
@@ -1216,8 +1231,9 @@ function findAxis(battle: Battle): number {
     [-0.3, 0, 0.3].every(shift =>
       [0.6, 0.8, 1].every(depth => {
         const across = axis + Math.PI / 2;
-        const x = FIELD.width / 2 - Math.cos(axis) * reach(axis) * depth + Math.cos(across) * reach(across) * shift;
-        const y = FIELD.height / 2 - Math.sin(axis) * reach(axis) * depth + Math.sin(across) * reach(across) * shift;
+        const [along, aside] = [reach(field, axis), reach(field, across)];
+        const x = field.width / 2 - Math.cos(axis) * along * depth + Math.cos(across) * aside * shift;
+        const y = field.height / 2 - Math.sin(axis) * along * depth + Math.sin(across) * aside * shift;
         return terrainAt(field, x, y).water !== 1;
       })
     );
@@ -1229,8 +1245,7 @@ function findAxis(battle: Battle): number {
 function moveBlock(battle: Battle, key: string, x: number, y: number): void {
   const block = battle.blocks.find(block => block.key === key);
   if (!block) return;
-  block.x = Math.min(Math.max(x, 20), FIELD.width - 20);
-  block.y = Math.min(Math.max(y, 20), FIELD.height - 20);
+  [block.x, block.y] = onField(battle.field, [x, y]);
   block.action = "hold";
   takePlace(battle, block);
 }

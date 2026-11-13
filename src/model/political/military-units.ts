@@ -1,44 +1,19 @@
 import { GOODS_DATA } from "@/data/goods";
 import { Icons } from "@/model/icons";
 import type { MilitaryUnit } from "@/types/military";
-import { rn } from "@/utils/number-utils";
 
-export const FOOT_SPEED = 7; // of troops on foot, in battle plan units a tick
-
-/** What a unit of a type is like unless set otherwise; `attack` is the share of attack in its attack and defense */
-export const UNIT_TYPE_TRAITS: Record<string, { speed: number; range: number; morale: number; attack: number }> = {
-  levies: { speed: 7, range: 0, morale: 0.5, attack: 0.5 },
-  melee: { speed: 7, range: 0, morale: 1, attack: 0.5 },
-  ranged: { speed: 7, range: 120, morale: 0.8, attack: 0.73 },
-  mounted: { speed: 20, range: 0, morale: 1.2, attack: 0.52 },
-  machinery: { speed: 2, range: 280, morale: 0.8, attack: 0.83 },
-  naval: { speed: 5, range: 200, morale: 1, attack: 0.6 },
-  armored: { speed: 9, range: 0, morale: 1, attack: 0.45 },
-  aviation: { speed: 24, range: 120, morale: 1, attack: 0.65 },
-  magical: { speed: 6, range: 150, morale: 1, attack: 0.7 }
-};
+export const FOOT_SPEED = 4.3; // km/h of troops on foot: 1.2 m/s
+const RANGE_POWER = 680; // metres of range that double the power
 
 type Traits = Pick<MilitaryUnit, "attack" | "defense" | "speed" | "range" | "morale">;
 
-// what speed, range and steadiness add to the mean of attack and defense
-const getReach = ({ speed, range, morale }: Pick<Traits, "speed" | "range" | "morale">): number =>
-  Math.sqrt((Math.max(speed, 0) + FOOT_SPEED) / (FOOT_SPEED * 2)) *
-  (1 + Math.max(range, 0) / 500) *
-  Math.sqrt(Math.max(morale, 0));
-
 /** Military power of a unit: its upkeep and its weight in a state's forces */
 export function getUnitPower(unit: Traits): number {
-  return ((Math.max(unit.attack, 0) + Math.max(unit.defense, 0)) / 2) * getReach(unit) || 0;
-}
-
-/** A unit saved with a single power gets the traits of its type, split to keep that power */
-export function upgradeMilitaryUnit(value: unknown): unknown {
-  if (!value || typeof value !== "object" || !("power" in value)) return value;
-  const { power, ...unit } = value as Record<string, unknown>;
-  if ("attack" in unit && "defense" in unit) return unit;
-  const { attack, ...traits } = UNIT_TYPE_TRAITS[String(unit.type)] ?? UNIT_TYPE_TRAITS.melee;
-  const both = (Math.max(Number(power) || 0, 0) * 2) / getReach(traits);
-  return { ...unit, attack: rn(both * attack, 2), defense: rn(both * (1 - attack), 2), ...traits };
+  const strength = (unit.attack + unit.defense) / 2;
+  const speed = Math.sqrt((unit.speed + FOOT_SPEED) / (FOOT_SPEED * 2));
+  const range = 1 + Math.max(unit.range, 0) / RANGE_POWER;
+  const morale = Math.sqrt(Math.max(unit.morale, 0));
+  return strength * speed * range * morale || 0;
 }
 
 export function getDefaultMilitaryUnits(): MilitaryUnit[] {
@@ -51,7 +26,7 @@ export function getDefaultMilitaryUnits(): MilitaryUnit[] {
       crew: 1,
       attack: 0.5,
       defense: 0.5,
-      speed: 7,
+      speed: 4.3,
       range: 0,
       morale: 0.5,
       type: "levies",
@@ -65,7 +40,7 @@ export function getDefaultMilitaryUnits(): MilitaryUnit[] {
       crew: 1,
       attack: 1,
       defense: 1,
-      speed: 7,
+      speed: 4.3,
       range: 0,
       morale: 1,
       type: "melee",
@@ -80,8 +55,8 @@ export function getDefaultMilitaryUnits(): MilitaryUnit[] {
       crew: 1,
       attack: 1.1,
       defense: 0.4,
-      speed: 7,
-      range: 120,
+      speed: 4.3,
+      range: 160,
       morale: 0.8,
       type: "ranged",
       separate: 0,
@@ -95,7 +70,7 @@ export function getDefaultMilitaryUnits(): MilitaryUnit[] {
       crew: 1,
       attack: 1.5,
       defense: 1.4,
-      speed: 20,
+      speed: 12.6,
       range: 0,
       morale: 1.2,
       type: "mounted",
@@ -110,8 +85,8 @@ export function getDefaultMilitaryUnits(): MilitaryUnit[] {
       crew: 8,
       attack: 16,
       defense: 3.2,
-      speed: 2,
-      range: 280,
+      speed: 1.8,
+      range: 380,
       morale: 0.8,
       type: "machinery",
       separate: 0,
@@ -125,8 +100,8 @@ export function getDefaultMilitaryUnits(): MilitaryUnit[] {
       crew: 100,
       attack: 46,
       defense: 31.2,
-      speed: 5,
-      range: 200,
+      speed: 3.1,
+      range: 270,
       morale: 1,
       type: "naval",
       separate: 1,
