@@ -17,6 +17,7 @@ export interface Tactic {
   shooters: "behind" | "front" | "wings";
   riders: "wings" | "strike" | "behind" | "wedge"; // a wedge of their own, apart from the line
   ring?: boolean; // a ring facing out, the riders and the reserve inside
+  ends?: boolean; // the reserve stands behind the ends of the line, to turn out at them
 }
 
 const tactic = (
@@ -39,9 +40,9 @@ export const TACTICS = {
   harass: tactic(1, 0, 1, false, 0, 0, "front", "wings"),
   flying: tactic(1, 0.2, 1, false, 0, 0, "behind", "wedge"),
   // defence
-  stand: tactic(1, 0.2, 1, false, 0, 0, "behind", "behind"),
-  crescent: tactic(1, 0.15, 0.8, false, 0, -1.35, "behind", "behind"),
-  crossing: tactic(1, 0.25, 0.7, false, 0, 0.9, "behind", "behind"),
+  stand: { ...tactic(1, 0.2, 1, false, 0, 0, "behind", "behind"), ends: true },
+  crescent: { ...tactic(1, 0.15, 0.8, false, 0, -1.35, "behind", "behind"), ends: true },
+  crossing: { ...tactic(1, 0.25, 0.7, false, 0, 0.9, "behind", "behind"), ends: true },
   laager: { ...tactic(1, 0.2, 1, false, 0, 0, "behind", "behind"), ring: true },
   // of a battle type
   column: tactic(1, 0, 1, false, 0, 0, "behind", "wings"),
@@ -134,6 +135,10 @@ export function form(blocks: Block[], tactic: Tactic, strike: number, room: numb
   const half = widthOf(lines[0]) / 2;
   const aside = (row: Block[]): number => (tactic.massed ? strike * (half - widthOf(row) / 2) : 0); // behind the massed wing
 
+  const split = (row: Block[]): [Block[], Block[]] => [
+    row.filter((_, i) => i % 2 === 0),
+    row.filter((_, i) => i % 2 === 1)
+  ];
   let rank = 0;
   let along = 0;
   const next = (): void => {
@@ -151,9 +156,25 @@ export function form(blocks: Block[], tactic: Tactic, strike: number, room: numb
     next();
     seat(arrange(rest), rank, along, aside(rest));
   }
-  for (const kept of wrap(reserve, Math.max(half * 2, row))) {
-    next();
-    seat(kept, rank, along, aside(kept), "reserve");
+  if (tactic.ends && reserve.length > 1) {
+    // half behind each end battalion
+    const [right, left] = split(reserve);
+    const rows = Math.max(left.length, right.length);
+    for (let i = 0; i < rows; i++) {
+      next();
+      for (const [wing, sign] of [
+        [left, -1],
+        [right, 1]
+      ] as const) {
+        const block = wing[i];
+        if (block) seat([block], rank, along, sign * Math.max(half - lines[0][0].width / 2, 0), "reserve");
+      }
+    }
+  } else {
+    for (const kept of wrap(reserve, Math.max(half * 2, row))) {
+      next();
+      seat(kept, rank, along, aside(kept), "reserve");
+    }
   }
   const back = along; // of the troops on foot
   for (const guns of wrap(engines, Math.max(half * 2, row))) {
@@ -168,10 +189,6 @@ export function form(blocks: Block[], tactic: Tactic, strike: number, room: numb
     seat(side > 0 ? wing : [...wing].reverse(), 0, back, side * (from + gap + width / 2), role);
     return from + gap + width;
   };
-  const split = (row: Block[]): [Block[], Block[]] => [
-    row.filter((_, i) => i % 2 === 0),
-    row.filter((_, i) => i % 2 === 1)
-  ];
   let ends = [half, half]; // left, right
   if (tactic.shooters === "wings") {
     const [right, left] = split(shooters);

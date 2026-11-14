@@ -69,6 +69,7 @@ import {
   step,
   turn
 } from "./movement";
+import { type Condition, HEAT, SKIES, type Weather } from "./weather";
 import { breakWagons, buildWorks, getShelter, isBarredByWorks, isSheltered, raiseWorks } from "./works";
 
 export { ROUND_TICKS };
@@ -107,6 +108,10 @@ const SHOCK = 0.5; // strength of a side taken by surprise
 const IMPETUS = 6.2; // closing speed in m/s that adds a whole blow again: riders at the gallop strike 2.7 times, foot at the charge 1.6
 const MAX_IMPETUS = 5;
 const SPENT = 0.85; // share of a charge's impetus left after each tick at grips
+
+// energy a tick by what a battalion does: gone after 2 hours of marching, 30 minutes at grips; back in an hour of rest
+const EXERTION = { rest: -1 / 450, march: 1 / 900, build: 1 / 600, shoot: 1 / 450, fight: 1 / 225, run: 1 / 150 };
+const RUNNING = 1.5; // of its pace, how fast a battalion runs rather than marches
 
 export type BlockStatus = "ready" | "routed" | "surrendered" | "fled" | "destroyed";
 export type BlockAction = "hold" | "move" | "shoot" | "fight" | "flee" | "build";
@@ -151,6 +156,7 @@ export interface Plan {
   arrival: number; // ticks till the foe is upon it, as the general reckons it this round; Infinity when it does not come
   wedge: Wedge | null; // the riders' own formation, when they fight apart
   muster: Muster | null; // a sortie's party forming up outside the walls
+  hooks: [left: number[], right: number[]]; // battalions turned out at the ends of the line, the nearest the end first
 }
 
 /** The party of a sortie formed up outside the gate it goes out by, before it falls on the foe */
@@ -201,6 +207,7 @@ export interface Block {
   width: number;
   depth: number;
   morale: number;
+  energy: number; // 1 fresh to 0 spent, when it strikes and stands with half its strength
   status: BlockStatus;
   action: BlockAction;
   target: number | null;
@@ -248,6 +255,8 @@ export type Intervention =
   | { tick: number; kind: "withdraw"; state: number; regiment: number }
   | { tick: number; kind: "type"; type: BattleType }
   | { tick: number; kind: "dig"; side: Side; on: boolean } // before the start: the side starts behind its works
+  | { tick: number; kind: "weather"; weather: Weather }
+  | { tick: number; kind: "condition"; condition: Condition; on: boolean }
   | { tick: number; kind: "tactic"; side: Side; tactic: TacticName | null }; // before the start; null: as its general sees fit
 
 export type LogEvent =
@@ -270,6 +279,8 @@ export type LogEvent =
   | "cut"
   | "supplied"
   | "dig"
+  | "weather"
+  | "condition"
   | "fortified"
   | "gap"
   | "clash"
@@ -319,6 +330,10 @@ export interface Battle {
   planned: boolean; // the generals have thought the battle through
   rehearsal: boolean; // it is fought in a general's mind
   settings: BattleSettings; // copied in at the setup: a battle under way never changes
+  weather: Weather;
+  mud: boolean; // the ground is soaked
+  ice: boolean; // the ground and the rivers are frozen
+  heat: boolean;
 }
 
 export interface BattleSetup {
@@ -335,6 +350,10 @@ export interface BattleSetup {
   attackers: BattleRegiment[];
   defenders: BattleRegiment[];
   settings?: BattleSettings;
+  weather?: Weather; // clear by default
+  mud?: boolean;
+  ice?: boolean;
+  heat?: boolean;
 }
 
 const createSide = (regiments: BattleRegiment[], phase: string): BattleSide => ({
@@ -355,6 +374,10 @@ const createSide = (regiments: BattleRegiment[], phase: string): BattleSide => (
 export function createBattle(setup: BattleSetup): Battle {
   const { attackers, defenders, settings, ...rest } = setup;
   const battle: Battle = {
+    weather: "clear",
+    mud: false,
+    ice: false,
+    heat: false,
     ...rest,
     settings: { ...DEFAULT_BATTLE_SETTINGS, ...settings },
     approach: setup.axis,
@@ -386,6 +409,7 @@ export function prepare(battle: Battle): void {
   battle.blocks = [];
   battle.battalion = getBattalionSize(battle);
   setScale(battle);
+  battle.field.frozen = battle.ice;
   forgetWays(battle.field);
   battle.axis = findAxis(battle);
   battle.field.held = getHeld(battle);
@@ -519,6 +543,17 @@ export function intervene(battle: Battle, change: Intervention): void {
     battle.log.push({ tick: battle.tick, event: "tactic", side: change.side, params: { tactic: change.tactic ?? "" } });
   } else if (change.kind === "dig") {
     battle.log.push({ tick: battle.tick, event: "dig", side: change.side, params: { on: String(change.on) } });
+  } else if (change.kind === "weather") {
+    battle.weather = change.weather;
+    battle.log.push({ tick: battle.tick, event: "weather", params: { weather: change.weather } });
+  } else if (change.kind === "condition") {
+    battle[change.condition] = change.on;
+    if (change.condition === "ice") freeze(battle);
+    battle.log.push({
+      tick: battle.tick,
+      event: "condition",
+      params: { condition: change.condition, on: String(change.on) }
+    });
   } else {
     battle[change.side].regiments.push(change.regiment);
     battle.log.push({
@@ -533,9 +568,16 @@ export function intervene(battle: Battle, change: Intervention): void {
   if (battle.tick) updatePower(battle);
   else {
     // what the generals settled on does not stand; a move or a turn of a battalion leaves it be
-    if (["add", "withdraw", "type", "order", "dig", "tactic"].includes(change.kind)) rethink(battle);
+    if (["add", "withdraw", "type", "order", "dig", "tactic", "weather", "condition"].includes(change.kind))
+      rethink(battle);
     prepare(battle);
   }
+}
+
+/** The rivers freeze over or thaw: the ways over the field are found anew */
+function freeze(battle: Battle): void {
+  battle.field.frozen = battle.ice;
+  forgetWays(battle.field);
 }
 
 /** Take a regiment out: before the start as if it never came, after it its battalions march off the field */
@@ -644,6 +686,7 @@ export function tick(battle: Battle): void {
   act(battle);
   buildWorks(battle, battle.tick % ROUND_TICKS);
   fight(battle);
+  tire(battle);
   battle.tick += 1;
   updatePower(battle);
   checkEnd(battle);
@@ -911,7 +954,8 @@ function fight(battle: Battle): void {
     const cover =
       (besieging ? 1 / WALLS : shot && (to.wood || to.town) ? COVER : 1) * getShelter(battle, block, target);
 
-    if (!shot) block.impetus = 1 + (block.impetus - 1) * SPENT;
+    if (shot) power *= SKIES[battle.weather].shot;
+    else block.impetus = 1 + (block.impetus - 1) * SPENT;
     const bearing = Math.atan2(block.y - target.y, block.x - target.x);
     const angle = Math.abs(normalize(bearing - target.facing));
     const side = angle > 2.1 ? 2 : angle > 1.05 ? 1 : 0; // rear, flank, front
@@ -949,6 +993,24 @@ function fight(battle: Battle): void {
       });
       shake(battle, block, 6);
     }
+  }
+}
+
+/** Battalions spend energy by what they do and win it back at rest; slopes and mud tire by taking longer */
+function tire(battle: Battle): void {
+  for (const block of battle.blocks) {
+    if (block.status !== "ready" && block.status !== "routed") continue;
+    const speed = Math.hypot(block.vx, block.vy);
+    const doing =
+      block.action === "fight" || block.action === "shoot" || block.action === "build"
+        ? block.action
+        : speed > getPace(battle, block) * RUNNING || (block.status === "routed" && speed)
+          ? "run"
+          : speed
+            ? "march"
+            : "rest";
+    const exertion = EXERTION[doing] * (battle.heat && doing !== "rest" ? HEAT : 1);
+    block.energy = Math.min(Math.max(block.energy - exertion, 0), 1);
   }
 }
 
@@ -1038,7 +1100,7 @@ export const getFortune = (die: number): number => 0.75 + (die - 3.5) * 0.15;
 function getPower(battle: Battle, block: Block, of: number, troops = block.troops, standing = false): number {
   const side = battle[block.side];
   const state = !standing && isRunning(block) ? BROKEN : side.phase === "shock" ? SHOCK : 1;
-  return troops * block.upkeep * of * state * getFortune(side.die);
+  return troops * block.upkeep * of * state * getFortune(side.die) * (0.5 + block.energy / 2);
 }
 
 /** What speed adds to a blow: a charge's, spent within a round or two at grips; a missile's, the more the nearer it was loosed */
@@ -1196,6 +1258,7 @@ function addBlocks(battle: Battle, side: Side, regiment: BattleRegiment): Block[
         width: Math.min(Math.max(getMen(unit, share) / battle.battalion, BLOCK_WIDTH[0]), BLOCK_WIDTH[1]) * front,
         depth: BLOCK_DEPTH * front,
         morale: battle[side].morale,
+        energy: 1,
         status: "ready",
         action: "hold",
         target: null,
@@ -1252,7 +1315,8 @@ const NO_PLAN: Plan = {
   fortify: false,
   arrival: Infinity,
   wedge: null,
-  muster: null
+  muster: null,
+  hooks: [[], []]
 };
 
 /** The approach, turned as little as it takes for the attackers to form up on land */

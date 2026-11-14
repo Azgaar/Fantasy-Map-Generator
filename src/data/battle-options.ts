@@ -42,6 +42,7 @@ export const DEFAULT_BATTLE_OPTIONS = {
     fire: true,
     missiles: true,
     clashes: true,
+    weather: true,
     title: true,
     scale: true,
     north: true

@@ -92,6 +92,7 @@ export function isBuilder(battle: Battle, block: Block): boolean {
     block.type !== "naval" &&
     block.type !== "aviation" &&
     battle[block.side].plan.tactic !== "laager" &&
+    !battle[block.side].plan.hooks.some(hook => hook.includes(block.id)) && // wheeled out from the line
     !isAtSea(battle, block)
   );
 }
@@ -144,9 +145,9 @@ function getShare(battle: Battle, side: Side, sort: (block: Block) => boolean): 
   return all ? some / all : 0;
 }
 
-/** Ticks the train takes to build the side's wagon line, a few stretches at once */
+/** Ticks the train takes to build the front of the side's wagon line, a few stretches at once: the back is closed last */
 const getWagonTicks = (battle: Battle, side: Side): number =>
-  Math.ceil(getWagonLine(battle, side).length / AT_ONCE) * BUILD_TICKS.wagons;
+  Math.ceil(getWagonLine(battle, side, false).length / AT_ONCE) * BUILD_TICKS.wagons;
 
 /**
  * The best kind a battalion of the side has done before the foe comes: wagons against a foe strong in riders and
@@ -319,7 +320,7 @@ function layWagons(battle: Battle, side: Side, done: boolean): void {
  * Where a side's wagon line runs: its stretches before the battalions of the first line, closed where neighbours do not
  * stand level (a crescent, a brow): a small step is taken up by the next stretch, a larger one by a stretch of its own
  */
-function getWagonLine(battle: Battle, side: Side): [Point, Point][] {
+function getWagonLine(battle: Battle, side: Side, closed = true): [Point, Point][] {
   const { field } = battle;
   const line = battle.blocks
     .filter(block => block.side === side && block.status === "ready" && isBuilder(battle, block))
@@ -345,12 +346,14 @@ function getWagonLine(battle: Battle, side: Side): [Point, Point][] {
     point[0] < field.width &&
     point[1] < field.height &&
     !terrainAt(field, ...point).water;
+  const tails: Point[] = []; // where each end's wagons stop, the right end's first
   for (const end of [1, -1]) {
     const [a, b] = end > 0 ? line.at(-1)! : line[0];
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
     const [vx, vy] = [(b[0] - a[0]) / length, (b[1] - a[1]) / length];
     let from = end > 0 ? b : a;
-    for (const turn of getBends(battle)) {
+    const bends = getBends(battle);
+    for (const turn of bends) {
       // round to the back, the front out: on from `b` along the line, back from `a` against it
       const [cos, sin] = [Math.cos(turn), Math.sin(turn * end)];
       const [dx, dy] = [vx * cos - vy * sin, vy * cos + vx * sin];
@@ -359,8 +362,55 @@ function getWagonLine(battle: Battle, side: Side): [Point, Point][] {
       stretches.push(end > 0 ? [from, to] : [to, from]);
       from = to;
     }
+    if (bends.length) tails.push(from);
   }
+  if (closed && tails.length === 2 && isRidden(battle, side)) closeWagons(battle, side, tails, stretches);
   return stretches;
+}
+
+/** The foe is strong in riders: a wagon line closes behind the side, or they ride round it into its back */
+const isRidden = (battle: Battle, side: Side): boolean => getShare(battle, enemyOf(side), isRider) >= STRONG;
+
+/**
+ * Close a wagon line behind the side: from the ends of its half circle straight back past the rearmost of its places,
+ * then across, pulled in where that runs off the field. No wagons are laid in water: it closes the ring there
+ */
+function closeWagons(battle: Battle, side: Side, [right, left]: Point[], stretches: [Point, Point][]): void {
+  const { field } = battle;
+  const { heading } = battle[side].plan;
+  const [bx, by] = [-Math.cos(heading), -Math.sin(heading)]; // to the back
+  const [a, b] = stretches[0];
+  const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const depth = (point: Point): number => point[0] * bx + point[1] * by;
+  const rear =
+    Math.max(
+      ...battle.blocks
+        .filter(block => block.side === side && block.status === "ready")
+        .map(block => depth([block.order.x, block.order.y]) + block.depth / 2)
+    ) + AHEAD;
+  const margin = field.front / 4;
+  const inside = ([x, y]: Point): Point => [
+    Math.min(Math.max(x, margin), field.width - margin),
+    Math.min(Math.max(y, margin), field.height - margin)
+  ];
+  const back = (point: Point): Point => {
+    const behind = Math.max(rear - depth(point), 0);
+    return inside([point[0] + bx * behind, point[1] + by * behind]);
+  };
+  // round the ring the way the half circle goes: on from the right end, back, across, and up to the left end
+  const corners = [right, back(right), back(left), left];
+  for (let i = 1; i < corners.length; i++) {
+    const [from, to] = [corners[i - 1], corners[i]];
+    const count = Math.ceil(Math.hypot(to[0] - from[0], to[1] - from[1]) / length);
+    for (let j = 0; j < count; j++) {
+      const at = (k: number): Point => [
+        from[0] + ((to[0] - from[0]) * k) / count,
+        from[1] + ((to[1] - from[1]) * k) / count
+      ];
+      const work = { a: at(j), b: at(j + 1) };
+      if (!terrainAt(field, ...middle(work)).water) stretches.push([work.a, work.b]);
+    }
+  }
 }
 
 /** Where the wagons of a laager go: about each battalion standing on its ring, by the angle; none for fewer than three */

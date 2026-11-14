@@ -9,15 +9,19 @@ import {
   type FieldWork,
   getCrossing,
   getElevation,
+  getGrade,
   getSlope,
   getWallsBetween,
+  isFordable,
   isStanding,
   nodeAt,
   nodeCentre,
   type Terrain,
-  terrainAt
+  terrainAt,
+  WALL_HEIGHT
 } from "./battlefield";
 import { flood, getStepBit, isClear, type Reach, spread, trace } from "./pathfinding";
+import { ICE, MUD, SKIES } from "./weather";
 import { bars, isBarredByWorks, isInDitch, isRider, isStaked } from "./works";
 
 export type Point = [number, number];
@@ -34,7 +38,6 @@ export const PACE = toMetresPerTick(FOOT_SPEED); // of troops on foot
 const WADING = 0.12; // share of the pace kept in deep water
 const FORDING = 0.4; // and in a ford
 const RUBBLE = 0.5; // and over the rubble of a breach
-const SIGHT = 0.01; // share of its range a shooter gains for each metre it stands above its target
 const POINT_BLANK = { shooter: 2, engine: 20 }; // under which they cannot shoot
 export const CHARGE_HASTE = 3; // how much faster than its pace a battalion runs in at a foe it is about to strike
 const SAMPLE = 11; // the way of a step is checked this often, under the contact gap: a charge ends at contact
@@ -134,36 +137,41 @@ export function getStride(battle: Battle, block: Block, heading: number, haste =
   return getPace(battle, block, terrain) * haste * getGoing(battle, block, terrain) * climb * ditch;
 }
 
-/** Share of its pace a block keeps on the ground */
+/** Share of its pace a block keeps on the ground: soaked ground slows all but fliers, open ground the most; frozen ground all */
 export function getGoing(battle: Battle, block: Block, terrain: Terrain): number {
-  if (terrain.rampart === 3) return RUBBLE;
-  if (terrain.road) return 1.2;
+  const ground = block.type !== "aviation";
+  const mud = ground && battle.mud;
+  const ice = ground && battle.ice ? ICE : 1;
+  if (terrain.rampart === 3) return RUBBLE * ice;
+  if (terrain.road) return 1.2 * (mud ? MUD.road : 1) * ice;
   if (terrain.water) return isAfloat(battle, block, terrain) ? 1 : terrain.ford || terrain.shallow ? FORDING : WADING;
-  if (terrain.wood) return block.type === "mounted" ? 0.4 : 0.65;
-  return terrain.marsh ? 0.5 : 1;
+  if (terrain.wood) return (block.type === "mounted" ? 0.4 : 0.65) * (mud ? MUD.cover : 1) * ice;
+  return (terrain.marsh ? 0.5 * (mud ? MUD.cover : 1) : mud ? MUD.open : 1) * ice;
 }
 
 /**
- * Share of its pace a block keeps on a slope, by Tobler's hiking function: a fifth quicker 3° downhill,
- * a tenth slower 2° uphill, a quarter of the pace 20° uphill and two fifths 20° downhill
+ * Share of its pace a block keeps on a slope: Tobler's hiking function cubed, 1.7 times the pace 3° downhill,
+ * a third of it 6° uphill, a tenth from 12° uphill and 18° downhill
  */
-export const getClimb = (slope: number): number => Math.max(Math.exp(-3.5 * Math.abs(slope + 0.05) + 0.175), 0.1);
+export const getClimb = (slope: number): number => Math.max(Math.exp(-10.5 * Math.abs(slope + 0.05) + 0.525), 0.1);
 
-/** How far a block shoots at a target: further from above, shorter from below */
+/**
+ * How far a block shoots at a target, as a missile flies: further from above, shorter from below, not at all half its range up;
+ * shorter in rain and fog
+ */
 export function getRange(battle: Battle, block: Block, target: Block): number {
   const { field } = battle;
   const above = getElevation(field, block.x, block.y) - getElevation(field, target.x, target.y);
-  return block.range * (1 + Math.min(Math.max(above * SIGHT, -LIFT), LIFT));
+  return block.range * SKIES[battle.weather].range * Math.sqrt(Math.max(1 + (2 * above) / block.range, 0));
 }
-
-const LIFT = 0.3; // the most height adds to the range or takes from it
 
 /** In range and not too close to load and aim */
 export function canShoot(battle: Battle, block: Block, target: Block): boolean {
   if (!block.range) return false;
   const distance = Math.hypot(target.x - block.x, target.y - block.y);
   // beyond the longest range there are no heights to read
-  if (distance > block.range * (1 + LIFT) || distance > getRange(battle, block, target)) return false;
+  const longest = block.range * Math.sqrt(1 + (2 * (battle.field.relief + WALL_HEIGHT)) / block.range);
+  if (distance > longest || distance > getRange(battle, block, target)) return false;
   return getGap(block, target)[0] >= (block.kind === "engine" ? POINT_BLANK.engine : POINT_BLANK.shooter);
 }
 
@@ -226,9 +234,13 @@ function getShipPace(units: MilitaryUnit[]): number | null {
 /** Share of its strength a block has on the ground it stands on, in attack and in defence */
 export function getFooting(battle: Battle, block: Block, terrain: Terrain): number {
   if (terrain.rampart && terrain.rampart < 3 && isClimbing(battle, block)) return 0.5;
-  if (terrain.water && !isAfloat(battle, block, terrain)) return terrain.water === 1 && !terrain.shallow ? 0.25 : 0.5;
-  return terrain.marsh ? 0.75 : 1;
+  if (terrain.water) return isAfloat(battle, block, terrain) ? 1 : terrain.water === 1 && !terrain.shallow ? 0.25 : 0.5;
+  if (block.type === "aviation") return 1;
+  const slope = Math.max(1 - getGrade(battle.field, block.x, block.y), SLOPE_FOOTING);
+  return (terrain.marsh ? 0.75 : 1) * slope * (battle.mud ? MUD.footing : 1);
 }
+
+const SLOPE_FOOTING = 0.5; // the least of its strength a block keeps on a steep slope
 
 /** A siege of a burg that has walls */
 export const hasWalls = (battle: Battle): boolean =>
@@ -690,7 +702,7 @@ function getOpenGround(battle: Battle, known: Exits, side: Side) {
   const open = new Uint8Array(COLS * ROWS);
   for (let node = 0; node < open.length; node++) {
     const water = field.water[node];
-    open[node] = water === 1 || (water === 2 && !field.ford[node] && !field.deck[node]) ? 0 : 1;
+    open[node] = water === 1 || (water === 2 && !isFordable(field, node) && !field.deck[node]) ? 0 : 1;
   }
   for (const foe of ready) {
     const reach = Math.max(foe.width, foe.depth) / 2 + CONTACT; // the ground it stands on and holds
@@ -759,7 +771,7 @@ export function openCrossing(battle: Battle, attackers: Point, defenders: Point)
   const from = nodeAt(field, ...attackers);
   const to = nodeAt(field, ...defenders);
   const size = COLS * ROWS;
-  const deep = (node: number): boolean => field.water[node] === 2 && !field.ford[node];
+  const deep = (node: number): boolean => field.water[node] === 2 && !isFordable(field, node);
   const still = (node: number): boolean => field.water[node] === 1;
   const dry = Float32Array.from({ length: size }, (_, node) => (deep(node) || still(node) ? Infinity : 1));
   if (spread(COLS, ROWS, [from], dry).cost[to] !== Infinity && dry[to] === 1) return;

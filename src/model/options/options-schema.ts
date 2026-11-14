@@ -222,6 +222,7 @@ const battle = z.strictObject({
     fire: z.boolean(),
     missiles: z.boolean(),
     clashes: z.boolean(),
+    weather: z.boolean(),
     title: z.boolean(),
     scale: z.boolean(),
     north: z.boolean()

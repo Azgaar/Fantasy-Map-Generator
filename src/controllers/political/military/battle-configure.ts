@@ -120,6 +120,11 @@ const GROUPS: { group: Group; label: string; controls: Control[] }[] = [
       { key: "missiles", label: t("Missiles"), tip: t("Draw arrows and shells in flight") },
       { key: "clashes", label: t("Clash marks"), tip: t("Draw the marks of melee and bursting shells") },
       {
+        key: "weather",
+        label: t("Weather effects"),
+        tip: t("Show rain, snow, fog, heat haze, mud and ice on the battle plan. On the screen only, not in exports. The weather tells on the battle either way")
+      },
+      {
         key: "title",
         label: t("Title and clock"),
         tip: t("Show the battle name and the time since its start in the corner of the view")

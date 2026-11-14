@@ -96,6 +96,7 @@ export interface Battlefield extends FieldSize {
   breaches: FieldBreach[];
   works: FieldWork[];
   held: number | null; // the burg the defenders of a siege hold
+  frozen: boolean; // the rivers bear troops anywhere, as a ford
 }
 
 export interface Terrain {
@@ -149,7 +150,8 @@ export function createEmptyBattlefield(open: Battlefield["open"] = null): Battle
     walls: [],
     breaches: [],
     works: [],
-    held: null
+    held: null,
+    frozen: false
   };
 }
 
@@ -392,7 +394,7 @@ const GATE = 0.5; // width of a gate as drawn, in battalion fronts
 const GATEWAY = 1.2; // and as troops take it: a battalion gets through without jamming
 const BREACH = 0.7; // and of a breach
 const RAMPART = 11; // how far from a wall its foot reaches
-const WALL_HEIGHT = 15; // of the walls and towers of a burg, in metres
+export const WALL_HEIGHT = 15; // of the walls and towers of a burg, in metres
 
 const EVEN = 0.75; // of how much farther or nearer than the mean a corner of the cell is, the walls keep: no sliver of a town
 const SHORT = 0.15; // of the radius, a side of the cell shorter than that is no side of the walls
@@ -803,6 +805,16 @@ export function getSlope(field: Battlefield, x: number, y: number, heading: numb
   return (getElevation(field, ...ahead, walls) - getElevation(field, ...behind, walls)) / (field.cell * 2);
 }
 
+/** Rise over run of the ground at a point the way it falls steepest; walls do not count */
+export function getGrade(field: Battlefield, x: number, y: number): number {
+  if (!field.relief) return 0;
+  return Math.hypot(getSlope(field, x, y, 0), getSlope(field, x, y, Math.PI / 2));
+}
+
+/** A river troops may cross at the node: a ford, or any river frozen over */
+export const isFordable = (field: Battlefield, node: number): boolean =>
+  field.ford[node] === 1 || (field.frozen && field.water[node] === 2);
+
 export function terrainAt(field: Battlefield, x: number, y: number): Terrain {
   const i = nodeAt(field, x, y);
   return {
@@ -811,7 +823,7 @@ export function terrainAt(field: Battlefield, x: number, y: number): Terrain {
     marsh: field.marsh[i] === 1,
     water: field.water[i],
     shallow: field.water[i] === 1 && isByLand(field, i),
-    ford: field.ford[i] === 1,
+    ford: isFordable(field, i),
     deck: field.deck[i] === 1,
     road: field.road[i] === 1,
     town: field.town[i] === 1,

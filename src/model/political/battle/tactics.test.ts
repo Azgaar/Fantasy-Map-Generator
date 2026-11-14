@@ -199,12 +199,13 @@ describe("a flying wedge", () => {
         const plan = b.attackers.plan;
         if (!plan.wedge?.charging || plan.wedge.target === null) continue;
         struck = plan.wedge.target;
-        // across the foe's formation: the wedge is beyond the end of his line, on the side of the battalion it falls on
-        const { x, y, heading } = b.defenders.plan;
+        // across the foe's formation: the wedge is beyond the end of his line as drawn up, on the side of the battalion
+        // it falls on; that battalion may have wheeled out to meet it
+        const { x, y, heading, half } = b.defenders.plan;
         const across = (point: { x: number; y: number }): number =>
           -Math.sin(heading) * (point.x - x) + Math.cos(heading) * (point.y - y);
         const end = across(b.blocks[struck]);
-        flank = Math.sign(across(plan.wedge)) === Math.sign(end) && Math.abs(across(plan.wedge)) > Math.abs(end);
+        flank = Math.sign(across(plan.wedge)) === Math.sign(end) && Math.abs(across(plan.wedge)) > half;
       }
       expect(struck, `axis ${axis}`).not.toBeNull();
       expect(flank, `axis ${axis}`).toBe(true);

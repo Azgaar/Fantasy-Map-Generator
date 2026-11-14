@@ -5,6 +5,7 @@ import type { LabelType } from "@/model/annotations/labels-generator";
 import type { ProsperityLevel } from "@/model/economy/prosperity";
 import type { Sampling } from "@/model/graph/lattice";
 import type { BattleType, Command } from "@/model/political/battle/battle-rules";
+import type { Condition, Weather } from "@/model/political/battle/weather";
 import type { TransportDomain } from "@/model/story/journeys/transports-generator";
 import type { DemandCategory } from "@/types/economy";
 import { t } from "@/utils/i18n";
@@ -265,6 +266,20 @@ export const BATTLE_TYPE_LABELS: Record<BattleType, string> = {
   landing: t("Landing"),
   bombardment: t("Bombardment"),
   air: t("Air battle")
+};
+
+export const WEATHER_LABELS: Record<Weather, string> = {
+  clear: t("Clear"),
+  rain: t("Rain"),
+  downpour: t("Heavy rain"),
+  snow: t("Snow"),
+  fog: t("Fog")
+};
+
+export const CONDITION_LABELS: Record<Condition, string> = {
+  mud: t("Mud"),
+  ice: t("Ice"),
+  heat: t("Heat")
 };
 
 export const BATTLE_ORDER_LABELS: Record<Command, string> = {

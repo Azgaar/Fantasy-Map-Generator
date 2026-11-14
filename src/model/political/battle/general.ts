@@ -28,6 +28,7 @@ import {
   getElevation,
   getGates,
   getWorksBetween,
+  isFordable,
   isStanding,
   nodeAt,
   nodeCentre,
@@ -103,6 +104,8 @@ const THREAT = 9; // foes come round further than that from the formation are no
 const WHEEL = 1.8; // a formation wheels to face a foe no nearer than that
 const POST = 2; // the point of a wedge waits so far beyond the end of the line
 const WIDE = 3; // and a wedge by so much: out of reach of the end of his line till it falls on him
+const FLANKED = 1.05; // radians off its facing a blow comes from in the flank
+const HOOKS = 3; // battalions turned out at an end of the line, at most
 const ROUND_SIDE = 0.9; // so far beyond the end of the line and no further ahead than that, a foe has come round a flank
 const ROUND_AHEAD = 0.45;
 
@@ -217,7 +220,8 @@ function createPlan(tactic: TacticName, frame: Frame, fixed = false): Plan {
     fortify: false,
     arrival: Infinity,
     wedge: null,
-    muster: null
+    muster: null,
+    hooks: [[], []]
   };
 }
 
@@ -570,7 +574,7 @@ function findCrossing(battle: Battle): Frame | null {
     field.width / 2 + Math.cos(axis) * along * deep,
     field.height / 2 + Math.sin(axis) * along * deep
   ];
-  const passable = (node: number): boolean => !field.water[node] || field.ford[node] === 1;
+  const passable = (node: number): boolean => !field.water[node] || isFordable(field, node);
   const costs = Float32Array.from(field.water, (_, node) => (passable(node) ? (field.water[node] ? 3 : 1) : Infinity));
   const way = trace(spread(COLS, ROWS, [nodeAt(field, ...point(-0.8))], costs), nodeAt(field, ...point(0.35)));
   const wet = (node: number): boolean =>
@@ -1463,7 +1467,119 @@ function direct(battle: Battle, side: Side, own: View, foe: View, gap: number): 
       if (order.mission === "line" && order.rank === 0 && refused) order.mission = "guard";
     }
   }
-  if (stance !== "flee") sendReserve(battle, side, own, foe, frameFoes);
+  if (stance !== "flee") {
+    hookFlanks(battle, side, own, frameFoes);
+    sendReserve(battle, side, own, foe, frameFoes);
+  }
+}
+
+/** The foe strikes a battalion in the flank or the rear */
+function isOnFlank(battle: Battle, foe: Block): boolean {
+  const target = foe.action === "fight" && foe.target !== null ? battle.blocks[foe.target] : null;
+  if (!target || target.side === foe.side) return false;
+  const bearing = Math.atan2(foe.y - target.y, foe.x - target.x) - target.facing;
+  return Math.abs(Math.atan2(Math.sin(bearing), Math.cos(bearing))) > FLANKED;
+}
+
+const isHooked = (battle: Battle, block: Block): boolean =>
+  battle[block.side].plan.hooks.some(hook => hook.includes(block.id));
+
+/**
+ * A side that holds turns battalions out at an end of its line, facing out in a short line back from it: its reserve
+ * and the lines behind as soon as the foe has riders on that wing, the first line from the end in once foes come
+ * beyond it. As strong as those foes, the more threatened end first; an end with no foes at it lends its reserve
+ */
+function hookFlanks(battle: Battle, side: Side, own: View, foes: Seen): void {
+  const { plan, advancing } = battle[side];
+  const { field } = battle;
+  const { front } = field;
+  const ground = battle.type === "field" || (battle.type === "landing" && side === "defenders");
+  const old = plan.hooks;
+  plan.hooks = [[], []];
+  if (advancing || plan.fixed || field.open || !ground) return;
+
+  const byId = new Map(own.ready.map(block => [block.id, block]));
+  const free = (block: Block): boolean => !block.order.sent && block.morale >= SHAKEN && block.action !== "fight";
+  const wheels = (block: Block): boolean => block.order.rank === 0 && block.order.role === "line";
+  const first = own.ready.filter(block => wheels(block) && !block.order.sent && block.kind === "line");
+  // a battalion of the first line with no foe before it within a charge may wheel back
+  const idle = ({ order, width }: Block): boolean =>
+    !foes.some(
+      ({ at }) => Math.abs(at[0] - order.across) < width && at[1] > order.along && at[1] - order.along < CHARGE * front
+    );
+
+  const ends = [-1, 1].map(sign => {
+    const end = first.reduce<Block | null>(
+      (a, b) => (a && a.order.across * sign >= b.order.across * sign ? a : b),
+      null
+    );
+    if (!end) return { sign, end, beyond: 0, round: 0, riders: 0 };
+    const { across, along } = end.order;
+    const edge = across * sign + end.width / 2; // the outer side of the end battalion
+    const off = ({ at }: Seen[number]): number => Math.hypot(at[0] - across, at[1] - along);
+    const out = (seen: Seen[number]): boolean => seen.at[0] * sign > edge;
+    // foes beyond it, no further ahead than a charge and two rounds' march: the reserve needs time to turn out
+    const beyond = sum(foes, seen => {
+      const near = seen.at[1] < along + CHARGE * front + getPace(battle, seen.block) * ROUND_TICKS * 2;
+      return out(seen) && near && off(seen) < THREAT * front ? strength(seen.block) : 0;
+    });
+    // foes coming round it, level with the line within a charge: the first line wheels back for them
+    const round = sum(foes, seen =>
+      out(seen) && seen.at[1] < along + COUNTER * front && off(seen) < CHARGE * front ? strength(seen.block) : 0
+    );
+    const riders = sum(foes, ({ block, at }) => (block.kind === "rider" && at[0] * sign > 0 ? strength(block) : 0));
+    return { sign, end, beyond, round, riders };
+  });
+  const quiet = (sign: number): boolean => ends.some(end => end.sign === sign && !end.beyond && !end.riders);
+  const hooked = new Set<number>();
+  for (const { sign, end, beyond, round, riders } of [...ends].sort(
+    (a, b) => b.beyond + b.riders - a.beyond - a.riders
+  )) {
+    if (!end || (!beyond && !riders)) continue;
+    const { across, along } = end.order;
+    const edge = across * sign + end.width / 2;
+    const kept = old[(sign + 1) / 2]
+      .map(id => byId.get(id))
+      .filter((block): block is Block => block !== undefined && !block.order.sent && (round > 0 || !wheels(block)));
+    const corner = onField(field, toField(plan, across, along - end.depth));
+    const near = (block: Block): number => Math.hypot(block.x - corner[0], block.y - corner[1]);
+    const behind = own.ready
+      .filter(
+        block =>
+          block.kind === "line" &&
+          free(block) &&
+          (block.order.role === "reserve" || (block.order.role === "line" && block.order.rank > 0)) &&
+          (block.order.across * sign >= 0 || quiet(-sign)) // of its own wing, or of a quiet one
+      )
+      .sort((a, b) => near(a) - near(b));
+    // the first line from the end in, as far as nobody stands before it, against foes coming round only
+    const wheel: Block[] = [];
+    for (const block of [...first].sort((a, b) => (b.order.across - a.order.across) * sign)) {
+      if (!round || hooked.has(block.id) || !free(block) || !idle(block)) break;
+      wheel.push(block);
+    }
+    const hook: Block[] = [];
+    for (const block of [...kept, ...behind, ...wheel]) {
+      const need = wheels(block) ? round : beyond + riders;
+      if (hooked.has(block.id) || hook.length >= HOOKS || sum(hook, strength) >= need) continue;
+      hook.push(block);
+      hooked.add(block.id);
+    }
+    // a new hook: the first line nearest the end wheels about its outer rear corner, the others stand back from it;
+    // those in a hook keep their places in it and newcomers fall in behind
+    const fresh = hook.slice(kept.filter(block => hook.includes(block)).length);
+    fresh.sort((a, b) => +wheels(b) - +wheels(a) || (b.order.across - a.order.across) * sign);
+    hook.splice(hook.length - fresh.length, fresh.length, ...fresh);
+    let back = along - end.depth / 2 - GAP * front;
+    for (const block of hook) {
+      const place = toField(plan, (edge - block.depth / 2) * sign, back - block.width / 2);
+      back -= block.width + GAP * front;
+      [block.order.x, block.order.y] = onField(field, place);
+      block.order.facing = plan.heading + (sign * Math.PI) / 2;
+      block.order.mission = "line";
+    }
+    plan.hooks[(sign + 1) / 2] = hook.map(block => block.id);
+  }
 }
 
 /**
@@ -1514,7 +1630,9 @@ function sendReserve(battle: Battle, side: Side, own: View, foe: View, foes: See
   const { plan, phase } = battle[side];
   const names = POSTURES[battle.type][side];
   const spare = (): Block[] =>
-    own.ready.filter(block => block.order.role === "reserve" && !block.order.sent && block.morale >= SHAKEN);
+    own.ready.filter(
+      block => block.order.role === "reserve" && !block.order.sent && block.morale >= SHAKEN && !isHooked(battle, block)
+    );
   const nearest = (among: Block[], to: { x: number; y: number }): Block | undefined =>
     among.reduce<Block | undefined>(
       (best, block) => (best && far(best, to) <= far(block, to) ? best : block),
@@ -1556,23 +1674,35 @@ function sendReserve(battle: Battle, side: Side, own: View, foe: View, foes: See
     if (lost.side !== side || lost.status === "ready" || order.role !== "line" || order.rank !== 0) continue;
     order.rank = -1; // seen to
     if (!foe.ready.some(block => far(block, order) < front * FOES_NEAR)) continue;
-    const behind = own.ready.filter(block => block.order.role === "line" && block.order.rank > 0 && !block.order.sent);
+    const behind = own.ready.filter(
+      block => block.order.role === "line" && block.order.rank > 0 && !block.order.sent && !isHooked(battle, block)
+    );
     const heir = nearest([...behind, ...spare()], order);
     if (heir)
       Object.assign(heir.order, { role: "line", mission: "line", rank: 0, across: order.across, along: order.along });
   }
 
-  // 2. foes come round a flank or through the line
+  // 2. foes come round a flank or through the line, or at grips with a battalion's flank or rear: riders first, as
+  // many sent at each as match it
   const answered = new Set(own.ready.map(block => block.order.target));
+  const going = new Map<number, number>();
+  for (const block of own.ready)
+    if (block.order.sent && block.order.target !== null)
+      going.set(block.order.target, (going.get(block.order.target) ?? 0) + strength(block));
   const urgent = ({ block, at }: Seen[number]): number => (block.kind === "rider" ? -1000 : 0) + at[1]; // riders, then the deepest
   for (const { block: threat, at } of [...foes].sort((a, b) => urgent(a) - urgent(b))) {
     const flank = Math.abs(at[0]) > plan.half + front * ROUND_SIDE && at[1] < front * ROUND_AHEAD;
     const round = at[1] < (-ROW_GAP * front) / 2 || flank;
-    if (!round || answered.has(threat.id) || far(threat, plan) > front * THREAT) continue;
-    const guards = own.ready.filter(
-      block => block.order.mission === "guard" && !block.order.sent && block.kind === "rider"
-    );
-    send(nearest([...spare(), ...guards], threat), threat);
+    if (!(round || isOnFlank(battle, threat)) || far(threat, plan) > front * THREAT) continue;
+    while ((going.get(threat.id) ?? 0) < strength(threat)) {
+      const guards = own.ready.filter(
+        block => block.order.mission === "guard" && !block.order.sent && block.kind === "rider"
+      );
+      const block = nearest([...spare(), ...guards], threat);
+      if (!block) break;
+      send(block, threat);
+      going.set(threat.id, (going.get(threat.id) ?? 0) + strength(block));
+    }
   }
 
   if (phase !== names.close || keepsOff(battle, side)) return;
@@ -1614,6 +1744,7 @@ function guardWards(
           (block.kind === "line" || block.kind === "rider") &&
           block.order.role !== "wedge" &&
           !block.order.sent &&
+          !isHooked(battle, block) &&
           block.action !== "fight" &&
           block.morale >= SHAKEN &&
           far(block, threat) < ward * 2

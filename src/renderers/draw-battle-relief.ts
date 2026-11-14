@@ -17,11 +17,11 @@ const MOST_ROWS = 24; // and no more rows of hachures, so the strokes stay short
 const INDEX_EVERY = 5; // every fifth line is an index line, labelled
 const MOST_LABELS = 14;
 const INK = "#6c645a";
-const HACHURE_SLOPE = [0.004, 0.02]; // gentler ground draws no hachure: a share of the field's steep slope, within these
-const SHADOW = 0.18; // the darkest shadow's opacity
-const SHADED_SLOPE = 0.3; // the field's steep slope is shaded as if it were this steep, so a gentle field's hills show
-const TOP_RADIUS = 6; // nodes each way a top is the highest within
-const TOP_RISE = [0.4, 0.2]; // a top stands this share of the field's most prominent one above its surroundings, and so many metres at least
+const HACHURE_SLOPE = [0.008, 0.03]; // gentler ground draws no hachure: half the field's steep slope, within these
+const FULL_RELIEF = 80; // metres of rise that draw hachures and shade at full strength; a lower field draws them fainter
+const SHADOW = 0.22; // the darkest shadow's opacity at full strength
+const SHADED_SLOPE = 0.3; // the field's steep slope is shaded as if it were this steep, up to 12 times its own
+const PROMINENCE = [0.1, 0.3]; // a top rises this share of the field's rise above the pass to higher ground, so many metres at least; a hollow as deep
 const MOST_TOPS = 5;
 const MOST_HOLLOWS = 3;
 
@@ -49,8 +49,9 @@ export function getReliefMarkup(field: Battlefield, halo: string): string {
   const surface = getSurface(field);
   const ratio = getHeightUnitRatio();
   const levels = getLevels(field, surface, ratio, MOST_LINES);
-  return /* html */ `<g class="battleShade">${getShade(field, surface)}</g>
-    <g class="battleHachures">${getHachures(surface, getLevels(field, surface, ratio, MOST_ROWS), ratio, pt)}</g>
+  const strength = Math.min(Math.max(field.relief / FULL_RELIEF, 0.15), 1);
+  return /* html */ `<g class="battleShade">${getShade(field, surface, strength)}</g>
+    <g class="battleHachures">${getHachures(field, surface, getLevels(field, surface, ratio, MOST_ROWS), ratio, strength)}</g>
     <g class="battleContours">${getContours(field, levels, surface, pt)}</g>
     <g class="battleContourLabels" fill="${INK}" stroke="${halo}" stroke-width="${3 * pt}" stroke-linejoin="round"
       paint-order="stroke" font-size="${9 * pt}" font-family="Georgia, serif" text-anchor="middle">${getLevelLabels(field, levels, surface, pt)}</g>
@@ -59,15 +60,14 @@ export function getReliefMarkup(field: Battlefield, halo: string): string {
 }
 
 /** Hachures: strokes from each level down the fall line toward the next, thicker where steeper */
-function getHachures(
-  { step, z, gx, gy, cols, rows, steep }: Surface,
-  levels: Level[],
-  ratio: number,
-  pt: number
-): string {
+function getHachures(field: Battlefield, surface: Surface, levels: Level[], ratio: number, strength: number): string {
   if (!levels.length) return "";
+  const { step, z, gx, gy, cols, rows, steep } = surface;
+  const pt = field.width / 1000;
   const drop = levels[0].interval / ratio;
-  const least = Math.min(Math.max(steep * 0.35, HACHURE_SLOPE[0]), HACHURE_SLOPE[1]);
+  const least = Math.min(Math.max(steep * 0.5, HACHURE_SLOPE[0]), HACHURE_SLOPE[1]);
+  // the rings run just outside the field to reach its edge: strokes start and end within it
+  const inside = (x: number, y: number): boolean => x >= 0 && y >= 0 && x <= field.width && y <= field.height;
   const at = (x: number, y: number): number =>
     Math.min(Math.max(Math.floor(y / step), 0), rows - 1) * cols +
     Math.min(Math.max(Math.floor(x / step), 0), cols - 1);
@@ -75,6 +75,7 @@ function getHachures(
   const strokes: string[][] = widths.map(() => []);
   for (const { rings } of levels) {
     walk(rings, 4 * pt, (x0, y0) => {
+      if (!inside(x0, y0)) return;
       const i0 = at(x0, y0);
       const slope = Math.hypot(gx[i0], gy[i0]);
       if (slope < least) return;
@@ -83,15 +84,16 @@ function getHachures(
         const i = at(x, y);
         const s = Math.hypot(gx[i], gy[i]);
         if (s < least * 0.8 || z[i0] - z[i] > drop * 0.8) break;
-        x -= (gx[i] / s) * step;
-        y -= (gy[i] / s) * step;
+        const [nx, ny] = [x - (gx[i] / s) * step, y - (gy[i] / s) * step];
+        if (!inside(nx, ny)) break;
+        [x, y] = [nx, ny];
       }
       if (Math.hypot(x - x0, y - y0) < pt) return;
       const bucket = Math.min(Math.floor(((slope - least) / 0.15) * widths.length), widths.length - 1);
       strokes[bucket].push(`M${Math.round(x0)} ${Math.round(y0)}L${Math.round(x)} ${Math.round(y)}`); // a metre is fine enough
     });
   }
-  return `<g fill="none" stroke="${INK}" stroke-linecap="round" opacity="0.5">${strokes
+  return `<g fill="none" stroke="${INK}" stroke-linecap="round" opacity="${rn(0.3 + 0.35 * strength, 2)}">${strokes
     .map((list, k) => (list.length ? `<path d="${list.join("")}" stroke-width="${widths[k] * pt}"/>` : ""))
     .join("")}</g>`;
 }
@@ -153,30 +155,15 @@ function getLevelLabels(field: Battlefield, levels: Level[], surface: Surface, p
 /** Tops and hollows: ▲ on the highest node of a hill, ▽ in the lowest of a hollow, each with its height */
 function getHeightMarks(field: Battlefield, ratio: number, pt: number): string {
   const ground = getGround(field);
-  // height over the mean of the nodes about it
-  const relative = ground.map((z, i) => {
+  const least = Math.max(field.relief * PROMINENCE[0], PROMINENCE[1]);
+  const neighbours = (i: number): number[] => {
     const [col, row] = [i % COLS, Math.floor(i / COLS)];
-    let sum = 0;
-    let count = 0;
-    for (let r = Math.max(row - 7, 0); r <= Math.min(row + 7, ROWS - 1); r++) {
-      for (let c = Math.max(col - 7, 0); c <= Math.min(col + 7, COLS - 1); c++) {
-        sum += ground[r * COLS + c];
-        count++;
-      }
+    const out: number[] = [];
+    for (let r = Math.max(row - 1, 0); r <= Math.min(row + 1, ROWS - 1); r++) {
+      for (let c = Math.max(col - 1, 0); c <= Math.min(col + 1, COLS - 1); c++)
+        if (r !== row || c !== col) out.push(r * COLS + c);
     }
-    return z - sum / count;
-  });
-  const isExtreme = (i: number, sign: number): boolean => {
-    const [col, row] = [i % COLS, Math.floor(i / COLS)];
-    for (let r = row - TOP_RADIUS; r <= row + TOP_RADIUS; r++) {
-      for (let c = col - TOP_RADIUS; c <= col + TOP_RADIUS; c++) {
-        if (r < 0 || c < 0 || r >= ROWS || c >= COLS || (r === row && c === col)) continue;
-        const other = r * COLS + c;
-        // level ground counts once: the first node of it wins
-        if ((ground[other] - ground[i]) * sign > 0 || (ground[other] === ground[i] && other < i)) return false;
-      }
-    }
-    return true;
+    return out;
   };
   // the shore is the lowest land, not a hollow
   const nearWater = (i: number): boolean => {
@@ -188,15 +175,20 @@ function getHeightMarks(field: Battlefield, ratio: number, pt: number): string {
     return false;
   };
   const pick = (sign: number, most: number): number[] => {
-    const rise = Math.max(Math.max(...relative.map(r => r * sign)) * TOP_RISE[0], TOP_RISE[1]);
-    const found: number[] = [];
-    ground.forEach((_, i) => {
+    const found: [node: number, prominence: number][] = [];
+    ground.forEach((z, i) => {
       const [col, row] = [i % COLS, Math.floor(i / COLS)];
-      if (col < 3 || row < 3 || col >= COLS - 3 || row >= ROWS - 3) return; // an edge is a slope running off the field
-      if (field.water[i] || relative[i] * sign < rise || nearWater(i)) return;
-      if (isExtreme(i, sign)) found.push(i);
+      if (col < 2 || row < 2 || col >= COLS - 2 || row >= ROWS - 2) return; // an edge is a slope running off the field
+      if (field.water[i] || (sign < 0 && nearWater(i))) return;
+      // level ground counts once: the first node of it
+      if (neighbours(i).some(n => (ground[n] - z) * sign > 0 || (ground[n] === z && n < i))) return;
+      const prominence = getProminence(ground, i, sign);
+      if (prominence >= least) found.push([i, prominence]);
     });
-    return found.sort((a, b) => (relative[b] - relative[a]) * sign).slice(0, most);
+    return found
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, most)
+      .map(([i]) => i);
   };
 
   const mark = (i: number, top: boolean): string => {
@@ -211,15 +203,68 @@ function getHeightMarks(field: Battlefield, ratio: number, pt: number): string {
   return [...pick(1, MOST_TOPS).map(i => mark(i, true)), ...pick(-1, MOST_HOLLOWS).map(i => mark(i, false))].join("");
 }
 
-/** A soft grey on the slopes turned from the north-west light; gentle fields are exaggerated more, so their hills show */
-function getShade(field: Battlefield, { cols, rows, gx, gy, steep }: Surface): string {
+/**
+ * How far a top rises above the lowest pass to higher ground (sign 1), or a hollow sinks below its lowest outlet (sign -1).
+ * The ground is flooded from the node down (or up) the levels; reaching the field's edge ends it, as the ground runs on
+ */
+function getProminence(ground: number[], start: number, sign: number): number {
+  const key = (i: number): number => ground[i] * sign;
+  const peak = key(start);
+  const seen = new Uint8Array(ground.length);
+  const queue = [start]; // a heap, the highest first
+  seen[start] = 1;
+  let level = peak;
+  while (queue.length) {
+    const i = popHighest(queue, key);
+    if (key(i) > peak) break;
+    level = Math.min(level, key(i));
+    const [col, row] = [i % COLS, Math.floor(i / COLS)];
+    if (col === 0 || row === 0 || col === COLS - 1 || row === ROWS - 1) break;
+    for (const n of [i - 1, i + 1, i - COLS, i + COLS]) {
+      if (seen[n]) continue;
+      seen[n] = 1;
+      pushHeap(queue, n, key);
+    }
+  }
+  return peak - level;
+}
+
+function pushHeap(heap: number[], item: number, key: (i: number) => number): void {
+  heap.push(item);
+  for (let k = heap.length - 1; k > 0; ) {
+    const parent = (k - 1) >> 1;
+    if (key(heap[parent]) >= key(heap[k])) break;
+    [heap[parent], heap[k]] = [heap[k], heap[parent]];
+    k = parent;
+  }
+}
+
+function popHighest(heap: number[], key: (i: number) => number): number {
+  const top = heap[0];
+  const last = heap.pop()!;
+  if (!heap.length) return top;
+  heap[0] = last;
+  for (let k = 0; ; ) {
+    const [left, right] = [2 * k + 1, 2 * k + 2];
+    let high = k;
+    if (left < heap.length && key(heap[left]) > key(heap[high])) high = left;
+    if (right < heap.length && key(heap[right]) > key(heap[high])) high = right;
+    if (high === k) break;
+    [heap[high], heap[k]] = [heap[k], heap[high]];
+    k = high;
+  }
+  return top;
+}
+
+/** A soft grey on the slopes turned from the north-west light: gentle slopes exaggerated so their form shows, a low field fainter */
+function getShade(field: Battlefield, { cols, rows, gx, gy, steep }: Surface, strength: number): string {
   const canvas = document.createElement("canvas");
   canvas.width = cols;
   canvas.height = rows;
   const context = canvas.getContext("2d");
   if (!context) return "";
 
-  const exaggeration = Math.min(Math.max(SHADED_SLOPE / steep, 2), 30);
+  const exaggeration = Math.min(Math.max(SHADED_SLOPE / steep, 2), 12);
   const flat = Math.SQRT1_2;
   const light = (x: number, y: number, azimuth: number): number => {
     const [nx, ny] = [-x * exaggeration, -y * exaggeration];
@@ -234,7 +279,7 @@ function getShade(field: Battlefield, { cols, rows, gx, gy, steep }: Surface): s
       0.5 * light(gx[i], gy[i], (-3 * Math.PI) / 4) +
       0.25 * light(gx[i], gy[i], Math.PI) +
       0.25 * light(gx[i], gy[i], -Math.PI / 2);
-    const shadow = Math.min(Math.max((flat - lit) * 1.1, 0), SHADOW);
+    const shadow = Math.min(Math.max((flat - lit) * 1.1, 0), SHADOW) * strength;
     image.data.set([60, 60, 66, shadow * 255], i * 4);
   }
   context.putImageData(image, 0, 0);

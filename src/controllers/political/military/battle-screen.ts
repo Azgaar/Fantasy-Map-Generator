@@ -6,7 +6,13 @@ import {
   PAUSE_EVENTS,
   type PauseEvent
 } from "@/data/battle-options";
-import { BATTLE_ORDER_LABELS, BATTLE_TACTIC_LABELS, BATTLE_TYPE_LABELS } from "@/data/id-labels";
+import {
+  BATTLE_ORDER_LABELS,
+  BATTLE_TACTIC_LABELS,
+  BATTLE_TYPE_LABELS,
+  CONDITION_LABELS,
+  WEATHER_LABELS
+} from "@/data/id-labels";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
@@ -52,13 +58,19 @@ import {
 } from "@/model/political/battle/battlefield";
 import type { TacticName } from "@/model/political/battle/formations";
 import { getHandTactic, getOrder, getTactics, isDugIn } from "@/model/political/battle/general";
+import {
+  CONDITIONS,
+  type Condition,
+  getClimateWeather,
+  WEATHERS,
+  type Weather
+} from "@/model/political/battle/weather";
 import { mayBuild } from "@/model/political/battle/works";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
 import { Stability } from "@/model/political/stability";
 import { Names } from "@/model/society/names-generator";
 import type { Marker } from "@/model/story/markers-generator";
-import { formatLength, getLengthUnit } from "@/model/units";
 import {
   type Camera,
   type CameraMode,
@@ -82,6 +94,7 @@ import {
   type Trails,
   updateBlocks
 } from "@/renderers/draw-battle-scene";
+import { drawBattleWeather } from "@/renderers/draw-battle-weather";
 import { moveRegiment } from "@/renderers/draw-military";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
@@ -223,7 +236,8 @@ function setup(
     populationScale: options.map.units.population.scale,
     attackers: attackers.map(regiment => toBattleRegiment(regiment, point)),
     defenders: defenders.map(regiment => toBattleRegiment(regiment, point)),
-    settings: from?.settings ?? battleOptions().simulation
+    settings: from?.settings ?? battleOptions().simulation,
+    ...getClimate(cell)
   });
 
   player.previous = null;
@@ -232,6 +246,12 @@ function setup(
   drawScene();
   ensureEl("battleLogList").innerHTML = "";
   refresh();
+}
+
+/** The weather the place is likely to give, the same every time for the same cell */
+function getClimate(cell: number): { weather: Weather; mud: boolean } {
+  const gridCell = pack.cells.g[cell];
+  return getClimateWeather(grid.cells.prec[gridCell] ?? 0, grid.cells.temp[gridCell] ?? 15, cell);
 }
 
 function buildField(x: number, y: number, type: BattleType) {
@@ -393,7 +413,9 @@ const STYLE = /* css */ `
   #battleStage { position: relative; aspect-ratio: 5 / 3; margin: 1px; outline: 1px solid #999; overflow: hidden; }
   #battleScene { display: block; width: 100%; height: 100%; font-family: var(--serif); touch-action: none; }
   #battleScene.battlePanning { cursor: grabbing; }
-  #battleOverlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #battleOverlay, #battleWeatherLayer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #battleScene.battleMuddy .battleMud, #battleScene.battleIcy .battleFrost { display: inline; }
+  #battleScene.battleIcy .battleRiver { stroke: #e3edf3; }
   #battleScene.battleEditable .battleBlock { cursor: grab; }
   #battleScene.battlePlanning .battleBlocks { display: none; }
   #battleScene.battleFocus .battleBlock:not(.battleFocused) { opacity: 0.3; }
@@ -427,7 +449,6 @@ const STYLE = /* css */ `
   #battleSpeed > input:hover::-moz-range-thumb { background: var(--header); }
   #battleSpeedLabel { min-width: 2.8em; font-weight: bold; font-variant-numeric: tabular-nums; }
   #battleClock { font-variant-numeric: tabular-nums; white-space: nowrap; }
-  #battleFieldSize { color: var(--muted); white-space: nowrap; }
 
   /* army sheets: the orders of each side and its regiments */
   #battleSides { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 0.8em; }
@@ -522,6 +543,7 @@ function renderDialog(): void {
         </div>
         <div id="battleStage">
           <svg id="battleScene" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet"></svg>
+          <canvas id="battleWeatherLayer" hidden></canvas>
           <svg id="battleOverlay" preserveAspectRatio="xMidYMid meet" font-family="Georgia, serif"></svg>
           <div id="battleLog" hidden>
             <header>
@@ -546,13 +568,19 @@ function renderDialog(): void {
               <span id="battleSpeedLabel">×${getPlayback(TICK_MS, player.speed)}</span>
             </label>
             <span id="battleClock"></span>
-            <span id="battleFieldSize" data-tip="${t("Field size")}"></span>
           </div>
           <div>
             <span class="battlePicker">
               <button id="battleType"></button>
               <div class="battleMenu battleTypes" hidden>
                 ${BATTLE_TYPES.map(type => `<button data-tip="${typeTip(type)}" data-type="${type}" class="icon-button-${type}">${BATTLE_TYPE_LABELS[type]}</button>`).join("")}
+              </div>
+            </span>
+            <span class="battlePicker">
+              <button id="battleWeather"></button>
+              <div class="battleMenu battleWeathers" hidden>
+                ${WEATHERS.map(weather => `<button data-weather="${weather}" class="icon-button-${weather}">${WEATHER_LABELS[weather]}</button>`).join("")}
+                ${CONDITIONS.map(condition => `<button data-condition="${condition}" class="icon-button-${condition}" data-tip="${CONDITION_TIPS[condition]}">${CONDITION_LABELS[condition]}</button>`).join("")}
               </div>
             </span>
             <button id="battleRoll" data-tip="${t("Draw the troops up anew. Only before the battle starts")}" class="icon-arrows-cw"></button>
@@ -593,6 +621,8 @@ function renderDialog(): void {
   });
   ensureEl("battleType").addEventListener("click", event => togglePicker(event));
   ensureEl("battleType").nextElementSibling!.addEventListener("click", event => changeType(event));
+  ensureEl("battleWeather").addEventListener("click", event => togglePicker(event));
+  ensureEl("battleWeather").nextElementSibling!.addEventListener("click", event => changeWeather(event));
   ensureEl("battleRoll").addEventListener("click", () => redeploy());
   ensureEl("battleConfigureOpen").addEventListener("click", () => BattleConfigure.open(CONFIGURE));
   ensureEl("battleLogToggle").addEventListener("click", () => toggleLog());
@@ -796,6 +826,7 @@ function applyOptions(group: keyof typeof options.app.battle): void {
     updateBlocks(scene(), b, null, 1); // the battle plan overlay
   } else if (group === "rendering") {
     drawScene();
+    drawWeather();
     updateCamera(0);
   } else if (group === "simulation" && !b.tick) {
     // a battle under way never changes; before the start it is set up anew, as by a change of armies
@@ -1032,14 +1063,22 @@ function refresh(): void {
   for (const button of type.nextElementSibling!.children) {
     button.classList.toggle("current", (button as HTMLElement).dataset.type === b.type);
   }
+  const weather = ensureEl<HTMLButtonElement>("battleWeather");
+  weather.className = `icon-button-${b.weather}`;
+  const conditions = CONDITIONS.filter(condition => b[condition]).map(condition => CONDITION_WORDS[condition]);
+  weather.textContent = [WEATHER_LABELS[b.weather], ...conditions].join(", ");
+  weather.dataset.tip = sentences(t("Weather and ground"), t("Click to change"));
+  for (const button of weather.nextElementSibling!.children as HTMLCollectionOf<HTMLElement>) {
+    const condition = button.dataset.condition as Condition | undefined;
+    button.classList.toggle("current", condition ? b[condition] : button.dataset.weather === b.weather);
+  }
+  drawWeather();
   const name = ensureEl<HTMLInputElement>("battleNameFull");
   if (document.activeElement !== name) name.value = b.name;
 
   const footer = ensureEl("battleFooter");
   put(footer, "#battleClock", formatClock(b.tick));
   ensureEl("battleClock").dataset.tip = t("Round {{round}}", { round: Math.floor(b.tick / ROUND_TICKS) + 1 });
-  const unit = getLengthUnit(b.field.width); // both lengths in one unit
-  put(footer, "#battleFieldSize", `${formatLength(b.field.width, unit)} × ${formatLength(b.field.height, unit)}`);
   if (!over) ensureEl("battleSummary").hidden = true;
 
   // setup only; nothing is hidden, so the controls never jump
@@ -1373,6 +1412,44 @@ function togglePicker(event: Event): void {
   document.addEventListener("click", closePickers, { once: true });
 }
 
+/** Rain, snow, fog and heat over the plan; soaked and frozen ground on it */
+function drawWeather(): void {
+  const b = battle!;
+  const shown = battleOptions().rendering.weather;
+  drawBattleWeather(ensureEl<HTMLCanvasElement>("battleWeatherLayer"), b.weather, b.heat, shown);
+  scene().classList.toggle("battleMuddy", shown && b.mud);
+  scene().classList.toggle("battleIcy", shown && b.ice);
+}
+
+/** The weather and the conditions change at any moment; clicks in a row at a moment leave one line in the log */
+function changeWeather(event: Event): void {
+  const target = event.target as HTMLElement;
+  const b = battle!;
+  if (target.tagName !== "BUTTON") return;
+  const condition = target.dataset.condition as Condition | undefined;
+  const change: Intervention = condition
+    ? { tick: b.tick, kind: "condition", condition, on: !b[condition] }
+    : { tick: b.tick, kind: "weather", weather: target.dataset.weather as Weather };
+  if (change.kind === "weather" && change.weather === b.weather) return;
+  const last = b.interventions.at(-1);
+  const repeated =
+    last?.tick === b.tick &&
+    last.kind === change.kind &&
+    (last.kind !== "condition" || (change.kind === "condition" && last.condition === change.condition));
+  if (repeated) {
+    b.interventions.pop();
+    b.log.pop();
+    ensureEl("battleLogList").lastElementChild?.remove();
+  }
+  intervene(b, change);
+  if (repeated && change.kind === "condition") {
+    b.interventions.pop(); // clicked back: as it was, with nothing to log
+    b.log.pop();
+  }
+  if (!b.tick) drawScene();
+  refresh();
+}
+
 function changeType(event: Event): void {
   const target = event.target as HTMLElement;
   const b = battle!;
@@ -1400,7 +1477,7 @@ function redeploy(): void {
   setup(sides[0], sides[1], { type: b.type, name: b.name, settings: b.settings });
   // what was done to the sides by hand stays done: morale, the ground prepared and the tactics given
   for (const change of b.interventions) {
-    if (change.kind === "morale" || change.kind === "dig" || change.kind === "tactic") intervene(battle!, change);
+    if (["morale", "dig", "tactic", "weather", "condition"].includes(change.kind)) intervene(battle!, change);
   }
   refresh();
 }
@@ -1542,6 +1619,8 @@ function logText({ event, side, params }: LogEntry): string {
   if (event === "cut") return t("{{burg}} is cut off", params);
   if (event === "supplied") return t("Supplies reach {{burg}}", params);
   if (event === "dig") return params!.on === "true" ? t("Dug in") : t("Not dug in");
+  if (event === "weather") return `${t("Weather")}: ${WEATHER_LABELS[params!.weather as Weather]}`;
+  if (event === "condition") return CONDITION_LOG[params!.condition as Condition][+(params!.on === "true")];
   if (event === "fortified") return `${t("Works stand")}: ${WORK_LABELS[params!.kind as WorkKind]}`;
   if (event === "gap") return t("The wagons are broken through");
   if (event === "clash") return t("The armies clash");
@@ -1621,7 +1700,8 @@ function startAnew(b: Battle): BattleStart {
     populationScale: b.populationScale,
     attackers: structuredClone(getInitialRegiments(b, "attackers")),
     defenders: structuredClone(getInitialRegiments(b, "defenders")),
-    settings: b.settings
+    settings: b.settings,
+    ...getClimate(b.cell)
   });
   return { battle, script: structuredClone([...b.interventions, ...script]) };
 }
@@ -1853,6 +1933,18 @@ function typeTip(type: BattleType): string {
   if (type === "bombardment") return t("Bombardment: a fleet shells troops ashore");
   return t("Air Battle: maneuring fight of avia units");
 }
+
+const CONDITION_TIPS: Record<Condition, string> = {
+  mud: t("Soaked ground slows troops off the roads, on open ground the most, and weakens their footing"),
+  ice: t("Frozen ground slows troops, and they may cross the frozen rivers anywhere, as at a ford"),
+  heat: t("Troops tire twice as fast in the heat")
+};
+const CONDITION_WORDS: Record<Condition, string> = { mud: t("mud"), ice: t("ice"), heat: t("heat") };
+const CONDITION_LOG: Record<Condition, [off: string, on: string]> = {
+  mud: [t("The ground dries"), t("The ground is soaked")],
+  ice: [t("The ice thaws"), t("The rivers freeze over")],
+  heat: [t("The heat breaks"), t("The heat sets in")]
+};
 
 const WORK_LABELS: Record<WorkKind, string> = { stakes: t("Stakes"), ditch: t("Ditch"), wagons: t("Wagons") };
 

@@ -3,13 +3,17 @@ import { COLS, ROWS } from "@/model/political/battle/battle-scale";
 import { type Battlefield, createEmptyBattlefield } from "@/model/political/battle/battlefield";
 import { getReliefMarkup } from "./draw-battle-relief";
 
+const bump = (col: number, row: number, x: number, y: number) => Math.exp(-((col - x) ** 2 + (row - y) ** 2) / 40);
+
 // a gentle slope east with a knoll in the west and a hollow in the east, rising `relief` metres in all
-function getField(relief: number): Battlefield {
+function getField(
+  relief: number,
+  shape = (col: number, row: number) => 0.6 * bump(col, row, 30, 30) - 0.4 * bump(col, row, 70, 30)
+): Battlefield {
   const field = createEmptyBattlefield();
-  const bump = (col: number, row: number, x: number, y: number) => Math.exp(-((col - x) ** 2 + (row - y) ** 2) / 40);
   const raw = Array.from({ length: COLS * ROWS }, (_, i) => {
     const [col, row] = [i % COLS, Math.floor(i / COLS)];
-    return (0.3 * col) / COLS + 0.6 * bump(col, row, 30, 30) - 0.4 * bump(col, row, 70, 30);
+    return (0.3 * col) / COLS + shape(col, row);
   });
   const [low, high] = [Math.min(...raw), Math.max(...raw)];
   return { ...field, base: 100, relief, elevation: raw.map(v => (v - low) / (high - low)) };
@@ -49,6 +53,33 @@ describe("battle relief", () => {
       expect(heights.match(/stroke="none"/g)).toHaveLength(1); // ▲
       expect(heights.match(/fill="none"/g)).toHaveLength(1); // ▽
     }
+  });
+
+  it("takes a shallow dip in high ground for no hollow", () => {
+    const heights = group(
+      getReliefMarkup(
+        getField(30, (col, row) => -0.02 * bump(col, row, 85, 30)),
+        "#fff"
+      ),
+      "battleHeights"
+    );
+    expect(heights).not.toMatch(/fill="none"/);
+  });
+
+  it("draws a low field's hachures and shade fainter than a high one's", () => {
+    const opacity = (relief: number) =>
+      +group(getReliefMarkup(getField(relief), "#fff"), "battleHachures").match(/opacity="([\d.]+)"/)![1];
+    expect(opacity(3)).toBeLessThan(opacity(100));
+  });
+
+  it("starts and ends every hachure within the field", () => {
+    const field = getField(100);
+    const strokes = group(getReliefMarkup(field, "#fff"), "battleHachures");
+    const numbers = [...strokes.matchAll(/[ML](-?\d+) (-?\d+)/g)].map(([, x, y]) => [+x, +y]);
+    expect(numbers.length).toBeGreaterThan(0);
+    expect(
+      numbers.every(([x, y]) => x >= 0 && y >= 0 && x <= Math.round(field.width) && y <= Math.round(field.height))
+    ).toBe(true);
   });
 
   it("draws hachures on a gentle field too", () => {

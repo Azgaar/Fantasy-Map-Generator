@@ -10,6 +10,7 @@ import { convertSpeed, formatLength, getSpeedUnit } from "@/model/units";
 import type { View } from "@/renderers/battle-camera";
 import { updateBattleDebug } from "@/renderers/draw-battle-debug";
 import { getReliefMarkup } from "@/renderers/draw-battle-relief";
+import { getMudMarkup } from "@/renderers/draw-battle-weather";
 import type { Point } from "@/types/global";
 import { sentences, t } from "@/utils/i18n";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
@@ -155,6 +156,11 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
     </defs>
     <rect width="${width}" height="${height}" fill="${paper}"/>
     <g class="battleTerrain" clip-path="url(#battleFrame)"></g>
+    <rect class="battleFrost" width="${width}" height="${height}" fill="#f6f9fb" opacity="0.2" display="none" pointer-events="none"/>
+    <g class="battleMud" display="none" pointer-events="none">
+      <rect width="${width}" height="${height}" fill="#6b4a26" opacity="0.04"/>
+      ${field.open ? "" : getMudMarkup(field)}
+    </g>
     <g class="battleLabels" pointer-events="none"></g>
     <g class="battleWorks" fill="none" stroke-width="${1.6 * pt}" pointer-events="none">${WORK_PATHS.map(
       ([kind, state]) =>
@@ -204,6 +210,7 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
       if (parent === banks && river.brook) continue; // a brook is waded anywhere: no fords to show on it
       parent
         .append("path")
+        .attr("class", parent === terrain ? "battleRiver" : null)
         .attr("d", d)
         .attr("fill", "none")
         .attr("stroke", stroke)
@@ -697,7 +704,8 @@ export function updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Posit
       const speed = unit ? `${t("Speed")}: ${convertSpeed(unit.speed)} ${getSpeedUnit()}` : "";
       const range = block.range ? `${t("Range")}: ${formatLength(block.range)}` : "";
       const morale = `${t("Morale")}: ${Math.round(block.morale)}%`;
-      return sentences(troops, morale, BATTLE_ACTION_LABELS[block.action], ...[speed, range].filter(Boolean));
+      const energy = `${t("Energy")}: ${Math.round(block.energy * 100)}%`;
+      return sentences(troops, morale, energy, BATTLE_ACTION_LABELS[block.action], ...[speed, range].filter(Boolean));
     })
     .each(function (block) {
       // the line inside the front edge is as long as the share of the troops alive
