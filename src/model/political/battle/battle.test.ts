@@ -25,6 +25,7 @@ import {
   createEmptyBattlefield,
   type FieldWall,
   type FieldWork,
+  getCliffsBetween,
   getElevation,
   getGates,
   getGrade,
@@ -1063,8 +1064,8 @@ describe("battle surrender", () => {
     expect(b.defenders.captured).toBeCloseTo(captured / initial);
   });
 
-  it("has a battalion about to break give itself up with water all round but the foe, and hold on with a way out", () => {
-    const pocket = (water: boolean): Block => {
+  it("has a battalion about to break give itself up with water or cliffs all round but the foe, and hold on with a way out", () => {
+    const pocket = (walls: "water" | "cliffs" | null): Block => {
       const b = battle([regiment(1, { infantry: 300 })], [regiment(2, { infantry: 600 })]);
       intervene(b, { tick: 0, kind: "order", side: "attackers", order: "hold" });
       intervene(b, { tick: 0, kind: "order", side: "defenders", order: "hold" });
@@ -1073,19 +1074,29 @@ describe("battle surrender", () => {
       foes.forEach((foe, i) => {
         intervene(b, { tick: 0, kind: "move", block: foe.key, x: own.x + 45, y: own.y + (i - 0.5) * 50 });
       });
-      if (water) {
+      if (walls === "water") {
         const { cell } = b.field;
         b.field.water = b.field.water.map((_, node) => {
           const [x, y] = [((node % COLS) + 0.5) * cell, (Math.floor(node / COLS) + 0.5) * cell];
           return x < own.x - 40 || Math.abs(y - own.y) > 60 ? 2 : 0; // a river behind it and on both sides
         });
       }
+      if (walls === "cliffs") {
+        const [x0, y0, y1, east] = [own.x - 40, own.y - 60, own.y + 60, b.field.width + 1];
+        b.field.cliffs.push(
+          { a: [x0, y1], b: [x0, y0], height: 20 },
+          { a: [x0, y0], b: [east, y0], height: 20 },
+          { a: [east, y1], b: [x0, y1], height: 20 }
+        );
+        forgetWays(b.field);
+      }
       own.morale = 18;
       for (let i = 0; i <= ROUND_TICKS; i++) tick(b); // morale is read as the next round begins
       return b.blocks.find(block => block.key === own.key)!;
     };
-    expect(pocket(true).status).toBe("surrendered");
-    expect(pocket(false).status).not.toBe("surrendered");
+    expect(pocket("water").status).toBe("surrendered");
+    expect(pocket("cliffs").status).toBe("surrendered");
+    expect(pocket(null).status).not.toBe("surrendered");
   });
 
   it("lays down a side's arms by order, for good once the battle is on", () => {
@@ -1858,6 +1869,56 @@ describe("battle ways", () => {
     expect(forded.length).toBeLessThan(5 * ROWS);
     replay(b, []);
     expect(b.attackers.casualties + b.defenders.casualties).toBeGreaterThan(0);
+  });
+
+  /** A cliff from node to node */
+  const cliff = (field: Battlefield, from: [number, number], to: [number, number]): void => {
+    const at = ([col, row]: [number, number]): [number, number] => [col * field.cell, row * field.cell];
+    field.cliffs.push({ a: at(from), b: at(to), height: 20 });
+  };
+
+  it("leads troops round a cliff to the foe, and nobody over it", () => {
+    const b = onField(field => cliff(field, [45, 0], [45, 45])); // open in the south
+    let crossed = 0;
+    while (!settled(b)) {
+      const before = new Map(b.blocks.map(block => [block.id, [block.x, block.y] as [number, number]]));
+      tick(b);
+      for (const block of b.blocks) {
+        const from = before.get(block.id);
+        if (from && block.status !== "fled" && getCliffsBetween(b.field, from, [block.x, block.y]).length) crossed++;
+      }
+    }
+    expect(crossed).toBe(0);
+    replay(b, []);
+    expect(b.attackers.casualties).toBeGreaterThan(0);
+    expect(b.defenders.casualties).toBeGreaterThan(0);
+  });
+
+  it("keeps foes either side of a cliff from coming to grips, not from shooting, and fliers from neither", () => {
+    const b = createBattle({
+      type: "field",
+      name: "Test",
+      place: null,
+      x: 0,
+      y: 0,
+      cell: 0,
+      axis: 0,
+      field: createEmptyBattlefield(),
+      units: [...UNITS, unit("fliers", "aviation", 1)],
+      populationScale: 1000,
+      attackers: [regiment(1, { infantry: 300, fliers: 100 })],
+      defenders: [regiment(2, { archers: 300 })]
+    });
+    const [x, y] = [b.field.width / 2, b.field.height / 2];
+    const of = (name: string): Block => b.blocks.find(block => block.unit === name)!;
+    const west = (block: Block): Block => ({ ...block, x: x - block.depth / 2 - 5, y, facing: 0 });
+    const east = (block: Block): Block => ({ ...block, x: x + block.depth / 2 + 5, y, facing: Math.PI });
+    const [infantry, fliers, archers] = [west(of("infantry")), west(of("fliers")), east(of("archers"))];
+    expect(inContact(b, infantry, archers)).toBe(true);
+    b.field.cliffs = [{ a: [x, 0], b: [x, b.field.height], height: 20 }];
+    expect(inContact(b, infantry, archers)).toBe(false);
+    expect(inContact(b, fliers, archers)).toBe(true);
+    expect(canShoot(b, archers, infantry)).toBe(true);
   });
 
   // a walled burg in the middle of a field of 200-men battalions, with a road through it for its gates

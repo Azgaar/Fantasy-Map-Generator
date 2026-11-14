@@ -122,7 +122,9 @@ const GROUPS: { group: Group; label: string; controls: Control[] }[] = [
       {
         key: "weather",
         label: t("Weather effects"),
-        tip: t("Show rain, snow, fog, heat haze, mud and ice on the battle plan. On the screen only, not in exports. The weather tells on the battle either way")
+        tip: t(
+          "Show rain, snow, fog, heat haze, mud and ice on the battle plan. On the screen only, not in exports. The weather tells on the battle either way"
+        )
       },
       {
         key: "title",

@@ -29,6 +29,7 @@ import {
   getGates,
   getWorksBetween,
   isFordable,
+  isRoughField,
   isStanding,
   nodeAt,
   nodeCentre,
@@ -482,7 +483,7 @@ export function getOptions(battle: Battle, side: Side): Option[] {
     work => isStanding(work) && (work.kind === "wagons" || (work.kind === "stakes" && riders(enemyOf(work.side))))
   );
   const ring = battle[enemyOf(side)].plan.tactic === "laager"; // and a foe that rings its wagons
-  const rough = field.water.some(Boolean) || field.walls.length > 0 || barring || ring;
+  const rough = isRoughField(field) || barring || ring;
   if ((rough && side === "defenders") || byHand) return [];
   const blocks = battle.blocks.filter(block => block.side === side);
   const names = rateTactics(battle, side, blocks, battle[side].plan.tactic === "crossing")[0].map(([name]) => name);

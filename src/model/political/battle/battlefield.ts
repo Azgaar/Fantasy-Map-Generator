@@ -70,6 +70,13 @@ export interface FieldBreach {
   burg: number;
 }
 
+/** A stretch of cliff, its top on the left of the way from `a` to `b`: nobody on the ground crosses it */
+export interface FieldCliff {
+  a: Point;
+  b: Point;
+  height: number; // metres from its foot to its top
+}
+
 /** Ground of a battle: the map around its cell as the layout, with detail that is always the same for the place */
 export interface Battlefield extends FieldSize {
   open: "sea" | "sky" | null; // no terrain: a naval or an air battle
@@ -95,6 +102,7 @@ export interface Battlefield extends FieldSize {
   walls: FieldWall[]; // what stands of them
   breaches: FieldBreach[];
   works: FieldWork[];
+  cliffs: FieldCliff[];
   held: number | null; // the burg the defenders of a siege hold
   frozen: boolean; // the rivers bear troops anywhere, as a ford
 }
@@ -150,6 +158,7 @@ export function createEmptyBattlefield(open: Battlefield["open"] = null): Battle
     walls: [],
     breaches: [],
     works: [],
+    cliffs: [],
     held: null,
     frozen: false
   };
@@ -672,37 +681,45 @@ export const getGates = (field: Battlefield, burg: number | null): FieldWall[] =
 
 /** The stretches of wall, gates among them, that the straight way between two points crosses */
 export function getWallsBetween(field: Battlefield, from: Point, to: Point): FieldWall[] {
-  const { walls, cell } = field;
-  if (!walls.length) return NO_WALLS;
+  const { walls, burgs } = field;
+  return getCrossed(walls, field.cell, from, to, () => {
+    const near = burgs.map(burg => burg.walled && distanceToLine([burg.x, burg.y], [from, to]) < burg.radius * 1.15);
+    return walls.flatMap((wall, i) => (near[wall.burg] ? [i] : []));
+  });
+}
+
+/** The stretches of cliff that the straight way between two points crosses */
+export const getCliffsBetween = (field: Battlefield, from: Point, to: Point): FieldCliff[] =>
+  getCrossed(field.cliffs, field.cell, from, to, () => field.cliffs.map((_, i) => i));
+
+type Stretch = { a: Point; b: Point };
+
+/** Of the stretches, the ones the straight way crosses: a short way checks those about it, a long one those `far` names */
+function getCrossed<T extends Stretch>(stretches: T[], cell: number, from: Point, to: Point, far: () => number[]): T[] {
+  if (!stretches.length) return NONE;
   const [c0, c1] = getSpan(from[0], to[0], cell, COLS);
   const [r0, r1] = getSpan(from[1], to[1], cell, ROWS);
-  // a short way is checked against the stretches about it, a long one against those of the burgs it comes by
   let candidates: number[];
-  if ((c1 - c0 + 1) * (r1 - r0 + 1) <= walls.length) {
-    const nodes = getWallNodes(field);
+  if ((c1 - c0 + 1) * (r1 - r0 + 1) <= stretches.length) {
+    const nodes = getStretchNodes(stretches, cell);
     candidates = [];
     for (let row = r0; row <= r1; row++)
       for (let col = c0; col <= c1; col++) candidates.push(...nodes[row * COLS + col]);
-    if (!candidates.length) return NO_WALLS;
+    if (!candidates.length) return NONE;
     candidates.sort((a, b) => a - b);
-  } else {
-    const near = field.burgs.map(
-      burg => burg.walled && distanceToLine([burg.x, burg.y], [from, to]) < burg.radius * 1.15
-    );
-    candidates = walls.flatMap((wall, i) => (near[wall.burg] ? [i] : []));
-  }
-  let crossed = NO_WALLS;
+  } else candidates = far();
+  let crossed: T[] = NONE;
   for (let i = 0; i < candidates.length; i++) {
     if (candidates[i] === candidates[i - 1]) continue;
-    const wall = walls[candidates[i]];
-    if (!cross(from, to, wall.a, wall.b)) continue;
-    if (crossed === NO_WALLS) crossed = [];
-    crossed.push(wall);
+    const stretch = stretches[candidates[i]];
+    if (!cross(from, to, stretch.a, stretch.b)) continue;
+    if (crossed === NONE) crossed = [];
+    crossed.push(stretch);
   }
   return crossed;
 }
 
-const NO_WALLS: FieldWall[] = [];
+const NONE: never[] = [];
 
 /** The first and the last grid column (or row) between two coordinates */
 function getSpan(a: number, b: number, cell: number, count: number): [number, number] {
@@ -710,23 +727,27 @@ function getSpan(a: number, b: number, cell: number, count: number): [number, nu
   return a < b ? [at(a), at(b)] : [at(b), at(a)];
 }
 
-/** The stretches of wall by the grid nodes their bounds take in, found once for the walls as they stand */
-function getWallNodes({ walls, cell }: Battlefield): number[][] {
-  let known = wallNodes.get(walls);
-  if (!known || known.length !== walls.length) {
+/** The stretches by the grid nodes their bounds take in, found once for the stretches as they stand */
+function getStretchNodes(stretches: Stretch[], cell: number): number[][] {
+  let known = stretchNodes.get(stretches);
+  if (!known || known.length !== stretches.length) {
     const nodes: number[][] = Array.from({ length: COLS * ROWS }, () => []);
-    walls.forEach(({ a, b }, i) => {
+    stretches.forEach(({ a, b }, i) => {
       const [c0, c1] = getSpan(a[0], b[0], cell, COLS);
       const [r0, r1] = getSpan(a[1], b[1], cell, ROWS);
       for (let row = r0; row <= r1; row++) for (let col = c0; col <= c1; col++) nodes[row * COLS + col].push(i);
     });
-    known = { length: walls.length, nodes };
-    wallNodes.set(walls, known);
+    known = { length: stretches.length, nodes };
+    stretchNodes.set(stretches, known);
   }
   return known.nodes;
 }
 
-const wallNodes = new WeakMap<FieldWall[], { length: number; nodes: number[][] }>();
+const stretchNodes = new WeakMap<Stretch[], { length: number; nodes: number[][] }>();
+
+/** Whether the field needs ways over the grid for everybody: water, walls or cliffs anywhere */
+export const isRoughField = (field: Battlefield): boolean =>
+  field.water.some(Boolean) || field.walls.length > 0 || field.cliffs.length > 0;
 
 /** Stretches of works that stand and that the straight way between two points crosses; of one side's when given */
 export function getWorksBetween(field: Battlefield, from: Point, to: Point, side?: FieldWork["side"]): FieldWork[] {

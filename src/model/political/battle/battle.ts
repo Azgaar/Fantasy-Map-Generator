@@ -57,6 +57,7 @@ import {
   giveWay,
   hasWayOut,
   inContact,
+  isCliffed,
   isRunning,
   isWet,
   type Move,
@@ -843,6 +844,7 @@ function act(battle: Battle): void {
       (dry && isWet(battle, block, block.x, block.y)) ||
       (safe && shuns(battle, block, block.x, block.y)) ||
       getWallsBetween(battle.field, [x, y], [block.x, block.y]).length > 0 || // not even by a gate
+      isCliffed(battle, block, [x, y], [block.x, block.y]) ||
       isBarredByWorks(battle, block, [x, y], [block.x, block.y]);
     if (pushed) [block.x, block.y] = [x, y];
   });
@@ -1199,6 +1201,9 @@ function setScale(battle: Battle): void {
       battle.type === "siege"
     );
   else {
+    const ratio = size.width / field.width; // cliffs are ground, drawn on the nodes as water is
+    const scale = ([x, y]: [number, number]): [number, number] => [x * ratio, y * ratio];
+    field.cliffs = field.cliffs.map(({ a, b, height }) => ({ a: scale(a), b: scale(b), height }));
     Object.assign(field, size);
     if (field.burgs.length) raiseWalls(field); // their grid of the new nodes
   }

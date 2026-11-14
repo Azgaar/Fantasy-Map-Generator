@@ -7,12 +7,14 @@ import {
   type Battlefield,
   type FieldWall,
   type FieldWork,
+  getCliffsBetween,
   getCrossing,
   getElevation,
   getGrade,
   getSlope,
   getWallsBetween,
   isFordable,
+  isRoughField,
   isStanding,
   nodeAt,
   nodeCentre,
@@ -265,22 +267,26 @@ export function canCross(battle: Battle, block: Block, wall: FieldWall): boolean
 
 const NO_WORKS: FieldWork[] = [];
 
-/** Whether a wall, a shut gate or works of the foe stand between two points for the block */
+/** Whether a wall, a shut gate, a cliff or works of the foe stand between two points for the block */
 export function isBarred(battle: Battle, block: Block, from: [number, number], to: [number, number]): boolean {
   const walls = getWallsBetween(battle.field, from, to);
   if (walls.length > 0 && walls.some(wall => !canCross(battle, block, wall))) return true;
-  return isBarredByWorks(battle, block, from, to);
+  return isCliffed(battle, block, from, to) || isBarredByWorks(battle, block, from, to);
 }
 
-// Ways round the water, the walls and the works that bar. Troops go straight while nothing but open dry ground lies
+/** A cliff between two points: nobody but fliers crosses it */
+export const isCliffed = (battle: Battle, block: Block, from: [number, number], to: [number, number]): boolean =>
+  block.type !== "aviation" && getCliffsBetween(battle.field, from, to).length > 0;
+
+// Ways round the water, the walls, the cliffs and the works that bar. Troops go straight while nothing but open dry ground lies
 // ahead, so a field without them plays as it did; where they are in the way troops take the cheapest way over the grid.
 
 interface Ways {
-  rough: boolean; // the field has water or walls at all
+  rough: boolean; // the field has water, walls or cliffs at all
   wet: boolean; // it has water
   wagons: Side[]; // the sides holding wagons: the ways are rough for their foes
   staked: Side[]; // and holding stakes: rough for their foes' riders
-  near: Uint8Array; // nodes by walls and by works that bar somebody
+  near: Uint8Array; // nodes by walls, cliffs and works that bar somebody
   walls: Uint8Array; // within a front of walls
 
   costs: Map<string, Float32Array>; // what a kind of troops pays for a node, by the kind
@@ -314,11 +320,11 @@ function getWays(battle: Battle): Ways {
       ...new Set(barring.filter(work => work.kind === kind).map(work => work.side))
     ];
     known = {
-      rough: field.water.some(Boolean) || field.walls.length > 0,
+      rough: isRoughField(field),
       wet: field.water.some(Boolean),
       wagons: holders("wagons"),
       staked: holders("stakes"),
-      near: markStretches(field, [...field.walls, ...barring]),
+      near: markStretches(field, [...field.walls, ...field.cliffs, ...barring]),
       walls: markStretches(field, field.walls, Math.ceil(field.front / field.cell)),
       costs: groundCosts.get(field) ?? new Map(),
       closed: new Map(),
@@ -350,7 +356,7 @@ function markStretches(field: Battlefield, stretches: { a: Point; b: Point }[], 
   return near;
 }
 
-/** Whether the block needs ways over the grid: water or walls anywhere, wagons of its foe, or its stakes when it rides */
+/** Whether the block needs ways over the grid: water, walls or cliffs anywhere, wagons of its foe, or its stakes when it rides */
 const isRough = (battle: Battle, block: Block): boolean => {
   const known = getWays(battle);
   if (known.rough) return true;
@@ -870,7 +876,7 @@ export const isNear = (battle: Battle, a: Block, b: Block): boolean => {
 /** Ships keep to the water of a land battle: hand to hand they fight only ships */
 export const canGrip = (battle: Battle, a: Block, b: Block): boolean => isMoored(battle, a) === isMoored(battle, b);
 
-/** Close enough to fight, with no wall between that neither of them can cross, nor stakes against riders */
+/** Close enough to fight, with no wall between that neither of them can cross, no cliff but for fliers, nor stakes against riders */
 export const inContact = (battle: Battle, a: Block, b: Block): boolean =>
   canGrip(battle, a, b) &&
   isNear(battle, a, b) &&
@@ -879,6 +885,7 @@ export const inContact = (battle: Battle, a: Block, b: Block): boolean =>
   !getWallsBetween(battle.field, [a.x, a.y], [b.x, b.y]).some(
     wall => !canCross(battle, a, wall) && !canCross(battle, b, wall)
   ) &&
+  !(isCliffed(battle, a, [a.x, a.y], [b.x, b.y]) && isCliffed(battle, b, [a.x, a.y], [b.x, b.y])) &&
   !isStaked(battle, a, b) &&
   !isAboard(battle, a) &&
   !isAboard(battle, b);
@@ -921,9 +928,9 @@ function getInWay(
   );
 }
 
-/** A stretch of wall, not a gate, between two points: who stands on either side of it is not in the other's way */
+/** A stretch of wall, not a gate, or a cliff between two points: who stands on either side of it is not in the other's way */
 const isWalledOff = (field: Battlefield, from: Point, to: Point): boolean =>
-  getWallsBetween(field, from, to).some(wall => !wall.gate);
+  getWallsBetween(field, from, to).some(wall => !wall.gate) || getCliffsBetween(field, from, to).length > 0;
 
 /** Friends within the walls of one burg: packed in its streets, they keep no lines and do not stand in each other's way */
 function isPacked(battle: Battle, a: Block, b: Block): boolean {
