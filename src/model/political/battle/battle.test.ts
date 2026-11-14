@@ -38,6 +38,7 @@ import {
   terrainAt,
   type WorkKind
 } from "./battlefield";
+import { raiseEscarpments } from "./cliffs";
 import { ROW_GAP } from "./formations";
 import { getCommands, getTactics, isDugIn } from "./general";
 import {
@@ -671,7 +672,8 @@ describe("battle generals of an ambush, a landing and a siege", () => {
       const field = createEmptyBattlefield();
       for (let row = 0; row < ROWS; row++) for (let col = 0; col < 30; col++) field.water[row * COLS + col] = 1;
       // the shore cliffed but for a beach in the south
-      if (cliffs) field.cliffs.push({ a: [30 * field.cell, 0], b: [30 * field.cell, 40 * field.cell], height: 20 });
+      if (cliffs)
+        field.cliffs.push({ a: [30 * field.cell, -field.cell], b: [30 * field.cell, 40 * field.cell], height: 20 });
       return setup("landing", mixed, mixed, field);
     };
     const middle = (b: Battle, side: Side): number =>
@@ -679,15 +681,17 @@ describe("battle generals of an ambush, a landing and a siege", () => {
       b.blocks.filter(block => block.side === side).length;
     const [open, cliffed] = [coast(false), coast(true)];
     expect(middle(cliffed, "defenders")).toBeGreaterThan(middle(open, "defenders") + cliffed.field.height * 0.15);
-    const landed = new Set<number>();
+    const ashore = new Map<number, number>(); // the row each battalion first stands on land at
     for (let i = 0; i < ROUND_TICKS * 40 && !cliffed.result; i++) {
       tick(cliffed);
-      for (const block of cliffed.blocks)
-        if (block.side === "attackers" && !cliffed.field.water[nodeAt(cliffed.field, block.x, block.y)])
-          landed.add(Math.floor(block.y / cliffed.field.cell));
+      for (const block of cliffed.blocks) {
+        const inOrder = block.side === "attackers" && block.status === "ready" && block.y >= 0;
+        if (inOrder && !ashore.has(block.id) && !cliffed.field.water[nodeAt(cliffed.field, block.x, block.y)])
+          ashore.set(block.id, Math.floor(block.y / cliffed.field.cell));
+      }
     }
-    expect(landed.size).toBeGreaterThan(0);
-    expect(Math.min(...landed)).toBeGreaterThanOrEqual(39); // nobody on land north of the beach
+    expect(ashore.size).toBeGreaterThan(0);
+    expect(Math.min(...ashore.values())).toBeGreaterThanOrEqual(39); // nobody comes ashore north of the beach
   });
 
   it("keeps a landing a landing when the attackers are told to hold off the shore", () => {
@@ -1995,6 +1999,52 @@ describe("battle ways", () => {
     expect(inContact(b, infantry, archers)).toBe(false);
     expect(inContact(b, fliers, archers)).toBe(true);
     expect(canShoot(b, archers, infantry)).toBe(true);
+  });
+
+  it("has an attack that comes no nearer on broken ground go in by its own ways, never standing off", () => {
+    const units = getDefaultMilitaryUnits().filter(unit => unit.type !== "naval");
+    const army = (state: number, share: number): BattleRegiment =>
+      regiment(state, Object.fromEntries(units.map(unit => [unit.name, Math.round(150 * share)])));
+    // escarpments of a rugged field, laid as a map field lays them, on patterns that stood off before
+    const escarped = (seed: number, axis: number, share: number): Battle => {
+      const wave = (fx: number, fy: number, phase: number) => (x: number, y: number) =>
+        0.5 + 0.25 * Math.sin(x / fx + seed * phase) + 0.25 * Math.cos(y / fy + seed * phase * 1.7);
+      const field = createEmptyBattlefield();
+      const ground = {
+        cell: field.cell,
+        front: field.front,
+        water: field.water,
+        open: new Uint8Array(COLS * ROWS).fill(1),
+        clearance: field.water.map(() => Infinity)
+      };
+      const scarps = raiseEscarpments(ground, 40, wave(110, 90, 1.3), wave(60, 75, 2.1))!;
+      [field.cliffs, field.top, field.scarp] = [scarps.cliffs, scarps.top, scarps.step];
+      field.relief = Math.max(...scarps.step);
+      field.elevation = scarps.top.map((top, i) => (top * scarps.step[i]) / field.relief);
+      return createBattle({
+        type: "field",
+        name: "Test",
+        place: null,
+        x: 0,
+        y: 0,
+        cell: 0,
+        axis,
+        field,
+        units,
+        populationScale: 1000,
+        attackers: [army(1, share)],
+        defenders: [army(2, 1)]
+      });
+    };
+    for (const [seed, axis, share] of [
+      [3, 0, 1.3],
+      [5, 0, 0.7],
+      [5, 4.5, 1.3]
+    ]) {
+      const b = run(escarped(seed, axis, share));
+      expect(b.result!.winner, `${seed} ${axis} ${share}`).not.toBeNull();
+      expect(b.tick).toBeLessThan(minutesToTicks(120));
+    }
   });
 
   // a walled burg in the middle of a field of 200-men battalions, with a road through it for its gates

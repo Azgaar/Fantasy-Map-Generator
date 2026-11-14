@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Point } from "@/types/global";
 import { COLS, ROWS } from "./battle-scale";
-import type { FieldCliff } from "./battlefield";
+import { createEmptyBattlefield, type FieldCliff, getCliffsBetween } from "./battlefield";
 import { type CliffGround, laySeaCliffs, raiseEscarpments, traceEdges } from "./cliffs";
 
 const CELL = 10;
@@ -15,9 +15,10 @@ const inBox = (node: number, [c0, r0, c1, r1]: number[]): boolean => {
 /** A field of open land, with the sea where `sea` says */
 function ground(
   sea: (node: number) => boolean = () => false,
-  clearance: (point: Point) => number = () => Infinity
+  clear: (point: Point) => number = () => Infinity
 ): CliffGround {
   const water = Array.from({ length: COLS * ROWS }, (_, node) => (sea(node) ? 1 : 0));
+  const clearance = water.map((_, node) => clear(centre(node)));
   return { cell: CELL, front: FRONT, water, open: Uint8Array.from(water, w => +!w), clearance };
 }
 
@@ -140,6 +141,35 @@ describe("cliffs", () => {
     expect(scarps.cliffs.some(({ a, b }) => Math.abs((a[0] + b[0]) / 2 - 450) < FRONT)).toBe(false);
     expect(scarps.step[45 * COLS + 45]).toBe(0); // on the road
     expect(scarps.cliffs.some(({ a }) => a[0] < 15 * CELL)).toBe(false);
+  });
+
+  it("finds every stretch a way crosses, short or long, on the field or off it, through a node's corner too", () => {
+    const field = createEmptyBattlefield();
+    let seed = 7;
+    const random = (): number => {
+      seed = (seed * 16807) % 2147483647;
+      return seed / 2147483647;
+    };
+    const { cell } = field;
+    const point = (): Point => {
+      const corner = random() < 0.2; // on a node's corner exactly
+      const [x, y] = [random() * (COLS + 4) - 2, random() * (ROWS + 4) - 2];
+      return corner ? [Math.round(x) * cell, Math.round(y) * cell] : [x * cell, y * cell];
+    };
+    field.cliffs = Array.from({ length: 300 }, () => {
+      const a = point();
+      const length = random() < 0.8 ? cell * 2 : cell * 40;
+      const angle = random() * Math.PI * 2;
+      return { a, b: [a[0] + Math.cos(angle) * length, a[1] + Math.sin(angle) * length] as Point, height: 10 };
+    });
+    for (let i = 0; i < 2000; i++) {
+      const from = point();
+      const reach = random() < 0.5 ? cell * 3 : cell * 120;
+      const angle = random() * Math.PI * 2;
+      const to: Point = [from[0] + Math.cos(angle) * reach, from[1] + Math.sin(angle) * reach];
+      const found = new Set(getCliffsBetween(field, from, to));
+      for (const cliff of field.cliffs) if (crosses(from, to, cliff.a, cliff.b)) expect(found.has(cliff)).toBe(true);
+    }
   });
 
   it("lays nothing on gentle ground", () => {

@@ -31,8 +31,7 @@ export interface CliffGround {
   front: number;
   water: number[]; // 1 sea or lake, 2 river
   open: Uint8Array; // nodes troops on foot can enter
-  /** Metres from the nearest road, river or burg: no cliff stands within a front of them */
-  clearance: (point: Point) => number;
+  clearance: number[]; // metres from a node to the nearest road, river or burg: no cliff stands within a front of them
 }
 
 /** On a rugged coast, the shore cliffed in stretches between beaches; the beach nearest the middle stays */
@@ -48,10 +47,10 @@ export function laySeaCliffs(ground: CliffGround, roughness: number, beach: Nois
       edge.inner.every(node => !water[node]) &&
       beach(...edge.mid) > CLIFFED &&
       distance(edge.mid, nearest.mid) > BEACH * front &&
-      clearance(edge.mid) > front
+      edge.corners.every(node => clearance[node] > front)
   );
   const height = getHeight(roughness);
-  return getPieces(edges, keep, PIECE * front).flatMap(piece => piece.map(edge => toCliff(edge, height)));
+  return getPieces(edges, keep, PIECE * front).flatMap(piece => toCliffs(piece, () => height, ground.cell));
 }
 
 /** High ground with cliffs along its edges where the map is rugged: the cliffs, the ground on top and its step */
@@ -81,40 +80,38 @@ export function raiseEscarpments(
 
   const full = getHeight(roughness);
   const [near, far] = CLEAR.map(share => share * front);
-  const base = water.map((_, node) => {
-    const point = centre(node);
-    return full * smoothstep(GAP[0], GAP[1], gapNoise(...point)) * smoothstep(near, far, clearance(point));
+  const shore = getDistances(node => water[node] === 1, cell);
+  const step = water.map((_, node) => {
+    const fade = smoothstep(near, far, clearance[node]) * smoothstep(near, far, shore[node]);
+    return fade && full * smoothstep(GAP[0], GAP[1], gapNoise(...centre(node))) * fade;
   });
-  const shore = getShoreDistance(water, cell);
-  for (let node = 0; node < base.length; node++) base[node] *= smoothstep(near, far, shore[node]);
+  /** The step faded to nothing about a point, smoothly over three nodes beyond the radius */
+  const cut = (at: Point, radius: number): void => {
+    const reach = radius + 3 * cell;
+    const [c0, c1] = [Math.floor((at[0] - reach) / cell), Math.ceil((at[0] + reach) / cell)];
+    const [r0, r1] = [Math.floor((at[1] - reach) / cell), Math.ceil((at[1] + reach) / cell)];
+    for (let row = Math.max(r0, 0); row <= Math.min(r1, ROWS - 1); row++)
+      for (let col = Math.max(c0, 0); col <= Math.min(c1, COLS - 1); col++) {
+        const node = row * COLS + col;
+        step[node] *= smoothstep(radius, reach, distance(at, centre(node)));
+      }
+  };
 
   const edges = traceEdges(node => top[node] === 1, cell);
-  const cuts: { at: Point; radius: number }[] = [];
+  const whole = getParts(open); // the pieces of ground without cliffs: they stay one
+  const heightOf = (edge: Edge): number => Math.min(...edge.inner.map(node => step[node]));
   for (let round = 0; round < ROUNDS; round++) {
-    const step = base.map((height, node) => {
-      for (const { at, radius } of cuts) height *= smoothstep(radius, radius + 3 * cell, distance(at, centre(node)));
-      return height;
-    });
-    const heightOf = (edge: Edge): number => Math.min(...edge.inner.map(node => step[node]));
     const keep = edges.map(edge => edge.corners.every(node => water[node] !== 1) && heightOf(edge) >= LEAST);
-
     const pieces = getPieces(edges, keep, 0);
     const short = pieces.filter(piece => getLength(piece) < PIECE * front);
-    if (short.length) {
-      for (const piece of short) {
-        const mid = piece[Math.floor(piece.length / 2)].mid;
-        cuts.push({ at: mid, radius: getLength(piece) / 2 + cell });
-      }
-      continue;
-    }
-    const kept = pieces.flat();
-    const gully = findGully(open, kept, heightOf);
+    for (const piece of short) cut(piece[Math.floor(piece.length / 2)].mid, getLength(piece) / 2 + cell);
+    if (short.length) continue;
+    const gully = findGully(open, whole, pieces.flat(), heightOf);
     if (gully) {
-      cuts.push({ at: gully, radius: Math.max((GULLY * front) / 2, cell) });
+      cut(gully, Math.max((GULLY * front) / 2, cell));
       continue;
     }
-    const cliffs = pieces.flatMap(piece => piece.map(edge => toCliff(edge, heightOf(edge))));
-    return { cliffs, top, step };
+    return { cliffs: pieces.flatMap(piece => toCliffs(piece, heightOf, cell)), top, step };
   }
   return null;
 }
@@ -232,7 +229,7 @@ const getLength = (piece: Edge[]): number => piece.reduce((sum, edge) => sum + d
  * Where to cut a gully: by the lowest stretch of cliff on the edge of ground the cliffs close off from ground it was
  * one with; null when they close nothing off
  */
-function findGully(open: Uint8Array, kept: Edge[], heightOf: (edge: Edge) => number): Point | null {
+function findGully(open: Uint8Array, whole: Int32Array, kept: Edge[], heightOf: (edge: Edge) => number): Point | null {
   if (!kept.length) return null;
   const closed = new Uint16Array(COLS * ROWS);
   for (const edge of kept) {
@@ -245,7 +242,6 @@ function findGully(open: Uint8Array, kept: Edge[], heightOf: (edge: Edge) => num
       }
     }
   }
-  const whole = getParts(open);
   const parts = getParts(open, closed);
   // of the parts of one piece of ground, all but its largest are closed off
   const largest = new Map<number, number>();
@@ -280,13 +276,11 @@ function getParts(open: Uint8Array, closed?: Uint16Array): Int32Array {
   return parts;
 }
 
-/** Nodes from the sea or a lake, in metres; far off on a field without */
-function getShoreDistance(water: number[], cell: number): number[] {
-  const sea = water.flatMap((w, node) => (w === 1 ? [node] : []));
-  const reach = new Array<number>(water.length).fill(Infinity);
-  if (!sea.length) return reach;
-  const queue = [...sea];
-  for (const node of sea) reach[node] = 0;
+/** Metres from each node to the nearest of the nodes marked, node by node: far off where none is */
+export function getDistances(marked: (node: number) => boolean, cell: number): number[] {
+  const reach = new Array<number>(COLS * ROWS).fill(Infinity);
+  const queue: number[] = [];
+  for (let node = 0; node < reach.length; node++) if (marked(node)) [reach[node], queue[queue.length]] = [0, node];
   for (let i = 0; i < queue.length; i++) {
     const node = queue[i];
     const [col, row] = [node % COLS, Math.floor(node / COLS)];
@@ -303,7 +297,21 @@ function getShoreDistance(water: number[], cell: number): number[] {
   return reach;
 }
 
-const toCliff = (edge: Edge, height: number): FieldCliff => ({ a: edge.a, b: edge.b, height });
+/** A piece as stretches of cliff; one that ends at the edge of the field runs on past it, so nobody slips round its end */
+function toCliffs(piece: Edge[], heightOf: (edge: Edge) => number, cell: number): FieldCliff[] {
+  const cliffs = piece.map(edge => ({ a: edge.a, b: edge.b, height: heightOf(edge) }));
+  const [first, last] = [cliffs[0], cliffs.at(-1)!];
+  first.a = beyond(first.a, cell);
+  last.b = beyond(last.b, cell);
+  return cliffs;
+}
+
+/** A point on the outermost nodes' middles moved out past the edge of the field; any other as it is */
+function beyond([x, y]: Point, cell: number): Point {
+  const out = (value: number, count: number): number =>
+    value <= cell / 2 ? -cell : value >= (count - 0.5) * cell ? (count + 1) * cell : value;
+  return [out(x, COLS), out(y, ROWS)];
+}
 
 const distance = (a: Point, b: Point): number => Math.hypot(a[0] - b[0], a[1] - b[1]);
 

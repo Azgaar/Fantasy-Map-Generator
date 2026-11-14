@@ -5,6 +5,7 @@ import { isFromSea, type Side } from "./battle-rules";
 import { COLS, ROWS, toMetresPerTick } from "./battle-scale";
 import {
   type Battlefield,
+  type FieldCliff,
   type FieldWall,
   type FieldWork,
   getCliffsBetween,
@@ -287,6 +288,7 @@ interface Ways {
   wagons: Side[]; // the sides holding wagons: the ways are rough for their foes
   staked: Side[]; // and holding stakes: rough for their foes' riders
   near: Uint8Array; // nodes by walls, cliffs and works that bar somebody
+  shut: Uint8Array; // by walls and works: the steps they shut depend on the troops, those cliffs shut do not
   walls: Uint8Array; // within a front of walls
 
   costs: Map<string, Float32Array>; // what a kind of troops pays for a node, by the kind
@@ -325,6 +327,7 @@ function getWays(battle: Battle): Ways {
       wagons: holders("wagons"),
       staked: holders("stakes"),
       near: markStretches(field, [...field.walls, ...field.cliffs, ...barring]),
+      shut: field.cliffs.length ? markStretches(field, [...field.walls, ...barring]) : new Uint8Array(0),
       walls: markStretches(field, field.walls, Math.ceil(field.front / field.cell)),
       costs: groundCosts.get(field) ?? new Map(),
       closed: new Map(),
@@ -374,7 +377,10 @@ function getClosed(battle: Battle, block: Block, kind = getKind(battle, block)):
   let closed = known.closed.get(kind);
   if (!closed) {
     const { field } = battle;
-    const marked = (node: number): boolean => known.near[node] === 1; // a wall or works by it
+    // cliffs shut the same steps to all but fliers; walls and works the steps by them, by who they bar
+    if (field.cliffs.length && block.type !== "aviation") closed = getCliffSteps(field).slice();
+    const marks = field.cliffs.length ? known.shut : known.near;
+    const marked = (node: number): boolean => marks[node] === 1; // a wall or works by it
     const shut = (from: number, to: number, bit: number): void => {
       if (isBarred(battle, block, nodeCentre(field, from), nodeCentre(field, to))) {
         closed ??= new Uint16Array(COLS * ROWS);
@@ -404,6 +410,33 @@ function getClosed(battle: Battle, block: Block, kind = getKind(battle, block)):
 }
 
 const OPEN_STEPS = new Uint16Array(COLS * ROWS); // no step is shut: never written to
+
+/** The steps from node to node a field's cliffs shut, found once: they never change */
+function getCliffSteps(field: Battlefield): Uint16Array {
+  const known = cliffSteps.get(field.cliffs);
+  if (known?.length === field.cliffs.length) return known.steps;
+  const steps = new Uint16Array(COLS * ROWS);
+  const near = markStretches(field, field.cliffs);
+  for (let node = 0; node < COLS * ROWS; node++) {
+    if (!near[node]) continue;
+    const col = node % COLS;
+    const row = (node - col) / COLS;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const [x, y] = [col + dx, row + dy];
+        if ((!dx && !dy) || x < 0 || y < 0 || x >= COLS || y >= ROWS) continue;
+        const next = y * COLS + x;
+        if (!getCliffsBetween(field, nodeCentre(field, node), nodeCentre(field, next)).length) continue;
+        steps[node] |= getStepBit(dx, dy);
+        steps[next] |= getStepBit(-dx, -dy);
+      }
+    }
+  }
+  cliffSteps.set(field.cliffs, { length: field.cliffs.length, steps });
+  return steps;
+}
+
+const cliffSteps = new WeakMap<FieldCliff[], { length: number; steps: Uint16Array }>();
 
 /** What a node's width of the way costs the block, node by node: the slower the going the dearer, no way where it keeps out */
 function getCosts(battle: Battle, block: Block, kind = getKind(battle, block)): Float32Array {
@@ -524,6 +557,21 @@ export function getDistance(battle: Battle, block: Block, foe: Spot): number {
   return goal === null ? straight : Math.max(reach.costTo(goal) * battle.field.cell, straight);
 }
 
+/**
+ * The shortest way from any of the battalions to a foe, as troops like the first would walk it round water, walls and
+ * cliffs: one spread from the foes for all of them
+ */
+export function getWalkGap(battle: Battle, own: Block[], foes: Block[]): number {
+  const like = own[0];
+  if (!like || !foes.length) return Infinity;
+  const kind = getKind(battle, like);
+  const sources = foes.map(foe => getNodeAt(battle, like, foe.x, foe.y));
+  const reach = spread(COLS, ROWS, sources, getCosts(battle, like, kind), getClosed(battle, like, kind), true);
+  let least = Infinity;
+  for (const block of own) least = Math.min(least, reach.costTo(getNodeAt(battle, like, block.x, block.y)));
+  return least * battle.field.cell;
+}
+
 /** Where to step to come to the target: the target itself, or the next turn of the way round the water */
 export function getHeading(battle: Battle, block: Block, target: Spot, key: number): [number, number] {
   const known = getWays(battle);
@@ -575,13 +623,10 @@ function seekWay(battle: Battle, like: Block, from: Point, to: Point): [Reach, n
 /** Where troops like the block would turn first on their way from one point to another: the goal itself over open ground */
 export function getTurn(battle: Battle, like: Block, from: Point, to: Point): Point {
   if (!isRough(battle, like) || isDry(battle, like, from, to)) return to;
-  const { field } = battle;
   const reach = spreadFrom(battle, like, getNodeAt(battle, like, ...from));
   const goal = getGoal(battle, like, reach, { x: to[0], y: to[1] });
   if (goal === null) return to;
-  const nodes = trace(reach, goal)
-    .slice(1)
-    .map(node => nodeCentre(field, node));
+  const nodes = getWayNodes(battle, like, reach, goal, from);
   let next = 0;
   while (next + 1 < nodes.length && isDry(battle, like, from, nodes[next + 1])) next++;
   return nodes[next] ?? to;
@@ -610,13 +655,19 @@ export function getSharedHeading(battle: Battle, block: Block, to: Spot): Point 
   if (!isRough(battle, block) || isDry(battle, block, here, [to.x, to.y])) return [to.x, to.y];
   const reach = getSharedReach(battle, block, nodeAt(battle.field, to.x, to.y));
   // down the way to the point, as far as the block can walk straight
-  let node = getNodeAt(battle, block, block.x, block.y);
-  if (reach.costTo(node) === Infinity) return [to.x, to.y];
+  const start = getNodeAt(battle, block, block.x, block.y);
+  if (reach.costTo(start) === Infinity) return [to.x, to.y];
   let next: Point = [to.x, to.y];
-  for (let i = 0; i < 12 && reach.from[node] !== -1; i++) {
+  for (let i = 0, node = start; i < 12 && reach.from[node] !== -1; i++) {
     node = reach.from[node];
     const turn = nodeCentre(battle.field, node);
-    if (i && !isDry(battle, block, here, turn)) break;
+    if (!isDry(battle, block, here, turn)) {
+      if (i) break;
+      if (battle.field.cliffs.length) {
+        next = nodeCentre(battle.field, start); // round a cliff's corner by its own node first
+        break;
+      }
+    }
     next = turn;
   }
   return next;
@@ -627,9 +678,7 @@ function findWay(battle: Battle, block: Block, target: Spot): [number, number][]
   if (isDry(battle, block, [block.x, block.y], [target.x, target.y])) return [];
   const [reach, goal] = seekWay(battle, block, [block.x, block.y], [target.x, target.y]);
   if (goal === null) return [];
-  const nodes = trace(reach, goal)
-    .slice(1)
-    .map(node => nodeCentre(battle.field, node));
+  const nodes = getWayNodes(battle, block, reach, goal, [block.x, block.y]);
 
   // only the turns are kept: from each the block walks straight to the farthest node it can
   const turns: [number, number][] = [];
@@ -642,6 +691,17 @@ function findWay(battle: Battle, block: Block, target: Spot): [number, number][]
     i = next + 1;
   }
   return turns;
+}
+
+/**
+ * The nodes of a way from a point to its goal. Its first node, the one the point stands in, is left out, but by a cliff
+ * when the next cannot be walked to straight from the point: the way goes round the cliff's corner by it
+ */
+function getWayNodes(battle: Battle, like: Block, reach: Reach, goal: number, from: Point): Point[] {
+  const nodes = trace(reach, goal).map(node => nodeCentre(battle.field, node));
+  const corner = battle.field.cliffs.length > 0 && nodes.length > 1 && !isDry(battle, like, from, nodes[1]);
+  if (!corner) nodes.shift();
+  return nodes;
 }
 
 /** The ground open to a side's troops this tick, and the edge nodes they get off by: shared while its foes stay as they are */

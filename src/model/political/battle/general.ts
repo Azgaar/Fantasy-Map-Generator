@@ -40,6 +40,7 @@ import { form, GAP, type Place, ROW_GAP, TACTICS, type TacticName } from "./form
 import {
   getPace,
   getTurn,
+  getWalkGap,
   hasWalls,
   isMoored,
   isStorming,
@@ -95,6 +96,7 @@ const MUSTERED = 0.5; // so near its place a battalion of a sortie has formed up
 const MUSTER_CLEAR = 1.75; // fronts a place of a sortie forming up keeps from the foe: beyond its reach to meet them
 const BEYOND = 1.15; // the ground beyond the ends of a line that covers them
 const BANK = 1.7; // a line holding a crossing stands so far behind its bank
+const STALLED = 4; // rounds an advancing side comes no nearer on a field with cliffs before it goes in
 const EDGE = 0.5; // and one holding the water's edge, its middle a battalion deep from it: who comes at it is still wading
 const BEND = 1.5; // how far a line bent to the ground goes ahead of its frame or back
 const KINK = 0.35; // and how much further than its neighbour, a front along a front across
@@ -217,6 +219,7 @@ function createPlan(tactic: TacticName, frame: Frame, fixed = false): Plan {
     byHand: null,
     opening: 0,
     gap: Infinity,
+    walk: Infinity,
     idle: 0,
     losses: 0,
     bled: 0,
@@ -1203,6 +1206,8 @@ function engage(battle: Battle, side: Side, own: View, foe: View, gap: number): 
   if (fort === "batter" && !battle[enemyOf(side)].advancing) return phase;
   if (atGrips || gap <= COUNTER * 1.5 * battle.field.front) return names.close; // the foe is upon us
   if (fort === "breached") return names.close; // in by the gaps
+  // on broken ground the formation cannot always go where its battalions can: one that comes no nearer goes in
+  if (data.advancing && battle.field.cliffs.length && data.plan.idle >= STALLED) return names.close;
   if (!data.advancing || battle.engaged === null) return phase; // a defender waits; an attacker is still coming up
   if (!own.fire) return names.close;
 
@@ -1424,8 +1429,11 @@ function direct(battle: Battle, side: Side, own: View, foe: View, gap: number): 
   const odds = own.power / (foe.power || 1e-9);
   const { field } = battle;
 
-  // who comes to whom: a defender goes over when the attack is spent or does not come at all
-  const closing = gap < plan.gap - PACE * CLOSING;
+  // who comes to whom: a defender goes over when the attack is spent or does not come at all.
+  // On broken ground the way round counts: who walks round a cliff to the foe comes on
+  const walk = field.cliffs.length ? getWalkBetween(battle) : Infinity;
+  const closing = field.cliffs.length ? walk < plan.walk - PACE * CLOSING : gap < plan.gap - PACE * CLOSING;
+  plan.walk = walk;
   if (data.advancing && closing) battle.lastLoss = battle.tick; // no lull while a side comes on
   plan.idle = closing || gap < CHARGE * field.front ? 0 : plan.idle + 1;
   plan.gap = gap;
@@ -1450,6 +1458,10 @@ function direct(battle: Battle, side: Side, own: View, foe: View, gap: number): 
   // no lull while a side builds within sight of the foe
   if (own.ready.some(block => block.action === "build") && foe.ready.some(block => far(block, own) < field.width))
     battle.lastLoss = battle.tick;
+
+  // on broken ground a formation that went in and comes no nearer lets its battalions find their own ways to the foe
+  if (field.cliffs.length && data.advancing && phase === names.close && plan.idle >= STALLED)
+    for (const block of own.ready) if (!block.order.sent) Object.assign(block.order, { mission: "hunt", sent: true });
 
   if (siege && side === "attackers" && !isStorming(battle))
     [plan.x, plan.y] = plan.camp; // back to the lines
@@ -1832,7 +1844,9 @@ function moveFrame(battle: Battle, side: Side, own: View, foe: View, gap: number
   const pace = Math.min(
     ...[...first, ...guns].map(block => getPace(battle, block, terrainAt(battle.field, block.x, block.y)))
   );
-  const advance = Math.min(pace * ROUND_TICKS, gap - want);
+  // no further than its next turn: past the corner of a cliff the way would lead back
+  const turnAt = straight || !field.cliffs.length ? Infinity : Math.hypot(tx - plan.x, ty - plan.y);
+  const advance = Math.min(pace * ROUND_TICKS, gap - want, turnAt);
   const lags = first.map(block => toFrame(plan, block.order)[1] - toFrame(plan, block)[1]).sort((a, b) => a - b);
   if (advance <= 0 || lags[lags.length >> 1] > field.front * LEVEL) return; // most of the line is behind
   plan.x += Math.cos(bearing) * advance;
@@ -1843,6 +1857,18 @@ function moveFrame(battle: Battle, side: Side, own: View, foe: View, gap: number
     own.ready.filter(block => !block.order.sent && block.order.role !== "wedge").map(block => block.order)
   );
 }
+
+/** The shortest way between the sides round water, walls and cliffs, found once a round for both: it is the same way */
+function getWalkBetween(battle: Battle): number {
+  const known = walks.get(battle);
+  if (known?.tick === battle.tick) return known.walk;
+  const ready = (side: Side): Block[] => battle.blocks.filter(block => block.side === side && block.status === "ready");
+  const walk = getWalkGap(battle, ready("attackers"), ready("defenders"));
+  walks.set(battle, { tick: battle.tick, walk });
+  return walk;
+}
+
+const walks = new WeakMap<Battle, { tick: number; walk: number }>();
 
 // The wedge
 

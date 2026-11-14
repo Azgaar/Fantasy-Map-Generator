@@ -150,6 +150,7 @@ export interface Plan {
   byHand: number | null; // the round it was given
   opening: number; // rounds the surprise of an ambush lasts
   gap: number; // between the sides, last round
+  walk: number; // on a field with cliffs: the shortest way round them from the side to the foe, last round
   idle: number; // rounds it has not closed
   losses: number; // share of the troops lost by the last round
   bled: number; // rounds in a row it lost men to shots alone
@@ -722,15 +723,6 @@ function startRound(battle: Battle): void {
     const [x, y] = stood.get(block.id) ?? [block.x, block.y];
     return block.action === "move" && Math.hypot(block.x - x, block.y - y) > getPace(battle, block) * MARCH;
   });
-  // the long way round a cliff is no lull: the attack is still coming on
-  const coming =
-    battle.field.cliffs.length > 0 &&
-    battle.blocks.some(block => {
-      if (block.status !== "ready" || block.action !== "move" || !battle[block.side].advancing) return false;
-      const [x, y] = stood.get(block.id) ?? [block.x, block.y];
-      return Math.hypot(block.x - x, block.y - y) > getPace(battle, block) * MARCH;
-    });
-  if (coming) battle.lastLoss = battle.tick;
   places.set(battle, new Map(battle.blocks.map(block => [block.id, [block.x, block.y]])));
   const held = SIDES.some(side => battle[side].plan.order); // stood by an order, a side has not begun
   if (battle.engaged === null && battle.round && (fighting || (!marching && !held))) {
@@ -1323,6 +1315,7 @@ const NO_PLAN: Plan = {
   byHand: null,
   opening: 0,
   gap: Infinity,
+  walk: Infinity,
   idle: 0,
   losses: 0,
   bled: 0,

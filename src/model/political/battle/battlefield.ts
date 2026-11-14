@@ -7,7 +7,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { getKmInDistanceUnit, getPeople, heightToMeters } from "@/model/units";
 import type { Point } from "@/types/global";
 import { COLS, DEFAULT_BATTALION, type FieldSize, fitSiegeBurg, getFieldSize, ROWS } from "./battle-scale";
-import { type CliffGround, laySeaCliffs, raiseEscarpments } from "./cliffs";
+import { type CliffGround, getDistances, laySeaCliffs, raiseEscarpments } from "./cliffs";
 
 type Box = [number, number, number, number]; // x0, y0, x1, y1
 
@@ -405,7 +405,7 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, clearing
     front: size.front,
     water: field.water,
     open: Uint8Array.from(field.water, (water, i) => +(!water || field.ford[i] === 1)),
-    clearance: point => getClearance(field, point)
+    clearance: getClearance(field, nodes)
   };
   field.cliffs = laySeaCliffs(cliffGround, roughness, createNoise(field, place, 11, 300));
   const scarps = siege
@@ -433,14 +433,15 @@ function getGapNoise(field: Battlefield, place: Point): (x: number, y: number) =
   return (x, y) => coarse(x, y) * 0.65 + fine(x, y) * 0.35;
 }
 
-/** Metres from a point to the nearest road, river bank or burg's edge, its piers taken in */
-function getClearance(field: Battlefield, point: Point): number {
-  let least = Infinity;
-  for (const road of field.roads) least = Math.min(least, distanceToLine(point, road));
-  for (const river of field.rivers) least = Math.min(least, distanceToLine(point, river.points) - river.width / 2);
-  for (const burg of field.burgs)
-    least = Math.min(least, Math.hypot(point[0] - burg.x, point[1] - burg.y) - burg.radius * 1.25);
-  return least;
+/** Metres from each node to the nearest road or river node, or to a burg's edge with its piers taken in */
+function getClearance(field: Battlefield, nodes: Point[]): number[] {
+  const { road, water, cell, burgs } = field;
+  const lines = getDistances(node => road[node] === 1 || water[node] === 2, cell);
+  return lines.map((least, node) => {
+    const [x, y] = nodes[node];
+    for (const burg of burgs) least = Math.min(least, Math.hypot(x - burg.x, y - burg.y) - burg.radius * 1.25);
+    return least;
+  });
 }
 
 const VIEW_MARGIN = 0.2; // of the field's width, lines are kept beyond its edge
@@ -725,34 +726,25 @@ export const getGates = (field: Battlefield, burg: number | null): FieldWall[] =
   field.walls.filter(wall => wall.burg === burg && wall.gate && !wall.jamb);
 
 /** The stretches of wall, gates among them, that the straight way between two points crosses */
-export function getWallsBetween(field: Battlefield, from: Point, to: Point): FieldWall[] {
-  const { walls, burgs } = field;
-  return getCrossed(walls, field.cell, from, to, () => {
-    const near = burgs.map(burg => burg.walled && distanceToLine([burg.x, burg.y], [from, to]) < burg.radius * 1.15);
-    return walls.flatMap((wall, i) => (near[wall.burg] ? [i] : []));
-  });
-}
+export const getWallsBetween = (field: Battlefield, from: Point, to: Point): FieldWall[] =>
+  getCrossed(field.walls, field.cell, from, to);
 
 /** The stretches of cliff that the straight way between two points crosses */
 export const getCliffsBetween = (field: Battlefield, from: Point, to: Point): FieldCliff[] =>
-  getCrossed(field.cliffs, field.cell, from, to, () => field.cliffs.map((_, i) => i));
+  getCrossed(field.cliffs, field.cell, from, to);
 
 type Stretch = { a: Point; b: Point };
 
-/** Of the stretches, the ones the straight way crosses: a short way checks those about it, a long one those `far` names */
-function getCrossed<T extends Stretch>(stretches: T[], cell: number, from: Point, to: Point, far: () => number[]): T[] {
+/** Of the stretches, the ones the straight way crosses: checked are those of the grid nodes it passes through */
+function getCrossed<T extends Stretch>(stretches: T[], cell: number, from: Point, to: Point): T[] {
   if (!stretches.length) return NONE;
-  const [c0, c1] = getSpan(from[0], to[0], cell, COLS);
-  const [r0, r1] = getSpan(from[1], to[1], cell, ROWS);
-  let candidates: number[];
-  if ((c1 - c0 + 1) * (r1 - r0 + 1) <= stretches.length) {
-    const nodes = getStretchNodes(stretches, cell);
-    candidates = [];
-    for (let row = r0; row <= r1; row++)
-      for (let col = c0; col <= c1; col++) candidates.push(...nodes[row * COLS + col]);
-    if (!candidates.length) return NONE;
-    candidates.sort((a, b) => a - b);
-  } else candidates = far();
+  const nodes = getStretchNodes(stretches, cell);
+  const candidates: number[] = [];
+  forNodesAlong(from, to, cell, node => {
+    for (const i of nodes[node]) candidates.push(i);
+  });
+  if (!candidates.length) return NONE;
+  candidates.sort((a, b) => a - b);
   let crossed: T[] = NONE;
   for (let i = 0; i < candidates.length; i++) {
     if (candidates[i] === candidates[i - 1]) continue;
@@ -765,6 +757,35 @@ function getCrossed<T extends Stretch>(stretches: T[], cell: number, from: Point
 }
 
 const NONE: never[] = [];
+
+/**
+ * Every grid node the straight way between two points passes through, in order (a voxel walk); points off the field
+ * are on the nodes at its edge, as the stretches beyond it are
+ */
+function forNodesAlong(from: Point, to: Point, cell: number, visit: (node: number) => void): void {
+  const [x0, y0, x1, y1] = [from[0] / cell, from[1] / cell, to[0] / cell, to[1] / cell];
+  let [col, row] = [Math.floor(x0), Math.floor(y0)];
+  const [lastCol, lastRow] = [Math.floor(x1), Math.floor(y1)];
+  const [dx, dy] = [x1 - x0, y1 - y0];
+  const [stepCol, stepRow] = [Math.sign(dx), Math.sign(dy)];
+  const [spanX, spanY] = [dx ? Math.abs(1 / dx) : Infinity, dy ? Math.abs(1 / dy) : Infinity];
+  let nextX = dx ? (stepCol > 0 ? col + 1 - x0 : x0 - col) * spanX : Infinity;
+  let nextY = dy ? (stepRow > 0 ? row + 1 - y0 : y0 - row) * spanY : Infinity;
+  const at = (c: number, r: number): number =>
+    Math.min(Math.max(r, 0), ROWS - 1) * COLS + Math.min(Math.max(c, 0), COLS - 1);
+  for (let count = Math.abs(lastCol - col) + Math.abs(lastRow - row); ; count--) {
+    visit(at(col, row));
+    if (count <= 0) return;
+    if (nextX === nextY) visit(at(col + stepCol, row)); // through a corner: both nodes by it
+    if (nextX <= nextY) {
+      col += stepCol;
+      nextX += spanX;
+    } else {
+      row += stepRow;
+      nextY += spanY;
+    }
+  }
+}
 
 /** The first and the last grid column (or row) between two coordinates */
 function getSpan(a: number, b: number, cell: number, count: number): [number, number] {
