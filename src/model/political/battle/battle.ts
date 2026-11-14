@@ -722,6 +722,15 @@ function startRound(battle: Battle): void {
     const [x, y] = stood.get(block.id) ?? [block.x, block.y];
     return block.action === "move" && Math.hypot(block.x - x, block.y - y) > getPace(battle, block) * MARCH;
   });
+  // the long way round a cliff is no lull: the attack is still coming on
+  const coming =
+    battle.field.cliffs.length > 0 &&
+    battle.blocks.some(block => {
+      if (block.status !== "ready" || block.action !== "move" || !battle[block.side].advancing) return false;
+      const [x, y] = stood.get(block.id) ?? [block.x, block.y];
+      return Math.hypot(block.x - x, block.y - y) > getPace(battle, block) * MARCH;
+    });
+  if (coming) battle.lastLoss = battle.tick;
   places.set(battle, new Map(battle.blocks.map(block => [block.id, [block.x, block.y]])));
   const held = SIDES.some(side => battle[side].plan.order); // stood by an order, a side has not begun
   if (battle.engaged === null && battle.round && (fighting || (!marching && !held))) {

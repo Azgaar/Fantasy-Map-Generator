@@ -127,6 +127,17 @@ function getGround(field: Battlefield, pt: number): string {
       .map(wall => `M${wall.a.map(v => v.toFixed(1))}L${wall.b.map(v => v.toFixed(1))}`)
       .join("");
   html += `<path d="${stretch(false)}" fill="none" stroke="#d0342c" stroke-width="${1.6 * pt}"/>`;
+  // cliffs bar everybody on the ground: a tick on the top side
+  const tick = 3 * pt;
+  const cliffs = field.cliffs
+    .map(({ a, b }) => {
+      const [mx, my] = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      const length = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      const [tx, ty] = [((b[1] - a[1]) / length) * tick, (-(b[0] - a[0]) / length) * tick];
+      return `M${a.map(v => v.toFixed(1))}L${b.map(v => v.toFixed(1))}M${mx.toFixed(1)},${my.toFixed(1)}l${tx.toFixed(1)},${ty.toFixed(1)}`;
+    })
+    .join("");
+  if (cliffs) html += `<path d="${cliffs}" fill="none" stroke="#b5179e" stroke-width="${1.6 * pt}"/>`;
   html += `<path d="${stretch(true)}" fill="none" stroke="#1a9e3a" stroke-width="${2.6 * pt}"/>`;
   field.burgs.forEach((burg, index) => {
     if (index === field.held)
@@ -136,6 +147,7 @@ function getGround(field: Battlefield, pt: number): string {
   // what the colors stand for
   const used = GROUND.filter(([, , is]) => field.water.some((_, node) => is(field, node)));
   const legend = [...used.map(([name, color]) => [name, color]), ["wall line", "#d0342c"], ["gate line", "#1a9e3a"]];
+  if (field.cliffs.length) legend.push(["cliff, top side ticked", "#b5179e"]);
   legend.forEach(([name, color], i) => {
     const y = height - (8 + (legend.length - 1 - i) * 11) * pt;
     html += `<rect x="${6 * pt}" y="${y - 7 * pt}" width="${8 * pt}" height="${8 * pt}" fill="${color}" fill-opacity="0.6" stroke="#000" stroke-width="${0.3 * pt}"/>`;
@@ -276,7 +288,9 @@ function describe(field: Battlefield, x: number, y: number): string {
     terrain.marsh ? "marsh" : "",
     terrain.town ? "town" : "",
     terrain.walled ? `within walls of ${field.burgs[terrain.walled - 1].name}` : "",
-    ["", "wall foot", "gateway", "breach"][terrain.rampart]
+    ["", "wall foot", "gateway", "breach"][terrain.rampart],
+    field.top[node] ? `high ground +${field.scarp[node].toFixed(1)} m` : "",
+    field.cliffs.some(cliff => distanceToLine([x, y], [cliff.a, cliff.b]) <= field.cell / 2) ? "by a cliff" : ""
   ].filter(Boolean);
   return `node ${node % COLS},${Math.floor(node / COLS)} at ${x.toFixed(0)},${y.toFixed(0)} · height ${terrain.height.toFixed(2)} · ${what.join(", ") || "open ground"}`;
 }

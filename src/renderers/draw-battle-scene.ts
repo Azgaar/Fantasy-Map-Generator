@@ -8,6 +8,7 @@ import { COLS, ROWS } from "@/model/political/battle/battle-scale";
 import { type Battlefield, type FieldWork, getQuays, type WorkKind } from "@/model/political/battle/battlefield";
 import { convertSpeed, formatLength, getSpeedUnit } from "@/model/units";
 import type { View } from "@/renderers/battle-camera";
+import { getCliffMarkup } from "@/renderers/draw-battle-cliffs";
 import { updateBattleDebug } from "@/renderers/draw-battle-debug";
 import { getReliefMarkup } from "@/renderers/draw-battle-relief";
 import { getMudMarkup } from "@/renderers/draw-battle-weather";
@@ -197,6 +198,8 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
       )
     )
     .attr("fill", WATER);
+
+  terrain.append("g").html(getCliffMarkup(field, pt));
 
   // no outline: tributaries join without a seam, and the mouth covers the shore line
   const course = line<Point>().curve(curveCatmullRom.alpha(0.5));

@@ -7,6 +7,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { getKmInDistanceUnit, getPeople, heightToMeters } from "@/model/units";
 import type { Point } from "@/types/global";
 import { COLS, DEFAULT_BATTALION, type FieldSize, fitSiegeBurg, getFieldSize, ROWS } from "./battle-scale";
+import { type CliffGround, laySeaCliffs, raiseEscarpments } from "./cliffs";
 
 type Box = [number, number, number, number]; // x0, y0, x1, y1
 
@@ -83,7 +84,9 @@ export interface Battlefield extends FieldSize {
   site: Point | null; // the map point a field of the map is built at
   biome: number;
   // one value per grid node, row by row
-  elevation: number[]; // the lie of the land, 0 the lowest to 1 the highest
+  elevation: number[]; // the lie of the land, 0 the lowest to 1 the highest, the step of high ground in
+  top: number[]; // 1 on high ground behind an escarpment; empty on a field without
+  scarp: number[]; // metres high ground rises by, smooth over all nodes: what `top` adds; empty on a field without
   relief: number; // metres from height 0 to height 1
   base: number; // metres above sea level of height 0
   wood: number[];
@@ -140,6 +143,8 @@ export function createEmptyBattlefield(open: Battlefield["open"] = null): Battle
     ...getFieldSize(DEFAULT_BATTALION),
     biome: 4,
     elevation: grid(),
+    top: [],
+    scarp: [],
     relief: 0,
     base: 0,
     wood: grid(),
@@ -394,8 +399,48 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, clearing
     }
   });
 
+  // cliffs where the ground is broken: on the coast, and on the edges of high ground but about a burg besieged
+  const cliffGround: CliffGround = {
+    cell: step,
+    front: size.front,
+    water: field.water,
+    open: Uint8Array.from(field.water, (water, i) => +(!water || field.ford[i] === 1)),
+    clearance: point => getClearance(field, point)
+  };
+  field.cliffs = laySeaCliffs(cliffGround, roughness, createNoise(field, place, 11, 300));
+  const scarps = siege
+    ? null
+    : raiseEscarpments(cliffGround, roughness, createNoise(field, place, 12, 700), getGapNoise(field, place));
+  if (scarps) {
+    field.cliffs.push(...scarps.cliffs);
+    field.top = scarps.top;
+    field.scarp = scarps.step;
+    const heights = ground.map((g, i) => (g ? g.height + scarps.top[i] * scarps.step[i] : null));
+    const high = Math.max(...heights.filter(h => h !== null));
+    field.relief = high - field.base;
+    heights.forEach((h, i) => {
+      if (h !== null) field.elevation[i] = field.relief ? (h - field.base) / field.relief : 0;
+    });
+  }
+
   raiseWalls(field);
   return field;
+}
+
+/** Where the edges of high ground are cliffs: two octaves, so the lattice of either does not show */
+function getGapNoise(field: Battlefield, place: Point): (x: number, y: number) => number {
+  const [coarse, fine] = [createNoise(field, place, 13, 420), createNoise(field, place, 14, 170)];
+  return (x, y) => coarse(x, y) * 0.65 + fine(x, y) * 0.35;
+}
+
+/** Metres from a point to the nearest road, river bank or burg's edge, its piers taken in */
+function getClearance(field: Battlefield, point: Point): number {
+  let least = Infinity;
+  for (const road of field.roads) least = Math.min(least, distanceToLine(point, road));
+  for (const river of field.rivers) least = Math.min(least, distanceToLine(point, river.points) - river.width / 2);
+  for (const burg of field.burgs)
+    least = Math.min(least, Math.hypot(point[0] - burg.x, point[1] - burg.y) - burg.radius * 1.25);
+  return least;
 }
 
 const VIEW_MARGIN = 0.2; // of the field's width, lines are kept beyond its edge
@@ -805,10 +850,19 @@ export function getElevation(field: Battlefield, x: number, y: number, onWalls =
   const fy = Math.min(Math.max(y / cell - 0.5, 0), ROWS - 1);
   const [c, r] = [Math.min(Math.floor(fx), COLS - 2), Math.min(Math.floor(fy), ROWS - 2)];
   const [dx, dy] = [fx - c, fy - r];
-  const at = (col: number, row: number): number => field.elevation[row * COLS + col];
-  const top = at(c, r) * (1 - dx) + at(c + 1, r) * dx;
-  const bottom = at(c, r + 1) * (1 - dx) + at(c + 1, r + 1) * dx;
-  return (top * (1 - dy) + bottom * dy) * field.relief + walls;
+  const between = (at: (col: number, row: number) => number): number => {
+    const top = at(c, r) * (1 - dx) + at(c + 1, r) * dx;
+    const bottom = at(c, r + 1) * (1 - dx) + at(c + 1, r + 1) * dx;
+    return top * (1 - dy) + bottom * dy;
+  };
+  const { elevation, relief, top, scarp } = field;
+  if (!top.length) return between((col, row) => elevation[row * COLS + col]) * relief + walls;
+  // high ground: the ground under it between the nodes, and its step where the point is on it, sharp at the edge
+  const under = between(
+    (col, row) => elevation[row * COLS + col] * relief - top[row * COLS + col] * scarp[row * COLS + col]
+  );
+  const step = top[node] ? between((col, row) => scarp[row * COLS + col]) : 0;
+  return under + step + walls;
 }
 
 /**
@@ -818,15 +872,22 @@ export function getElevation(field: Battlefield, x: number, y: number, onWalls =
 export function getSlope(field: Battlefield, x: number, y: number, heading: number, climber = false): number {
   if (!field.relief && !climber) return 0;
   const [dx, dy] = [Math.cos(heading) * field.cell, Math.sin(heading) * field.cell];
-  const [ahead, behind]: Point[] = [
+  let [ahead, behind]: Point[] = [
     [x + dx, y + dy],
     [x - dx, y - dy]
   ];
   const walls = climber && getWallsBetween(field, behind, ahead).some(wall => !wall.gate);
-  return (getElevation(field, ...ahead, walls) - getElevation(field, ...behind, walls)) / (field.cell * 2);
+  if (!field.cliffs.length)
+    return (getElevation(field, ...ahead, walls) - getElevation(field, ...behind, walls)) / (field.cell * 2);
+  // a cliff is no slope: the ground is read on the point's own side of it
+  const here: Point = [x, y];
+  if (getCliffsBetween(field, here, ahead).length) ahead = here;
+  if (getCliffsBetween(field, here, behind).length) behind = here;
+  const run = Math.hypot(ahead[0] - behind[0], ahead[1] - behind[1]);
+  return run ? (getElevation(field, ...ahead, walls) - getElevation(field, ...behind, walls)) / run : 0;
 }
 
-/** Rise over run of the ground at a point the way it falls steepest; walls do not count */
+/** Rise over run of the ground at a point the way it falls steepest; walls and cliffs do not count */
 export function getGrade(field: Battlefield, x: number, y: number): number {
   if (!field.relief) return 0;
   return Math.hypot(getSlope(field, x, y, 0), getSlope(field, x, y, Math.PI / 2));

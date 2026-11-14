@@ -666,6 +666,30 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     expect(front > 614).toBe(b.defenders.waits); // inland when he settled on waiting, at the shore when not
   });
 
+  it("has defenders ready for a landing on a cliffed coast hold its beach, and the attackers come ashore there", () => {
+    const coast = (cliffs: boolean): Battle => {
+      const field = createEmptyBattlefield();
+      for (let row = 0; row < ROWS; row++) for (let col = 0; col < 30; col++) field.water[row * COLS + col] = 1;
+      // the shore cliffed but for a beach in the south
+      if (cliffs) field.cliffs.push({ a: [30 * field.cell, 0], b: [30 * field.cell, 40 * field.cell], height: 20 });
+      return setup("landing", mixed, mixed, field);
+    };
+    const middle = (b: Battle, side: Side): number =>
+      sum(b.blocks.filter(block => block.side === side).map(block => block.y)) /
+      b.blocks.filter(block => block.side === side).length;
+    const [open, cliffed] = [coast(false), coast(true)];
+    expect(middle(cliffed, "defenders")).toBeGreaterThan(middle(open, "defenders") + cliffed.field.height * 0.15);
+    const landed = new Set<number>();
+    for (let i = 0; i < ROUND_TICKS * 40 && !cliffed.result; i++) {
+      tick(cliffed);
+      for (const block of cliffed.blocks)
+        if (block.side === "attackers" && !cliffed.field.water[nodeAt(cliffed.field, block.x, block.y)])
+          landed.add(Math.floor(block.y / cliffed.field.cell));
+    }
+    expect(landed.size).toBeGreaterThan(0);
+    expect(Math.min(...landed)).toBeGreaterThanOrEqual(39); // nobody on land north of the beach
+  });
+
   it("keeps a landing a landing when the attackers are told to hold off the shore", () => {
     const field = createEmptyBattlefield();
     for (let row = 0; row < ROWS; row++) for (let col = 0; col < 30; col++) field.water[row * COLS + col] = 1;
@@ -1219,6 +1243,28 @@ describe("battle balance", () => {
     expect(share(even, strong).losses).toBeGreaterThan(0.75);
   });
 
+  it("ends within the lull when neither side comes on, the ends of the line not trading turned-out flanks", () => {
+    // the weaker attacker waits, the defenders are not strong enough to go for it; its riders stand far behind its middle
+    const b = createBattle({
+      type: "field",
+      name: "Test",
+      place: null,
+      x: 0,
+      y: 0,
+      cell: 0,
+      axis: 0,
+      field: createEmptyBattlefield(),
+      units: getDefaultMilitaryUnits(),
+      populationScale: 1000,
+      attackers: [regiment(1, { infantry: 1200, archers: 2200, cavalry: 300 })],
+      defenders: [regiment(2, { infantry: 3400, archers: 300, cavalry: 300 })]
+    });
+    run(b);
+    expect(b.engaged).not.toBeNull();
+    expect(b.tick).toBeLessThan(minutesToTicks(30));
+    expect(b.result!.winner).toBeNull();
+  });
+
   it("favours the ambushers", () => {
     const { wins, losses } = share(even, even, "ambush");
     expect(losses).toBeGreaterThan(wins);
@@ -1652,6 +1698,36 @@ describe("battle slopes and speed", () => {
     expect(getRange(b, put(archers, 0.4), put(foe, 0.6)) / archers.range).toBeCloseTo(Math.sqrt(0.75));
     expect(getRange(b, put(archers, 0.99), put(foe, 0.01)) / archers.range).toBeCloseTo(Math.sqrt(2.225)); // 98 m
     expect(getRange(b, put(archers, 0.01), put(foe, 0.99))).toBe(0); // over half its range up: out of reach
+  });
+
+  /** High ground east of the middle, so many metres up a cliff along its edge */
+  const escarp = (b: Battle, height: number): number => {
+    const { field } = b;
+    const edge = (COLS / 2) * field.cell;
+    field.top = field.elevation.map((_, i) => +(i % COLS >= COLS / 2));
+    field.scarp = field.elevation.map(() => height);
+    field.relief = height;
+    field.elevation = field.top.slice();
+    field.cliffs = [{ a: [edge, 0], b: [edge, field.height], height }];
+    forgetWays(field);
+    return edge;
+  };
+
+  it("stands troops on top of a cliff on level ground, its full height above those below", () => {
+    const b = battle([regiment(1, { archers: 100 })], [regiment(2, { infantry: 100 })]);
+    const edge = escarp(b, 20);
+    const y = b.field.height / 2;
+    expect(getElevation(b.field, edge + 1, y)).toBeCloseTo(20);
+    expect(getElevation(b.field, edge - 1, y)).toBeCloseTo(0);
+    for (const heading of [0, Math.PI / 2, Math.PI]) {
+      expect(getSlope(b.field, edge + 1, y, heading)).toBeCloseTo(0);
+      expect(getSlope(b.field, edge - 1, y, heading)).toBeCloseTo(0);
+    }
+    const [archers, foe] = b.blocks;
+    const put = (block: Block, x: number): Block => ({ ...block, x, y });
+    expect(getFooting(b, put(archers, edge + 5), terrainAt(b.field, edge + 5, y))).toBe(1);
+    const range = getRange(b, put(archers, edge + 5), put(foe, edge - 100));
+    expect(range / archers.range).toBeCloseTo(Math.sqrt(1.25)); // 20 m above
   });
 
   it("does not let engines fire at point blank, as bows still may", () => {

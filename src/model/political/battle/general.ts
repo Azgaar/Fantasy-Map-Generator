@@ -25,6 +25,7 @@ import {
   type Battlefield,
   distanceToLine,
   type FieldWall,
+  getCliffsBetween,
   getElevation,
   getGates,
   getWorksBetween,
@@ -525,14 +526,20 @@ function findGround(battle: Battle, side: Side, places: Place[], forward: number
   const getEnds = (frame: Frame): number => {
     let ends = 0;
     for (const sign of [-1, 1]) {
-      const beyond = terrainAt(field, ...toField(frame, sign * (half + front * BEYOND), 0));
-      if (beyond.water || beyond.wood || beyond.town) ends += 1;
+      const point = toField(frame, sign * (half + front * BEYOND), 0);
+      const beyond = terrainAt(field, ...point);
+      const cliff = getCliffsBetween(field, toField(frame, sign * half, 0), point).length > 0;
+      if (beyond.water || beyond.wood || beyond.town || cliff) ends += 1;
     }
     return ends;
   };
   // a line is worth the ground under it, what covers its ends and what the foe has to cross to come at it
   const score = (frame: Frame, deep: number, shift: number): number => {
     let value = -Math.abs(shift) / 4 - Math.abs(deep - 0.35) / 2;
+    // no line across a cliff, half of it above and half below
+    for (const share of [-1, -0.5, 0, 0.5])
+      if (getCliffsBetween(field, toField(frame, share * half, 0), toField(frame, (share + 0.5) * half, 0)).length)
+        value -= 2;
     for (const share of [-1, -0.5, 0, 0.5, 1]) {
       const terrain = terrainAt(field, ...toField(frame, share * half, 0));
       if (terrain.water && !field.open) value -= 2;
@@ -611,8 +618,27 @@ function findShore(battle: Battle): Frame | null {
   for (let deep = -along * 0.8; deep < along * 0.35; deep += field.cell)
     if (terrainAt(field, ...at(deep)).water === 1) shore = deep;
   if (shore === null) return null;
-  const [x, y] = at(shore + field.cell / 2 + field.front * EDGE);
+  const inland = field.cell / 2 + field.front * EDGE;
+  const beach = findBeach(field, at(shore));
+  const [x, y] = beach
+    ? [beach[0] + Math.cos(axis) * inland, beach[1] + Math.sin(axis) * inland]
+    : at(shore + field.cell / 2 + field.front * EDGE);
   return { x, y, heading: axis + Math.PI };
+}
+
+/** Where the shore at a point is cliffed: the shallows nearest it with no cliff within a front, to come ashore at */
+function findBeach(field: Battlefield, shore: Point): Point | null {
+  const cliffed = (point: Point): boolean =>
+    field.cliffs.some(cliff => distanceToLine(point, [cliff.a, cliff.b]) < field.front);
+  if (!cliffed(shore)) return null;
+  let [best, least] = [shore, Infinity];
+  for (let node = 0; node < field.water.length; node++) {
+    if (!terrainAt(field, ...nodeCentre(field, node)).shallow) continue;
+    const point = nodeCentre(field, node);
+    const distance = Math.hypot(point[0] - shore[0], point[1] - shore[1]);
+    if (distance < least && !cliffed(point)) [best, least] = [point, distance];
+  }
+  return best;
 }
 
 /**
@@ -1539,7 +1565,10 @@ function hookFlanks(battle: Battle, side: Side, own: View, foes: Seen): void {
         ? strength(seen.block)
         : 0
     );
-    const riders = sum(foes, ({ block, at }) => (block.kind === "rider" && at[0] * sign > 0 ? strength(block) : 0));
+    // riders on that wing within reach of the end: far off, a shift of the foe's frame would swing them to the other end
+    const riders = sum(foes, seen =>
+      seen.block.kind === "rider" && seen.at[0] * sign > 0 && off(seen) < THREAT * front ? strength(seen.block) : 0
+    );
     return { sign, end, beyond, round, riders };
   });
   const quiet = (sign: number): boolean => ends.some(end => end.sign === sign && !end.beyond && !end.riders);
