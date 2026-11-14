@@ -659,15 +659,30 @@ export function openBreach(field: Battlefield, burg: number, [x, y]: Point): voi
 
 /** The stretches of wall, gates among them, that the straight way between two points crosses */
 export function getWallsBetween(field: Battlefield, from: Point, to: Point): FieldWall[] {
-  if (!field.walls.length) return NO_WALLS;
-  // only the burgs the way comes by
-  const near = field.burgs.map(
-    burg => burg.walled && distanceToLine([burg.x, burg.y], [from, to]) < burg.radius * 1.15
-  );
-  if (!near.includes(true)) return NO_WALLS;
+  const { walls, cell } = field;
+  if (!walls.length) return NO_WALLS;
+  const [c0, c1] = getSpan(from[0], to[0], cell, COLS);
+  const [r0, r1] = getSpan(from[1], to[1], cell, ROWS);
+  // a short way is checked against the stretches about it, a long one against those of the burgs it comes by
+  let candidates: number[];
+  if ((c1 - c0 + 1) * (r1 - r0 + 1) <= walls.length) {
+    const nodes = getWallNodes(field);
+    candidates = [];
+    for (let row = r0; row <= r1; row++)
+      for (let col = c0; col <= c1; col++) candidates.push(...nodes[row * COLS + col]);
+    if (!candidates.length) return NO_WALLS;
+    candidates.sort((a, b) => a - b);
+  } else {
+    const near = field.burgs.map(
+      burg => burg.walled && distanceToLine([burg.x, burg.y], [from, to]) < burg.radius * 1.15
+    );
+    candidates = walls.flatMap((wall, i) => (near[wall.burg] ? [i] : []));
+  }
   let crossed = NO_WALLS;
-  for (const wall of field.walls) {
-    if (!near[wall.burg] || !cross(from, to, wall.a, wall.b)) continue;
+  for (let i = 0; i < candidates.length; i++) {
+    if (candidates[i] === candidates[i - 1]) continue;
+    const wall = walls[candidates[i]];
+    if (!cross(from, to, wall.a, wall.b)) continue;
     if (crossed === NO_WALLS) crossed = [];
     crossed.push(wall);
   }
@@ -675,6 +690,30 @@ export function getWallsBetween(field: Battlefield, from: Point, to: Point): Fie
 }
 
 const NO_WALLS: FieldWall[] = [];
+
+/** The first and the last grid column (or row) between two coordinates */
+function getSpan(a: number, b: number, cell: number, count: number): [number, number] {
+  const at = (value: number): number => Math.min(Math.max(Math.floor(value / cell), 0), count - 1);
+  return a < b ? [at(a), at(b)] : [at(b), at(a)];
+}
+
+/** The stretches of wall by the grid nodes their bounds take in, found once for the walls as they stand */
+function getWallNodes({ walls, cell }: Battlefield): number[][] {
+  let known = wallNodes.get(walls);
+  if (!known || known.length !== walls.length) {
+    const nodes: number[][] = Array.from({ length: COLS * ROWS }, () => []);
+    walls.forEach(({ a, b }, i) => {
+      const [c0, c1] = getSpan(a[0], b[0], cell, COLS);
+      const [r0, r1] = getSpan(a[1], b[1], cell, ROWS);
+      for (let row = r0; row <= r1; row++) for (let col = c0; col <= c1; col++) nodes[row * COLS + col].push(i);
+    });
+    known = { length: walls.length, nodes };
+    wallNodes.set(walls, known);
+  }
+  return known.nodes;
+}
+
+const wallNodes = new WeakMap<FieldWall[], { length: number; nodes: number[][] }>();
 
 /** Stretches of works that stand and that the straight way between two points crosses; of one side's when given */
 export function getWorksBetween(field: Battlefield, from: Point, to: Point, side?: FieldWork["side"]): FieldWork[] {
@@ -722,9 +761,9 @@ export const nodeCentre = ({ cell }: Battlefield, node: number): [number, number
 ];
 
 /** Height of a point above the lowest ground, between the nodes as well; who is within walls stands on them */
-export function getElevation(field: Battlefield, x: number, y: number): number {
+export function getElevation(field: Battlefield, x: number, y: number, onWalls = true): number {
   const node = nodeAt(field, x, y);
-  const walls = field.walled[node] && field.rampart[node] !== 3 ? WALL_HEIGHT : 0; // a breach is no higher than its rubble
+  const walls = onWalls && field.walled[node] && field.rampart[node] !== 3 ? WALL_HEIGHT : 0; // a breach is no higher than its rubble
   if (!field.relief) return walls;
   const { cell } = field;
   const fx = Math.min(Math.max(x / cell - 0.5, 0), COLS - 1);
@@ -737,11 +776,19 @@ export function getElevation(field: Battlefield, x: number, y: number): number {
   return (top * (1 - dy) + bottom * dy) * field.relief + walls;
 }
 
-/** Rise over run of the ground at a point in the direction of the heading: uphill positive */
-export function getSlope(field: Battlefield, x: number, y: number, heading: number): number {
-  if (!field.relief && !field.walls.length) return 0;
+/**
+ * Rise over run of the ground at a point in the direction of the heading: uphill positive.
+ * The walls count for who climbs them, and only over a stretch of them: a gate and the streets within are level
+ */
+export function getSlope(field: Battlefield, x: number, y: number, heading: number, climber = false): number {
+  if (!field.relief && !climber) return 0;
   const [dx, dy] = [Math.cos(heading) * field.cell, Math.sin(heading) * field.cell];
-  return (getElevation(field, x + dx, y + dy) - getElevation(field, x - dx, y - dy)) / (field.cell * 2);
+  const [ahead, behind]: Point[] = [
+    [x + dx, y + dy],
+    [x - dx, y - dy]
+  ];
+  const walls = climber && getWallsBetween(field, behind, ahead).some(wall => !wall.gate);
+  return (getElevation(field, ...ahead, walls) - getElevation(field, ...behind, walls)) / (field.cell * 2);
 }
 
 export function terrainAt(field: Battlefield, x: number, y: number): Terrain {

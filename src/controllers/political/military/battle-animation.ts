@@ -28,7 +28,8 @@ type Quality = "low" | "medium" | "high";
 const FRAME_MS = 50; // aimed at: GIF delays are in hundredths of a second, short ones play slower
 const END_MS = 3000; // the outcome stands before the loop starts again
 const MOVING = [".battleWorks", ".battleFire", ".battleBlocks", ".battleMissiles", ".battleClashes"]; // layers above the ground
-export const SPEEDS = [0.5, 1, 2, 4]; // playback, ×1 the speed a tick is drawn at
+const MIN_DELAY_MS = 20; // GIF viewers slow shorter frames down
+export const SPEEDS = [0.1, 0.2, 0.5, 1, 2, 4, 8, 16]; // playback, ×1 the speed a tick is drawn at
 
 /** How many times as fast as the battle it plays at a speed */
 export const getPlayback = (tickMs: number, speed: number): number =>
@@ -49,6 +50,8 @@ function open(source: Source): void {
   findEl("battleAnimation")?.remove();
   const option = (value: string, label: string, selected = false, disabled = false): string =>
     `<option value="${value}"${selected ? " selected" : ""}${disabled ? " disabled" : ""}>${label}</option>`;
+  const speeds = SPEEDS.filter(speed => source.tickMs / speed >= MIN_DELAY_MS);
+  const selected = Math.min(source.speed, speeds.at(-1)!);
 
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
@@ -68,7 +71,7 @@ function open(source: Source): void {
         </label>
         <label>${t("Speed")}
           <select name="speed">
-            ${SPEEDS.map(speed => option(String(speed), `×${getPlayback(source.tickMs, speed)}`, speed === source.speed)).join("")}
+            ${speeds.map(speed => option(String(speed), `×${getPlayback(source.tickMs, speed)}`, speed === selected)).join("")}
           </select>
         </label>
       </fieldset>

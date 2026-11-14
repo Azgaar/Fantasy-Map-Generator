@@ -50,14 +50,13 @@ export function step(
   dy: number,
   limit: number,
   others: Block[],
-  haste = 1
+  haste = 1,
+  swings = SWINGS
 ): boolean {
   const length = Math.hypot(dx, dy);
   if (!length) return false;
-  const terrain = terrainAt(battle.field, block.x, block.y);
   const heading = Math.atan2(dy, dx);
-  const climb = isAfloat(battle, block, terrain) ? 1 : getClimb(getSlope(battle.field, block.x, block.y, heading));
-  const pace = getPace(battle, block, terrain) * haste * getGoing(battle, block, terrain) * climb;
+  const pace = getStride(battle, block, heading, haste);
   const distance = Math.min(pace, limit);
   const wading = !isMoored(battle, block) && shuns(battle, block, block.x, block.y); // may wade out; a ship aground stays
   // a step aside ends in the water only midstream, when the way ahead is water too
@@ -96,7 +95,8 @@ export function step(
 
   // straight on, as far as it is open, to close up; then round what is in the way: by the side it took last, further and further
   const side = block.detour || 1;
-  for (const swing of [0, 0.7 * side, -0.7 * side, 1.4 * side, -1.4 * side, 2.2 * side, -2.2 * side]) {
+  for (const off of swings) {
+    const swing = off * side;
     const open = walk(heading + swing, swing !== 0);
     if (swing ? open < distance : open < distance / 4) continue;
     block.x = from[0] + Math.cos(heading + swing) * open;
@@ -107,6 +107,18 @@ export function step(
     return true;
   }
   return false;
+}
+
+const SWINGS = [0, 0.7, -0.7, 1.4, -1.4, 2.2, -2.2]; // radians off the way a step tries, by the side it took last
+const STRAIGHT = [0];
+
+/** Metres the block covers in a tick the way it heads, on the ground and the slope where it stands */
+export function getStride(battle: Battle, block: Block, heading: number, haste = 1): number {
+  const terrain = terrainAt(battle.field, block.x, block.y);
+  const climb = isAfloat(battle, block, terrain)
+    ? 1
+    : getClimb(getSlope(battle.field, block.x, block.y, heading, isClimbing(battle, block)));
+  return getPace(battle, block, terrain) * haste * getGoing(battle, block, terrain) * climb;
 }
 
 /** Share of its pace a block keeps on the ground */
@@ -389,11 +401,34 @@ function isWading(costs: Float32Array): boolean {
 
 const wading = new WeakMap<Float32Array, boolean>();
 
+/**
+ * The node the ways of the block start or end at for a point: the point's own, or by a wall or works the nearest one on
+ * the point's side of them. A point a metre outside the wall may lie in a node whose middle is within it
+ */
+function getNodeAt(battle: Battle, block: Block, x: number, y: number): number {
+  const { field } = battle;
+  const node = nodeAt(field, x, y);
+  if (!getWays(battle).near[node]) return node;
+  const col = node % COLS;
+  const row = (node - col) / COLS;
+  let best = node;
+  let least = Infinity;
+  for (let ny = Math.max(row - 1, 0); ny <= Math.min(row + 1, ROWS - 1); ny++) {
+    for (let nx = Math.max(col - 1, 0); nx <= Math.min(col + 1, COLS - 1); nx++) {
+      const near = ny * COLS + nx;
+      const centre = nodeCentre(field, near);
+      const distance = Math.hypot(centre[0] - x, centre[1] - y);
+      if (distance < least && !isBarred(battle, block, [x, y], centre)) [best, least] = [near, distance];
+    }
+  }
+  return best;
+}
+
 /** The field from where the block stands; for distances it is kept while the block stays about the place */
 function getReach(battle: Battle, block: Block, exact = false): Reach {
   const known = getWays(battle);
   const kind = getKind(battle, block);
-  const node = nodeAt(battle.field, block.x, block.y);
+  const node = getNodeAt(battle, block, block.x, block.y);
   const last = known.reach.get(block.id);
   const row = (at: number): number => Math.floor(at / COLS);
   const moved = last
@@ -420,8 +455,8 @@ function spreadFrom(battle: Battle, block: Block, node: number): Reach {
 }
 
 /** The node by a foe the block can come to, when there is one: a foe may stand where the block does not go */
-function getGoal(field: Battlefield, reach: Reach, foe: Spot): number | null {
-  const node = nodeAt(field, foe.x, foe.y);
+function getGoal(battle: Battle, block: Block, reach: Reach, foe: Spot): number | null {
+  const node = getNodeAt(battle, block, foe.x, foe.y);
   if (reach.cost[node] !== Infinity) return node;
   let best: number | null = null;
   const col = node % COLS;
@@ -442,7 +477,7 @@ export function getDistance(battle: Battle, block: Block, foe: Spot): number {
   if (battle.field.held !== null && block.side === "attackers") return straight;
   if (!isRough(battle, block) || isDry(battle, block, [block.x, block.y], [foe.x, foe.y])) return straight;
   const reach = getReach(battle, block);
-  const goal = getGoal(battle.field, reach, foe);
+  const goal = getGoal(battle, block, reach, foe);
   return goal === null ? straight : Math.max(reach.cost[goal] * battle.field.cell, straight);
 }
 
@@ -485,8 +520,8 @@ export function getHeading(battle: Battle, block: Block, target: Spot, key: numb
 export function getTurn(battle: Battle, like: Block, from: Point, to: Point): Point {
   if (!isRough(battle, like) || isDry(battle, like, from, to)) return to;
   const { field } = battle;
-  const reach = spreadFrom(battle, like, nodeAt(field, ...from));
-  const goal = getGoal(field, reach, { x: to[0], y: to[1] });
+  const reach = spreadFrom(battle, like, getNodeAt(battle, like, ...from));
+  const goal = getGoal(battle, like, reach, { x: to[0], y: to[1] });
   if (goal === null) return to;
   const nodes = trace(reach, goal)
     .slice(1)
@@ -519,7 +554,7 @@ export function getSharedHeading(battle: Battle, block: Block, to: Spot): Point 
   if (!isRough(battle, block) || isDry(battle, block, here, [to.x, to.y])) return [to.x, to.y];
   const reach = getSharedReach(battle, block, nodeAt(battle.field, to.x, to.y));
   // down the way to the point, as far as the block can walk straight
-  let node = nodeAt(battle.field, block.x, block.y);
+  let node = getNodeAt(battle, block, block.x, block.y);
   if (reach.cost[node] === Infinity) return [to.x, to.y];
   let next: Point = [to.x, to.y];
   for (let i = 0; i < 12 && reach.from[node] !== -1; i++) {
@@ -535,7 +570,7 @@ export function getSharedHeading(battle: Battle, block: Block, to: Spot): Point 
 function findWay(battle: Battle, block: Block, target: Spot): [number, number][] {
   if (isDry(battle, block, [block.x, block.y], [target.x, target.y])) return [];
   const reach = getReach(battle, block, true);
-  const goal = getGoal(battle.field, reach, target);
+  const goal = getGoal(battle, block, reach, target);
   if (goal === null) return [];
   const nodes = trace(reach, goal)
     .slice(1)
@@ -657,7 +692,7 @@ export function getFlight(battle: Battle, block: Block): number | null {
     known.flight.set(kind, reach);
   }
 
-  const node = nodeAt(field, block.x, block.y);
+  const node = getNodeAt(battle, block, block.x, block.y);
   const col = node % COLS;
   const row = (node - col) / COLS;
   if (!reach.cost[node]) {
@@ -665,10 +700,13 @@ export function getFlight(battle: Battle, block: Block): number | null {
     const out = [col, COLS - 1 - col, row, ROWS - 1 - row];
     return [Math.PI, 0, -Math.PI / 2, Math.PI / 2][out.indexOf(Math.min(...out))];
   }
+  // the node nearer the edge about it that the block can step to: not one over a wall it cannot cross
   let best = node;
   for (let y = Math.max(row - 2, 0); y <= Math.min(row + 2, ROWS - 1); y++) {
     for (let x = Math.max(col - 2, 0); x <= Math.min(col + 2, COLS - 1); x++) {
-      if (reach.cost[y * COLS + x] < reach.cost[best]) best = y * COLS + x;
+      const near = y * COLS + x;
+      if (reach.cost[near] >= reach.cost[best]) continue;
+      if (!isBarred(battle, block, [block.x, block.y], nodeCentre(field, near))) best = near;
     }
   }
   if (best === node) return null;
@@ -792,8 +830,19 @@ export const inContact = (battle: Battle, a: Block, b: Block): boolean =>
   !isAboard(battle, b);
 
 /** Whether the block would stand clear of all the others at the point */
-function isFree(battle: Battle, block: Block, x: number, y: number, others: Block[]): boolean {
-  if (isRunning(block)) return true;
+const isFree = (battle: Battle, block: Block, x: number, y: number, others: Block[]): boolean =>
+  getInWay(battle, block, x, y, others) === undefined;
+
+/** The first of the others the block would stand on at the point */
+function getInWay(
+  battle: Battle,
+  block: Block,
+  x: number,
+  y: number,
+  others: Block[],
+  filing = isFiling(battle, block)
+): Block | undefined {
+  if (isRunning(block)) return undefined;
   const near = NEAR * battle.field.front;
   let discs: [number, number][] | null = null;
   const getOwnDiscs = (): [number, number][] => {
@@ -808,17 +857,23 @@ function isFree(battle: Battle, block: Block, x: number, y: number, others: Bloc
     towns ??= [terrainAt(battle.field, x, y).walled, terrainAt(battle.field, block.x, block.y).walled];
     return towns.includes(town);
   };
-  return others.every(
+  return others.find(
     other =>
-      Math.abs(other.x - x) > near ||
-      Math.abs(other.y - y) > near ||
-      other === block ||
-      isRunning(other) ||
-      getLeastGap(block, other, x, y) >= 1 ||
-      packed(other) ||
-      getGap(block, other, getOwnDiscs())[0] >= 1
+      Math.abs(other.x - x) <= near &&
+      Math.abs(other.y - y) <= near &&
+      other !== block &&
+      !isRunning(other) &&
+      !(filing && other.side === block.side) &&
+      getLeastGap(block, other, x, y) < 1 &&
+      !packed(other) &&
+      getGap(block, other, getOwnDiscs())[0] < 1 &&
+      !isWalledOff(battle.field, [x, y], [other.x, other.y])
   );
 }
+
+/** A stretch of wall, not a gate, between two points: who stands on either side of it is not in the other's way */
+const isWalledOff = (field: Battlefield, from: Point, to: Point): boolean =>
+  getWallsBetween(field, from, to).some(wall => !wall.gate);
 
 /** Friends within the walls of one burg: packed in its streets, they keep no lines and do not stand in each other's way */
 function isPacked(battle: Battle, a: Block, b: Block): boolean {
@@ -834,6 +889,7 @@ export function separate(battle: Battle, blocks: Block[]): void {
   // what pushing does not change: as `getLeastGap` and `isRunning` read it
   const radius = blocks.map(block => Math.max(block.width, block.depth) / 2);
   const running = blocks.map(isRunning);
+  const filing = blocks.map(block => isFiling(battle, block));
   for (let pass = 0; pass < 3; pass++) {
     for (let i = 0; i < blocks.length; i++) {
       const a = blocks[i];
@@ -842,8 +898,9 @@ export function separate(battle: Battle, blocks: Block[]): void {
         if (!(Math.abs(a.x - b.x) < near && Math.abs(a.y - b.y) < near) || a === b) continue; // as `isNear`
         if (Math.hypot(b.x - a.x, b.y - a.y) - radius[i] - radius[j] >= clearance) continue;
         if (running[i] || running[j] || isPacked(battle, a, b)) continue;
+        if (a.side === b.side && (filing[i] || filing[j])) continue;
         const [gap, dx, dy] = getGap(a, b);
-        if (gap >= clearance) continue;
+        if (gap >= clearance || isWalledOff(battle.field, [a.x, a.y], [b.x, b.y])) continue;
         const heavyA = a.action === "fight" ? 3 : 1;
         const heavyB = b.action === "fight" ? 3 : 1;
         const push = clearance - gap;
@@ -855,6 +912,121 @@ export function separate(battle: Battle, blocks: Block[]): void {
     }
   }
 }
+
+// Giving way. A battalion held up by a friend in its way asks it to give way, and the friend keeps out of it next tick
+// if it stands idle, crosses its way or has waited for its own way less long: a gate, a bridge or a ford is passed in the
+// order battalions came to it. One held up by friends for two rounds all the same files through them till it is clear.
+
+/** A battalion's try to move this tick: where from, the way and how far it meant to go */
+export interface Move {
+  block: Block;
+  from: Point;
+  to: Point; // the next turn of its way, or its goal
+  leg: number;
+}
+
+interface Ask {
+  by: number;
+  since: number; // the tick the asker was first held up
+  from: Point;
+  heading: number;
+}
+
+interface Traffic {
+  tick: number; // noted at the end of
+  heading: Map<number, number>; // the way each battalion that moved tried to go
+  since: Map<number, number>; // the battalions held up, since when
+  asks: Map<number, Ask>; // by the friend asked to give way
+  filing: Set<number>; // the battalions that file through friends
+}
+
+const traffic = new WeakMap<Battle, Traffic>();
+
+/** What the last tick left to this one; nothing after a replay from the start */
+function getTraffic(battle: Battle): Traffic | undefined {
+  const known = traffic.get(battle);
+  return known?.tick === battle.tick - 1 ? known : undefined;
+}
+
+const HELD_UP = 0.25; // a battalion that comes no further than this share of its leg is held up
+const PATIENCE = ROUND_TICKS * 2; // ticks a battalion is held up by friends before it files through them
+
+/** Keep out of the way of the friend who asked for it: step aside, or stand; false when not asked or itself held up longer */
+export function giveWay(battle: Battle, block: Block, others: Block[]): boolean {
+  const known = getTraffic(battle);
+  const ask = known?.asks.get(block.id);
+  if (!known || !ask) return false;
+  const own = known.heading.get(block.id);
+  if (own !== undefined && Math.cos(own - ask.heading) > SAME_WAY) return false; // ahead in the same queue
+  const since = known.since.get(block.id);
+  if (since !== undefined && (since < ask.since || (since === ask.since && block.id < ask.by))) return false;
+  // off the asker's way on the side the block stands, or on ahead of it, or off by the other side; never back at it
+  const { heading } = ask;
+  const side = Math.cos(heading) * (block.y - ask.from[1]) - Math.sin(heading) * (block.x - ask.from[0]) < 0 ? -1 : 1;
+  ASIDE.some(off => {
+    const away = heading + off * side;
+    return step(battle, block, Math.cos(away), Math.sin(away), Infinity, others, 1, STRAIGHT);
+  });
+  return true;
+}
+
+const ASIDE = [1.1, 1.6, 0.5, 0, -0.5, -1.1, -1.6]; // radians off the asker's way a friend giving way tries, its own side first
+const SAME_WAY = 0.5; // cosine of the angle within which two go the same way
+
+/** Whether the block files through its friends this tick: they are not in its way, nor it in theirs */
+const isFiling = (battle: Battle, block: Block): boolean => getTraffic(battle)?.filing.has(block.id) === true;
+
+/** After the moves: who was held up, since when, which friend in its way it asks to give way and who files through */
+export function noteTraffic(battle: Battle, moves: Move[], others: Block[]): void {
+  const last = getTraffic(battle);
+  const known: Traffic = {
+    tick: battle.tick,
+    heading: new Map(),
+    since: new Map(),
+    asks: new Map(),
+    filing: new Set()
+  };
+  const ahead = (CLEARANCE + NEAR_ENOUGH) * battle.field.front;
+  for (const { block, from, to, leg } of moves) {
+    const heading = Math.atan2(to[1] - from[1], to[0] - from[0]);
+    known.heading.set(block.id, heading);
+    if (last?.filing.has(block.id) && getFriendUnder(battle, block, others)) known.filing.add(block.id); // till clear
+    const [cos, sin] = [Math.cos(heading), Math.sin(heading)];
+    const stride = Math.min(leg, getStride(battle, { ...block, x: from[0], y: from[1] }, heading));
+    if (stride < 1 || (block.x - from[0]) * cos + (block.y - from[1]) * sin >= stride * HELD_UP) continue;
+    const since = last?.since.get(block.id) ?? battle.tick;
+    known.since.set(block.id, since);
+    if (isRough(battle, block) && !isDry(battle, block, [block.x, block.y], to)) continue; // water or a wall holds it, not a friend
+
+    // the first friend it would walk into straight on
+    const reach = stride + ahead;
+    const samples = Math.max(Math.ceil(reach / SAMPLE), 1);
+    let blocker: Block | undefined;
+    for (let i = 1; i <= samples && !blocker; i++) {
+      const along = (reach * i) / samples;
+      blocker = getInWay(battle, block, block.x + cos * along, block.y + sin * along, others);
+    }
+    if (!blocker || blocker.side !== block.side) continue;
+    if (battle.tick - since >= PATIENCE) known.filing.add(block.id);
+    const asked = known.asks.get(blocker.id);
+    if (asked && (asked.since < since || (asked.since === since && asked.by < block.id))) continue;
+    known.asks.set(blocker.id, { by: block.id, since, from: [block.x, block.y], heading });
+  }
+  traffic.set(battle, known);
+}
+
+/** A friend the block stands on, when there is one */
+const getFriendUnder = (battle: Battle, block: Block, others: Block[]): Block | undefined =>
+  getInWay(
+    battle,
+    block,
+    block.x,
+    block.y,
+    others.filter(other => other.side === block.side),
+    false
+  );
+
+const NEAR_ENOUGH = 0.1; // in fronts beyond the clearance: a friend so near ahead is in the way
 
 export function normalize(angle: number): number {
   return Math.atan2(Math.sin(angle), Math.cos(angle));

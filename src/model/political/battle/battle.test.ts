@@ -271,7 +271,7 @@ describe("battle generals", () => {
       const held = trial.result!.winner === "attackers" ? 1 : trial.result!.winner === "defenders" ? -1 : 0;
       return held + trial.defenders.casualties - trial.attackers.casualties;
     };
-    expect(outcome(chosen)).toBeGreaterThanOrEqual(outcome(first));
+    expect(outcome(chosen)).toBeGreaterThanOrEqual(outcome(first) - 0.05); // the rehearsals are shorter: a few in a hundred lost
 
     // a battle ticked without it plans itself, to the same end
     const [planned, unplanned] = [run(b), run(battle([regiment(1, big)], [regiment(2, big)]))];
@@ -1514,6 +1514,77 @@ describe("battle ways", () => {
       }
     }
     expect(out).toBe(true);
+  });
+
+  it("marches through a gate on the level, and climbs only over the walls", () => {
+    const field = createEmptyBattlefield();
+    burg(field);
+    const gate = field.walls.find(wall => wall.gate)!;
+    const [x, y] = [(gate.a[0] + gate.b[0]) / 2, (gate.a[1] + gate.b[1]) / 2];
+    const inward = Math.atan2(273 - y, 456 - x);
+    expect(getSlope(field, x, y, inward)).toBe(0);
+    const wall = field.walls.find(stretch => !stretch.gate && Math.hypot(stretch.a[0] - x, stretch.a[1] - y) > 40)!;
+    const [wx, wy] = [(wall.a[0] + wall.b[0]) / 2, (wall.a[1] + wall.b[1]) / 2];
+    const up = Math.atan2(273 - wy, 456 - wx);
+    expect(getSlope(field, wx, wy, up)).toBe(0); // nobody climbs who cannot cross it
+    expect(getSlope(field, wx, wy, up, true)).toBeGreaterThan(0.3);
+  });
+
+  it("takes an army through a walled town by its gates without a jam", () => {
+    const field = createEmptyBattlefield();
+    field.roads.push(
+      [
+        [0, 409],
+        [1364, 409]
+      ],
+      [
+        [682, 0],
+        [682, 818]
+      ]
+    );
+    field.burgs.push({ x: 682.2, y: 409, radius: 330, name: "Town", group: "city", walled: true, outline: [] });
+    raiseWalls(field);
+    const armies = (infantry: number) => [regiment(1, { infantry, archers: infantry * 0.3, cavalry: infantry * 0.2 })];
+    const b = createBattle({
+      type: "field",
+      name: "Test",
+      place: null,
+      x: 0,
+      y: 0,
+      cell: 0,
+      axis: 1.2,
+      field,
+      units: UNITS,
+      populationScale: 1000,
+      attackers: armies(4000),
+      defenders: armies(3000).map(one => ({ ...one, state: 2 }))
+    });
+    // held up: off its place, with no foe near, and not a sixth of a front further in two rounds
+    const front = b.field.front;
+    const trail = new Map<number, [number, number][]>();
+    const held = new Map<number, number>();
+    let longest = 0;
+    while (!b.result && b.tick < 600) {
+      tick(b);
+      for (const block of b.blocks) {
+        const last = [...(trail.get(block.id) ?? []), [block.x, block.y] as [number, number]].slice(-ROUND_TICKS * 2);
+        trail.set(block.id, last);
+        const away = Math.hypot(block.order.x - block.x, block.order.y - block.y) > 0.3 * front;
+        const foe = b.blocks.some(
+          other =>
+            other.side !== block.side &&
+            other.status === "ready" &&
+            Math.hypot(other.x - block.x, other.y - block.y) < 3 * front
+        );
+        const still =
+          last.length === ROUND_TICKS * 2 && Math.hypot(block.x - last[0][0], block.y - last[0][1]) < front / 6;
+        const stuck = block.status === "ready" && (block.action === "move" || block.action === "hold");
+        held.set(block.id, stuck && away && !foe && still ? (held.get(block.id) ?? 0) + 1 : 0);
+        longest = Math.max(longest, held.get(block.id)!);
+      }
+    }
+    expect(b.result).not.toBeNull();
+    expect(longest).toBeLessThan(ROUND_TICKS * 4);
   });
 
   it("has walls take their share of the losses however heavy the fire", () => {

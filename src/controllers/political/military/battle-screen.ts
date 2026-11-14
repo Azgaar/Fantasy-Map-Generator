@@ -245,7 +245,6 @@ const STYLE = /* css */ `
   #battleLayout .attackers { --side: ${SIDE_COLORS.attackers}; }
   #battleLayout .defenders { --side: ${SIDE_COLORS.defenders}; }
   #battleLayout button { white-space: nowrap; }
-  .battleGroup { display: inline-flex; }
 
   /* a button that opens a list of named choices, upward: the pickers stand low in the window */
   .battlePicker { position: relative; display: inline-block; }
@@ -350,7 +349,19 @@ const STYLE = /* css */ `
   #battleFooter button { height: 2em; box-sizing: border-box; } /* one height, whatever the icon */
   #battleRun, #battleResultRestart { min-width: 10em; }
   #battleRun.battlePause::before { content: "❚❚"; margin-right: 0.5em; font-size: 0.7em; vertical-align: 0.15em; }
-  #battleSpeed { margin: 0 0.5em; }
+  #battleSpeed { display: inline-flex; align-items: center; gap: 0.5em; margin: 0 0.6em; }
+  #battleSpeed > input {
+    --thumb: 0.9em;
+    width: 12em; height: 2em; margin: 0; padding: 0; border: 0; appearance: none; cursor: pointer;
+    background: linear-gradient(to right, #999 1px, transparent 1px) calc(var(--thumb) / 2) calc(50% + 0.55em) / calc((100% - var(--thumb)) / var(--steps)) 0.3em repeat-x;
+  }
+  #battleSpeed > input::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, var(--header) calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--fill)), #ddd 0); }
+  #battleSpeed > input::-moz-range-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, var(--header) calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--fill)), #ddd 0); }
+  #battleSpeed > input::-webkit-slider-thumb { appearance: none; box-sizing: border-box; width: var(--thumb); height: var(--thumb); margin-top: calc(2px - var(--thumb) / 2); border: 1px solid var(--dark-solid); border-radius: 15%; background: var(--light-solid); box-shadow: 0.5px 0.5px 0 var(--dark-solid); }
+  #battleSpeed > input::-moz-range-thumb { box-sizing: border-box; width: var(--thumb); height: var(--thumb); border: 1px solid var(--dark-solid); border-radius: 15%; background: var(--light-solid); box-shadow: 0.5px 0.5px 0 var(--dark-solid); }
+  #battleSpeed > input:hover::-webkit-slider-thumb { background: var(--header); }
+  #battleSpeed > input:hover::-moz-range-thumb { background: var(--header); }
+  #battleSpeedLabel { min-width: 2.8em; font-weight: bold; font-variant-numeric: tabular-nums; }
   #battleClock { font-variant-numeric: tabular-nums; white-space: nowrap; }
   #battleFieldSize { color: var(--muted); white-space: nowrap; }
 
@@ -457,9 +468,10 @@ function renderDialog(): void {
             <button id="battleResultRestart" class="icon-ccw" data-tip="${t("Play the same battle again from the start")}" hidden> ${t("Play again")}</button>
             <button id="battleStep" data-tip="${t("Advance the battle by a single step")}" class="icon-right-open"></button>
             <button id="battleRestart" data-tip="${t("Play the same battle again from the start")}" class="icon-ccw"></button>
-            <div id="battleSpeed" class="battleGroup" data-tip="${t("Battle speed")}">
-              ${SPEEDS.map(speed => `<button data-speed="${speed}" class="${speed === 1 ? "pressed" : ""}">×${getPlayback(TICK_MS, speed)}</button>`).join("")}
-            </div>
+            <label id="battleSpeed" data-tip="${t("Battle speed")}">
+              <input type="range" min="0" max="${SPEEDS.length - 1}" step="1" value="${SPEEDS.indexOf(player.speed)}" style="--steps: ${SPEEDS.length - 1}; --fill: ${SPEEDS.indexOf(player.speed) / (SPEEDS.length - 1)}" />
+              <span id="battleSpeedLabel">×${getPlayback(TICK_MS, player.speed)}</span>
+            </label>
             <span id="battleClock"></span>
             <span id="battleFieldSize" data-tip="${t("Field size")}"></span>
           </div>
@@ -500,11 +512,10 @@ function renderDialog(): void {
   ensureEl("battleStep").addEventListener("click", () => step());
   ensureEl("battleRestart").addEventListener("click", () => restart());
   ensureEl("battleResultRestart").addEventListener("click", () => restart());
-  ensureEl("battleSpeed").addEventListener("click", event => {
-    const button = (event.target as HTMLElement).closest<HTMLElement>("button");
-    if (!button) return;
-    player.speed = +button.dataset.speed!;
-    for (const other of ensureEl("battleSpeed").children) other.classList.toggle("pressed", other === button);
+  ensureEl("battleSpeed").addEventListener("input", event => {
+    const input = event.target as HTMLInputElement;
+    input.style.setProperty("--fill", String(+input.value / (SPEEDS.length - 1)));
+    setSpeed(SPEEDS[+input.value]);
   });
   ensureEl("battleType").addEventListener("click", event => togglePicker(event));
   ensureEl("battleType").nextElementSibling!.addEventListener("click", event => changeType(event));
@@ -624,6 +635,14 @@ function step(): void {
   advance();
   player.previous = null;
   updateBlocks(scene(), battle, null, 1);
+}
+
+function setSpeed(speed: number): void {
+  // keep the tick in progress where it is
+  const now = performance.now();
+  player.tickStart = now - ((now - player.tickStart) * player.speed) / speed;
+  player.speed = speed;
+  ensureEl("battleSpeedLabel").textContent = `×${getPlayback(TICK_MS, speed)}`;
 }
 
 function animate(now: number): void {

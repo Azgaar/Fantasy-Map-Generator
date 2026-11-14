@@ -52,11 +52,14 @@ import {
   getPace,
   getRange,
   getSharedHeading,
+  giveWay,
   hasWayOut,
   inContact,
   isRunning,
   isWet,
+  type Move,
   normalize,
+  noteTraffic,
   openCrossing,
   ROUND_TICKS,
   separate,
@@ -726,7 +729,6 @@ function steady(battle: Battle): void {
 /** Every battalion turns its order into a move, then blows are settled together */
 function act(battle: Battle): void {
   const onField = battle.blocks.filter(block => block.status === "ready" || block.status === "routed");
-  const present = battle.blocks.filter(block => block.status === "surrendered").concat(onField); // prisoners are in the way
   const sense: Sense = { onField, crowd: new Map(), held: new Set() };
   for (const block of onField) {
     if (block.status !== "ready" || block.target === null) continue;
@@ -735,11 +737,12 @@ function act(battle: Battle): void {
   }
 
   const shooting = new Set<number>();
+  const moves: Move[] = [];
   for (const block of onField) block.vx = block.vy = 0;
   // the sides take the first move in turn: whoever moves first takes the ground
   for (const block of battle.tick % 2 ? [...onField].reverse() : onField) {
     if (block.status === "routed" || block.order.mission === "withdraw" || block.leaving) {
-      flee(battle, block, present);
+      flee(battle, block, onField);
       continue;
     }
 
@@ -753,13 +756,15 @@ function act(battle: Battle): void {
     if (build) block.action = "build";
     else if (target && inContact(battle, block, target)) block.action = "fight";
     else if (target && fires && canShoot(battle, block, target)) block.action = "shoot";
+    else if (giveWay(battle, block, onField)) block.action = block.vx || block.vy ? "move" : "hold";
     else if (to) {
       // to the place, or to the next turn of the way round the water and no further
       const whole = Math.hypot(to.x - block.x, to.y - block.y) - stop;
       const [x, y] = shared ? getSharedHeading(battle, block, to) : getHeading(battle, block, to, key);
       const due = keep ? whole / (ROUND_TICKS - (battle.tick % ROUND_TICKS)) : whole; // the place moves once a round
       const leg = Math.min(due, x === to.x && y === to.y ? whole : Math.hypot(x - block.x, y - block.y));
-      const moved = whole > 0 && step(battle, block, x - block.x, y - block.y, leg, present, haste);
+      if (whole > 0) moves.push({ block, from: [block.x, block.y], to: [x, y], leg });
+      const moved = whole > 0 && step(battle, block, x - block.x, y - block.y, leg, onField, haste);
       block.action = moved ? "move" : "hold";
       if (moved && !target && whole > MARCHING * battle.field.front) {
         block.facing = turn(block.facing, Math.atan2(y - block.y, x - block.x), 0.7); // it marches
@@ -770,14 +775,14 @@ function act(battle: Battle): void {
   }
 
   // nobody is pushed into the water, out of a ford into the deep or through a wall
-  const stood = present.map(block => ({
+  const stood = onField.map(block => ({
     x: block.x,
     y: block.y,
     dry: !isWet(battle, block, block.x, block.y),
     safe: !shuns(battle, block, block.x, block.y)
   }));
-  separate(battle, present);
-  present.forEach((block, i) => {
+  separate(battle, onField);
+  onField.forEach((block, i) => {
     const { x, y, dry, safe } = stood[i];
     const pushed =
       (dry && isWet(battle, block, block.x, block.y)) ||
@@ -786,6 +791,7 @@ function act(battle: Battle): void {
       isBarredByWorks(battle, block, [x, y], [block.x, block.y]);
     if (pushed) [block.x, block.y] = [x, y];
   });
+  noteTraffic(battle, moves, onField);
 
   // who strikes is settled once all have moved, so neither side gets the first blow
   const byId = new Map(onField.map(block => [block.id, block]));
@@ -793,6 +799,7 @@ function act(battle: Battle): void {
     const target = block.action === "flee" ? undefined : byId.get(block.target ?? -1);
     if (target && inContact(battle, block, target)) block.action = "fight";
     else if (target && shooting.has(block.id) && canShoot(battle, block, target)) block.action = "shoot";
+    else if (block.action === "fight") block.action = "hold"; // pushed apart from its foe
     if (!target || block.action !== "fight") block.impetus = 0;
     else if (!block.impetus && isSheltered(battle, block, target))
       block.impetus = 1; // a charge breaks on the works
