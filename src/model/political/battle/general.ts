@@ -60,6 +60,7 @@ import {
   mayBuild
 } from "./works";
 
+const BREACHES = 2; // gaps the engines knock in the foe's wagons before the side goes in
 const STORM_ODDS = [4, 2.5, 1.8, 1.4]; // besiegers to besieged it takes to storm walls, by the breaches in them
 const ASSAULT_ODDS = 1.25; // and a burg without walls
 const SORTIE_ROUNDS = 8; // a sortie at engines is out so long once it goes for them
@@ -486,6 +487,9 @@ export function getOptions(battle: Battle, side: Side): Option[] {
   const blocks = battle.blocks.filter(block => block.side === side);
   const names = rateTactics(battle, side, blocks, battle[side].plan.tactic === "crossing")[0].map(([name]) => name);
   const options = (rough ? names.slice(0, 1) : names).map(name => option(name));
+  // with engines before wagons: to batter them first, or to storm them at once
+  const engines = blocks.some(block => block.kind === "engine");
+  if (engines && (barring || ring)) options.push(option(names[0], false, true));
   // an attacker who is the weaker may think better of it; one who is not came to fight
   const free = !battle[side].plan.order; // not ordered what to do by hand
   const cautious = side === "attackers" && free && isAttacking(battle, side, false) && getOdds(battle, side) < 1;
@@ -1167,7 +1171,11 @@ function engage(battle: Battle, side: Side, own: View, foe: View, gap: number): 
 
   // standing off
   const atGrips = own.ready.some(block => block.action === "fight");
+  // the engines are at the wagons: the troops wait out of the fight unless the foe comes out of them, whoever skirmishes
+  const fort = data.advancing && !plan.order ? getFort(battle, side) : null;
+  if (fort === "batter" && !battle[enemyOf(side)].advancing) return phase;
   if (atGrips || gap <= COUNTER * 1.5 * battle.field.front) return names.close; // the foe is upon us
+  if (fort === "breached") return names.close; // in by the gaps
   if (!data.advancing || battle.engaged === null) return phase; // a defender waits; an attacker is still coming up
   if (!own.fire) return names.close;
 
@@ -1508,6 +1516,7 @@ function hookFlanks(battle: Battle, side: Side, own: View, foes: Seen): void {
       ({ at }) => Math.abs(at[0] - order.across) < width && at[1] > order.along && at[1] - order.along < CHARGE * front
     );
 
+  const coming = battle[enemyOf(side)].advancing;
   const ends = [-1, 1].map(sign => {
     const end = first.reduce<Block | null>(
       (a, b) => (a && a.order.across * sign >= b.order.across * sign ? a : b),
@@ -1523,9 +1532,11 @@ function hookFlanks(battle: Battle, side: Side, own: View, foes: Seen): void {
       const near = seen.at[1] < along + CHARGE * front + getPace(battle, seen.block) * ROUND_TICKS * 2;
       return out(seen) && near && off(seen) < THREAT * front ? strength(seen.block) : 0;
     });
-    // foes coming round it, level with the line within a charge: the first line wheels back for them
+    // foes of an advancing side coming round it, level with the line within a charge: the first line wheels back
     const round = sum(foes, seen =>
-      out(seen) && seen.at[1] < along + COUNTER * front && off(seen) < CHARGE * front ? strength(seen.block) : 0
+      coming && out(seen) && seen.at[1] < along + COUNTER * front && off(seen) < CHARGE * front
+        ? strength(seen.block)
+        : 0
     );
     const riders = sum(foes, ({ block, at }) => (block.kind === "rider" && at[0] * sign > 0 ? strength(block) : 0));
     return { sign, end, beyond, round, riders };
@@ -1565,15 +1576,15 @@ function hookFlanks(battle: Battle, side: Side, own: View, foes: Seen): void {
       hook.push(block);
       hooked.add(block.id);
     }
-    // a new hook: the first line nearest the end wheels about its outer rear corner, the others stand back from it;
+    // a new hook: beyond the end, back from its rear corner, the first line nearest the end first, the others behind it;
     // those in a hook keep their places in it and newcomers fall in behind
     const fresh = hook.slice(kept.filter(block => hook.includes(block)).length);
     fresh.sort((a, b) => +wheels(b) - +wheels(a) || (b.order.across - a.order.across) * sign);
     hook.splice(hook.length - fresh.length, fresh.length, ...fresh);
-    let back = along - end.depth / 2 - GAP * front;
+    let back = along + end.depth / 2;
     for (const block of hook) {
-      const place = toField(plan, (edge - block.depth / 2) * sign, back - block.width / 2);
-      back -= block.width + GAP * front;
+      const place = toField(plan, (edge + block.depth / 2) * sign, back - block.width / 2); // clear of the rows behind
+      back -= block.width + GAP * 2 * front;
       [block.order.x, block.order.y] = onField(field, place);
       block.order.facing = plan.heading + (sign * Math.PI) / 2;
       block.order.mission = "line";
@@ -1613,7 +1624,8 @@ function getMission(battle: Battle, side: Side, block: Block, own: View, foes: S
 
   // riders on a wing go round the foe's line when the lines close, unless the foe's riders there outweigh them
   const sign = Math.sign(block.order.across) || 1;
-  const launched = phase === names.close || (advancing && plan.gap < CHARGE * battle.field.front); // to fall on the foe as the lines meet
+  const near = advancing && plan.gap < CHARGE * battle.field.front && getFort(battle, side) !== "batter";
+  const launched = phase === names.close || near; // to fall on the foe as the lines meet
   if (!launched || off || block.morale < SHAKEN || siege) return "guard";
   const there = (all: Block[], at: (block: Block) => number): number =>
     sum(all, block => (block.kind === "rider" && at(block) * sign > 0 ? strength(block) : 0));
@@ -1780,8 +1792,16 @@ function moveFrame(battle: Battle, side: Side, own: View, foe: View, gap: number
   if (!data.advancing) return;
 
   const apart = keepsOff(battle, side) || (phase === names.apart && isOpenFight(battle));
-  const want = apart ? plan.halt : -Infinity;
-  const pace = Math.min(...first.map(block => getPace(battle, block, terrainAt(battle.field, block.x, block.y))));
+  // the engines come up with the line when they are to batter the foe's wagons, and it halts once they reach them
+  const guns = getFort(battle, side) === "batter" ? own.ready.filter(block => block.kind === "engine") : [];
+  const wagons = field.works.filter(work => work.side !== side && work.kind === "wagons" && isStanding(work));
+  const inRange = (gun: Block): boolean =>
+    wagons.some(work => distanceToLine([gun.x, gun.y], [work.a, work.b]) < gun.range * 0.9);
+  if (guns.length && guns.every(inRange)) return;
+  const want = guns.length ? COUNTER * 2 * field.front : apart ? plan.halt : -Infinity;
+  const pace = Math.min(
+    ...[...first, ...guns].map(block => getPace(battle, block, terrainAt(battle.field, block.x, block.y)))
+  );
   const advance = Math.min(pace * ROUND_TICKS, gap - want);
   const lags = first.map(block => toFrame(plan, block.order)[1] - toFrame(plan, block)[1]).sort((a, b) => a - b);
   if (advance <= 0 || lags[lags.length >> 1] > field.front * LEVEL) return; // most of the line is behind
@@ -1966,6 +1986,19 @@ function isFoeUpon(battle: Battle, side: Side): boolean {
       foe.status === "ready" &&
       builders.some(block => Math.hypot(foe.x - block.x, foe.y - block.y) < getPace(battle, foe) * ROUND_TICKS + reach)
   );
+}
+
+/**
+ * How a side with engines goes at a foe behind wagons, unless its general chose to storm them at once: it batters them
+ * till its engines have knocked gaps enough in them, then it goes in by the gaps. Null without engines or such a foe
+ */
+function getFort(battle: Battle, side: Side): "batter" | "breached" | null {
+  if (battle[side].storms || !isOpenFight(battle)) return null;
+  if (!battle.blocks.some(block => block.side === side && block.status === "ready" && block.kind === "engine"))
+    return null;
+  const wagons = battle.field.works.filter(work => work.side !== side && work.kind === "wagons" && work.up);
+  if (!wagons.some(isStanding)) return null;
+  return wagons.filter(work => !isStanding(work)).length < BREACHES ? "batter" : "breached";
 }
 
 /**

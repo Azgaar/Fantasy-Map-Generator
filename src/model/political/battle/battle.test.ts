@@ -1037,7 +1037,7 @@ describe("battle surrender", () => {
   });
 
   it("has a battalion that gave itself up fight and be struck no more", () => {
-    const b = battle([regiment(1, { infantry: 900, archers: 300, cavalry: 150 })], [regiment(2, even)]);
+    const b = battle([regiment(1, { infantry: 1080, archers: 360, cavalry: 180 })], [regiment(2, even)]);
     const taken = new Map<number, number>();
     while (!b.result) {
       tick(b);
@@ -2263,6 +2263,7 @@ describe("battle works", () => {
 
     const laager = battle([regiment(1, { infantry: 900, archers: 300, cavalry: 1600 })], [regiment(2, noRiders)]);
     expect(laager.defenders.plan.tactic).toBe("laager");
+    intervene(laager, { tick: 0, kind: "tactic", side: "defenders", tactic: "laager" }); // whatever the rehearsals say
     const horse = (): number =>
       Math.min(
         ...of(laager, "attackers")
@@ -2523,6 +2524,8 @@ describe("battle works", () => {
   it("has foot fight a wagon ring over the wagons, and get in by the gap engines knock into it", () => {
     const b = setup("field", { infantry: 900, cavalry: 1600, artillery: 40 }, noRiders);
     expect(b.defenders.plan.tactic).toBe("laager");
+    b.planned = true;
+    b.attackers.storms = true; // its general storms the wagons at once rather than batter them first
     let over = false;
     let gap: number | null = null;
     let within = false;
@@ -2542,6 +2545,26 @@ describe("battle works", () => {
     expect(gap).not.toBeNull();
     expect(within).toBe(true);
     expect(worksOf(b, "defenders").filter(work => work.harm >= 1).length).toBeGreaterThan(0); // the wreck stays drawn
+  });
+
+  it("has a side with engines batter a wagon fort from out of the fight, then go in by the gaps", () => {
+    const run = (storms: boolean): { gaps: number; closed: number } => {
+      const b = setup("field", { ...big, artillery: 40 }, big);
+      dig(b, "defenders");
+      b.planned = true;
+      b.attackers.storms = storms;
+      expect(b.defenders.plan.tactic).not.toBe("laager");
+      const gaps = (): number =>
+        worksOf(b, "defenders").filter(work => work.kind === "wagons" && work.harm >= 1).length;
+      const { close } = POSTURES.field.attackers;
+      while (!b.result && b.attackers.phase !== close) tick(b);
+      return { gaps: gaps(), closed: b.tick };
+    };
+    const battered = run(false);
+    expect(battered.gaps).toBeGreaterThanOrEqual(2); // it goes in once the engines have knocked gaps enough
+    const stormed = run(true);
+    expect(stormed.gaps).toBeLessThan(2); // its general chose to storm at once
+    expect(stormed.closed).toBeLessThan(battered.closed);
   });
 
   it("starts a side dug in behind finished works, laid anew before battalions moved by hand and on a reset", () => {
