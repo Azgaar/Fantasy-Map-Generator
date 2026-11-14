@@ -182,11 +182,13 @@ function getDoings(battle: Battle, at: Places, pt: number): string {
     const target = block.target === null ? null : byId.get(block.target);
     if (target) {
       const to = at.get(target.id) ?? target;
-      // a blow or a shot the target's works weaken is drawn in their colour
+      // a blow or a shot the target's wagons weaken is drawn in their colour
       const striking = block.action === "fight" || block.action === "shoot";
-      const sheltered = striking && getShelter(battle, block, target, block.action === "shoot") < 1;
+      const sheltered = striking && getShelter(battle, block, target) < 1;
       const works = sheltered
-        ? getWorksBetween(battle.field, [block.x, block.y], [target.x, target.y], target.side)
+        ? getWorksBetween(battle.field, [block.x, block.y], [target.x, target.y], target.side).filter(
+            work => work.kind === "wagons"
+          )
         : [];
       const color = works.length ? getWorkColor(works[0]) : "#000";
       html += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}L${to.x.toFixed(1)} ${to.y.toFixed(1)}" stroke="${color}" stroke-width="${(works.length ? 1 : 0.5) * pt}" stroke-opacity="${works.length ? 0.9 : 0.45}" stroke-dasharray="${pt} ${3 * pt}"/>`;
@@ -217,7 +219,7 @@ function getDoings(battle: Battle, at: Places, pt: number): string {
   }
 
   const side = (name: "attackers" | "defenders"): string => {
-    const { phase, morale, power, die, bonus, plan, advancing } = battle[name];
+    const { phase, morale, power, die, plan, advancing } = battle[name];
     const own = battle.field.works.filter(work => work.side === name);
     const arrives = Number.isFinite(plan.arrival) ? (plan.arrival / 6).toFixed(1) : "∞";
     const works = [
@@ -226,7 +228,7 @@ function getDoings(battle: Battle, at: Places, pt: number): string {
       `arrives ${arrives}`,
       own.length ? `works ${own.filter(isStanding).length}/${own.length}` : ""
     ].filter(Boolean);
-    return `${name}: ${plan.tactic}, ${advancing ? "advancing" : "holding"}, ${phase}, morale ${morale.toFixed(0)}, power ${power.toFixed(1)}${bonus ? ` (${bonus > 0 ? "+" : ""}${bonus})` : ""}, die ${die}, ${works.join(", ")}`;
+    return `${name}: ${plan.tactic}, ${advancing ? "advancing" : "holding"}, ${phase}, morale ${morale.toFixed(0)}, power ${power.toFixed(1)}, die ${die}, ${works.join(", ")}`;
   };
   const { works } = battle.field;
   const down = works.filter(work => work.harm >= 1).length;

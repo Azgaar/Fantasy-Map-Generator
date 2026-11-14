@@ -1,8 +1,9 @@
 // The side level: a general appraises the field, picks a tactic, draws the troops up and, each round, sets the phase
 // and gives every battalion its order. Nothing here is rolled. See docs/domain/battles.md.
 
+import { least } from "d3";
 import { CHARGE, COUNTER, getBearing, LONG_SHOT, SHAKEN } from "./battalion";
-import type { Battle, Block, Order, Plan, Wedge } from "./battle";
+import type { Battle, Block, Muster, Order, Plan, Wedge } from "./battle";
 import {
   COMMANDS,
   type Command,
@@ -10,6 +11,7 @@ import {
   getCommand,
   getStance,
   isBeaten,
+  isFromSea,
   isOpen,
   keepsPhase,
   POSTURES,
@@ -18,11 +20,13 @@ import {
   STARVED,
   SURRENDER
 } from "./battle-rules";
-import { COLS, minutesToTicks, ROWS } from "./battle-scale";
+import { COLS, ROWS } from "./battle-scale";
 import {
   type Battlefield,
+  distanceToLine,
   type FieldWall,
   getElevation,
+  getGates,
   getWorksBetween,
   isStanding,
   nodeAt,
@@ -55,10 +59,11 @@ import {
   mayBuild
 } from "./works";
 
-const ORDER_ROUNDS = minutesToTicks(8) / ROUND_TICKS; // an order given by hand stands that long
 const STORM_ODDS = [4, 2.5, 1.8, 1.4]; // besiegers to besieged it takes to storm walls, by the breaches in them
 const ASSAULT_ODDS = 1.25; // and a burg without walls
-const SORTIE_ROUNDS = 8;
+const SORTIE_ROUNDS = 8; // a sortie at engines is out so long once it goes for them
+const MUSTER_ROUNDS = [2, 8]; // a sortie waits so long at least and at most to form up outside the walls
+const MUSTER_SLACK = 1.5; // and half as long again as the march of its slowest battalion takes
 const RING_ODDS = 3; // besiegers to besieged it takes to ring a walled burg in
 const RING_BATTALIONS = 6; // and battalions at the least, a stretch of the ring each
 
@@ -78,6 +83,12 @@ const AHEAD = 0.45; // what a place ahead costs a battalion put out of water it 
 const WING = 0.7; // a foe so far from the middle of the line is on a wing
 const LEVEL = 0.7; // so near the line or the place, a battalion counts as level with it
 const APART = 0.7; // garrison battalions keep so far apart in the streets
+const MUSTER_OUT = 1; // the nearest row of a sortie forms up so far out of the gate
+const MUSTER_ROW = 4; // battalions abreast at most
+const MUSTER_FURTHEST = 3; // fronts further out of the gate a sortie may form up to find room
+const MUSTER_MET = 1.5; // a foe so near a battalion of a sortie forming up: it goes at once
+const MUSTERED = 0.5; // so near its place a battalion of a sortie has formed up
+const MUSTER_CLEAR = 1.75; // fronts a place of a sortie forming up keeps from the foe: beyond its reach to meet them
 const BEYOND = 1.15; // the ground beyond the ends of a line that covers them
 const BANK = 1.7; // a line holding a crossing stands so far behind its bank
 const EDGE = 0.5; // and one holding the water's edge, its middle a battalion deep from it: who comes at it is still wading
@@ -127,13 +138,12 @@ function survey(battle: Battle, side: Side): View {
   const all = battle.blocks.filter(block => block.side === side);
   const ready = all.filter(block => block.status === "ready" && !block.leaving);
   const troops = sum(ready, block => block.troops) || 1;
-  const { boost } = battle[side];
   return {
     ready,
-    power: sum(ready, strength) * boost,
-    fire: sum(ready, block => (block.range ? strength(block) : 0)) * boost,
-    grip: sum(ready, block => strength(block) * getGrip(block)) * boost,
-    riders: sum(ready, block => (block.kind === "rider" ? strength(block) : 0)) * boost,
+    power: sum(ready, strength),
+    fire: sum(ready, block => (block.range ? strength(block) : 0)),
+    grip: sum(ready, block => strength(block) * getGrip(block)),
+    riders: sum(ready, block => (block.kind === "rider" ? strength(block) : 0)),
     morale: sum(ready, block => block.morale * block.troops) / troops,
     losses: battle[side].casualties + battle[side].captured,
     share: all.length ? ready.length / all.length : 0,
@@ -155,7 +165,9 @@ export function deploy(battle: Battle): void {
     const attacking = side === "attackers";
     if (type === "ambush") attacking ? marchColumn(battle, blocks) : layAmbush(battle, blocks);
     else if (type === "siege" && field.held !== null && attacking)
-      canRing(battle, blocks) ? ringIn(battle, blocks) : layLines(battle, blocks);
+      canRing(battle, blocks) && getHandTactic(battle, side) !== "lines"
+        ? ringIn(battle, blocks)
+        : layLines(battle, blocks);
     else if (type === "siege" && hasWalls(battle)) manWalls(battle, blocks);
     else drawUp(battle, side, blocks);
   }
@@ -204,7 +216,8 @@ function createPlan(tactic: TacticName, frame: Frame, fixed = false): Plan {
     bled: 0,
     fortify: false,
     arrival: Infinity,
-    wedge: null
+    wedge: null,
+    muster: null
   };
 }
 
@@ -311,8 +324,8 @@ function drawUp(battle: Battle, side: Side, blocks: Block[]): void {
   const crossing = side === "defenders" ? findCrossing(battle) : null;
   const [tactic, strike] = chooseTactic(battle, side, blocks, crossing !== null);
   const places = form(blocks, TACTICS[tactic], strike, getRoom(battle), battle.field.front);
-  // defenders ready for a landing meet it at the water's edge, unless their general would rather fight inland
-  const meets = battle.type === "landing" && side === "defenders" && !battle[side].waits;
+  // defenders ready for a landing or a bombardment meet it at the water's edge, unless their general would rather wait inland
+  const meets = isFromSea(battle.type) && side === "defenders" && !battle[side].waits;
   const shore = meets ? findShore(battle) : null;
   const frame = crossing ?? shore ?? findGround(battle, side, places, forward)[0];
   // a line that holds follows the ground: the water's edge, or the brow of the slope the foe has to come up
@@ -400,11 +413,31 @@ function isBare(battle: Battle, side: Side, blocks: Block[]): boolean {
   return findGround(battle, side, places, forward)[1] === 0;
 }
 
-/** The tactic of a side: the one its general settled on thinking the battle through, else the best by the scores */
+/** The tactic of a side: the one given by hand, else the one its general settled on, else the best by the scores */
 function chooseTactic(battle: Battle, side: Side, blocks: Block[], crossing: boolean): [TacticName, number] {
   const [scores, strike] = rateTactics(battle, side, blocks, crossing);
-  const settled = scores.find(([name]) => name === battle[side].tactic);
+  const wanted = getHandTactic(battle, side) ?? battle[side].tactic;
+  const settled = scores.find(([name]) => name === wanted);
   return [(settled ?? scores[0])[0], strike];
+}
+
+/** The tactic a side was given by hand before the start: the last word stands, null gives it back to its general */
+export function getHandTactic(battle: Battle, side: Side): TacticName | null {
+  const change = battle.interventions.findLast(change => change.kind === "tactic" && change.side === side);
+  return change?.kind === "tactic" ? change.tactic : null;
+}
+
+/** The tactics a side may be drawn up in, the likeliest first; none when there is no choice */
+export function getTactics(battle: Battle, side: Side): TacticName[] {
+  const { type, field } = battle;
+  const blocks = battle.blocks.filter(block => block.side === side);
+  if (type === "ambush") return side === "defenders" ? ["ambuscade", "waylay"] : [];
+  if (type === "siege" && field.held !== null && side === "attackers")
+    return canRing(battle, blocks) ? ["ring", "lines"] : [];
+  if (type === "siege" && hasWalls(battle)) return [];
+  const crossing = side === "defenders" && findCrossing(battle) !== null;
+  const names = rateTactics(battle, side, blocks, crossing)[0].map(([name]) => name);
+  return names.length > 1 ? names : [];
 }
 
 /** What a general may settle on before a battle: a tactic, to wait for the foe rather than go to meet him, to storm at once */
@@ -421,13 +454,15 @@ const option = (tactic: TacticName | null, waits = false, storms = false): Optio
  * In the open: every tactic open to him, and for an attacker who is the weaker to stand and wait instead; where water or
  * walls make the going slow to reckon only such an attacker does it, with his likeliest tactic.
  * In an ambush: to lie on both sides of the road or on one. The column has no plan: it is caught.
- * In a landing: for ready defenders, to meet it at the shore or to wait inland.
+ * In a landing and a bombardment: for ready defenders, to meet it at the shore or to wait inland.
  * In a siege: for besiegers a little short of the odds the walls ask for, to storm at once all the same or to keep to the rule.
  */
 export function getOptions(battle: Battle, side: Side): Option[] {
   const { type, field } = battle;
-  if (type === "ambush") return side === "defenders" ? [option("ambuscade"), option("waylay")] : [];
-  if (type === "landing") return side === "defenders" && findShore(battle) ? [option(null), option(null, true)] : [];
+  const byHand = getHandTactic(battle, side) !== null; // the general has nothing to settle
+  if (type === "ambush") return side === "defenders" && !byHand ? [option("ambuscade"), option("waylay")] : [];
+  if (isFromSea(battle.type))
+    return side === "defenders" && findShore(battle) ? [option(null), option(null, true)] : [];
   if (type === "siege") {
     // a storm of many battalions is too slow to play through in the time there is
     if (side === "defenders" || field.held === null || battle.blocks.length > 28) return [];
@@ -443,7 +478,7 @@ export function getOptions(battle: Battle, side: Side): Option[] {
   );
   const ring = battle[enemyOf(side)].plan.tactic === "laager"; // and a foe that rings its wagons
   const rough = field.water.some(Boolean) || field.walls.length > 0 || barring || ring;
-  if (rough && side === "defenders") return [];
+  if ((rough && side === "defenders") || byHand) return [];
   const blocks = battle.blocks.filter(block => block.side === side);
   const names = rateTactics(battle, side, blocks, battle[side].plan.tactic === "crossing")[0].map(([name]) => name);
   const options = (rough ? names.slice(0, 1) : names).map(name => option(name));
@@ -456,7 +491,7 @@ export function getOptions(battle: Battle, side: Side): Option[] {
 
 /**
  * Where a side forms up: the attackers where they came from, the defenders on the best ground about the battle point;
- * and how many ends of its line the ground there covers, the edge of the field apart
+ * and how many ends of its line the ground there covers
  */
 function findGround(battle: Battle, side: Side, places: Place[], forward: number): [Frame, number] {
   const { axis, field } = battle;
@@ -477,15 +512,12 @@ function findGround(battle: Battle, side: Side, places: Place[], forward: number
     y: field.height / 2 + Math.sin(axis) * along * deep + Math.sin(axis + Math.PI / 2) * width * shift,
     heading: forward
   });
-  /** The ends of a line there that water, wood or a burg covers, or the edge of the field */
-  const getEnds = (frame: Frame, edge = true): number => {
+  /** The ends of a line there that water, wood or a burg covers. The edge of the field is where the view ends, no cover */
+  const getEnds = (frame: Frame): number => {
     let ends = 0;
     for (const sign of [-1, 1]) {
-      const [x, y] = toField(frame, sign * (half + front * BEYOND), 0);
-      const beyond = terrainAt(field, x, y);
-      const margin = getMargin(field);
-      const off = x < margin || y < margin || x > field.width - margin || y > field.height - margin;
-      if ((edge && off) || beyond.water || beyond.wood || beyond.town) ends += 1;
+      const beyond = terrainAt(field, ...toField(frame, sign * (half + front * BEYOND), 0));
+      if (beyond.water || beyond.wood || beyond.town) ends += 1;
     }
     return ends;
   };
@@ -523,12 +555,12 @@ function findGround(battle: Battle, side: Side, places: Place[], forward: number
   const inside = ([x, y]: Point): boolean =>
     x >= margin && y >= margin && x <= field.width - margin && y <= field.height - margin;
   for (let i = 0; i < 30 && !inside(toField(frame, 0, -depth)); i++) [frame.x, frame.y] = toField(frame, 0, step);
-  return [frame, getEnds(frame, false)];
+  return [frame, getEnds(frame)];
 }
 
 /**
  * A river the attackers have to cross on their way: the defenders stand round the far end of the ford or the bridge
- * they will come by, when it is on their half of the field
+ * they will come by, when it is on their half of the field. A brook is waded anywhere: no crossing to hold
  */
 function findCrossing(battle: Battle): Frame | null {
   const { field, axis } = battle;
@@ -541,7 +573,8 @@ function findCrossing(battle: Battle): Frame | null {
   const passable = (node: number): boolean => !field.water[node] || field.ford[node] === 1;
   const costs = Float32Array.from(field.water, (_, node) => (passable(node) ? (field.water[node] ? 3 : 1) : Infinity));
   const way = trace(spread(COLS, ROWS, [nodeAt(field, ...point(-0.8))], costs), nodeAt(field, ...point(0.35)));
-  const wet = (node: number): boolean => field.water[node] > 0 || field.deck[node] === 1;
+  const wet = (node: number): boolean =>
+    (field.water[node] > 0 || field.deck[node] === 1) && !isBrook(field, nodeCentre(field, node));
   const last = way.findLastIndex(wet);
   if (last < way.length * 0.4 || last >= way.length - 2) return null;
   const [x, y] = nodeCentre(field, way[last]);
@@ -549,6 +582,12 @@ function findCrossing(battle: Battle): Frame | null {
   const heading = Math.atan2(y - by, x - bx);
   const back = field.front * BANK;
   return { x: x - Math.cos(heading) * back, y: y - Math.sin(heading) * back, heading };
+}
+
+/** Whether the river nearest a point is a brook */
+function isBrook(field: Battlefield, point: Point): boolean {
+  const nearest = least(field.rivers, river => distanceToLine(point, river.points));
+  return nearest?.brook ?? false;
 }
 
 /** Defenders ready for a landing hold the water's edge where the attackers come out of it */
@@ -683,7 +722,8 @@ function layAmbush(battle: Battle, blocks: Block[]): void {
       if (hidden(lie(side, distance))) return lie(side, distance);
     return lie(side, far);
   };
-  const tactic: TacticName = battle.defenders.tactic === "waylay" ? "waylay" : "ambuscade";
+  const chosen = getHandTactic(battle, "defenders") ?? battle.defenders.tactic;
+  const tactic: TacticName = chosen === "waylay" ? "waylay" : "ambuscade";
   const wings =
     tactic === "waylay"
       ? [{ troops: sorted, frame: cover(at(1)) > cover(at(0)) ? at(1) : at(0) }]
@@ -790,7 +830,7 @@ function ringIn(battle: Battle, blocks: Block[]): void {
     return best;
   };
 
-  const gates = field.walls.filter(wall => wall.burg === held && wall.gate);
+  const gates = getGates(field, held);
   const mid = (wall: FieldWall): Point => [(wall.a[0] + wall.b[0]) / 2, (wall.a[1] + wall.b[1]) / 2];
   const byStrength = (a: Block, b: Block): number => strength(b) - strength(a);
   const ships = blocks.filter(block => isMoored(battle, block)).sort(byStrength);
@@ -846,8 +886,7 @@ export function isCutOff(battle: Battle): boolean {
   const { field } = battle;
   if (battle.attackers.plan.tactic !== "ring" || battle.attackers.phase === "retreat") return false;
   const watchers = battle.blocks.filter(block => block.side === "attackers" && block.status === "ready");
-  return field.walls.every(wall => {
-    if (wall.burg !== field.held || !wall.gate) return true;
+  return getGates(field, field.held).every(wall => {
     return watchers.some(block => {
       const fits = wall.water === 2 || (wall.water === 1) === isMoored(battle, block);
       return fits && watches(battle, block, wall);
@@ -882,7 +921,7 @@ function manWalls(battle: Battle, blocks: Block[]): void {
     taken.push(best);
     return best;
   };
-  const gates = field.walls.filter(wall => wall.burg === held && wall.gate).map(wall => wall.a);
+  const gates = getGates(field, held).map(wall => wall.a);
   const toFoe = ([x, y]: Point): number =>
     (x - burg.x) * Math.cos(frame.heading) + (y - burg.y) * Math.sin(frame.heading);
   const toGate = ([x, y]: Point): number =>
@@ -1039,7 +1078,7 @@ export function obey(battle: Battle, side: Side, command: Command): void {
 /** An order given by hand has stood its time: the general decides again */
 function release(battle: Battle, side: Side): void {
   const { plan } = battle[side];
-  if (plan.byHand === null || battle.round - plan.byHand < ORDER_ROUNDS) return;
+  if (plan.byHand === null || battle.round - plan.byHand < battle.settings.orderRounds) return;
   Object.assign(plan, { order: null, byHand: null });
   if (!isOpenFight(battle)) battle[side].advancing = isAttacking(battle, side, false);
 }
@@ -1116,7 +1155,8 @@ function engage(battle: Battle, side: Side, own: View, foe: View, gap: number): 
   const data = battle[side];
   const { phase, plan } = data;
   const names = POSTURES[battle.type][side];
-  if (isLost(own, foe)) return names.run;
+  const firing = battle.type === "bombardment"; // ships and troops only shoot: fire against fire
+  if (firing ? isLost({ ...own, power: own.fire }, { ...foe, power: foe.fire }) : isLost(own, foe)) return names.run;
   if (isBeaten(battle.type, enemyOf(side), battle[enemyOf(side)].phase) || foe.share <= 0.25) return names.chase;
   if (phase === names.close || phase === names.chase) return names.close;
   if (!isOpenFight(battle)) return names.close;
@@ -1159,6 +1199,15 @@ function isOnWalls(battle: Battle): boolean {
   });
 }
 
+/** Battalions of the side in order within the walls of the burg */
+const isWithin = (battle: Battle, side: Side): boolean =>
+  battle.blocks.some(
+    block =>
+      block.side === side &&
+      block.status === "ready" &&
+      terrainAt(battle.field, block.x, block.y).walled === battle.field.held! + 1
+  );
+
 function besiege(battle: Battle, own: View, foe: View): string {
   const { phase } = battle.attackers;
   if (phase === "retreat" || phase === "looting") return phase;
@@ -1189,28 +1238,115 @@ function withstand(battle: Battle, own: View, foe: View): string {
   const besiegers = battle.attackers.phase;
   if (besiegers === "retreat" || besiegers === SURRENDER) return "pursue";
   // the burg is given up when the garrison's heart is gone, or half of it with the besiegers on the walls and the stronger,
-  // or when it is cut off and starved
+  // when it is cut off and starved, or when stormers stand in it and none of the garrison does: it is taken
   const fallen = own.losses >= 1 / 2 && own.power < foe.power && isOnWalls(battle);
   const starved = battle.cutOff && own.morale <= STARVED + 1;
-  if (!own.ready.length || own.morale < 15 || fallen || starved) return SURRENDER;
+  const taken = besiegers === "storming" && isWithin(battle, "attackers") && !isWithin(battle, "defenders");
+  if (!own.ready.length || own.morale < 15 || fallen || starved || taken) return SURRENDER;
   if (besiegers === "storming" || besiegers === "looting") return "defense";
 
   // a sortie at engines left with fewer guards than the party: it comes home when they are done for, or it is.
-  // A garrison half as strong again as the besiegers comes out to drive them off, and stays out while it is the stronger.
+  // A garrison half as strong again as the besiegers comes out to drive them off, and stays out while it is the stronger;
+  // under the fire of their engines, which it cannot answer from the walls, one that is the stronger at all.
   // A garrison cut off has less to lose: it goes out on a lower heart and stays out longer
   const party = own.ready.filter(block => block.order.role === "reserve" || block.order.sent);
   const prey = getSortiePrey(battle, own, foe);
-  const strong = isStrongGarrison(own, foe);
+  const strong = isStrongGarrison(own, foe) || (besiegers === "bombardment" && own.power >= foe.power);
   const heart = battle.cutOff ? SHAKEN : 40;
   if (phase === "sortie") {
     const spent = sum(party, block => block.morale * block.troops) / (sum(party, block => block.troops) || 1) < heart;
-    if (strong ? !spent && own.power >= foe.power : prey && !spent && battle.round - plan.since < SORTIE_ROUNDS)
-      return phase;
+    const out = plan.muster ? (plan.muster.launched ?? battle.round) : plan.since; // the time it formed up is not counted
+    if (strong ? !spent && own.power >= foe.power : prey && !spent && battle.round - out < SORTIE_ROUNDS) return phase;
   } else if ((prey || strong) && own.morale >= heart + 10 && battle.round - plan.since >= 3) return "sortie";
   return own.ready.some(block => block.type === "machinery") ? "bombardment" : "sheltering";
 }
 
 const isStrongGarrison = (own: View, foe: View): boolean => own.power >= foe.power * 1.5;
+
+/**
+ * The party of a sortie forms up outside a gate in rows facing its prey, or the besiegers: by the gate nearest them
+ * with a front of open ground between the rows and the foe. Null when it is too few or no gate has that room
+ */
+function musterSortie(battle: Battle, party: Block[], prey: Block | null, foe: View): Muster | null {
+  const { field } = battle;
+  const { front } = field;
+  const burg = field.burgs[field.held!];
+  const ashore = foe.ready.filter(block => !isMoored(battle, block));
+  if (party.length < 2 || !ashore.length) return null;
+  const goal = prey ?? {
+    x: sum(ashore, block => block.x) / ashore.length,
+    y: sum(ashore, block => block.y) / ashore.length
+  };
+
+  const abreast = Math.min(Math.max(Math.ceil(party.length / 2), 2), MUSTER_ROW);
+  const depth = (Math.ceil(party.length / abreast) - 1) * ROW_GAP * front;
+  const reach = MUSTER_OUT * front + depth / 2; // of the middle of the rows from the gate
+  const clear = MUSTER_CLEAR * front;
+  const open = ([x, y]: Point): boolean =>
+    !terrainAt(field, x, y).walled &&
+    !shuns(battle, party[0], x, y) &&
+    ashore.every(block => far(block, toSpot([x, y])) >= clear);
+  /**
+   * The rows out of a gate, as near it as all of them stand out of the walls and the water and clear of the foe;
+   * none on the far side of the burg from the goal
+   */
+  const lay = ([gx, gy]: Point) => {
+    const out = Math.atan2(gy - burg.y, gx - burg.x);
+    for (let further = 0; further <= MUSTER_FURTHEST; further += 0.5) {
+      const distance = reach + further * front;
+      const centre = { x: gx + Math.cos(out) * distance, y: gy + Math.sin(out) * distance };
+      if (far(centre, goal) >= far(burg, goal)) return null; // a march round the burg is no sortie
+      const heading = Math.atan2(goal.y - centre.y, goal.x - centre.x);
+      const places = party.map((_, i): Point => {
+        const row = Math.floor(i / abreast);
+        const inRow = Math.min(abreast, party.length - row * abreast);
+        const across = ((i % abreast) - (inRow - 1) / 2) * front * (1 + GAP);
+        return onField(field, toField({ ...centre, heading }, across, depth / 2 - row * ROW_GAP * front));
+      });
+      if (places.every(open)) return { centre, heading, places, gate: toSpot([gx, gy]) };
+    }
+    return null;
+  };
+  let best: NonNullable<ReturnType<typeof lay>> | null = null;
+  for (const wall of getGates(field, field.held)) {
+    if (wall.water === 1) continue;
+    const muster = lay([(wall.a[0] + wall.b[0]) / 2, (wall.a[1] + wall.b[1]) / 2]);
+    if (muster && (!best || far(muster.centre, goal) < far(best.centre, goal))) best = muster;
+  }
+  if (!best) return null;
+
+  // who is out of the gate first goes furthest, so nobody stands in the way of those behind
+  const { centre, heading, places, gate } = best;
+  places.sort((a, b) => far(toSpot(b), gate) - far(toSpot(a), gate));
+  let march = 0; // ticks the slowest battalion takes to its place
+  [...party]
+    .sort((a, b) => far(a, gate) - far(b, gate))
+    .forEach((block, i) => {
+      const [x, y] = places[i];
+      Object.assign(block.order, { mission: "flank", sent: true, target: null, x, y, facing: heading });
+      march = Math.max(march, far(block, { x, y }) / getPace(battle, block));
+    });
+  const [least, most] = MUSTER_ROUNDS;
+  const rounds = Math.min(Math.max(Math.ceil((march * MUSTER_SLACK) / ROUND_TICKS), least), most);
+  return { ...centre, heading, until: battle.round + rounds, launched: null };
+}
+
+const toSpot = ([x, y]: Point): { x: number; y: number } => ({ x, y });
+
+/** A sortie formed up, kept waiting too long or met by the foe goes for its prey */
+function launchSortie(battle: Battle, own: View, foe: View): void {
+  const muster = battle.defenders.plan.muster!;
+  if (muster.launched !== null) return;
+  const { front } = battle.field;
+  const party = own.ready.filter(block => block.order.sent);
+  const formed = party.filter(block => far(block, block.order) < MUSTERED * front).length >= (party.length * 2) / 3;
+  const late = battle.round >= muster.until;
+  const met = foe.ready.some(block => party.some(own => far(block, own) < MUSTER_MET * front)); // it comes upon the rows
+  if (!formed && !late && !met) return;
+  muster.launched = battle.round;
+  const prey = getSortiePrey(battle, own, foe);
+  for (const block of party) Object.assign(block.order, { mission: "hunt", target: prey?.id ?? null });
+}
 
 /**
  * What a sortie may go for, the nearest first: an engine whose guards the party outweighs by half, and when the burg
@@ -1222,9 +1358,7 @@ function getSortiePrey(battle: Battle, own: View, foe: View): Block | null {
   const party = own.ready.filter(block => block.kind === "rider" || block.kind === "line");
   const might = sum(party, strength) / 2 + sum(party, block => (block.kind === "rider" ? strength(block) / 2 : 0));
   const ashore = foe.ready.filter(block => !isMoored(battle, block) && far(block, burg) < burg.radius + SORTIE);
-  const gates = battle.cutOff
-    ? field.walls.filter(wall => wall.burg === field.held && wall.gate && wall.water !== 1)
-    : [];
+  const gates = battle.cutOff ? getGates(field, field.held).filter(wall => wall.water !== 1) : [];
   const preys = ashore
     .filter(block => block.kind === "engine" || gates.some(wall => watches(battle, block, wall)))
     .sort((a, b) => far(a, burg) - far(b, burg));
@@ -1397,12 +1531,22 @@ function sendReserve(battle: Battle, side: Side, own: View, foe: View, foes: See
 
   if (plan.tactic === "garrison") {
     // a sortie: the riders and every other battalion of the line go out, at the engine when there is one to go for;
-    // the whole line when the garrison comes out to drive the besiegers off
-    if (phase !== "sortie" || own.ready.some(block => block.order.sent)) return;
+    // the whole line when the garrison comes out to drive the besiegers off. They form up outside a gate first
+    if (phase !== "sortie") {
+      plan.muster = null;
+      return;
+    }
+    if (plan.muster) {
+      launchSortie(battle, own, foe);
+      return;
+    }
+    if (own.ready.some(block => block.order.sent)) return;
     const line = own.ready.filter(block => block.order.role === "line" && block.morale >= SHAKEN);
     const prey = getSortiePrey(battle, own, foe);
     const all = isStrongGarrison(own, foe);
-    for (const block of [...spare(), ...line.filter((_, i) => all || i % 2 === 0)]) send(block, prey);
+    const party = [...spare(), ...line.filter((_, i) => all || i % 2 === 0)];
+    plan.muster = musterSortie(battle, party, prey, foe);
+    if (!plan.muster) for (const block of party) send(block, prey);
     return;
   }
 

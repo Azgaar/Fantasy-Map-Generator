@@ -1,7 +1,15 @@
 import { select, sum } from "d3";
+import {
+  BATTLE_SPEEDS,
+  type BattleSettings,
+  DEFAULT_BATTLE_SETTINGS,
+  PAUSE_EVENTS,
+  type PauseEvent
+} from "@/data/battle-options";
 import { BATTLE_ORDER_LABELS, BATTLE_TACTIC_LABELS, BATTLE_TYPE_LABELS } from "@/data/id-labels";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import { Options } from "@/model/options/options-model";
 import {
   applyDue,
   type Battle,
@@ -21,6 +29,7 @@ import {
   plan,
   prepare,
   ROUND_TICKS,
+  rethink,
   tick
 } from "@/model/political/battle/battle";
 import {
@@ -35,22 +44,42 @@ import {
   type Side
 } from "@/model/political/battle/battle-rules";
 import { formatClock } from "@/model/political/battle/battle-scale";
-import { createEmptyBattlefield, createMapField, type WorkKind } from "@/model/political/battle/battlefield";
-import { getOrder, isDugIn } from "@/model/political/battle/general";
+import {
+  createEmptyBattlefield,
+  createMapField,
+  hidesTroops,
+  type WorkKind
+} from "@/model/political/battle/battlefield";
+import type { TacticName } from "@/model/political/battle/formations";
+import { getHandTactic, getOrder, getTactics, isDugIn } from "@/model/political/battle/general";
 import { mayBuild } from "@/model/political/battle/works";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
-import { getUnitPower } from "@/model/political/military-units";
 import { Stability } from "@/model/political/stability";
 import { Names } from "@/model/society/names-generator";
 import type { Marker } from "@/model/story/markers-generator";
 import { formatLength, getLengthUnit } from "@/model/units";
 import {
+  type Camera,
+  type CameraMode,
+  createCamera,
+  moveCamera,
+  panView,
+  toCameraTroops,
+  zoomView
+} from "@/renderers/battle-camera";
+import { drawBattleOverlay } from "@/renderers/draw-battle-overlay";
+import {
+  drawArrows,
   drawBattlefield,
   drawBlocks,
   type Positions,
   SIDE_COLORS,
+  type SideColors,
+  setLook,
+  setView,
   snapshot,
+  type Trails,
   updateBlocks
 } from "@/renderers/draw-battle-scene";
 import { moveRegiment } from "@/renderers/draw-military";
@@ -61,6 +90,7 @@ import { Dialog } from "@/ui/dialog/dialog";
 import { applySorting, applySortingByHeader } from "@/ui/dialog/sorting";
 import { tip } from "@/ui/tooltips";
 import { last } from "@/utils/array-utils";
+import { getColorDistance } from "@/utils/color-utils";
 import { wiki } from "@/utils/common-utils";
 import { createFileInput, downloadFile, uploadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
@@ -68,9 +98,12 @@ import { getAdjective, list } from "@/utils/language-utils";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
-import { BattleAnimation, type BattleStart, getPlayback, SPEEDS } from "./battle-animation";
+import { type BattleSource, type BattleStart, getPlayback } from "./battle-animation";
+import { BattleConfigure } from "./battle-configure";
+import type { ReportText } from "./battle-report";
 
 const TICK_MS = 160; // a tick at normal speed: fifty times as fast as the battle
+const MORALE_STEP = 5; // a click on the morale bar adds or takes away
 const LOG_VERSION = 2;
 
 interface BattleLogFile {
@@ -82,6 +115,7 @@ interface BattleLogFile {
   interventions: Intervention[];
   log: string[];
   result: string | null;
+  settings?: BattleSettings; // the numbers it was fought with; the defaults when absent
 }
 
 let battle: Battle | null = null;
@@ -89,16 +123,24 @@ let regiments = new Map<string, Regiment>(); // the map's regiments in the battl
 let script: Intervention[] = []; // changes of a loaded log still to come
 let fileInput: HTMLInputElement | null = null;
 
-const player = { playing: false, speed: 1, frame: 0, tickStart: 0, previous: null as Positions | null };
+const player = { playing: false, speed: 1, frame: 0, tickStart: 0, lastFrame: 0, previous: null as Positions | null };
 let planning = 0; // timer of the generals' thinking the battle through
+let camera: Camera | null = null;
+let cameraMode: CameraMode = "follow"; // manual while the user looks round by hand
+let trails: Trails = new Map(); // where each battalion stood at each round since the last key moment
+let colors: SideColors = SIDE_COLORS;
 
 const regimentKey = (regiment: { state: number; i: number }): string => `${regiment.state}-${regiment.i}`;
 const scene = (): SVGSVGElement => document.getElementById("battleScene") as unknown as SVGSVGElement;
+const overlay = (): SVGSVGElement => document.getElementById("battleOverlay") as unknown as SVGSVGElement;
+const battleOptions = () => options.app.battle;
 
 function open(attacker: Regiment, defender: Regiment): void {
   if (options.app.mode) return;
   Dialog.closeAll(".stable");
   options.app.mode = "battle"; // an edit mode keeps other dialogs from opening
+  player.speed = battleOptions().view.speed;
+  cameraMode = battleOptions().view.camera;
 
   renderDialog();
   regiments = new Map([attacker, defender].map(regiment => [regimentKey(regiment), regiment]));
@@ -116,6 +158,9 @@ function open(attacker: Regiment, defender: Regiment): void {
     onClose: cancelResults
   });
   fitDialog();
+  toggleLog(battleOptions().view.log, false);
+  player.lastFrame = 0;
+  player.frame = requestAnimationFrame(loop);
   tip(
     t("Drag troops to change the deployment, double-click one to turn it, then start the battle"),
     true,
@@ -155,7 +200,7 @@ function fitDialog(): void {
 function setup(
   attackers: Regiment[],
   defenders: Regiment[],
-  from?: Partial<Pick<BattleLogFile, "type" | "name">>
+  from?: Partial<Pick<BattleLogFile, "type" | "name" | "settings">>
 ): void {
   const defender = defenders[0];
   const attacker = attackers[0];
@@ -177,11 +222,13 @@ function setup(
     units: options.map.military.units,
     populationScale: options.map.units.population.scale,
     attackers: attackers.map(regiment => toBattleRegiment(regiment, point)),
-    defenders: defenders.map(regiment => toBattleRegiment(regiment, point))
+    defenders: defenders.map(regiment => toBattleRegiment(regiment, point)),
+    settings: from?.settings ?? battleOptions().simulation
   });
 
   player.previous = null;
-  drawBattlefield(scene(), battle.field);
+  resetTrails();
+  drawField();
   drawScene();
   ensureEl("battleLogList").innerHTML = "";
   refresh();
@@ -210,21 +257,18 @@ function toBattleRegiment(regiment: Regiment, point: { x: number; y: number }): 
 const AMBUSH_ODDS = 0.75; // defenders weaker than that lie in ambush where the ground hides them
 
 function defineType(attacker: Regiment, defender: Regiment, cell: number): BattleType {
-  const types = (regiment: Regiment): (string | undefined)[] =>
-    Object.keys(regiment.u).map(name => options.map.military.units.find(u => u.name === name)?.type);
-  const typesA = types(attacker);
-  const burg = pack.burgs[pack.cells.burg[cell]];
+  const typesA = Military.getUnitTypes(attacker);
+  const flying = (types: (string | undefined)[]): boolean => types.every(type => type === "aviation");
+  const burg = pack.cells.burg[cell];
 
   if (attacker.n && defender.n) return "naval";
-  if (typesA.every(type => type === "aviation") && types(defender).every(type => type === "aviation")) return "air";
+  if (flying(typesA) && flying(Military.getUnitTypes(defender))) return "air";
   if (attacker.n && !defender.n && typesA.some(type => type !== "naval")) return "landing";
-  if (!defender.n && (burg?.walls || burg?.citadel)) return "siege";
-  // as the ribbon above the plan counts it
-  const power = (regiment: Regiment): number =>
-    sum(options.map.military.units, unit => (regiment.u[unit.name] ?? 0) * getUnitPower(unit)) *
-    Military.getBattleUpkeep(regiment.state);
-  const hidden = [5, 6, 7, 8, 9, 12].includes(pack.cells.biome[cell]); // forest or marsh
-  if (hidden && power(defender) < power(attacker) * AMBUSH_ODDS) return "ambush";
+  if (pack.burgs[burg]?.walls) return "siege";
+  if (attacker.n && !defender.n) return "bombardment"; // ships alone cannot land
+  const hidden = !burg && hidesTroops(pack.cells.biome[cell]);
+  if (hidden && Military.getRegimentPower(defender) < Military.getRegimentPower(attacker) * AMBUSH_ODDS)
+    return "ambush";
   return "field";
 }
 
@@ -236,87 +280,14 @@ function definePlace(cell: number): string | null {
   return Names.getCulture(cells.culture[cell]);
 }
 
-const STYLE = /* css */ `
-  #battleScreen { overflow: hidden; container: battle / size; }
-  /* top to bottom: who fights whom, the battlefield, the controls, the armies; scrolls when the armies outgrow the window */
-  #battleLayout { --line: #ccc; --muted: #666; --loss: #c5221f; display: flex; flex-direction: column; gap: 0.5em; box-sizing: border-box; width: auto; height: 100%; overflow-y: auto; }
-  #battleLayout > * { flex: none; }
-  #battleLayout [hidden] { display: none !important; }
-  #battleLayout .attackers { --side: ${SIDE_COLORS.attackers}; }
-  #battleLayout .defenders { --side: ${SIDE_COLORS.defenders}; }
-  #battleLayout button { white-space: nowrap; }
-
-  /* a button that opens a list of named choices, upward: the pickers stand low in the window */
-  .battlePicker { position: relative; display: inline-block; }
-  .battlePicker > button::before, .battleMenu > button::before { margin-right: 0.3em; }
-  .battlePicker > button:not(:disabled)::after { content: "▾"; margin-left: 0.4em; }
-  .battleMenu { position: absolute; bottom: 100%; left: 0; z-index: 5; display: flex; flex-direction: column; min-width: 100%; border: 1px solid #999; background: #fff; }
-  #battleLayout .battleMenu > button { padding: 0.3em 0.9em 0.3em 0.5em; border: 0; border-radius: 0; background: none; text-align: left; }
-  #battleLayout .battleMenu > button:hover { background: #eee; }
-  #battleLayout .battleMenu > button.current { font-weight: bold; }
-
-  /* who fights whom, and how the scales stand */
-  #battleHeader { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.3em 0.8em; margin-bottom: -0.5em; padding: 0.3em 0.6em; background: linear-gradient(150deg, transparent, ${SIDE_COLORS.attackers}30 20%, transparent 45%, transparent 55%, ${SIDE_COLORS.defenders}30 80%, transparent); }
-  .battleBanner { display: flex; align-items: center; gap: 0.7em; width: 100%; max-width: 30em; min-width: 0; }
-  .battleBanner.defenders { justify-self: end; }
-  .battleBanner.defenders, .battleBanner.defenders .battleBannerText > span { flex-direction: row-reverse; }
-  .battleBanner.defenders .battleStates { text-align: right; }
+/** The summary of a battle: over the field at its end, and atop a battle report */
+const SUMMARY_STYLE = /* css */ `
   .battleEmblems { display: flex; flex-shrink: 0; }
   .battleEmblems > svg { width: 3.2em; height: 3.2em; }
   .battleEmblems > svg + svg { margin-left: -1.9em; }
-  .battleBannerText { display: flex; flex: 1; flex-direction: column; gap: 0.2em; min-width: 0; }
-  .battleBannerText > span { display: flex; align-items: center; gap: 0.6em; }
-  .battleBannerText .battleBar { flex: 1; }
-  .battleStates { flex: 1; min-width: 0; overflow: hidden; font-size: 1.2em; text-overflow: ellipsis; white-space: nowrap; }
-  .battleTroops { display: inline-flex; align-items: baseline; gap: 0.4em; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .battleCount > b { font-size: 1.2em; }
-  .battleCount > span { color: var(--muted); }
   .battleLost { color: var(--loss); font-style: italic; }
   .battleCaptured { color: var(--muted); font-style: italic; white-space: nowrap; }
   .battleCaptured:empty::before { display: none; }
-  .battleBar { height: 0.5em; border: 1px solid #999; border-radius: 0.3em; overflow: hidden; }
-  .battleBar > i { display: block; height: 100%; background: #3f9b3f; transition: width 0.15s linear; }
-  .battleBar.mid > i { background: #e0a920; }
-  .battleBar.low > i { background: var(--loss); }
-  /* the side's order, or its tactic before the start: a chip in the side's colour */
-  #battleLayout .battleOrdersButton { flex: none; max-width: 14em; padding: 0.1em 0.6em; border: 1px solid color-mix(in srgb, var(--side) 45%, transparent); border-radius: 1em; background: color-mix(in srgb, var(--side) 10%, #fff); color: #333; cursor: pointer; }
-  #battleLayout .battleOrdersButton:hover { border-color: var(--side); background: color-mix(in srgb, var(--side) 20%, #fff); }
-  .battleOrder { display: block; overflow: hidden; text-overflow: ellipsis; }
-  #battleTitle { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.7em; min-width: 0; }
-  #battleTitle > div { display: flex; flex-direction: column; align-items: center; gap: 0.25em; min-width: 0; }
-  /* the die of the round, in the side's colour: a click turns it to the next face */
-  .battleDie { width: 3em; height: 3em; cursor: pointer; }
-  .battleDie > rect { fill: var(--side); }
-  .battleDie > circle { fill: #fff; }
-  .battleDie:hover > rect { stroke: #333; }
-  #battleName { position: relative; width: 16em; max-width: 100%; }
-  #battleNameFull { width: 100%; padding: 0 0.4em; border-color: transparent; background: none; font-size: 1.15em; font-weight: bold; text-align: center; text-overflow: ellipsis; }
-  #battleNameFull:hover, #battleNameFull:focus { border-color: #abadb3; background: #fff; }
-  #battleNameTools { position: absolute; top: 0; right: 0; bottom: 0; display: none; background: #fff; }
-  #battleName:hover > #battleNameTools, #battleName:focus-within > #battleNameTools { display: flex; }
-
-  /* the scales: the power of each side, as its share of the ribbon */
-  #battleBalance { position: relative; display: flex; width: clamp(11em, 22cqw, 16em); height: 1.6em; color: #fff; font-weight: bold; font-variant-numeric: tabular-nums; }
-  #battleBalance > i { display: flex; align-items: center; min-width: 4.2em; padding: 0 0.7em 0 1.2em; box-sizing: border-box; background: ${SIDE_COLORS.attackers}; font-style: normal; clip-path: polygon(0.7em 0, 100% 0, 100% 100%, 0.7em 100%, 0 50%); transition: width 0.25s ease-out; }
-  #battleBalance > i + i { flex: 1; justify-content: flex-end; padding: 0 1.2em 0 0.7em; background: ${SIDE_COLORS.defenders}; clip-path: polygon(0 0, calc(100% - 0.7em) 0, 100% 50%, calc(100% - 0.7em) 100%, 0 100%); }
-  #battleBalance > b { position: absolute; top: 50%; left: var(--at, 50%); width: 0.75em; height: 0.75em; border: 1px solid #333; background: #fff; transform: translate(-50%, -50%) rotate(45deg); transition: left 0.25s ease-out; }
-
-  /* the battlefield: as wide as the window, in the plan's shape */
-  #battleStage { position: relative; aspect-ratio: 5 / 3; margin: 1px; outline: 1px solid #999; overflow: hidden; }
-  #battleScene { display: block; width: 100%; height: 100%; font-family: var(--serif); }
-  #battleScene.battleEditable .battleBlock { cursor: grab; }
-  #battleScene.battlePlanning .battleBlocks { display: none; }
-  #battleScene.battleFocus .battleBlock:not(.battleFocused) { opacity: 0.3; }
-  #battleLog { position: absolute; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; width: 21em; max-width: 100%; border-left: 1px solid #999; background: #fffffff0; }
-  #battleLog > header { display: flex; align-items: center; gap: 0.2em; padding: 0.3em 0.3em 0.3em 0.6em; border-bottom: 1px solid var(--line); }
-  #battleLog > header > b { flex: 1; }
-  #battleLogList { flex: 1; padding: 0.3em 0.6em; overflow-y: auto; line-height: 1.4; user-select: text; }
-  #battleLogList > div { display: grid; grid-template-columns: 2.6em 0.6em minmax(0, 1fr); gap: 0.4em; align-items: baseline; }
-  #battleLogList > div > i { color: var(--muted); font-style: normal; font-variant-numeric: tabular-nums; text-align: right; }
-  #battleLogList > div > u { width: 0.6em; height: 0.6em; background: var(--side, transparent); }
-  #battleLogList > div.order { color: var(--muted); }
-  #battleLogList > div.start, #battleLogList > div.end { font-weight: bold; }
-
   /* the end of the battle, over the field: who won and at what cost */
   #battleSummary { position: absolute; inset: 0; z-index: 3; display: flex; padding: 0.8em; overflow-y: auto; background: #000000a0; animation: battleSummaryFade 0.3s ease-out; }
   #battleSummary > div { --side: #666; position: relative; display: flex; flex-direction: column; gap: 0.6em; width: min(44em, 100%); margin: auto; padding: 0.8em 1em 1em; box-sizing: border-box; border-top: 4px solid var(--side); background: #fff; box-shadow: 0 0.4em 2em #000a; animation: battleSummaryRise 0.35s ease-out; }
@@ -344,6 +315,99 @@ const STYLE = /* css */ `
   @keyframes battleSummaryFade { from { opacity: 0; } }
   @keyframes battleSummaryRise { from { opacity: 0; transform: translateY(1.5em) scale(0.96); } }
 
+`;
+
+const STYLE = /* css */ `
+  #battleScreen { overflow: hidden; container: battle / size; }
+  /* top to bottom: who fights whom, the battlefield, the controls, the armies; scrolls when the armies outgrow the window */
+  #battleLayout { --line: #ccc; --muted: #666; --loss: #c5221f; display: flex; flex-direction: column; gap: 0.5em; box-sizing: border-box; width: auto; height: 100%; overflow-y: auto; }
+  #battleLayout > * { flex: none; }
+  #battleLayout [hidden] { display: none !important; }
+  #battleLayout .attackers { --side: var(--attackers); }
+  #battleLayout .defenders { --side: var(--defenders); }
+  #battleLayout button { white-space: nowrap; }
+
+  /* a button that opens a list of named choices, upward: the pickers stand low in the window */
+  .battlePicker { position: relative; display: inline-block; }
+  .battlePicker > button::before, .battleMenu > button::before { margin-right: 0.3em; }
+  .battlePicker > button:not(:disabled)::after { content: "▾"; margin-left: 0.4em; }
+  .battleMenu { position: absolute; bottom: 100%; left: 0; z-index: 5; display: flex; flex-direction: column; min-width: 100%; border: 1px solid #999; background: #fff; }
+  #battleLayout .battleMenu > button { padding: 0.3em 0.9em 0.3em 0.5em; border: 0; border-radius: 0; background: none; text-align: left; }
+  #battleLayout .battleMenu > button:hover { background: #eee; }
+  #battleLayout .battleMenu > button.current { font-weight: bold; }
+
+  /* who fights whom, and how the scales stand */
+  #battleHeader { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.3em 0.8em; margin-bottom: -0.5em; padding: 0.3em 0.6em; background: linear-gradient(150deg, transparent, color-mix(in srgb, var(--attackers) 19%, transparent) 20%, transparent 45%, transparent 55%, color-mix(in srgb, var(--defenders) 19%, transparent) 80%, transparent); }
+  .battleBanner { display: flex; align-items: center; gap: 0.7em; width: 100%; max-width: 30em; min-width: 0; }
+  .battleBanner.defenders { justify-self: end; }
+  .battleBanner.defenders, .battleBanner.defenders .battleBannerText > span { flex-direction: row-reverse; }
+  .battleBanner.defenders .battleStates { text-align: right; }
+  .battleBannerText { display: flex; flex: 1; flex-direction: column; gap: 0.2em; min-width: 0; }
+  .battleBannerText > span { display: flex; align-items: center; gap: 0.6em; }
+  .battleMoraleBox { position: relative; display: flex; flex: 1; align-items: center; }
+  .battleMoraleBox > .battleBar { flex: 1; }
+  /* morale steps show over the ends of the bar under the pointer */
+  #battleLayout .battleMoraleStep { position: absolute; top: 50%; width: 1.5em; height: 1.5em; padding: 0; border: 1px solid #fff; border-radius: 50%; background: var(--side); color: #fff; font-size: 0.85em; line-height: 1; opacity: 0; cursor: pointer; transform: translateY(-50%); transition: opacity 0.1s; }
+  #battleLayout .battleMoraleStep::before { margin: 0; }
+  #battleLayout .battleMoraleStep:hover { background: color-mix(in srgb, var(--side) 75%, #000); }
+  .battleMoraleStep.icon-minus { left: -0.3em; }
+  .battleMoraleStep.icon-plus { right: -0.3em; }
+  #battleLayout .battleMoraleBox:hover > .battleMoraleStep { opacity: 1; }
+  .battleStates { flex: 1; min-width: 0; overflow: hidden; font-size: 1.2em; text-overflow: ellipsis; white-space: nowrap; }
+  .battleTroops { display: inline-flex; align-items: baseline; gap: 0.4em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .battleCount > b { font-size: 1.2em; }
+  .battleCount > span { color: var(--muted); }
+  .battleBar { height: 0.5em; border: 1px solid #999; border-radius: 0.3em; overflow: hidden; }
+  .battleBar > i { display: block; height: 100%; background: #3f9b3f; transition: width 0.15s linear; }
+  .battleBar.mid > i { background: #e0a920; }
+  .battleBar.low > i { background: var(--loss); }
+  /* the side's order, or its tactic before the start: a chip in the side's colour */
+  #battleLayout .battleOrdersButton { max-width: 100%; padding: 0.1em 0.6em; border: 1px solid color-mix(in srgb, var(--side) 45%, transparent); border-radius: 1em; background: color-mix(in srgb, var(--side) 10%, #fff); color: #333; cursor: pointer; }
+  #battleLayout .battleOrdersButton:hover { border-color: var(--side); background: color-mix(in srgb, var(--side) 20%, #fff); }
+  .battleOrder { display: block; overflow: hidden; text-overflow: ellipsis; }
+  .battleBanner .battlePicker { flex: none; max-width: 14em; }
+  .battleBanner .battlePicker > button::after { content: none; }
+  .battleMenu.battleOrders { top: 100%; bottom: auto; min-width: 12em; }
+  .defenders .battleMenu.battleOrders { right: 0; left: auto; }
+  #battleLayout .battleMenu > button.battleMenuBreak { border-top: 1px solid var(--line); }
+  #battleTitle { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.7em; min-width: 0; }
+  #battleTitle > div { display: flex; flex-direction: column; align-items: center; gap: 0.25em; min-width: 0; }
+  /* the die of the round, in the side's colour: a click turns it to the next face */
+  .battleDie { width: 3em; height: 3em; cursor: pointer; }
+  .battleDie > rect { fill: var(--side); }
+  .battleDie > circle { fill: #fff; }
+  .battleDie:hover > rect { stroke: #333; }
+  #battleName { position: relative; width: 16em; max-width: 100%; }
+  #battleNameFull { width: 100%; padding: 0 0.4em; border-color: transparent; background: none; font-size: 1.15em; font-weight: bold; text-align: center; text-overflow: ellipsis; }
+  #battleNameFull:hover, #battleNameFull:focus { border-color: #abadb3; background: #fff; }
+  #battleNameTools { position: absolute; top: 0; right: 0; bottom: 0; display: none; background: #fff; }
+  #battleName:hover > #battleNameTools, #battleName:focus-within > #battleNameTools { display: flex; }
+
+  /* the scales: the power of each side, as its share of the ribbon */
+  #battleBalance { position: relative; display: flex; width: clamp(11em, 22cqw, 16em); height: 1.6em; color: #fff; font-weight: bold; font-variant-numeric: tabular-nums; }
+  #battleBalance > i { display: flex; align-items: center; min-width: 4.2em; padding: 0 0.7em 0 1.2em; box-sizing: border-box; background: var(--attackers); font-style: normal; clip-path: polygon(0.7em 0, 100% 0, 100% 100%, 0.7em 100%, 0 50%); transition: width 0.25s ease-out; }
+  #battleBalance > i + i { flex: 1; justify-content: flex-end; padding: 0 1.2em 0 0.7em; background: var(--defenders); clip-path: polygon(0 0, calc(100% - 0.7em) 0, 100% 50%, calc(100% - 0.7em) 100%, 0 100%); }
+  #battleBalance > b { position: absolute; top: 50%; left: var(--at, 50%); width: 0.75em; height: 0.75em; border: 1px solid #333; background: #fff; transform: translate(-50%, -50%) rotate(45deg); transition: left 0.25s ease-out; }
+
+  /* the battlefield: as wide as the window, in the plan's shape */
+  #battleStage { position: relative; aspect-ratio: 5 / 3; margin: 1px; outline: 1px solid #999; overflow: hidden; }
+  #battleScene { display: block; width: 100%; height: 100%; font-family: var(--serif); touch-action: none; }
+  #battleScene.battlePanning { cursor: grabbing; }
+  #battleOverlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #battleScene.battleEditable .battleBlock { cursor: grab; }
+  #battleScene.battlePlanning .battleBlocks { display: none; }
+  #battleScene.battleFocus .battleBlock:not(.battleFocused) { opacity: 0.3; }
+  #battleLog { position: absolute; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; width: 21em; max-width: 100%; border-left: 1px solid #999; background: #fffffff0; }
+  #battleLog > header { display: flex; align-items: center; gap: 0.2em; padding: 0.3em 0.3em 0.3em 0.6em; border-bottom: 1px solid var(--line); }
+  #battleLog > header > b { flex: 1; }
+  #battleLogList { flex: 1; padding: 0.3em 0.6em; overflow-y: auto; line-height: 1.4; user-select: text; }
+  #battleLogList > div { display: grid; grid-template-columns: 2.6em 0.6em minmax(0, 1fr); gap: 0.4em; align-items: baseline; }
+  #battleLogList > div > i { color: var(--muted); font-style: normal; font-variant-numeric: tabular-nums; text-align: right; }
+  #battleLogList > div > u { width: 0.6em; height: 0.6em; background: var(--side, transparent); }
+  #battleLogList > div.order { color: var(--muted); }
+  #battleLogList > div.start, #battleLogList > div.end { font-weight: bold; }
+
+  ${SUMMARY_STYLE}
   #battleFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4em 1em; }
   #battleFooter > div { display: flex; align-items: center; gap: 0.3em; min-width: 0; }
   #battleFooter button { height: 2em; box-sizing: border-box; } /* one height, whatever the icon */
@@ -405,10 +469,17 @@ function renderDialog(): void {
       <span class="battleBannerText">
         <span>
           <b class="battleStates"></b>
-          <button class="battleOrdersButton" data-tip="${t("Give an order, add power or morale. Each change is made once and written to the battle log")}"><span class="battleOrder"></span></button>
+          <span class="battlePicker">
+            <button class="battleOrdersButton" data-tip="${t("Click to give the side an order. Each order is written to the battle log")}"><span class="battleOrder"></span></button>
+            <div class="battleMenu battleOrders" hidden></div>
+          </span>
         </span>
         <span>
-          <div class="battleBar battleMorale"><i></i></div>
+          <span class="battleMoraleBox">
+            <div class="battleBar battleMorale"><i></i></div>
+            <button class="battleMoraleStep icon-minus" data-step="-${MORALE_STEP}" data-tip="${t("Lower the side's morale by {{value}}", { value: MORALE_STEP })}"></button>
+            <button class="battleMoraleStep icon-plus" data-step="${MORALE_STEP}" data-tip="${t("Raise the side's morale by {{value}}", { value: MORALE_STEP })}"></button>
+          </span>
           <span class="battleTroops">
             <span class="battleCount" data-tip="${t("Troops left")}"><b></b><span></span></span>
             <span class="battleLost" data-tip="${t("Casualties")}"></span>
@@ -451,6 +522,7 @@ function renderDialog(): void {
         </div>
         <div id="battleStage">
           <svg id="battleScene" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet"></svg>
+          <svg id="battleOverlay" preserveAspectRatio="xMidYMid meet" font-family="Georgia, serif"></svg>
           <div id="battleLog" hidden>
             <header>
               <b>${t("Battle log")}</b>
@@ -466,10 +538,11 @@ function renderDialog(): void {
           <div>
             <button id="battleRun" data-tip="${t("Start or pause the battle")}"></button>
             <button id="battleResultRestart" class="icon-ccw" data-tip="${t("Play the same battle again from the start")}" hidden> ${t("Play again")}</button>
+            <button id="battleStepBack" data-tip="${t("Take the battle back by a single step")}" class="icon-left-open"></button>
             <button id="battleStep" data-tip="${t("Advance the battle by a single step")}" class="icon-right-open"></button>
             <button id="battleRestart" data-tip="${t("Play the same battle again from the start")}" class="icon-ccw"></button>
             <label id="battleSpeed" data-tip="${t("Battle speed")}">
-              <input type="range" min="0" max="${SPEEDS.length - 1}" step="1" value="${SPEEDS.indexOf(player.speed)}" style="--steps: ${SPEEDS.length - 1}; --fill: ${SPEEDS.indexOf(player.speed) / (SPEEDS.length - 1)}" />
+              <input type="range" min="0" max="${BATTLE_SPEEDS.length - 1}" step="1" value="${BATTLE_SPEEDS.indexOf(player.speed)}" style="--steps: ${BATTLE_SPEEDS.length - 1}; --fill: ${BATTLE_SPEEDS.indexOf(player.speed) / (BATTLE_SPEEDS.length - 1)}" />
               <span id="battleSpeedLabel">×${getPlayback(TICK_MS, player.speed)}</span>
             </label>
             <span id="battleClock"></span>
@@ -483,8 +556,8 @@ function renderDialog(): void {
               </div>
             </span>
             <button id="battleRoll" data-tip="${t("Draw the troops up anew. Only before the battle starts")}" class="icon-arrows-cw"></button>
-            <button id="battleAnimate" data-tip="${t("Save the battle as an animation, played from the start to the end")}" class="icon-button-screenshot"></button>
             <button id="battleLogToggle" data-tip="${t("Show the battle log")}" class="icon-list-bullet"></button>
+            <button id="battleConfigureOpen" data-tip="${t("Configure Battle: view, rendering, playback, simulation and export")}" class="icon-cog"></button>
             <button id="battleWiki" data-tip="${t("Open Battle Simulation Tutorial")}" class="icon-info"></button>
             <button id="battleApply" data-tip="${t("End battle: apply current results and close the screen")}" class="icon-check"></button>
             <button id="battleCancel" data-tip="${t("Cancel battle: roll back results and close the screen")}" class="icon-cancel"></button>
@@ -509,18 +582,19 @@ function renderDialog(): void {
   applySortingByHeader("battleScreen", "regimentSelectorHeader");
 
   ensureEl("battleRun").addEventListener("click", () => (player.playing ? pause() : play()));
+  ensureEl("battleStepBack").addEventListener("click", () => stepBack());
   ensureEl("battleStep").addEventListener("click", () => step());
   ensureEl("battleRestart").addEventListener("click", () => restart());
   ensureEl("battleResultRestart").addEventListener("click", () => restart());
   ensureEl("battleSpeed").addEventListener("input", event => {
     const input = event.target as HTMLInputElement;
-    input.style.setProperty("--fill", String(+input.value / (SPEEDS.length - 1)));
-    setSpeed(SPEEDS[+input.value]);
+    input.style.setProperty("--fill", String(+input.value / (BATTLE_SPEEDS.length - 1)));
+    setSpeed(BATTLE_SPEEDS[+input.value]);
   });
   ensureEl("battleType").addEventListener("click", event => togglePicker(event));
   ensureEl("battleType").nextElementSibling!.addEventListener("click", event => changeType(event));
   ensureEl("battleRoll").addEventListener("click", () => redeploy());
-  ensureEl("battleAnimate").addEventListener("click", () => saveAnimation());
+  ensureEl("battleConfigureOpen").addEventListener("click", () => BattleConfigure.open(CONFIGURE));
   ensureEl("battleLogToggle").addEventListener("click", () => toggleLog());
   ensureEl("battleLogClose").addEventListener("click", () => toggleLog(false));
   ensureEl("battleLogDownload").addEventListener("click", () => downloadLog());
@@ -548,14 +622,17 @@ function renderDialog(): void {
     focusRegiment(block ? `${block.state}-${block.regiment}` : null, false);
   });
   scene().addEventListener("pointerleave", () => focusRegiment(null));
+  bindCamera();
 
   for (const side of SIDES) {
     const el = ensureEl(`battleSide_${side}`);
     el.querySelector(".battleAddRegiment")!.addEventListener("click", () => addSide(side));
     ensureEl(`battleDie_${side}`).addEventListener("click", () => turnDie(side));
-    ensureEl(`battleBanner_${side}`)
-      .querySelector(".battleOrdersButton")!
-      .addEventListener("click", () => openOrders(side));
+    const banner = ensureEl(`battleBanner_${side}`);
+    banner.querySelector(".battleOrdersButton")!.addEventListener("click", event => openOrders(event, side));
+    banner.querySelector(".battleOrders")!.addEventListener("click", event => giveOrder(event, side));
+    for (const button of banner.querySelectorAll<HTMLElement>(".battleMoraleStep"))
+      button.addEventListener("click", () => changeMorale(side, +button.dataset.step!));
 
     // a regiment under the pointer stands out on the battlefield
     const list = el.querySelector<HTMLElement>(".battleRegimentList")!;
@@ -575,11 +652,169 @@ function renderDialog(): void {
   fileInput.onchange = () => uploadFile(fileInput!, loadLog);
 }
 
-function toggleLog(show = ensureEl("battleLog").hidden): void {
+function toggleLog(show = ensureEl("battleLog").hidden, keep = true): void {
   ensureEl("battleLog").hidden = !show;
   ensureEl("battleLogToggle").classList.toggle("pressed", show);
   if (show) ensureEl("battleLogList").scrollTop = ensureEl("battleLogList").scrollHeight;
+  if (keep) Options.set(o => (o.app.battle.view.log = show));
 }
+
+// the camera
+
+/** Zoom with the wheel or a pinch at the pointer, pan by dragging empty ground: the camera stops following */
+function bindCamera(): void {
+  const svg = scene();
+  const pointers = new Map<number, [number, number]>();
+  let dragged = 0; // pixels a press moved: a click is no pan
+  const onBlock = (event: Event): boolean =>
+    Boolean((event.target as Element).closest(".battleBlock")) && svg.classList.contains("battleEditable");
+  const toField = (x: number, y: number): [number, number] => {
+    const rect = svg.getBoundingClientRect();
+    const { view } = camera!;
+    return [
+      view.x + ((x - rect.left) / rect.width) * view.width,
+      view.y + ((y - rect.top) / rect.height) * view.height
+    ];
+  };
+  const look = (view: Camera["view"]): void => {
+    cameraMode = "manual";
+    camera = { view, target: view };
+    updateCamera(0);
+  };
+
+  svg.addEventListener(
+    "wheel",
+    event => {
+      if (!camera || !battle) return;
+      event.preventDefault();
+      look(
+        zoomView(battle.field, camera.view, Math.exp(-event.deltaY * 0.0015), toField(event.clientX, event.clientY))
+      );
+    },
+    { passive: false }
+  );
+  svg.addEventListener("pointerdown", event => {
+    if (event.button || onBlock(event)) return; // a drag on a battalion before the start moves it
+    pointers.set(event.pointerId, [event.clientX, event.clientY]);
+    dragged = 0;
+  });
+  svg.addEventListener("pointermove", event => {
+    const was = pointers.get(event.pointerId);
+    if (!was || !camera || !battle) return;
+    const now: [number, number] = [event.clientX, event.clientY];
+    pointers.set(event.pointerId, now);
+    const { field } = battle;
+    if (pointers.size === 2) {
+      const other = [...pointers].find(([id]) => id !== event.pointerId)![1];
+      const factor =
+        Math.hypot(now[0] - other[0], now[1] - other[1]) / (Math.hypot(was[0] - other[0], was[1] - other[1]) || 1);
+      look(zoomView(field, camera.view, factor, toField((now[0] + other[0]) / 2, (now[1] + other[1]) / 2)));
+      return;
+    }
+    dragged += Math.hypot(now[0] - was[0], now[1] - was[1]);
+    if (dragged < 4) return;
+    if (!svg.hasPointerCapture(event.pointerId)) svg.setPointerCapture(event.pointerId);
+    svg.classList.add("battlePanning");
+    const scale = camera.view.width / svg.getBoundingClientRect().width;
+    look(panView(field, camera.view, (was[0] - now[0]) * scale, (was[1] - now[1]) * scale));
+  });
+  const release = (event: PointerEvent): void => {
+    pointers.delete(event.pointerId);
+    if (!pointers.size) svg.classList.remove("battlePanning");
+  };
+  svg.addEventListener("pointerup", release);
+  svg.addEventListener("pointercancel", release);
+  svg.addEventListener("dblclick", event => {
+    if (onBlock(event)) return; // a battalion is turned
+    cameraMode = battleOptions().view.camera;
+  });
+}
+
+/** The camera `elapsed` seconds of screen time later, and the overlay that stays put over the view */
+function updateCamera(elapsed: number): void {
+  const b = battle;
+  if (!b || !camera) return;
+  camera = moveCamera(camera, b.field, toCameraTroops(b.blocks), cameraMode, elapsed);
+  setView(scene(), b.field, camera.view);
+  const look = battleOptions().rendering;
+  drawBattleOverlay(overlay(), { title: b.name, clock: formatClock(b.tick), viewWidth: camera.view.width, look });
+}
+
+/** The ground drawn anew: the camera frames it at once, in its chosen mode */
+function drawField(): void {
+  const b = battle!;
+  drawBattlefield(scene(), b.field);
+  if (cameraMode === "manual") cameraMode = battleOptions().view.camera;
+  camera = createCamera(b.field);
+  updateCamera(Infinity);
+}
+
+/** The sides by the leading state of each, the one with the most troops; red and blue when those look alike */
+function getSideColors(b: Battle): SideColors {
+  if (battleOptions().rendering.colors === "sides") return SIDE_COLORS;
+  const leading = (side: Side): number => {
+    const troops = new Map<number, number>();
+    for (const regiment of b[side].regiments)
+      troops.set(regiment.state, (troops.get(regiment.state) ?? 0) + sum(Object.values(regiment.troops)));
+    return [...troops].sort((a, z) => z[1] - a[1])[0]?.[0] ?? 0;
+  };
+  const [attackers, defenders] = SIDES.map(side => {
+    const color = pack.states[leading(side)]?.color;
+    return color && /^#[\da-f]{6}$/i.test(color) ? color : SIDE_COLORS[side];
+  });
+  return getColorDistance(attackers, defenders) < MIN_CONTRAST ? SIDE_COLORS : { attackers, defenders };
+}
+
+const MIN_CONTRAST = 25; // colours closer than that in Lab do not tell the sides apart
+
+/** What the scene draws and in which colours, from the options */
+function applyLook(): void {
+  colors = getSideColors(battle!);
+  setLook(scene(), battleOptions().rendering, colors);
+  const layout = ensureEl("battleLayout");
+  for (const side of SIDES) layout.style.setProperty(`--${side}`, colors[side]);
+}
+
+/** Where each battalion went since the last key moment, shown while paused */
+function resetTrails(): void {
+  trails = new Map(battle!.blocks.map(block => [block.id, [[block.x, block.y]]]));
+}
+
+function showArrows(): void {
+  const b = battle!;
+  drawArrows(scene(), b, !player.playing && b.tick ? trails : null);
+}
+
+/** The screen's options changed in Configure Battle */
+function applyOptions(group: keyof typeof options.app.battle): void {
+  const b = battle;
+  if (!b) return;
+  if (group === "view") {
+    cameraMode = battleOptions().view.camera;
+    if (player.speed !== battleOptions().view.speed) setSpeed(battleOptions().view.speed);
+    toggleLog(battleOptions().view.log, false);
+    updateBlocks(scene(), b, null, 1); // the battle plan overlay
+  } else if (group === "rendering") {
+    drawScene();
+    updateCamera(0);
+  } else if (group === "simulation" && !b.tick) {
+    // a battle under way never changes; before the start it is set up anew, as by a change of armies
+    const { field } = b;
+    b.settings = { ...battleOptions().simulation };
+    rethink(b);
+    prepare(b);
+    if (b.field !== field) drawField();
+    drawScene();
+    refresh();
+  }
+}
+
+const CONFIGURE = {
+  tickMs: TICK_MS,
+  onChange: applyOptions,
+  getSource: () => getSource(),
+  pause: () => pause()
+};
 
 /** Mark a regiment in its sheet and, unless the pointer is on the field already, its troops on the field */
 function focusRegiment(key: string | null, onField = true): void {
@@ -615,69 +850,118 @@ function play(): void {
   if (b.result || isPlanning()) return;
   player.playing = true;
   player.tickStart = performance.now();
-  if (!player.previous) advance();
+  resetTrails(); // the paused moment is the key moment the arrows start from
+  showArrows();
   setEditable();
-  cancelAnimationFrame(player.frame);
-  player.frame = requestAnimationFrame(animate);
+  if (!player.previous && advance()) pause();
 }
 
 function pause(): void {
   player.playing = false;
-  cancelAnimationFrame(player.frame);
   player.previous = null;
-  if (battle) updateBlocks(scene(), battle, null, 1);
+  if (battle) {
+    updateBlocks(scene(), battle, null, 1);
+    showArrows();
+  }
   setEditable();
 }
 
+/** A tick or a round on, as the step is set */
 function step(): void {
-  if (!battle || battle.result || isPlanning()) return;
+  const b = battle;
+  if (!b || b.result || isPlanning()) return;
   pause();
-  advance();
+  const round = battleOptions().playback.step === "round";
+  do advance();
+  while (round && b.tick % ROUND_TICKS && !b.result);
   player.previous = null;
-  updateBlocks(scene(), battle, null, 1);
+  updateBlocks(scene(), b, null, 1);
+  showArrows();
+}
+
+/** A tick or a round back: the battle is played anew from its start up to there, every change made coming at its moment */
+function stepBack(): void {
+  const b = battle;
+  if (!b?.tick || isPlanning()) return;
+  pause();
+  const round = battleOptions().playback.step === "round";
+  const target = round ? (Math.ceil(b.tick / ROUND_TICKS) - 1) * ROUND_TICKS : b.tick - 1;
+  const start = startAnew(b);
+  const anew = start.battle;
+  applyDue(anew, start.script);
+  plan(anew);
+  while (anew.tick < target && !anew.result) {
+    applyDue(anew, start.script);
+    tick(anew);
+  }
+  applyDue(anew, start.script); // the changes made while it stood there
+  battle = anew;
+  script = start.script;
+  player.previous = null;
+  resetTrails();
+  drawScene();
+  refresh();
 }
 
 function setSpeed(speed: number): void {
+  if (!BATTLE_SPEEDS.includes(speed)) return;
   // keep the tick in progress where it is
   const now = performance.now();
   player.tickStart = now - ((now - player.tickStart) * player.speed) / speed;
   player.speed = speed;
   ensureEl("battleSpeedLabel").textContent = `×${getPlayback(TICK_MS, speed)}`;
+  const input = ensureEl("battleSpeed").querySelector("input")!;
+  input.value = String(BATTLE_SPEEDS.indexOf(speed));
+  input.style.setProperty("--fill", String(BATTLE_SPEEDS.indexOf(speed) / (BATTLE_SPEEDS.length - 1)));
+  if (battleOptions().view.speed !== speed) Options.set(o => (o.app.battle.view.speed = speed));
 }
 
-function animate(now: number): void {
+/** Every frame while the screen is open: the battle plays on, and the camera follows */
+function loop(now: number): void {
   const b = battle;
-  if (!b || !player.playing) return;
-  let progress = (now - player.tickStart) / (TICK_MS / player.speed);
-  // a throttled tab catches up a few ticks a frame
-  for (let ticks = 0; progress >= 1 && ticks < 4; ticks++) {
-    if (b.result) {
-      pause();
-      return;
+  if (!b) return;
+  const elapsed = player.lastFrame ? (now - player.lastFrame) / 1000 : 0;
+  player.lastFrame = now;
+  if (player.playing) {
+    let progress = (now - player.tickStart) / (TICK_MS / player.speed);
+    // a throttled tab catches up a few ticks a frame
+    for (let ticks = 0; progress >= 1 && ticks < 4 && player.playing; ticks++) {
+      if (b.result || advance()) pause();
+      progress -= 1;
     }
-    advance();
-    progress -= 1;
+    if (progress >= 1) progress = 0;
+    player.tickStart = now - progress * (TICK_MS / player.speed);
+    if (player.playing) updateBlocks(scene(), b, player.previous, progress);
   }
-  if (progress >= 1) progress = 0;
-  player.tickStart = now - progress * (TICK_MS / player.speed);
-  updateBlocks(scene(), b, player.previous, progress);
-  player.frame = requestAnimationFrame(animate);
+  updateCamera(elapsed);
+  player.frame = requestAnimationFrame(loop);
 }
 
-function advance(): void {
+/** A tick on; true when it brought an event the battle pauses at */
+function advance(): boolean {
   const b = battle!;
   player.previous = snapshot(b);
   const blocks = b.blocks.length;
   applyDue(b, script);
   if (b.blocks.length !== blocks) drawScene(); // a recorded reinforcement
+  const logged = b.log.length;
   tick(b);
+  if (b.tick % ROUND_TICKS === 0) {
+    for (const block of b.blocks) trails.set(block.id, [...(trails.get(block.id) ?? []), [block.x, block.y]]);
+  }
   refresh();
   if (b.result) showSummary();
+  const stops = getPauseEvents();
+  return b.log.slice(logged).some(entry => stops.includes(entry.event as PauseEvent));
 }
 
+const getPauseEvents = (): PauseEvent[] => PAUSE_EVENTS.filter(event => battleOptions().playback.pause[event]);
+
 function drawScene(): void {
+  applyLook();
   drawBlocks(scene(), battle!, dropBlock, turnBlock);
   setEditable();
+  showArrows();
 }
 
 function dropBlock(block: Block, x: number, y: number): void {
@@ -760,6 +1044,7 @@ function refresh(): void {
 
   // setup only; nothing is hidden, so the controls never jump
   ensureEl<HTMLButtonElement>("battleRoll").disabled = started;
+  ensureEl<HTMLButtonElement>("battleStepBack").disabled = !started || isPlanning();
   ensureEl<HTMLButtonElement>("battleStep").disabled = over || isPlanning();
   ensureEl<HTMLButtonElement>("battleRestart").disabled = !started;
   ensureEl("battleRun").hidden = over;
@@ -793,6 +1078,7 @@ function refreshSide(side: Side): void {
   moraleBar.className = `battleBar battleMorale ${morale < 33 ? "low" : morale < 66 ? "mid" : ""}`;
   moraleBar.dataset.tip = `${side === "attackers" ? t("Attackers morale") : t("Defenders morale")}: ${morale}`;
   (moraleBar.firstElementChild as HTMLElement).style.width = `${morale}%`;
+  for (const step of banner.querySelectorAll<HTMLElement>(".battleMoraleStep")) step.hidden = Boolean(b.result);
 
   const die = ensureEl<SVGElement & HTMLElement>(`battleDie_${side}`);
   if (die.dataset.die !== String(data.die)) {
@@ -916,11 +1202,15 @@ function emblems(states: number[]): string {
 function showSummary(): void {
   const b = battle!;
   if (!b.result) return;
-  const { winner, status } = b.result;
-  const headline = winner ? (winner === "attackers" ? t("Attackers win") : t("Defenders win")) : t("No victor");
-
   const el = ensureEl("battleSummary");
-  el.innerHTML = /* html */ `<div class="${winner ?? ""}">
+  el.innerHTML = getSummary(b);
+  el.hidden = false;
+}
+
+function getSummary(b: Battle): string {
+  const { winner, status } = getResult(b);
+  const headline = winner ? (winner === "attackers" ? t("Attackers win") : t("Defenders win")) : t("No victor");
+  return /* html */ `<div class="${winner ?? ""}">
       <button class="battleSummaryClose icon-cancel" data-action="close" data-tip="${t("Close the summary to look at the battlefield")}"></button>
       <header>
         <span class="battleSummaryKicker">${escapeHtml(b.name)}</span>
@@ -933,7 +1223,6 @@ function showSummary(): void {
         <button data-action="apply" class="icon-check" data-tip="${t("End battle: apply current results and close the screen")}"> ${t("Apply results")}</button>
       </footer>
     </div>`;
-  el.hidden = false;
 }
 
 function summarySide(b: Battle, side: Side, status: string): string {
@@ -1000,58 +1289,74 @@ function turnDie(side: Side): void {
   refresh();
 }
 
-/** What the user may do to a side by hand: each change is made once and goes to the log */
-function openOrders(side: Side): void {
+/** The orders the side may be given, and before the start whether it stands behind works prepared the night before */
+function openOrders(event: Event, side: Side): void {
   const b = battle!;
   if (b.result) return;
-  findEl("battleOrdersScreen")?.remove();
-  const amount = t("Amount to add; a negative one is taken away");
+  const menu = (event.currentTarget as HTMLElement).nextElementSibling as HTMLElement;
   const current = getOrder(b, side);
-  // before the start a side that may build can stand behind works prepared the night before
-  const digs = !b.tick && mayBuild(b, side);
-  const dug = isDugIn(b, side);
-  const digTip = t("Start the battle behind finished works: a ditch, or stakes against a foe strong in riders");
-  const orders = (Object.keys(COMMANDS[b.type][side]) as Command[])
-    .map(
-      order => `<option value="${order}" ${order === current ? "selected" : ""}>${BATTLE_ORDER_LABELS[order]}</option>`
-    )
-    .join("");
-  ensureEl("dialogs").insertAdjacentHTML(
-    "beforeend",
-    /* html */ `<div id="battleOrdersScreen" class="dialog">
-      <div style="display: grid; grid-template-columns: auto 8em; align-items: center; gap: 0.5em 1em; width: auto">
-        <label for="battleOrdersOrder">${t("Orders")}</label>
-        <select id="battleOrdersOrder">${orders}</select>
-        <label for="battleOrdersPower" data-tip="${amount}">${t("Power")}</label>
-        <input id="battleOrdersPower" data-tip="${amount}" type="number" step="10" value="0" />
-        <label for="battleOrdersMorale" data-tip="${amount}">${t("Morale")}</label>
-        <input id="battleOrdersMorale" data-tip="${amount}" type="number" step="5" min="-100" max="100" value="0" />
-        ${digs ? `<label for="battleOrdersDig" data-tip="${digTip}">${t("Dug in")}</label><input id="battleOrdersDig" data-tip="${digTip}" type="checkbox" class="native" ${dug ? "checked" : ""} />` : ""}
-      </div>
-    </div>`
+  const items: string[] = [];
+  // before the start the side may be drawn up in another tactic than its general's
+  const tactics = b.tick ? [] : getTactics(b, side);
+  if (tactics.length) {
+    const chosen = getHandTactic(b, side);
+    const tactic = (name: string, label: string, tip: string, on: boolean): string =>
+      `<button data-tactic="${name}" data-tip="${tip}" class="icon-button-tactic ${on ? "current" : ""}">${label}</button>`;
+    items.push(tactic("", t("General's choice"), t("The general draws the side up as he sees fit"), !chosen));
+    for (const name of tactics)
+      items.push(tactic(name, BATTLE_TACTIC_LABELS[name], t("Draw the side up in this tactic"), name === chosen));
+  }
+  const orders = (Object.keys(COMMANDS[b.type][side]) as Command[]).map(
+    (order, i) =>
+      `<button data-order="${order}" data-tip="${orderTip(order)}" class="icon-button-${order} ${order === current ? "current" : ""} ${tactics.length && !i ? "battleMenuBreak" : ""}">${BATTLE_ORDER_LABELS[order]}</button>`
   );
+  items.push(...orders);
+  if (!b.tick && mayBuild(b, side)) {
+    const tip = t(
+      "Start the battle behind finished works: wagons against a foe strong in riders and shooters, else a ditch"
+    );
+    const icon = isDugIn(b, side) ? "icon-check" : "icon-check-empty";
+    items.push(`<button data-dig data-tip="${tip}" class="battleMenuBreak ${icon}">${t("Dug in")}</button>`);
+  }
+  menu.innerHTML = items.join("");
+  togglePicker(event);
+}
 
-  const apply = (): void => {
-    const order = ensureEl<HTMLSelectElement>("battleOrdersOrder").value as Command;
-    const power = +ensureEl<HTMLInputElement>("battleOrdersPower").value || 0;
-    const morale = +ensureEl<HTMLInputElement>("battleOrdersMorale").value || 0;
-    const dig = digs && ensureEl<HTMLInputElement>("battleOrdersDig").checked;
-    if (digs && dig !== dug) intervene(b, { tick: b.tick, kind: "dig", side, on: dig });
-    if (order !== current) intervene(b, { tick: b.tick, kind: "order", side, order });
-    if (power) intervene(b, { tick: b.tick, kind: "power", side, value: power });
-    if (morale) intervene(b, { tick: b.tick, kind: "morale", side, value: morale });
-    Dialog.close("battleOrdersScreen");
-    refresh();
-  };
+function giveOrder(event: Event, side: Side): void {
+  const b = battle!;
+  const button = (event.target as HTMLElement).closest("button");
+  if (!button || b.result) return;
+  if (button.dataset.tactic !== undefined) {
+    const tactic = (button.dataset.tactic || null) as TacticName | null;
+    if (!b.tick && tactic !== getHandTactic(b, side)) intervene(b, { tick: b.tick, kind: "tactic", side, tactic });
+  } else if (button.dataset.dig !== undefined) {
+    if (!b.tick) intervene(b, { tick: b.tick, kind: "dig", side, on: !isDugIn(b, side) });
+  } else {
+    const order = button.dataset.order as Command;
+    if (order !== getOrder(b, side)) intervene(b, { tick: b.tick, kind: "order", side, order });
+  }
+  refresh();
+}
 
-  Dialog.open("battleOrdersScreen", {
-    title: sideLabel(side),
-    position: { my: "center", at: "center", of: "#battleScreen" },
-    buttons: [
-      { label: t("Apply"), onClick: apply },
-      { label: t("Cancel"), onClick: () => Dialog.close("battleOrdersScreen") }
-    ]
-  });
+/** Hearten or shake a side by hand: clicks in a row leave one line in the log */
+function changeMorale(side: Side, value: number): void {
+  const b = battle!;
+  if (b.result) return;
+  const previous = b.interventions.at(-1);
+  intervene(b, { tick: b.tick, kind: "morale", side, value });
+  if (previous?.kind === "morale" && previous.side === side && previous.tick === b.tick) {
+    b.interventions.pop();
+    b.log.pop();
+    previous.value += value;
+    ensureEl("battleLogList").lastElementChild?.remove();
+    if (previous.value) b.log.at(-1)!.params!.value = previous.value > 0 ? `+${previous.value}` : `−${-previous.value}`;
+    else {
+      b.interventions.pop();
+      b.log.pop();
+    }
+    if (!b.tick) prepare(b); // the troops are lined up anew with the morale as it now stands
+  }
+  refresh();
 }
 
 function closePickers(): void {
@@ -1080,7 +1385,7 @@ function changeType(event: Event): void {
     // the ground follows the type until the battle starts
     b.field = buildField(b.x, b.y, type);
     prepare(b);
-    drawBattlefield(scene(), b.field);
+    drawField();
     drawScene();
   }
   if (named) setName(getBattleName(type, b.place));
@@ -1092,10 +1397,10 @@ function redeploy(): void {
   const b = battle!;
   if (b.tick) return;
   const sides = SIDES.map(side => b[side].regiments.map(regiment => regiments.get(regimentKey(regiment))!));
-  setup(sides[0], sides[1], { type: b.type, name: b.name });
-  // what was done to the sides by hand stays done, and the ground prepared before the battle
+  setup(sides[0], sides[1], { type: b.type, name: b.name, settings: b.settings });
+  // what was done to the sides by hand stays done: morale, the ground prepared and the tactics given
   for (const change of b.interventions) {
-    if (change.kind === "power" || change.kind === "morale" || change.kind === "dig") intervene(battle!, change);
+    if (change.kind === "morale" || change.kind === "dig" || change.kind === "tactic") intervene(battle!, change);
   }
   refresh();
 }
@@ -1181,7 +1486,7 @@ function addSide(side: Side): void {
       joinBattle(regiment, side);
       intervene(b, { tick: b.tick, kind: "add", side, regiment: toBattleRegiment(regiment, b) });
     });
-    if (b.field !== field) drawBattlefield(scene(), b.field); // more troops, a larger field
+    if (b.field !== field) drawField(); // more troops, a larger field
     drawScene();
     refresh();
   }
@@ -1203,7 +1508,7 @@ function withdrawRegiment(key: string): void {
     const regiment = regiments.get(key);
     if (regiment) leaveBattle(regiment);
     regiments.delete(key);
-    if (b.field !== field) drawBattlefield(scene(), b.field); // fewer troops, a smaller field
+    if (b.field !== field) drawField(); // fewer troops, a smaller field
     drawScene();
   }
   refresh();
@@ -1227,9 +1532,9 @@ function logText({ event, side, params }: LogEntry): string {
   if (event === "order") return `${t("Orders")}: ${BATTLE_ORDER_LABELS[params!.order as Command]}`;
   if (event === "ordered")
     return t("Ordered to {{order}}", { order: BATTLE_ORDER_LABELS[params!.order as Command].toLowerCase() });
-  if (event === "tactic") return `${t("Tactic")}: ${BATTLE_TACTIC_LABELS[params!.tactic]}`;
+  if (event === "tactic")
+    return `${t("Tactic")}: ${params!.tactic ? BATTLE_TACTIC_LABELS[params!.tactic] : t("General's choice")}`;
   if (event === "die") return `${t("Fortune")}: ${params!.die}`;
-  if (event === "power") return `${t("Power")}: ${params!.value}`;
   if (event === "morale") return `${t("Morale")}: ${params!.value}`;
   if (event === "join") return t("{{regiment}} joins the battle", params);
   if (event === "withdraw") return t("{{regiment}} is withdrawn", params);
@@ -1239,6 +1544,8 @@ function logText({ event, side, params }: LogEntry): string {
   if (event === "dig") return params!.on === "true" ? t("Dug in") : t("Not dug in");
   if (event === "fortified") return `${t("Works stand")}: ${WORK_LABELS[params!.kind as WorkKind]}`;
   if (event === "gap") return t("The wagons are broken through");
+  if (event === "clash") return t("The armies clash");
+  if (event === "broken") return t("The army breaks");
   if (event === "end") return side ? t("Hold the field") : t("The battle dies down");
 
   const block = { block: capitalize(params!.block) };
@@ -1285,12 +1592,13 @@ function buildLog(): BattleLogFile {
     type: b.type,
     attackers: ids("attackers"),
     defenders: ids("defenders"),
-    interventions: [...b.interventions],
+    interventions: [...b.interventions, ...script], // with those still to come after a step back
     log: b.log.map(entry => {
       const whose = entry.side ? `${sideLabel(entry.side)}: ` : "";
       return `${formatClock(entry.tick)} ${whose}${logText(entry)}`;
     }),
-    result: b.result ? outcome(b) : null
+    result: b.result ? outcome(b) : null,
+    settings: { ...b.settings }
   };
 }
 
@@ -1312,21 +1620,36 @@ function startAnew(b: Battle): BattleStart {
     units: b.units,
     populationScale: b.populationScale,
     attackers: structuredClone(getInitialRegiments(b, "attackers")),
-    defenders: structuredClone(getInitialRegiments(b, "defenders"))
+    defenders: structuredClone(getInitialRegiments(b, "defenders")),
+    settings: b.settings
   });
   return { battle, script: structuredClone([...b.interventions, ...script]) };
 }
 
-function saveAnimation(): void {
+/** The battle for an export: from its start, drawn as on screen, and worded for a report */
+function getSource(): BattleSource & { report: ReportText } {
   const b = battle!;
-  pause();
-  BattleAnimation.open({
+  const { year, era } = options.map.lore.calendar;
+  const shown = { ...colors };
+  return {
     fileName: getFileName(b.name),
+    title: b.name,
     start: () => startAnew(b),
     tickMs: TICK_MS,
-    speed: player.speed,
-    screenWidth: scene().getBoundingClientRect().width * devicePixelRatio
-  });
+    screenWidth: scene().getBoundingClientRect().width * devicePixelRatio,
+    look: { ...battleOptions().rendering },
+    colors: shown,
+    report: {
+      heading: [`${year} ${era}`, b.place].filter(Boolean).join(" · "),
+      summary: getSummary,
+      style: `body { --line: #ccc; --muted: #666; --loss: #c5221f; --attackers: ${shown.attackers}; --defenders: ${shown.defenders}; }
+        #battleSummary .attackers, .report .attackers { --side: var(--attackers); }
+        #battleSummary .defenders, .report .defenders { --side: var(--defenders); } ${SUMMARY_STYLE}`,
+      describe: logText,
+      marks: entry => (entry.side ? `--side: ${shown[entry.side]}` : ""),
+      kinds: getPauseEvents()
+    }
+  };
 }
 
 function loadLog(data: string): void {
@@ -1370,7 +1693,7 @@ function restore(file: BattleLogFile): boolean {
   const staying = new Set([...attackers, ...defenders]);
   for (const regiment of regiments.values()) if (!staying.has(regiment)) leaveBattle(regiment);
   regiments = new Map();
-  setup(attackers, defenders, file); // at the same place
+  setup(attackers, defenders, { ...file, settings: { ...DEFAULT_BATTLE_SETTINGS, ...file.settings } }); // at the same place
   SIDES.forEach((side, i) => {
     for (const regiment of [attackers, defenders][i]) {
       if (regiment.px === undefined) joinBattle(regiment, side);
@@ -1505,6 +1828,9 @@ function leaveBattle(regiment: Regiment): void {
 
 function closeBattleScreen(): void {
   pause();
+  cancelAnimationFrame(player.frame);
+  BattleConfigure.close();
+  camera = null;
   clearTimeout(planning);
   planning = 0;
   for (const regiment of regiments.values()) leaveBattle(regiment);
@@ -1514,7 +1840,6 @@ function closeBattleScreen(): void {
   fileInput?.remove();
   fileInput = null;
   options.app.mode = null; // exit edit mode
-  Dialog.destroy("battleOrdersScreen");
   Dialog.destroy("battleScreen");
   Dialog.destroy("regimentSelectorScreen");
 }
@@ -1525,6 +1850,7 @@ function typeTip(type: BattleType): string {
   if (type === "siege") return t("Siege: burg blockade and storming");
   if (type === "ambush") return t("Ambush: surprise attack");
   if (type === "landing") return t("Landing: amphibious attack");
+  if (type === "bombardment") return t("Bombardment: a fleet shells troops ashore");
   return t("Air Battle: maneuring fight of avia units");
 }
 

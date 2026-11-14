@@ -1,29 +1,47 @@
 // Shortest ways over a grid of nodes, row by row: each node has a cost of the way through it
 
-/** Cost of the way from the sources to every node, in nodes' widths, and the node each is reached from */
+/**
+ * Cost of the way from the sources to every node, in nodes' widths, and the node each is reached from.
+ * Read a node's cost by `costTo`: a lazy spread goes on only as far as that node, and `cost` and `from` hold for the
+ * nodes it has come to and the ways to them
+ */
 export interface Reach {
   cost: Float64Array; // doubles: a rounded cost would look improved by an equal way and be spread again
   from: Int32Array;
+  costTo: (node: number) => number;
 }
 
 /**
- * Spread from the sources over the grid, the cheapest ways first.
+ * Spread from the sources over the grid, the cheapest ways first: all of it, or when `lazy` only as far as asked.
  * `costs` is what a node's width of the way costs there; a node of infinite cost cannot be entered.
  * A source may stand where it cannot: it leaves at the cost of the node it steps onto.
  * `closed` shuts single steps, for what is thinner than a node: a bit a neighbour, see `getStepBit`.
+ * `toward` is the one node the spread is for: it goes that way first, and costs hold only for the way to it
  */
 export function spread(
   cols: number,
   rows: number,
   sources: number[],
   costs: ArrayLike<number>,
-  closed?: ArrayLike<number>
+  closed?: ArrayLike<number>,
+  lazy = false,
+  toward = -1
 ): Reach {
+  // the least a way from a node to `toward` costs: as many nodes' widths as the straight steps, at the cheapest going
+  const least = toward < 0 ? 0 : getLeast(costs);
+  const [goalCol, goalRow] = [toward % cols, Math.floor(toward / cols)];
+  const ahead = (node: number): number => {
+    if (toward < 0) return 0;
+    const dx = Math.abs((node % cols) - goalCol);
+    const dy = Math.abs(Math.floor(node / cols) - goalRow);
+    return (Math.max(dx, dy) + (Math.SQRT2 - 1) * Math.min(dx, dy)) * least;
+  };
   const size = cols * rows;
   const cost = new Float64Array(size).fill(Infinity);
   const from = new Int32Array(size).fill(-1);
+  const settled = new Uint8Array(size); // its cost and its way are final: it came off the heap
 
-  // a binary heap of nodes by cost; a node may be in it more than once, the dearer copies are skipped
+  // a binary heap of nodes by cost and what is left of the way; a node may be in it more than once, later copies are skipped
   let heapCost = new Float64Array(size);
   let heapNode = new Int32Array(size);
   let length = 0;
@@ -70,13 +88,20 @@ export function spread(
 
   for (const source of sources) {
     cost[source] = 0;
-    push(0, source);
+    push(ahead(source), source);
   }
 
-  while (length) {
-    const reached = heapCost[0];
-    const node = pop();
-    if (reached > cost[node]) continue;
+  /** Spread on till the node is settled, or everywhere */
+  const run = (until: number): void => {
+    while (length && !(until >= 0 && settled[until])) {
+      const node = pop();
+      if (settled[node]) continue;
+      settled[node] = 1;
+      relax(node, cost[node]);
+    }
+  };
+
+  const relax = (node: number, reached: number): void => {
     const col = node % cols;
     const row = (node - col) / cols;
     const here = costs[node];
@@ -101,13 +126,18 @@ export function spread(
         if (reached + step < cost[next]) {
           cost[next] = reached + step;
           from[next] = node;
-          push(cost[next], next);
+          push(cost[next] + ahead(next), next);
         }
       }
     }
-  }
+  };
 
-  return { cost, from };
+  if (!lazy) run(-1);
+  const costTo = (node: number): number => {
+    if (!settled[node]) run(node);
+    return cost[node];
+  };
+  return { cost, from, costTo };
 }
 
 /**
@@ -150,12 +180,25 @@ export function flood(
   return reached;
 }
 
+/** The cheapest node's width of the way on the grid, at least something */
+function getLeast(costs: ArrayLike<number>): number {
+  let least = leasts.get(costs);
+  if (least === undefined) {
+    least = Infinity;
+    for (let i = 0; i < costs.length; i++) if (costs[i] < least) least = costs[i];
+    leasts.set(costs, least === Infinity ? 0 : least);
+  }
+  return leasts.get(costs)!;
+}
+
+const leasts = new WeakMap<ArrayLike<number>, number>();
+
 /** The bit of a step to a neighbour in the `closed` mask of a node */
 export const getStepBit = (dx: number, dy: number): number => 1 << ((dy + 1) * 3 + dx + 1);
 
 /** Nodes of the way to a node, from the source on; empty when the node is not reached */
-export function trace({ cost, from }: Reach, node: number): number[] {
-  if (cost[node] === Infinity) return [];
+export function trace({ from, costTo }: Reach, node: number): number[] {
+  if (costTo(node) === Infinity) return [];
   const way = [node];
   while (from[way[0]] !== -1) way.unshift(from[way[0]]);
   return way;

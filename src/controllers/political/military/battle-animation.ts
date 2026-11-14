@@ -1,12 +1,21 @@
+import type { BattleLook, BattleOptions } from "@/data/battle-options";
 import { applyDue, type Battle, type Intervention, plan, replay, tick } from "@/model/political/battle/battle";
 import { formatClock, TICK_SECONDS } from "@/model/political/battle/battle-scale";
 import type { Battlefield } from "@/model/political/battle/battlefield";
-import { drawBattlefield, drawBlocks, snapshot, updateBlocks } from "@/renderers/draw-battle-scene";
-import { Dialog } from "@/ui/dialog/dialog";
+import { type Camera, createCamera, moveCamera, toCameraTroops, type View } from "@/renderers/battle-camera";
+import { drawBattleOverlay, OVERLAY_HEIGHT, OVERLAY_WIDTH } from "@/renderers/draw-battle-overlay";
+import {
+  drawBattlefield,
+  drawBlocks,
+  type SideColors,
+  setLook,
+  setView,
+  snapshot,
+  updateBlocks
+} from "@/renderers/draw-battle-scene";
 import { downloadFile } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
 import { log } from "@/utils/logger";
-import { ensureEl, findEl } from "@/utils/node-utils";
 import { escapeHtml } from "@/utils/string-utils";
 
 /** A battle set up anew at its start, with the changes to make on the way */
@@ -15,21 +24,27 @@ export interface BattleStart {
   script: Intervention[];
 }
 
-interface Source {
+/** What the screen hands an export: the battle from its start, and how it is drawn on screen */
+export interface BattleSource {
   fileName: string;
+  title: string;
   start: () => BattleStart;
   tickMs: number; // at normal speed
-  speed: number; // chosen on the battle screen
   screenWidth: number; // of the field on screen, in device pixels
+  look: BattleLook;
+  colors: SideColors;
 }
 
-type Format = "gif" | "svg";
-type Quality = "low" | "medium" | "high";
+export type ExportChoice = BattleOptions["export"];
+export type Progress = (share: number, status: string) => void;
+type Quality = ExportChoice["quality"];
+
 const FRAME_MS = 50; // aimed at: GIF delays are in hundredths of a second, short ones play slower
 const END_MS = 3000; // the outcome stands before the loop starts again
 const MOVING = [".battleWorks", ".battleFire", ".battleBlocks", ".battleMissiles", ".battleClashes"]; // layers above the ground
-const MIN_DELAY_MS = 20; // GIF viewers slow shorter frames down
-export const SPEEDS = [0.1, 0.2, 0.5, 1, 2, 4, 8, 16]; // playback, ×1 the speed a tick is drawn at
+export const MIN_DELAY_MS = 20; // GIF viewers slow shorter frames down
+const LEAST_FRONTS = 6; // the camera's narrowest view, in battalion fronts: the ground is drawn sharp enough for it
+const GROUND_MOST = 4096; // pixels the ground of a GIF is drawn wide at the most
 
 /** How many times as fast as the battle it plays at a speed */
 export const getPlayback = (tickMs: number, speed: number): number =>
@@ -37,84 +52,23 @@ export const getPlayback = (tickMs: number, speed: number): number =>
 const WIDTHS: Record<Exclude<Quality, "high">, number> = { low: 600, medium: 1000 }; // high is as sharp as the screen
 const MAX_WIDTH = 2000; // pixels
 
-const STYLE = /* css */ `
-  #battleAnimationForm { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.4em 0.8em; margin: 0; padding: 0; border: 0; }
-  #battleAnimationForm label { display: contents; }
-  #battleAnimation .battleAnimationProgress { display: flex; align-items: center; gap: 0.6em; }
-  #battleAnimationProgress { flex: 1; height: 1.5em; }
-`;
+/** The size of a file, as people read it */
+export const formatSize = (size: number): string =>
+  size > 1048576 ? `${(size / 1048576).toFixed(1)} MB` : `${Math.ceil(size / 1024)} KB`;
 
-let recording: AbortController | null = null;
-
-function open(source: Source): void {
-  findEl("battleAnimation")?.remove();
-  const option = (value: string, label: string, selected = false, disabled = false): string =>
-    `<option value="${value}"${selected ? " selected" : ""}${disabled ? " disabled" : ""}>${label}</option>`;
-  const speeds = SPEEDS.filter(speed => source.tickMs / speed >= MIN_DELAY_MS);
-  const selected = Math.min(source.speed, speeds.at(-1)!);
-
-  ensureEl("dialogs").insertAdjacentHTML(
-    "beforeend",
-    /* html */ `<div id="battleAnimation" class="dialog">
-      <style>${STYLE}</style>
-      <fieldset id="battleAnimationForm">
-        <label>${t("Format")}
-          <select name="format">
-            ${option("gif", "GIF", true)}
-            ${option("svg", t("Animated SVG"))}
-          </select>
-        </label>
-        <label>${t("Quality")}
-          <select name="quality">
-            ${option("low", t("Low"))}${option("medium", t("Medium"), true)}${option("high", t("High"))}
-          </select>
-        </label>
-        <label>${t("Speed")}
-          <select name="speed">
-            ${speeds.map(speed => option(String(speed), `×${getPlayback(source.tickMs, speed)}`, speed === selected)).join("")}
-          </select>
-        </label>
-      </fieldset>
-      <div class="battleAnimationProgress">
-        <progress id="battleAnimationProgress" max="1" value="0"></progress>
-        <span id="battleAnimationStatus"></span>
-      </div>
-    </div>`
-  );
-
-  Dialog.open("battleAnimation", {
-    title: t("Save battle animation"),
-    width: "auto",
-    modal: true,
-    position: { my: "center", at: "center", of: "#battleScreen" },
-    buttons: [
-      {
-        label: t("Save"),
-        className: "battleAnimationSave",
-        onClick: () => (recording ? recording.abort() : save(source))
-      },
-      { label: t("Close"), onClick: () => Dialog.close("battleAnimation") }
-    ],
-    onClose: () => recording?.abort()
-  });
-}
-
-const field = (name: string): HTMLSelectElement =>
-  ensureEl("battleAnimationForm").querySelector<HTMLSelectElement>(`[name="${name}"]`)!;
-
-function showProgress(share: number, status: string): void {
-  const progress = findEl<HTMLProgressElement>("battleAnimationProgress");
-  if (!progress) return; // closed
-  progress.value = share;
-  ensureEl("battleAnimationStatus").textContent = status;
-}
-
-async function save(source: Source): Promise<void> {
-  const format = field("format").value as Format;
-  const quality = field("quality").value as Quality;
-  const tickMs = source.tickMs / +field("speed").value;
+/** Record the battle from its start to the end and download it; false when stopped */
+export async function saveAnimation(
+  source: BattleSource,
+  choice: ExportChoice,
+  signal: AbortSignal,
+  onProgress: Progress
+): Promise<boolean> {
+  const format = choice.format === "svg" ? "svg" : "gif";
+  const tickMs = Math.max(source.tickMs / (choice.speed || 1), MIN_DELAY_MS);
   const width =
-    quality === "high" ? Math.min(Math.max(Math.round(source.screenWidth), 1000), MAX_WIDTH) : WIDTHS[quality];
+    choice.quality === "high"
+      ? Math.min(Math.max(Math.round(source.screenWidth), 1000), MAX_WIDTH)
+      : WIDTHS[choice.quality];
 
   // a quick run to the end tells how long the battle is
   const probe = source.start();
@@ -122,10 +76,7 @@ async function save(source: Source): Promise<void> {
   const ticks = Math.max(probe.battle.tick, 1);
   const end = formatClock(ticks);
 
-  recording = new AbortController();
-  const signal = recording.signal;
-  setBusy(true);
-  showProgress(0, "");
+  onProgress(0, "");
   const started = performance.now();
   try {
     const gif = format === "gif" ? await createGifWriter() : null;
@@ -135,31 +86,23 @@ async function save(source: Source): Promise<void> {
       width,
       tickMs,
       signal,
-      onTick: tick => showProgress(tick / ticks, `${formatClock(tick)} / ${end}`)
+      camera: choice.camera,
+      source,
+      onTick: tick => onProgress(tick / ticks, `${formatClock(tick)} / ${end}`)
     });
     if (!file) {
-      showProgress(0, t("Cancelled"));
-      return;
+      onProgress(0, t("Cancelled"));
+      return false;
     }
     downloadFile(file, `${source.fileName}.${format}`, file.type);
-    const size = file.size > 1048576 ? `${(file.size / 1048576).toFixed(1)} MB` : `${Math.ceil(file.size / 1024)} KB`;
     const seconds = Math.round((performance.now() - started) / 100) / 10;
-    showProgress(1, t("Saved: {{size}} in {{seconds}} s", { size, seconds }));
+    onProgress(1, t("Saved: {{size}} in {{seconds}} s", { size: formatSize(file.size), seconds }));
+    return true;
   } catch (error) {
     log.error(error);
-    showProgress(0, t("Cannot make the animation"));
-  } finally {
-    if (recording?.signal === signal) recording = null;
-    setBusy(false);
+    onProgress(0, t("Cannot make the animation"));
+    return false;
   }
-}
-
-function setBusy(busy: boolean): void {
-  const dialog = findEl("battleAnimation");
-  if (!dialog) return;
-  (ensureEl("battleAnimationForm") as HTMLFieldSetElement).disabled = busy;
-  const button = dialog.closest(".dialog-window")?.querySelector(".battleAnimationSave");
-  if (button) button.textContent = busy ? t("Cancel") : t("Save");
 }
 
 interface RecordOptions {
@@ -167,39 +110,69 @@ interface RecordOptions {
   width: number; // of an image
   tickMs: number; // a tick's length
   signal: AbortSignal;
+  camera: ExportChoice["camera"];
+  source: BattleSource;
   onTick: (tick: number) => void;
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+const xml = new XMLSerializer();
+export const markup = (nodes: Element[]): string => nodes.map(node => xml.serializeToString(node)).join("");
+
+/** A scene of the battle off screen, drawn as on screen, with its camera and overlay */
+export function createStage(battle: Battle, source: BattleSource, mode: ExportChoice["camera"]) {
+  const svg = document.createElementNS(SVG_NS, "svg");
+  const overlay = document.createElementNS(SVG_NS, "svg");
+  setLook(svg, source.look, source.colors);
+  drawBattlefield(svg, battle.field);
+  let camera: Camera = createCamera(battle.field);
+  const icons = new Set<string>();
+  let defs = "";
+  return {
+    svg,
+    overlay,
+    ground: markup([...svg.children]),
+    get defs(): string {
+      return defs;
+    },
+    get view(): View {
+      return camera.view;
+    },
+    /** Blocks drawn anew, with the unit icons a file has to carry: they are symbols of the page */
+    placeBlocks(): void {
+      drawBlocks(svg, battle, noop, noop);
+      for (const use of svg.querySelectorAll("use")) icons.add(use.getAttribute("href")!.slice(1));
+      const style = svg.querySelector("style.battleLook")?.outerHTML ?? "";
+      defs = `${style}<defs>${markup([...icons].flatMap(id => document.getElementById(id) ?? []))}</defs>`;
+    },
+    /** The camera `elapsed` seconds on, and the overlay for the moment */
+    frame(elapsed: number): void {
+      camera = moveCamera(camera, battle.field, toCameraTroops(battle.blocks), mode, elapsed);
+      setView(svg, battle.field, camera.view);
+      const clock = formatClock(battle.tick);
+      drawBattleOverlay(overlay, { title: source.title, clock, viewWidth: camera.view.width, look: source.look });
+    }
+  };
 }
 
 /** Play a battle set up anew from its start to the end into a looping animation */
 async function recordBattle(
   battle: Battle,
   script: Intervention[],
-  { gif, width, tickMs, signal, onTick }: RecordOptions
+  { gif, width, tickMs, signal, camera, source, onTick }: RecordOptions
 ): Promise<Blob | null> {
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  const xml = new XMLSerializer();
-  const markup = (nodes: Element[]): string => nodes.map(node => xml.serializeToString(node)).join("");
-
-  drawBattlefield(svg, battle.field);
-  const ground = markup([...svg.children]);
-
   applyDue(battle, script);
   plan(battle); // the first frame shows the troops as the generals drew them up
-  const icons = new Set<string>();
-  let defs = "";
-  const placeBlocks = (): void => {
-    drawBlocks(svg, battle, noop, noop);
-    // the unit icons are symbols of the page, the file has to carry its own
-    for (const use of svg.querySelectorAll("use")) icons.add(use.getAttribute("href")!.slice(1));
-    defs = `<defs>${markup([...icons].flatMap(id => document.getElementById(id) ?? []))}</defs>`;
-  };
-  placeBlocks();
-  updateBlocks(svg, battle, null, 1);
+  const stage = createStage(battle, source, camera);
+  stage.placeBlocks();
+  updateBlocks(stage.svg, battle, null, 1);
+  stage.frame(Infinity); // framed from the first frame
 
-  const layers = MOVING.map(layer => svg.querySelector(layer)!);
-  const recorder = new SvgRecorder(layers);
+  const layers = MOVING.map(layer => stage.svg.querySelector(layer)!);
+  const overlays = [...stage.overlay.children];
+  const recorder = new SvgRecorder([...layers, ...overlays], stage.svg);
   const addFrame = gif
-    ? await createRasterSink(gif, battle.field, width, ground, () => defs + markup(layers))
+    ? await createRasterSink(gif, battle.field, width, camera === "field" ? 1 : getMostZoom(battle.field), stage)
     : async (delay: number) => recorder.capture(delay);
 
   const frames = Math.max(1, Math.round(tickMs / FRAME_MS));
@@ -210,10 +183,11 @@ async function recordBattle(
     const previous = snapshot(battle);
     const blocks = battle.blocks.length;
     applyDue(battle, script);
-    if (battle.blocks.length !== blocks) placeBlocks(); // a recorded reinforcement
+    if (battle.blocks.length !== blocks) stage.placeBlocks(); // a recorded reinforcement
     tick(battle);
     for (let frame = 1; frame <= frames; frame++) {
-      updateBlocks(svg, battle, previous, frame / frames);
+      updateBlocks(stage.svg, battle, previous, frame / frames);
+      stage.frame(delay / 1000);
       await addFrame(delay);
     }
     onTick(battle.tick);
@@ -221,42 +195,55 @@ async function recordBattle(
   }
 
   if (gif) return gif.finish(END_MS);
-  const svgFile = `<svg xmlns="http://www.w3.org/2000/svg" ${viewBox(battle.field, SVG_WIDTH)}>${ground}${defs}${recorder.write(END_MS)}</svg>`;
+  const recorded = recorder.write(END_MS);
+  const scene = recorded.slice(0, layers.length).join("");
+  const overlay = recorded.slice(layers.length).join("");
+  const svgFile = `<svg xmlns="${SVG_NS}" viewBox="0 0 ${OVERLAY_WIDTH} ${OVERLAY_HEIGHT}" width="${SVG_WIDTH}" height="${(SVG_WIDTH * OVERLAY_HEIGHT) / OVERLAY_WIDTH}" font-family="Georgia, serif"><svg viewBox="${stage.svg.getAttribute("viewBox")}" width="${OVERLAY_WIDTH}" height="${OVERLAY_HEIGHT}">${recorder.writeView(END_MS)}${stage.ground}${stage.defs}${scene}</svg>${overlay}</svg>`;
   return new Blob([svgFile], { type: "image/svg+xml" });
 }
 
 const SVG_WIDTH = 1000; // pixels an animated drawing opens at
-const getHeight = (field: Battlefield, width: number): number => Math.round((field.height * width) / field.width);
+const getHeight = (width: number): number => Math.round((width * OVERLAY_HEIGHT) / OVERLAY_WIDTH);
 
-/** The field in metres, shown so many pixels wide */
-const viewBox = (field: Battlefield, width: number): string =>
-  `viewBox="0 0 ${field.width} ${field.height}" width="${width}" height="${getHeight(field, width)}" font-family="Georgia, serif"`;
+/** How many times the camera may zoom in on the field at the most */
+const getMostZoom = (field: Battlefield): number => Math.max(field.width / (field.front * LEAST_FRONTS), 1);
 
-/** Draws a frame as the ground under the moving layers and adds it to the GIF */
+/** The scene as an image in the view's part of the field, the overlay over it */
+export const getFrameMarkup = (view: View, width: number, content: string, overlay: string): string =>
+  `<svg xmlns="${SVG_NS}" viewBox="0 0 ${OVERLAY_WIDTH} ${OVERLAY_HEIGHT}" width="${width}" height="${getHeight(width)}" font-family="Georgia, serif"><svg viewBox="${view.x} ${view.y} ${view.width} ${view.height}" width="${OVERLAY_WIDTH}" height="${OVERLAY_HEIGHT}">${content}</svg>${overlay}</svg>`;
+
+/** Draws a frame as the part of the ground in view under the moving layers and the overlay, and adds it to the GIF */
 async function createRasterSink(
   gif: GifWriter,
   field: Battlefield,
   width: number,
-  ground: string,
-  moving: () => string
+  zoom: number,
+  stage: ReturnType<typeof createStage>
 ) {
-  const toImage = (content: string): Promise<HTMLImageElement> =>
-    loadImage(`<svg xmlns="http://www.w3.org/2000/svg" ${viewBox(field, width)}>${content}</svg>`);
-  const groundImage = await toImage(ground); // drawn once, under every frame
+  // drawn once, sharp enough for the closest view, under every frame
+  const groundWidth = Math.min(Math.round(width * zoom), Math.max(GROUND_MOST, width));
+  const ground = await loadImage(
+    `<svg xmlns="${SVG_NS}" viewBox="0 0 ${field.width} ${field.height}" width="${groundWidth}" height="${Math.round((groundWidth * field.height) / field.width)}">${stage.ground}</svg>`
+  );
+  const scale = ground.width / field.width;
   const canvas = document.createElement("canvas");
   canvas.width = width;
-  canvas.height = getHeight(field, width);
+  canvas.height = getHeight(width);
   const context = canvas.getContext("2d", { willReadFrequently: true })!;
+  const moving = MOVING.map(layer => stage.svg.querySelector(layer)!);
   return async (delay: number): Promise<void> => {
-    context.drawImage(groundImage, 0, 0);
-    context.drawImage(await toImage(moving()), 0, 0);
+    const { view } = stage;
+    const [x, y, w, h] = [view.x, view.y, view.width, view.height].map(value => value * scale);
+    context.drawImage(ground, x, y, w, h, 0, 0, canvas.width, canvas.height);
+    const frame = getFrameMarkup(view, width, stage.defs + markup(moving), markup([...stage.overlay.children]));
+    context.drawImage(await loadImage(frame), 0, 0);
     gif.add(canvas, delay);
   };
 }
 
 const noop = (): void => {};
 
-async function loadImage(markup: string): Promise<HTMLImageElement> {
+export async function loadImage(markup: string): Promise<HTMLImageElement> {
   const url = URL.createObjectURL(new Blob([markup], { type: "image/svg+xml" }));
   const image = new Image();
   image.src = url;
@@ -267,8 +254,6 @@ async function loadImage(markup: string): Promise<HTMLImageElement> {
   }
   return image;
 }
-
-export const BattleAnimation = { open };
 
 type GifWriter = Awaited<ReturnType<typeof createGifWriter>>;
 
@@ -331,21 +316,25 @@ const TOLERANCE = 0.06; // a glide may miss a recorded value by less than its ro
 const TRANSFORM = /^(?:translate\((-?[\d.]+)[ ,](-?[\d.]+)\))?\s*(?:rotate\((-?[\d.]+)\))?$/;
 
 /** Records how the elements under the roots change from frame to frame and writes it as one looping SVG animation:
- * numbers and transforms glide, other values switch */
+ * numbers and transforms glide, other values switch; the camera's view box glides too */
 class SvgRecorder {
   #roots: Element[];
+  #camera: Element;
+  #views: string[] = [];
   #times: number[] = []; // when each frame starts, ms
   #duration = 0;
   #tracks = new Map<Element, Track>();
 
-  constructor(roots: Element[]) {
+  constructor(roots: Element[], camera: Element) {
     this.#roots = roots;
+    this.#camera = camera;
   }
 
   capture(delay: number): void {
     const frame = this.#times.length;
     this.#times.push(this.#duration);
     this.#duration += delay;
+    this.#views.push(this.#camera.getAttribute("viewBox")!);
     const walk = (parent: Element): void => {
       for (const element of parent.children) {
         let track = this.#tracks.get(element);
@@ -363,11 +352,48 @@ class SvgRecorder {
     for (const root of this.#roots) walk(root);
   }
 
-  /** The roots with their recorded content; the last frame stays `endDelay` ms */
-  write(endDelay: number): string {
+  /** The camera's view box over the frames */
+  writeView(endDelay: number): string {
+    const views = this.#views;
+    return views.every(view => view === views[0])
+      ? ""
+      : this.#linear("animate", `attributeName="viewBox"`, views, this.#duration + endDelay);
+  }
+
+  // a value on the straight way between its neighbours is not needed to glide
+  #linear(tag: string, attributes: string, values: string[], total: number): string {
+    const all = [...values, values[values.length - 1]];
+    const times = [...this.#times, total];
+    const numbers = all.map(value => value.split(" ").map(Number));
+    // does the glide from one value to another pass this one
+    const passes = (from: number, to: number, i: number): boolean => {
+      const share = (times[i] - times[from]) / (times[to] - times[from]);
+      return numbers[i].every(
+        (n, k) => Math.abs(numbers[from][k] + (numbers[to][k] - numbers[from][k]) * share - n) < TOLERANCE
+      );
+    };
+    const kept = [0];
+    for (let i = 1; i < all.length - 1; i++) {
+      const from = kept[kept.length - 1];
+      for (let j = from + 1; j <= i; j++) {
+        if (passes(from, i + 1, j)) continue;
+        kept.push(i);
+        break;
+      }
+    }
+    kept.push(all.length - 1);
+    const keyTimes = kept.map(i => (i < all.length - 1 ? (times[i] / total).toFixed(5) : "1"));
+    const timing = `dur="${Math.round(total)}ms" repeatCount="indefinite"`;
+    return `<${tag} ${attributes} ${timing} values="${kept.map(i => all[i]).join(";")}" keyTimes="${keyTimes.join(";")}"/>`;
+  }
+
+  /** Each root with its recorded content; the last frame stays `endDelay` ms */
+  write(endDelay: number): string[] {
     const total = this.#duration + endDelay;
     const keyTimes = this.#times.map(time => (time / total).toFixed(5));
     const timing = `dur="${Math.round(total)}ms" repeatCount="indefinite"`;
+    const linear = (tag: string, attributes: string, values: string[]): string =>
+      this.#linear(tag, attributes, values, total);
     const children = new Map<Element, Track[]>();
     for (const track of this.#tracks.values()) {
       if (!children.has(track.parent)) children.set(track.parent, []);
@@ -390,32 +416,6 @@ class SvgRecorder {
     const discrete = (name: string, values: string[]): string => {
       const steps = values.flatMap((value, i) => (i && value === values[i - 1] ? [] : [i]));
       return `<animate attributeName="${name}" ${timing} calcMode="discrete" values="${steps.map(i => escapeHtml(values[i])).join(";")}" keyTimes="${steps.map(i => keyTimes[i]).join(";")}"/>`;
-    };
-
-    // a value on the straight way between its neighbours is not needed to glide
-    const linear = (tag: string, attributes: string, values: string[]): string => {
-      const all = [...values, values[values.length - 1]];
-      const times = [...this.#times, total];
-      const numbers = all.map(value => value.split(" ").map(Number));
-      // does the glide from one value to another pass this one
-      const passes = (from: number, to: number, i: number): boolean => {
-        const share = (times[i] - times[from]) / (times[to] - times[from]);
-        return numbers[i].every(
-          (n, k) => Math.abs(numbers[from][k] + (numbers[to][k] - numbers[from][k]) * share - n) < TOLERANCE
-        );
-      };
-      const kept = [0];
-      for (let i = 1; i < all.length - 1; i++) {
-        const from = kept[kept.length - 1];
-        for (let j = from + 1; j <= i; j++) {
-          if (passes(from, i + 1, j)) continue;
-          kept.push(i);
-          break;
-        }
-      }
-      kept.push(all.length - 1);
-      const keyTimes = kept.map(i => (i < all.length - 1 ? (times[i] / total).toFixed(5) : "1"));
-      return `<${tag} ${attributes} ${timing} values="${kept.map(i => all[i]).join(";")}" keyTimes="${keyTimes.join(";")}"/>`;
     };
 
     const transform = (values: string[]): string => {
@@ -465,11 +465,9 @@ class SvgRecorder {
       return `<${tag}${attributes}>${animations}${content}</${tag}>`;
     };
 
-    return this.#roots
-      .map(root => {
-        const attributes = [...root.attributes].map(({ name, value }) => ` ${name}="${escapeHtml(value)}"`).join("");
-        return `<${root.tagName}${attributes}>${(children.get(root) ?? []).map(write).join("")}</${root.tagName}>`;
-      })
-      .join("");
+    return this.#roots.map(root => {
+      const attributes = [...root.attributes].map(({ name, value }) => ` ${name}="${escapeHtml(value)}"`).join("");
+      return `<${root.tagName}${attributes}>${(children.get(root) ?? []).map(write).join("")}</${root.tagName}>`;
+    });
   }
 }

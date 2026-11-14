@@ -81,6 +81,32 @@ describe("pathfinding", () => {
     expect([...reach.cost]).toEqual([0, 1, 2, 3, 2, 1, 0]);
   });
 
+  it("spreads lazily only as far as asked, and toward a node as cheap a way as all round", () => {
+    let seed = 7;
+    const random = (): number => {
+      seed = (seed * 16807) % 2147483647;
+      return seed / 2147483647;
+    };
+    for (let round = 0; round < 30; round++) {
+      const [cols, rows] = [40, 25];
+      const costs = Float32Array.from({ length: cols * rows }, () => (random() < 0.15 ? Infinity : 0.8 + random() * 3));
+      const source = Math.floor(random() * cols * rows);
+      const all = spread(cols, rows, [source], costs);
+      const lazy = spread(cols, rows, [source], costs, undefined, true);
+      for (let k = 0; k < 10; k++) {
+        const goal = Math.floor(random() * cols * rows);
+        expect(lazy.costTo(goal)).toBe(all.cost[goal]);
+        expect(trace(lazy, goal)).toEqual(trace(all, goal));
+        const toward = spread(cols, rows, [source], costs, undefined, true, goal);
+        if (all.cost[goal] === Infinity) expect(toward.costTo(goal)).toBe(Infinity);
+        else expect(toward.costTo(goal)).toBeCloseTo(all.cost[goal], 9);
+      }
+      expect(lazy.cost.filter(cost => cost !== Infinity).length).toBeLessThanOrEqual(
+        all.cost.filter(cost => cost !== Infinity).length
+      );
+    }
+  });
+
   it("tells whether a straight way is clear", () => {
     const g = grid([".....", "..#..", "....."]);
     const inWay = (node: number): boolean => g.costs[node] === Infinity;

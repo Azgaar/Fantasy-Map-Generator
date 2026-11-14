@@ -45,6 +45,7 @@ export interface FieldWall {
   b: Point;
   burg: number; // index in the field's burgs
   gate: boolean;
+  jamb: boolean; // a stretch of the gateway beside the gate, drawn as wall: troops take a gate wider than it is drawn
   water: number; // what a gate opens on: 0 a road, 1 the sea or a lake, 2 a river
 }
 
@@ -77,6 +78,7 @@ export interface Battlefield extends FieldSize {
   // one value per grid node, row by row
   elevation: number[]; // the lie of the land, 0 the lowest to 1 the highest
   relief: number; // metres from height 0 to height 1
+  base: number; // metres above sea level of height 0
   wood: number[];
   marsh: number[];
   water: number[]; // 1 sea or lake, 2 river
@@ -117,7 +119,8 @@ const FORD = 72; // length of a ford along the river
 
 // share of the ground under trees, by biome
 const WOODS: Record<number, number> = { 3: 0.15, 4: 0.2, 5: 0.5, 6: 0.55, 7: 0.7, 8: 0.65, 9: 0.55, 10: 0.05, 12: 0.2 };
-const FOREST_BIOMES = [5, 6, 7, 8, 9];
+const WETLAND = 12;
+const HIDING_BIOMES = [5, 6, 7, 8, 9, WETLAND]; // forests and wetland
 
 /** A field with no ground, of the size for battalions of the default size; `prepare` sizes it to its battle */
 export function createEmptyBattlefield(open: Battlefield["open"] = null): Battlefield {
@@ -129,6 +132,7 @@ export function createEmptyBattlefield(open: Battlefield["open"] = null): Battle
     biome: 4,
     elevation: grid(),
     relief: 0,
+    base: 0,
     wood: grid(),
     marsh: grid(),
     water: grid(),
@@ -218,10 +222,10 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, clearing
       return {
         h: sum(c => cells.h[c]),
         trees: sum(c => WOODS[cells.biome[c]] ?? 0),
-        wet: sum(c => +(cells.biome[c] === 12))
+        wet: sum(c => +(cells.biome[c] === WETLAND))
       };
     }
-    return { h: cells.h[cell], trees: WOODS[cells.biome[cell]] ?? 0, wet: +(cells.biome[cell] === 12) };
+    return { h: cells.h[cell], trees: WOODS[cells.biome[cell]] ?? 0, wet: +(cells.biome[cell] === WETLAND) };
   };
 
   // hills below the map's grain: a tenth of the rise to the neighbours, 4 to 100 m
@@ -247,6 +251,7 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, clearing
   const low = land.length ? Math.min(...land) : 0;
   const high = land.length ? Math.max(...land) : 0;
   field.relief = high - low;
+  field.base = low;
   ground.forEach((g, i) => {
     if (!g) {
       field.water[i] = 1;
@@ -383,7 +388,8 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, clearing
 }
 
 const VIEW_MARGIN = 0.2; // of the field's width, lines are kept beyond its edge
-const GATE = 0.5; // width of a gate, in battalion fronts: a battalion gets through
+const GATE = 0.5; // width of a gate as drawn, in battalion fronts
+const GATEWAY = 1.2; // and as troops take it: a battalion gets through without jamming
 const BREACH = 0.7; // and of a breach
 const RAMPART = 11; // how far from a wall its foot reaches
 const WALL_HEIGHT = 15; // of the walls and towers of a burg, in metres
@@ -510,7 +516,7 @@ export function raiseWalls(field: Battlefield): void {
   field.walls = [];
   field.walled.fill(0);
   field.rampart.fill(0);
-  const [gate, breach] = [getOpening(field, GATE), getOpening(field, BREACH)];
+  const [gate, gateway, breach] = [getOpening(field, GATE), getOpening(field, GATEWAY), getOpening(field, BREACH)];
 
   field.burgs.forEach((burg, index) => {
     if (!burg.outline.length) burg.outline = getOutline(burg);
@@ -560,8 +566,9 @@ export function raiseWalls(field: Battlefield): void {
     for (const [a, b] of stretches) {
       const mid: Point = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
       if (field.breaches.some(gap => gap.burg === index && near(mid, [gap.x, gap.y], breach / 2))) continue;
-      const by = gates.find(other => near(mid, other.at, gate / 2));
-      field.walls.push({ a, b, burg: index, gate: Boolean(by), water: by?.water ?? 0 });
+      const by = gates.find(other => near(mid, other.at, gateway / 2));
+      const jamb = Boolean(by) && !gates.some(other => near(mid, other.at, gate / 2));
+      field.walls.push({ a, b, burg: index, gate: Boolean(by), jamb, water: by?.water ?? 0 });
     }
   });
 
@@ -657,6 +664,10 @@ export function openBreach(field: Battlefield, burg: number, [x, y]: Point): voi
   raiseWalls(field);
 }
 
+/** The gates of a burg, as drawn: the stretches of its gateways that are no jambs */
+export const getGates = (field: Battlefield, burg: number | null): FieldWall[] =>
+  field.walls.filter(wall => wall.burg === burg && wall.gate && !wall.jamb);
+
 /** The stretches of wall, gates among them, that the straight way between two points crosses */
 export function getWallsBetween(field: Battlefield, from: Point, to: Point): FieldWall[] {
   const { walls, cell } = field;
@@ -745,7 +756,8 @@ export function getCrossing(works: FieldWork[], from: Point, to: Point): number 
   return first;
 }
 
-export const isForest = (biome: number): boolean => FOREST_BIOMES.includes(biome);
+/** Woods and marsh, where troops lie hidden */
+export const hidesTroops = (biome: number): boolean => HIDING_BIOMES.includes(biome);
 
 /** The grid node a point of the field lies in */
 export function nodeAt({ cell }: Battlefield, x: number, y: number): number {

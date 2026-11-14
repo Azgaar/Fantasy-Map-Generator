@@ -92,6 +92,8 @@ describe("a landing met at the water's edge", () => {
 
   it("has the attackers wade the shallows out of their boats and fight nobody from them", () => {
     const b = setup("landing", mixed, mixed, coast());
+    prepare(b);
+    b.planned = true; // met at the water's edge, whatever the general would choose
     let wading = 0;
     while (!b.result && b.tick < 600) {
       tick(b);

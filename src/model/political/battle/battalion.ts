@@ -7,6 +7,7 @@ import { getWorksBetween } from "./battlefield";
 import {
   ARRIVED,
   CHARGE_HASTE,
+  canGrip,
   canShoot,
   getDistance,
   getGap,
@@ -24,6 +25,7 @@ export type Kind = "line" | "shooter" | "rider" | "engine";
 
 export const SHAKEN = 30; // morale under which a battalion does not attack
 const PRIZE = 0.3; // how much nearer a foe that only hits looks to who picks a target
+const UNDER = (1 + PRIZE) * (1 + 1e-9); // the worth over the straight line over this is less than over any way
 
 // in metres
 export const LONG_SHOT = 250; // shooters of this range and more are engines
@@ -77,6 +79,7 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
   const { order } = block;
   const foes = sense.onField.filter(foe => foe.side !== block.side);
   const ready = foes.filter(foe => foe.status === "ready");
+  const prey = ready.filter(foe => canGrip(battle, block, foe)); // whom it can come to grips with
   const stand: Intent = {
     target: null,
     to: null,
@@ -92,13 +95,18 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
   const { front } = battle.field;
   const far = (foe: Spot, from: Spot = block): number => Math.hypot(foe.x - from.x, foe.y - from.y);
   const pick = (among: Block[]): Block | null => {
-    let best: Block | null = null;
+    // best first by the worth over the straight line: no way is shorter, so a foe that cannot beat the best even so is
+    // passed over without finding the way to it; of foes worth the same the first in the list is kept
+    const bounds = among.map(foe => getWorth(battle, block, foe, sense, far(foe)) / UNDER);
+    const order = among.map((_, i) => i).sort((a, b) => bounds[a] - bounds[b]);
+    let best = -1;
     let least = Infinity;
-    for (const foe of among) {
-      const score = getWorth(battle, block, foe, sense);
-      if (score < least) [best, least] = [foe, score];
+    for (const i of order) {
+      if (bounds[i] > least) break;
+      const score = getWorth(battle, block, among[i], sense);
+      if (score < least || (score === least && i < best)) [best, least] = [i, score];
     }
-    return best;
+    return best < 0 ? null : among[best];
   };
   const goHome = (): Intent =>
     far(order) < ARRIVED * front ? stand : { ...stand, to: order, key: getPointKey(battle, order), keep: true };
@@ -171,7 +179,7 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
 
   if (order.mission === "flank") {
     // only who bars the way
-    const barring = pick(ready.filter(foe => far(foe) <= COUNTER * front + foe.width / 2));
+    const barring = pick(prey.filter(foe => far(foe) <= COUNTER * front + foe.width / 2));
     if (barring && !shaken) return charge(barring);
     // stormers all make for the middle of the burg
     const shared = battle.type === "siege";
@@ -179,9 +187,12 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
   }
 
   if (order.mission === "hunt") {
-    const target = pick(ready.length ? (bold ? foes : ready) : foes);
+    const shooting = Boolean(block.range) && block.kind !== "line";
+    const among = shooting ? foes : foes.filter(foe => canGrip(battle, block, foe));
+    const inOrder = among.filter(foe => foe.status === "ready");
+    const target = pick(inOrder.length && !bold ? inOrder : among);
     if (!target) return goHome();
-    if (block.range && block.kind !== "line") return shoot(target, true);
+    if (shooting) return shoot(target, true);
     return shaken ? stand : charge(target);
   }
 
@@ -192,7 +203,7 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
   const behind = battle.field.works.length > 0 && isHolding(battle, block.side);
   const over = (foe: Block): boolean =>
     behind && getWorksBetween(battle.field, [block.x, block.y], [foe.x, foe.y], block.side).length > 0;
-  const within = ready.filter(foe => {
+  const within = prey.filter(foe => {
     const distance = far(foe, order) - foe.width / 2;
     const near =
       foe.id === order.target ||
@@ -218,8 +229,14 @@ function getPointKey(battle: Battle, point: Spot): number {
 }
 
 /** How little a foe is worth going for: the way to it, shortened by all that makes it a better prey */
-function getWorth(battle: Battle, block: Block, foe: Block, sense: Sense): number {
-  let score = getDistance(battle, block, foe);
+function getWorth(
+  battle: Battle,
+  block: Block,
+  foe: Block,
+  sense: Sense,
+  way = getDistance(battle, block, foe)
+): number {
+  let score = way;
   const chasing =
     getStance(battle[block.side].phase) === "advance" && isBeaten(battle.type, foe.side, battle[foe.side].phase);
   const { front } = battle.field;

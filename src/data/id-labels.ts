@@ -263,6 +263,7 @@ export const BATTLE_TYPE_LABELS: Record<BattleType, string> = {
   siege: t("Siege"),
   ambush: t("Ambush"),
   landing: t("Landing"),
+  bombardment: t("Bombardment"),
   air: t("Air battle")
 };
 

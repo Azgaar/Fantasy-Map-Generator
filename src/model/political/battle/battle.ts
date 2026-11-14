@@ -1,3 +1,4 @@
+import { type BattleSettings, DEFAULT_BATTLE_SETTINGS } from "@/data/battle-options";
 import { getUnitPower } from "@/model/political/military-units";
 import type { MilitaryUnit } from "@/types/military";
 import { decide, getKind, type Kind, type Sense } from "./battalion";
@@ -8,6 +9,7 @@ import {
   getBattleStatus,
   getInitialMorale,
   isBeaten,
+  isFromSea,
   isIdle,
   PHASES,
   SIDES,
@@ -70,11 +72,6 @@ import {
 import { breakWagons, buildWorks, getShelter, isBarredByWorks, isSheltered, raiseWorks } from "./works";
 
 export { ROUND_TICKS };
-
-const MAX_TICKS = minutesToTicks(8 * 60); // a backstop for a battle that neither ends nor dies down, not a length
-const IDLE_ROUNDS = 12; // rounds without losses that end a battle: ten minutes or so
-const REHEARSAL_TICKS = 360; // how far ahead a general plays a battle through in his mind
-const STORM_TICKS = 150; // and a storm of walls or of a wagon ring, slow to reckon: long enough to see it carried or thrown back
 
 // in battalion fronts
 const BLOCK_DEPTH = 0.5;
@@ -153,6 +150,16 @@ export interface Plan {
   fortify: boolean; // the side builds works
   arrival: number; // ticks till the foe is upon it, as the general reckons it this round; Infinity when it does not come
   wedge: Wedge | null; // the riders' own formation, when they fight apart
+  muster: Muster | null; // a sortie's party forming up outside the walls
+}
+
+/** The party of a sortie formed up outside the gate it goes out by, before it falls on the foe */
+export interface Muster {
+  x: number;
+  y: number;
+  heading: number;
+  until: number; // round it goes at the latest, formed up or not
+  launched: number | null; // round it went for the foe
 }
 
 /** Riders drawn up in a wedge of their own: where its point is, and the foe it falls on once it charges */
@@ -218,8 +225,6 @@ export interface BattleRegiment {
 
 export interface BattleSide {
   regiments: BattleRegiment[];
-  bonus: number; // power added by hand, in troops × unit power × upkeep
-  boost: number; // what the bonus multiplies the strength of the troops by
   morale: number;
   casualties: number; // share of the initial troops fallen
   captured: number; // and taken prisoner
@@ -237,13 +242,13 @@ export type Intervention =
   | { tick: number; kind: "move"; block: string; x: number; y: number }
   | { tick: number; kind: "turn"; block: string; facing: number }
   | { tick: number; kind: "order"; side: Side; order: Command }
-  | { tick: number; kind: "power"; side: Side; value: number }
   | { tick: number; kind: "morale"; side: Side; value: number }
   | { tick: number; kind: "die"; side: Side; die: number }
   | { tick: number; kind: "add"; side: Side; regiment: BattleRegiment }
   | { tick: number; kind: "withdraw"; state: number; regiment: number }
   | { tick: number; kind: "type"; type: BattleType }
-  | { tick: number; kind: "dig"; side: Side; on: boolean }; // before the start: the side starts behind its works
+  | { tick: number; kind: "dig"; side: Side; on: boolean } // before the start: the side starts behind its works
+  | { tick: number; kind: "tactic"; side: Side; tactic: TacticName | null }; // before the start; null: as its general sees fit
 
 export type LogEvent =
   | "start"
@@ -252,7 +257,6 @@ export type LogEvent =
   | "move"
   | "turn"
   | "die"
-  | "power"
   | "morale"
   | "join"
   | "withdraw"
@@ -268,6 +272,8 @@ export type LogEvent =
   | "dig"
   | "fortified"
   | "gap"
+  | "clash"
+  | "broken"
   | "end";
 
 /** What happened; the screen words it */
@@ -312,6 +318,7 @@ export interface Battle {
   result: BattleResult | null;
   planned: boolean; // the generals have thought the battle through
   rehearsal: boolean; // it is fought in a general's mind
+  settings: BattleSettings; // copied in at the setup: a battle under way never changes
 }
 
 export interface BattleSetup {
@@ -327,12 +334,11 @@ export interface BattleSetup {
   populationScale: number;
   attackers: BattleRegiment[];
   defenders: BattleRegiment[];
+  settings?: BattleSettings;
 }
 
 const createSide = (regiments: BattleRegiment[], phase: string): BattleSide => ({
   regiments,
-  bonus: 0,
-  boost: 1,
   morale: 100,
   casualties: 0,
   captured: 0,
@@ -347,9 +353,10 @@ const createSide = (regiments: BattleRegiment[], phase: string): BattleSide => (
 });
 
 export function createBattle(setup: BattleSetup): Battle {
-  const { attackers, defenders, ...rest } = setup;
+  const { attackers, defenders, settings, ...rest } = setup;
   const battle: Battle = {
     ...rest,
+    settings: { ...DEFAULT_BATTLE_SETTINGS, ...settings },
     approach: setup.axis,
     battalion: 0,
     attackers: createSide(attackers, PHASES[setup.type].attackers[0]),
@@ -423,7 +430,8 @@ export function plan(battle: Battle): void {
   // each against the foe as the odds make him expect it: neither knows what the other has settled on
   const options = SIDES.map(side => getOptions(battle, side));
   const laager = [...options.flat(), ...SIDES.map(side => battle[side].plan)].some(({ tactic }) => tactic === "laager");
-  const ticks = battle.type === "siege" || laager ? STORM_TICKS : REHEARSAL_TICKS;
+  const { stormPlanTicks, planTicks } = battle.settings;
+  const ticks = battle.type === "siege" || laager ? stormPlanTicks : planTicks;
   const settled = SIDES.map((side, i) => {
     let best: Option | null = null;
     let most = -Infinity;
@@ -448,7 +456,6 @@ export function plan(battle: Battle): void {
 function rehearse(battle: Battle, side: Side, option: Option, ticks: number): number {
   const copy = (name: Side): BattleSide => ({
     ...createSide(battle[name].regiments, battle[name].phase),
-    bonus: battle[name].bonus,
     ...(name === side ? option : {})
   });
   // fortune is not theirs to know: the dice are even, and nobody has moved a battalion by hand;
@@ -460,7 +467,7 @@ function rehearse(battle: Battle, side: Side, option: Option, ticks: number): nu
     defenders: copy("defenders"),
     blocks: [],
     course: [],
-    interventions: battle.interventions.filter(change => change.kind === "dig"), // the ground as prepared
+    interventions: battle.interventions.filter(change => change.kind === "dig" || change.kind === "tactic"), // the ground as prepared, tactics given by hand
     log: [],
     result: null,
     planned: true,
@@ -496,9 +503,6 @@ export function intervene(battle: Battle, change: Intervention): void {
   if (change.kind === "order") {
     obey(battle, change.side, change.order);
     battle.log.push({ tick: battle.tick, event: "ordered", side: change.side, params: { order: change.order } });
-  } else if (change.kind === "power") {
-    battle[change.side].bonus += change.value;
-    battle.log.push({ tick: battle.tick, event: "power", side: change.side, params: { value: signed(change.value) } });
   } else if (change.kind === "morale") {
     if (battle.tick) addMorale(battle, change.side, change.value); // before the start the troops are lined up anew
     battle.log.push({ tick: battle.tick, event: "morale", side: change.side, params: { value: signed(change.value) } });
@@ -507,10 +511,12 @@ export function intervene(battle: Battle, change: Intervention): void {
     battle.log.push({ tick: battle.tick, event: "die", side: change.side, params: { die: String(change.die) } });
   } else if (change.kind === "type") {
     battle.type = change.type;
-    battle.interventions = battle.interventions.filter(c => c.kind !== "order" || c.tick); // orders for the old type
+    battle.interventions = battle.interventions.filter(c => (c.kind !== "order" && c.kind !== "tactic") || c.tick); // given for the old type
     for (const side of SIDES) battle[side].phase = PHASES[battle.type][side][0];
   } else if (change.kind === "withdraw") {
     withdraw(battle, change.state, change.regiment);
+  } else if (change.kind === "tactic") {
+    battle.log.push({ tick: battle.tick, event: "tactic", side: change.side, params: { tactic: change.tactic ?? "" } });
   } else if (change.kind === "dig") {
     battle.log.push({ tick: battle.tick, event: "dig", side: change.side, params: { on: String(change.on) } });
   } else {
@@ -527,7 +533,7 @@ export function intervene(battle: Battle, change: Intervention): void {
   if (battle.tick) updatePower(battle);
   else {
     // what the generals settled on does not stand; a move or a turn of a battalion leaves it be
-    if (["power", "add", "withdraw", "type", "order", "dig"].includes(change.kind)) rethink(battle);
+    if (["add", "withdraw", "type", "order", "dig", "tactic"].includes(change.kind)) rethink(battle);
     prepare(battle);
   }
 }
@@ -677,11 +683,17 @@ function startRound(battle: Battle): void {
   if (battle.engaged === null && battle.round && (fighting || (!marching && !held))) {
     battle.engaged = battle.round;
     battle.lastLoss = battle.tick;
+    battle.log.push({ tick: battle.tick, event: "clash" });
   }
 
+  const beaten = SIDES.map(side => isBeaten(battle.type, side, battle[side].phase));
   command(battle);
+  SIDES.forEach((side, i) => {
+    if (!beaten[i] && isBeaten(battle.type, side, battle[side].phase))
+      battle.log.push({ tick: battle.tick, event: "broken", side });
+  });
   batter(battle);
-  if (breakWagons(battle) || raised) forgetWays(battle.field); // the troops go round what bars them, or in by a gap
+  if (breakWagons(battle) || raised) forgetWays(battle.field, true); // the troops go round what bars them, or in by a gap
 
   const [attackers, defenders] = getCommands(battle);
   const orders = `Attackers: ${attackers}, defenders: ${defenders}`;
@@ -897,7 +909,7 @@ function fight(battle: Battle): void {
     // cover takes its share of the losses: walls from without, woods and houses from shots
     const besieging = to.walled > 0 && from.walled !== to.walled;
     const cover =
-      (besieging ? 1 / WALLS : shot && (to.wood || to.town) ? COVER : 1) * getShelter(battle, block, target, shot);
+      (besieging ? 1 / WALLS : shot && (to.wood || to.town) ? COVER : 1) * getShelter(battle, block, target);
 
     if (!shot) block.impetus = 1 + (block.impetus - 1) * SPENT;
     const bearing = Math.atan2(block.y - target.y, block.x - target.x);
@@ -990,7 +1002,7 @@ function getHand(battle: Battle, block: Block): { friends: number; foes: number;
     if (other.side !== block.side) nearest = Math.min(nearest, distance);
     if (distance > near) continue;
     if (other.side === block.side) friends += strength(other);
-    else foes += strength(other);
+    else if (battle.type !== "bombardment" || other.range) foes += strength(other); // ships and troops only shoot
   }
   return { friends, foes, nearest };
 }
@@ -1026,7 +1038,7 @@ export const getFortune = (die: number): number => 0.75 + (die - 3.5) * 0.15;
 function getPower(battle: Battle, block: Block, of: number, troops = block.troops, standing = false): number {
   const side = battle[block.side];
   const state = !standing && isRunning(block) ? BROKEN : side.phase === "shock" ? SHOCK : 1;
-  return troops * block.upkeep * of * state * getFortune(side.die) * side.boost;
+  return troops * block.upkeep * of * state * getFortune(side.die);
 }
 
 /** What speed adds to a blow: a charge's, spent within a round or two at grips; a missile's, the more the nearer it was loosed */
@@ -1036,11 +1048,10 @@ function getImpetus(battle: Battle, block: Block, target: Block): number {
   return Math.min(Math.max(1.5 - share, 0.5), 1.5);
 }
 
-/** Power of the troops a side has in order, as the military screens count it, with what was added by hand */
+/** Power of the troops a side has in order, as the military screens count it */
 export function getUnitsPower(battle: Battle, side: Side): number {
   const inOrder = battle.blocks.filter(block => block.side === side && isInOrder(block));
-  const base = sum(inOrder, block => block.troops * block.unitPower * block.upkeep);
-  return base ? Math.max(base + battle[side].bonus, 0) : 0;
+  return sum(inOrder, block => block.troops * block.unitPower * block.upkeep);
 }
 
 /** Hearten or shake the troops of a side that are in order */
@@ -1057,8 +1068,7 @@ function updatePower(battle: Battle): void {
   for (const side of SIDES) {
     const blocks = battle.blocks.filter(block => block.side === side);
     const base = sum(blocks.filter(isInOrder), strength);
-    battle[side].boost = base ? Math.max(1 + battle[side].bonus / base, 0) : 1;
-    battle[side].power = (base * battle[side].boost) / (battle.populationScale / 10);
+    battle[side].power = base / (battle.populationScale / 10);
     const initial = sum(blocks, block => block.initial);
     const troops = sum(blocks, getFree);
     battle[side].casualties = initial ? 1 - sum(blocks, block => block.troops) / initial : 0;
@@ -1093,8 +1103,10 @@ function checkEnd(battle: Battle): void {
     !onField[0] ||
     !onField[1] ||
     (!ready[0] && !ready[1]) ||
-    battle.tick >= MAX_TICKS ||
-    (battle.engaged !== null && !battle.cutOff && battle.tick - battle.lastLoss > IDLE_ROUNDS * ROUND_TICKS); // a long way round is no lull, nor a blockade
+    battle.tick >= minutesToTicks(battle.settings.maxMinutes) ||
+    (battle.engaged !== null &&
+      !battle.cutOff &&
+      battle.tick - battle.lastLoss > battle.settings.lullRounds * ROUND_TICKS); // a long way round is no lull, nor a blockade
   if (!over) return;
 
   // a side holds the field while it has troops in order and has neither turned to run nor given itself up
@@ -1130,7 +1142,7 @@ function setScale(battle: Battle): void {
   }
 }
 
-/** Men in a battalion: 0.3 to 1 population point, the least that makes no more than forty battalions of all the troops; 0.2 when 0.3 makes fewer than ten */
+/** Men in a battalion: 0.3 to 1 population point, the least that makes no more battalions of all the troops than allowed; 0.2 when 0.3 makes fewer than the fewest */
 function getBattalionSize(battle: Battle): number {
   let men = 0;
   for (const side of SIDES) {
@@ -1139,7 +1151,9 @@ function getBattalionSize(battle: Battle): number {
     }
   }
   const battalions = (size: number): number => men / (size * battle.populationScale);
-  const size = battalions(0.3) < 10 ? 0.2 : ([0.3, 0.5].find(size => battalions(size) <= 40) ?? 1);
+  const { minBattalions, maxBattalions } = battle.settings;
+  const size =
+    battalions(0.3) < minBattalions ? 0.2 : ([0.3, 0.5].find(size => battalions(size) <= maxBattalions) ?? 1);
   return Math.round(size * battle.populationScale);
 }
 
@@ -1237,13 +1251,14 @@ const NO_PLAN: Plan = {
   bled: 0,
   fortify: false,
   arrival: Infinity,
-  wedge: null
+  wedge: null,
+  muster: null
 };
 
 /** The approach, turned as little as it takes for the attackers to form up on land */
 function findAxis(battle: Battle): number {
   const { field, approach } = battle;
-  if (field.open || battle.type === "landing") return approach;
+  if (field.open || isFromSea(battle.type)) return approach;
   const dry = (axis: number): boolean =>
     [-0.3, 0, 0.3].every(shift =>
       [0.6, 0.8, 1].every(depth => {

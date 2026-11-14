@@ -710,6 +710,13 @@ class MilitaryModule {
     return this.getTroopsPower(regiment) * this.getBattleUpkeep(regiment.state);
   }
 
+  /** The types of the units a regiment has troops of; undefined for a unit type since removed */
+  getUnitTypes(regiment: Regiment): (string | undefined)[] {
+    return Object.keys(regiment.u)
+      .filter(name => regiment.u[name] > 0)
+      .map(name => options.map.military.units.find(unit => unit.name === name)?.type);
+  }
+
   private getNominalPower(stateId: number): number {
     return sum(pack.states[stateId]?.military ?? [], regiment => this.getTroopsPower(regiment));
   }

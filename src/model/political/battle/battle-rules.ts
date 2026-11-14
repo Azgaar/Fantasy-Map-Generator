@@ -1,9 +1,9 @@
 export type Side = "attackers" | "defenders";
-export type BattleType = "field" | "naval" | "siege" | "ambush" | "landing" | "air";
+export type BattleType = "field" | "naval" | "siege" | "ambush" | "landing" | "bombardment" | "air";
 export type Stance = "hold" | "shoot" | "advance" | "flee";
 
 export const SIDES: Side[] = ["attackers", "defenders"];
-export const BATTLE_TYPES: BattleType[] = ["field", "naval", "siege", "ambush", "landing", "air"];
+export const BATTLE_TYPES: BattleType[] = ["field", "naval", "siege", "ambush", "landing", "bombardment", "air"];
 export const enemyOf = (side: Side): Side => (side === "attackers" ? "defenders" : "attackers");
 
 export const STARVED = 20; // morale hunger takes a garrison cut off down to: there it gives the burg up
@@ -30,6 +30,10 @@ export const PHASES: Record<BattleType, Record<Side, string[]>> = {
   landing: {
     attackers: ["landing", "melee", "pursue", "flee", "surrendering"],
     defenders: ["defense", "shock", "melee", "waiting", "pursue", "retreat", "surrendering"]
+  },
+  bombardment: {
+    attackers: ["bombardment", "withdrawal", "surrendering"],
+    defenders: ["defense", "retreat", "surrendering"]
   },
   air: {
     attackers: ["maneuvering", "dogfight", "pursue", "retreat", "surrendering"],
@@ -77,6 +81,9 @@ export const getStance = (phase: string): Stance => COMMAND_STANCE[PHASE_COMMAND
 /** A side that sits it out: a blockade, the shelter of the walls, a shore the foe has left. It holds its fire */
 export const isIdle = (phase: string): boolean => PHASE_COMMAND[phase] === "hold";
 
+/** The attackers come from the sea: they keep their approach, cross nothing, and the defenders hold the shore or wait inland */
+export const isFromSea = (type: BattleType): boolean => type === "landing" || type === "bombardment";
+
 /** A battle of two lines: no walls, no ambush, no ships to land from */
 export const isOpen = (type: BattleType): boolean => type === "field" || type === "naval" || type === "air";
 
@@ -91,11 +98,12 @@ export function getCommand(type: BattleType, phase: string, advancing: boolean):
 }
 
 /**
- * In an ambush and a landing the phases are how the fight stands, not what a general picks: an order by hand changes
- * what the troops do and leaves the phase to take its course, unless it is to pursue or to retreat
+ * In an ambush, a landing and a bombardment the phases are how the fight stands, not what a general picks: an order by
+ * hand changes what the troops do and leaves the phase to take its course, unless it is to pursue or to retreat
  */
 export const keepsPhase = (type: BattleType, command: Command): boolean =>
-  (type === "ambush" || type === "landing") && ["hold", "fortify", "skirmish", "attack", "defend"].includes(command);
+  (type === "ambush" || type === "landing" || type === "bombardment") &&
+  ["hold", "fortify", "skirmish", "attack", "defend"].includes(command);
 
 /** A side that turned to run or laid down its arms: it neither fights on nor holds the field */
 export const isBeaten = (type: BattleType, side: Side, phase: string): boolean =>
@@ -129,6 +137,11 @@ export const POSTURES: Record<BattleType, Record<Side, Postures>> = {
   landing: {
     attackers: postures("landing", "melee", "pursue", "flee"),
     defenders: postures("defense", "melee", "pursue", "retreat")
+  },
+  // ships and troops never come to grips: the fleet shells what it reaches, the troops hold and shoot back
+  bombardment: {
+    attackers: postures("bombardment", "bombardment", "bombardment", "withdrawal"),
+    defenders: postures("defense", "defense", "defense", "retreat")
   },
   air: {
     attackers: postures("maneuvering", "dogfight", "pursue", "retreat"),
@@ -179,6 +192,10 @@ export const COMMANDS: Record<BattleType, Record<Side, Commands>> = {
   },
   ambush: forBoth("ambush"),
   landing: { attackers: forBoth("landing").attackers, defenders: withWorks(forBoth("landing").defenders) },
+  bombardment: {
+    attackers: { hold: "bombardment", skirmish: "bombardment", retreat: "withdrawal", surrender: SURRENDER },
+    defenders: { hold: "defense", skirmish: "defense", retreat: "retreat", surrender: SURRENDER }
+  },
   air: forBoth("air")
 };
 
@@ -196,6 +213,7 @@ export function getBattleName(type: BattleType, place: string | null): string {
   if (type === "siege") return `Siege of ${place}`;
   if (type === "ambush") return `${place} Ambush`;
   if (type === "landing") return `${place} Landing`;
+  if (type === "bombardment") return `Bombardment of ${place}`;
   return `${place} Air Battle`;
 }
 
