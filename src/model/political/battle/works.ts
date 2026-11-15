@@ -125,18 +125,25 @@ class WorksModule {
       order.rank === 0 &&
       !order.sent &&
       (order.role === "line" || order.role === "support") &&
-      (block.kind === "line" || block.kind === "shooter") &&
-      block.type !== "naval" &&
-      block.type !== "aviation" &&
+      this.isOnFoot(block) &&
       battle[block.side].plan.tactic !== "wagenburg" &&
       !battle[block.side].plan.hooks.some(hook => hook.includes(block.id)) && // wheeled out from the line
       !this.isAtSea(battle, block)
     );
   }
 
-  /** Where a battalion's stretch runs: across the front of its place, as long as the block and the gap to a neighbour */
+  /** A battalion told to fortify by hand: on foot, of a side that may build */
+  mayDig(battle: Battle, block: Block): boolean {
+    return this.mayBuild(battle, block.side) && this.isOnFoot(block);
+  }
+
+  private isOnFoot(block: Block): boolean {
+    return (block.kind === "line" || block.kind === "shooter") && block.type !== "naval" && block.type !== "aviation";
+  }
+
+  /** Where a battalion's stretch runs: across the front of its place, or of the spot it was told to fortify */
   getStretchLine(battle: Battle, block: Block): [[number, number], [number, number]] {
-    const { x, y, facing } = block.order;
+    const { x, y, facing } = block.task?.kind === "fortify" ? block.task : block.order;
     const ahead = block.depth / 2 + AHEAD;
     const half = (block.width + GAP * battle.field.front) / 2;
     const [cx, cy] = [x + Math.cos(facing) * ahead, y + Math.sin(facing) * ahead];
@@ -152,7 +159,7 @@ class WorksModule {
   }
 
   /** The stretch before the battalion would lie in the water: nothing is built there */
-  private isAtSea(battle: Battle, block: Block): boolean {
+  isAtSea(battle: Battle, block: Block): boolean {
     const [a, b] = this.getStretchLine(battle, block);
     return Battlefields.terrainAt(battle.field, ...this.middle({ a, b })).water > 0;
   }
@@ -191,12 +198,13 @@ class WorksModule {
    * shooters, a ditch against one weak in riders, else stakes; none when neither is done in time
    * @param rate share of a full battalion's work it does a tick
    * @param ticks till the foe is there
+   * @param train the side's train builds wagons: not for a battalion fortifying by hand
    */
-  chooseKind(battle: Battle, side: Side, rate: number, ticks: number): WorkKind | null {
+  chooseKind(battle: Battle, side: Side, rate: number, ticks: number, train = true): WorkKind | null {
     if (!rate) return null;
     const foe = BattleRules.enemyOf(side);
     const mobile = this.getShare(battle, foe, block => this.isRider(block) || block.kind === "shooter") >= STRONG;
-    if (mobile && this.getWagonTicks(battle, side) <= ticks) return "wagons";
+    if (train && mobile && this.getWagonTicks(battle, side) <= ticks) return "wagons";
     if (this.getShare(battle, foe, block => this.isRider(block)) < STRONG && BUILD_TICKS.ditch / rate <= ticks)
       return "ditch";
     return BUILD_TICKS.stakes / rate <= ticks ? "stakes" : null;
@@ -261,7 +269,9 @@ class WorksModule {
       let work = this.findStretch(battle, block);
       if (!work) {
         const rate = block.troops / battle.battalion;
-        let kind = this.chooseKind(battle, block.side, rate, battle[block.side].plan.arrival - elapsed) ?? "stakes";
+        const hand = block.task?.kind === "fortify"; // with all the time it is given
+        const ticks = hand ? Infinity : battle[block.side].plan.arrival - elapsed;
+        let kind = this.chooseKind(battle, block.side, rate, ticks, !hand) ?? "stakes";
         if (kind === "wagons" && !this.hasWagons(battle, block.side)) this.layWagons(battle, block.side, false);
         work = this.findStretch(battle, block);
         if (!work) {

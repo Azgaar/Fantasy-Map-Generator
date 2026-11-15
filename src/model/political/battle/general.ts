@@ -123,6 +123,10 @@ const ROLES: Record<Block["kind"], Exclude<Order["role"], "wedge">> = {
 
 type Seen = { block: Block; at: [across: number, along: number] }[];
 
+// a side drawn up on its ground (`drawUp`) may take any of these by hand; the crossing and the Wagenburg where they apply
+const ATTACKS: TacticName[] = ["assault", "oblique", "envelopment", "wedge", "harass", "flyingWedge"];
+const DEFENCES: TacticName[] = ["defensiveLine", "refusedFlanks", "crossing", "wagenburg"];
+
 class GeneralModule {
   private readonly walks = new WeakMap<Battle, { tick: number; walk: number }>();
 
@@ -163,9 +167,7 @@ class GeneralModule {
       const attacking = side === "attackers";
       if (type === "ambush") attacking ? this.marchColumn(battle, blocks) : this.layAmbush(battle, blocks);
       else if (type === "siege" && field.held !== null && attacking)
-        this.canRing(battle, blocks) && this.getHandTactic(battle, side) !== "lines"
-          ? this.ringIn(battle, blocks)
-          : this.layLines(battle, blocks);
+        this.isRinging(battle, blocks) ? this.ringIn(battle, blocks) : this.layLines(battle, blocks);
       else if (type === "siege" && Movement.hasWalls(battle)) this.manWalls(battle, blocks);
       else this.drawUp(battle, side, blocks);
     }
@@ -212,12 +214,14 @@ class GeneralModule {
       fixed,
       half: 0,
       halt: 0,
+      reach: 0,
       since: 0,
       fired: null,
       order: null,
       byHand: null,
       opening: 0,
       gap: Infinity,
+      apart: Infinity,
       walk: Infinity,
       idle: 0,
       losses: 0,
@@ -293,6 +297,7 @@ class GeneralModule {
       ? Math.min(...shooters.map(({ block, along }) => block.range * 0.9 + along)) - places[0].block.depth
       : 0;
     plan.halt = Math.max(shot, COUNTER * 2 * front);
+    plan.reach = shot;
     battle[side].plan = plan;
     for (const place of places) {
       // riders do not stand among trees or in a bog: they close in to the line till the ground is open
@@ -442,9 +447,25 @@ class GeneralModule {
   /** The tactic of a side: the one given by hand, else the one its general settled on, else the best by the scores */
   private chooseTactic(battle: Battle, side: Side, blocks: Block[], crossing: boolean): [TacticName, number] {
     const [scores, strike] = this.rateTactics(battle, side, blocks, crossing);
-    const wanted = this.getHandTactic(battle, side) ?? battle[side].tactic;
-    const settled = scores.find(([name]) => name === wanted);
+    const hand = this.getHandTactic(battle, side);
+    if (hand && this.getDrawUpTactics(battle, side, crossing).includes(hand)) return [hand, strike];
+    const settled = scores.find(([name]) => name === battle[side].tactic);
     return [(settled ?? scores[0])[0], strike];
+  }
+
+  /** Every tactic a side drawn up on its ground may take by hand, whether its general would or not */
+  private getDrawUpTactics(battle: Battle, side: Side, crossing: boolean): TacticName[] {
+    if (battle.type === "landing" && side === "attackers") return ["waves"];
+    return [...ATTACKS, ...DEFENCES].filter(
+      name => (name !== "crossing" || crossing) && (name !== "wagenburg" || Works.mayBuild(battle, side))
+    );
+  }
+
+  /** Besiegers ring the burg in when they can, or when told to by hand; told to draw up in lines, they do */
+  private isRinging(battle: Battle, blocks: Block[]): boolean {
+    const hand = this.getHandTactic(battle, "attackers");
+    if (!Movement.hasWalls(battle) || hand === "lines") return false;
+    return hand === "ring" || this.canRing(battle, blocks);
   }
 
   /** The tactic a side was given by hand before the start: the last word stands, null gives it back to its general */
@@ -453,16 +474,19 @@ class GeneralModule {
     return change?.kind === "tactic" ? change.tactic : null;
   }
 
-  /** The tactics a side may be drawn up in, the likeliest first; none when there is no choice */
+  /** Every tactic the battle type lets a side be drawn up in, the likeliest first; none when there is no choice */
   getTactics(battle: Battle, side: Side): TacticName[] {
     const { type, field } = battle;
     const blocks = battle.blocks.filter(block => block.side === side);
     if (type === "ambush") return side === "defenders" ? ["ambuscadeBothSides", "ambuscadeOneSide"] : [];
-    if (type === "siege" && field.held !== null && side === "attackers")
-      return this.canRing(battle, blocks) ? ["ring", "lines"] : [];
+    if (type === "siege" && field.held !== null && side === "attackers") {
+      if (!Movement.hasWalls(battle)) return [];
+      return this.canRing(battle, blocks) ? ["ring", "lines"] : ["lines", "ring"];
+    }
     if (type === "siege" && Movement.hasWalls(battle)) return [];
     const crossing = side === "defenders" && this.findCrossing(battle) !== null;
-    const names = this.rateTactics(battle, side, blocks, crossing)[0].map(([name]) => name);
+    const likely = this.rateTactics(battle, side, blocks, crossing)[0].map(([name]) => name);
+    const names = [...new Set([...likely, ...this.getDrawUpTactics(battle, side, crossing)])];
     return names.length > 1 ? names : [];
   }
 
@@ -1407,7 +1431,8 @@ class GeneralModule {
     const gripShare = own.grip / (own.grip + foe.grip);
     if (gripShare > fireShare + 0.05) return names.close;
     if (own.ready.some(block => block.action === "shoot")) plan.fired ??= battle.round;
-    if (own.grip <= own.fire) return phase; // made for shooting: it closes to its range and no nearer
+    // made for shooting: it closes to its range and no nearer, unless its shots fall short of where it halts (big battalions)
+    if (own.grip <= own.fire && (plan.fired !== null || plan.reach >= plan.halt)) return phase;
     if (plan.fired === null) return battle.round - battle.engaged >= 4 ? names.close : phase; // out of his range
     const patience = this.clamp(Math.round(4 + 16 * (fireShare - 0.5)), 4, 12);
     return battle.round - plan.fired >= patience ? names.close : phase;
@@ -1642,7 +1667,11 @@ class GeneralModule {
     const walk = field.cliffs.length ? this.getWalkBetween(battle) : Infinity;
     const closing = field.cliffs.length ? walk < plan.walk - PACE * CLOSING : gap < plan.gap - PACE * CLOSING;
     plan.walk = walk;
-    if (data.advancing && closing) battle.lastLoss = battle.tick; // no lull while a side comes on
+    // nor while its body does, behind the first who met: a long march on a big field
+    const apart = this.far(own, foe);
+    const nearing = apart < plan.apart - PACE * CLOSING;
+    plan.apart = apart;
+    if (data.advancing && (closing || nearing)) battle.lastLoss = battle.tick; // no lull while a side comes on
     plan.idle = closing || gap < CHARGE * field.front ? 0 : plan.idle + 1;
     plan.gap = gap;
     plan.bled = own.losses > plan.losses && !own.ready.some(block => block.action === "fight") ? plan.bled + 1 : 0;
@@ -2290,8 +2319,13 @@ class GeneralModule {
    */
   private getFort(battle: Battle, side: Side): "batter" | "breached" | null {
     if (battle[side].storms || !this.isOpenFight(battle)) return null;
-    if (!battle.blocks.some(block => block.side === side && block.status === "ready" && block.kind === "engine"))
-      return null;
+    const engines = battle.blocks.filter(
+      block => block.side === side && block.status === "ready" && block.kind === "engine"
+    );
+    if (!engines.length) return null;
+    // from their row behind a line halted out of the foe's reach, the engines must reach the wagons: big battalions go in
+    const reach = Math.max(...engines.map(block => block.range * 0.9 + block.order.along));
+    if (reach < COUNTER * 2 * battle.field.front) return null;
     const wagons = battle.field.works.filter(work => work.side !== side && work.kind === "wagons" && work.up);
     if (!wagons.some(work => Battlefields.isStanding(work))) return null;
     return wagons.filter(work => !Battlefields.isStanding(work)).length < BREACHES ? "batter" : "breached";

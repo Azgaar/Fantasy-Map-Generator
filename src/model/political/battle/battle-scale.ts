@@ -2,6 +2,7 @@
 
 export const TICK_SECONDS = 8;
 const RANKS = 5; // a battalion stands so deep, a metre a man along its front
+const WIDEST = 1000; // men a battalion stands in five ranks at most: a bigger one stands deeper on the same front
 export const DEFAULT_BATTALION = 300; // men: the size the battle was balanced at
 export const COLS = 100; // the grid of a field of any size: a node is 1% of its width
 export const ROWS = 60;
@@ -11,7 +12,6 @@ const FRONTS = 1000 / 44; // battalion fronts across the field
 const SIEGE_LAND = 340; // metres of land round a besieged burg, the ring at most, and a battalion front more behind it
 const SIEGE_ZOOM = 1.5; // a siege field is at most so many times as wide as its battalions or its ring ask for
 const MIN_WIDTH = 250;
-const MAX_WIDTH = 10000;
 
 export interface FieldSize {
   width: number;
@@ -23,13 +23,13 @@ export interface FieldSize {
 class BattleScaleModule {
   /** The field for battalions of so many men; a siege takes in its whole burg and the land about it, top to bottom */
   getFieldSize(men: number, siegeRadius = Infinity): FieldSize {
-    const front = men / RANKS;
+    const front = Math.min(men, WIDEST) / RANKS;
     const army = front * FRONTS;
     const ring = SIEGE_LAND + front;
     const siege = Number.isFinite(siegeRadius)
       ? Math.min(this.toWidth(ring + siegeRadius), Math.max(army, this.toWidth(ring)) * SIEGE_ZOOM)
       : 0;
-    const width = Math.min(Math.max(army, siege, MIN_WIDTH), MAX_WIDTH);
+    const width = Math.max(army, siege, MIN_WIDTH);
     return { width, height: (width * ROWS) / COLS, cell: width / COLS, front };
   }
 

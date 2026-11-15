@@ -1119,7 +1119,8 @@ class BattleSceneRenderer {
     const { task } = block;
     // an order given by hand shows at once, before the battalion acts on it
     const aim = task && task.target !== null ? at.get(task.target) : undefined;
-    const foe = task?.kind === "attack" ? aim : block.target === null ? undefined : at.get(block.target);
+    const chased = task?.kind === "attack" || task?.kind === "pursue";
+    const foe = chased ? aim : block.target === null ? undefined : at.get(block.target);
     const goal: Point | null = task?.kind === "move" ? [task.x, task.y] : task ? null : block.goal;
     const marks: string[] = [];
     if (task?.kind === "protect" && aim)

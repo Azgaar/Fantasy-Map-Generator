@@ -6,6 +6,7 @@ describe("battle scale", () => {
     expect(BattleScale.getFieldSize(300).front).toBe(60);
     expect(BattleScale.getFieldSize(200).front).toBe(40);
     expect(BattleScale.getFieldSize(1000).front).toBe(200);
+    expect(BattleScale.getFieldSize(4000).front).toBe(200); // more men stand deeper on the same front
   });
 
   it("sizes the field by the battalions, 0.6 as deep as it is wide", () => {
@@ -39,9 +40,10 @@ describe("battle scale", () => {
     expect(BattleScale.getFieldSize(300, 5000).width).toBe(city.width);
   });
 
-  it("keeps the field between 250 m and 10 km wide", () => {
+  it("keeps the field 250 m wide at least, and at most what battalions of 1000 ask for", () => {
     expect(BattleScale.getFieldSize(20).width).toBe(250);
-    expect(BattleScale.getFieldSize(5000).width).toBe(10000);
+    expect(BattleScale.getFieldSize(5000).width).toBeCloseTo(4545, 0); // as for battalions of 1000
+    expect(BattleScale.getFieldSize(5000, 20000).width).toBeCloseTo(6818, 0); // a siege of a city, 1.5 times as wide
   });
 
   it("turns km/h into metres a tick of eight seconds and back to m/s", () => {

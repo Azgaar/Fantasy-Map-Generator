@@ -16,6 +16,7 @@ import {
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
+import { Battalions } from "@/model/political/battle/battalion";
 import {
   type Battle,
   type BattleRegiment,
@@ -23,7 +24,8 @@ import {
   type Block,
   type Intervention,
   type LogEntry,
-  ROUND_TICKS
+  ROUND_TICKS,
+  type TaskKind
 } from "@/model/political/battle/battle";
 import {
   BATTLE_TYPES,
@@ -190,6 +192,7 @@ const STYLE = /* css */ `
   .battleBanner .battlePicker { flex: none; max-width: 14em; }
   .battleBanner .battlePicker > button::after { content: none; }
   .battleMenu.battleOrders { top: 100%; bottom: auto; min-width: 12em; }
+  #battleTaskMenu { bottom: auto; min-width: 8em; box-shadow: 0.1em 0.2em 0.6em #0004; }
   .defenders .battleMenu.battleOrders { right: 0; left: auto; }
   #battleLayout .battleMenu > button.battleMenuBreak { border-top: 1px solid var(--line); }
   #battleTitle { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.7em; min-width: 0; }
@@ -304,6 +307,7 @@ interface Press {
   shift: boolean;
   touch: boolean;
   field: Point; // where it was pressed
+  client: Point; // and on the screen
   block: Block | null; // under the pointer
   handle: boolean; // the turning handle
   dragged: number; // pixels: a click is no drag
@@ -350,9 +354,10 @@ class BattleScreenController {
   private colors: SideColors = SIDE_COLORS;
 
   // selection: battalions are picked by a click or a box; before the start they are dragged and turned together,
-  // in the battle they take orders by a right click
+  // in the battle they take orders by a right click, or from the menu a click on a picked one opens
 
   private selected: string[] = []; // keys of the battalions picked
+  private tasked: { keys: string[]; at: Point } | null = null; // the battalions the task menu is for, and where it opened
   private pointer: { x: number; y: number } | null = null; // over the battle screen
   private shownTip: string | null = null;
   private shownLog: LogEntry[] = []; // the entries the log window shows, to redraw from the first that changed
@@ -585,6 +590,7 @@ class BattleScreenController {
             <canvas id="battleWeatherLayer" hidden></canvas>
             <svg id="battleOverlay" preserveAspectRatio="xMidYMid meet" font-family="Georgia, serif"></svg>
             <div id="battleSummary" hidden></div>
+            <div id="battleTaskMenu" class="battleMenu" hidden></div>
           </div>
           <div id="battleFooter">
             <div>
@@ -807,6 +813,7 @@ class BattleScreenController {
       { passive: false }
     );
     svg.addEventListener("contextmenu", event => event.preventDefault()); // a right click gives an order
+    ensureEl("battleTaskMenu").addEventListener("click", event => this.giveSpotTask(event));
     svg.addEventListener("pointerdown", event => {
       pointers.set(event.pointerId, [event.clientX, event.clientY]);
       if (!this.camera || !this.battle) return;
@@ -823,6 +830,7 @@ class BattleScreenController {
         shift: event.shiftKey,
         touch: event.pointerType === "touch",
         field: toField(event.clientX, event.clientY),
+        client: [event.clientX, event.clientY],
         block: el ? select<Element, Block>(el).datum() : null,
         handle: Boolean(target.closest(".battleTurnHandle")),
         dragged: 0,
@@ -996,27 +1004,69 @@ class BattleScreenController {
     this.showSelection();
   }
 
-  /** A click picks a battalion or drops the pick; in the battle a right or a shift click gives the picked an order */
+  /**
+   * A click picks a battalion or drops the pick; in the battle a right or a shift click gives the picked an order, and a
+   * click on a picked one opens the orders they take on their own spots
+   */
   private clickField(press: Press): void {
     const b = this.battle!;
     if (press.handle) return;
-    if (b.tick && !b.result && (press.button === 2 || (press.button === 0 && press.shift))) this.giveTask(press);
+    const live = b.tick && !b.result;
+    const picked = press.block && this.selected.includes(press.block.key) && this.isPickable(press.block);
+    if (live && (press.button === 2 || (press.button === 0 && press.shift))) this.giveTask(press);
+    else if (live && press.button === 0 && picked) this.openTasks(press);
     else if (press.button === 0) this.setSelected(press.block && this.isPickable(press.block) ? [press.block.key] : []);
+  }
+
+  /** The orders the picked battalions of the clicked one's side take on their own spots, at the click */
+  private openTasks(press: Press): void {
+    const b = this.battle!;
+    const clicked = press.block!;
+    const blocks = this.getSelected().filter(block => block.side === clicked.side && this.isPickable(block));
+    const tasks = new Set(blocks.flatMap(block => Battalions.getTasks(b, block)));
+    const shown = (Object.keys(BATTLE_ORDER_LABELS) as Command[]).filter(task => tasks.has(task as TaskKind));
+    const menu = ensureEl("battleTaskMenu");
+    menu.innerHTML = shown
+      .map(
+        task =>
+          `<button data-task="${task}" data-tip="${this.taskTip(task)}" class="icon-button-${task} ${task === clicked.task?.kind ? "current" : ""}">${BATTLE_ORDER_LABELS[task]}</button>`
+      )
+      .join("");
+    this.tasked = { keys: blocks.map(block => block.key), at: press.field };
+    this.closePickers();
+    menu.hidden = false;
+    // at the click, within the plan
+    const stage = ensureEl("battleStage").getBoundingClientRect();
+    const left = Math.min(press.client[0] - stage.left, stage.width - menu.offsetWidth);
+    const top = Math.min(press.client[1] - stage.top, stage.height - menu.offsetHeight);
+    Object.assign(menu.style, { left: `${Math.max(left, 0)}px`, top: `${Math.max(top, 0)}px` });
+    setTimeout(() => document.addEventListener("click", this.closePickers, { once: true })); // after this click
+  }
+
+  private giveSpotTask(event: Event): void {
+    const b = this.battle!;
+    const task = (event.target as HTMLElement).closest<HTMLElement>("[data-task]")?.dataset.task as TaskKind;
+    if (!task || !this.tasked || !b.tick || b.result) return;
+    const [x, y] = this.tasked.at;
+    Battles.intervene(b, { tick: b.tick, kind: "task", blocks: this.tasked.keys, task, x, y, target: null });
+    this.refresh();
   }
 
   /** In the battle only battalions that take orders are picked */
   private readonly isPickable = (block: Block): boolean =>
     !this.battle!.tick || (block.status === "ready" && !block.leaving);
 
-  /** The picked battalions of a side go where the user points, attack the foe pointed at or protect the friend */
+  /** The picked battalions of a side go where the user points, attack the foe pointed at, pursue it broken, or protect the friend */
   private giveTask(press: Press): void {
     const b = this.battle!;
     const own = this.getSelected().filter(this.isPickable);
     if (!own.length) return;
     const side = own[0].side;
     const blocks = own.filter(block => block.side === side);
-    const target = press.block?.status === "ready" && !blocks.includes(press.block) ? press.block : null;
-    const task = !target ? "move" : target.side === side ? "protect" : "attack";
+    const pointed = press.block && !blocks.includes(press.block) ? press.block : null;
+    const broken = pointed?.status === "routed" && pointed.side !== side;
+    const target = pointed?.status === "ready" || broken ? pointed : null;
+    const task = !target ? "move" : broken ? "pursue" : target.side === side ? "protect" : "attack";
     const [x, y] = target ? [target.x, target.y] : press.field;
     const keys = blocks.map(block => block.key);
     Battles.intervene(b, { tick: b.tick, kind: "task", blocks: keys, task, x, y, target: target?.key ?? null });
@@ -1921,9 +1971,12 @@ class BattleScreenController {
       const who =
         params!.count === "1" ? capitalize(params!.block) : t("{{number}} battalions", { number: params!.count });
       if (params!.task === "attack") return t("{{who}} ordered to attack {{target}}", { who, target: params!.target });
+      if (params!.task === "pursue") return t("{{who}} ordered to pursue {{target}}", { who, target: params!.target });
       if (params!.task === "protect")
         return t("{{who}} ordered to protect {{target}}", { who, target: params!.target });
-      return t("{{who}} ordered to move", { who });
+      if (params!.task === "move") return t("{{who}} ordered to move", { who });
+      const order = BATTLE_ORDER_LABELS[params!.task as Command].toLowerCase();
+      return t("{{who}} ordered to {{order}}", { who, order });
     }
 
     const block = { block: capitalize(params!.block) };
@@ -2244,6 +2297,17 @@ class BattleScreenController {
     if (type === "landing") return t("Landing: amphibious attack");
     if (type === "bombardment") return t("Bombardment: a fleet shells troops ashore");
     return t("Air Battle: maneuring fight of avia units");
+  }
+
+  /** What a battalion does under an order on its own spot */
+  private taskTip(task: Command): string {
+    if (task === "hold") return t("Hold: keep the spot and shoot what comes within range");
+    if (task === "fortify") return t("Fortify: build works before the spot and hold behind them");
+    if (task === "skirmish")
+      return t("Skirmish: come within shot of the enemy and shoot, stepping back from those who come at it");
+    if (task === "defend") return t("Defend: keep the spot and charge what comes near it");
+    if (task === "retreat") return t("Retreat: march off the field");
+    return t("Surrender: lay down arms");
   }
 
   private orderTip(order: Command): string {

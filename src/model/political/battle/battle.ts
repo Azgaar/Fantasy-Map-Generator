@@ -80,12 +80,14 @@ export interface Plan {
   fixed: boolean; // places are points of the field: the formation does not move
   half: number; // half the first line
   halt: number; // how far from the foe the formation stops to shoot
+  reach: number; // how far from the foe its shooters' shots fall on its front
   since: number; // round the phase was taken
   fired: number | null; // round its shooting began
   order: Command | null; // given by hand, while it stands
   byHand: number | null; // the round it was given
   opening: number; // rounds the surprise of an ambush lasts
   gap: number; // between the sides, last round
+  apart: number; // between the middles of the sides, last round
   walk: number; // on a field with cliffs: the shortest way round them from the side to the foe, last round
   idle: number; // rounds it has not closed
   losses: number; // share of the troops lost by the last round
@@ -158,9 +160,22 @@ export interface Block {
   order: Order;
 }
 
-export type TaskKind = "move" | "attack" | "protect";
+/** Pointed at a spot, a foe or a friend: move, attack, pursue a broken foe, protect; or given on the battalion's own spot */
+export type TaskKind =
+  | "move"
+  | "attack"
+  | "pursue"
+  | "protect"
+  | "hold"
+  | "defend"
+  | "skirmish"
+  | "fortify"
+  | "retreat"
+  | "surrender";
 
-/** What the user tells a battalion to do: go to a point, attack a foe or protect a friend */
+const POINTED_TASKS: TaskKind[] = ["move", "attack", "pursue", "protect"];
+
+/** What the user tells a battalion to do; retreat and surrender are done at once and stand as no task */
 export interface Task {
   kind: TaskKind;
   x: number;
@@ -343,12 +358,14 @@ const NO_PLAN: Plan = {
   fixed: true,
   half: 0,
   halt: 0,
+  reach: 0,
   since: 0,
   fired: null,
   order: null,
   byHand: null,
   opening: 0,
   gap: Infinity,
+  apart: Infinity,
   walk: Infinity,
   idle: 0,
   losses: 0,
@@ -1322,7 +1339,10 @@ class BattleModule {
     }
   }
 
-  /** Men in a battalion: 0.3 to 1 population point, the least that makes no more battalions of all the troops than allowed; 0.2 when 0.3 makes fewer than the fewest */
+  /**
+   * Men in a battalion: 0.3 to 1 population point, the least that makes no more battalions of all the troops than allowed;
+   * 0.2 when 0.3 makes fewer than the fewest. A host too big for that gets as many whole points as keep it within the limit
+   */
   private getBattalionSize(battle: Battle): number {
     let men = 0;
     for (const side of SIDES) {
@@ -1333,7 +1353,9 @@ class BattleModule {
     const battalions = (size: number): number => men / (size * battle.populationScale);
     const { minBattalions, maxBattalions } = battle.settings;
     const size =
-      battalions(0.3) < minBattalions ? 0.2 : ([0.3, 0.5].find(size => battalions(size) <= maxBattalions) ?? 1);
+      battalions(0.3) < minBattalions
+        ? 0.2
+        : ([0.3, 0.5, 1].find(size => battalions(size) <= maxBattalions) ?? Math.ceil(battalions(1) / maxBattalions));
     return Math.round(size * battle.populationScale);
   }
 
@@ -1454,20 +1476,34 @@ class BattleModule {
     if (block) block.facing = block.order.facing = Movement.normalize(facing);
   }
 
-  /** Battalions given a task by hand: those of the side that can still take orders */
+  /** Battalions given a task by hand: those of the side that can still take orders, and can carry this one out */
   private assign(battle: Battle, change: Extract<Intervention, { kind: "task" }>): void {
+    const { task } = change;
     const target = battle.blocks.find(block => block.key === change.target) ?? null;
+    const pointed = POINTED_TASKS.includes(task);
     const blocks = change.blocks
       .map(key => battle.blocks.find(block => block.key === key))
-      .filter((block): block is Block => block?.status === "ready" && !block.leaving && block !== target);
-    if (!blocks.length || (change.task !== "move" && target?.status !== "ready")) return;
-    // sent to a point, they keep their places to one another and all face the way they go
-    const [cx, cy] = [sum(blocks, block => block.x) / blocks.length, sum(blocks, block => block.y) / blocks.length];
-    const facing = Math.atan2(change.y - cy, change.x - cx);
-    for (const block of blocks) {
-      const at: Point = [change.x + block.x - cx, change.y + block.y - cy];
-      const [x, y] = change.task === "move" ? Generals.onField(battle.field, at) : [change.x, change.y];
-      block.task = { kind: change.task, x, y, facing, target: target?.id ?? null, round: battle.round };
+      .filter((block): block is Block => block?.status === "ready" && !block.leaving && block !== target)
+      .filter(block => pointed || Battalions.getTasks(battle, block).includes(task));
+    if (!blocks.length || (task !== "move" && pointed && target?.status !== this.getTargetStatus(task))) return;
+    if (task === "retreat") for (const block of blocks) Object.assign(block, { leaving: true, task: null });
+    else if (task === "surrender")
+      for (const block of blocks) {
+        this.yieldBlock(block);
+        this.shake(battle, block, 6);
+      }
+    else if (!pointed)
+      for (const block of blocks)
+        block.task = { kind: task, x: block.x, y: block.y, facing: block.facing, target: null, round: battle.round };
+    else {
+      // sent to a point, they keep their places to one another and all face the way they go
+      const [cx, cy] = [sum(blocks, block => block.x) / blocks.length, sum(blocks, block => block.y) / blocks.length];
+      const facing = Math.atan2(change.y - cy, change.x - cx);
+      for (const block of blocks) {
+        const at: Point = [change.x + block.x - cx, change.y + block.y - cy];
+        const [x, y] = task === "move" ? Generals.onField(battle.field, at) : [change.x, change.y];
+        block.task = { kind: task, x, y, facing, target: target?.id ?? null, round: battle.round };
+      }
     }
     const params: Record<string, string> = {
       block: this.blockName(blocks[0]),
@@ -1482,9 +1518,14 @@ class BattleModule {
   private isTaskOver(battle: Battle, block: Block, task: Task): boolean {
     if (block.status !== "ready" || block.leaving) return true;
     if (battle.round - task.round >= battle.settings.orderRounds) return true;
-    if (task.kind === "move") return false;
+    if (task.target === null) return false; // a spot to go to or to keep
     const target = battle.blocks.find(other => other.id === task.target);
-    return target?.status !== "ready";
+    return target?.status !== this.getTargetStatus(task.kind);
+  }
+
+  /** Who a task pointed at a battalion goes for: a broken foe is pursued, a foe in order attacked, a friend protected */
+  private getTargetStatus(task: TaskKind): BlockStatus {
+    return task === "pursue" ? "routed" : "ready";
   }
 
   /** A battalion in the log: the side is shown beside it, and the regiment's name would take the line */

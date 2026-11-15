@@ -1,9 +1,9 @@
 // The battalion level: what one battalion does this tick, by its order and by what is around it. See docs/domain/battles.md.
 
 import { FOOT_SPEED } from "@/model/political/military-units";
-import type { Battle, Block } from "./battle";
+import type { Battle, Block, TaskKind } from "./battle";
 import { CHARGE, CHARGE_HASTE, COUNTER, SHAKEN } from "./battle-balance";
-import { BattleRules, type Command, type Side } from "./battle-rules";
+import { BattleRules, COMMANDS, type Command, type Side } from "./battle-rules";
 import { Battlefields, type FieldWork } from "./battlefield";
 import { ARRIVED, Movement, ROUND_TICKS, type Spot } from "./movement";
 import { Works } from "./works";
@@ -58,6 +58,17 @@ class BattalionModule {
     if (unit.range >= LONG_SHOT) return "engine";
     if (unit.range > 0) return "shooter";
     return unit.speed >= FOOT_SPEED * 2 ? "rider" : "line";
+  }
+
+  /** The tasks a battalion can be given on its own spot: shooters skirmish, who comes to grips defends, who is on foot fortifies */
+  getTasks(battle: Battle, block: Block): TaskKind[] {
+    const tasks: TaskKind[] = ["hold"];
+    if (Works.mayDig(battle, block)) tasks.push("fortify");
+    if (block.range) tasks.push("skirmish");
+    if ((block.kind === "line" || block.kind === "rider") && battle.type !== "bombardment") tasks.push("defend");
+    if (COMMANDS[battle.type][block.side].retreat) tasks.push("retreat"); // the besieged cannot
+    tasks.push("surrender");
+    return tasks;
   }
 
   /** What an order by hand has the side do where the phase is not the order's to change: in an ambush, in a landing */
@@ -125,17 +136,53 @@ class BattalionModule {
       return { ...stand, target };
     }
 
+    // out of reach of those who come for it
+    const evade = (): Intent | null => {
+      const threat = ready
+        .filter(
+          foe =>
+            !foe.range &&
+            !sense.held.has(foe.id) &&
+            far(foe) < EVADE &&
+            !Works.isBarredByWorks(battle, foe, [foe.x, foe.y], [block.x, block.y]) // riders before stakes, foes outside wagons
+        )
+        .reduce<Block | null>((a, b) => (a && far(a) <= far(b) ? a : b), null);
+      if (!threat) return null;
+      const away = Math.atan2(block.y - threat.y, block.x - threat.x);
+      const to = { x: block.x + Math.cos(away) * EVADE, y: block.y + Math.sin(away) * EVADE };
+      return { ...stand, to, key: this.getPointKey(battle, to) };
+    };
+    // at its place to build while no foe can be upon it within a round; the work is kept for when the foe is gone
+    const atWork = (place: Spot): boolean => {
+      if (far(place) >= AT_WORK * front) return false;
+      const work = Works.findStretch(battle, block);
+      const near = ready.some(foe => far(foe) < Movement.getPace(battle, foe) * ROUND_TICKS + CHARGE * front);
+      return (!work || work.done < 1) && !near;
+    };
+
     if (block.task) {
       const { task } = block;
       const shot = (among: Block[]): Block | null => pick(among.filter(foe => Movement.canShoot(battle, block, foe)));
-      if (task.kind === "move") {
+      if (task.kind === "skirmish") {
+        const target = pick(ready);
+        return evade() ?? (target ? shoot(target, true) : { ...stand, facing: block.facing });
+      }
+      if (task.target === null) {
+        // a spot to go to or to keep: a defender meets what comes near it, one told to fortify builds there
+        if (task.kind === "defend" && block.morale >= SHAKEN) {
+          const near = pick(prey.filter(foe => far(foe, task) - foe.width / 2 <= COUNTER * front));
+          if (near) return charge(near);
+        }
+        if (task.kind === "fortify" && Works.mayDig(battle, block) && !Works.isAtSea(battle, block) && atWork(task))
+          return { ...stand, build: true, facing: task.facing };
         if (far(task) >= ARRIVED * front)
           return { ...stand, to: task, key: this.getPointKey(battle, task), facing: task.facing };
         const target = block.range ? shot(ready) : null; // there it shoots what comes in range, and fights what comes at it
         return target ? shoot(target) : { ...stand, facing: task.facing };
       }
       const other = sense.onField.find(other => other.id === task.target);
-      if (other && task.kind === "attack") return block.range ? shoot(other, true) : charge(other);
+      if (other && (task.kind === "attack" || task.kind === "pursue"))
+        return block.range ? shoot(other, true) : charge(other);
       if (other) {
         // the foes that come at the friend, the nearest to it first
         const near = (foe: Block): boolean => far(foe, other) - foe.width / 2 <= GUARD * front;
@@ -148,13 +195,8 @@ class BattalionModule {
       }
     }
 
-    // at work on its stretch while no foe can be upon it within a round; the work is kept for when the foe is gone
     const { plan } = battle[block.side];
-    if (plan.fortify && Works.isBuilder(battle, block) && far(order) < AT_WORK * front) {
-      const work = Works.findStretch(battle, block);
-      const near = ready.some(foe => far(foe) < Movement.getPace(battle, foe) * ROUND_TICKS + CHARGE * front);
-      if ((!work || work.done < 1) && !near) return { ...stand, build: true };
-    }
+    if (plan.fortify && Works.isBuilder(battle, block) && atWork(order)) return { ...stand, build: true };
 
     const shaken = block.morale < SHAKEN;
     const { phase, advancing } = battle[block.side];
@@ -170,21 +212,8 @@ class BattalionModule {
     }
 
     if (order.mission === "support") {
-      // out of reach of those who come for it
-      const threat = ready
-        .filter(
-          foe =>
-            !foe.range &&
-            !sense.held.has(foe.id) &&
-            far(foe) < EVADE &&
-            !Works.isBarredByWorks(battle, foe, [foe.x, foe.y], [block.x, block.y]) // riders before stakes, foes outside wagons
-        )
-        .reduce<Block | null>((a, b) => (a && far(a) <= far(b) ? a : b), null);
-      if (threat) {
-        const away = Math.atan2(block.y - threat.y, block.x - threat.x);
-        const to = { x: block.x + Math.cos(away) * EVADE, y: block.y + Math.sin(away) * EVADE };
-        return { ...stand, to, key: this.getPointKey(battle, to) };
-      }
+      const away = evade();
+      if (away) return away;
       const target = pick(inRange());
       if (target) return shoot(target);
       // nothing in range: a step forward from the place, no further than the leash

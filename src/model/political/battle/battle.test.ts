@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { type BattleSettings, DEFAULT_BATTLE_SETTINGS } from "@/data/battle-options";
 import { getDefaultMilitaryUnits } from "@/model/political/military-units";
 import type { MilitaryUnit } from "@/types/military";
-import { type Battle, type BattleRegiment, Battles, type Block, ROUND_TICKS } from "./battle";
+import { Battalions } from "./battalion";
+import { type Battle, type BattleRegiment, Battles, type Block, ROUND_TICKS, type TaskKind } from "./battle";
 import { CONTACT } from "./battle-balance";
 import { BattleRules, type BattleType, PHASES, POSTURES, type Side } from "./battle-rules";
 import { BattleScale, COLS, ROWS } from "./battle-scale";
@@ -114,13 +115,58 @@ describe("battle", () => {
     expect(total).toBe(5000);
   });
 
-  it("keeps a battalion within 0.2 to 1 population point, by the size of the battle", () => {
+  it("keeps a battalion within 0.2 to 1 population point, by the size of the battle, and grows it for a host", () => {
     const size = (men: number): number => battle([regiment(1, { infantry: men })], [regiment(2, even)]).battalion;
     expect(size(100)).toBe(200);
     expect(size(4000)).toBe(300);
     expect(size(9000)).toBe(300);
     expect(size(14000)).toBe(500);
-    expect(size(90000)).toBe(1000);
+    expect(size(30000)).toBe(1000);
+    expect(size(90000)).toBe(3000); // whole points, no more than 40 battalions
+    expect(size(1_000_000)).toBe(26000);
+  });
+
+  it("fights a host out in no more than 40 battalions on a field of 1000-man ones", () => {
+    const fleets = Battles.create({
+      type: "naval",
+      name: "Test",
+      place: null,
+      x: 0,
+      y: 0,
+      cell: 0,
+      axis: 0,
+      field: Battlefields.createEmpty("sea"),
+      units: getDefaultMilitaryUnits(),
+      populationScale: 1000,
+      attackers: [regiment(1, { fleet: 600 })], // 60,000 sailors a side
+      defenders: [regiment(2, { fleet: 600 })]
+    });
+    expect(fleets.battalion).toBe(3000);
+    expect(fleets.blocks.length).toBe(40);
+    expect(fleets.field.front).toBe(200);
+    run(fleets);
+    expect(fleets.result!.winner).not.toBeNull(); // ships that out-range nothing from their halt close in
+  });
+
+  it("has engines too far behind the line to reach the wagons go in with it instead of battering for ever", () => {
+    const host = Battles.create({
+      type: "field",
+      name: "Test",
+      place: null,
+      x: 0,
+      y: 0,
+      cell: 0,
+      axis: 0,
+      field: Battlefields.createEmpty(),
+      units: getDefaultMilitaryUnits(),
+      populationScale: 1000,
+      attackers: [regiment(1, { infantry: 6000, archers: 2250, cavalry: 1500, artillery: 250 })],
+      defenders: [regiment(2, { infantry: 6000, archers: 2250, cavalry: 1500 })]
+    });
+    expect(host.battalion).toBe(1000);
+    run(host);
+    expect(host.result!.winner).not.toBeNull();
+    expect(host.log.some(entry => entry.event === "gap")).toBe(true); // they still knock the wagons down on the way in
   });
 
   it("opens the log with the tactic of each side, before the start too", () => {
@@ -243,6 +289,35 @@ describe("battle generals", () => {
     expect(tactics(weaker, big)[0]).toBe("oblique"); // weaker: all on one wing
     expect(tactics({ infantry: 1500, archers: 300, cavalry: 1800 }, big)[0]).toBe("envelopment");
     expect(tactics({ infantry: 900, archers: 2400, cavalry: 300 }, { infantry: 3000, cavalry: 600 })[0]).toBe("harass");
+  });
+
+  it("offers every tactic of the open field by hand, the general's likeliest first, and draws the side up in it", () => {
+    const b = battle([regiment(1, big)], [regiment(2, big)]);
+    const all = [
+      "assault",
+      "oblique",
+      "envelopment",
+      "wedge",
+      "harass",
+      "flyingWedge",
+      "defensiveLine",
+      "refusedFlanks"
+    ];
+    for (const side of ["attackers", "defenders"] as const) {
+      const offered = Generals.getTactics(b, side);
+      expect(offered[0]).toBe(b[side].plan.tactic);
+      expect([...offered].sort()).toEqual([...all, "wagenburg"].sort()); // no river to hold a crossing of
+      for (const tactic of offered) {
+        Battles.intervene(b, { tick: 0, kind: "tactic", side, tactic });
+        expect(b[side].plan.tactic).toBe(tactic);
+      }
+      Battles.intervene(b, { tick: 0, kind: "tactic", side, tactic: null });
+    }
+    expect(b.attackers.plan.tactic).toBe("assault"); // the general's again
+    const naval = battle([regiment(1, big)], [regiment(2, big)], "naval");
+    naval.field = Battlefields.createEmpty("sea");
+    Battles.prepare(naval);
+    expect([...Generals.getTactics(naval, "defenders")].sort()).toEqual([...all].sort()); // no wagons at sea
   });
 
   it("thinks the battle through before it begins: the attackers take the tactic that ends best for them", () => {
@@ -736,6 +811,13 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     Battles.tick(short);
     expect(short.attackers.phase).toBe("storming");
     expect(run(short).result!.winner).toBe("attackers");
+
+    // told to, they ring it in all the same, and the burg is cut off
+    const ringed = setup("siege", { infantry: 3600, archers: 800 }, { infantry: 900, archers: 600 }, walled());
+    expect(Generals.getTactics(ringed, "attackers")).toEqual(["lines", "ring"]);
+    Battles.intervene(ringed, { tick: 0, kind: "tactic", side: "attackers", tactic: "ring" });
+    expect(ringed.attackers.plan.tactic).toBe("ring");
+    expect(Generals.isCutOff(ringed)).toBe(true);
 
     const guns = setup("siege", { artillery: 400 }, { infantry: 300 }, walled());
     for (let i = 0; i < ROUND_TICKS * 30 && !guns.result; i++) {
@@ -3203,14 +3285,7 @@ describe("battalion tasks", () => {
     Battles.tick(b);
     return b;
   };
-  const task = (
-    b: Battle,
-    blocks: Block[],
-    kind: "move" | "attack" | "protect",
-    x: number,
-    y: number,
-    target?: Block
-  ) =>
+  const task = (b: Battle, blocks: Block[], kind: TaskKind, x: number, y: number, target?: Block) =>
     Battles.intervene(b, {
       tick: b.tick,
       kind: "task",
@@ -3273,5 +3348,86 @@ describe("battalion tasks", () => {
     while (b.round < b.settings.orderRounds && !b.result) Battles.tick(b);
     if (!b.result) Battles.tick(b);
     expect(block.task).toBe(null);
+  });
+
+  it("sends a battalion after a broken foe pointed at, not after one in order", () => {
+    const b = started();
+    const [block] = own(b, "cavalry");
+    const foe = b.blocks.find(other => other.side === "defenders")!;
+    task(b, [block], "pursue", foe.x, foe.y, foe);
+    expect(block.task).toBe(null);
+    foe.status = "routed";
+    task(b, [block], "attack", foe.x, foe.y, foe);
+    expect(block.task).toBe(null);
+    task(b, [block], "pursue", foe.x, foe.y, foe);
+    expect(block.task).toMatchObject({ kind: "pursue", target: foe.id });
+    Battles.tick(b);
+    expect(block.target).toBe(foe.id);
+    foe.status = "fled";
+    Battles.tick(b);
+    expect(block.task).toBe(null);
+  });
+
+  it("gives a battalion only the tasks of its kind", () => {
+    const b = started();
+    const tasks = (unit: string): TaskKind[] => Battalions.getTasks(b, own(b, unit)[0]);
+    expect(tasks("infantry")).toEqual(["hold", "fortify", "defend", "retreat", "surrender"]);
+    expect(tasks("archers")).toEqual(["hold", "fortify", "skirmish", "retreat", "surrender"]);
+    expect(tasks("cavalry")).toEqual(["hold", "defend", "retreat", "surrender"]);
+    const [infantry] = own(b, "infantry");
+    task(b, [infantry], "skirmish", 0, 0);
+    expect(infantry.task).toBe(null);
+  });
+
+  it("keeps a battalion told to hold or to defend on its spot", () => {
+    const b = started();
+    const [held, defended] = own(b, "infantry");
+    const spots = [held, defended].map(block => [block.x, block.y]);
+    task(b, [held], "hold", 0, 0);
+    task(b, [defended], "defend", 0, 0);
+    expect(held.task).toMatchObject({ kind: "hold", x: spots[0][0], y: spots[0][1], target: null });
+    expect(b.log.at(-1)?.params).toMatchObject({ task: "defend", count: "1" });
+    for (let i = 0; i < 6; i++) Battles.tick(b);
+    for (const [i, block] of [held, defended].entries())
+      expect(Math.hypot(block.x - spots[i][0], block.y - spots[i][1])).toBeLessThan(b.field.front);
+  });
+
+  it("has a battalion told to defend meet a foe that comes near its spot, and one told to hold let it come", () => {
+    const b = started();
+    const [held, defended] = own(b, "infantry");
+    task(b, [held], "hold", 0, 0);
+    task(b, [defended], "defend", 0, 0);
+    const foes = b.blocks.filter(other => other.side === "defenders" && other.unit === "infantry");
+    for (const [i, block] of [held, defended].entries()) {
+      const reach = (block.depth + foes[i].depth) / 2 + b.field.front * 0.3; // within a counter-charge, not at grips
+      Object.assign(foes[i], {
+        x: block.x + Math.cos(block.facing) * reach,
+        y: block.y + Math.sin(block.facing) * reach
+      });
+    }
+    Battles.tick(b);
+    expect(defended.target).toBe(foes[1].id);
+    expect(held.target).toBe(null);
+  });
+
+  it("has a battalion told to fortify build a stretch before its spot", () => {
+    const b = started();
+    for (const foe of b.blocks.filter(other => other.side === "defenders")) foe.status = "fled"; // nobody comes
+    const [block] = own(b, "infantry");
+    task(b, [block], "fortify", 0, 0);
+    Battles.tick(b);
+    expect(block.action).toBe("build");
+    const work = b.field.works.find(work => work.builder === block.id);
+    expect(work && work.kind !== "wagons").toBe(true);
+  });
+
+  it("has battalions told to retreat march off, and those told to surrender lay down their arms", () => {
+    const b = started();
+    const [left, yielded] = own(b, "infantry");
+    task(b, [left], "retreat", 0, 0);
+    task(b, [yielded], "surrender", 0, 0);
+    expect(left.leaving).toBe(true);
+    expect(yielded.status).toBe("surrendered");
+    expect(b.log.at(-1)?.params?.task).toBe("surrender");
   });
 });
