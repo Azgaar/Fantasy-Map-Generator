@@ -136,6 +136,10 @@ Journey path drawing:
 
 - <kbd>Backspace</kbd> - undo the last point
 
+Battle screen:
+
+- <kbd>Space</kbd> - start, pause or continue the battle
+
 Wrap Tool:
 
 - <kbd>Shift</kbd> + drag - resize the brush

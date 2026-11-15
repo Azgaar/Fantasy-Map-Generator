@@ -264,6 +264,7 @@ export interface Battle {
   approach: number; // direction the attackers came from the map, radians
   axis: number; // direction of the attack on the field: the approach, turned to start from dry land
   field: Battlefield;
+  scene: Battlefield | null; // the field's ground and more round it, drawn only: the field is cut from its middle
   units: MilitaryUnit[];
   populationScale: number; // men in a population point
   battalion: number; // men in a full battalion, the same for both sides
@@ -386,6 +387,7 @@ class BattleModule {
       mud: false,
       ice: false,
       heat: false,
+      scene: null,
       ...rest,
       settings: { ...DEFAULT_BATTLE_SETTINGS, ...settings },
       approach: setup.axis,
@@ -474,12 +476,12 @@ class BattleModule {
     if (battle.rehearsal) return;
     // each against the foe as the odds make him expect it: neither knows what the other has settled on
     const options = SIDES.map(side => Generals.getOptions(battle, side));
-    const laager = [...options.flat(), ...SIDES.map(side => battle[side].plan)].some(
-      ({ tactic }) => tactic === "laager"
+    const wagenburg = [...options.flat(), ...SIDES.map(side => battle[side].plan)].some(
+      ({ tactic }) => tactic === "wagenburg"
     );
     const { planTicks } = battle.settings;
     const stormPlanTicks = planTicks / 2; // a storm of walls or of a wagon ring is slow to reckon
-    const ticks = battle.type === "siege" || laager ? stormPlanTicks : planTicks;
+    const ticks = battle.type === "siege" || wagenburg ? stormPlanTicks : planTicks;
     const played = new Map<string, Rehearsal>(); // a side's option is often what the other expects of it: the same game
     const settled = SIDES.map((side, i) => {
       let best: Option | null = null;
@@ -1308,8 +1310,10 @@ class BattleModule {
     const radius = battle.type === "siege" && field.site ? Battlefields.getSiegeRadius(field.site) : Infinity;
     const size = BattleScale.getFieldSize(battle.battalion, radius);
     if (field.width === size.width && field.front === size.front) return;
-    if (field.site) battle.field = Battlefields.build(field.site[0], field.site[1], size, battle.type);
-    else {
+    if (field.site) {
+      battle.scene = Battlefields.build(field.site[0], field.site[1], size, battle.type);
+      battle.field = Battlefields.cut(battle.scene);
+    } else {
       const ratio = size.width / field.width; // cliffs are ground, drawn on the nodes as water is
       const scale = ([x, y]: [number, number]): [number, number] => [x * ratio, y * ratio];
       field.cliffs = field.cliffs.map(({ a, b, height }) => ({ a: scale(a), b: scale(b), height }));

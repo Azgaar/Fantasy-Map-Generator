@@ -20,7 +20,16 @@ function ground(
   const water = Array.from({ length: COLS * ROWS }, (_, node) => (sea(node) ? 1 : 0));
   const clearance = water.map((_, node) => clear(centre(node)));
   const height = water.map(() => 0);
-  return { cell: CELL, front: FRONT, water, open: Uint8Array.from(water, w => +!w), clearance, height };
+  return {
+    cols: COLS,
+    rows: ROWS,
+    cell: CELL,
+    front: FRONT,
+    water,
+    open: Uint8Array.from(water, w => +!w),
+    clearance,
+    height
+  };
 }
 
 /** Escarpments of a field whose land is 100 m higher where `high` says, its edge a sheer drop */
@@ -91,7 +100,7 @@ const length = (cliffs: { a: Point; b: Point }[]): number =>
 describe("cliffs", () => {
   it("traces the edge of a block of nodes all round, the block on the left of every stretch", () => {
     const box = [20, 10, 30, 25];
-    const edges = Cliffs.traceEdges(node => inBox(node, box), CELL);
+    const edges = Cliffs.traceEdges(node => inBox(node, box), { cols: COLS, rows: ROWS, cell: CELL });
     expect(length(edges)).toBeCloseTo(2 * (10 + 15) * CELL - 4 * (2 - Math.SQRT2) * (CELL / 2), 5); // corners cut
     for (const edge of edges) {
       const [ux, uy] = [edge.b[0] - edge.a[0], edge.b[1] - edge.a[1]];

@@ -8,7 +8,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { getKmInDistanceUnit, getPeople, heightToMeters } from "@/model/units";
 import type { Point } from "@/types/global";
 import { BattleRules, type BattleType } from "./battle-rules";
-import { BattleScale, COLS, DEFAULT_BATTALION, type FieldSize, ROWS } from "./battle-scale";
+import { BattleScale, COLS, DEFAULT_BATTALION, type FieldSize, ROWS, SURROUND } from "./battle-scale";
 import { BattleSite } from "./battle-site";
 import { type CliffGround, Cliffs } from "./cliffs";
 
@@ -83,6 +83,8 @@ export interface FieldCliff {
 
 /** Ground of a battle: the map around its cell as the layout, with detail that is always the same for the place */
 export interface Battlefield extends FieldSize {
+  cols: number; // of its grid: COLS × ROWS for a battle, more for its scene
+  rows: number;
   open: "sea" | "sky" | null; // no terrain: a naval or an air battle
   site: Point | null; // the map point a field of the map is built at
   biome: number; // of the site
@@ -176,9 +178,11 @@ class BattlefieldModule {
   }
 
   /** A field with no ground, of the size for battalions of the default size; `prepare` sizes it to its battle */
-  createEmpty(open: Battlefield["open"] = null): Battlefield {
-    const grid = (): number[] => new Array(COLS * ROWS).fill(0);
+  createEmpty(open: Battlefield["open"] = null, cols = COLS, rows = ROWS): Battlefield {
+    const grid = (): number[] => new Array(cols * rows).fill(0);
     return {
+      cols,
+      rows,
       open,
       site: null,
       ...BattleScale.getFieldSize(DEFAULT_BATTALION),
@@ -218,16 +222,24 @@ class BattlefieldModule {
   }
 
   /**
-   * The map round a point at true scale: lines and coasts as the map draws them, the ground as it lies between the cell centres.
-   * What the map is too coarse to show, hills, copses, bogs, the meanders of a river, comes from noise fixed by the place.
-   * An ambush keeps the cover in the middle, a siege fits the besieged burg in, a battle from the sea is fought on the shore
+   * The scene of a battle: the map round a point at true scale, a field of the size in its middle and ground round it.
+   * Lines and coasts as the map draws them, the ground as it lies between the cell centres. What the map is too coarse to
+   * show, hills, copses, bogs, the meanders of a river, comes from noise fixed by the place. An ambush keeps the cover in
+   * the middle, a siege fits the besieged burg in, a battle from the sea is fought on the shore. `cut` takes the field out
    */
   build(x: number, y: number, size: FieldSize, type: BattleType = "field"): Battlefield {
     const [clearing, siege] = [type !== "ambush", type === "siege"];
-    const field: Battlefield = { ...this.createEmpty(), site: [x, y], ...size };
+    const [cols, rows] = [COLS + SURROUND[0] * 2, ROWS + SURROUND[1] * 2];
+    const field: Battlefield = {
+      ...this.createEmpty(null, cols, rows),
+      site: [x, y],
+      ...size,
+      width: size.cell * cols,
+      height: size.cell * rows
+    };
     const place: Point = [Math.round(x), Math.round(y)];
     const { cells } = pack;
-    const { width, height, cell: step } = size;
+    const { width, height, cell: step } = field;
     const cell = Pack.findCell(x, y);
     if (cell === undefined) return field;
     field.biome = cells.biome[cell];
@@ -249,7 +261,7 @@ class BattlefieldModule {
     };
     const nearby = Pack.findAll(sx, sy, spacing * 2 + width / pixel);
     if (!nearby.includes(cell)) nearby.push(cell);
-    const nodes = Array.from({ length: COLS * ROWS }, (_, i) => this.nodeCentre(field, i));
+    const nodes = Array.from({ length: cols * rows }, (_, i) => this.nodeCentre(field, i));
 
     // land and water by the coasts as drawn
     const shapes = [...new Set(nearby.map(i => cells.f[i]))]
@@ -304,7 +316,7 @@ class BattlefieldModule {
     const groves = this.createNoise(field, place, 2, 260);
     const bogs = this.createNoise(field, place, 3, 220);
 
-    field.biomes = new Array(COLS * ROWS).fill(field.biome);
+    field.biomes = new Array(cols * rows).fill(field.biome);
     const ground = nodes.map((node, i) => {
       if (!isLand(node, lakes[i] ?? 0)) return null;
       const { h, trees, wet, biome } = interpolate(node);
@@ -333,7 +345,7 @@ class BattlefieldModule {
       const [nx, ny] = nodes[i];
       field.elevation[i] = high > low ? (g.height - low) / (high - low) : 0;
       if (lakes[i] === DRY_LAKE) return;
-      const fromCentre = Math.hypot((nx - width / 2) / width, (ny - height / 2) / height);
+      const fromCentre = Math.hypot((nx - width / 2) / size.width, (ny - height / 2) / size.height);
       const open = clearing ? Math.min(0.35 + fromCentre * 2.2, 1.15) : 1.15;
       if (groves(nx, ny) < g.trees * open) field.wood[i] = 1;
       else if (bogs(nx, ny) < g.wet * 0.6) field.marsh[i] = 1;
@@ -463,6 +475,66 @@ class BattlefieldModule {
     return field;
   }
 
+  /** The battle's field: the middle of its scene, on a grid of COLS × ROWS; burgs that reach it come along */
+  cut(scene: Battlefield): Battlefield {
+    const [left, top] = [(scene.cols - COLS) / 2, (scene.rows - ROWS) / 2];
+    const [dx, dy] = [left * scene.cell, top * scene.cell];
+    const field: Battlefield = {
+      ...this.createEmpty(),
+      site: scene.site,
+      width: COLS * scene.cell,
+      height: ROWS * scene.cell,
+      cell: scene.cell,
+      front: scene.front,
+      biome: scene.biome
+    };
+    const nodes = Array.from(
+      { length: COLS * ROWS },
+      (_, i) => (Math.floor(i / COLS) + top) * scene.cols + (i % COLS) + left
+    );
+    const slice = (grid: number[]): number[] => (grid.length ? nodes.map(node => grid[node]) : []);
+    const move = ([x, y]: Point): Point => [x - dx, y - dy];
+    Object.assign(field, {
+      biomes: slice(scene.biomes),
+      lake: slice(scene.lake),
+      top: slice(scene.top),
+      scarp: slice(scene.scarp),
+      wood: slice(scene.wood),
+      marsh: slice(scene.marsh),
+      water: slice(scene.water),
+      ford: slice(scene.ford),
+      deck: slice(scene.deck),
+      road: slice(scene.road),
+      town: slice(scene.town),
+      rivers: scene.rivers.map(river => ({ ...river, points: river.points.map(move) })),
+      roads: scene.roads.map(road => road.map(move)),
+      bridges: scene.bridges.map(bridge => ({ ...bridge, x: bridge.x - dx, y: bridge.y - dy })),
+      burgs: scene.burgs
+        .map(burg => ({ ...burg, x: burg.x - dx, y: burg.y - dy, outline: burg.outline.map(move) }))
+        .filter(
+          ({ x, y, radius }) =>
+            x + radius > 0 && x - radius < field.width && y + radius > 0 && y - radius < field.height
+        )
+    });
+    const box: Box = [-field.cell, -field.cell, field.width + field.cell, field.height + field.cell]; // off the field: see `toCliffs`
+    field.cliffs = scene.cliffs.flatMap(({ a, b, height }) => {
+      const span = this.clipSegment(a, b, box);
+      if (!span) return [];
+      const at = (t: number): Point => move([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+      return [{ a: at(span[0]), b: at(span[1]), height }];
+    });
+
+    // heights from the lowest land of the field
+    const heights = nodes.map(node =>
+      scene.water[node] === 1 ? null : scene.base + scene.elevation[node] * scene.relief
+    );
+    const land = heights.filter(h => h !== null);
+    [field.base, field.relief] = land.length ? [Math.min(...land), Math.max(...land) - Math.min(...land)] : [0, 0];
+    field.elevation = heights.map(h => (h !== null && field.relief ? (h - field.base) / field.relief : 0));
+    this.raiseWalls(field);
+    return field;
+  }
+
   /** Cliffs where the ground is broken: on the coast, and on the steep edges of high ground but about a burg besieged */
   private raiseCliffs(
     field: Battlefield,
@@ -473,6 +545,8 @@ class BattlefieldModule {
     siege: boolean
   ): void {
     const cliffGround: CliffGround = {
+      cols: field.cols,
+      rows: field.rows,
       cell: field.cell,
       front: field.front,
       water: field.water,
@@ -504,8 +578,8 @@ class BattlefieldModule {
 
   /** Metres from each node to the nearest road or river node, or to a burg's edge with its piers taken in */
   private getClearance(field: Battlefield, nodes: Point[]): number[] {
-    const { road, water, cell, burgs } = field;
-    const lines = Cliffs.getDistances(node => road[node] === 1 || water[node] === 2, cell);
+    const { road, water, burgs } = field;
+    const lines = Cliffs.getDistances(node => road[node] === 1 || water[node] === 2, field);
     return lines.map((least, node) => {
       const [x, y] = nodes[node];
       for (const burg of burgs) least = Math.min(least, Math.hypot(x - burg.x, y - burg.y) - burg.radius * 1.25);
@@ -922,16 +996,21 @@ class BattlefieldModule {
     return HIDING_BIOMES.includes(biome);
   }
 
+  /** A point of a drawing: a thousandth of the battle's width, on its field and on its scene alike */
+  getPoint({ cell }: Battlefield): number {
+    return (cell * COLS) / 1000;
+  }
+
   /** The grid node a point of the field lies in */
-  nodeAt({ cell }: Battlefield, x: number, y: number): number {
-    const col = Math.min(Math.max(Math.floor(x / cell), 0), COLS - 1);
-    const row = Math.min(Math.max(Math.floor(y / cell), 0), ROWS - 1);
-    return row * COLS + col;
+  nodeAt({ cell, cols, rows }: Battlefield, x: number, y: number): number {
+    const col = Math.min(Math.max(Math.floor(x / cell), 0), cols - 1);
+    const row = Math.min(Math.max(Math.floor(y / cell), 0), rows - 1);
+    return row * cols + col;
   }
 
   /** The middle of a grid node */
-  nodeCentre({ cell }: Battlefield, node: number): [number, number] {
-    return [((node % COLS) + 0.5) * cell, (Math.floor(node / COLS) + 0.5) * cell];
+  nodeCentre({ cell, cols }: Battlefield, node: number): [number, number] {
+    return [((node % cols) + 0.5) * cell, (Math.floor(node / cols) + 0.5) * cell];
   }
 
   /** Height of a point above the lowest ground, between the nodes as well; who is within walls stands on them */
@@ -939,10 +1018,10 @@ class BattlefieldModule {
     const node = this.nodeAt(field, x, y);
     const walls = onWalls && field.walled[node] && field.rampart[node] !== 3 ? WALL_HEIGHT : 0; // a breach is no higher than its rubble
     if (!field.relief) return walls;
-    const { cell } = field;
-    const fx = Math.min(Math.max(x / cell - 0.5, 0), COLS - 1);
-    const fy = Math.min(Math.max(y / cell - 0.5, 0), ROWS - 1);
-    const [c, r] = [Math.min(Math.floor(fx), COLS - 2), Math.min(Math.floor(fy), ROWS - 2)];
+    const { cell, cols, rows } = field;
+    const fx = Math.min(Math.max(x / cell - 0.5, 0), cols - 1);
+    const fy = Math.min(Math.max(y / cell - 0.5, 0), rows - 1);
+    const [c, r] = [Math.min(Math.floor(fx), cols - 2), Math.min(Math.floor(fy), rows - 2)];
     const [dx, dy] = [fx - c, fy - r];
     const between = (at: (col: number, row: number) => number): number => {
       const top = at(c, r) * (1 - dx) + at(c + 1, r) * dx;
@@ -950,12 +1029,12 @@ class BattlefieldModule {
       return top * (1 - dy) + bottom * dy;
     };
     const { elevation, relief, top, scarp } = field;
-    if (!top.length) return between((col, row) => elevation[row * COLS + col]) * relief + walls;
+    if (!top.length) return between((col, row) => elevation[row * cols + col]) * relief + walls;
     // high ground: the ground under it between the nodes, and its step where the point is on it, sharp at the edge
     const under = between(
-      (col, row) => elevation[row * COLS + col] * relief - top[row * COLS + col] * scarp[row * COLS + col]
+      (col, row) => elevation[row * cols + col] * relief - top[row * cols + col] * scarp[row * cols + col]
     );
-    const step = top[node] ? between((col, row) => scarp[row * COLS + col]) : 0;
+    const step = top[node] ? between((col, row) => scarp[row * cols + col]) : 0;
     return under + step + walls;
   }
 
@@ -1013,10 +1092,11 @@ class BattlefieldModule {
 
   /** A node next to one of dry land, corners too */
   private isByLand(field: Battlefield, node: number): boolean {
-    const [col, row] = [node % COLS, Math.floor(node / COLS)];
-    for (let y = Math.max(row - 1, 0); y <= Math.min(row + 1, ROWS - 1); y++)
-      for (let x = Math.max(col - 1, 0); x <= Math.min(col + 1, COLS - 1); x++)
-        if (!field.water[y * COLS + x]) return true;
+    const { cols, rows } = field;
+    const [col, row] = [node % cols, Math.floor(node / cols)];
+    for (let y = Math.max(row - 1, 0); y <= Math.min(row + 1, rows - 1); y++)
+      for (let x = Math.max(col - 1, 0); x <= Math.min(col + 1, cols - 1); x++)
+        if (!field.water[y * cols + x]) return true;
     return false;
   }
 

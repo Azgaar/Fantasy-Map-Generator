@@ -346,12 +346,12 @@ class GeneralModule {
     const frame = crossing ?? shore ?? this.findGround(battle, side, places, forward)[0];
     // a line that holds follows the ground: the water's edge, or the brow of the slope the foe has to come up
     if (shore) this.bend(places, battle.field.front, place => this.getShoreOffset(battle, frame, place));
-    else if (tactic === "stand" || tactic === "crescent")
+    else if (tactic === "defensiveLine" || tactic === "refusedFlanks")
       this.bend(places, battle.field.front, place => this.getBrowOffset(battle, side, frame, place));
     const plan = this.createPlan(tactic, frame);
     plan.strike = TACTICS[tactic].riders === "wedge" ? this.chooseLane(battle, side, frame, places) : strike;
     this.seat(battle, side, plan, places);
-    plan.fixed = Boolean(TACTICS[tactic].ring); // a laager stands where it formed
+    plan.fixed = Boolean(TACTICS[tactic].ring); // a Wagenburg stands where it formed
   }
 
   /** Score every tactic the side may use against what it knows of both armies, the best first, and name the wing to mass on */
@@ -395,8 +395,8 @@ class GeneralModule {
     const enemy = BattleRules.enemyOf(side);
     const dug = this.isDugIn(battle, enemy);
     const [ends, ring] = [
-      dug && battle[enemy].plan.tactic !== "laager" ? 0.4 : 0,
-      dug && battle[enemy].plan.tactic === "laager" ? 0.6 : 0
+      dug && battle[enemy].plan.tactic !== "wagenburg" ? 0.4 : 0,
+      dug && battle[enemy].plan.tactic === "wagenburg" ? 0.6 : 0
     ];
     const scores: [TacticName, number][] = attacking
       ? [
@@ -406,18 +406,18 @@ class GeneralModule {
           ["wedge", line >= 5 ? 0.7 + (width(foeBlocks) / (width(blocks) || 1) - 1) * 0.8 + (heavier ? 0.25 : 0) : 0],
           ["harass", shooters >= Math.max(line, 2) ? 0.5 + (fireShare - gripShare) * 3 + ring : 0],
           [
-            "flying",
+            "flyingWedge",
             riders >= 2 && own.riders >= own.power * 0.2
               ? 0.55 + Math.min(riderOdds - 1, 1.5) * 0.5 + (odds - 1) * 0.3
               : 0
           ]
         ]
       : [
-          ["stand", 1],
-          ["crescent", line >= 3 ? 0.8 + (1 / odds - 1) * 0.6 + (riderOdds < 0.67 ? 0.3 : 0) : 0],
+          ["defensiveLine", 1],
+          ["refusedFlanks", line >= 3 ? 0.8 + (1 / odds - 1) * 0.6 + (riderOdds < 0.67 ? 0.3 : 0) : 0],
           ["crossing", crossing ? 3 : 0],
           [
-            "laager",
+            "wagenburg",
             !crossing && this.isOutridden(own, foe) && line + shooters >= 4 && this.isBare(battle, side, blocks)
               ? 2.5
               : 0
@@ -431,10 +431,10 @@ class GeneralModule {
     return foe.riders >= own.riders * 2 && foe.riders >= foe.power * 0.4;
   }
 
-  /** The ground about the battle point covers neither end of a line: nothing for it to lean on, a laager stands anywhere */
+  /** The ground about the battle point covers neither end of a line: nothing for it to lean on, a Wagenburg stands anywhere */
   private isBare(battle: Battle, side: Side, blocks: Block[]): boolean {
     if (!Works.mayBuild(battle, side)) return false;
-    const places = Formations.form(blocks, TACTICS.stand, 1, this.getRoom(battle), battle.field.front);
+    const places = Formations.form(blocks, TACTICS.defensiveLine, 1, this.getRoom(battle), battle.field.front);
     const forward = side === "attackers" ? battle.axis : battle.axis + Math.PI;
     return this.findGround(battle, side, places, forward)[1] === 0;
   }
@@ -457,7 +457,7 @@ class GeneralModule {
   getTactics(battle: Battle, side: Side): TacticName[] {
     const { type, field } = battle;
     const blocks = battle.blocks.filter(block => block.side === side);
-    if (type === "ambush") return side === "defenders" ? ["ambuscade", "waylay"] : [];
+    if (type === "ambush") return side === "defenders" ? ["ambuscadeBothSides", "ambuscadeOneSide"] : [];
     if (type === "siege" && field.held !== null && side === "attackers")
       return this.canRing(battle, blocks) ? ["ring", "lines"] : [];
     if (type === "siege" && Movement.hasWalls(battle)) return [];
@@ -484,7 +484,7 @@ class GeneralModule {
     if (type === "ambush") {
       if (side === "attackers" || byHand) return [];
       const shooters = battle.blocks.some(block => block.side === side && block.kind === "shooter");
-      const tactics: TacticName[] = ["ambuscade", "waylay"];
+      const tactics: TacticName[] = ["ambuscadeBothSides", "ambuscadeOneSide"];
       return [
         ...tactics.map(tactic => this.option(tactic)),
         ...(shooters ? tactics.map(tactic => this.option(tactic, true)) : [])
@@ -507,7 +507,7 @@ class GeneralModule {
         Battlefields.isStanding(work) &&
         (work.kind === "wagons" || (work.kind === "stakes" && riders(BattleRules.enemyOf(work.side))))
     );
-    const ring = battle[BattleRules.enemyOf(side)].plan.tactic === "laager"; // and a foe that rings its wagons
+    const ring = battle[BattleRules.enemyOf(side)].plan.tactic === "wagenburg"; // and a foe that rings its wagons
     const rough = Battlefields.isRoughField(field) || barring || ring;
     if ((rough && side === "defenders") || byHand) return [];
     const blocks = battle.blocks.filter(block => block.side === side);
@@ -910,9 +910,9 @@ class GeneralModule {
       return lie(side, Math.max(far, AMBUSH[0]));
     };
     const chosen = this.getHandTactic(battle, "defenders") ?? battle.defenders.tactic;
-    const tactic: TacticName = chosen === "waylay" ? "waylay" : "ambuscade";
+    const tactic: TacticName = chosen === "ambuscadeOneSide" ? "ambuscadeOneSide" : "ambuscadeBothSides";
     const wings =
-      tactic === "waylay"
+      tactic === "ambuscadeOneSide"
         ? [{ troops: sorted, frame: cover(at(1)) > cover(at(0)) ? at(1) : at(0) }]
         : [0, 1].map(side => ({ troops: sorted.filter((_, i) => i % 2 === side), frame: at(side) }));
     const hunting = !battle.defenders.waits; // who shoot first keep where they lie till the column wavers
@@ -1874,7 +1874,7 @@ class GeneralModule {
     const siege = battle.type === "siege" && battle.field.held !== null;
     const free = phase === names.chase || phase === "looting" || (siege && phase === "storming");
     if (role === "support" || role === "battery") return role;
-    const lying = plan.tactic === "ambuscade" || plan.tactic === "waylay";
+    const lying = plan.tactic === "ambuscadeBothSides" || plan.tactic === "ambuscadeOneSide";
     const off = this.keepsOff(battle, side);
     if (lying && advancing && !off) return "hunt"; // told to stand, ambushers keep where they lie
     if (free) return role === "line" && !siege && phase === names.chase && block.kind !== "rider" ? "line" : "hunt";
@@ -1919,7 +1919,7 @@ class GeneralModule {
 
     const { front } = battle.field;
     if (plan.tactic !== "garrison") this.guardWards(battle, own, foe, WARD * front, spare, nearest, send);
-    const sally = plan.tactic === "laager" && battle[side].advancing; // out of the wagons once the foe is spent
+    const sally = plan.tactic === "wagenburg" && battle[side].advancing; // out of the wagons once the foe is spent
     if (plan.fixed && plan.tactic !== "garrison" && !sally) return;
 
     if (plan.tactic === "garrison") {
@@ -2252,7 +2252,7 @@ class GeneralModule {
 
   /**
    * Whether the side builds works this round. It begins when it holds, may build, and some kind is done before the foe
-   * comes, unless its general chose to wait rather than fight; a laager from the first tick. Once begun it goes on till the works stand,
+   * comes, unless its general chose to wait rather than fight; a Wagenburg from the first tick. Once begun it goes on till the works stand,
    * it advances or the foe is upon its line; an order by hand stands for its time
    */
   private fortifies(battle: Battle, side: Side): boolean {
@@ -2260,7 +2260,7 @@ class GeneralModule {
     if (!Works.mayBuild(battle, side) || !Works.isHolding(battle, side) || !Works.hasWorkLeft(battle, side))
       return false;
     if (plan.order) return plan.order === "fortify";
-    if (plan.tactic === "laager") return true;
+    if (plan.tactic === "wagenburg") return true;
     if (this.isFoeUpon(battle, side)) return false; // no battalion of the line could build: it fights
     if (plan.fortify) return true;
     // a general who chose not to fight here does not dig in: both would, till the lull. In a landing `waits` is to stand inland

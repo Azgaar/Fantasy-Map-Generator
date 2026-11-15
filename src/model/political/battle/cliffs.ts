@@ -2,7 +2,6 @@
 // the grid alone. See docs/domain/battles.md#cliffs.
 
 import type { Point } from "@/types/global";
-import { COLS, ROWS } from "./battle-scale";
 import type { FieldCliff } from "./battlefield";
 import { Pathfinding } from "./pathfinding";
 
@@ -28,9 +27,15 @@ const ROUNDS = 24; // of cutting gullies before a field gives up its escarpments
 
 type Noise = (x: number, y: number) => number;
 
-/** What the cliffs are laid on: the grid and what the map draws on it */
-export interface CliffGround {
+/** A grid of nodes so many metres apart */
+export interface Grid {
+  cols: number;
+  rows: number;
   cell: number;
+}
+
+/** What the cliffs are laid on: the grid and what the map draws on it */
+export interface CliffGround extends Grid {
   front: number;
   water: number[]; // 1 sea or lake, 2 river
   open: Uint8Array; // nodes troops on foot can enter
@@ -81,9 +86,9 @@ class CliffsModule {
   laySeaCliffs(ground: CliffGround, roughness: number, beach: Noise): FieldCliff[] {
     if (!CLIFFS.on || roughness < SEA_CLIFF_ROUGHNESS) return [];
     const { water, front, clearance } = ground;
-    const edges = this.traceEdges(node => water[node] !== 1, ground.cell);
+    const edges = this.traceEdges(node => water[node] !== 1, ground);
     if (!edges.length) return [];
-    const middle: Point = [(COLS * ground.cell) / 2, (ROWS * ground.cell) / 2];
+    const middle: Point = [(ground.cols * ground.cell) / 2, (ground.rows * ground.cell) / 2];
     const nearest = edges.reduce((best, edge) =>
       this.distance(edge.mid, middle) < this.distance(best.mid, middle) ? edge : best
     );
@@ -98,7 +103,7 @@ class CliffsModule {
     return this.getPieces(edges, keep, 0)
       .flatMap(piece => this.splitLong(piece, LONGEST * front, GAP_WIDTH * front))
       .filter(piece => this.getLength(piece) >= PIECE * front)
-      .flatMap(piece => this.toCliffs(piece, () => height, ground.cell));
+      .flatMap(piece => this.toCliffs(piece, () => height, ground));
   }
 
   /**
@@ -115,7 +120,7 @@ class CliffsModule {
     if (!land.length) return null;
     const [low, high] = [Math.min(...land), Math.max(...land)];
     const level = low + (high - low) * TOP;
-    const edges = this.traceEdges(node => water[node] !== 1 && height[node] > level, cell);
+    const edges = this.traceEdges(node => water[node] !== 1 && height[node] > level, ground);
     // the ground falls across the edge steeply of itself: the cliff is the hillside at its steepest
     const mean = (nodes: number[]): number => nodes.reduce((sum, node) => sum + height[node], 0) / nodes.length;
     const fall = new Map(edges.map(edge => [edge, (mean(edge.inner) - mean(edge.outer)) / cell]));
@@ -126,7 +131,7 @@ class CliffsModule {
         gapNoise(...edge.mid) > GAP
     );
 
-    const whole = this.getParts(open); // the pieces of ground without cliffs: they stay one
+    const whole = this.getParts(ground, open); // the pieces of ground without cliffs: they stay one
     const gully = Math.max((GULLY * front) / 2, cell);
     for (let round = 0; round < ROUNDS; round++) {
       const runs = this.getPieces(edges, keep, 0).flatMap((piece, line) =>
@@ -137,10 +142,10 @@ class CliffsModule {
         2 * RAMP * front
       );
       // a gully where the hillside is gentlest
-      const at = this.findGully(open, whole, pieces.flat(), edge => fall.get(edge)!);
+      const at = this.findGully(ground, open, whole, pieces.flat(), edge => fall.get(edge)!);
       if (!at)
         return {
-          cliffs: pieces.flatMap(piece => this.toCliffs(piece, () => this.getHeight(roughness), cell)),
+          cliffs: pieces.flatMap(piece => this.toCliffs(piece, () => this.getHeight(roughness), ground)),
           ...this.raiseGround(ground, pieces, this.getHeight(roughness))
         };
       edges.forEach((edge, i) => {
@@ -170,10 +175,11 @@ class CliffsModule {
    * distance from it and toward its ends, measured straight along its end stretches, so it is smooth everywhere but
    * across the cliff: the side flips there, and past its ends, where there is no step left
    */
-  private raiseGround({ cell, front }: CliffGround, pieces: Edge[][], height: number): Omit<Escarpments, "cliffs"> {
-    const top = new Array<number>(COLS * ROWS).fill(0);
-    const step = new Array<number>(COLS * ROWS).fill(0);
-    const closest = new Array<number>(COLS * ROWS).fill(Infinity);
+  private raiseGround(ground: CliffGround, pieces: Edge[][], height: number): Omit<Escarpments, "cliffs"> {
+    const { cols, rows, cell, front } = ground;
+    const top = new Array<number>(cols * rows).fill(0);
+    const step = new Array<number>(cols * rows).fill(0);
+    const closest = new Array<number>(cols * rows).fill(Infinity);
     const [reach, taper] = [RAMP * front, TAPER * front];
     for (const piece of pieces) {
       const spans = piece.map(({ a, b }) => this.distance(a, b) || 1);
@@ -182,14 +188,14 @@ class CliffsModule {
       const [first, last] = [piece[0].a, piece.at(-1)!.b];
       const [into, out] = [ways[0], ways.at(-1)!];
       // a cliff that runs off the field does not end there
-      const [start, end] = [!this.isOnEdge(first, cell), !this.isOnEdge(last, cell)];
+      const [start, end] = [!this.isOnEdge(first, ground), !this.isOnEdge(last, ground)];
       const xs = piece.flatMap(({ a, b }) => [a[0], b[0]]);
       const ys = piece.flatMap(({ a, b }) => [a[1], b[1]]);
       const [c0, c1] = [Math.floor((Math.min(...xs) - reach) / cell), Math.ceil((Math.max(...xs) + reach) / cell)];
       const [r0, r1] = [Math.floor((Math.min(...ys) - reach) / cell), Math.ceil((Math.max(...ys) + reach) / cell)];
-      for (let row = Math.max(r0, 0); row <= Math.min(r1, ROWS - 1); row++) {
-        for (let col = Math.max(c0, 0); col <= Math.min(c1, COLS - 1); col++) {
-          const node = row * COLS + col;
+      for (let row = Math.max(r0, 0); row <= Math.min(r1, rows - 1); row++) {
+        for (let col = Math.max(c0, 0); col <= Math.min(c1, cols - 1); col++) {
+          const node = row * cols + col;
           const p: Point = [(col + 0.5) * cell, (row + 0.5) * cell];
           const ends =
             (start ? this.smoothstep(0, taper, (p[0] - first[0]) * into[0] + (p[1] - first[1]) * into[1]) : 1) *
@@ -225,11 +231,11 @@ class CliffsModule {
    * The edge of the nodes `inside` marks, square by square (marching squares): through the middles of the sides between
    * a node within and one without. Where two within stand corner to corner they are joined
    */
-  traceEdges(inside: (node: number) => boolean, cell: number): Edge[] {
+  traceEdges(inside: (node: number) => boolean, { cols, rows, cell }: Grid): Edge[] {
     const edges: Edge[] = [];
-    for (let row = 0; row < ROWS - 1; row++) {
-      for (let col = 0; col < COLS - 1; col++) {
-        const corners = CORNERS.map(([dx, dy]) => (row + dy) * COLS + col + dx);
+    for (let row = 0; row < rows - 1; row++) {
+      for (let col = 0; col < cols - 1; col++) {
+        const corners = CORNERS.map(([dx, dy]) => (row + dy) * cols + col + dx);
         const within = corners.map(inside);
         const count = within.filter(Boolean).length;
         if (!count || count === 4) continue;
@@ -240,7 +246,7 @@ class CliffsModule {
             ? [0, 1, 2, 3].filter(k => !within[k]).map(k => [(k + 3) % 4, k])
             : [[crossed[0], crossed[1]]];
         for (const [s, t] of pairs) {
-          const key = (side: number): number => (2 * row + SIDES[side][1]) * (2 * COLS + 1) + 2 * col + SIDES[side][0];
+          const key = (side: number): number => (2 * row + SIDES[side][1]) * (2 * cols + 1) + 2 * col + SIDES[side][0];
           const point = (side: number): Point => [
             (col + SIDES[side][0] / 2 + 0.5) * cell,
             (row + SIDES[side][1] / 2 + 0.5) * cell
@@ -249,7 +255,7 @@ class CliffsModule {
           const mid: Point = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
           const inner = corners.filter((_, k) => within[k]);
           const outer = crossed.length === 4 ? [corners[t]] : corners.filter((_, k) => !within[k]);
-          const [nx, ny] = [((inner[0] % COLS) + 0.5) * cell, (Math.floor(inner[0] / COLS) + 0.5) * cell];
+          const [nx, ny] = [((inner[0] % cols) + 0.5) * cell, (Math.floor(inner[0] / cols) + 0.5) * cell];
           // within on the left: the side ahead turned a quarter to the left, as works have their front
           const [ux, uy] = [b[0] - a[0], b[1] - a[1]];
           if ((nx - mid[0]) * uy - (ny - mid[1]) * ux < 0) [a, b, from, to] = [b, a, to, from];
@@ -328,20 +334,27 @@ class CliffsModule {
    * Where to cut a gully: by the stretch of cliff ranked lowest on the edge of ground the cliffs close off from ground it
    * was one with; null when they close nothing off
    */
-  private findGully(open: Uint8Array, whole: Int32Array, kept: Edge[], rank: (edge: Edge) => number): Point | null {
+  private findGully(
+    grid: Grid,
+    open: Uint8Array,
+    whole: Int32Array,
+    kept: Edge[],
+    rank: (edge: Edge) => number
+  ): Point | null {
     if (!kept.length) return null;
-    const closed = new Uint16Array(COLS * ROWS);
+    const { cols } = grid;
+    const closed = new Uint16Array(open.length);
     for (const edge of kept) {
       for (const p of edge.outer) {
         for (const q of edge.corners) {
           if (edge.outer.includes(q)) continue;
-          const [dx, dy] = [(q % COLS) - (p % COLS), Math.floor(q / COLS) - Math.floor(p / COLS)];
+          const [dx, dy] = [(q % cols) - (p % cols), Math.floor(q / cols) - Math.floor(p / cols)];
           closed[p] |= Pathfinding.getStepBit(dx, dy);
           closed[q] |= Pathfinding.getStepBit(-dx, -dy);
         }
       }
     }
-    const parts = this.getParts(open, closed);
+    const parts = this.getParts(grid, open, closed);
     // of the parts of one piece of ground, all but its largest are closed off
     const largest = new Map<number, number>();
     const sizes = new Map<number, number>();
@@ -365,29 +378,29 @@ class CliffsModule {
   }
 
   /** Each open node's part: the nodes it can come to, by the steps left open */
-  private getParts(open: Uint8Array, closed?: Uint16Array): Int32Array {
-    const parts = new Int32Array(COLS * ROWS).fill(-1);
+  private getParts({ cols, rows }: Grid, open: Uint8Array, closed?: Uint16Array): Int32Array {
+    const parts = new Int32Array(cols * rows).fill(-1);
     for (let node = 0; node < parts.length; node++) {
       if (!open[node] || parts[node] >= 0) continue;
-      const reached = Pathfinding.flood(COLS, ROWS, [node], open, closed);
+      const reached = Pathfinding.flood(cols, rows, [node], open, closed);
       for (let i = 0; i < reached.length; i++) if (reached[i]) parts[i] = node;
     }
     return parts;
   }
 
   /** Metres from each node to the nearest of the nodes marked, node by node: far off where none is */
-  getDistances(marked: (node: number) => boolean, cell: number): number[] {
-    const reach = new Array<number>(COLS * ROWS).fill(Infinity);
+  getDistances(marked: (node: number) => boolean, { cols, rows, cell }: Grid): number[] {
+    const reach = new Array<number>(cols * rows).fill(Infinity);
     const queue: number[] = [];
     for (let node = 0; node < reach.length; node++) if (marked(node)) [reach[node], queue[queue.length]] = [0, node];
     for (let i = 0; i < queue.length; i++) {
       const node = queue[i];
-      const [col, row] = [node % COLS, Math.floor(node / COLS)];
+      const [col, row] = [node % cols, Math.floor(node / cols)];
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           const [x, y] = [col + dx, row + dy];
-          if ((!dx && !dy) || x < 0 || y < 0 || x >= COLS || y >= ROWS) continue;
-          const near = y * COLS + x;
+          if ((!dx && !dy) || x < 0 || y < 0 || x >= cols || y >= rows) continue;
+          const near = y * cols + x;
           const far = reach[node] + Math.hypot(dx, dy) * cell;
           if (far < reach[near]) [reach[near], queue[queue.length]] = [far, near];
         }
@@ -397,24 +410,24 @@ class CliffsModule {
   }
 
   /** A piece as stretches of cliff; one that ends at the edge of the field runs on past it, so nobody slips round its end */
-  private toCliffs(piece: Edge[], heightOf: (edge: Edge) => number, cell: number): FieldCliff[] {
+  private toCliffs(piece: Edge[], heightOf: (edge: Edge) => number, grid: Grid): FieldCliff[] {
     const cliffs = piece.map(edge => ({ a: edge.a, b: edge.b, height: heightOf(edge) }));
     const [first, last] = [cliffs[0], cliffs.at(-1)!];
-    first.a = this.beyond(first.a, cell);
-    last.b = this.beyond(last.b, cell);
+    first.a = this.beyond(first.a, grid);
+    last.b = this.beyond(last.b, grid);
     return cliffs;
   }
 
   /** A point on the outermost nodes' middles: where a line traced over the grid runs off the field */
-  private isOnEdge(point: Point, cell: number): boolean {
-    return this.beyond(point, cell).some((value, i) => value !== point[i]);
+  private isOnEdge(point: Point, grid: Grid): boolean {
+    return this.beyond(point, grid).some((value, i) => value !== point[i]);
   }
 
   /** A point on the outermost nodes' middles moved out past the edge of the field; any other as it is */
-  private beyond([x, y]: Point, cell: number): Point {
+  private beyond([x, y]: Point, { cols, rows, cell }: Grid): Point {
     const out = (value: number, count: number): number =>
       value <= cell / 2 ? -cell : value >= (count - 0.5) * cell ? (count + 1) * cell : value;
-    return [out(x, COLS), out(y, ROWS)];
+    return [out(x, cols), out(y, rows)];
   }
 
   private distance(a: Point, b: Point): number {

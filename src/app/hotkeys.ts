@@ -27,6 +27,7 @@ function handleKeydown(event: KeyboardEvent): void {
   if (altKey && !ctrlKey && !shiftKey) event.preventDefault(); // disallow plain alt key combinations
   if (ctrlKey && ["KeyS", "KeyC"].includes(code)) event.preventDefault(); // disallow CTRL + S and CTRL + C
   if (["F1", "F2", "F6", "F9", "Tab"].includes(code)) event.preventDefault(); // disallow default Fn and Tab
+  if (isBattleSpace(event)) event.preventDefault(); // a focused button is not pressed by it
 }
 
 function handleKeyup(event: KeyboardEvent): void {
@@ -43,7 +44,8 @@ function handleKeyup(event: KeyboardEvent): void {
   const layer = getLayerByShortcut(code);
   const brush = getVisibleBrush();
 
-  if (code === "Space") openOmnibar(event);
+  if (isBattleSpace(event)) findEl("battleRun")?.click();
+  else if (code === "Space") openOmnibar(event);
   else if (code === "F1") Services.ReleaseNotes.open();
   else if (code === "F2") regeneratePrompt();
   else if (code === "F6") Services.Save.toStorage();
@@ -129,6 +131,11 @@ function isBrowsingKey({ code, key, ctrlKey, metaKey, altKey, shiftKey }: Keyboa
   if (BROWSING_CODES.includes(code)) return true;
   if (/^[\d=+-]$/.test(key)) return !(shiftKey && code === "Equal"); // Shift + Equal opens the Measurers Editor
   return !shiftKey && !!getLayerByShortcut(code);
+}
+
+/** A plain Space while the battle screen is open starts or pauses the battle */
+function isBattleSpace({ code, ctrlKey, metaKey, altKey, shiftKey }: KeyboardEvent): boolean {
+  return code === "Space" && !ctrlKey && !metaKey && !altKey && !shiftKey && Dialog.isOpen("battleScreen");
 }
 
 // only a plain Space with nothing focused: a focused control keeps its own Space, a modified Space is not ours,

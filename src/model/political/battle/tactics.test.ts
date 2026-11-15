@@ -141,7 +141,7 @@ describe("a line along the brow", () => {
 
   it("bends a line that holds to the crest the foe has to come up", () => {
     const b = setup("field", mixed, mixed, ridge());
-    expect(["stand", "crescent"]).toContain(b.defenders.plan.tactic);
+    expect(["defensiveLine", "refusedFlanks"]).toContain(b.defenders.plan.tactic);
     const line = firstLine(b, "defenders");
     const heights = line.map(block => Battlefields.getElevation(b.field, block.x, block.y));
     expect(Math.min(...heights)).toBeGreaterThan(b.field.relief * 0.8);
@@ -151,7 +151,7 @@ describe("a line along the brow", () => {
     const b = setup("field", mixed, mixed, Battlefields.createEmpty());
     const line = firstLine(b, "defenders");
     const along = line.map(block => block.order.along);
-    const bow = b.defenders.plan.tactic === "stand";
+    const bow = b.defenders.plan.tactic === "defensiveLine";
     if (bow) expect(Math.max(...along) - Math.min(...along)).toBeLessThan(1);
   });
 });
@@ -161,7 +161,7 @@ describe("a flying wedge", () => {
   const foes = { infantry: 2400, archers: 600, cavalry: 600 };
   const wedge = (axis = 0): Battle => {
     const b = setup("field", riders, foes, Battlefields.createEmpty(), axis);
-    b.attackers.tactic = "flying";
+    b.attackers.tactic = "flyingWedge";
     Battles.prepare(b);
     b.planned = true;
     return b;
@@ -169,9 +169,9 @@ describe("a flying wedge", () => {
 
   it("is weighed by a general strong in riders", () => {
     const b = setup("field", riders, foes, Battlefields.createEmpty());
-    expect(Generals.getOptions(b, "attackers").map(option => option.tactic)).toContain("flying");
+    expect(Generals.getOptions(b, "attackers").map(option => option.tactic)).toContain("flyingWedge");
     const few = setup("field", { infantry: 3000, archers: 600, cavalry: 300 }, foes, Battlefields.createEmpty());
-    expect(Generals.getOptions(few, "attackers").map(option => option.tactic)).not.toContain("flying");
+    expect(Generals.getOptions(few, "attackers").map(option => option.tactic)).not.toContain("flyingWedge");
   });
 
   it("draws the riders up in a wedge apart from the line, its point ahead", () => {

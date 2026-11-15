@@ -24,6 +24,7 @@ export interface BattleContext {
   onChange: (group: Group) => void;
   getSource: () => BattleSource & { report: ReportText };
   pause: () => void;
+  toggleLog: () => void;
 }
 
 interface Control {
@@ -345,11 +346,26 @@ class BattleConfigureController {
       position: { my: "right top", at: "right-10 top+10", of: "svg" },
       width: "30em",
       maxHeight: window.innerHeight * 0.9,
+      buttons: [
+        {
+          label: t("Battle log"),
+          tip: t("Show the battle log"),
+          className: "icon-list-bullet",
+          onClick: () => this.context?.toggleLog()
+        }
+      ],
       onClose: () => {
         this.recording?.abort();
         this.context = null;
       }
     });
+    this.setLogShown(Dialog.isOpen("battleLog"));
+  }
+
+  /** The log button stays pressed while the log is open */
+  setLogShown(show: boolean): void {
+    const button = findEl("battleConfigure")?.closest(".dialog-window")?.querySelector(".icon-list-bullet");
+    button?.classList.toggle("pressed", show);
   }
 
   private getGroup(group: Group): Record<string, unknown> {

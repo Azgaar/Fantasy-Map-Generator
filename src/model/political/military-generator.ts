@@ -881,7 +881,7 @@ class MilitaryModule {
   }
 
   /** Split a regiment in two halves; the new one stands just below. Returns its id */
-  split(stateId: number, regimentId: number): number {
+  split(stateId: number, regimentId: number, shift = REGIMENT_SIZE * 2): number {
     const regiment = this.living(stateId, regimentId);
     const state = pack.states[stateId];
     const military = state.military!;
@@ -894,9 +894,8 @@ class MilitaryModule {
     regiment.u = Object.fromEntries(Object.entries(regiment.u).map(([unit, count]) => [unit, count - half[unit]]));
     regiment.a = sum(Object.values(regiment.u));
 
-    const shift = REGIMENT_SIZE * 2;
-    let y = regiment.y + shift;
-    while (military.some(other => other.x === regiment.x && other.y === y)) y += shift;
+    let y = rn(regiment.y + shift, 2);
+    while (military.some(other => other.x === regiment.x && other.y === y)) y = rn(y + shift, 2);
     const i = Math.max(...military.map(other => other.i)) + 1;
     const added: Regiment = {
       a,

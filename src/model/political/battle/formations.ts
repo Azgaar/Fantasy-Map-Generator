@@ -26,14 +26,14 @@ export type TacticName =
   | "envelopment"
   | "wedge"
   | "harass"
-  | "flying"
-  | "stand"
-  | "crescent"
+  | "flyingWedge"
+  | "defensiveLine"
+  | "refusedFlanks"
   | "crossing"
-  | "laager"
+  | "wagenburg"
   | "column"
-  | "ambuscade"
-  | "waylay"
+  | "ambuscadeBothSides"
+  | "ambuscadeOneSide"
   | "lines"
   | "ring"
   | "garrison"
@@ -73,9 +73,18 @@ export const TACTICS: Record<TacticName, Tactic> = {
     riders: "behind"
   },
   harass: { lines: 1, reserve: 0, span: 1, massed: false, refuse: 0, bow: 0, shooters: "front", riders: "wings" },
-  flying: { lines: 1, reserve: 0.2, span: 1, massed: false, refuse: 0, bow: 0, shooters: "behind", riders: "wedge" },
+  flyingWedge: {
+    lines: 1,
+    reserve: 0.2,
+    span: 1,
+    massed: false,
+    refuse: 0,
+    bow: 0,
+    shooters: "behind",
+    riders: "wedge"
+  },
   // defence
-  stand: {
+  defensiveLine: {
     lines: 1,
     reserve: 0.2,
     span: 1,
@@ -86,7 +95,7 @@ export const TACTICS: Record<TacticName, Tactic> = {
     riders: "behind",
     ends: true
   },
-  crescent: {
+  refusedFlanks: {
     lines: 1,
     reserve: 0.15,
     span: 0.8,
@@ -108,7 +117,7 @@ export const TACTICS: Record<TacticName, Tactic> = {
     riders: "behind",
     ends: true
   },
-  laager: {
+  wagenburg: {
     lines: 1,
     reserve: 0.2,
     span: 1,
@@ -121,8 +130,26 @@ export const TACTICS: Record<TacticName, Tactic> = {
   },
   // of a battle type
   column: { lines: 1, reserve: 0, span: 1, massed: false, refuse: 0, bow: 0, shooters: "behind", riders: "wings" },
-  ambuscade: { lines: 1, reserve: 0, span: 1, massed: false, refuse: 0, bow: 0, shooters: "behind", riders: "wings" },
-  waylay: { lines: 1, reserve: 0, span: 1, massed: false, refuse: 0, bow: 0, shooters: "behind", riders: "wings" },
+  ambuscadeBothSides: {
+    lines: 1,
+    reserve: 0,
+    span: 1,
+    massed: false,
+    refuse: 0,
+    bow: 0,
+    shooters: "behind",
+    riders: "wings"
+  },
+  ambuscadeOneSide: {
+    lines: 1,
+    reserve: 0,
+    span: 1,
+    massed: false,
+    refuse: 0,
+    bow: 0,
+    shooters: "behind",
+    riders: "wings"
+  },
   lines: { lines: 1, reserve: 0.2, span: 1, massed: false, refuse: 0, bow: 0, shooters: "behind", riders: "wings" },
   ring: { lines: 1, reserve: 0, span: 1, massed: false, refuse: 0, bow: 0, shooters: "behind", riders: "behind" },
   garrison: { lines: 1, reserve: 0, span: 1, massed: false, refuse: 0, bow: 0, shooters: "behind", riders: "behind" },
@@ -332,8 +359,8 @@ class FormationModule {
   }
 
   /**
-   * A ring round the middle of the formation, facing out: line troops and shooters on it with the engines among them,
-   * the riders and a reserve inside
+   * A ring round the middle of the formation, facing out: line troops on it, shooters and engines in the middle with
+   * the riders and a reserve about them; shooters and engines fill out a ring too short to close
    */
   private formRing(blocks: Block[], tactic: Tactic, front: number): Place[] {
     const [gap, rowGap] = [GAP * front, ROW_GAP * front];
@@ -343,13 +370,17 @@ class FormationModule {
     const line = of("line");
     const kept = line.length >= 4 ? Math.round(line.length * tactic.reserve) : 0;
     const reserve = kept ? line.splice(line.length - kept) : [];
+    const fire = [...of("shooter"), ...of("engine")];
+    const closed = line.length >= 3;
     // shooters and engines spread evenly among the line troops
     const spread = (row: Block[]): { block: Block; at: number }[] =>
       row.map((block, i) => ({ block, at: (i + 0.5) / row.length }));
-    const ring = [...spread(line), ...spread([...of("shooter"), ...of("engine")])]
-      .sort((a, b) => a.at - b.at || a.block.id - b.block.id)
-      .map(({ block }) => block);
-    const inside = [...of("rider"), ...reserve];
+    const ring = closed
+      ? line
+      : [...spread(line), ...spread(fire)]
+          .sort((a, b) => a.at - b.at || a.block.id - b.block.id)
+          .map(({ block }) => block);
+    const inside = [...(closed ? fire : []), ...of("rider"), ...reserve];
 
     const around = ring.reduce((sum, block) => sum + block.width + gap, 0);
     const radius = Math.max(around / (Math.PI * 2), front * (0.8 + 0.6 * Math.sqrt(inside.length)));
@@ -362,18 +393,28 @@ class FormationModule {
       const [across, along] = [Math.sin(angle) * radius, Math.cos(angle) * radius];
       places.push({ block, role, mission: MISSIONS[role], rank: 0, across, along, facing: angle });
     }
-    // inside: rows about the middle, facing the way the formation does
+    // inside: rows facing the way the formation does, the first row in the middle and the rest out from it
     const rows: Block[][] = [];
     for (const block of inside) {
       const last = rows.at(-1);
       if (last && last.reduce((sum, other) => sum + other.width + gap, block.width) <= radius) last.push(block);
       else rows.push([block]);
     }
+    const slots = rows
+      .map((_, i) => ((rows.length - 1) / 2 - i) * rowGap)
+      .sort((a, b) => Math.abs(a) - Math.abs(b) || b - a);
     rows.forEach((row, i) => {
       let offset = -row.reduce((sum, block) => sum + block.width + gap, -gap) / 2;
-      const along = ((rows.length - 1) / 2 - i) * rowGap;
       for (const block of row) {
-        places.push({ block, role: "reserve", mission: "reserve", rank: 1, across: offset + block.width / 2, along });
+        const role: Role = block.kind === "shooter" || block.kind === "engine" ? ROLES[block.kind] : "reserve";
+        places.push({
+          block,
+          role,
+          mission: MISSIONS[role],
+          rank: 1,
+          across: offset + block.width / 2,
+          along: slots[i]
+        });
         offset += block.width + gap;
       }
     });

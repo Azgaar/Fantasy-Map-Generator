@@ -356,17 +356,16 @@ const oceanWaves = meta(
   options: { render: false, type: "waves", density: 1, length: 1, reach: 4, halo: 0.25 }
 });
 
-// the options of a layer whose font size follows the zoom (renderers/viewport/viewport.ts)
+// how a layer's size follows the zoom (renderers/viewport/viewport.ts)
+const zoomSizeOption = (zoomSize: ZoomSize) =>
+  choice(ZOOM_SIZES, {
+    label: t("Zoom size"),
+    tip: t("Set how the size changes on zoom, from growing with the map to keeping the same pixel size"),
+    effect: "zoom"
+  }).default(zoomSize);
+
 const zoomOptions = (zoomSize: ZoomSize) =>
-  z
-    .strictObject({
-      zoomSize: choice(ZOOM_SIZES, {
-        label: t("Zoom size"),
-        tip: t("Set how the size changes on zoom, from growing with the map to keeping the same pixel size"),
-        effect: "zoom"
-      }).default(zoomSize)
-    })
-    .default({ zoomSize });
+  z.strictObject({ zoomSize: zoomSizeOption(zoomSize) }).default({ zoomSize });
 
 const burgGroup = z.strictObject({
   attrs: z.strictObject({
@@ -796,7 +795,8 @@ export const stylesSchema = z.strictObject({
       showNames: flag({
         label: t("Show names"),
         tip: t("Display regiment names below units")
-      }).default(false)
+      }).default(false),
+      zoomSize: zoomSizeOption("geometric")
     })
   }),
   ocean: z.strictObject({

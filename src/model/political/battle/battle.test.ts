@@ -238,8 +238,8 @@ describe("battle generals", () => {
   });
 
   it("picks a tactic by the odds and by what the armies are made of", () => {
-    expect(tactics({ infantry: 3600, archers: 1200, cavalry: 900 }, big)).toEqual(["assault", "crescent"]);
-    expect(tactics(big, big)).toEqual(["assault", "stand"]); // no stronger, no weaker wing to mass on
+    expect(tactics({ infantry: 3600, archers: 1200, cavalry: 900 }, big)).toEqual(["assault", "refusedFlanks"]);
+    expect(tactics(big, big)).toEqual(["assault", "defensiveLine"]); // no stronger, no weaker wing to mass on
     expect(tactics(weaker, big)[0]).toBe("oblique"); // weaker: all on one wing
     expect(tactics({ infantry: 1500, archers: 300, cavalry: 1800 }, big)[0]).toBe("envelopment");
     expect(tactics({ infantry: 900, archers: 2400, cavalry: 300 }, { infantry: 3000, cavalry: 600 })[0]).toBe("harass");
@@ -614,14 +614,14 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     const field = Battlefields.createEmpty();
     for (let row = 8; row < 44; row++) for (let col = 20; col < 80; col++) field.wood[row * COLS + col] = +(row < 26);
     const b = setup("ambush", mixed, mixed, field);
-    expect(b.defenders.plan.tactic).toBe("ambuscade");
+    expect(b.defenders.plan.tactic).toBe("ambuscadeBothSides");
     Battles.plan(b);
-    expect(["ambuscade", "waylay"]).toContain(b.defenders.tactic);
+    expect(["ambuscadeBothSides", "ambuscadeOneSide"]).toContain(b.defenders.tactic);
     // in the wood they lie at its edge, a short dash from the road: nearer than a bowshot
     const wooded = b.blocks.filter(block => block.side === "defenders" && block.y < 409 && block.order.rank === 0);
     expect(Math.max(...wooded.map(block => block.y))).toBeGreaterThan(409 - 177);
     expect(b.attackers.tactic).toBeNull(); // the column is caught: its general has no plan
-    if (b.defenders.tactic === "waylay") {
+    if (b.defenders.tactic === "ambuscadeOneSide") {
       const ambushers = b.blocks.filter(block => block.side === "defenders");
       expect(ambushers.every(block => block.y < 409)).toBe(true); // all in the wood north of the road
     }
@@ -2100,6 +2100,8 @@ describe("battle ways", () => {
         0.5 + 0.25 * Math.sin(x / fx + seed * phase) + 0.25 * Math.cos(y / fy + seed * phase * 1.7);
       const field = Battlefields.createEmpty();
       const ground = {
+        cols: field.cols,
+        rows: field.rows,
         cell: field.cell,
         front: field.front,
         water: field.water,
@@ -2487,11 +2489,11 @@ describe("battle works", () => {
 
   it("closes a wagon line where the first line does not stand level: no gap between the stretches", () => {
     const b = battle([regiment(1, { infantry: 3600, archers: 1200, cavalry: 900 })], [regiment(2, big)]);
-    Battles.intervene(b, { tick: 0, kind: "tactic", side: "defenders", tactic: "crescent" });
+    Battles.intervene(b, { tick: 0, kind: "tactic", side: "defenders", tactic: "refusedFlanks" });
     order(b, "attackers", "hold");
     order(b, "defenders", "fortify");
     Battles.plan(b);
-    expect(b.defenders.plan.tactic).toBe("crescent");
+    expect(b.defenders.plan.tactic).toBe("refusedFlanks");
     ticks(b, 1);
     const line = builders(b, "defenders");
     const front = (block: Block): number =>
@@ -2526,7 +2528,7 @@ describe("battle works", () => {
     expect(worksOf(coming, "defenders").every(work => work.kind === "stakes" && work.up)).toBe(true);
   });
 
-  it("has besiegers in blockade dig siege lines, and a laager ring its wagons with the horse bearing down", () => {
+  it("has besiegers in blockade dig siege lines, and a Wagenburg ring its wagons with the horse bearing down", () => {
     const siege = setup("siege", { infantry: 2000, archers: 400 }, { infantry: 900, archers: 600 }, walled());
     expect(siege.attackers.plan.tactic).toBe("lines");
     expect(Generals.isDugIn(siege, "attackers")).toBe(false); // they do not ring the burg in: no lines laid in advance
@@ -2539,24 +2541,24 @@ describe("battle works", () => {
     expect(worksOf(siege, "attackers").filter(work => work.up).length).toBeGreaterThan(3);
     expect(worksOf(siege, "defenders")).toEqual([]); // the besieged have walls
 
-    const laager = battle([regiment(1, { infantry: 900, archers: 300, cavalry: 1600 })], [regiment(2, noRiders)]);
-    expect(laager.defenders.plan.tactic).toBe("laager");
-    Battles.intervene(laager, { tick: 0, kind: "tactic", side: "defenders", tactic: "laager" }); // whatever the rehearsals say
+    const wagenburg = battle([regiment(1, { infantry: 900, archers: 300, cavalry: 1600 })], [regiment(2, noRiders)]);
+    expect(wagenburg.defenders.plan.tactic).toBe("wagenburg");
+    Battles.intervene(wagenburg, { tick: 0, kind: "tactic", side: "defenders", tactic: "wagenburg" }); // whatever the rehearsals say
     const horse = (): number =>
       Math.min(
-        ...of(laager, "attackers")
+        ...of(wagenburg, "attackers")
           .filter(block => block.kind === "rider")
-          .map(block => Math.hypot(block.x - laager.defenders.plan.x, block.y - laager.defenders.plan.y))
+          .map(block => Math.hypot(block.x - wagenburg.defenders.plan.x, block.y - wagenburg.defenders.plan.y))
       );
     const far = horse();
-    ticks(laager, 36);
+    ticks(wagenburg, 36);
     expect(horse()).toBeLessThan(far * 0.6);
-    const wagons = worksOf(laager, "defenders");
-    expect(wagons.length).toBe(of(laager, "defenders").filter(block => block.order.rank === 0).length);
+    const wagons = worksOf(wagenburg, "defenders");
+    expect(wagons.length).toBe(of(wagenburg, "defenders").filter(block => block.order.rank === 0).length);
     expect(wagons.every(work => work.kind === "wagons" && work.up && work.builder === null)).toBe(true);
     // a closed ring round the whole army
     for (const work of wagons) expect(wagons.filter(other => other.a === work.b)).toHaveLength(1);
-    for (const block of of(laager, "defenders")) expect(inside([block.x, block.y], wagons), block.key).toBe(true);
+    for (const block of of(wagenburg, "defenders")) expect(inside([block.x, block.y], wagons), block.key).toBe(true);
   });
 
   it("has a side behind its works come out when it is shot at with nothing to answer, and stay when it is not", () => {
@@ -2804,8 +2806,8 @@ describe("battle works", () => {
   });
 
   it("has foot fight a wagon ring over the wagons, and get in by the gap engines knock into it", () => {
-    const b = setup("field", { infantry: 900, cavalry: 1600, artillery: 40 }, noRiders);
-    expect(b.defenders.plan.tactic).toBe("laager");
+    const b = setup("field", { infantry: 900, cavalry: 1600, artillery: 40 }, { infantry: 3600, archers: 900 }); // a ring of ten stretches
+    expect(b.defenders.plan.tactic).toBe("wagenburg");
     b.planned = true;
     b.attackers.storms = true; // its general storms the wagons at once rather than batter them first
     let over = false;
@@ -2836,7 +2838,7 @@ describe("battle works", () => {
       dig(b, "defenders");
       b.planned = true;
       b.attackers.storms = storms;
-      expect(b.defenders.plan.tactic).not.toBe("laager");
+      expect(b.defenders.plan.tactic).not.toBe("wagenburg");
       const gaps = (): number =>
         worksOf(b, "defenders").filter(work => work.kind === "wagons" && work.harm >= 1).length;
       const { close } = POSTURES.field.attackers;
@@ -2976,13 +2978,13 @@ describe("battle works", () => {
     const foot = { infantry: 15000, archers: 4000 };
     timed(foot, foot, true); // a ditch
     timed({ infantry: 10000, archers: 3000, cavalry: 6000 }, { infantry: 12000, archers: 4000, cavalry: 3000 }, true); // stakes
-    timed({ infantry: 5000, archers: 1500, cavalry: 9000 }, { infantry: 14000, archers: 5000 }, false); // a laager
-    // a laager on ground with water: the defenders do not think it through, a weaker attacker does, briefly
+    timed({ infantry: 5000, archers: 1500, cavalry: 9000 }, { infantry: 14000, archers: 5000 }, false); // a Wagenburg
+    // a Wagenburg on ground with water: the defenders do not think it through, a weaker attacker does, briefly
     const field = Battlefields.createEmpty();
     for (let row = 0; row < 6; row++) for (let col = 0; col < 6; col++) field.water[row * COLS + col] = 1;
     const started = performance.now();
     const pond = setup("field", { infantry: 3000, cavalry: 11000 }, { infantry: 24000, archers: 9000 }, field);
-    expect(pond.defenders.plan.tactic).toBe("laager");
+    expect(pond.defenders.plan.tactic).toBe("wagenburg");
     Battles.plan(pond);
     expect(performance.now() - started).toBeLessThan(1000);
   });
@@ -3032,9 +3034,9 @@ describe("battle works", () => {
     expect(Works.isDigging(b, "defenders")).toBe(false);
   });
 
-  it("has a laager left with too few battalions on its ring for wagons give up fortifying", () => {
+  it("has a Wagenburg left with too few battalions on its ring for wagons give up fortifying", () => {
     const b = battle([regiment(1, { infantry: 900, archers: 300, cavalry: 1600 })], [regiment(2, noRiders)]);
-    expect(b.defenders.plan.tactic).toBe("laager");
+    expect(b.defenders.plan.tactic).toBe("wagenburg");
     b.planned = true;
     for (const block of of(b, "defenders")
       .filter(block => block.order.rank === 0)

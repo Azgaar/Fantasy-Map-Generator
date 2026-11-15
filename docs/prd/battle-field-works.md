@@ -14,11 +14,11 @@ Users want a side to be able to dig in, and the battle to be honest about it. Wo
 
 A side can build **works**: lines on the ground in front of its first line that hinder its foes and shelter it. There are three kinds:
 
-| Kind | Built against | Takes | Hinders foes | Shelters the holders |
-| --- | --- | --- | --- | --- |
-| **Stakes** | a foe strong in riders | 2 minutes | riders cannot reach the holders over them | blows over them weaker; a charge over them has no impetus |
-| **Ditch** | any other foe | 15 minutes | — | shots and blows over it weaker; a charge over it has no impetus |
-| **Wagons** | a foe strong in riders, by a side in a wagon ring | 4 minutes | no foe crosses them | shots and blows over them weaker; a charge over them has no impetus |
+| Kind       | Built against                                     | Takes      | Hinders foes                              | Shelters the holders                                                |
+| ---------- | ------------------------------------------------- | ---------- | ----------------------------------------- | ------------------------------------------------------------------- |
+| **Stakes** | a foe strong in riders                            | 2 minutes  | riders cannot reach the holders over them | blows over them weaker; a charge over them has no impetus           |
+| **Ditch**  | any other foe                                     | 15 minutes | —                                         | shots and blows over it weaker; a charge over it has no impetus     |
+| **Wagons** | a foe strong in riders, by a side in a wagon ring | 4 minutes  | no foe crosses them                       | shots and blows over them weaker; a charge over them has no impetus |
 
 Works are built **in the battle**, at any phase, by either side:
 
@@ -94,7 +94,7 @@ works: FieldWork[];
 
 - **Its line.** A stretch runs across the front of its battalion's place, as long as the block's width plus the line's gap (`GAP`), so neighbours' stretches join. It stands 6 m ahead of the front: well inside the 12 m at which blocks fight, so at grips it always lies between the two. It runs from `a` to `b` with its front on the left, for the drawing. Ends are left open: a line of works has flanks.
 - **Only the first line builds.** Places of rank 0 get stretches, whoever stands there: line foot or shooters in the first line. Shooters behind the line get none, or their stakes would stand in the line's back. Riders, engines, ships and fliers never build.
-- **The wagon ring** is a closed polygon of stretches round a laager's formation, a stretch for each battalion standing on it.
+- **The wagon ring** is a closed polygon of stretches round a Wagenburg's formation, a stretch for each battalion standing on it.
 - **One test decides when a work counts.** It is finished and not down, it is held by the side of the block it shelters (the target of a blow or a shot, the foe of a block that would cross it), and the straight line from one block's middle to the other's crosses it (`getWorksBetween`, beside `getWallsBetween`). The test needs no facing: a foe that came round the end has no work between it and its target. A side's own works never hinder it.
 - **No grid marks.** All the effects of works use this exact test, as contact across walls already does. The grid's 9–45 m nodes are too coarse for a 6 m strip: a foe at grips stands with its middle outside any strip one could mark.
 - **Finished works take effect at the start of the next round**, all at once. Then, if any of them bars a kind of troops (stakes, wagons), the field's ways are forgotten (`forgetWays`), at most once a round, so that the troops go round them. Whether a field needs ways at all (`rough`) is decided when its ways are first made, so forgetting them is also how a field that had none gets them; the cache needs no new key.
@@ -103,13 +103,13 @@ works: FieldWork[];
 
 One factor per kind, applied the same way to all blows and shots that come over a work at its holders:
 
-| | stakes | ditch | wagons |
-| --- | --- | --- | --- |
-| blows over it | × 0.75 | × 0.6 | × 0.5 |
-| shots over it | × 1 | × 0.6 | × 0.5 |
-| impetus of a charge over it | none | none | none |
-| crossing it | riders never; foot freely | everybody freely | nobody, until a stretch is knocked down |
-| contact over it | not for riders | yes | yes |
+|                             | stakes                    | ditch            | wagons                                  |
+| --------------------------- | ------------------------- | ---------------- | --------------------------------------- |
+| blows over it               | × 0.75                    | × 0.6            | × 0.5                                   |
+| shots over it               | × 1                       | × 0.6            | × 0.5                                   |
+| impetus of a charge over it | none                      | none             | none                                    |
+| crossing it                 | riders never; foot freely | everybody freely | nobody, until a stretch is knocked down |
+| contact over it             | not for riders            | yes              | yes                                     |
 
 - **One factor, not footing and cover multiplied together.** Walls are × 1/3. A ditch with a bank-and-footing penalty and a separate cover factor would multiply out to the strength of stone walls. Footing at the foot of a work is folded into the blow factor.
 - **Cover.** `fight` multiplies `power` by the factor where it applies `WALLS` and `COVER`, with the same "between" test.
@@ -128,19 +128,20 @@ Two existing behaviours would empty a work as soon as the foe came:
 
 - **Rates.** Times are for a full battalion. A smaller one builds in proportion to its troops: `done += troops / battalion / ticks` a tick. A wagon ring is the side's train: it builds as one, however large the army, every tick while the side fortifies, whatever its battalions do.
 
-  | Kind | Ticks | Time |
-  | --- | --- | --- |
-  | stakes | 15 | 2 minutes |
-  | wagons | 30 | 4 minutes |
-  | ditch | 112 | 15 minutes |
+  | Kind   | Ticks | Time       |
+  | ------ | ----- | ---------- |
+  | stakes | 15    | 2 minutes  |
+  | wagons | 30    | 4 minutes  |
+  | ditch  | 112   | 15 minutes |
 
-- **Which kind.** The best kind that will be done in time. A ditch when the foe's riders are under a third of its power and a ditch will be done before the foe arrives; else stakes, when they will be. A battalion keeps the kind it began. A laager builds wagons.
+- **Which kind.** The best kind that will be done in time. A ditch when the foe's riders are under a third of its power and a ditch will be done before the foe arrives; else stakes, when they will be. A battalion keeps the kind it began. A Wagenburg builds wagons.
 - **The side's decision (`plan.fortify`).** The general makes it once a round, in `direct`, since he sees the whole field. A side begins to fortify when all of these hold:
   - **It holds.** It neither advances, chases nor runs. In a siege `advancing` is set by the phase, and the besiegers always advance, so for them it is the phase: they hold in blockade.
   - **It may build.** The battle is a field battle, the besiegers of a siege, or the defenders of a landing. Ambushers hide rather than dig, the besieged have walls, and naval and air battles have no ground.
   - **The foe will not arrive before some kind is done.** Its arrival is the gap between the lines over how fast it closed last round (`plan.gap` before and now). A foe that is not closing arrives never; one that is closing arrives at the gap divided by that rate. In the first round there is no last round (`plan.gap` starts at infinity): a foe that advances is reckoned to close at the pace of its first line.
 
-  Once begun, it goes on until the side's works are done or it advances. Builders the foe comes near are stopped by the battalion's rule, not by the general's, so the order does not flicker from round to round. A laager fortifies from the first tick, whatever the foe: its wagons are its tactic. `getOrder` shows `fortify` while it is set.
+  Once begun, it goes on until the side's works are done or it advances. Builders the foe comes near are stopped by the battalion's rule, not by the general's, so the order does not flicker from round to round. A Wagenburg fortifies from the first tick, whatever the foe: its wagons are its tactic. `getOrder` shows `fortify` while it is set.
+
 - **The battalion's decision.** It is made every tick in `decide`, as a new `build` intent and action. A battalion of a fortifying side builds its stretch when it stands at its place, is not at grips, and no foe in order is within a round's march of it (the foe's pace × 6 ticks, plus a charge). Otherwise it decides as now. Progress is kept: it takes up the work again once the foe has gone.
 - **The frame stands still while a side fortifies or holds works** (`plan.fixed`), so places and their stretches stay together. Only advancing frees it. A frame that moves on leaves its works behind, as real armies did.
 - **The order by hand.** `Fortify` is a new `Command`, listed for the sides that may build: field (both), siege besiegers, landing defenders. It takes the side's holding phase (`COMMANDS`). In a landing it keeps the phase (`keepsPhase`). `obey` leaves `advancing` false for it, as for `hold` and `defend`, and sets `plan.fortify`. Like any order it stands for `ORDER_ROUNDS`; then the general's rule decides whether to go on.
@@ -165,13 +166,13 @@ Two existing behaviours would empty a work as soon as the foe came:
 - **Tactic scores.** Against a side dug in, Oblique and Envelopment score more when the works have ends, and Harass when they are a ring. A field with wagons, or stakes and riders, is rough, so, as now, defenders there do not rehearse and attackers rehearse only their best tactic; the score has to point them right.
 - **Rehearsal.** A rehearsal is the real engine on a copy of the field, so it digs, fortifies and batters as the battle would. Nothing special is needed.
 
-### The laager
+### The Wagenburg
 
-- **A new tactic, `laager`.** A ring formation: line troops and shooters on the ring facing out, engines among them, riders and the reserve inside. The wagons are the work along it.
+- **A new tactic, `wagenburg`.** A ring formation: line troops and shooters on the ring facing out, engines among them, riders and the reserve inside. The wagons are the work along it.
 - **Chosen when** the side defends, the foe's riders outweigh its own two to one and make two fifths or more of the foe's power, and the ground offers nothing for the ends of a line. For that, `findGround` returns the score of the ground it picks.
-- **Wagons.** Every land army has a train, so any land army can form a laager.
+- **Wagons.** Every land army has a train, so any land army can form a Wagenburg.
 - **The formation is fixed** (`plan.fixed`). Its battalions go out by sallies only (the reserve, `spent`) and come back over their own wagons.
-- **Defenders rehearse it** against Stand and Crescent on an open field, as they rehearse the tactics now: 30 ticks of building against a cavalry foe's approach is a race the rehearsal settles.
+- **Defenders rehearse it** against Defensive line and Refused flanks on an open field, as they rehearse the tactics now: 30 ticks of building against a cavalry foe's approach is a race the rehearsal settles.
 
 ### The screen
 
@@ -183,11 +184,11 @@ Two existing behaviours would empty a work as soon as the foe came:
 
 Works are drawn the way fortifications appear on old battle plans: flat, one colour per kind, no textures, in the plan's own ink.
 
-| Kind | Symbol | Colour |
-| --- | --- | --- |
-| ditch | a line, with short hachures on its front side | earth, `#8a6d4b` |
-| stakes | a row of short strokes leaning out to the front | wood, `#6b4f32` |
-| wagons | small filled oblongs end to end along the line | wall ink, `#55524b` |
+| Kind   | Symbol                                          | Colour              |
+| ------ | ----------------------------------------------- | ------------------- |
+| ditch  | a line, with short hachures on its front side   | earth, `#8a6d4b`    |
+| stakes | a row of short strokes leaning out to the front | wood, `#6b4f32`     |
+| wagons | small filled oblongs end to end along the line  | wall ink, `#55524b` |
 
 - **The layer.** A new `<g class="battleWorks">` sits over the ground and under `battleFire` and the blocks, so troops stand on their works. Works grow and fall during the battle, so it joins the moving layers of the animation export (`MOVING` in `battle-animation.ts`), which are redrawn every frame. The ground layers are drawn once.
 - **Sizes are in plan points** (`getPoint`, a thousandth of the field's width), like roads and walls, not in metres. A 3 m ditch would be invisible on a 5 km field. The sizes:
@@ -214,6 +215,7 @@ The Battles diagnostics (`draw-battle-debug.ts`) show works as the simulation ha
   - grey, dashed: down.
 
   An unfinished stretch is drawn thin, with its `done` as a percentage at its middle. A short tick marks its front side, to check the front-on-the-left rule. The legend gets the four entries.
+
 - **Who builds.** A battalion's label already shows its mission and its action, so `build` appears there with nothing more to do. A thin line joins a builder to the middle of its stretch.
 - **The "between" test.** A blow or a shot that a work weakens has its target line drawn in that work's colour instead of grey. So the test can be checked at a glance: head on through the ditch, round its end with no change.
 - **The side's line** adds `fortify` while it is set, `holds works` once it does, the general's estimate of the foe's arrival in rounds (`arrives ∞` for a foe not closing), and the works as finished/all.
@@ -222,19 +224,19 @@ The Battles diagnostics (`draw-battle-debug.ts`) show works as the simulation ha
 
 ### Modules touched
 
-| Module | Change |
-| --- | --- |
-| `battlefield.ts` | `FieldWork`, `works`, `getWorksBetween` |
-| `movement.ts` | barring by works in `isBarred` and `inContact`, `rough` by the kind of troops |
-| `battle.ts` | building progress, works taking effect each round, impetus and cover, knocking down wagons, the `dig` intervention, the log events, no lull while building |
-| `battalion.ts` | the `build` intent; holding behind works; shooters not stepping back from barred foes |
-| `general.ts` | `plan.fortify` and its rule, the fixed frame, holding works, the attacker's reaction, dug-in works in `drawUp`, the ground score, the laager |
-| `formations.ts` | the `laager` entry and the ring builder |
-| `battle-rules.ts` | the `fortify` command in `COMMANDS`, `getCommand` and `keepsPhase` |
-| `draw-battle-scene.ts`, `battle-animation.ts` | drawing works |
-| `draw-battle-debug.ts` | works, builders, the between test and the side's fortifying in the diagnostics |
-| `battle-screen.ts` | the order, the Dug in setting, the log lines, the tooltip |
-| `docs/domain/battles.md`, `docs/wiki/Battle-Simulator.md` | a Works section, the new order |
+| Module                                                    | Change                                                                                                                                                     |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `battlefield.ts`                                          | `FieldWork`, `works`, `getWorksBetween`                                                                                                                    |
+| `movement.ts`                                             | barring by works in `isBarred` and `inContact`, `rough` by the kind of troops                                                                              |
+| `battle.ts`                                               | building progress, works taking effect each round, impetus and cover, knocking down wagons, the `dig` intervention, the log events, no lull while building |
+| `battalion.ts`                                            | the `build` intent; holding behind works; shooters not stepping back from barred foes                                                                      |
+| `general.ts`                                              | `plan.fortify` and its rule, the fixed frame, holding works, the attacker's reaction, dug-in works in `drawUp`, the ground score, the Wagenburg            |
+| `formations.ts`                                           | the `wagenburg` entry and the ring builder                                                                                                                 |
+| `battle-rules.ts`                                         | the `fortify` command in `COMMANDS`, `getCommand` and `keepsPhase`                                                                                         |
+| `draw-battle-scene.ts`, `battle-animation.ts`             | drawing works                                                                                                                                              |
+| `draw-battle-debug.ts`                                    | works, builders, the between test and the side's fortifying in the diagnostics                                                                             |
+| `battle-screen.ts`                                        | the order, the Dug in setting, the log lines, the tooltip                                                                                                  |
+| `docs/domain/battles.md`, `docs/wiki/Battle-Simulator.md` | a Works section, the new order                                                                                                                             |
 
 ### Delivery stages
 
@@ -243,7 +245,7 @@ Each stage ships on its own and is balanced before the next one starts:
 1. **The model and stakes.** `FieldWork`, the test, building, `Fortify`, the general's rule, the fixed frame, holding behind works, drawing. Stakes exercise barring (riders only), the blow factor and impetus.
 2. **Ditch.** Cover from shots, the attacker's reaction, no lull while building.
 3. **Dug in and siege lines.** The setting and its defaults.
-4. **Laager.** The tactic, the ring formation, wagons, engines knocking them down.
+4. **Wagenburg.** The tactic, the ring formation, wagons, engines knocking them down.
 
 ## Testing Decisions
 
@@ -254,10 +256,11 @@ Each stage ships on its own and is balanced before the next one starts:
   - who wins and with what losses.
 
   They do not check which constant was used. Battles are deterministic, so tests compare outcomes and positions.
+
 - **New tests in `battle.test.ts`:**
   - a line told to fortify with no foe near finishes its stakes in 15 ticks, and the stretches join along it;
   - a foe that is not closing lets a side finish a ditch; one that closes too fast for a ditch gets stakes;
-  - besiegers in blockade fortify; a laager builds its wagons with cavalry bearing down;
+  - besiegers in blockade fortify; a Wagenburg builds its wagons with cavalry bearing down;
   - a side behind its ditch, shot at with nothing to answer, comes out; one that is not shot at stays;
   - line troops behind their ditch go for a foe that came round its end;
   - a battalion stops building when a foe comes within a round's march, fights, and takes the work up again when the foe is gone;
@@ -274,11 +277,12 @@ Each stage ships on its own and is balanced before the next one starts:
   - the same battle with works replays the same, interventions included.
 
   Prior art: the ford tests ("stands round the far end of a ford", "has a weaker attacker think better of forcing a ford").
+
 - **Pathfinding.** A unit test that stakes shut the steps across them for riders only, and that their ends stay open.
 - **Balance against a HEAD worktree.** Compare several army sizes, all eight directions, on a plain and on a hill, mixed armies at equal power, even dice:
   - **with works switched off**, outcomes match HEAD. The switch is a test-only flag of the battle model, not a user setting. With works on, defenders plant stakes in most battles, so HEAD equality cannot be the gate;
   - **with works on**, an equal attacker loses an assault on a ditch by losses but is not destroyed, cavalry against a line behind stakes loses, and no battle turns into both sides digging until the lull.
-- **Performance.** Measure planning and round times against the budgets in battles.md: a plain with ditches (should equal an open plain), stakes against riders, and a laager.
+- **Performance.** Measure planning and round times against the budgets in battles.md: a plain with ditches (should equal an open plain), stakes against riders, and a Wagenburg.
 
 ## Out of Scope
 
@@ -303,5 +307,6 @@ Each stage ships on its own and is balanced before the next one starts:
   - a ditch goes up only if the foe holds back.
 
   Because an attacker no weaker comes on at a ditch, in-battle ditches will mostly be dug against weaker attackers, and the strong ditch is the dug-in one. That is the history: entrenched positions were prepared, not improvised.
+
 - **Why "dug in" stays narrow.** Free works for every defender would help them even against attacks they never saw coming. They would also shift the outcome of most field battles, where defenders stand at fair odds. Dug in is therefore a default only where the battle type implies days of preparation, and otherwise the user's choice.
 - **The risk to watch** is patience. If attackers wait too long, battles turn into both sides digging. The reaction to a ditch or a ring is the guard against it, and the balance check looks for battles where both sides build.

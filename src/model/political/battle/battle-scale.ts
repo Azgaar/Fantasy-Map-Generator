@@ -5,6 +5,7 @@ const RANKS = 5; // a battalion stands so deep, a metre a man along its front
 export const DEFAULT_BATTALION = 300; // men: the size the battle was balanced at
 export const COLS = 100; // the grid of a field of any size: a node is 1% of its width
 export const ROWS = 60;
+export const SURROUND = [4, 4]; // grid nodes of ground round each side of the field, across and down: drawn, never fought on
 
 const FRONTS = 1000 / 44; // battalion fronts across the field
 const SIEGE_LAND = 340; // metres of land round a besieged burg, the ring at most, and a battalion front more behind it

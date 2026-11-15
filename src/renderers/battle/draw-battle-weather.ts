@@ -1,7 +1,6 @@
 // Rain, snow, fog and heat over the battle plan: a WebGL layer of the screen only, drawn every frame while there is weather to show
 
 import { curveBasisClosed, line } from "d3";
-import { COLS, ROWS } from "@/model/political/battle/battle-scale";
 import { type Battlefield, Battlefields } from "@/model/political/battle/battlefield";
 import type { Weather } from "@/model/political/battle/weather";
 
@@ -222,11 +221,11 @@ class BattleWeatherRenderer {
    * each a halo of wet earth, the water and a glint along it. Placed by the node, so the same field is always soaked alike
    */
   getMudMarkup(field: Battlefield): string {
-    const { cell } = field;
+    const { cell, cols, rows } = field;
     const [wide, narrow, halos, waters, glints]: string[][] = [[], [], [], [], []];
-    for (let node = 0; node < COLS * ROWS; node++) {
+    for (let node = 0; node < cols * rows; node++) {
       if (field.water[node] || field.town[node] || field.walled[node]) continue;
-      const [col, row] = [node % COLS, Math.floor(node / COLS)];
+      const [col, row] = [node % cols, Math.floor(node / cols)];
       const patch = this.smooth(this.patchNoise(col, row), 0.45, 0.85);
       const [cx, cy] = Battlefields.nodeCentre(field, node);
       if (patch && col % BLOTCH === row % 2 && row % BLOTCH === 0) {

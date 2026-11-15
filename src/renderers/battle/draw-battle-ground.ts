@@ -3,7 +3,6 @@
 
 import { hcl } from "d3";
 import { Relief, type ReliefPool } from "@/model/physical/relief-generator";
-import { COLS, ROWS } from "@/model/political/battle/battle-scale";
 import { type Battlefield, Battlefields, DRY_LAKE } from "@/model/political/battle/battlefield";
 import { minmax, normalize, rn } from "@/utils/number-utils";
 import { walkLine } from "@/utils/path-utils";
@@ -114,7 +113,7 @@ class BattleGroundRenderer {
   /** A mask of woods or bogs: white within, fading out over a node or two round their edge; nothing on a field without them or a canvas */
   getSoftMask(field: Battlefield, grid: number[], id: string): string {
     if (!grid.some(Boolean)) return "";
-    const soft = this.soften(this.soften(grid));
+    const soft = this.soften(field, this.soften(field, grid));
     const image = this.toImage(field, i => [
       255,
       255,
@@ -148,14 +147,17 @@ class BattleGroundRenderer {
 
   /** Trees in the woods and reeds in the bogs, the props of each biome on open ground, rocks on steep slopes, scree under cliffs, reeds and shingle by the water */
   getPropsMarkup(field: Battlefield): string {
-    const pt = field.width / 1000;
+    const pt = Battlefields.getPoint(field);
     const spacing = SPACING * pt;
     const digits = pt < 4 ? 1 : 0;
     const [sx, sy] = field.site ? field.site.map(Math.round) : [0, 0];
     const cover = {
-      wood: this.soften(field.wood),
-      marsh: this.soften(field.marsh),
-      sea: this.soften(field.water.map(w => +(w === 1)))
+      wood: this.soften(field, field.wood),
+      marsh: this.soften(field, field.marsh),
+      sea: this.soften(
+        field,
+        field.water.map(w => +(w === 1))
+      )
     };
     const wind = (Battlefields.mix(sx, sy, 200) - 0.5) * 0.8; // the dunes of a field all face one way
     const biomes = new Map<number, BiomeProps>();
@@ -331,45 +333,45 @@ class BattleGroundRenderer {
   /** The node grid as an image over the field, a pixel a node, smoothed between them; nothing without a canvas */
   private toImage(field: Battlefield, pixel: (node: number) => ArrayLike<number>): string {
     const canvas = document.createElement("canvas");
-    canvas.width = COLS;
-    canvas.height = ROWS;
+    canvas.width = field.cols;
+    canvas.height = field.rows;
     const context = canvas.getContext("2d");
     if (!context) return "";
-    const image = context.createImageData(COLS, ROWS);
-    for (let i = 0; i < COLS * ROWS; i++) image.data.set(pixel(i), i * 4);
+    const image = context.createImageData(field.cols, field.rows);
+    for (let i = 0; i < field.cols * field.rows; i++) image.data.set(pixel(i), i * 4);
     context.putImageData(image, 0, 0);
     return `<image href="${canvas.toDataURL()}" width="${field.width}" height="${field.height}" preserveAspectRatio="none"/>`;
   }
 
   /** A node grid blurred as the outlines of woods and water are, to be sampled anywhere */
-  private soften(grid: ArrayLike<number>): Float32Array {
+  private soften({ cols, rows }: Battlefield, grid: ArrayLike<number>): Float32Array {
     const at = (col: number, row: number): number =>
-      grid[minmax(row, 0, ROWS - 1) * COLS + minmax(col, 0, COLS - 1)] ?? 0;
-    const soft = new Float32Array(COLS * ROWS);
-    for (let row = 0; row < ROWS; row++) {
-      for (let col = 0; col < COLS; col++) {
+      grid[minmax(row, 0, rows - 1) * cols + minmax(col, 0, cols - 1)] ?? 0;
+    const soft = new Float32Array(cols * rows);
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
         let total = at(col, row) * 2;
         for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) total += at(col + dx, row + dy);
-        soft[row * COLS + col] = total / 11;
+        soft[row * cols + col] = total / 11;
       }
     }
     return soft;
   }
 
   /** A softened grid between the node centres */
-  private sample({ cell }: Battlefield, soft: Float32Array, x: number, y: number): number {
-    const [u, v] = [minmax(x / cell - 0.5, 0, COLS - 1), minmax(y / cell - 0.5, 0, ROWS - 1)];
-    const [col, row] = [Math.min(Math.floor(u), COLS - 2), Math.min(Math.floor(v), ROWS - 2)];
+  private sample({ cell, cols, rows }: Battlefield, soft: Float32Array, x: number, y: number): number {
+    const [u, v] = [minmax(x / cell - 0.5, 0, cols - 1), minmax(y / cell - 0.5, 0, rows - 1)];
+    const [col, row] = [Math.min(Math.floor(u), cols - 2), Math.min(Math.floor(v), rows - 2)];
     const [tx, ty] = [u - col, v - row];
-    const at = (c: number, r: number): number => soft[r * COLS + c];
+    const at = (c: number, r: number): number => soft[r * cols + c];
     const top = at(col, row) + (at(col + 1, row) - at(col, row)) * tx;
     const bottom = at(col, row + 1) + (at(col + 1, row + 1) - at(col, row + 1)) * tx;
     return top + (bottom - top) * ty;
   }
 
   /** Nodes a cliff's scree may reach: spots elsewhere need not measure the cliffs */
-  private getCliffReach({ cliffs, cell }: Battlefield): Uint8Array {
-    const reach = new Uint8Array(COLS * ROWS);
+  private getCliffReach({ cliffs, cell, cols, rows }: Battlefield): Uint8Array {
+    const reach = new Uint8Array(cols * rows);
     const margin = Math.ceil(SCREE[0]) + 1;
     for (const { a, b } of cliffs) {
       const [c0, c1] = [
@@ -380,8 +382,8 @@ class BattleGroundRenderer {
         Math.floor(Math.min(a[1], b[1]) / cell) - margin,
         Math.floor(Math.max(a[1], b[1]) / cell) + margin
       ];
-      for (let row = Math.max(r0, 0); row <= Math.min(r1, ROWS - 1); row++) {
-        for (let col = Math.max(c0, 0); col <= Math.min(c1, COLS - 1); col++) reach[row * COLS + col] = 1;
+      for (let row = Math.max(r0, 0); row <= Math.min(r1, rows - 1); row++) {
+        for (let col = Math.max(c0, 0); col <= Math.min(c1, cols - 1); col++) reach[row * cols + col] = 1;
       }
     }
     return reach;
@@ -406,15 +408,15 @@ class BattleGroundRenderer {
   }
 
   /** Rise over run at a node, read on land and on its own side of an escarpment */
-  private getSlope({ elevation, relief, cell, top, water }: Battlefield, node: number): number {
-    const [col, row] = [node % COLS, Math.floor(node / COLS)];
+  private getSlope({ elevation, relief, cell, cols, rows, top, water }: Battlefield, node: number): number {
+    const [col, row] = [node % cols, Math.floor(node / cols)];
     const same = (other: number): number =>
       water[other] !== 1 && (!top.length || top[other] === top[node]) ? other : node;
     const rise = (a: number, b: number, run: number): number => ((elevation[b] - elevation[a]) * relief) / (run * cell);
-    const [w, e] = [same(row * COLS + Math.max(col - 1, 0)), same(row * COLS + Math.min(col + 1, COLS - 1))];
-    const [n, s] = [same(Math.max(row - 1, 0) * COLS + col), same(Math.min(row + 1, ROWS - 1) * COLS + col)];
+    const [w, e] = [same(row * cols + Math.max(col - 1, 0)), same(row * cols + Math.min(col + 1, cols - 1))];
+    const [n, s] = [same(Math.max(row - 1, 0) * cols + col), same(Math.min(row + 1, rows - 1) * cols + col)];
     const gx = e === w ? 0 : rise(w, e, e - w);
-    const gy = n === s ? 0 : rise(n, s, (s - n) / COLS);
+    const gy = n === s ? 0 : rise(n, s, (s - n) / cols);
     return Math.hypot(gx, gy);
   }
 }

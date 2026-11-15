@@ -2,13 +2,15 @@ import { describe, expect, it } from "vitest";
 import { BattleCamera, type CameraTroop, type View } from "./battle-camera";
 
 const field = { width: 1000, height: 600, front: 20 };
+const scene = { x: -40, y: -40, width: 1080, height: 680 }; // four nodes more round each side
+const whole = { x: -40, y: -24, width: 1080, height: 648 }; // in the field's proportions
 const troop = (x: number, y: number, present = true): CameraTroop => ({ x, y, width: 20, depth: 10, present });
 const aspect = (view: View): number => view.width / view.height;
 const inside = (view: View): boolean =>
-  view.x >= 0 &&
-  view.y >= 0 &&
-  view.x + view.width <= field.width + 1e-9 &&
-  view.y + view.height <= field.height + 1e-9;
+  view.x >= scene.x - 1e-9 &&
+  view.y >= scene.y - 1e-9 &&
+  view.x + view.width <= scene.x + scene.width + 1e-9 &&
+  view.y + view.height <= scene.y + scene.height + 1e-9;
 const contains = (view: View, x: number, y: number): boolean =>
   x >= view.x && x <= view.x + view.width && y >= view.y && y <= view.y + view.height;
 
@@ -21,13 +23,10 @@ describe("frameTroops", () => {
     expect(view.width).toBeLessThan(field.width);
   });
 
-  it("gives the whole field for troops spread wider than it", () => {
-    expect(BattleCamera.frameTroops(field, [troop(5, 5), troop(995, 595)])).toEqual({
-      x: 0,
-      y: 0,
-      width: 1000,
-      height: 600
-    });
+  it("gives the whole scene for troops spread wider than it", () => {
+    const view = BattleCamera.frameTroops(field, [troop(-95, -55), troop(1095, 655)]);
+    expect(view.width).toBeCloseTo(whole.width);
+    expect(inside(view)).toBe(true);
   });
 
   it("never frames narrower than a few battalion fronts", () => {
@@ -42,10 +41,10 @@ describe("frameTroops", () => {
     expect(contains(view, 990, 590)).toBe(false);
   });
 
-  it("keeps the view within the field by the edge", () => {
-    const view = BattleCamera.frameTroops(field, [troop(2, 2)]);
+  it("keeps the view within the scene by its edge", () => {
+    const view = BattleCamera.frameTroops(field, [troop(-98, -58)]);
     expect(inside(view)).toBe(true);
-    expect(view.x).toBe(0);
+    expect(view.x).toBeCloseTo(scene.x);
   });
 });
 
@@ -77,14 +76,13 @@ describe("moveCamera", () => {
     expect(camera.view).not.toEqual(held);
   });
 
-  it("shows the whole field in its mode", () => {
-    expect(BattleCamera.move(BattleCamera.create(field), field, troops, "field", 1).view).toEqual(
-      BattleCamera.clampView(field, { x: 0, y: 0, width: 1000, height: 600 })
-    );
+  it("shows the whole scene in its mode", () => {
+    const { view } = BattleCamera.move(BattleCamera.create(field), field, troops, "field", 1);
+    for (const [key, value] of Object.entries(whole)) expect(view[key as keyof View]).toBeCloseTo(value);
   });
 
   it("clamps a view set by hand", () => {
-    const camera = { view: { x: 950, y: -40, width: 50, height: 30 }, target: BattleCamera.create(field).target };
+    const camera = { view: { x: 1150, y: -100, width: 50, height: 30 }, target: BattleCamera.create(field).target };
     const { view } = BattleCamera.move(camera, field, troops, "manual", 1);
     expect(view.width).toBe(120);
     expect(inside(view)).toBe(true);
@@ -109,13 +107,16 @@ describe("zoom and pan", () => {
     expect((250 - view.x) / view.width).toBeCloseTo(0.25);
   });
 
-  it("goes no further than the whole field or the least width", () => {
-    expect(BattleCamera.zoomView(field, { x: 0, y: 0, width: 1000, height: 600 }, 0.5, [500, 300]).width).toBe(1000);
+  it("goes no further than the whole scene or the least width", () => {
+    expect(BattleCamera.zoomView(field, { x: 0, y: 0, width: 1000, height: 600 }, 0.5, [500, 300]).width).toBeCloseTo(
+      scene.width
+    );
     expect(BattleCamera.zoomView(field, { x: 0, y: 0, width: 1000, height: 600 }, 100, [500, 300]).width).toBe(120);
   });
 
-  it("pans within the field", () => {
+  it("pans within the scene", () => {
     const view = BattleCamera.panView(field, { x: 100, y: 100, width: 500, height: 300 }, 1000, -1000);
-    expect(view).toEqual({ x: 500, y: 0, width: 500, height: 300 });
+    expect(view.x).toBeCloseTo(scene.x + scene.width - 500);
+    expect(view.y).toBeCloseTo(scene.y);
   });
 });

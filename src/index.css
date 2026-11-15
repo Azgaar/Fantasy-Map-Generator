@@ -191,6 +191,10 @@ t,
   fill-opacity: 1;
 }
 
+#armies > g > g {
+  scale: var(--regiment-scale, 1);
+}
+
 #armies use.regimentIcon {
   pointer-events: none;
   fill: #fff;
@@ -331,9 +335,11 @@ i.icon-lock {
   animation: dash 80s linear backwards;
 }
 
+/* sits on the regiment edge, so it takes the regiment scale and undoes it for its own size */
 #rotationControl {
-  r: calc(4 * var(--px));
-  stroke-width: var(--px);
+  scale: var(--regiment-scale, 1);
+  r: calc(4 * var(--px) / var(--regiment-scale, 1));
+  stroke-width: calc(var(--px) / var(--regiment-scale, 1));
 }
 
 #cultureCenters,

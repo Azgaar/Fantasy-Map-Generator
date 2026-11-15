@@ -8,6 +8,7 @@ import { Military } from "@/model/political/military-generator";
 import { Tags } from "@/model/tags";
 import {
   drawRegiment,
+  getRegimentStep,
   getRegimentWidth,
   moveRegiment,
   regimentIconBox,
@@ -368,7 +369,7 @@ function splitRegiment(): void {
   const state = +selectedRegiment.dataset.state!;
   let newId: number;
   try {
-    newId = Military.split(state, reg.i);
+    newId = Military.split(state, reg.i, getRegimentStep());
   } catch {
     tip(t("Not enough forces to split"), false, "error");
     return;
@@ -469,7 +470,7 @@ async function attackRegimentOnClick(this: SVGGElement, event: MouseEvent): Prom
   defender.py = defender.y;
 
   // move attacker to defender
-  moveRegiment(attacker, defender.x, defender.y - 8);
+  moveRegiment(attacker, defender.x, rn(defender.y - getRegimentStep(), 2));
 
   // draw battle icon
   const attackTransition = transition().delay(300).duration(700).ease(easeSinInOut);

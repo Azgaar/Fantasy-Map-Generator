@@ -306,7 +306,7 @@ class BattleAnimationExport {
     const svg = document.createElementNS(SVG_NS, "svg");
     const overlay = document.createElementNS(SVG_NS, "svg");
     BattleSceneView.setLook(svg, source.look, source.colors);
-    BattleSceneView.drawField(svg, battle.field);
+    BattleSceneView.drawField(svg, battle.field, battle.scene);
     let camera: Camera = BattleCamera.create(battle.field);
     const icons = new Set<string>();
     let defs = "";
@@ -413,10 +413,11 @@ class BattleAnimationExport {
   private async createRasterSink(gif: GifWriter, field: Battlefield, width: number, zoom: number, stage: Stage) {
     // drawn once, sharp enough for the closest view, under every frame
     const groundWidth = Math.min(Math.round(width * zoom), Math.max(GROUND_MOST, width));
+    const scene = BattleCamera.getSceneBox(field);
     const ground = await this.loadImage(
-      `<svg xmlns="${SVG_NS}" viewBox="0 0 ${field.width} ${field.height}" width="${groundWidth}" height="${Math.round((groundWidth * field.height) / field.width)}">${stage.ground}</svg>`
+      `<svg xmlns="${SVG_NS}" viewBox="${scene.x} ${scene.y} ${scene.width} ${scene.height}" width="${groundWidth}" height="${Math.round((groundWidth * scene.height) / scene.width)}">${stage.ground}</svg>`
     );
-    const scale = ground.width / field.width;
+    const scale = ground.width / scene.width;
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = this.getHeight(width);
@@ -424,7 +425,7 @@ class BattleAnimationExport {
     const moving = MOVING.map(layer => stage.svg.querySelector(layer)!);
     return async (delay: number): Promise<void> => {
       const { view } = stage;
-      const [x, y, w, h] = [view.x, view.y, view.width, view.height].map(value => value * scale);
+      const [x, y, w, h] = [view.x - scene.x, view.y - scene.y, view.width, view.height].map(value => value * scale);
       context.drawImage(ground, x, y, w, h, 0, 0, canvas.width, canvas.height);
       const frame = this.getFrameMarkup(
         view,

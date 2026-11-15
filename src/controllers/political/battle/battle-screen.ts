@@ -58,7 +58,7 @@ import {
   type Trails
 } from "@/renderers/battle/draw-battle-scene";
 import { BattleWeatherView } from "@/renderers/battle/draw-battle-weather";
-import { moveRegiment } from "@/renderers/draw-military";
+import { getRegimentStep, moveRegiment } from "@/renderers/draw-military";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { viewport } from "@/renderers/viewport/viewport";
@@ -116,8 +116,7 @@ const SUMMARY_STYLE = /* css */ `
   #battleSummary > div { --side: #666; position: relative; display: flex; flex-direction: column; gap: 0.6em; width: min(44em, 100%); margin: auto; padding: 0.8em 1em 1em; box-sizing: border-box; border-top: 4px solid var(--side); background: #fff; box-shadow: 0 0.4em 2em #000a; animation: battleSummaryRise 0.35s ease-out; }
   #battleSummary > div > header { text-align: center; }
   #battleSummary h2 { margin: 0.1em 0; color: var(--side); font-family: var(--serif); font-size: 2.2em; letter-spacing: 0.08em; text-transform: uppercase; }
-  #battleSummary h2 + span, .battleSummaryKicker { color: var(--muted); }
-  .battleSummaryKicker { font-family: var(--serif); font-size: 1.1em; }
+  .battleSummaryKicker { color: var(--muted); font-family: var(--serif); font-size: 1.1em; }
   .battleSummaryClose { position: absolute; top: 0.4em; right: 0.4em; }
   .battleSummarySides { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.8em; }
   .battleSummarySide { display: flex; flex-direction: column; gap: 0.4em; min-width: 0; padding: 0.5em 0.6em; border: 1px solid var(--line); border-top: 3px solid var(--side); }
@@ -220,7 +219,7 @@ const STYLE = /* css */ `
   #battleScene.battleMuddy .battleMud, #battleScene.battleIcy .battleFrost { display: inline; }
   #battleScene.battleIcy .battleRiver { stroke: #e3edf3; }
   #battleScene.battleEditable .battleBlock { cursor: grab; }
-  #battleScene .battleSelected > rect { stroke: #fff; stroke-opacity: 0.9; stroke-width: 2px; vector-effect: non-scaling-stroke; }
+  #battleScene .battleSelected > .battleHalo { display: inline; }
   #battleScene .battleTurnHandle { cursor: grab; }
   #battleScene.battlePlanning .battleBlocks { display: none; }
   #battleScene.battleFocus .battleBlock:not(.battleFocused) { opacity: 0.3; }
@@ -615,7 +614,6 @@ class BattleScreenController {
                 </div>
               </span>
               <button id="battleRoll" data-tip="${t("Draw the troops up anew. Only before the battle starts")}" class="icon-arrows-cw"></button>
-              <button id="battleLogToggle" data-tip="${t("Show the battle log")}" class="icon-list-bullet"></button>
               <button id="battleConfigureOpen" data-tip="${t("Configure Battle: view, rendering, playback, simulation and export")}" class="icon-cog"></button>
               <button id="battleWiki" data-tip="${t("Open Battle Simulation Tutorial")}" class="icon-info"></button>
               <button id="battleApply" data-tip="${t("End battle: apply current results and close the screen")}" class="icon-check"></button>
@@ -661,10 +659,10 @@ class BattleScreenController {
         tickMs: TICK_MS,
         onChange: group => this.applyOptions(group),
         getSource: () => this.getSource(),
-        pause: () => this.pause()
+        pause: () => this.pause(),
+        toggleLog: () => this.toggleLog()
       })
     );
-    ensureEl("battleLogToggle").addEventListener("click", () => this.toggleLog());
     ensureEl<HTMLInputElement>("battleNameFull").addEventListener("change", event => {
       this.setName((event.target as HTMLInputElement).value);
     });
@@ -735,7 +733,7 @@ class BattleScreenController {
   /** The battle log, a window of its own beside the battle screen */
   private toggleLog(show = !Dialog.isOpen("battleLog"), keep = true): void {
     if (keep) Options.set(o => (o.app.battle.view.log = show));
-    ensureEl("battleLogToggle").classList.toggle("pressed", show);
+    BattleConfigure.setLogShown(show);
     if (!show) Dialog.close("battleLog");
     if (!show || Dialog.isOpen("battleLog")) return;
     const download = t(
@@ -760,7 +758,7 @@ class BattleScreenController {
         }
       ],
       onClose: () => {
-        ensureEl("battleLogToggle").classList.remove("pressed");
+        BattleConfigure.setLogShown(false);
         Options.set(o => (o.app.battle.view.log = false));
       }
     });
@@ -975,11 +973,9 @@ class BattleScreenController {
     const places = this.getPlaces(press, to);
     if (!done) {
       BattleSceneView.previewBlocks(this.scene(), places);
-      if (press.gesture === "turn") {
-        const turn = [...places.values()][0].facing - this.getSelected()[0].facing;
-        const handle = this.getHandle(this.getPivot(this.getSelected()), turn);
-        BattleSceneView.drawSelection(this.scene(), b, { box: null, handle });
-      }
+      // the turning handle goes with the battalions, moved or turned
+      const placed = this.getSelected().map(block => ({ ...block, ...places.get(block.id)! }));
+      BattleSceneView.drawSelection(this.scene(), b, { box: null, handle: this.getHandle(this.getPivot(placed), 0) });
       return;
     }
     for (const block of this.getSelected()) {
@@ -1051,7 +1047,7 @@ class BattleScreenController {
   /** The ground drawn anew: the camera frames it at once, in its chosen mode */
   private drawField(): void {
     const b = this.battle!;
-    BattleSceneView.drawField(this.scene(), b.field);
+    BattleSceneView.drawField(this.scene(), b.field, b.scene);
     if (this.cameraMode === "manual") this.cameraMode = this.battleOptions().view.camera;
     this.camera = BattleCamera.create(b.field);
     this.updateCamera(Infinity);
@@ -1539,7 +1535,6 @@ class BattleScreenController {
         <header>
           <span class="battleSummaryKicker">${escapeHtml(b.name)}</span>
           <h2>${headline}</h2>
-          <span>${escapeHtml(this.resultText(b))}</span>
         </header>
         <div class="battleSummarySides">${SIDES.map((side, i) => this.summarySide(b, side, status[i])).join("")}</div>
         <footer>
@@ -1888,10 +1883,11 @@ class BattleScreenController {
   private joinBattle(regiment: Regiment, side: Side): void {
     const b = this.battle!;
     this.regiments.set(this.regimentKey(regiment), regiment);
-    const shift = side === "attackers" ? (b.attackers.regiments.length + 1) * -8 : b.defenders.regiments.length * 8;
+    const step = getRegimentStep();
+    const shift = side === "attackers" ? (b.attackers.regiments.length + 1) * -step : b.defenders.regiments.length * step;
     regiment.px = regiment.x;
     regiment.py = regiment.y;
-    moveRegiment(regiment, b.x, b.y + shift);
+    moveRegiment(regiment, b.x, rn(b.y + shift, 2));
   }
 
   // the log
@@ -1941,13 +1937,6 @@ class BattleScreenController {
 
   private sideLabel(side: Side): string {
     return side === "attackers" ? t("Attackers") : t("Defenders");
-  }
-
-  /** How the battle ended, where no mark shows the side */
-  private resultText(b: Battle): string {
-    const winner = b.result?.winner;
-    if (!winner) return t("The battle dies down");
-    return winner === "attackers" ? t("The attackers hold the field") : t("The defenders hold the field");
   }
 
   private outcome(b: Battle): string {

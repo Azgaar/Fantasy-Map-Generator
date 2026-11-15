@@ -118,7 +118,7 @@ class WorksModule {
     return !advancing && phase !== chase && phase !== run && phase !== SURRENDER;
   }
 
-  /** A battalion of the first line on foot builds the stretch before its place; a laager builds wagons instead */
+  /** A battalion of the first line on foot builds the stretch before its place; a Wagenburg builds wagons instead */
   isBuilder(battle: Battle, block: Block): boolean {
     const { order } = block;
     return (
@@ -128,7 +128,7 @@ class WorksModule {
       (block.kind === "line" || block.kind === "shooter") &&
       block.type !== "naval" &&
       block.type !== "aviation" &&
-      battle[block.side].plan.tactic !== "laager" &&
+      battle[block.side].plan.tactic !== "wagenburg" &&
       !battle[block.side].plan.hooks.some(hook => hook.includes(block.id)) && // wheeled out from the line
       !this.isAtSea(battle, block)
     );
@@ -206,7 +206,7 @@ class WorksModule {
   hasWorkLeft(battle: Battle, side: Side): boolean {
     const wagons = battle.field.works.filter(work => work.side === side && work.kind === "wagons");
     if (wagons.some(work => !work.up)) return true;
-    if (battle[side].plan.tactic === "laager") return !wagons.length && this.getRing(battle, side).length > 0;
+    if (battle[side].plan.tactic === "wagenburg") return !wagons.length && this.getRing(battle, side).length > 0;
     return battle.blocks.some(block => {
       if (block.side !== side || block.status !== "ready" || block.leaving || !this.isBuilder(battle, block))
         return false;
@@ -218,7 +218,7 @@ class WorksModule {
   holdsWorks(battle: Battle, side: Side): boolean {
     const { works } = battle.field;
     if (!works.some(work => work.side === side && Battlefields.isStanding(work))) return false;
-    if (battle[side].plan.tactic === "laager") return true;
+    if (battle[side].plan.tactic === "wagenburg") return true;
     return battle.blocks.some(
       block =>
         block.side === side &&
@@ -277,7 +277,7 @@ class WorksModule {
     for (const side of SIDES) {
       const { plan } = battle[side];
       if (!plan.fortify) continue;
-      if (plan.tactic === "laager" && !this.hasWagons(battle, side)) this.layRing(battle, side, false);
+      if (plan.tactic === "wagenburg" && !this.hasWagons(battle, side)) this.layRing(battle, side, false);
       const pending = battle.field.works
         .filter(work => work.side === side && work.kind === "wagons" && work.done < 1)
         .sort((a, b) => b.done - a.done) // those begun first
@@ -345,7 +345,7 @@ class WorksModule {
 
   /** Works laid in advance before a side's places: what its rule would build with all the time there is */
   layWorks(battle: Battle, side: Side): void {
-    if (battle[side].plan.tactic === "laager") {
+    if (battle[side].plan.tactic === "wagenburg") {
       this.layRing(battle, side, true);
       return;
     }
@@ -466,7 +466,7 @@ class WorksModule {
     }
   }
 
-  /** Where the wagons of a laager go: about each battalion standing on its ring, by the angle; none for fewer than three */
+  /** Where the wagons of a Wagenburg go: about each battalion standing on its ring, by the angle; none for fewer than three */
   private getRing(battle: Battle, side: Side): { angle: number; radius: number }[] {
     const { plan } = battle[side];
     const ring = battle.blocks
@@ -482,7 +482,7 @@ class WorksModule {
     return ring.length < 3 ? [] : ring;
   }
 
-  /** A wagon ring round a laager: a stretch before each battalion standing on it, joined end to end */
+  /** A wagon ring round a Wagenburg: a stretch before each battalion standing on it, joined end to end */
   private layRing(battle: Battle, side: Side, done: boolean): void {
     const { plan } = battle[side];
     const ring = this.getRing(battle, side);

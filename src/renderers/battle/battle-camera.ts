@@ -1,5 +1,7 @@
 // What part of the battle field is in sight: pure, so the screen and the exports frame a battle the same way
 
+import { COLS, ROWS, SURROUND } from "@/model/political/battle/battle-scale";
+
 export interface View {
   x: number;
   y: number;
@@ -35,8 +37,18 @@ const SETTLE = 0.3; // seconds: the view eases most of the way in a second
 const STEADY = 0.04; // a framing that moved less than this share of the held one is ignored
 
 class BattleCameraModule {
-  getFieldView({ width, height }: CameraField): View {
-    return { x: 0, y: 0, width, height };
+  /** The scene: the field and the ground drawn round it */
+  getSceneBox({ width, height }: CameraField): View {
+    const [across, down] = [(width / COLS) * SURROUND[0], (height / ROWS) * SURROUND[1]];
+    return { x: -across, y: -down, width: width + across * 2, height: height + down * 2 };
+  }
+
+  /** As much of the scene as the field's proportions take in, about its middle */
+  getFieldView(field: CameraField): View {
+    const scene = this.getSceneBox(field);
+    const wide = Math.min(scene.width, (scene.height * field.width) / field.height);
+    const high = (wide * field.height) / field.width;
+    return { x: (field.width - wide) / 2, y: (field.height - high) / 2, width: wide, height: high };
   }
 
   create(field: CameraField): Camera {
@@ -46,13 +58,14 @@ class BattleCameraModule {
     };
   }
 
-  /** In the field's proportions, inside it, no narrower than a few battalion fronts */
+  /** In the field's proportions, inside the scene, no narrower than a few battalion fronts */
   clampView(field: CameraField, { x, y, width }: View): View {
+    const scene = this.getSceneBox(field);
     const aspect = field.width / field.height;
-    const wide = Math.min(Math.max(width, field.front * LEAST), field.width);
+    const wide = Math.min(Math.max(width, field.front * LEAST), this.getFieldView(field).width);
     const high = wide / aspect;
-    const left = Math.min(Math.max(x, 0), field.width - wide);
-    const top = Math.min(Math.max(y, 0), field.height - high);
+    const left = Math.min(Math.max(x, scene.x), scene.x + scene.width - wide);
+    const top = Math.min(Math.max(y, scene.y), scene.y + scene.height - high);
     return { x: left, y: top, width: wide, height: high };
   }
 

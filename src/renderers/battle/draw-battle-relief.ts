@@ -2,7 +2,7 @@
 // Every part is drawn at once in its own group; the battle look shows the chosen ones. See docs/domain/battles.md
 
 import { contours } from "d3";
-import { COLS, ROWS } from "@/model/political/battle/battle-scale";
+import { COLS } from "@/model/political/battle/battle-scale";
 import { type Battlefield, Battlefields } from "@/model/political/battle/battlefield";
 import { getHeightUnitRatio } from "@/model/units";
 import { getContourLabels } from "@/renderers/heightmap/heightmap-contours";
@@ -10,7 +10,7 @@ import type { Point } from "@/types/global";
 import { rn } from "@/utils/number-utils";
 import { walkLine } from "@/utils/path-utils";
 
-const SAMPLES = 400; // the surface is sampled so many times across the field, whatever its size
+const SAMPLES = 400; // the surface is sampled so many times across the battle's field, whatever its size
 const PAD = 2; // samples added round the field, so lines run off it instead of closing at its edge
 const STEPS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000]; // contour intervals, in the map's height unit
 const MOST_LINES = 12; // the finest interval that draws no more lines over the field's rise
@@ -49,7 +49,7 @@ class BattleReliefRenderer {
   /** The relief groups, each shown or hidden by the battle look */
   getMarkup(field: Battlefield, halo: string): string {
     if (!field.relief) return "";
-    const pt = field.width / 1000;
+    const pt = Battlefields.getPoint(field);
     const surface = this.getSurface(field);
     const ratio = getHeightUnitRatio();
     const levels = this.getLevels(field, surface, ratio, MOST_LINES);
@@ -68,7 +68,7 @@ class BattleReliefRenderer {
     if (!levels.length) return "";
     const { step, z, gx, gy, cols, rows, steep } = surface;
     const band = surface.band.length ? surface.band : new Uint8Array(cols * rows);
-    const pt = field.width / 1000;
+    const pt = Battlefields.getPoint(field);
     const drop = levels[0].interval / ratio;
     const least = Math.min(Math.max(steep * 0.5, HACHURE_SLOPE[0]), HACHURE_SLOPE[1]);
     // the rings run just outside the field to reach its edge: strokes start and end within it
@@ -167,35 +167,36 @@ class BattleReliefRenderer {
 
   /** Tops and hollows: ▲ on the highest node of a hill, ▽ in the lowest of a hollow, each with its height */
   private getHeightMarks(field: Battlefield, ratio: number, pt: number): string {
+    const { cols, rows } = field;
     const ground = this.getGround(field);
     const least = Math.max(field.relief * PROMINENCE[0], PROMINENCE[1]);
     const neighbours = (i: number): number[] => {
-      const [col, row] = [i % COLS, Math.floor(i / COLS)];
+      const [col, row] = [i % cols, Math.floor(i / cols)];
       const out: number[] = [];
-      for (let r = Math.max(row - 1, 0); r <= Math.min(row + 1, ROWS - 1); r++) {
-        for (let c = Math.max(col - 1, 0); c <= Math.min(col + 1, COLS - 1); c++)
-          if (r !== row || c !== col) out.push(r * COLS + c);
+      for (let r = Math.max(row - 1, 0); r <= Math.min(row + 1, rows - 1); r++) {
+        for (let c = Math.max(col - 1, 0); c <= Math.min(col + 1, cols - 1); c++)
+          if (r !== row || c !== col) out.push(r * cols + c);
       }
       return out;
     };
     // the shore is the lowest land, not a hollow
     const nearWater = (i: number): boolean => {
-      const [col, row] = [i % COLS, Math.floor(i / COLS)];
-      for (let r = Math.max(row - 3, 0); r <= Math.min(row + 3, ROWS - 1); r++) {
-        for (let c = Math.max(col - 3, 0); c <= Math.min(col + 3, COLS - 1); c++)
-          if (field.water[r * COLS + c] === 1) return true;
+      const [col, row] = [i % cols, Math.floor(i / cols)];
+      for (let r = Math.max(row - 3, 0); r <= Math.min(row + 3, rows - 1); r++) {
+        for (let c = Math.max(col - 3, 0); c <= Math.min(col + 3, cols - 1); c++)
+          if (field.water[r * cols + c] === 1) return true;
       }
       return false;
     };
     const pick = (sign: number, most: number): number[] => {
       const found: [node: number, prominence: number][] = [];
       ground.forEach((z, i) => {
-        const [col, row] = [i % COLS, Math.floor(i / COLS)];
-        if (col < 2 || row < 2 || col >= COLS - 2 || row >= ROWS - 2) return; // an edge is a slope running off the field
+        const [col, row] = [i % cols, Math.floor(i / cols)];
+        if (col < 2 || row < 2 || col >= cols - 2 || row >= rows - 2) return; // an edge is a slope running off the field
         if (field.water[i] || (sign < 0 && nearWater(i))) return;
         // level ground counts once: the first node of it
         if (neighbours(i).some(n => (ground[n] - z) * sign > 0 || (ground[n] === z && n < i))) return;
-        const prominence = this.getProminence(ground, i, sign);
+        const prominence = this.getProminence(field, ground, i, sign);
         if (prominence >= least) found.push([i, prominence]);
       });
       return found
@@ -205,7 +206,7 @@ class BattleReliefRenderer {
     };
 
     const mark = (i: number, top: boolean): string => {
-      const [x, y] = [((i % COLS) + 0.5) * field.cell, (Math.floor(i / COLS) + 0.5) * field.cell];
+      const [x, y] = [((i % cols) + 0.5) * field.cell, (Math.floor(i / cols) + 0.5) * field.cell];
       const [h, w] = [5 * pt, 4.4 * pt];
       const sign = top
         ? `<path d="M0 ${-h * 0.62}L${w} ${h * 0.38}H${-w}Z" stroke="none"/>`
@@ -220,7 +221,7 @@ class BattleReliefRenderer {
    * How far a top rises above the lowest pass to higher ground (sign 1), or a hollow sinks below its lowest outlet (sign -1).
    * The ground is flooded from the node down (or up) the levels; reaching the field's edge ends it, as the ground runs on
    */
-  private getProminence(ground: number[], start: number, sign: number): number {
+  private getProminence({ cols, rows }: Battlefield, ground: number[], start: number, sign: number): number {
     const key = (i: number): number => ground[i] * sign;
     const peak = key(start);
     const seen = new Uint8Array(ground.length);
@@ -231,9 +232,9 @@ class BattleReliefRenderer {
       const i = this.popHighest(queue, key);
       if (key(i) > peak) break;
       level = Math.min(level, key(i));
-      const [col, row] = [i % COLS, Math.floor(i / COLS)];
-      if (col === 0 || row === 0 || col === COLS - 1 || row === ROWS - 1) break;
-      for (const n of [i - 1, i + 1, i - COLS, i + COLS]) {
+      const [col, row] = [i % cols, Math.floor(i / cols)];
+      if (col === 0 || row === 0 || col === cols - 1 || row === rows - 1) break;
+      for (const n of [i - 1, i + 1, i - cols, i + cols]) {
         if (seen[n]) continue;
         seen[n] = 1;
         this.pushHeap(queue, n, key);
@@ -335,8 +336,8 @@ class BattleReliefRenderer {
 
   /** The ground at so many samples across the field: a cubic B-spline over the nodes, water filled from the shore */
   private getSurface(field: Battlefield): Surface {
-    const step = field.width / SAMPLES;
-    const cols = SAMPLES;
+    const cols = Math.round((field.cols * SAMPLES) / COLS);
+    const step = field.width / cols;
     const rows = Math.ceil(field.height / step);
     // high ground stands on the ground under it by its step, sharp at its edge as the troops have it
     const { top, scarp } = field;
@@ -430,7 +431,7 @@ class BattleReliefRenderer {
   }
 
   /** Node heights in metres above the lowest node, or of the ground under the high ground; sea and lake nodes take the height of the nearest shore */
-  private getGround({ elevation, water, relief, top, scarp }: Battlefield, under = false): number[] {
+  private getGround({ elevation, water, relief, top, scarp, cols }: Battlefield, under = false): number[] {
     const ground = elevation.map((e, i) => e * relief - (under && top.length ? top[i] * scarp[i] : 0));
     let known = water.map(w => w !== 1);
     if (!known.some(Boolean)) return ground;
@@ -438,8 +439,8 @@ class BattleReliefRenderer {
       const next = [...known];
       for (let i = 0; i < ground.length; i++) {
         if (known[i]) continue;
-        const col = i % COLS;
-        const sides = [col > 0 ? i - 1 : -1, col < COLS - 1 ? i + 1 : -1, i - COLS, i + COLS];
+        const col = i % cols;
+        const sides = [col > 0 ? i - 1 : -1, col < cols - 1 ? i + 1 : -1, i - cols, i + cols];
         const shore = sides.filter(n => n >= 0 && n < ground.length && known[n]);
         if (!shore.length) continue;
         ground[i] = shore.reduce((sum, n) => sum + ground[n], 0) / shore.length;
@@ -455,11 +456,11 @@ class BattleReliefRenderer {
     return (u * u * u * p0 + (3 * t3 - 6 * t2 + 4) * p1 + (-3 * t3 + 3 * t2 + 3 * t + 1) * p2 + t3 * p3) / 6;
   }
 
-  private sampleGround({ cell }: Battlefield, ground: number[], x: number, y: number): number {
+  private sampleGround({ cell, cols, rows }: Battlefield, ground: number[], x: number, y: number): number {
     const [fx, fy] = [x / cell - 0.5, y / cell - 0.5];
     const [col, row] = [Math.floor(fx), Math.floor(fy)];
     const at = (c: number, r: number): number =>
-      ground[Math.min(Math.max(r, 0), ROWS - 1) * COLS + Math.min(Math.max(c, 0), COLS - 1)];
+      ground[Math.min(Math.max(r, 0), rows - 1) * cols + Math.min(Math.max(c, 0), cols - 1)];
     const across = (k: number): number =>
       this.bspline(at(col - 1, row + k), at(col, row + k), at(col + 1, row + k), at(col + 2, row + k), fx - col);
     return this.bspline(across(-1), across(0), across(1), across(2), fy - row);
