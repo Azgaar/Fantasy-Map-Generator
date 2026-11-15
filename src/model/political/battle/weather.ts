@@ -14,10 +14,10 @@ interface Sky {
 
 export const SKIES: Record<Weather, Sky> = {
   clear: { range: 1, shot: 1 },
-  rain: { range: 0.5, shot: 0.6 },
-  downpour: { range: 0.25, shot: 0.35 },
-  snow: { range: 0.6, shot: 0.8 },
-  fog: { range: 0.4, shot: 0.6 }
+  rain: { range: 0.75, shot: 0.6 },
+  downpour: { range: 0.625, shot: 0.35 },
+  snow: { range: 0.8, shot: 0.8 },
+  fog: { range: 0.7, shot: 0.6 }
 };
 
 // pace kept on soaked ground: open ground and roads churn up, woods and bogs were soft already; and the footing

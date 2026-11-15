@@ -1471,11 +1471,11 @@ describe("battle weather", () => {
     const range = (block: Block): number => getRange(b, block, foe);
     expect([range(archers), range(engines)]).toEqual([160, 380]);
     intervene(b, { tick: 0, kind: "weather", weather: "rain" });
-    expect(range(archers)).toBeCloseTo(80);
+    expect(range(archers)).toBeCloseTo(120);
     intervene(b, { tick: 0, kind: "weather", weather: "downpour" });
-    expect([range(archers), range(engines)]).toEqual([40, 95]);
+    expect([range(archers), range(engines)]).toEqual([100, 237.5]);
     intervene(b, { tick: 0, kind: "weather", weather: "fog" });
-    expect([range(archers), range(engines)]).toEqual([64, 152]);
+    expect([range(archers), range(engines)]).toEqual([112, 266]);
     expect(b.log.at(-1)).toEqual({ tick: 0, event: "weather", params: { weather: "fog" } });
   });
 
@@ -1501,7 +1501,7 @@ describe("battle weather", () => {
   it("shortens the range in snow", () => {
     const b = field();
     intervene(b, { tick: 0, kind: "weather", weather: "snow" });
-    expect(getRange(b, of(b, "archers"), of(b, "infantry"))).toBeCloseTo(96);
+    expect(getRange(b, of(b, "archers"), of(b, "infantry"))).toBeCloseTo(128);
   });
 
   it("freezes the rivers over: troops cross them anywhere, as at a ford, and go slower on frozen ground", () => {

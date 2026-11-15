@@ -83,7 +83,8 @@ export interface FieldCliff {
 export interface Battlefield extends FieldSize {
   open: "sea" | "sky" | null; // no terrain: a naval or an air battle
   site: Point | null; // the map point a field of the map is built at
-  biome: number;
+  biome: number; // of the site
+  biomes: number[]; // of each node, ragged where biomes meet; empty on a field all of `biome`
   // one value per grid node, row by row
   elevation: number[]; // the lie of the land, 0 the lowest to 1 the highest, the step of high ground in
   top: number[]; // 1 on high ground behind an escarpment; empty on a field without
@@ -143,6 +144,7 @@ export function createEmptyBattlefield(open: Battlefield["open"] = null): Battle
     site: null,
     ...getFieldSize(DEFAULT_BATTALION),
     biome: 4,
+    biomes: [],
     elevation: grid(),
     top: [],
     scarp: [],
@@ -230,7 +232,8 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, type: Ba
     .map(v => pack.vertices.c[v])
     .filter(corners => corners?.every(c => c < cells.i.length))
     .map(corners => ({ corners, points: corners.map(c => toField(cells.p[c][0], cells.p[c][1])) }));
-  const interpolate = (node: Point): { h: number; trees: number; wet: number } => {
+  const borders = createNoise(field, place, 8, 160);
+  const interpolate = (node: Point): { h: number; trees: number; wet: number; biome: number } => {
     for (const { corners, points } of triangles) {
       const weights = getBarycentric(node, points);
       if (!weights) continue;
@@ -239,10 +242,12 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, type: Ba
       return {
         h: sum(c => cells.h[c]),
         trees: sum(c => WOODS[cells.biome[c]] ?? 0),
-        wet: sum(c => +(cells.biome[c] === WETLAND))
+        wet: sum(c => +(cells.biome[c] === WETLAND)),
+        biome: pickBiome(corners, weights, borders(...node), field.biome)
       };
     }
-    return { h: cells.h[cell], trees: WOODS[cells.biome[cell]] ?? 0, wet: +(cells.biome[cell] === WETLAND) };
+    const biome = cells.biome[cell];
+    return { h: cells.h[cell], trees: WOODS[biome] ?? 0, wet: +(biome === WETLAND), biome };
   };
 
   // hills below the map's grain: a tenth of the rise to the neighbours, 4 to 100 m
@@ -255,15 +260,20 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, type: Ba
   const groves = createNoise(field, place, 2, 260);
   const bogs = createNoise(field, place, 3, 220);
 
-  const ground = nodes.map(node => {
+  field.biomes = new Array(COLS * ROWS).fill(field.biome);
+  const ground = nodes.map((node, i) => {
     if (!isLand(node)) return null;
-    const { h, trees, wet } = interpolate(node);
+    const { h, trees, wet, biome } = interpolate(node);
+    field.biomes[i] = biome;
     return {
       height: heightToMeters(Math.max(h, 20)) + (hills(...node) * 0.65 + knolls(...node) * 0.35) * roughness,
       trees,
       wet
     };
   });
+  // a field sited on the sea takes the biome most of its land has; water and land the map left marine take the field's
+  if (!field.biome) field.biome = getMostCommon(field.biomes.filter(Boolean)) ?? 0;
+  field.biomes = field.biomes.map((biome, i) => (ground[i] && biome) || field.biome);
   const land = ground.filter(g => g !== null).map(g => g.height);
   const low = land.length ? Math.min(...land) : 0;
   const high = land.length ? Math.max(...land) : 0;
@@ -1222,10 +1232,33 @@ function bend(line: Point[], wavelength: number, amplitude: number, place: Point
 }
 
 /** A fixed number from 0 to 1 for three whole numbers: what makes the ground of a place the same every time */
-function mix(a: number, b: number, c: number): number {
+export function mix(a: number, b: number, c: number): number {
   let hash = (Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263) + Math.imul(c | 0, 1274126177)) | 0;
   hash = Math.imul(hash ^ (hash >>> 13), 1103515245);
   return ((hash ^ (hash >>> 16)) >>> 0) / 4294967296;
+}
+
+function getMostCommon(values: number[]): number | undefined {
+  const counts = new Map<number, number>();
+  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+  return [...counts].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0];
+}
+
+/** One of the corners' land biomes by its share of the node: the noise roughens the border between them */
+function pickBiome(corners: number[], weights: number[], roll: number, fallback: number): number {
+  const shares = new Map<number, number>();
+  corners.forEach((c, k) => {
+    const biome = pack.cells.biome[c];
+    if (biome) shares.set(biome, (shares.get(biome) ?? 0) + weights[k]); // a marine cell lends the shore no biome
+  });
+  const sorted = [...shares].sort((a, b) => a[0] - b[0]);
+  const sum = sorted.reduce((total, [, share]) => total + share, 0);
+  let total = 0;
+  for (const [biome, share] of sorted) {
+    total += share / sum;
+    if (roll < total) return biome;
+  }
+  return sorted.at(-1)?.[0] ?? fallback;
 }
 
 /** Smooth noise, 0 to 1, of a pattern fixed by the place on the map and the layer it is for */

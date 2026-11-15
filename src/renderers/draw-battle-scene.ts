@@ -4,12 +4,14 @@ import { BATTLE_ACTION_LABELS } from "@/data/id-labels";
 import { Icons } from "@/model/icons";
 import type { Battle, Block } from "@/model/political/battle/battle";
 import type { Side } from "@/model/political/battle/battle-rules";
-import { COLS, ROWS } from "@/model/political/battle/battle-scale";
+import { COLS, ROWS, toMetresPerSecond } from "@/model/political/battle/battle-scale";
 import { type Battlefield, type FieldWork, getQuays, type WorkKind } from "@/model/political/battle/battlefield";
+import { SKIES } from "@/model/political/battle/weather";
 import { convertSpeed, formatLength, getSpeedUnit } from "@/model/units";
 import type { View } from "@/renderers/battle-camera";
 import { getCliffMarkup } from "@/renderers/draw-battle-cliffs";
 import { updateBattleDebug } from "@/renderers/draw-battle-debug";
+import { getGroundMarkup, getGroundTint, getPropsMarkup, getSoftMask } from "@/renderers/draw-battle-ground";
 import { getReliefMarkup } from "@/renderers/draw-battle-relief";
 import { getMudMarkup } from "@/renderers/draw-battle-weather";
 import type { Point } from "@/types/global";
@@ -29,6 +31,7 @@ interface Scene {
   look: BattleLook;
   colors: SideColors;
   marks: number;
+  hovered: number | null; // the battalion under the pointer
 }
 
 const scenes = new WeakMap<SVGSVGElement, Scene>();
@@ -36,7 +39,8 @@ const RESCALE = 0.03; // marks are sized anew when the zoom changed by more than
 const ICON = 16; // points a unit icon is wide at the most
 
 function getScene(svg: SVGSVGElement): Scene {
-  if (!scenes.has(svg)) scenes.set(svg, { look: DEFAULT_BATTLE_OPTIONS.rendering, colors: SIDE_COLORS, marks: 1 });
+  if (!scenes.has(svg))
+    scenes.set(svg, { look: DEFAULT_BATTLE_OPTIONS.rendering, colors: SIDE_COLORS, marks: 1, hovered: null });
   return scenes.get(svg)!;
 }
 
@@ -53,9 +57,9 @@ const VOLLEY = [
 const SHELL_TICKS = 6; // from shot to shot
 const SHELL_FLIGHT = 0.6; // share of that the shell flies, then it bursts
 
-const GROUND: Record<number, string> = { 1: "#f6ecd2", 2: "#f1ecdf", 10: "#eef0ea", 11: "#f3f6f8" };
 const INK = "#3d3a33";
 const WATER = "#b4cbe2";
+const STRAND = "#e8dcbc";
 
 /** The field is drawn in metres; what it shows at a size on screen, as marks and lines, is sized in points of a 1000-wide field */
 const getPoint = (field: Battlefield): number => field.width / 1000;
@@ -75,6 +79,7 @@ export function setLook(svg: SVGSVGElement, look: BattleLook, colors: SideColors
 
 const LOOK_LAYERS: [keyof BattleLook, string][] = [
   ["woods", ".battleWoods"],
+  ["props", ".battleProps"],
   ["labels", ".battleLabels, .battleRiverName"],
   ["icons", ".battleIcon"],
   ["flags", ".battleFlag"],
@@ -93,8 +98,13 @@ const getHiddenRelief = ({ relief, shade, heights }: BattleLook): string[] => [
   ...(heights ? [] : [".battleContourLabels", ".battleHeights"])
 ];
 
+// the props draw the trees of the woods: their pattern is for a field without
 const getLookStyle = (look: BattleLook): string =>
-  `${[...LOOK_LAYERS.filter(([key]) => !look[key]).map(([, selector]) => selector), ...getHiddenRelief(look)]
+  `${[
+    ...LOOK_LAYERS.filter(([key]) => !look[key]).map(([, selector]) => selector),
+    ...getHiddenRelief(look),
+    ...(look.props ? [".battleWoodPattern"] : [])
+  ]
     .map(selector => `${selector} { display: none; }`)
     .join(" ")} .battleFallen > rect { fill: none; } .battleFallen > :not(rect) { display: none; }`;
 
@@ -130,8 +140,7 @@ function scaleMarks(svg: SVGSVGElement, field: Battlefield): void {
 }
 
 export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
-  const paper =
-    field.open === "sea" ? "#d3e0ea" : field.open === "sky" ? "#eaf1f7" : (GROUND[field.biome] ?? "#fbf5e9");
+  const paper = field.open === "sea" ? "#d3e0ea" : field.open === "sky" ? "#eaf1f7" : getGroundTint(field.biome);
   const { width, height } = field;
   const pt = getPoint(field);
   const scene = getScene(svg);
@@ -170,6 +179,7 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
     <g class="battleWorkTips" stroke="none" pointer-events="stroke"></g>
     <g class="battleFire" fill="none" stroke-width="${pt}" stroke-dasharray="${2 * pt} ${5 * pt}" opacity="0.55"></g>
     <g class="battleArrows" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.8" pointer-events="none"></g>
+    <g class="battleHover" fill="none" pointer-events="none"></g>
     <g class="battleBlocks"></g>
     <g class="battleMissiles" fill="none" stroke-linecap="round" pointer-events="none"></g>
     <g class="battleClashes" text-anchor="middle" dominant-baseline="central" fill="#b3261e" pointer-events="none"></g>`;
@@ -178,26 +188,43 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
   const terrain = select(svg).select<SVGGElement>(".battleTerrain");
   const labels = select(svg).select<SVGGElement>(".battleLabels");
 
-  terrain
-    .append("path")
-    .attr("class", "battleWoods")
-    .attr("d", outline(field, field.marsh, 0.5))
-    .attr("fill", "url(#battleMarsh)");
-  const wood = outline(field, field.wood, 0.5);
-  terrain.append("path").attr("class", "battleWoods").attr("d", wood).attr("fill", "#dbe7c9").attr("opacity", 0.75);
-  terrain.append("path").attr("class", "battleWoods").attr("d", wood).attr("fill", "url(#battleWood)");
+  terrain.append("g").html(getGroundMarkup(field));
+  // woods and bogs fade out at their edges; without a canvas their outlines are drawn sharp
+  const masks = {
+    wood: getSoftMask(field, field.wood, "battleWoodMask"),
+    marsh: getSoftMask(field, field.marsh, "battleMarshMask")
+  };
+  svg.querySelector("defs")?.insertAdjacentHTML("beforeend", masks.wood + masks.marsh);
+  const cover = (kind: "wood" | "marsh", fill: string, className = "battleWoods") => {
+    const shape = terrain
+      .append(masks[kind] ? "rect" : "path")
+      .attr("class", className)
+      .attr("fill", fill);
+    if (!masks[kind]) return shape.attr("d", outline(field, field[kind], 0.5));
+    return shape
+      .attr("width", width)
+      .attr("height", height)
+      .attr("mask", `url(#battle${capitalize(kind)}Mask)`);
+  };
+  cover("marsh", "url(#battleMarsh)");
+  cover("wood", "#dbe7c9").attr("opacity", 0.75);
+  cover("wood", "url(#battleWood)", "battleWoods battleWoodPattern");
   terrain.append("g").attr("class", "battleRelief").html(getReliefMarkup(field, paper));
+  terrain.append("g").html(getPropsMarkup(field));
+  const sea = outline(
+    field,
+    field.water.map(w => +(w === 1)),
+    0.5
+  );
+  // a strand of sand along the sea and lake shores, half of it under the water
   terrain
     .append("path")
-    .attr(
-      "d",
-      outline(
-        field,
-        field.water.map(w => +(w === 1)),
-        0.5
-      )
-    )
-    .attr("fill", WATER);
+    .attr("class", "battleProps")
+    .attr("d", sea)
+    .attr("fill", "none")
+    .attr("stroke", STRAND)
+    .attr("stroke-width", 7 * pt);
+  terrain.append("path").attr("d", sea).attr("fill", WATER);
 
   terrain.append("g").html(getCliffMarkup(field, pt));
 
@@ -291,7 +318,7 @@ export function drawBattlefield(svg: SVGSVGElement, field: Battlefield): void {
       .attr("font-style", "italic")
       .attr("fill", "#2b3a7c")
       .attr("paint-order", "stroke")
-      .attr("stroke", "#fbf5e9")
+      .attr("stroke", paper)
       .attr("stroke-width", 2.5 * pt)
       .append("textPath")
       .attr("href", `#battleRiver${i}`)
@@ -461,7 +488,7 @@ function drawWorks(svg: SVGSVGElement, field: Battlefield): void {
 
 const WORK_HOVER = 8; // points wide a stretch reacts to the pointer
 
-/** What a stretch is, whose, what it does and how far along it is */
+/** What a stretch is, whose and how far along it is */
 function getWorkTip(work: FieldWork): string {
   const percent = (share: number): number => Math.floor(share * 100);
   const status =
@@ -474,7 +501,7 @@ function getWorkTip(work: FieldWork): string {
           : work.harm > 0
             ? t("Damaged: {{percent}}%", { percent: percent(work.harm) })
             : t("Standing");
-  return sentences(`${WORK_LABELS[work.kind]()} (${SIDE_LABELS[work.side]()})`, WORK_EFFECTS[work.kind](), status);
+  return sentences(`${WORK_LABELS[work.kind]()} (${SIDE_LABELS[work.side]()})`, status);
 }
 
 const WORK_LABELS: Record<WorkKind, () => string> = {
@@ -483,11 +510,6 @@ const WORK_LABELS: Record<WorkKind, () => string> = {
   wagons: () => t("Wagons")
 };
 const SIDE_LABELS: Record<Side, () => string> = { attackers: () => t("Attackers"), defenders: () => t("Defenders") };
-const WORK_EFFECTS: Record<WorkKind, () => string> = {
-  stakes: () => t("Stop the foe's riders; a charge over them has no impetus"),
-  ditch: () => t("Slows everybody astride it to a ford's pace; a charge over it has no impetus"),
-  wagons: () => t("Bar the foe and halve its blows and shots over them; a charge over them has no impetus")
-};
 
 /** The path of a stretch, its front on the left of `a` → `b`: hachures and stakes on the foe's side */
 function drawStretch(work: FieldWork, down: boolean, pt: number): string {
@@ -702,9 +724,9 @@ export function updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Posit
     .classed("battleFallen", block => outline && block.status === "destroyed")
     .attr("data-tip", block => {
       const troops = `${capitalize(block.unit.replace(/_/g, " "))}: ${block.troops} / ${block.initial}`;
-      if (block.status !== "ready") return `${troops}, ${block.status}`;
-      const unit = battle.units.find(unit => unit.name === block.unit);
-      const speed = unit ? `${t("Speed")}: ${convertSpeed(unit.speed)} ${getSpeedUnit()}` : "";
+      if (block.status !== "ready" && block.status !== "routed") return `${troops}, ${block.status}`;
+      const kmh = toMetresPerSecond(Math.hypot(block.vx, block.vy)) * 3.6;
+      const speed = `${t("Speed")}: ${convertSpeed(kmh)} ${getSpeedUnit()}`;
       const range = block.range ? `${t("Range")}: ${formatLength(block.range)}` : "";
       const morale = `${t("Morale")}: ${Math.round(block.morale)}%`;
       const energy = `${t("Energy")}: ${Math.round(block.energy * 100)}%`;
@@ -811,7 +833,43 @@ export function updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Posit
     .attr("x", burst => burst.x.toFixed(1))
     .attr("y", burst => burst.y.toFixed(1));
 
+  drawHover(svg, battle, at);
   updateBattleDebug(svg, battle, at, pt);
+}
+
+/** The battalion under the pointer shows its foe, where it goes and how far it shoots */
+export function hoverBlock(svg: SVGSVGElement, battle: Battle, id: number | null): void {
+  getScene(svg).hovered = id;
+  const at = shown.get(svg)?.at;
+  if (at) drawHover(svg, battle, at);
+}
+
+function drawHover(svg: SVGSVGElement, battle: Battle, at: Positions): void {
+  const layer = svg.querySelector(".battleHover");
+  if (!layer) return;
+  const { hovered, colors } = getScene(svg);
+  const block = battle.blocks.find(block => block.id === hovered);
+  const from = block && at.get(block.id);
+  if (!block || !from || battle.result || (block.status !== "ready" && block.status !== "routed")) {
+    layer.innerHTML = "";
+    return;
+  }
+  const mark = getMark(svg, battle.field);
+  const stroke = darker(colors[block.side], 0.6);
+  const foe = block.target === null ? undefined : at.get(block.target);
+  const marks: string[] = [];
+  if (block.range) {
+    const radius = block.range * SKIES[battle.weather].range;
+    marks.push(
+      `<circle cx="${from.x.toFixed(1)}" cy="${from.y.toFixed(1)}" r="${radius.toFixed(1)}" stroke-dasharray="${4 * mark} ${3 * mark}"/>`
+    );
+  }
+  if (block.goal && (!foe || Math.hypot(block.goal[0] - foe.x, block.goal[1] - foe.y) > block.depth))
+    marks.push(
+      `<path d="M${fixed([from.x, from.y])}L${fixed(block.goal)}" stroke-dasharray="${4 * mark} ${3 * mark}"/>`
+    );
+  if (foe) marks.push(`<path d="M${fixed([from.x, from.y])}L${fixed([foe.x, foe.y])}"/>`);
+  layer.innerHTML = `<g stroke="${stroke}" stroke-width="${1.5 * mark}">${marks.join("")}</g>`;
 }
 
 const fixed = ([x, y]: Point): string => `${x.toFixed(1)} ${y.toFixed(1)}`;

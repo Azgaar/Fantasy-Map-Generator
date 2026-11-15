@@ -1,0 +1,75 @@
+import { hcl } from "d3";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Biomes } from "@/model/physical/biomes-generator";
+import { COLS, ROWS } from "@/model/political/battle/battle-scale";
+import { type Battlefield, createEmptyBattlefield } from "@/model/political/battle/battlefield";
+import { getGroundTint, getPropsMarkup } from "./draw-battle-ground";
+
+const [GRASSLAND, TAIGA, HOT_DESERT] = [4, 9, 1];
+
+/** A field of one biome, its west half wooded */
+function getField(biome: number, change: (field: Battlefield) => void = () => {}): Battlefield {
+  const field = createEmptyBattlefield();
+  field.site = [120, 80];
+  field.biome = biome;
+  field.biomes = new Array(COLS * ROWS).fill(biome);
+  field.wood = field.wood.map((_, i) => +(i % COLS < 40));
+  change(field);
+  return field;
+}
+
+const pathsOf = (markup: string, group: 0 | 1): string[] =>
+  [...(markup.split("</g>")[group] ?? "").matchAll(/<path d="([^"]+)" fill="([^"]+)"/g)].map(m => `${m[2]} ${m[1]}`);
+
+const pointsOf = (paths: string[]): number[][] =>
+  paths.flatMap(path => [...path.matchAll(/M(-?[\d.]+) (-?[\d.]+)/g)].map(m => [+m[1], +m[2]]));
+
+describe("battle ground", () => {
+  beforeEach(() => vi.stubGlobal("pack", { biomes: Biomes.getDefault() }));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("tints every biome pale, dark ones too", () => {
+    for (const biome of [GRASSLAND, TAIGA, HOT_DESERT]) expect(hcl(getGroundTint(biome)).l).toBeGreaterThan(90);
+    expect(getGroundTint(GRASSLAND)).not.toBe(getGroundTint(TAIGA));
+  });
+
+  it("draws the same props for the same place", () => {
+    expect(getPropsMarkup(getField(TAIGA))).toBe(getPropsMarkup(getField(TAIGA)));
+  });
+
+  it("draws the trees of the biome in its woods, and only there", () => {
+    const field = getField(TAIGA);
+    const woods = pathsOf(getPropsMarkup(field), 0);
+    expect(woods).toHaveLength(1);
+    expect(woods[0]).toMatch(/^#f1f4ef /); // snowy conifers
+    expect(pointsOf(woods).every(([x]) => x < field.cell * 40.5)).toBe(true); // the edge fades over the node beyond
+  });
+
+  it("puts grass on grassland and dunes or cacti on hot desert", () => {
+    const fills = (biome: number) => pathsOf(getPropsMarkup(getField(biome, field => field.wood.fill(0))), 1);
+    expect(fills(GRASSLAND).length).toBeGreaterThan(0);
+    expect(fills(HOT_DESERT).join()).not.toBe(fills(GRASSLAND).join());
+  });
+
+  it("keeps props off roads, burgs and water", () => {
+    const field = getField(GRASSLAND, field => {
+      field.wood.fill(0);
+      field.road = field.road.map((_, i) => +(i % COLS < 30));
+      field.town = field.town.map((_, i) => +(i % COLS >= 30 && i % COLS < 60));
+      field.water = field.water.map((_, i) => +(i % COLS >= 60));
+    });
+    expect(getPropsMarkup(field)).not.toContain("<path");
+  });
+
+  it("lays scree below a cliff, not above it", () => {
+    const field = getField(GRASSLAND, field => {
+      field.wood.fill(0);
+      const y = ROWS * 0.5 * field.cell;
+      field.cliffs = [{ a: [0, y], b: [field.width, y], height: 20 }]; // the top on the left of east: north
+    });
+    const scree = pathsOf(getPropsMarkup(field), 1).filter(path => path.startsWith("#ddd7cb"));
+    const points = pointsOf(scree);
+    expect(points.length).toBeGreaterThan(0);
+    expect(points.every(([, y]) => y > ROWS * 0.5 * field.cell)).toBe(true);
+  });
+});

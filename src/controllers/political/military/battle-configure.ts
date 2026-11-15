@@ -83,6 +83,11 @@ const GROUPS: { group: Group; label: string; controls: Control[] }[] = [
         tip: t("Label the contour lines and mark hilltops and hollows with their heights")
       },
       { key: "woods", label: t("Woods and marsh"), tip: t("Draw the patterns of woods and marshes") },
+      {
+        key: "props",
+        label: t("Ground props"),
+        tip: t("Draw trees, grass, rocks, dunes, reeds and the like by the biome and the lie of the land")
+      },
       { key: "labels", label: t("Place labels"), tip: t("Draw the names of burgs and rivers") },
       {
         key: "colors",

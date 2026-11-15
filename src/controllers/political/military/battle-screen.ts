@@ -86,6 +86,7 @@ import {
   drawArrows,
   drawBattlefield,
   drawBlocks,
+  hoverBlock,
   type Positions,
   SIDE_COLORS,
   type SideColors,
@@ -640,8 +641,12 @@ function renderDialog(): void {
     const el = (event.target as Element).closest(".battleBlock");
     const block = el && select<Element, Block>(el).datum();
     focusRegiment(block ? `${block.state}-${block.regiment}` : null, false);
+    if (battle) hoverBlock(scene(), battle, block ? block.id : null);
   });
-  scene().addEventListener("pointerleave", () => focusRegiment(null));
+  scene().addEventListener("pointerleave", () => {
+    focusRegiment(null);
+    if (battle) hoverBlock(scene(), battle, null);
+  });
   bindCamera();
   const screen = ensureEl("battleScreen");
   screen.addEventListener("pointermove", event => {

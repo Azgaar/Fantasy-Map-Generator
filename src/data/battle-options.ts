@@ -32,6 +32,7 @@ export const DEFAULT_BATTLE_OPTIONS = {
     shade: true,
     heights: true,
     woods: true,
+    props: true,
     labels: true,
     colors: "sides" as "sides" | "states",
     icons: true,

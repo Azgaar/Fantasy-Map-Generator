@@ -1,5 +1,6 @@
 import { type BattleSettings, DEFAULT_BATTLE_SETTINGS } from "@/data/battle-options";
 import { getUnitPower } from "@/model/political/military-units";
+import type { Point } from "@/types/global";
 import type { MilitaryUnit } from "@/types/military";
 import { decide, getKind, type Kind, type Sense } from "./battalion";
 import {
@@ -220,6 +221,7 @@ export interface Block {
   harm: number; // the part of a man lost so far
   leaving: boolean; // its regiment was taken out of the battle: it marches off the field
   detour: number; // the side it goes round what is in its way by: -1, 1, or 0 on a clear way
+  goal: Point | null; // where it is going this tick
   order: Order;
 }
 
@@ -804,7 +806,10 @@ function act(battle: Battle): void {
 
   const shooting = new Set<number>();
   const moves: Move[] = [];
-  for (const block of onField) block.vx = block.vy = 0;
+  for (const block of onField) {
+    block.vx = block.vy = 0;
+    block.goal = null;
+  }
   // the sides take the first move in turn: whoever moves first takes the ground
   for (const block of battle.tick % 2 ? [...onField].reverse() : onField) {
     if (block.status === "routed" || block.order.mission === "withdraw" || block.leaving) {
@@ -832,6 +837,7 @@ function act(battle: Battle): void {
       if (whole > 0) moves.push({ block, from: [block.x, block.y], to: [x, y], leg });
       const moved = whole > 0 && step(battle, block, x - block.x, y - block.y, leg, onField, haste);
       block.action = moved ? "move" : "hold";
+      if (moved) block.goal = [to.x, to.y];
       if (moved && !target && whole > MARCHING * battle.field.front) {
         block.facing = turn(block.facing, Math.atan2(y - block.y, x - block.x), 0.7); // it marches
         continue;
@@ -1278,6 +1284,7 @@ function addBlocks(battle: Battle, side: Side, regiment: BattleRegiment): Block[
         harm: 0.5, // losses are rounded to the nearest man, or ship
         leaving: false,
         detour: 0,
+        goal: null,
         order: { ...NO_ORDER }
       };
       battle.blocks.push(block);

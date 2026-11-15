@@ -212,6 +212,7 @@ const battle = z.strictObject({
     shade: z.boolean(),
     heights: z.boolean(),
     woods: z.boolean(),
+    props: z.boolean(),
     labels: z.boolean(),
     colors: z.enum(["sides", "states"]),
     icons: z.boolean(),
