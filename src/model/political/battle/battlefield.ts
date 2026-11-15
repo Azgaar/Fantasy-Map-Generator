@@ -255,7 +255,7 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, type: Ba
         h: sum(c => cells.h[c]),
         trees: sum(c => WOODS[cells.biome[c]] ?? 0),
         wet: sum(c => +(cells.biome[c] === WETLAND)),
-        biome: pickBiome(corners, weights, borders(...node), field.biome)
+        biome: pickBiome(corners, weights, () => borders(...node), field.biome)
       };
     }
     const biome = cells.biome[cell];
@@ -1261,7 +1261,9 @@ function getMostCommon(values: number[]): number | undefined {
 }
 
 /** One of the corners' land biomes by its share of the node: the noise roughens the border between them */
-function pickBiome(corners: number[], weights: number[], roll: number, fallback: number): number {
+function pickBiome(corners: number[], weights: number[], roll: () => number, fallback: number): number {
+  const [a, b, c] = corners.map(corner => pack.cells.biome[corner]);
+  if (a === b && b === c) return a || fallback; // inside a biome: nothing to pick
   const shares = new Map<number, number>();
   corners.forEach((c, k) => {
     const biome = pack.cells.biome[c];
@@ -1269,10 +1271,11 @@ function pickBiome(corners: number[], weights: number[], roll: number, fallback:
   });
   const sorted = [...shares].sort((a, b) => a[0] - b[0]);
   const sum = sorted.reduce((total, [, share]) => total + share, 0);
+  const draw = roll();
   let total = 0;
   for (const [biome, share] of sorted) {
     total += share / sum;
-    if (roll < total) return biome;
+    if (draw < total) return biome;
   }
   return sorted.at(-1)?.[0] ?? fallback;
 }

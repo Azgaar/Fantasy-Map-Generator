@@ -5,7 +5,6 @@ import { hcl } from "d3";
 import { Relief, type ReliefPool } from "@/model/physical/relief-generator";
 import { COLS, ROWS } from "@/model/political/battle/battle-scale";
 import { type Battlefield, DRY_LAKE, mix, nodeAt } from "@/model/political/battle/battlefield";
-import type { Point } from "@/types/global";
 import { minmax, normalize, rn } from "@/utils/number-utils";
 import { walkLine } from "@/utils/path-utils";
 
@@ -149,12 +148,13 @@ export function getPropsMarkup(field: Battlefield): string {
   const placed = { covered: glyphs(), open: glyphs() }; // in woods and bogs, or not
   let count = 0;
 
-  const put = (kind: Kind, [x, y]: Point, roll: Roll, covered = false): void => {
+  const put = (kind: Kind, x: number, y: number, roll: Roll, covered = false): void => {
     const size = pt * GLYPH * STYLES[kind].size * (0.85 + roll(3) * 0.35);
     const angle = kind === "dune" ? wind + (roll(4) - 0.5) * 0.3 : TURNED.has(kind) ? roll(4) * 6.3 : 0;
     placed[covered ? "covered" : "open"][kind].push(drawGlyph(kind, x, y, size, angle, digits, roll));
     count++;
   };
+  const nearCliff = getCliffReach(field);
   const isClear = (node: number): boolean =>
     !field.town[node] && !field.road[node] && !field.walled[node] && !field.deck[node] && field.water[node] !== 2;
 
@@ -174,8 +174,9 @@ export function getPropsMarkup(field: Battlefield): string {
       if (!isClear(node) || at.sea > SHORE[1]) continue;
       const biome = biomeAt(field, node);
       if (!biomes.has(biome)) biomes.set(biome, getBiomeProps(biome));
-      const prop = choose(field, node, [x, y], roll, at, biome, biomes.get(biome)!);
-      if (prop) put(prop.kind, [x, y], roll, prop.covered);
+      const cliff = nearCliff[node] ? getCliffSide(field, x, y) : null;
+      const prop = choose(field, node, cliff, roll, at, biome, biomes.get(biome)!);
+      if (prop) put(prop.kind, x, y, roll, prop.covered);
     }
   }
 
@@ -189,7 +190,7 @@ export function getPropsMarkup(field: Battlefield): string {
       const [rx, ry] = [x - uy * off, y + ux * off];
       if (rx < 0 || ry < 0 || rx > field.width || ry > field.height) return;
       const node = nodeAt(field, rx, ry);
-      if (isClear(node) && !field.water[node] && !REEDLESS.has(biomeAt(field, node))) put("reeds", [rx, ry], roll);
+      if (isClear(node) && !field.water[node] && !REEDLESS.has(biomeAt(field, node))) put("reeds", rx, ry, roll);
     });
   });
 
@@ -223,7 +224,7 @@ function getBiomeProps(biome: number): BiomeProps {
 function choose(
   field: Battlefield,
   node: number,
-  [x, y]: Point,
+  cliff: { distance: number; below: boolean } | null,
   roll: Roll,
   cover: { wood: number; marsh: number; sea: number },
   biome: number,
@@ -231,7 +232,6 @@ function choose(
 ): { kind: Kind; covered?: boolean } | null {
   const chance = roll(2);
 
-  const cliff = getCliffSide(field, x, y);
   if (cliff && cliff.distance < CLIFF_BAND) return null;
   if (cliff?.below && cliff.distance < SCREE[0]) {
     const share = SCREE[1] * (1 - (cliff.distance - CLIFF_BAND) / (SCREE[0] - CLIFF_BAND));
@@ -355,6 +355,26 @@ function sample({ cell }: Battlefield, soft: Float32Array, x: number, y: number)
   const top = at(col, row) + (at(col + 1, row) - at(col, row)) * tx;
   const bottom = at(col, row + 1) + (at(col + 1, row + 1) - at(col, row + 1)) * tx;
   return top + (bottom - top) * ty;
+}
+
+/** Nodes a cliff's scree may reach: spots elsewhere need not measure the cliffs */
+function getCliffReach({ cliffs, cell }: Battlefield): Uint8Array {
+  const reach = new Uint8Array(COLS * ROWS);
+  const margin = Math.ceil(SCREE[0]) + 1;
+  for (const { a, b } of cliffs) {
+    const [c0, c1] = [
+      Math.floor(Math.min(a[0], b[0]) / cell) - margin,
+      Math.floor(Math.max(a[0], b[0]) / cell) + margin
+    ];
+    const [r0, r1] = [
+      Math.floor(Math.min(a[1], b[1]) / cell) - margin,
+      Math.floor(Math.max(a[1], b[1]) / cell) + margin
+    ];
+    for (let row = Math.max(r0, 0); row <= Math.min(r1, ROWS - 1); row++) {
+      for (let col = Math.max(c0, 0); col <= Math.min(c1, COLS - 1); col++) reach[row * COLS + col] = 1;
+    }
+  }
+  return reach;
 }
 
 /** The nearest cliff in nodes and whether the spot lies below it, on the right of its way: null on a field without */
