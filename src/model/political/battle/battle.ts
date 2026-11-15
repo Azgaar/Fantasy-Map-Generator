@@ -24,6 +24,7 @@ import {
   type FieldWall,
   getSiegeRadius,
   getWallsBetween,
+  nodeCentre,
   openBreach,
   raiseWalls,
   terrainAt
@@ -58,6 +59,8 @@ import {
   hasWayOut,
   inContact,
   isCliffed,
+  isLandlocked,
+  isMoored,
   isRunning,
   isWet,
   type Move,
@@ -262,7 +265,6 @@ export type Intervention =
   | { tick: number; kind: "tactic"; side: Side; tactic: TacticName | null }; // before the start; null: as its general sees fit
 
 export type LogEvent =
-  | "start"
   | "order"
   | "ordered"
   | "move"
@@ -285,6 +287,7 @@ export type LogEvent =
   | "condition"
   | "fortified"
   | "gap"
+  | "raised"
   | "clash"
   | "broken"
   | "end";
@@ -323,6 +326,7 @@ export interface Battle {
   engaged: number | null; // round of the first blow: phases count from it, however long the approach
   lastLoss: number; // tick of the last casualty
   storm: number | null; // round the besiegers set out to storm the walls
+  raised: boolean; // the besiegers drew off before a garrison out in force: they were not broken
   cutOff: boolean; // the besieged burg is ringed in by land and water: nothing comes in
   battered: number; // how far the engines are with the next breach, 0 to 1
   course: { orders: string; count: number }[]; // the orders the sides were under, round by round
@@ -392,6 +396,7 @@ export function createBattle(setup: BattleSetup): Battle {
     engaged: null,
     lastLoss: 0,
     storm: null,
+    raised: false,
     cutOff: false,
     battered: 0,
     course: [],
@@ -442,6 +447,17 @@ function drawUp(battle: Battle): void {
   }
   digIn(battle);
   forgetWays(battle.field);
+  noteTactics(battle);
+}
+
+/** The log opens with the tactic each side is drawn up in, whatever was done before the start */
+function noteTactics(battle: Battle): void {
+  if (battle.tick || battle.rehearsal) return;
+  const rest = battle.log.filter(entry => entry.event !== "tactic");
+  const tactics = SIDES.map(
+    (side): LogEntry => ({ tick: 0, event: "tactic", side, params: { tactic: battle[side].plan.tactic } })
+  );
+  battle.log.splice(0, battle.log.length, ...tactics, ...rest);
 }
 
 /**
@@ -541,8 +557,6 @@ export function intervene(battle: Battle, change: Intervention): void {
     for (const side of SIDES) battle[side].phase = PHASES[battle.type][side][0];
   } else if (change.kind === "withdraw") {
     withdraw(battle, change.state, change.regiment);
-  } else if (change.kind === "tactic") {
-    battle.log.push({ tick: battle.tick, event: "tactic", side: change.side, params: { tactic: change.tactic ?? "" } });
   } else if (change.kind === "dig") {
     battle.log.push({ tick: battle.tick, event: "dig", side: change.side, params: { on: String(change.on) } });
   } else if (change.kind === "weather") {
@@ -556,7 +570,7 @@ export function intervene(battle: Battle, change: Intervention): void {
       event: "condition",
       params: { condition: change.condition, on: String(change.on) }
     });
-  } else {
+  } else if (change.kind === "add") {
     battle[change.side].regiments.push(change.regiment);
     battle.log.push({
       tick: battle.tick,
@@ -698,11 +712,6 @@ const places = new WeakMap<Battle, Map<number, [number, number]>>(); // where th
 
 function startRound(battle: Battle): void {
   battle.round = battle.tick / ROUND_TICKS;
-  if (!battle.tick) {
-    battle.log.push({ tick: 0, event: "start" });
-    for (const side of SIDES)
-      battle.log.push({ tick: 0, event: "tactic", side, params: { tactic: battle[side].plan.tactic } });
-  }
   const cutOff = isCutOff(battle);
   if (cutOff !== battle.cutOff) {
     const burg = battle.field.burgs[battle.field.held!].name;
@@ -735,7 +744,7 @@ function startRound(battle: Battle): void {
   command(battle);
   SIDES.forEach((side, i) => {
     if (!beaten[i] && isBeaten(battle.type, side, battle[side].phase))
-      battle.log.push({ tick: battle.tick, event: "broken", side });
+      battle.log.push({ tick: battle.tick, event: side === "attackers" && battle.raised ? "raised" : "broken", side });
   });
   batter(battle);
   if (breakWagons(battle) || raised) forgetWays(battle.field, true); // the troops go round what bars them, or in by a gap
@@ -882,11 +891,13 @@ function flee(battle: Battle, block: Block, others: Block[]): void {
     return;
   }
   block.action = "flee";
+  // ships on water with no way off the field sail out of the fight at once
+  const sails = isMoored(battle, block) && isLandlocked(battle, block);
   const away = getFlight(battle, block) ?? (block.side === "attackers" ? battle.axis + Math.PI : battle.axis);
   block.facing = turn(block.facing, away, 1.2);
-  step(battle, block, Math.cos(away), Math.sin(away), Infinity, others, FLIGHT);
+  if (!sails) step(battle, block, Math.cos(away), Math.sin(away), Infinity, others, FLIGHT);
   const off = block.x < 0 || block.x > battle.field.width || block.y < 0 || block.y > battle.field.height;
-  if (off) {
+  if (off || sails) {
     block.status = "fled";
     battle.log.push({
       tick: battle.tick,
@@ -1181,7 +1192,9 @@ function checkEnd(battle: Battle): void {
   for (const block of battle.blocks)
     if (block.side === winner && block.status === "surrendered") block.status = "ready";
   updatePower(battle);
-  battle.result = { winner, status: getBattleStatus(getLost(battle.attackers), getLost(battle.defenders), winner) };
+  const status = getBattleStatus(getLost(battle.attackers), getLost(battle.defenders), winner);
+  if (battle.raised) status[0] = "attackers raised the siege";
+  battle.result = { winner, status };
   battle.log.push({ tick: battle.tick, event: "end", side: winner });
 }
 
@@ -1193,14 +1206,7 @@ function setScale(battle: Battle): void {
   const radius = battle.type === "siege" && field.site ? getSiegeRadius(field.site) : Infinity;
   const size = getFieldSize(battle.battalion, radius);
   if (field.width === size.width && field.front === size.front) return;
-  if (field.site)
-    battle.field = buildBattlefield(
-      field.site[0],
-      field.site[1],
-      size,
-      battle.type !== "ambush",
-      battle.type === "siege"
-    );
+  if (field.site) battle.field = buildBattlefield(field.site[0], field.site[1], size, battle.type);
   else {
     const ratio = size.width / field.width; // cliffs are ground, drawn on the nodes as water is
     const scale = ([x, y]: [number, number]): [number, number] => [x * ratio, y * ratio];
@@ -1329,7 +1335,12 @@ const NO_PLAN: Plan = {
 /** The approach, turned as little as it takes for the attackers to form up on land */
 function findAxis(battle: Battle): number {
   const { field, approach } = battle;
-  if (field.open || isFromSea(battle.type)) return approach;
+  if (isFromSea(battle.type) && !field.open) {
+    // the way the fleet came, unless that is from the land: then straight from the water
+    const landward = getLandward(field);
+    return landward === null || Math.abs(normalize(approach - landward)) < Math.PI / 3 ? approach : landward;
+  }
+  if (field.open) return approach;
   const dry = (axis: number): boolean =>
     [-0.3, 0, 0.3].every(shift =>
       [0.6, 0.8, 1].every(depth => {
@@ -1343,6 +1354,22 @@ function findAxis(battle: Battle): number {
   for (const swing of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.2, -2.2, Math.PI])
     if (dry(approach + swing)) return approach + swing;
   return approach;
+}
+
+/** From the sea or a lake onto the land, as the field lies: the way a fleet comes at the shore */
+function getLandward(field: Battlefield): number | null {
+  const [land, sea] = [
+    { x: 0, y: 0, n: 0 },
+    { x: 0, y: 0, n: 0 }
+  ];
+  for (let node = 0; node < field.water.length; node++) {
+    if (field.water[node] === 2) continue; // a river says nothing of where the sea is
+    const [x, y] = nodeCentre(field, node);
+    const sum = field.water[node] ? sea : land;
+    [sum.x, sum.y, sum.n] = [sum.x + x, sum.y + y, sum.n + 1];
+  }
+  if (!land.n || !sea.n) return null;
+  return Math.atan2(land.y / land.n - sea.y / sea.n, land.x / land.n - sea.x / sea.n);
 }
 
 function moveBlock(battle: Battle, key: string, x: number, y: number): void {

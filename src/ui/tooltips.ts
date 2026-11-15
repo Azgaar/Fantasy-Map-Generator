@@ -124,6 +124,14 @@ export function showDataTip(event: Event): void {
   tip(dataTip);
 }
 
+/** The tip of an element or of the nearest one holding it, else the main tip: for a pointer that stays while what is
+ * under it moves or changes, so the tip shown never outlives what it is about */
+export function showElementTip(element: Element | null): void {
+  const holder = element?.closest<HTMLElement | SVGElement>("[data-tip]");
+  if (holder?.dataset.tip) tip(holder.dataset.tip);
+  else showMainTip();
+}
+
 /** Full text of an element that cuts it to fit, or "" if it fits */
 function getClippedText(element: HTMLElement): string {
   if (element.scrollWidth <= element.clientWidth || getComputedStyle(element).overflowX === "visible") return "";

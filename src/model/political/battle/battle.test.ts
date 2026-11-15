@@ -33,6 +33,7 @@ import {
   getWallsBetween,
   getWorksBetween,
   nodeAt,
+  nodeCentre,
   openBreach,
   raiseWalls,
   terrainAt,
@@ -40,7 +41,7 @@ import {
 } from "./battlefield";
 import { raiseEscarpments } from "./cliffs";
 import { ROW_GAP } from "./formations";
-import { getCommands, getTactics, isDugIn } from "./general";
+import { getCommands, getOptions, getTactics, isDugIn } from "./general";
 import {
   CONTACT,
   canShoot,
@@ -165,6 +166,16 @@ describe("battle", () => {
     expect(size(90000)).toBe(1000);
   });
 
+  it("opens the log with the tactic of each side, before the start too", () => {
+    const b = battle([regiment(1, even)], [regiment(2, even)]);
+    const opening = (): string[] => b.log.slice(0, 2).map(entry => `${entry.event} ${entry.side}`);
+    expect(opening()).toEqual(["tactic attackers", "tactic defenders"]);
+    intervene(b, { tick: 0, kind: "move", block: b.blocks[0].key, x: 100, y: 100 });
+    tick(b);
+    expect(opening()).toEqual(["tactic attackers", "tactic defenders"]);
+    expect(b.log.filter(entry => entry.event === "tactic")).toHaveLength(2);
+  });
+
   it("lines the sides up apart", () => {
     const b = battle([regiment(1, even)], [regiment(2, even)]);
     const x = (side: string): number =>
@@ -281,7 +292,7 @@ describe("battle generals", () => {
     const chosen = b.attackers.plan.tactic;
     expect(b.attackers.tactic).toBe(chosen);
     expect(b.tick).toBe(0);
-    expect(b.log).toEqual([]); // nothing of the rehearsals is left in the battle
+    expect(b.log.map(entry => entry.event)).toEqual(["tactic", "tactic"]); // nothing of the rehearsals is left in the battle
 
     // no worse than what the odds alone suggested
     const outcome = (tactic: string): number => {
@@ -656,6 +667,47 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     expect(b.result!.winner).toBe("defenders");
   });
 
+  it("has ambushers with shooters weigh shooting from cover first, and fall on the column once it wavers", () => {
+    const b = setup("ambush", mixed, mixed, createEmptyBattlefield());
+    expect(getOptions(b, "defenders").filter(option => option.waits)).toHaveLength(2); // on both sides or on one
+    b.defenders.waits = true;
+    prepare(b);
+    b.planned = true;
+    expect(getCommands(b)).toEqual(["defend", "skirmish"]);
+    const lying = b.blocks.filter(block => block.side === "defenders" && block.kind === "line");
+    const places = lying.map(block => [block.x, block.y]);
+    let sprung = -1;
+    while (!b.result && sprung < 0) {
+      tick(b);
+      if (b.defenders.advancing) sprung = b.tick;
+      else
+        for (const [i, block] of lying.entries())
+          expect(Math.hypot(block.x - places[i][0], block.y - places[i][1])).toBeLessThan(b.field.front);
+    }
+    expect(sprung).toBeGreaterThan(0); // they do fall on it
+    expect(getCommands(b)[1]).toBe("attack");
+  });
+
+  it("lays the column of an ambush along the road, the ambushers clear of its flank", () => {
+    const field = createEmptyBattlefield();
+    field.roads.push([
+      [0, 200],
+      [1364, 600]
+    ]);
+    const b = setup("ambush", mixed, mixed, field);
+    const slope = Math.atan2(400, 1364);
+    const column = b.blocks.filter(block => block.side === "attackers");
+    for (const block of column) {
+      const off = Math.abs((block.y - 200) * Math.cos(slope) - block.x * Math.sin(slope)); // from the road
+      expect(off).toBeLessThan(block.width);
+      expect(Math.abs(block.facing - slope)).toBeLessThan(0.05);
+    }
+    for (const ambusher of b.blocks.filter(block => block.side === "defenders")) {
+      const nearest = Math.min(...column.map(block => Math.hypot(block.x - ambusher.x, block.y - ambusher.y)));
+      expect(nearest).toBeGreaterThan(90); // a dash off, not at grips before the first blow
+    }
+  });
+
   it("has defenders ready for a landing weigh meeting it at the shore against waiting inland", () => {
     const field = createEmptyBattlefield();
     for (let row = 0; row < ROWS; row++) for (let col = 0; col < 30; col++) field.water[row * COLS + col] = 1;
@@ -913,6 +965,10 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     expect(phases).toContain("retreat/pursue");
     expect(b.result.winner).toBe("defenders");
     expect(b.round).toBeLessThan(25); // nobody is stuck in the gate
+    // drawn off in order: the siege is raised, the besiegers are not broken
+    expect(b.log.some(entry => entry.event === "raised" && entry.side === "attackers")).toBe(true);
+    expect(b.log.some(entry => entry.event === "broken" && entry.side === "attackers")).toBe(false);
+    expect(b.result.status[0]).toBe("attackers raised the siege");
   });
 
   it("has a garrison stronger than the besiegers come out from under their engines' fire", () => {
@@ -1164,7 +1220,7 @@ describe("battle actions", () => {
     intervene(b, { tick: 0, kind: "tactic", side: "attackers", tactic: given });
     plan(b);
     expect(b.attackers.plan.tactic).toBe(given);
-    expect(b.log.at(-1)).toMatchObject({ event: "tactic", side: "attackers", params: { tactic: given } });
+    expect(b.log[0]).toMatchObject({ event: "tactic", side: "attackers", params: { tactic: given } }); // the log opens with it
 
     intervene(b, { tick: 0, kind: "tactic", side: "attackers", tactic: null });
     plan(b);
@@ -1195,7 +1251,7 @@ describe("battle deployment", () => {
     const { key } = b.blocks[0];
     intervene(b, { tick: 0, kind: "move", block: key, x: 109, y: 127 });
     intervene(b, { tick: 0, kind: "turn", block: key, facing: 1 });
-    expect(b.log.map(entry => entry.event)).toEqual(["move", "turn"]);
+    expect(b.log.map(entry => entry.event)).toEqual(["tactic", "tactic", "move", "turn"]);
 
     intervene(b, { tick: 0, kind: "morale", side: "attackers", value: -5 }); // lines the troops up anew
     const block = b.blocks.find(block => block.key === key)!;
@@ -1209,7 +1265,7 @@ describe("battle die", () => {
     const even6 = battle([regiment(1, even)], [regiment(2, even)]);
     expect([even6.attackers.die, even6.defenders.die]).toEqual([3, 3]);
     intervene(even6, { tick: 0, kind: "die", side: "attackers", die: 6 });
-    expect(even6.log[0]).toMatchObject({ event: "die", side: "attackers", params: { die: "6" } });
+    expect(even6.log[2]).toMatchObject({ event: "die", side: "attackers", params: { die: "6" } }); // after the tactics
     for (let i = 0; i < ROUND_TICKS * 25 && !even6.result; i++) tick(even6);
     expect([even6.attackers.die, even6.defenders.die]).toEqual([6, 3]);
     run(even6);
@@ -1851,6 +1907,33 @@ describe("battle ways", () => {
     }
   });
 
+  it("keeps ships off a ford, and sails them out of the fight at once from a lake with no way off the field", () => {
+    const field = createEmptyBattlefield();
+    band(field, "water", 2, [0, COLS], [20, 22]); // a brook across the field, waded anywhere
+    band(field, "ford", 1, [0, COLS], [20, 22]);
+    band(field, "water", 1, [8, 20], [30, 40]); // a lake that reaches no edge
+    const b = createBattle({
+      type: "field",
+      name: "Test",
+      place: null,
+      x: 0,
+      y: 0,
+      cell: 0,
+      axis: 0,
+      field,
+      units: [...UNITS, unit("ships", "naval", 1)],
+      populationScale: 1000,
+      attackers: [regiment(1, { infantry: 900 }), regiment(1, { ships: 30 }, 1)],
+      defenders: [regiment(2, { infantry: 900, archers: 300 })]
+    });
+    const ships = b.blocks.filter(block => block.unit === "ships");
+    for (const ship of ships) expect(b.field.water[nodeAt(b.field, ship.x, ship.y)]).toBe(1); // on the lake
+    for (let i = 0; i < ROUND_TICKS; i++) tick(b);
+    intervene(b, { tick: b.tick, kind: "withdraw", state: 1, regiment: 1 });
+    tick(b);
+    expect(ships.every(ship => ship.status === "fled")).toBe(true);
+  });
+
   /** Ticks the attackers in order spend in water, till the fight is settled */
   const wetTicks = (b: Battle): number => {
     let wet = 0;
@@ -2015,9 +2098,10 @@ describe("battle ways", () => {
         front: field.front,
         water: field.water,
         open: new Uint8Array(COLS * ROWS).fill(1),
-        clearance: field.water.map(() => Infinity)
+        clearance: field.water.map(() => Infinity),
+        height: field.water.map((_, node) => 200 * wave(110, 90, 1.3)(...nodeCentre(field, node)))
       };
-      const scarps = raiseEscarpments(ground, 40, wave(110, 90, 1.3), wave(60, 75, 2.1))!;
+      const scarps = raiseEscarpments(ground, 60, wave(60, 75, 2.1))!;
       [field.cliffs, field.top, field.scarp] = [scarps.cliffs, scarps.top, scarps.step];
       field.relief = Math.max(...scarps.step);
       field.elevation = scarps.top.map((top, i) => (top * scarps.step[i]) / field.relief);
@@ -3066,6 +3150,28 @@ describe("a bombardment", () => {
       }
     }
     expect(b.attackers.captured).toBe(0);
+  });
+
+  it("comes at the shore from the water whichever way the fleet came, and leaves nobody drawn up on land", () => {
+    const field = createEmptyBattlefield();
+    for (let row = 0; row < ROWS; row++) for (let col = 0; col < 30; col++) field.water[row * COLS + col] = 1;
+    const b = createBattle({
+      type: "bombardment",
+      name: "Test",
+      place: null,
+      x: 0,
+      y: 0,
+      cell: 0,
+      axis: Math.PI, // the way from where the fleet lay leads over the land
+      field,
+      units: [...UNITS, unit("ships", "naval", 5)],
+      populationScale: 1000,
+      attackers: [regiment(1, { ships: 200 })],
+      defenders: [regiment(2, { infantry: 1200, archers: 600 })]
+    });
+    expect(Math.abs(b.axis)).toBeLessThan(0.2); // from the sea in the west onto the land
+    for (const block of b.blocks)
+      expect(terrainAt(b.field, block.x, block.y).water).toBe(block.side === "attackers" ? 1 : 0);
   });
 
   it("has a fleet withdraw before stronger fire from the shore", () => {

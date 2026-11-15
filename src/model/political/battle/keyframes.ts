@@ -10,8 +10,9 @@ export function selectKeyframes(log: LogEntry[], kinds: LogEvent[], most = MOST)
   const end = log.findLast(entry => entry.event === "end")?.tick ?? log.at(-1)?.tick ?? 0;
   const chosen = kinds.length ? kinds : DEFAULT_KEY_EVENTS;
   const rounds = new Map<number, { tick: number; score: number }>();
-  for (const { tick, event } of log) {
+  for (const { tick, event: logged } of log) {
     if (!tick || tick >= end) continue;
+    const event = logged === "raised" ? "broken" : logged; // a siege raised is the moment the besiegers give up
     const round = Math.floor(tick / ROUND_TICKS);
     const key = rounds.get(round);
     const score = +chosen.includes(event) + +TOLL.includes(event);

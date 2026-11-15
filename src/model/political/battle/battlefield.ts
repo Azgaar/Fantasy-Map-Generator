@@ -6,8 +6,9 @@ import { Rivers } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { getKmInDistanceUnit, getPeople, heightToMeters } from "@/model/units";
 import type { Point } from "@/types/global";
+import { type BattleType, isFromSea } from "./battle-rules";
 import { COLS, DEFAULT_BATTALION, type FieldSize, fitSiegeBurg, getFieldSize, ROWS } from "./battle-scale";
-import { type CliffGround, getDistances, laySeaCliffs, raiseEscarpments } from "./cliffs";
+import { type CliffGround, getDistances, isRugged, laySeaCliffs, raiseEscarpments } from "./cliffs";
 
 type Box = [number, number, number, number]; // x0, y0, x1, y1
 
@@ -177,10 +178,10 @@ export function createMapField(x: number, y: number): Battlefield {
 /**
  * The map round a point at true scale: lines and coasts as the map draws them, the ground as it lies between the cell centres.
  * What the map is too coarse to show, hills, copses, bogs, the meanders of a river, comes from noise fixed by the place.
- * @param clearing keep the middle open for the lines to meet; an ambush wants the cover
- * @param siege the besieged burg at the site is fitted into the field
+ * An ambush keeps the cover in the middle, a siege fits the besieged burg in, a battle from the sea is fought on the shore
  */
-export function buildBattlefield(x: number, y: number, size: FieldSize, clearing = true, siege = false): Battlefield {
+export function buildBattlefield(x: number, y: number, size: FieldSize, type: BattleType = "field"): Battlefield {
+  const [clearing, siege] = [type !== "ambush", type === "siege"];
   const field: Battlefield = { ...createEmptyBattlefield(), site: [x, y], ...size };
   const place: Point = [Math.round(x), Math.round(y)];
   const { cells } = pack;
@@ -193,7 +194,7 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, clearing
   const held = cells.burg[cell] ? pack.burgs[cells.burg[cell]] : null;
   const heldRadius = held ? getBurgRadius(held) : 0;
   const drawnRadius = siege ? fitSiegeBurg(heldRadius, size) : heldRadius;
-  const [sx, sy] = findSite(cell, place, pixel, drawnRadius);
+  const [sx, sy] = findSite(cell, place, pixel, drawnRadius, isFromSea(type));
   const toField = (mx: number, my: number): Point => [(mx - sx) * pixel + width / 2, (my - sy) * pixel + height / 2];
   const inView = ([fx, fy]: Point, margin = 0): boolean =>
     fx > -margin && fx < width + margin && fy > -margin && fy < height + margin;
@@ -399,32 +400,42 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, clearing
     }
   });
 
-  // cliffs where the ground is broken: on the coast, and on the edges of high ground but about a burg besieged
+  if (isRugged(roughness)) raiseCliffs(field, ground, nodes, roughness, place, siege);
+  raiseWalls(field);
+  return field;
+}
+
+/** Cliffs where the ground is broken: on the coast, and on the steep edges of high ground but about a burg besieged */
+function raiseCliffs(
+  field: Battlefield,
+  ground: ({ height: number } | null)[],
+  nodes: Point[],
+  roughness: number,
+  place: Point,
+  siege: boolean
+): void {
   const cliffGround: CliffGround = {
-    cell: step,
-    front: size.front,
+    cell: field.cell,
+    front: field.front,
     water: field.water,
     open: Uint8Array.from(field.water, (water, i) => +(!water || field.ford[i] === 1)),
-    clearance: getClearance(field, nodes)
+    clearance: getClearance(field, nodes),
+    height: ground.map(g => g?.height ?? 0)
   };
   field.cliffs = laySeaCliffs(cliffGround, roughness, createNoise(field, place, 11, 300));
-  const scarps = siege
-    ? null
-    : raiseEscarpments(cliffGround, roughness, createNoise(field, place, 12, 700), getGapNoise(field, place));
+  const scarps = siege ? null : raiseEscarpments(cliffGround, roughness, getGapNoise(field, place));
   if (scarps) {
     field.cliffs.push(...scarps.cliffs);
     field.top = scarps.top;
     field.scarp = scarps.step;
-    const heights = ground.map((g, i) => (g ? g.height + scarps.top[i] * scarps.step[i] : null));
-    const high = Math.max(...heights.filter(h => h !== null));
-    field.relief = high - field.base;
+    // raised by half the step on a cliff's top side, lowered by half at its foot
+    const heights = ground.map((g, i) => (g ? g.height + (scarps.top[i] - 0.5) * scarps.step[i] : null));
+    const land = heights.filter(h => h !== null);
+    [field.base, field.relief] = [Math.min(...land), Math.max(...land) - Math.min(...land)];
     heights.forEach((h, i) => {
       if (h !== null) field.elevation[i] = field.relief ? (h - field.base) / field.relief : 0;
     });
   }
-
-  raiseWalls(field);
-  return field;
 }
 
 /** Where the edges of high ground are cliffs: two octaves, so the lattice of either does not show */
@@ -996,12 +1007,12 @@ const nearestIndex = (points: Point[], [x, y]: Point): number =>
  * Where in its cell a battle is fought, in map pixels: at the burg or by the river it is named after,
  * on the crossing of a road over the river if there is one
  */
-function findSite(cell: number, place: Point, pixel: number, burgRadius: number): Point {
+function findSite(cell: number, place: Point, pixel: number, burgRadius: number, fromSea: boolean): Point {
   const { cells } = pack;
-  if (cells.burg[cell]) {
-    const burg = pack.burgs[cells.burg[cell]];
-    return burg.port ? getHarbour(burg, pixel, burgRadius) : [burg.x, burg.y];
-  }
+  const burg = cells.burg[cell] ? pack.burgs[cells.burg[cell]] : null;
+  if (burg?.port) return getHarbour(burg, pixel, burgRadius);
+  if (fromSea) return getShore(place) ?? (burg ? [burg.x, burg.y] : place); // the fight is for the water's edge
+  if (burg) return [burg.x, burg.y];
   const river = cells.r[cell] && pack.rivers.find(river => river.i === cells.r[cell]);
   if (!river) return place;
 
@@ -1033,6 +1044,21 @@ function findSite(cell: number, place: Point, pixel: number, burgRadius: number)
   const angle = mix(place[0], place[1], -1) * Math.PI * 2;
   const shift = (mix(place[0], place[1], -2) * SITE_SHIFT) / pixel;
   return [site[0] + Math.cos(angle) * shift, site[1] + Math.sin(angle) * shift];
+}
+
+/** The nearest point of a coast or a lake shore to a map point, a cell or so off at most: where troops there meet a fleet */
+export function getShore([x, y]: Point): Point | null {
+  let [best, least]: [Point | null, number] = [null, getSpacing() * 1.5];
+  for (const f of new Set(Pack.findAll(x, y, least).map(i => pack.cells.f[i]))) {
+    const feature = pack.features[f];
+    if (!feature || !(feature.land || feature.type === "lake")) continue;
+    const outline = Coastline.getFeatureShape(feature).points.map(([px, py]): Point => [px, py]);
+    if (outline.length < 2) continue;
+    const point = nearestOnLine([x, y], [...outline, outline[0]]);
+    const distance = Math.hypot(point[0] - x, point[1] - y);
+    if (distance < least) [best, least] = [point, distance];
+  }
+  return best;
 }
 
 /** The mean distance between cell centres in map pixels */

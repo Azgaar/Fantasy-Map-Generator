@@ -203,6 +203,13 @@ export function isWet(battle: Battle, block: Block, x: number, y: number): boole
 /** Ships on the ground of a land battle: they keep to the water, on the run too */
 export const isMoored = (battle: Battle, block: Block): boolean => block.type === "naval" && !battle.field.open;
 
+/** Water a ship sails: the sea, a lake, a river too deep to wade; not a ford or a brook */
+const isSailable = (field: Battlefield, node: number): boolean => field.water[node] > 0 && !isFordable(field, node);
+
+/** Whether ships have water to keep to on the field */
+export const hasShipWater = (field: Battlefield): boolean =>
+  field.open !== null || field.water.some((_, node) => isSailable(field, node));
+
 /**
  * Troops in order keep out of lakes, the sea and a river out of its fords, and out of the shallows but in a landing;
  * at a ford, a bridge and a beach a side that does not advance holds its bank
@@ -210,7 +217,7 @@ export const isMoored = (battle: Battle, block: Block): boolean => block.type ==
 export function shuns(battle: Battle, block: Block, x: number, y: number): boolean {
   const terrain = terrainAt(battle.field, x, y);
   const { water, ford, deck } = terrain;
-  if (isMoored(battle, block)) return !water;
+  if (isMoored(battle, block)) return !water || ford;
   if ((!water && !deck) || isRunning(block) || isAfloat(battle, block, terrain)) return false;
   const shallow = terrain.shallow && battle.type === "landing";
   return (!ford && !shallow && !deck) || !battle[block.side].advancing;
@@ -789,24 +796,10 @@ function getOpenGround(battle: Battle, known: Exits, side: Side) {
 
 /** The way off the field for troops on the run: to the nearest edge behind their side, round the water */
 export function getFlight(battle: Battle, block: Block): number | null {
-  const known = getWays(battle);
   const { field } = battle;
-  if (!isRough(battle, block)) return null;
-  const kind = getKind(battle, block);
-  let reach = known.flight.get(kind);
-  if (!reach) {
-    const away = block.side === "attackers" ? battle.axis + Math.PI : battle.axis;
-    const edge: number[] = [];
-    for (let node = 0; node < COLS * ROWS; node++) {
-      const col = node % COLS;
-      const row = (node - col) / COLS;
-      if (col && row && col < COLS - 1 && row < ROWS - 1) continue;
-      const [x, y] = nodeCentre(field, node);
-      if ((x - field.width / 2) * Math.cos(away) + (y - field.height / 2) * Math.sin(away) > 0) edge.push(node);
-    }
-    reach = spread(COLS, ROWS, edge, getCosts(battle, block, kind), getClosed(battle, block, kind));
-    known.flight.set(kind, reach);
-  }
+  const moored = isMoored(battle, block);
+  if (!moored && !isRough(battle, block)) return null;
+  const reach = moored ? getSailing(battle, block) : getFlightReach(battle, block);
 
   const node = getNodeAt(battle, block, block.x, block.y);
   const col = node % COLS;
@@ -828,6 +821,43 @@ export function getFlight(battle: Battle, block: Block): number | null {
   if (best === node) return null;
   const [x, y] = nodeCentre(field, best);
   return Math.atan2(y - block.y, x - block.x);
+}
+
+/** Ships leave by water, off whichever edge of the field it reaches */
+export function isLandlocked(battle: Battle, block: Block): boolean {
+  const reach = getSailing(battle, block);
+  return !Number.isFinite(reach.cost[getNodeAt(battle, block, block.x, block.y)]);
+}
+
+function getSailing(battle: Battle, block: Block): Reach {
+  const known = getWays(battle);
+  const kind = `${getKind(battle, block)}|sail`;
+  let reach = known.flight.get(kind);
+  if (!reach) {
+    const costs = getCosts(battle, block);
+    const edge = EDGES.filter(node => Number.isFinite(costs[node]));
+    reach = spread(COLS, ROWS, edge, costs, getClosed(battle, block));
+    known.flight.set(kind, reach);
+  }
+  return reach;
+}
+
+/** The ways to the edge of the field behind the block's side */
+function getFlightReach(battle: Battle, block: Block): Reach {
+  const known = getWays(battle);
+  const { field } = battle;
+  const kind = getKind(battle, block);
+  let reach = known.flight.get(kind);
+  if (!reach) {
+    const away = block.side === "attackers" ? battle.axis + Math.PI : battle.axis;
+    const behind = (node: number): boolean => {
+      const [x, y] = nodeCentre(field, node);
+      return (x - field.width / 2) * Math.cos(away) + (y - field.height / 2) * Math.sin(away) > 0;
+    };
+    reach = spread(COLS, ROWS, EDGES.filter(behind), getCosts(battle, block, kind), getClosed(battle, block, kind));
+    known.flight.set(kind, reach);
+  }
+  return reach;
 }
 
 /** Sides that water keeps apart get a crossing where it is narrowest for them: a ford on a river, shallows in a lake */

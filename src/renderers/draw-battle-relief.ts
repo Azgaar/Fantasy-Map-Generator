@@ -3,7 +3,7 @@
 
 import { contours } from "d3";
 import { COLS, ROWS } from "@/model/political/battle/battle-scale";
-import type { Battlefield } from "@/model/political/battle/battlefield";
+import { type Battlefield, distanceToLine, nodeAt } from "@/model/political/battle/battlefield";
 import { getHeightUnitRatio } from "@/model/units";
 import { getContourLabels } from "@/renderers/heightmap/heightmap-contours";
 import type { Point } from "@/types/global";
@@ -24,6 +24,7 @@ const SHADED_SLOPE = 0.3; // the field's steep slope is shaded as if it were thi
 const PROMINENCE = [0.1, 0.3]; // a top rises this share of the field's rise above the pass to higher ground, so many metres at least; a hollow as deep
 const MOST_TOPS = 5;
 const MOST_HOLLOWS = 3;
+const CLIFF_BAND = 0.8; // of a node either side of a cliff, the relief is left out: the cliff's own mark shows the drop
 
 interface Surface {
   step: number; // metres between samples
@@ -33,6 +34,7 @@ interface Surface {
   gx: Float32Array; // rise over run, east
   gy: Float32Array; // rise over run, south
   steep: number; // the slope only a twentieth of the field is steeper than
+  band: Uint8Array; // samples by a cliff, left undrawn; empty without cliffs
 }
 
 interface Level {
@@ -63,6 +65,7 @@ export function getReliefMarkup(field: Battlefield, halo: string): string {
 function getHachures(field: Battlefield, surface: Surface, levels: Level[], ratio: number, strength: number): string {
   if (!levels.length) return "";
   const { step, z, gx, gy, cols, rows, steep } = surface;
+  const band = surface.band.length ? surface.band : new Uint8Array(cols * rows);
   const pt = field.width / 1000;
   const drop = levels[0].interval / ratio;
   const least = Math.min(Math.max(steep * 0.5, HACHURE_SLOPE[0]), HACHURE_SLOPE[1]);
@@ -78,14 +81,14 @@ function getHachures(field: Battlefield, surface: Surface, levels: Level[], rati
       if (!inside(x0, y0)) return;
       const i0 = at(x0, y0);
       const slope = Math.hypot(gx[i0], gy[i0]);
-      if (slope < least) return;
+      if (slope < least || band[i0]) return;
       let [x, y] = [x0, y0];
       for (let k = 0; k < 30; k++) {
         const i = at(x, y);
         const s = Math.hypot(gx[i], gy[i]);
         if (s < least * 0.8 || z[i0] - z[i] > drop * 0.8) break;
         const [nx, ny] = [x - (gx[i] / s) * step, y - (gy[i] / s) * step];
-        if (!inside(nx, ny)) break;
+        if (!inside(nx, ny) || band[at(nx, ny)]) break;
         [x, y] = [nx, ny];
       }
       if (Math.hypot(x - x0, y - y0) < pt) return;
@@ -99,9 +102,11 @@ function getHachures(field: Battlefield, surface: Surface, levels: Level[], rati
 }
 
 /** Hairline contours with a fringe of short ticks on their downhill side */
-function getContours(field: Battlefield, levels: Level[], { step, gx, gy, cols, rows }: Surface, pt: number): string {
+function getContours(field: Battlefield, levels: Level[], surface: Surface, pt: number): string {
+  const { step, gx, gy, cols, rows, band } = surface;
   const lines = levels.map(
-    ({ rings, index }) => `<path d="${toPath(rings)}" stroke-width="${(index ? 0.66 : 0.33) * pt}"/>`
+    ({ rings, index }) =>
+      `<path d="${toPath(cutAtCliffs(surface, rings))}" stroke-width="${(index ? 0.66 : 0.33) * pt}"/>`
   );
   const length = 3.3 * pt;
   const ticks: string[] = [];
@@ -109,6 +114,7 @@ function getContours(field: Battlefield, levels: Level[], { step, gx, gy, cols, 
     walk(rings, 9 * pt, (x, y) => {
       if (x < 0 || y < 0 || x > field.width || y > field.height) return;
       const i = Math.min(Math.floor(y / step), rows - 1) * cols + Math.min(Math.floor(x / step), cols - 1);
+      if (band[i]) return;
       const slope = Math.hypot(gx[i], gy[i]);
       if (slope < 0.002) return;
       ticks.push(`M${rn(x, 1)} ${rn(y, 1)}l${rn((-gx[i] / slope) * length, 1)} ${rn((-gy[i] / slope) * length, 1)}`);
@@ -125,7 +131,8 @@ function getLevelLabels(field: Battlefield, levels: Level[], surface: Surface, p
 
   // the stretches within the field, away from its edge
   const margin = 20 * pt;
-  const inside = ([x, y]: Point) => x > margin && y > margin && x < field.width - margin && y < field.height - margin;
+  const inside = ([x, y]: Point) =>
+    x > margin && y > margin && x < field.width - margin && y < field.height - margin && !isByCliff(surface, x, y);
   const chains = levels.flatMap(({ value, rings }) =>
     rings.flatMap(ring => {
       const runs: Point[][] = [[]];
@@ -322,38 +329,96 @@ function getLevels(field: Battlefield, surface: Surface, ratio: number, most: nu
 
 /** The ground at so many samples across the field: a cubic B-spline over the nodes, water filled from the shore */
 function getSurface(field: Battlefield): Surface {
-  const ground = getGround(field);
   const step = field.width / SAMPLES;
   const cols = SAMPLES;
   const rows = Math.ceil(field.height / step);
+  // high ground stands on the ground under it by its step, sharp at its edge as the troops have it
+  const { top, scarp } = field;
+  const under = getGround(field, true);
+  const side = new Uint8Array(cols * rows);
   const z = new Float32Array(cols * rows);
   for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++)
-      z[row * cols + col] = sampleGround(field, ground, (col + 0.5) * step, (row + 0.5) * step);
-  }
-  const gx = new Float32Array(cols * rows);
-  const gy = new Float32Array(cols * rows);
-  for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
-      const [c0, c1] = [Math.max(col - 1, 0), Math.min(col + 1, cols - 1)];
-      const [r0, r1] = [Math.max(row - 1, 0), Math.min(row + 1, rows - 1)];
-      gx[row * cols + col] = (z[row * cols + c1] - z[row * cols + c0]) / ((c1 - c0) * step);
-      gy[row * cols + col] = (z[r1 * cols + col] - z[r0 * cols + col]) / ((r1 - r0) * step);
+      const [x, y] = [(col + 0.5) * step, (row + 0.5) * step];
+      const i = row * cols + col;
+      side[i] = top.length ? top[nodeAt(field, x, y)] : 0;
+      z[i] = sampleGround(field, under, x, y) + (side[i] ? sampleGround(field, scarp, x, y) : 0);
     }
   }
-  const slopes = Array.from(gx, (x, i) => Math.hypot(x, gy[i])).sort((a, b) => a - b);
+  // slopes read on the sample's own side of a step: a cliff is no slope
+  const gx = new Float32Array(cols * rows);
+  const gy = new Float32Array(cols * rows);
+  const rise = (i: number, a: number, b: number, run: number): number => {
+    const [p, q] = [side[a] === side[i] ? a : i, side[b] === side[i] ? b : i];
+    return p === q ? 0 : (z[q] - z[p]) / (((q - p) / run) * step);
+  };
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const i = row * cols + col;
+      gx[i] = rise(i, row * cols + Math.max(col - 1, 0), row * cols + Math.min(col + 1, cols - 1), 1);
+      gy[i] = rise(i, Math.max(row - 1, 0) * cols + col, Math.min(row + 1, rows - 1) * cols + col, cols);
+    }
+  }
+  const band = getCliffBand(field, step, cols, rows);
+  const slopes = Array.from(gx, (x, i) => (band[i] ? 0 : Math.hypot(x, gy[i]))).sort((a, b) => a - b);
   const steep = Math.max(slopes[Math.floor(slopes.length * 0.95)], 0.001);
-  return { step, cols, rows, z, gx, gy, steep };
+  return { step, cols, rows, z, gx, gy, steep, band };
 }
+
+/** The samples within a band either side of a cliff; empty on a field without */
+function getCliffBand({ cliffs, cell }: Battlefield, step: number, cols: number, rows: number): Uint8Array {
+  if (!cliffs.length) return new Uint8Array(0);
+  const band = new Uint8Array(cols * rows);
+  const reach = cell * CLIFF_BAND;
+  const span = Math.ceil(reach / step);
+  for (const { a, b } of cliffs) {
+    const count = Math.max(Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step), 1);
+    for (let k = 0; k <= count; k++) {
+      const [px, py] = [a[0] + ((b[0] - a[0]) * k) / count, a[1] + ((b[1] - a[1]) * k) / count];
+      const [col, row] = [Math.floor(px / step), Math.floor(py / step)];
+      for (let r = Math.max(row - span, 0); r <= Math.min(row + span, rows - 1); r++) {
+        for (let c = Math.max(col - span, 0); c <= Math.min(col + span, cols - 1); c++) {
+          const [x, y] = [(c + 0.5) * step, (r + 0.5) * step];
+          if (!band[r * cols + c] && distanceToLine([x, y], [a, b]) <= reach) band[r * cols + c] = 1;
+        }
+      }
+    }
+  }
+  return band;
+}
+
+const isByCliff = ({ band, step, cols, rows }: Surface, x: number, y: number): boolean =>
+  band.length > 0 &&
+  band[
+    Math.min(Math.max(Math.floor(y / step), 0), rows - 1) * cols + Math.min(Math.max(Math.floor(x / step), 0), cols - 1)
+  ] === 1;
+
+/** Rings as lines, broken off by the cliffs: a contour runs into a cliff, not along it */
+function cutAtCliffs(surface: Surface, rings: Point[][]): Point[][] {
+  if (!surface.band.length) return rings;
+  return rings.flatMap(ring => {
+    const runs: Point[][] = [[]];
+    for (const point of ring) {
+      if (!isByCliff(surface, ...point)) runs.at(-1)!.push(point);
+      else if (runs.at(-1)!.length) runs.push([]);
+    }
+    if (runs.length > 1 && isClosed(ring) && runs[0].length && runs.at(-1)!.length)
+      runs[0] = [...runs.pop()!, ...runs[0].slice(1)]; // the run over the ring's seam is one
+    return runs.filter(run => run.length > 1);
+  });
+}
+
+const isClosed = (ring: Point[]): boolean =>
+  ring.length > 2 && ring[0][0] === ring.at(-1)![0] && ring[0][1] === ring.at(-1)![1];
 
 const heightAt = ({ step, cols, rows, z }: Surface, x: number, y: number): number =>
   z[
     Math.min(Math.max(Math.floor(y / step), 0), rows - 1) * cols + Math.min(Math.max(Math.floor(x / step), 0), cols - 1)
   ];
 
-/** Node heights in metres above the lowest node; sea and lake nodes take the height of the nearest shore */
-function getGround({ elevation, water, relief }: Battlefield): number[] {
-  const ground = elevation.map(e => e * relief);
+/** Node heights in metres above the lowest node, or of the ground under the high ground; sea and lake nodes take the height of the nearest shore */
+function getGround({ elevation, water, relief, top, scarp }: Battlefield, under = false): number[] {
+  const ground = elevation.map((e, i) => e * relief - (under && top.length ? top[i] * scarp[i] : 0));
   let known = water.map(w => w !== 1);
   if (!known.some(Boolean)) return ground;
   while (known.some(k => !k)) {
@@ -406,4 +471,6 @@ function walk(rings: Point[][], spacing: number, visit: (x: number, y: number) =
 }
 
 const toPath = (rings: Point[][]): string =>
-  rings.map(ring => `M${ring.map(([x, y]) => `${rn(x, 1)} ${rn(y, 1)}`).join("L")}Z`).join("");
+  rings
+    .map(ring => `M${ring.map(([x, y]) => `${rn(x, 1)} ${rn(y, 1)}`).join("L")}${isClosed(ring) ? "Z" : ""}`)
+    .join("");

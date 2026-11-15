@@ -44,6 +44,7 @@ import {
   hasWalls,
   isMoored,
   isStorming,
+  isWet,
   PACE,
   type Point,
   ROUND_TICKS,
@@ -102,6 +103,8 @@ const BEND = 1.5; // how far a line bent to the ground goes ahead of its frame o
 const KINK = 0.35; // and how much further than its neighbour, a front along a front across
 const CLIMB = 1.5; // the slope below a line the foe charges up
 const FILE = 0.6; // between the battalions of a column, besides their depth
+const WAVERING = 70; // morale of an ambushed column at which ambushers who shoot first fall on it
+const ROAD_REACH = 0.25; // a road so near the middle of the field, in its heights, is the one an ambushed column is on
 const COVER = [-3.4, -1.7, 0, 1.7, 3.4]; // where along their line ambushers look for cover
 const ROUND_END = 2; // riders going round the foe's line pass its end by so much
 const FOES_NEAR = 3.6; // a gap in the line with foes so near is filled
@@ -190,16 +193,19 @@ const KEEN = 1.25; // and at which defenders come out to meet them
 
 /** Who comes to whom in the open: attackers unless much the weaker, defenders when much the stronger and behind no river */
 function isAttacking(battle: Battle, side: Side, crossing: boolean): boolean {
-  if (!isOpenFight(battle)) return side === "attackers" || battle.type === "ambush"; // ambushers fall on the column
+  if (!isOpenFight(battle)) return side === "attackers" || (battle.type === "ambush" && !battle[side].waits); // ambushers fall on the column
   if (battle[side].waits) return false; // its general thought it through and saw nothing to gain by it
   return side === "attackers" ? getOdds(battle, side) >= BOLD : getOdds(battle, side) >= KEEN && !crossing;
 }
 
 const isOpenFight = (battle: Battle): boolean => isOpen(battle.type);
 
-/** Told by hand to hold or to skirmish where no phase says so */
+/** Told by hand to hold or to skirmish where no phase says so; ambushers who shoot from cover first */
 const keepsOff = (battle: Battle, side: Side): boolean =>
-  ["hold", "fortify", "skirmish"].includes(getBearing(battle, side) ?? "");
+  ["hold", "fortify", "skirmish"].includes(getBearing(battle, side) ?? "") || isShootingFirst(battle, side);
+
+const isShootingFirst = (battle: Battle, side: Side): boolean =>
+  battle.type === "ambush" && side === "defenders" && battle[side].waits;
 
 const getOdds = (battle: Battle, side: Side): number =>
   survey(battle, side).power / (survey(battle, enemyOf(side)).power || 1e-9);
@@ -470,7 +476,12 @@ const option = (tactic: TacticName | null, waits = false, storms = false): Optio
 export function getOptions(battle: Battle, side: Side): Option[] {
   const { type, field } = battle;
   const byHand = getHandTactic(battle, side) !== null; // the general has nothing to settle
-  if (type === "ambush") return side === "defenders" && !byHand ? [option("ambuscade"), option("waylay")] : [];
+  if (type === "ambush") {
+    if (side === "attackers" || byHand) return [];
+    const shooters = battle.blocks.some(block => block.side === side && block.kind === "shooter");
+    const tactics: TacticName[] = ["ambuscade", "waylay"];
+    return [...tactics.map(tactic => option(tactic)), ...(shooters ? tactics.map(tactic => option(tactic, true)) : [])];
+  }
   if (isFromSea(battle.type))
     return side === "defenders" && findShore(battle) ? [option(null), option(null, true)] : [];
   if (type === "siege") {
@@ -536,9 +547,28 @@ function findGround(battle: Battle, side: Side, places: Place[], forward: number
     }
     return ends;
   };
+  // nobody stands in the water or beyond it, as seen from the middle of the formation
+  const line = places.filter(place => place.role !== "wedge");
+  const isAcross = (frame: Frame, [x, y]: Point): boolean => {
+    const steps = Math.ceil(Math.hypot(x - frame.x, y - frame.y) / (field.cell / 2));
+    for (let i = 1; i <= steps; i++) {
+      const share = i / steps;
+      if (terrainAt(field, frame.x + (x - frame.x) * share, frame.y + (y - frame.y) * share).water) return true;
+    }
+    return false;
+  };
+  const afloat = field.open || (isFromSea(battle.type) && !defending); // who comes from the sea starts on it
+  const wetPlaces = (frame: Frame): number => {
+    if (afloat) return 0;
+    const stood = { ...frame };
+    keepOnField(field, stood, line); // as it will stand
+    return line.filter(place => isAcross(stood, toField(stood, place.across, place.along))).length;
+  };
+  const home = defending ? 0.35 : -0.8;
+
   // a line is worth the ground under it, what covers its ends and what the foe has to cross to come at it
   const score = (frame: Frame, deep: number, shift: number): number => {
-    let value = -Math.abs(shift) / 4 - Math.abs(deep - 0.35) / 2;
+    let value = -Math.abs(shift) / 4 - Math.abs(deep - home) / 2 - wetPlaces(frame);
     // no line across a cliff, half of it above and half below
     for (const share of [-1, -0.5, 0, 0.5])
       if (getCliffsBetween(field, toField(frame, share * half, 0), toField(frame, (share + 0.5) * half, 0)).length)
@@ -561,11 +591,14 @@ function findGround(battle: Battle, side: Side, places: Place[], forward: number
 
   let best: Frame | null = null;
   let most = -Infinity;
-  for (const deep of defending ? [0.35, 0.2, 0.5] : [-0.8]) {
+  let dry = false;
+  // attackers come nearer only when water cuts the ground they came to; from the sea they start where they lie
+  for (const deep of defending ? [0.35, 0.2, 0.5] : afloat ? [-0.8] : [-0.8, -0.65, -0.5]) {
+    if (!defending && deep !== -0.8 && dry) break;
     for (const shift of [0, -0.2, 0.2, -0.4, 0.4]) {
       const frame = at(deep, shift);
       const value = score(frame, deep, shift);
-      if (value > most) [best, most] = [frame, value];
+      if (value > most) [best, most, dry] = [frame, value, !wetPlaces(frame)];
     }
   }
   // the last line stands on the field too
@@ -711,38 +744,131 @@ function getBrowOffset(battle: Battle, side: Side, frame: Frame, place: Place): 
   return best;
 }
 
-/** An ambush: the attackers are caught on the march, in a column along the road */
-function marchColumn(battle: Battle, blocks: Block[]): void {
+/** The way an ambushed column marches: the road through the middle of the field, else straight on along the attack */
+interface Route {
+  at: (s: number) => Frame; // the point that far along the way, heading on along it
+  middle: number; // how far along it the middle of the field lies
+  room: [number, number]; // and where it is on the field
+}
+
+function getRoute(battle: Battle): Route {
+  const { field, axis } = battle;
+  const middle: Point = [field.width / 2, field.height / 2];
+  const road = least(field.roads, road => distanceToLine(middle, road));
+  const onRoad = road && road.length > 1 && distanceToLine(middle, road) < field.height * ROAD_REACH;
+  const ahead = (line: Point[]): boolean =>
+    (line.at(-1)![0] - line[0][0]) * Math.cos(axis) + (line.at(-1)![1] - line[0][1]) * Math.sin(axis) >= 0;
+  const out = reach(field, axis);
+  const straight: Point[] = [-1, 1].map(sign => [
+    middle[0] + Math.cos(axis) * out * sign,
+    middle[1] + Math.sin(axis) * out * sign
+  ]);
+  const points = densify(onRoad ? (ahead(road) ? road : [...road].reverse()) : straight, field.cell / 2);
+
+  const lengths = [0];
+  for (let i = 1; i < points.length; i++)
+    lengths.push(lengths[i - 1] + Math.hypot(points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]));
+  const at = (s: number): Frame => {
+    let i = 1;
+    while (i < points.length - 1 && lengths[i] < s) i++;
+    const [a, b] = [points[i - 1], points[i]];
+    const share = clamp((s - lengths[i - 1]) / (lengths[i] - lengths[i - 1] || 1), 0, 1);
+    return {
+      x: a[0] + (b[0] - a[0]) * share,
+      y: a[1] + (b[1] - a[1]) * share,
+      heading: Math.atan2(b[1] - a[1], b[0] - a[0])
+    };
+  };
+  // the stretch on the field about the middle
+  const margin = getMargin(field);
+  const inside = ([x, y]: Point): boolean =>
+    x >= margin && y >= margin && x <= field.width - margin && y <= field.height - margin;
+  const nearest = points.reduce(
+    (best, point, i) =>
+      Math.hypot(point[0] - middle[0], point[1] - middle[1]) <
+      Math.hypot(points[best][0] - middle[0], points[best][1] - middle[1])
+        ? i
+        : best,
+    0
+  );
+  let [first, last] = [nearest, nearest];
+  while (first > 0 && inside(points[first - 1])) first--;
+  while (last < points.length - 1 && inside(points[last + 1])) last++;
+  return { at, middle: lengths[nearest], room: [lengths[first], lengths[last]] };
+}
+
+/** The line with a point every `step` or so along it */
+function densify(line: Point[], step: number): Point[] {
+  const points: Point[] = [line[0]];
+  for (let i = 1; i < line.length; i++) {
+    const [[ax, ay], [bx, by]] = [line[i - 1], line[i]];
+    const parts = Math.max(Math.ceil(Math.hypot(bx - ax, by - ay) / step), 1);
+    for (let k = 1; k <= parts; k++) points.push([ax + ((bx - ax) * k) / parts, ay + ((by - ay) * k) / parts]);
+  }
+  return points;
+}
+
+/** The column on the march: riders ahead, engines last, in as many files as it takes to fit the road on the field */
+function getColumn(battle: Battle, blocks: Block[]) {
   const order = ["rider", "line", "shooter", "engine"];
   const { field } = battle;
+  const route = getRoute(battle);
   const column = [...blocks].sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind) || a.id - b.id);
-  const pitch = blocks[0]?.depth + field.front * FILE;
-  const files = Math.max(Math.ceil((column.length * pitch) / (reach(field, battle.axis) * 1.8)), 1);
-  const frame = { x: field.width / 2, y: field.height / 2, heading: battle.axis };
-  const places = column.map((block, i): Place => {
-    const role = ROLES[block.kind];
+  const pitch = (blocks[0]?.depth ?? 0) + field.front * FILE;
+  const room = Math.max(route.room[1] - route.room[0], pitch);
+  const files = Math.max(Math.ceil((column.length * pitch) / room), 1);
+  const rows = Math.ceil(column.length / files);
+  const spacing = Math.max(...blocks.map(block => block.width), 0) + GAP * field.front;
+  // the middle of the column at the middle of the field, as far as the road there lets it
+  const length = (rows - 1) * pitch;
+  const middle = clamp(
+    route.middle,
+    route.room[0] + length / 2,
+    Math.max(route.room[1] - length / 2, route.room[0] + length / 2)
+  );
+  return { route, column, pitch, files, rows, middle, half: (files * spacing) / 2, spacing };
+}
+
+/** An ambush: the attackers are caught on the march, in a column along the road */
+function marchColumn(battle: Battle, blocks: Block[]): void {
+  const { field } = battle;
+  const { route, column, pitch, files, rows, middle, spacing } = getColumn(battle, blocks);
+  const frame = route.at(middle);
+  const spots = column.map((block, i) => {
     const row = Math.floor(i / files);
-    const across = ((i % files) - (files - 1) / 2) * (block.width + GAP * field.front);
-    const along = ((Math.ceil(column.length / files) - 1) / 2 - row) * pitch;
-    return { block, role, mission: role === "wing" ? "guard" : role, rank: 0, across, along };
+    const across = ((i % files) - (files - 1) / 2) * spacing;
+    return { block, across, along: middle + ((rows - 1) / 2 - row) * pitch };
+  });
+  const places = spots.map(({ block, across, along }): Place => {
+    const role = ROLES[block.kind];
+    return { block, role, mission: role === "wing" ? "guard" : role, rank: 0, across, along: along - middle };
   });
   seat(battle, "attackers", createPlan("column", frame, true), places);
+  // each battalion on the road where it is, heading on along it
+  for (const { block, across, along } of spots) {
+    const there = route.at(along);
+    [block.x, block.y] = onField(field, toField(there, across, 0));
+    block.facing = block.order.facing = there.heading;
+    takePlace(battle, block);
+  }
 }
 
 /**
- * The ambushers lie by the road and fall on the column at once: on both sides of it, or all on one side,
- * the better covered, when their general thinks that ends better
+ * The ambushers lie by the road and fall on the column: on both sides of it, or all on one side, the better covered,
+ * when their general thinks that ends better. One with shooters may have them shoot from cover first (`waits`)
  */
 function layAmbush(battle: Battle, blocks: Block[]): void {
   const { field } = battle;
   const sorted = [...blocks].sort((a, b) => a.kind.localeCompare(b.kind) || a.id - b.id);
+  const { route, middle, half } = getColumn(
+    battle,
+    battle.blocks.filter(block => block.side === "attackers")
+  );
+  const road = route.at(middle);
   const lie = (side: number, distance: number): Frame => {
-    const out = battle.axis + (side ? Math.PI / 2 : -Math.PI / 2);
-    return {
-      x: field.width / 2 + Math.cos(out) * distance,
-      y: field.height / 2 + Math.sin(out) * distance,
-      heading: out + Math.PI
-    };
+    const out = road.heading + (side ? Math.PI / 2 : -Math.PI / 2);
+    const away = half + distance; // from the flank of the column
+    return { x: road.x + Math.cos(out) * away, y: road.y + Math.sin(out) * away, heading: out + Math.PI };
   };
   // trees and high ground hide those who lie in wait, along the stretch of road their line looks over
   const along = COVER.map(share => share * field.front);
@@ -755,10 +881,10 @@ function layAmbush(battle: Battle, blocks: Block[]): void {
     sum(along, across => +terrainAt(field, ...toField(frame, across, 0)).wood) >= 3;
   /** Where they lie on a side: at the edge of the trees nearest the road, a short dash from it; a bowshot off in the open */
   const at = (side: number): Frame => {
-    const far = Math.min(reach(field, battle.axis + Math.PI / 2) * 0.75, AMBUSH[1]);
+    const far = Math.min(reach(field, road.heading + Math.PI / 2) * 0.75 - half, AMBUSH[1]);
     for (let distance = AMBUSH[0]; distance < far; distance += field.cell)
       if (hidden(lie(side, distance))) return lie(side, distance);
-    return lie(side, far);
+    return lie(side, Math.max(far, AMBUSH[0]));
   };
   const chosen = getHandTactic(battle, "defenders") ?? battle.defenders.tactic;
   const tactic: TacticName = chosen === "waylay" ? "waylay" : "ambuscade";
@@ -766,9 +892,11 @@ function layAmbush(battle: Battle, blocks: Block[]): void {
     tactic === "waylay"
       ? [{ troops: sorted, frame: cover(at(1)) > cover(at(0)) ? at(1) : at(0) }]
       : [0, 1].map(side => ({ troops: sorted.filter((_, i) => i % 2 === side), frame: at(side) }));
+  const hunting = !battle.defenders.waits; // who shoot first keep where they lie till the column wavers
   for (const { troops, frame } of wings) {
-    const places = form(troops, TACTICS[tactic], 1, reach(field, battle.axis) * 1.7, field.front);
-    for (const place of places) if (place.role !== "support" && place.role !== "battery") place.mission = "hunt";
+    const places = form(troops, TACTICS[tactic], 1, reach(field, road.heading) * 1.7, field.front);
+    for (const place of places)
+      if (hunting && place.role !== "support" && place.role !== "battery") place.mission = "hunt";
     seat(battle, "defenders", createPlan(tactic, frame, true), places);
   }
   battle.defenders.plan.half = 0;
@@ -989,13 +1117,15 @@ const ROLES: Record<Block["kind"], Exclude<Order["role"], "wedge">> = {
 };
 
 /**
- * Nobody is drawn up in water it keeps out of: such a block steps to the nearest ground, rather back than forward.
- * Ships put out to the nearest water, however far
+ * Nobody is drawn up in the water, a ford neither: such a block steps to the nearest ground, rather back than forward.
+ * Ships put out to the nearest water they sail, however far
  */
 export function settle(battle: Battle): void {
   const { field } = battle;
+  const shunned = (block: Block, x: number, y: number): boolean =>
+    shuns(battle, block, x, y) || isWet(battle, block, x, y);
   for (const block of battle.blocks) {
-    if (!shuns(battle, block, block.x, block.y)) continue;
+    if (!shunned(block, block.x, block.y)) continue;
     const forward = block.side === "attackers" ? battle.axis : battle.axis + Math.PI;
     const node = nodeAt(field, block.x, block.y);
     const col = node % COLS;
@@ -1006,7 +1136,7 @@ export function settle(battle: Battle): void {
     for (let y = Math.max(row - span, 0); y <= Math.min(row + span, ROWS - 1); y++) {
       for (let x = Math.max(col - span, 0); x <= Math.min(col + span, COLS - 1); x++) {
         const [nx, ny] = nodeCentre(field, y * COLS + x);
-        if (shuns(battle, block, nx, ny)) continue;
+        if (shunned(block, nx, ny)) continue;
         const ahead = (nx - block.x) * Math.cos(forward) + (ny - block.y) * Math.sin(forward) > 0;
         const score = Math.hypot(nx - block.x, ny - block.y) + (ahead ? field.front * AHEAD : 0);
         if (score < least) [best, least] = [[nx, ny], score];
@@ -1060,6 +1190,7 @@ export function command(battle: Battle): void {
   const before = getCommands(battle);
   for (const side of SIDES) battle[side].plan.arrival = getArrival(battle, side, views[enemyOf(side)], gap);
   for (const side of SIDES) release(battle, side);
+  spring(battle, views.defenders, views.attackers, gap);
   const phases = SIDES.map(side => choosePhase(battle, side, views[side], views[enemyOf(side)], gap));
   SIDES.forEach((side, i) => {
     if (phases[i] !== battle[side].phase) battle[side].plan.since = battle.round;
@@ -1075,6 +1206,7 @@ export function command(battle: Battle): void {
 /** The order a side is under: the one given by hand while it stands, else what its phase comes to */
 export function getOrder(battle: Battle, side: Side): Command {
   const { phase, advancing, plan } = battle[side];
+  if (!plan.order && isShootingFirst(battle, side)) return "skirmish";
   return plan.order ?? (plan.fortify ? "fortify" : getCommand(battle.type, phase, advancing));
 }
 
@@ -1111,6 +1243,16 @@ export function obey(battle: Battle, side: Side, command: Command): void {
   }
   data.plan.fortify = command === "fortify";
   if (battle.tick) direct(battle, side, survey(battle, side), survey(battle, enemyOf(side)), battle[side].plan.gap);
+}
+
+/** Ambushers who shoot from cover fall on the column once it wavers, comes at them, or the surprise is spent */
+function spring(battle: Battle, own: View, foe: View, gap: number): void {
+  const data = battle.defenders;
+  if (!isShootingFirst(battle, "defenders") || data.plan.order) return;
+  const fought = battle.engaged === null ? 0 : battle.round - battle.engaged;
+  const upon = gap <= CHARGE * battle.field.front;
+  if (own.fire && !upon && foe.morale >= WAVERING && fought < data.plan.opening) return;
+  Object.assign(data, { waits: false, advancing: true });
 }
 
 /** An order given by hand has stood its time: the general decides again */
@@ -1259,7 +1401,10 @@ function besiege(battle: Battle, own: View, foe: View): string {
   const odds = own.power / (foe.power || 1e-9);
   if (isLost(own, foe) && !isOnWalls(battle)) return "retreat";
   // a garrison out in force that is half as strong again: the siege is raised
-  if (battle.defenders.phase === "sortie" && isStrongGarrison(foe, own)) return "retreat";
+  if (battle.defenders.phase === "sortie" && isStrongGarrison(foe, own)) {
+    battle.raised = true;
+    return "retreat";
+  }
 
   // a burg is stormed at the odds its walls ask for; a storm that lost them by a third is called off
   const need = getStormOdds(battle);

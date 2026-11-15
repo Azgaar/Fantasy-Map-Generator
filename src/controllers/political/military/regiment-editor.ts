@@ -2,6 +2,7 @@ import { type D3DragEvent, drag, easeSinInOut, select, transition } from "d3";
 import { Controllers } from "@/controllers";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import { getShore } from "@/model/political/battle/battlefield";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
 import { Tags } from "@/model/tags";
@@ -454,6 +455,10 @@ async function attackRegimentOnClick(this: SVGGElement, event: MouseEvent): Prom
   const reachesSea = Military.getUnitTypes(attacker).some(type => type === "naval" || type === "aviation");
   if (openSea && !attacker.n && !reachesSea) {
     tip(t("Land troops cannot reach a fleet on the open sea"), false, "error");
+    return;
+  }
+  if (attacker.n && !defender.n && !getShore([defender.x, defender.y])) {
+    tip(t("A fleet cannot reach troops away from the shore"), false, "error");
     return;
   }
 

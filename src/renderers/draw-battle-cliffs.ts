@@ -1,10 +1,11 @@
 import type { Battlefield, FieldCliff } from "@/model/political/battle/battlefield";
 import type { Point } from "@/types/global";
 
-const INK = "#4a443b";
-const LINE = 1.3; // points
-const TOOTH: [long: number, wide: number, apart: number] = [2.5, 1.8, 2.6]; // points, the longer the higher the cliff
-const TOOTH_PER_METRE = 0.12; // points of a tooth's length for each metre of the cliff, up to twice its own
+const INK = "#6c645a"; // the relief's: a cliff is part of the lie of the land, not drawn over it
+const OPACITY = 0.9;
+const LINE = 1; // points
+const TOOTH: [long: number, wide: number, apart: number] = [2, 1.3, 2.4]; // points, the longer the higher the cliff
+const TOOTH_PER_METRE = 0.07; // points of a tooth's length for each metre of the cliff, up to twice its own
 const ROUNDS = 6; // of averaging the grid's steps out of a line
 
 /** Cliffs as old battle plans draw them: a line along the top, teeth hanging from it down the face */
@@ -15,14 +16,14 @@ export function getCliffMarkup(field: Battlefield, pt: number): string {
   for (const { points, height } of getLines(field.cliffs)) {
     line += `M${points.map(format).join("L")}`;
     const [base, wide, apart] = TOOTH.map(size => size * pt);
-    const long = Math.min(base + height * TOOTH_PER_METRE * pt, base * 3);
+    const long = Math.min(base + height * TOOTH_PER_METRE * pt, base * 2);
     walk(points, apart, (at, [ux, uy]) => {
       const [dx, dy] = [-uy, ux]; // the top is on the left of the way along: the face is on the right
       const [hx, hy] = [(ux * wide) / 2, (uy * wide) / 2];
       teeth += `M${format([at[0] - hx, at[1] - hy])}L${format([at[0] + hx, at[1] + hy])}L${format([at[0] + dx * long, at[1] + dy * long])}Z`;
     });
   }
-  return /* html */ `<g class="battleCliffs" pointer-events="none">
+  return /* html */ `<g class="battleCliffs" pointer-events="none" opacity="${OPACITY}">
     <path d="${teeth}" fill="${INK}"/>
     <path d="${line}" fill="none" stroke="${INK}" stroke-width="${LINE * pt}" stroke-linejoin="round" stroke-linecap="round"/>
   </g>`;

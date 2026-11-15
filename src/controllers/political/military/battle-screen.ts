@@ -58,6 +58,7 @@ import {
 } from "@/model/political/battle/battlefield";
 import type { TacticName } from "@/model/political/battle/formations";
 import { getHandTactic, getOrder, getTactics, isDugIn } from "@/model/political/battle/general";
+import { hasShipWater } from "@/model/political/battle/movement";
 import {
   CONDITIONS,
   type Condition,
@@ -101,7 +102,7 @@ import { Layers } from "@/renderers/layers";
 import { viewport } from "@/renderers/viewport/viewport";
 import { Dialog } from "@/ui/dialog/dialog";
 import { applySorting, applySortingByHeader } from "@/ui/dialog/sorting";
-import { tip } from "@/ui/tooltips";
+import { showElementTip, showMainTip, tip } from "@/ui/tooltips";
 import { last } from "@/utils/array-utils";
 import { getColorDistance } from "@/utils/color-utils";
 import { wiki } from "@/utils/common-utils";
@@ -244,7 +245,6 @@ function setup(
   resetTrails();
   drawField();
   drawScene();
-  ensureEl("battleLogList").innerHTML = "";
   refresh();
 }
 
@@ -419,15 +419,15 @@ const STYLE = /* css */ `
   #battleScene.battleEditable .battleBlock { cursor: grab; }
   #battleScene.battlePlanning .battleBlocks { display: none; }
   #battleScene.battleFocus .battleBlock:not(.battleFocused) { opacity: 0.3; }
-  #battleLog { position: absolute; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; width: 21em; max-width: 100%; border-left: 1px solid #999; background: #fffffff0; }
-  #battleLog > header { display: flex; align-items: center; gap: 0.2em; padding: 0.3em 0.3em 0.3em 0.6em; border-bottom: 1px solid var(--line); }
-  #battleLog > header > b { flex: 1; }
-  #battleLogList { flex: 1; padding: 0.3em 0.6em; overflow-y: auto; line-height: 1.4; user-select: text; }
+  #battleLog { --line: #ccc; --muted: #666; height: 100%; }
+  #battleLog .attackers { --side: var(--attackers); }
+  #battleLog .defenders { --side: var(--defenders); }
+  #battleLogList { box-sizing: border-box; height: 100%; padding: 0.3em 0.6em; overflow-y: auto; line-height: 1.4; user-select: text; }
   #battleLogList > div { display: grid; grid-template-columns: 2.6em 0.6em minmax(0, 1fr); gap: 0.4em; align-items: baseline; }
   #battleLogList > div > i { color: var(--muted); font-style: normal; font-variant-numeric: tabular-nums; text-align: right; }
   #battleLogList > div > u { width: 0.6em; height: 0.6em; background: var(--side, transparent); }
   #battleLogList > div.order { color: var(--muted); }
-  #battleLogList > div.start, #battleLogList > div.end { font-weight: bold; }
+  #battleLogList > div.end { font-weight: bold; }
 
   ${SUMMARY_STYLE}
   #battleFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4em 1em; }
@@ -484,6 +484,7 @@ const STYLE = /* css */ `
 function renderDialog(): void {
   findEl("battleScreen")?.remove();
   findEl("regimentSelectorScreen")?.remove();
+  Dialog.destroy("battleLog");
 
   const banner = (side: Side): string => /* html */ `<div id="battleBanner_${side}" class="battleBanner ${side}">
       <span class="battleEmblems"></span>
@@ -545,15 +546,6 @@ function renderDialog(): void {
           <svg id="battleScene" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet"></svg>
           <canvas id="battleWeatherLayer" hidden></canvas>
           <svg id="battleOverlay" preserveAspectRatio="xMidYMid meet" font-family="Georgia, serif"></svg>
-          <div id="battleLog" hidden>
-            <header>
-              <b>${t("Battle log")}</b>
-              <button id="battleLogDownload" data-tip="${t("Download the battle log: it can be loaded to replay the battle or to repeat its setup in another one")}" class="icon-download"></button>
-              <button id="battleLogUpload" data-tip="${t("Load a battle log")}" class="icon-upload"></button>
-              <button id="battleLogClose" data-tip="${t("Close")}" class="icon-cancel"></button>
-            </header>
-            <div id="battleLogList"></div>
-          </div>
           <div id="battleSummary" hidden></div>
         </div>
         <div id="battleFooter">
@@ -597,6 +589,7 @@ function renderDialog(): void {
         </div>
       </div>
     </div>
+    <div id="battleLog" class="dialog"><div id="battleLogList"></div></div>
     <div id="regimentSelectorScreen" class="dialog">
       <div id="regimentSelectorHeader" class="header">
         <div data-tip="${t("Click to sort")}" class="sortable alphabetically" data-sortby="state">${t("State")}&nbsp;</div>
@@ -626,9 +619,6 @@ function renderDialog(): void {
   ensureEl("battleRoll").addEventListener("click", () => redeploy());
   ensureEl("battleConfigureOpen").addEventListener("click", () => BattleConfigure.open(CONFIGURE));
   ensureEl("battleLogToggle").addEventListener("click", () => toggleLog());
-  ensureEl("battleLogClose").addEventListener("click", () => toggleLog(false));
-  ensureEl("battleLogDownload").addEventListener("click", () => downloadLog());
-  ensureEl("battleLogUpload").addEventListener("click", () => fileInput?.click());
   ensureEl<HTMLInputElement>("battleNameFull").addEventListener("change", event => {
     setName((event.target as HTMLInputElement).value);
   });
@@ -653,6 +643,16 @@ function renderDialog(): void {
   });
   scene().addEventListener("pointerleave", () => focusRegiment(null));
   bindCamera();
+  const screen = ensureEl("battleScreen");
+  screen.addEventListener("pointermove", event => {
+    pointer = { x: event.clientX, y: event.clientY };
+    shownTip = null; // the hover tips of the app may have shown another
+    retip();
+  });
+  screen.addEventListener("pointerleave", () => {
+    pointer = null;
+    showMainTip();
+  });
 
   for (const side of SIDES) {
     const el = ensureEl(`battleSide_${side}`);
@@ -682,11 +682,35 @@ function renderDialog(): void {
   fileInput.onchange = () => uploadFile(fileInput!, loadLog);
 }
 
-function toggleLog(show = ensureEl("battleLog").hidden, keep = true): void {
-  ensureEl("battleLog").hidden = !show;
-  ensureEl("battleLogToggle").classList.toggle("pressed", show);
-  if (show) ensureEl("battleLogList").scrollTop = ensureEl("battleLogList").scrollHeight;
+/** The battle log, a window of its own beside the battle screen */
+function toggleLog(show = !Dialog.isOpen("battleLog"), keep = true): void {
   if (keep) Options.set(o => (o.app.battle.view.log = show));
+  ensureEl("battleLogToggle").classList.toggle("pressed", show);
+  if (!show) Dialog.close("battleLog");
+  if (!show || Dialog.isOpen("battleLog")) return;
+  const download = t(
+    "Download the battle log: it can be loaded to replay the battle or to repeat its setup in another one"
+  );
+  Dialog.open("battleLog", {
+    title: t("Battle log"),
+    width: "22em",
+    height: Math.min(viewport.height * 0.6, 520),
+    minWidth: 200,
+    minHeight: 120,
+    resizable: true,
+    persistent: true, // its markup is the battle screen's
+    position: { my: "left top", at: "right+8 top", of: "#battleScreen" },
+    titlebarButtons: [
+      { label: t("Download"), tip: download, className: "icon-download", onClick: () => downloadLog() },
+      { label: t("Load"), tip: t("Load a battle log"), className: "icon-upload", onClick: () => fileInput?.click() }
+    ],
+    onClose: () => {
+      ensureEl("battleLogToggle").classList.remove("pressed");
+      Options.set(o => (o.app.battle.view.log = false));
+    }
+  });
+  const list = ensureEl("battleLogList");
+  list.scrollTop = list.scrollHeight;
 }
 
 // the camera
@@ -801,8 +825,8 @@ const MIN_CONTRAST = 25; // colours closer than that in Lab do not tell the side
 function applyLook(): void {
   colors = getSideColors(battle!);
   setLook(scene(), battleOptions().rendering, colors);
-  const layout = ensureEl("battleLayout");
-  for (const side of SIDES) layout.style.setProperty(`--${side}`, colors[side]);
+  for (const id of ["battleLayout", "battleLog"])
+    for (const side of SIDES) ensureEl(id).style.setProperty(`--${side}`, colors[side]);
 }
 
 /** Where each battalion went since the last key moment, shown while paused */
@@ -965,7 +989,21 @@ function loop(now: number): void {
     if (player.playing) updateBlocks(scene(), b, player.previous, progress);
   }
   updateCamera(elapsed);
+  retip();
   player.frame = requestAnimationFrame(loop);
+}
+
+let pointer: { x: number; y: number } | null = null; // over the battle screen
+let shownTip: string | null = null;
+
+/** The tip of what is under a pointer that stays still while the troops, the camera and the numbers move under it */
+function retip(): void {
+  if (!pointer) return;
+  const under = document.elementFromPoint(pointer.x, pointer.y);
+  const text = under?.closest<HTMLElement | SVGElement>("[data-tip]")?.dataset.tip ?? "";
+  if (text === shownTip) return;
+  shownTip = text;
+  showElementTip(under);
 }
 
 /** A tick on; true when it brought an event the battle pauses at */
@@ -983,7 +1021,8 @@ function advance(): boolean {
   refresh();
   if (b.result) showSummary();
   const stops = getPauseEvents();
-  return b.log.slice(logged).some(entry => stops.includes(entry.event as PauseEvent));
+  const kind = (event: LogEntry["event"]): string => (event === "raised" ? "broken" : event); // the besiegers give up
+  return b.log.slice(logged).some(entry => stops.includes(kind(entry.event) as PauseEvent));
 }
 
 const getPauseEvents = (): PauseEvent[] => PAUSE_EVENTS.filter(event => battleOptions().playback.pause[event]);
@@ -1090,15 +1129,23 @@ function refresh(): void {
   ensureEl("battleResultRestart").hidden = !over;
   setEditable();
 
+  renderLog(b.log);
+  retip(); // a number under the pointer changed
+}
+
+let shownLog: LogEntry[] = []; // the entries the log window shows, to redraw from the first that changed
+
+function renderLog(log: LogEntry[]): void {
+  let same = 0;
+  while (same < shownLog.length && shownLog[same] === log[same]) same++;
+  if (same === shownLog.length && same === log.length) return;
   const list = ensureEl("battleLogList");
-  if (list.childElementCount > b.log.length) list.innerHTML = "";
-  for (const entry of b.log.slice(list.childElementCount)) {
-    list.insertAdjacentHTML(
-      "beforeend",
-      `<div class="${entry.event} ${entry.side ?? ""}"><i>${formatClock(entry.tick)}</i><u></u><span>${escapeHtml(logText(entry))}</span></div>`
-    );
-    list.scrollTop = list.scrollHeight;
-  }
+  while (list.childElementCount > same) list.lastElementChild!.remove();
+  const line = (entry: LogEntry): string =>
+    `<div class="${entry.event} ${entry.side ?? ""}"><i>${formatClock(entry.tick)}</i><u></u><span>${escapeHtml(logText(entry))}</span></div>`;
+  list.insertAdjacentHTML("beforeend", log.slice(same).map(line).join(""));
+  list.scrollTop = list.scrollHeight;
+  shownLog = [...log];
 }
 
 function refreshSide(side: Side): void {
@@ -1302,7 +1349,7 @@ function summarySide(b: Battle, side: Side, status: string): string {
       <div class="battleSummaryStats">
         <span>${t("Troops left")}</span><b>${left} <small>/ ${initial}</small></b>
         <span>${t("Casualties")}</span><b class="battleLost">${share}%</b>
-        ${captured ? `<span>${t("Captured")}</span><b class="battleCaptured">${captured}</b>` : ""}
+        ${captured ? `<span>${t("Captured")}</span><b class="battleCaptured">${rn(b[side].captured * 100)}%</b>` : ""}
         <span>${t("Morale")}</span><b>${b[side].morale | 0}</b>
       </div>
       <div class="battleSummaryUnits ${captured ? "withCaptured" : ""}">
@@ -1322,7 +1369,6 @@ function turnDie(side: Side): void {
   if (previous?.kind === "die" && previous.side === side && previous.tick === b.tick) {
     b.interventions.pop(); // clicks through the faces leave one line in the log
     b.log.pop();
-    ensureEl("battleLogList").lastElementChild?.remove();
   }
   intervene(b, { tick: b.tick, kind: "die", side, die });
   refresh();
@@ -1387,8 +1433,10 @@ function changeMorale(side: Side, value: number): void {
     b.interventions.pop();
     b.log.pop();
     previous.value += value;
-    ensureEl("battleLogList").lastElementChild?.remove();
-    if (previous.value) b.log.at(-1)!.params!.value = previous.value > 0 ? `+${previous.value}` : `−${-previous.value}`;
+    const entry = b.log.at(-1)!;
+    const shown = previous.value > 0 ? `+${previous.value}` : `−${-previous.value}`;
+    if (previous.value)
+      b.log[b.log.length - 1] = { ...entry, params: { ...entry.params, value: shown } }; // a new line
     else {
       b.interventions.pop();
       b.log.pop();
@@ -1439,7 +1487,6 @@ function changeWeather(event: Event): void {
   if (repeated) {
     b.interventions.pop();
     b.log.pop();
-    ensureEl("battleLogList").lastElementChild?.remove();
   }
   intervene(b, change);
   if (repeated && change.kind === "condition") {
@@ -1505,13 +1552,19 @@ function addSide(side: Side): void {
   const distance = (reg: Regiment): number =>
     rn(Math.hypot(b.y - reg.y, b.x - reg.x) * options.map.units.distance.scale);
 
+  const shipless = !hasShipWater(b.field);
   body.innerHTML = all
     .map(r => {
       const s = pack.states[r.state];
       const added = regiments.has(regimentKey(r));
       const dist = added ? 0 : distance(r);
-      return /* html */ `<div ${added ? "class='inactive'" : ""} data-s=${s.i} data-i=${r.i} data-state="${escapeHtml(s.name)}"
-        data-regiment="${escapeHtml(r.name)}" data-total=${Military.getTroops(r.a)} data-distance="${dist}" data-tip="${t("Click to select regiment")}">
+      const why = added
+        ? t("Regiment is already in the battle")
+        : r.n && shipless
+          ? t("Ships have no water to keep to on this field")
+          : "";
+      return /* html */ `<div ${why ? `class="inactive" data-why="${escapeHtml(why)}"` : ""} data-s=${s.i} data-i=${r.i} data-state="${escapeHtml(s.name)}"
+        data-regiment="${escapeHtml(r.name)}" data-total=${Military.getTroops(r.a)} data-distance="${dist}" data-tip="${why || t("Click to select regiment")}">
         <span><svg viewBox="0 0 10 10"><rect width="10" height="10" fill="${s.color}" stroke="#333"/></svg>${escapeHtml(s.name)}</span>
         <span>${Icons.html(r.icon ?? "")} ${escapeHtml(r.name)}</span>
         <span>${Military.getTroops(r.a)}</span>
@@ -1542,8 +1595,8 @@ function addSide(side: Side): void {
   function selectLine(event: Event): void {
     const row = (event.target as HTMLElement).closest<HTMLElement>("#regimentSelectorBody > div");
     if (!row) return;
-    if (row.classList.contains("inactive")) {
-      tip(t("Regiment is already in the battle"), false, "error");
+    if (row.dataset.why) {
+      tip(row.dataset.why, false, "error");
       return;
     }
     row.classList.toggle("selected");
@@ -1605,7 +1658,6 @@ function joinBattle(regiment: Regiment, side: Side): void {
 
 /** A line of the log; whose it is the mark beside it shows */
 function logText({ event, side, params }: LogEntry): string {
-  if (event === "start") return t("The battle begins");
   if (event === "order") return `${t("Orders")}: ${BATTLE_ORDER_LABELS[params!.order as Command]}`;
   if (event === "ordered")
     return t("Ordered to {{order}}", { order: BATTLE_ORDER_LABELS[params!.order as Command].toLowerCase() });
@@ -1625,6 +1677,7 @@ function logText({ event, side, params }: LogEntry): string {
   if (event === "gap") return t("The wagons are broken through");
   if (event === "clash") return t("The armies clash");
   if (event === "broken") return t("The army breaks");
+  if (event === "raised") return t("The siege is raised");
   if (event === "end") return side ? t("Hold the field") : t("The battle dies down");
 
   const block = { block: capitalize(params!.block) };
@@ -1842,12 +1895,13 @@ function applyResults(): void {
         regiment.note += `<br><br>${b.name} (${year} ${eraShort}): ${battleStatus[sideIndex]}. The regiment ${getRegimentStatus(share)}.${initialText}${casualtiesText}${capturedText}`;
       }
 
+      // counted in whole troops and turned back into points once, so no fraction of a man is left over
       const { scale } = options.map.units.population;
       for (const unit in regiment.u) {
         const died = (losses[unit] ?? 0) + (captured[unit] ?? 0); // prisoners are lost to the regiment too
-        regiment.u[unit] = (data.troops[unit] ?? 0) > died ? regiment.u[unit] - died / scale : 0;
+        regiment.u[unit] = Math.max(Military.getTroops(regiment.u[unit]) - died, 0) / scale;
       }
-      regiment.a = sum(Object.values(regiment.u));
+      regiment.a = sum(Object.values(regiment.u), points => Military.getTroops(points)) / scale;
       select<SVGGElement, unknown>("#armies")
         .select(`g#regiment${regiment.state}-${regiment.i} > text`)
         .text(Military.getTotal(regiment));
@@ -1922,6 +1976,8 @@ function closeBattleScreen(): void {
   options.app.mode = null; // exit edit mode
   Dialog.destroy("battleScreen");
   Dialog.destroy("regimentSelectorScreen");
+  Dialog.destroy("battleLog");
+  shownLog = [];
 }
 
 function typeTip(type: BattleType): string {

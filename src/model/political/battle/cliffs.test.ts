@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Point } from "@/types/global";
 import { COLS, ROWS } from "./battle-scale";
 import { createEmptyBattlefield, type FieldCliff, getCliffsBetween } from "./battlefield";
-import { type CliffGround, laySeaCliffs, raiseEscarpments, traceEdges } from "./cliffs";
+import { type CliffGround, type Escarpments, laySeaCliffs, raiseEscarpments, traceEdges } from "./cliffs";
 
 const CELL = 10;
 const FRONT = 40;
@@ -19,7 +19,42 @@ function ground(
 ): CliffGround {
   const water = Array.from({ length: COLS * ROWS }, (_, node) => (sea(node) ? 1 : 0));
   const clearance = water.map((_, node) => clear(centre(node)));
-  return { cell: CELL, front: FRONT, water, open: Uint8Array.from(water, w => +!w), clearance };
+  const height = water.map(() => 0);
+  return { cell: CELL, front: FRONT, water, open: Uint8Array.from(water, w => +!w), clearance, height };
+}
+
+/** Escarpments of a field whose land is 100 m higher where `high` says, its edge a sheer drop */
+const escarp = (field: CliffGround, high: (node: number) => boolean) => {
+  field.height = field.height.map((_, node) => (high(node) ? 100 : 0));
+  return raiseEscarpments(field, 60, () => 1);
+};
+
+/**
+ * Borders of nodes the ground jumps at with no cliff between them: where the side changes, by the step about the border.
+ * The ground is smooth but across a cliff
+ */
+function getJumps({ cliffs, top, step }: Escarpments): number[][] {
+  const field = { ...createEmptyBattlefield(), cell: CELL, cliffs };
+  const jumps: number[][] = [];
+  for (let node = 0; node < COLS * ROWS; node++) {
+    for (const next of [node % COLS < COLS - 1 ? node + 1 : -1, node + COLS < COLS * ROWS ? node + COLS : -1]) {
+      if (next < 0 || top[node] === top[next]) continue;
+      const jump = (step[node] + step[next]) / 2;
+      if (jump > 1 && !getCliffsBetween(field, centre(node), centre(next)).length) jumps.push([node, next, jump]);
+    }
+  }
+  return jumps;
+}
+
+/** The pieces of cliff, as laid end to end */
+function getPieces(cliffs: FieldCliff[]): FieldCliff[][] {
+  const pieces: FieldCliff[][] = [];
+  for (const cliff of cliffs) {
+    const last = pieces.at(-1)?.at(-1);
+    if (last && last.b[0] === cliff.a[0] && last.b[1] === cliff.a[1]) pieces.at(-1)!.push(cliff);
+    else pieces.push([cliff]);
+  }
+  return pieces;
 }
 
 const crosses = (a: Point, b: Point, c: Point, d: Point): boolean => {
@@ -70,15 +105,16 @@ describe("cliffs", () => {
 
   it("cliffs a rugged coast in stretches and keeps the shore nearest the middle a beach", () => {
     const sea = (node: number): boolean => Math.floor(node / COLS) < 20; // the sea in the north
-    const cliffs = laySeaCliffs(ground(sea), 20, () => 1);
+    const cliffs = laySeaCliffs(ground(sea), 40, () => 1);
     expect(cliffs.length).toBeGreaterThan(0);
     for (const cliff of cliffs) expect(cliff.a[1]).toBeCloseTo(20 * CELL); // on the shore, between the rows
     const middle = (COLS * CELL) / 2;
     const atMiddle = cliffs.filter(({ a, b }) => Math.abs((a[0] + b[0]) / 2 - middle) < 1.5 * FRONT);
     expect(atMiddle).toEqual([]);
-    expect(length(cliffs)).toBeGreaterThan((COLS - 1) * CELL - 3 * FRONT - 2 * CELL); // all but the beach
+    expect(length(cliffs)).toBeGreaterThan(((COLS - 1) * CELL - 3 * FRONT) * 0.7); // all but the beach and gaps
+    for (const piece of getPieces(cliffs)) expect(length(piece)).toBeLessThanOrEqual(6 * FRONT + 2 * CELL); // and its run past the edge
     expect(laySeaCliffs(ground(sea), 5, () => 1)).toEqual([]); // a gentle coast has none
-    expect(laySeaCliffs(ground(sea), 20, () => 0)).toEqual([]); // nor a coast all beaches
+    expect(laySeaCliffs(ground(sea), 40, () => 0)).toEqual([]); // nor a coast all beaches
   });
 
   it("leaves no cliff by a road", () => {
@@ -86,27 +122,26 @@ describe("cliffs", () => {
     const road = 200; // a road coming down to the shore at x = 200
     const cliffs = laySeaCliffs(
       ground(sea, ([x]: Point) => Math.abs(x - road)),
-      20,
+      40,
       () => 1
     );
     expect(cliffs.some(({ a, b }) => Math.abs((a[0] + b[0]) / 2 - road) < FRONT)).toBe(false);
   });
 
-  it("raises high ground with cliffs on its edges and cuts a gully into a plateau they close all round", () => {
+  it("cliffs the steep edge of a plateau in pieces, its top side raised, and cuts a gully where they close it all round", () => {
     const box = [30, 15, 60, 40];
     const field = ground();
-    const scarps = raiseEscarpments(
-      field,
-      40,
-      (x: number, y: number) => +inBox(Math.floor(y / CELL) * COLS + Math.floor(x / CELL), box),
-      () => 1
-    )!;
+    const scarps = escarp(field, node => inBox(node, box))!;
     expect(scarps).not.toBeNull();
-    expect(scarps.top.filter(Boolean).length).toBe(30 * 25);
-    expect(Math.max(...scarps.step)).toBe(20); // half the roughness
-    expect(length(scarps.cliffs)).toBeGreaterThan(80 * CELL); // nearly all round
-    expect(length(scarps.cliffs)).toBeLessThan(110 * CELL); // but for the gully
+    // the top side of every cliff is the plateau's, and the step at a cliff is up to half the roughness
+    expect(scarps.top.every((top, node) => !top || scarps.step[node] < 0.5 || inBox(node, box))).toBe(true);
+    expect(getJumps(scarps)).toEqual([]);
+    expect(Math.max(...scarps.step)).toBeGreaterThan(20);
+    expect(Math.max(...scarps.step)).toBeLessThanOrEqual(30);
+    expect(length(scarps.cliffs)).toBeGreaterThan(50 * CELL); // much of the way round
+    expect(length(scarps.cliffs)).toBeLessThan(100 * CELL); // but for the gaps
     for (const cliff of scarps.cliffs) expect(cliff.height).toBeGreaterThanOrEqual(3);
+    for (const piece of getPieces(scarps.cliffs)) expect(length(piece)).toBeLessThanOrEqual(6 * FRONT + 2 * CELL); // and its run past the edge
     // the plateau is reached from the plain
     const inside = 27 * COLS + 45;
     expect(reach(field.open, scarps.cliffs, 0).has(inside)).toBe(true);
@@ -117,29 +152,18 @@ describe("cliffs", () => {
     const hollow = [35, 22, 55, 38];
     const high = (node: number): boolean => inBox(node, outer) && !inBox(node, hollow);
     const field = ground();
-    const scarps = raiseEscarpments(
-      field,
-      40,
-      (x: number, y: number) => +high(Math.floor(y / CELL) * COLS + Math.floor(x / CELL)),
-      () => 1
-    )!;
+    const scarps = escarp(field, high)!;
     const reached = reach(field.open, scarps.cliffs, 0);
     expect(reached.size).toBe(COLS * ROWS);
   });
 
-  it("brings the edge down to a bank by a road, and has no cliff shorter than two fronts", () => {
+  it("has no cliff by a road, nor one shorter than two fronts", () => {
     const field = ground(undefined, ([x]: Point) => Math.abs(x - 450));
     const box = [30, 15, 60, 40];
     const knoll = [10, 50, 12, 52]; // too small for a cliff
     const high = (node: number): boolean => inBox(node, box) || inBox(node, knoll);
-    const scarps = raiseEscarpments(
-      field,
-      40,
-      (x: number, y: number) => +high(Math.floor(y / CELL) * COLS + Math.floor(x / CELL)),
-      () => 1
-    )!;
+    const scarps = escarp(field, high)!;
     expect(scarps.cliffs.some(({ a, b }) => Math.abs((a[0] + b[0]) / 2 - 450) < FRONT)).toBe(false);
-    expect(scarps.step[45 * COLS + 45]).toBe(0); // on the road
     expect(scarps.cliffs.some(({ a }) => a[0] < 15 * CELL)).toBe(false);
   });
 
@@ -172,14 +196,29 @@ describe("cliffs", () => {
     }
   });
 
-  it("lays nothing on gentle ground", () => {
-    expect(
-      raiseEscarpments(
-        ground(),
-        10,
-        () => 1,
-        () => 1
-      )
-    ).toBeNull();
+  it("raises and lowers the ground about cliffs on hills so it jumps across a cliff alone", () => {
+    for (const [fx, fy] of [
+      [9, 7],
+      [14, 11],
+      [6, 13]
+    ]) {
+      const field = ground();
+      field.height = field.height.map((_, node) => {
+        const [x, y] = [node % COLS, Math.floor(node / COLS)];
+        return 150 * (Math.sin(x / fx) + Math.cos(y / fy) + Math.sin((x + y) / (fx + fy)));
+      });
+      const scarps = raiseEscarpments(field, 60, () => 1)!;
+      expect(scarps.cliffs.length).toBeGreaterThan(0);
+      expect(getJumps(scarps)).toEqual([]);
+    }
+  });
+
+  it("lays nothing on gentle ground, nor on a hillside that is not steep", () => {
+    expect(raiseEscarpments(ground(), 40, () => 1)).toBeNull();
+    const hillside = ground();
+    hillside.height = hillside.height.map((_, node) => (node % COLS) * CELL * 0.08); // 4.6°
+    expect(raiseEscarpments(hillside, 60, () => 1)!.cliffs).toEqual([]);
+    hillside.height = hillside.height.map((_, node) => (node % COLS) * CELL * 0.2); // 11°
+    expect(raiseEscarpments(hillside, 60, () => 1)!.cliffs.length).toBeGreaterThan(0);
   });
 });
