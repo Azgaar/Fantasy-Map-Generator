@@ -1312,7 +1312,7 @@ class BattleModule {
     if (field.width === size.width && field.front === size.front) return;
     if (field.site) {
       battle.scene = Battlefields.build(field.site[0], field.site[1], size, battle.type);
-      battle.field = Battlefields.cut(battle.scene);
+      battle.field = Battlefields.cut(battle.scene, size);
     } else {
       const ratio = size.width / field.width; // cliffs are ground, drawn on the nodes as water is
       const scale = ([x, y]: [number, number]): [number, number] => [x * ratio, y * ratio];

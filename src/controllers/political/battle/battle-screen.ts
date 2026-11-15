@@ -184,7 +184,7 @@ const STYLE = /* css */ `
   .battleBar.mid > i { background: #e0a920; }
   .battleBar.low > i { background: var(--loss); }
   /* the side's order, or its tactic before the start: a chip in the side's colour */
-  #battleLayout .battleOrdersButton { max-width: 100%; padding: 0.1em 0.6em; border: 1px solid color-mix(in srgb, var(--side) 45%, transparent); border-radius: 1em; background: color-mix(in srgb, var(--side) 10%, #fff); color: #333; cursor: pointer; }
+  #battleLayout .battleOrdersButton { max-width: 100%; padding: 0.1em 0.6em; border: 1px solid color-mix(in srgb, var(--side) 45%, transparent); border-radius: 0.5em; background: color-mix(in srgb, var(--side) 10%, #fff); color: #333; cursor: pointer; }
   #battleLayout .battleOrdersButton:hover { border-color: var(--side); background: color-mix(in srgb, var(--side) 20%, #fff); }
   .battleOrder { display: block; overflow: hidden; text-overflow: ellipsis; }
   .battleBanner .battlePicker { flex: none; max-width: 14em; }
@@ -1884,7 +1884,8 @@ class BattleScreenController {
     const b = this.battle!;
     this.regiments.set(this.regimentKey(regiment), regiment);
     const step = getRegimentStep();
-    const shift = side === "attackers" ? (b.attackers.regiments.length + 1) * -step : b.defenders.regiments.length * step;
+    const shift =
+      side === "attackers" ? (b.attackers.regiments.length + 1) * -step : b.defenders.regiments.length * step;
     regiment.px = regiment.x;
     regiment.py = regiment.y;
     moveRegiment(regiment, b.x, rn(b.y + shift, 2));

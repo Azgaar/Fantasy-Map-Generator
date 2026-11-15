@@ -475,19 +475,11 @@ class BattlefieldModule {
     return field;
   }
 
-  /** The battle's field: the middle of its scene, on a grid of COLS × ROWS; burgs that reach it come along */
-  cut(scene: Battlefield): Battlefield {
-    const [left, top] = [(scene.cols - COLS) / 2, (scene.rows - ROWS) / 2];
+  /** The battle's field of the size its scene was built for: the middle of the scene; burgs that reach it come along */
+  cut(scene: Battlefield, size: FieldSize): Battlefield {
+    const [left, top] = SURROUND;
     const [dx, dy] = [left * scene.cell, top * scene.cell];
-    const field: Battlefield = {
-      ...this.createEmpty(),
-      site: scene.site,
-      width: COLS * scene.cell,
-      height: ROWS * scene.cell,
-      cell: scene.cell,
-      front: scene.front,
-      biome: scene.biome
-    };
+    const field: Battlefield = { ...this.createEmpty(), site: scene.site, ...size, biome: scene.biome };
     const nodes = Array.from(
       { length: COLS * ROWS },
       (_, i) => (Math.floor(i / COLS) + top) * scene.cols + (i % COLS) + left
@@ -517,11 +509,12 @@ class BattlefieldModule {
         )
     });
     const box: Box = [-field.cell, -field.cell, field.width + field.cell, field.height + field.cell]; // off the field: see `toCliffs`
-    field.cliffs = scene.cliffs.flatMap(({ a, b, height }) => {
+    field.cliffs = scene.cliffs.flatMap(cliff => {
+      const [a, b] = [move(cliff.a), move(cliff.b)];
       const span = this.clipSegment(a, b, box);
       if (!span) return [];
-      const at = (t: number): Point => move([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
-      return [{ a: at(span[0]), b: at(span[1]), height }];
+      const at = (t: number): Point => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+      return [{ a: at(span[0]), b: at(span[1]), height: cliff.height }];
     });
 
     // heights from the lowest land of the field
@@ -550,7 +543,7 @@ class BattlefieldModule {
       cell: field.cell,
       front: field.front,
       water: field.water,
-      open: Uint8Array.from(field.water, (water, i) => +(!water || field.ford[i] === 1)),
+      open: Uint8Array.from(field.water, (water, i) => +((!water || field.ford[i] === 1) && this.isInField(field, i))), // no ground of the battle closed off but through the scene round it
       clearance: this.getClearance(field, nodes),
       height: ground.map(g => g?.height ?? 0)
     };
@@ -568,6 +561,13 @@ class BattlefieldModule {
         if (h !== null) field.elevation[i] = field.relief ? (h - field.base) / field.relief : 0;
       });
     }
+  }
+
+  /** A node of a scene within the battle's field */
+  private isInField({ cols, rows }: Battlefield, node: number): boolean {
+    const [col, row] = [node % cols, Math.floor(node / cols)];
+    const [across, down] = SURROUND;
+    return col >= across && col < cols - across && row >= down && row < rows - down;
   }
 
   /** Where the edges of high ground are cliffs: two octaves, so the lattice of either does not show */

@@ -7,10 +7,10 @@ const whole = { x: -40, y: -24, width: 1080, height: 648 }; // in the field's pr
 const troop = (x: number, y: number, present = true): CameraTroop => ({ x, y, width: 20, depth: 10, present });
 const aspect = (view: View): number => view.width / view.height;
 const inside = (view: View): boolean =>
-  view.x >= scene.x - 1e-9 &&
-  view.y >= scene.y - 1e-9 &&
-  view.x + view.width <= scene.x + scene.width + 1e-9 &&
-  view.y + view.height <= scene.y + scene.height + 1e-9;
+  view.x >= whole.x - 1e-9 &&
+  view.y >= whole.y - 1e-9 &&
+  view.x + view.width <= whole.x + whole.width + 1e-9 &&
+  view.y + view.height <= whole.y + whole.height + 1e-9;
 const contains = (view: View, x: number, y: number): boolean =>
   x >= view.x && x <= view.x + view.width && y >= view.y && y <= view.y + view.height;
 
@@ -23,10 +23,14 @@ describe("frameTroops", () => {
     expect(view.width).toBeLessThan(field.width);
   });
 
+  it("takes in the field and the scene round it, in the field's proportions about its middle", () => {
+    expect(BattleCamera.getSceneBox(field)).toEqual(scene);
+    expect(BattleCamera.getFieldView(field)).toEqual(whole);
+  });
+
   it("gives the whole scene for troops spread wider than it", () => {
     const view = BattleCamera.frameTroops(field, [troop(-95, -55), troop(1095, 655)]);
-    expect(view.width).toBeCloseTo(whole.width);
-    expect(inside(view)).toBe(true);
+    for (const [key, value] of Object.entries(whole)) expect(view[key as keyof View]).toBeCloseTo(value);
   });
 
   it("never frames narrower than a few battalion fronts", () => {
@@ -116,7 +120,7 @@ describe("zoom and pan", () => {
 
   it("pans within the scene", () => {
     const view = BattleCamera.panView(field, { x: 100, y: 100, width: 500, height: 300 }, 1000, -1000);
-    expect(view.x).toBeCloseTo(scene.x + scene.width - 500);
-    expect(view.y).toBeCloseTo(scene.y);
+    expect(view.x).toBeCloseTo(whole.x + whole.width - 500);
+    expect(view.y).toBeCloseTo(whole.y);
   });
 });

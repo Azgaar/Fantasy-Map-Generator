@@ -395,12 +395,17 @@ class BattleSceneRenderer {
           .attr("stroke-width", river.width);
       }
     }
-    // fords: a river shown shallow, with its stones, where it can be waded; kept within its banks
-    terrain
-      .append("path")
-      .attr("d", this.outline(field, field.ford, 0.3))
-      .attr("fill", "url(#battleFord)")
-      .attr("mask", "url(#battleRivers)");
+    // fords: a stretch of the river shown shallow, with its stones, square across it; kept within its banks
+    for (const ford of this.getFords(field)) {
+      terrain
+        .append("path")
+        .attr("d", line<Point>()(ford.points))
+        .attr("fill", "none")
+        .attr("stroke", "url(#battleFord)")
+        .attr("stroke-width", ford.width * 1.5) // wide enough to cover the curve between points: the mask trims it
+        .attr("stroke-linejoin", "round")
+        .attr("mask", "url(#battleRivers)");
+    }
 
     // a bridge: its deck under the road, its parapets beside it
     const span = (bridge: Battlefield["bridges"][number], d: string) =>
@@ -1090,6 +1095,64 @@ class BattleSceneRenderer {
       .attr("stroke", "#fbf5e9")
       .attr("stroke-width", 3)
       .text(text);
+  }
+
+  /** The stretches of river the ford nodes lie on, each from its first node to its last along the course */
+  private getFords(field: Battlefield): { points: Point[]; width: number }[] {
+    const { cell } = field;
+    const rivers = field.rivers.filter(river => !river.brook); // a brook has no fords to show
+    const along = rivers.map((): number[] => []);
+    field.ford.forEach((ford, node) => {
+      if (!ford) return;
+      const [x, y] = Battlefields.nodeCentre(field, node);
+      let best = { river: -1, distance: Infinity, at: 0 };
+      rivers.forEach(({ points, width }, river) => {
+        for (let i = 1, walked = 0; i < points.length; i++) {
+          const [ax, ay] = points[i - 1];
+          const [dx, dy] = [points[i][0] - ax, points[i][1] - ay];
+          const length = Math.hypot(dx, dy);
+          const t = length ? Math.min(Math.max(((x - ax) * dx + (y - ay) * dy) / length ** 2, 0), 1) : 0;
+          const distance = Math.hypot(x - ax - dx * t, y - ay - dy * t);
+          if (distance < best.distance && distance < width / 2 + cell)
+            best = { river, distance, at: walked + t * length };
+          walked += length;
+        }
+      });
+      if (best.river !== -1) along[best.river].push(best.at);
+    });
+
+    const fords: { points: Point[]; width: number }[] = [];
+    along.forEach((spots, river) => {
+      spots.sort((a, b) => a - b);
+      for (let first = 0; first < spots.length; ) {
+        let last = first;
+        while (last + 1 < spots.length && spots[last + 1] - spots[last] < cell * 1.5) last++;
+        const points = this.getStretch(rivers[river].points, spots[first] - cell / 2, spots[last] + cell / 2);
+        if (points.length > 1) fords.push({ points, width: rivers[river].width });
+        first = last + 1;
+      }
+    });
+    return fords;
+  }
+
+  /** The part of a line between two distances along it */
+  private getStretch(points: Point[], from: number, to: number): Point[] {
+    const stretch: Point[] = [];
+    for (let i = 1, walked = 0; i < points.length; i++) {
+      const [ax, ay] = points[i - 1];
+      const [bx, by] = points[i];
+      const length = Math.hypot(bx - ax, by - ay);
+      const at = (distance: number): Point => {
+        const t = length ? (distance - walked) / length : 0;
+        return [ax + (bx - ax) * t, ay + (by - ay) * t];
+      };
+      if (walked + length > from && walked < to) {
+        if (!stretch.length) stretch.push(at(Math.max(from, walked)));
+        stretch.push(at(Math.min(to, walked + length)));
+      }
+      walked += length;
+    }
+    return stretch;
   }
 
   /** Smooth outline of the grid nodes above the level */

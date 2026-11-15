@@ -58,14 +58,14 @@ class BattleCameraModule {
     };
   }
 
-  /** In the field's proportions, inside the scene, no narrower than a few battalion fronts */
+  /** In the field's proportions, inside the whole view, no narrower than a few battalion fronts */
   clampView(field: CameraField, { x, y, width }: View): View {
-    const scene = this.getSceneBox(field);
+    const whole = this.getFieldView(field);
     const aspect = field.width / field.height;
-    const wide = Math.min(Math.max(width, field.front * LEAST), this.getFieldView(field).width);
+    const wide = Math.min(Math.max(width, field.front * LEAST), whole.width);
     const high = wide / aspect;
-    const left = Math.min(Math.max(x, scene.x), scene.x + scene.width - wide);
-    const top = Math.min(Math.max(y, scene.y), scene.y + scene.height - high);
+    const left = Math.min(Math.max(x, whole.x), whole.x + whole.width - wide);
+    const top = Math.min(Math.max(y, whole.y), whole.y + whole.height - high);
     return { x: left, y: top, width: wide, height: high };
   }
 

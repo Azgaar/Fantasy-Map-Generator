@@ -54,6 +54,7 @@ export const UPKEEP_COST = 20; // military spending a day that keeps troops of p
 const MIN_UPKEEP = 0.05; // unpaid troops still fight, if barely
 const EQUIPMENT = 0.365; // population points of troops equipped by a unit a day a state consumes of their goods
 const FRONT_DEPTH = 2; // lines of cells behind the border a state at war deploys its regiments to
+const RESERVE = 0.3; // share of a state's regiments, and of its fleets, farthest from the front that stay at their bases
 const REACH = 150; // how far a platoon joins a regiment of another landmass, map units
 const REGIMENT_SIZE = 3; // regiment box height at the default style, map units; layout ignores the style
 // what the unit's forces are raised by: a change of any calls for raising them anew
@@ -569,7 +570,7 @@ class MilitaryModule {
     for (const regiment of emblemed) regiment.icon = this.getEmblem(regiment);
   }
 
-  /** Moves regiments of states at war, largest first, to the foremost line's nearest free cell */
+  /** Moves regiments of states at war but the reserve, largest first, to the foremost line's nearest free cell */
   private deployToFronts(states: State[]) {
     const { cells } = pack;
     const { p } = cells;
@@ -631,17 +632,31 @@ class MilitaryModule {
     };
 
     // fleets first: few water cells reach the border, and land regiments on the coast would block them
+    const marching = new Map<Regiment, { lines: number[][]; feature: number }>();
     for (const naval of [true, false]) {
       for (const state of states) {
         const front = fronts.get(state.i);
         if (!front) continue;
+        const lines = naval ? front.sea : front.land;
+        const gaps = new Map<Regiment, { gap: number; feature: number }>(); // squared distance to the border it can reach
         for (const regiment of state.military ?? []) {
           if (Boolean(regiment.n) !== naval) continue;
-          if (naval) deploy(regiment, front.sea, cells.f[cells.haven[regiment.cell]]);
-          else deploy(regiment, front.land, cells.f[regiment.cell]);
+          const feature = cells.f[naval ? cells.haven[regiment.cell] : regiment.cell];
+          const ahead = lines[0].filter(i => cells.f[i] === feature);
+          if (!ahead.length) continue;
+          const gap = Math.min(...ahead.map(i => (p[i][0] - regiment.x) ** 2 + (p[i][1] - regiment.y) ** 2));
+          gaps.set(regiment, { gap, feature });
         }
+        const reserve = [...gaps.keys()]
+          .sort((a, b) => gaps.get(b)!.gap - gaps.get(a)!.gap)
+          .slice(0, Math.round(gaps.size * RESERVE));
+        for (const [regiment, { feature }] of gaps)
+          if (!reserve.includes(regiment)) marching.set(regiment, { lines, feature });
       }
     }
+
+    for (const state of states) placed.addAll((state.military ?? []).filter(regiment => !marching.has(regiment)));
+    for (const [regiment, { lines, feature }] of marching) deploy(regiment, lines, feature);
   }
 
   getName(r: Regiment, regiments: Regiment[]) {
