@@ -1950,7 +1950,7 @@
   "Minimum zoom level to show the group": "Minimum zoom level to show the group",
   "Minimum zoom to show the group, leave empty for no limit": "Minimum zoom to show the group, leave empty for no limit",
   "Minorities": "Minorities",
-  "Minutes after which a battle that neither ends nor dies down is over": "Minutes after which a battle that neither ends nor dies down is over",
+  "Rounds after which a battle that neither ends nor dies down is over": "Rounds after which a battle that neither ends nor dies down is over",
   "Mirror": "Mirror",
   "Mirror heightmap along axis": "Mirror heightmap along axis",
   "Missiles": "Missiles",

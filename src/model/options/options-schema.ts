@@ -236,7 +236,7 @@ const battle = z.strictObject({
     .strictObject({
       maxBattalions: between(10, 200),
       minBattalions: between(2, 40),
-      maxMinutes: between(20, 24 * 60),
+      maxRounds: between(25, 1800),
       lullRounds: between(3, 60),
       orderRounds: between(1, 60),
       planTicks: between(30, 1200)

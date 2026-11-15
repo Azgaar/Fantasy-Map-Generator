@@ -8,7 +8,7 @@ export type PauseEvent = (typeof PAUSE_EVENTS)[number];
 export interface BattleSettings {
   maxBattalions: number; // the troops are split into no more battalions than that
   minBattalions: number; // and smaller ones when they would make fewer
-  maxMinutes: number; // a backstop for a battle that neither ends nor dies down
+  maxRounds: number; // a backstop for a battle that neither ends nor dies down
   lullRounds: number; // rounds without losses that end a battle
   orderRounds: number; // an order given by hand stands that long
   planTicks: number; // how far ahead a general plays an open battle through in his mind
@@ -17,7 +17,7 @@ export interface BattleSettings {
 export const DEFAULT_BATTLE_SETTINGS: BattleSettings = {
   maxBattalions: 40,
   minBattalions: 10,
-  maxMinutes: 8 * 60,
+  maxRounds: 600,
   lullRounds: 10,
   orderRounds: 10,
   planTicks: 360

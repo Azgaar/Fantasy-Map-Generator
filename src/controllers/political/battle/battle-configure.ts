@@ -207,11 +207,11 @@ class BattleConfigureController {
           range: [2, 40]
         },
         {
-          key: "maxMinutes",
+          key: "maxRounds",
           label: t("Longest battle"),
-          tip: t("Minutes after which a battle that neither ends nor dies down is over"),
-          range: [20, 1440],
-          hint: value => `${t("min")} (${Math.round(value / 6) / 10} ${t("h")})`
+          tip: t("Rounds after which a battle that neither ends nor dies down is over"),
+          range: [25, 1800],
+          hint: value => `${t("rounds")} (${Math.round((value * ROUND_TICKS * TICK_SECONDS) / 360) / 10} ${t("h")})`
         },
         {
           key: "lullRounds",

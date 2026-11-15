@@ -1264,7 +1264,7 @@ class BattleModule {
       !onField[0] ||
       !onField[1] ||
       (!ready[0] && !ready[1]) ||
-      battle.tick >= BattleScale.minutesToTicks(battle.settings.maxMinutes) ||
+      battle.tick >= battle.settings.maxRounds * ROUND_TICKS ||
       (battle.engaged !== null &&
         !battle.cutOff &&
         battle.tick - battle.lastLoss > battle.settings.lullRounds * ROUND_TICKS); // a long way round is no lull, nor a blockade

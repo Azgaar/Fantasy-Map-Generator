@@ -3042,9 +3042,9 @@ describe("battle settings", () => {
   });
 
   it("ends sooner when the longest battle is shorter", () => {
-    const b = run(battle([regiment(1, even)], [regiment(2, even)], "field", 0, settings({ maxMinutes: 5 })));
-    expect(b.tick).toBe(BattleScale.minutesToTicks(5));
-    expect(run(battle([regiment(1, even)], [regiment(2, even)])).tick).toBeGreaterThan(BattleScale.minutesToTicks(5));
+    const b = run(battle([regiment(1, even)], [regiment(2, even)], "field", 0, settings({ maxRounds: 6 })));
+    expect(b.tick).toBe(6 * ROUND_TICKS);
+    expect(run(battle([regiment(1, even)], [regiment(2, even)])).tick).toBeGreaterThan(6 * ROUND_TICKS);
   });
 
   it("replays a battle set up with other numbers the same", () => {
