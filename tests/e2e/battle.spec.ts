@@ -173,6 +173,34 @@ test.describe("Battle simulator", () => {
     await expect(page.locator("#battleScene .battleDebug")).toHaveCount(0);
   });
 
+  test("exports the battle from Configure Battle: an animated SVG, a battle report and a GIF", async ({ page }) => {
+    test.setTimeout(180000);
+    await page.evaluate(() => {
+      const { options } = window as any;
+      options.app.battle.simulation.maxMinutes = 20; // a short battle: the exports replay it from the start
+      options.app.battle.export.quality = "low";
+    });
+    await startBattle(page);
+    await pickType(page, "field");
+    await expect(page.locator("#battleStep")).toBeEnabled();
+    await page.locator("#battleConfigureOpen").click();
+    const exporting = page.locator('#battleConfigure details[data-group="export"]');
+    await exporting.evaluate(details => {
+      (details as HTMLDetailsElement).open = true;
+    });
+    for (const [format, ending] of [
+      ["svg", ".svg"],
+      ["report", "-report.html"],
+      ["gif", ".gif"]
+    ]) {
+      await exporting.locator('[data-key="format"]').selectOption(format);
+      const download = page.waitForEvent("download", { timeout: 120000 });
+      await page.locator("#battleConfigureSave").click();
+      expect((await download).suggestedFilename().endsWith(ending)).toBe(true);
+      await expect(page.locator("#battleConfigureSave")).toHaveText("Save");
+    }
+  });
+
   test("applies the losses to the regiments and marks the battlefield", async ({ page }) => {
     const { attacker, defender, troops } = await startBattle(page);
     const markers = await page.evaluate(() => (window as any).pack.markers.length);

@@ -12,33 +12,67 @@ export interface BattleSettings {
   lullRounds: number; // rounds without losses that end a battle
   orderRounds: number; // an order given by hand stands that long
   planTicks: number; // how far ahead a general plays an open battle through in his mind
-  stormPlanTicks: number; // and a storm of walls or of a wagon ring, slow to reckon
 }
 
 export const DEFAULT_BATTLE_SETTINGS: BattleSettings = {
   maxBattalions: 40,
   minBattalions: 10,
   maxMinutes: 8 * 60,
-  lullRounds: 12,
+  lullRounds: 10,
   orderRounds: 10,
-  planTicks: 360,
-  stormPlanTicks: 150
+  planTicks: 360
 };
 
-export const DEFAULT_BATTLE_OPTIONS = {
-  view: { camera: "follow" as "follow" | "field", speed: 1, log: false },
+export interface BattleOptions {
+  view: { camera: "follow" | "field"; speed: number; log: boolean };
   rendering: {
-    relief: "hachures" as "hachures" | "contours" | "none",
+    relief: "hachures" | "contours" | "none";
+    shade: boolean;
+    heights: boolean;
+    woods: boolean;
+    props: boolean;
+    labels: boolean;
+    colors: "sides" | "states";
+    icons: boolean;
+    flags: boolean;
+    health: boolean;
+    fallen: "fade" | "outline";
+    arrows: boolean;
+    fire: boolean;
+    missiles: boolean;
+    clashes: boolean;
+    weather: boolean;
+    title: boolean;
+    scale: boolean;
+    north: boolean;
+  };
+  playback: {
+    step: "tick" | "round";
+    pause: Record<PauseEvent, boolean>;
+  };
+  simulation: BattleSettings;
+  export: {
+    format: "gif" | "svg" | "report";
+    quality: "low" | "medium" | "high";
+    speed: number;
+    camera: "follow" | "field";
+  };
+}
+
+export const DEFAULT_BATTLE_OPTIONS: BattleOptions = {
+  view: { camera: "follow", speed: 1, log: false },
+  rendering: {
+    relief: "hachures",
     shade: true,
     heights: true,
     woods: true,
     props: true,
     labels: true,
-    colors: "sides" as "sides" | "states",
+    colors: "sides",
     icons: true,
     flags: true,
     health: true,
-    fallen: "fade" as "fade" | "outline",
+    fallen: "fade",
     arrows: false,
     fire: true,
     missiles: true,
@@ -48,18 +82,9 @@ export const DEFAULT_BATTLE_OPTIONS = {
     scale: true,
     north: true
   },
-  playback: {
-    step: "tick" as "tick" | "round",
-    pause: { clash: false, rout: false, surrender: false, breach: false, broken: false } as Record<PauseEvent, boolean>
-  },
+  playback: { step: "tick", pause: { clash: false, rout: false, surrender: false, breach: false, broken: false } },
   simulation: DEFAULT_BATTLE_SETTINGS,
-  export: {
-    format: "gif" as "gif" | "svg" | "report",
-    quality: "medium" as "low" | "medium" | "high",
-    speed: 1,
-    camera: "follow" as "follow" | "field"
-  }
+  export: { format: "gif", quality: "medium", speed: 1, camera: "follow" }
 };
 
-export type BattleOptions = typeof DEFAULT_BATTLE_OPTIONS;
 export type BattleLook = BattleOptions["rendering"];

@@ -239,8 +239,7 @@ const battle = z.strictObject({
       maxMinutes: between(20, 24 * 60),
       lullRounds: between(3, 60),
       orderRounds: between(1, 60),
-      planTicks: between(30, 1200),
-      stormPlanTicks: between(30, 600)
+      planTicks: between(30, 1200)
     })
     .refine(({ maxBattalions, minBattalions }) => minBattalions <= maxBattalions, {
       message: "simulation.minBattalions must not exceed maxBattalions"

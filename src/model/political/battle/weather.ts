@@ -27,36 +27,40 @@ export const HEAT = 2; // how much faster troops tire in the heat
 
 const WET = 20; // precipitation of a wet climate, in the map's hundreds of mm a year
 
-/**
- * The day a place is likely to give: rain and mud the likelier the wetter it is, snow for rain in frost, fog in cool damp places;
- * ice the likelier the harder the frost, heat the hotter the place
- */
-export function getClimateWeather(
-  precipitation: number,
-  temperature: number,
-  seed: number
-): { weather: Weather } & Record<Condition, boolean> {
-  const wet = Math.min(Math.max(precipitation / WET, 0), 1);
-  const frost = temperature <= 0;
-  const rain = 0.05 + 0.3 * wet;
-  const fog = 0.04 + 0.12 * wet * (temperature < 15 ? 1 : 0.3);
-  const roll = random(seed);
-  const falling: Weather = frost ? "snow" : roll < rain / 3 ? "downpour" : "rain";
-  const weather: Weather = roll < rain ? falling : roll < rain + fog ? "fog" : "clear";
-  const soaked = weather === "rain" || weather === "downpour" ? 0.4 + 0.5 * wet : 0.25 * wet;
-  const ice = Math.min(Math.max(-temperature / 12, 0), 0.9);
-  const heat = Math.min(Math.max((temperature - 22) / 15, 0), 0.7);
-  return {
-    weather,
-    mud: !frost && random(seed + 1) < soaked,
-    ice: random(seed + 2) < ice,
-    heat: random(seed + 3) < heat
-  };
+class WeatherModule {
+  /**
+   * The day a place is likely to give: rain and mud the likelier the wetter it is, snow for rain in frost, fog in cool damp places;
+   * ice the likelier the harder the frost, heat the hotter the place
+   */
+  getClimate(
+    precipitation: number,
+    temperature: number,
+    seed: number
+  ): { weather: Weather } & Record<Condition, boolean> {
+    const wet = Math.min(Math.max(precipitation / WET, 0), 1);
+    const frost = temperature <= 0;
+    const rain = 0.05 + 0.3 * wet;
+    const fog = 0.04 + 0.12 * wet * (temperature < 15 ? 1 : 0.3);
+    const roll = this.random(seed);
+    const falling: Weather = frost ? "snow" : roll < rain / 3 ? "downpour" : "rain";
+    const weather: Weather = roll < rain ? falling : roll < rain + fog ? "fog" : "clear";
+    const soaked = weather === "rain" || weather === "downpour" ? 0.4 + 0.5 * wet : 0.25 * wet;
+    const ice = Math.min(Math.max(-temperature / 12, 0), 0.9);
+    const heat = Math.min(Math.max((temperature - 22) / 15, 0), 0.7);
+    return {
+      weather,
+      mud: !frost && this.random(seed + 1) < soaked,
+      ice: this.random(seed + 2) < ice,
+      heat: this.random(seed + 3) < heat
+    };
+  }
+
+  /** A number in [0, 1) that is always the same for the same seed */
+  private random(seed: number): number {
+    let x = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b);
+    x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
+    return ((x ^ (x >>> 16)) >>> 0) / 2 ** 32;
+  }
 }
 
-/** A number in [0, 1) that is always the same for the same seed */
-function random(seed: number): number {
-  let x = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b);
-  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
-  return ((x ^ (x >>> 16)) >>> 0) / 2 ** 32;
-}
+export const BattleWeather = new WeatherModule();

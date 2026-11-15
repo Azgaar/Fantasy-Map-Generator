@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { COLS, ROWS } from "@/model/political/battle/battle-scale";
-import { type Battlefield, createEmptyBattlefield } from "@/model/political/battle/battlefield";
-import { getReliefMarkup } from "./draw-battle-relief";
+import { type Battlefield, Battlefields } from "@/model/political/battle/battlefield";
+import { BattleReliefView } from "./draw-battle-relief";
 
 const bump = (col: number, row: number, x: number, y: number) => Math.exp(-((col - x) ** 2 + (row - y) ** 2) / 40);
 
@@ -10,7 +10,7 @@ function getField(
   relief: number,
   shape = (col: number, row: number) => 0.6 * bump(col, row, 30, 30) - 0.4 * bump(col, row, 70, 30)
 ): Battlefield {
-  const field = createEmptyBattlefield();
+  const field = Battlefields.createEmpty();
   const raw = Array.from({ length: COLS * ROWS }, (_, i) => {
     const [col, row] = [i % COLS, Math.floor(i / COLS)];
     return (0.3 * col) / COLS + shape(col, row);
@@ -31,25 +31,25 @@ describe("battle relief", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("draws nothing on a level field", () => {
-    expect(getReliefMarkup(createEmptyBattlefield(), "#fff")).toBe("");
+    expect(BattleReliefView.getMarkup(Battlefields.createEmpty(), "#fff")).toBe("");
   });
 
   it("labels the lines of a low field, every one of them when no index line crosses it", () => {
-    const markup = getReliefMarkup(getField(3), "#fff");
+    const markup = BattleReliefView.getMarkup(getField(3), "#fff");
     const values = labels(markup);
     expect(values.length).toBeGreaterThan(0);
     expect(values.some(value => value % 5)).toBe(true); // 1 m lines, labelled though none is an index line
   });
 
   it("labels only the index lines of a field two of them cross", () => {
-    const values = labels(getReliefMarkup(getField(110), "#fff")); // 10 m lines from 110 to 200: index lines at 150 and 200
+    const values = labels(BattleReliefView.getMarkup(getField(110), "#fff")); // 10 m lines from 110 to 200: index lines at 150 and 200
     expect(values.length).toBeGreaterThan(0);
     expect(values.every(value => value % 50 === 0)).toBe(true); // 10 m lines, every fifth labelled
   });
 
   it("marks the knoll as a top and the hollow as a hollow, low field or high", () => {
     for (const relief of [3, 100]) {
-      const heights = group(getReliefMarkup(getField(relief), "#fff"), "battleHeights");
+      const heights = group(BattleReliefView.getMarkup(getField(relief), "#fff"), "battleHeights");
       expect(heights.match(/stroke="none"/g)).toHaveLength(1); // ▲
       expect(heights.match(/fill="none"/g)).toHaveLength(1); // ▽
     }
@@ -57,7 +57,7 @@ describe("battle relief", () => {
 
   it("takes a shallow dip in high ground for no hollow", () => {
     const heights = group(
-      getReliefMarkup(
+      BattleReliefView.getMarkup(
         getField(30, (col, row) => -0.02 * bump(col, row, 85, 30)),
         "#fff"
       ),
@@ -68,13 +68,13 @@ describe("battle relief", () => {
 
   it("draws a low field's hachures and shade fainter than a high one's", () => {
     const opacity = (relief: number) =>
-      +group(getReliefMarkup(getField(relief), "#fff"), "battleHachures").match(/opacity="([\d.]+)"/)![1];
+      +group(BattleReliefView.getMarkup(getField(relief), "#fff"), "battleHachures").match(/opacity="([\d.]+)"/)![1];
     expect(opacity(3)).toBeLessThan(opacity(100));
   });
 
   it("starts and ends every hachure within the field", () => {
     const field = getField(100);
-    const strokes = group(getReliefMarkup(field, "#fff"), "battleHachures");
+    const strokes = group(BattleReliefView.getMarkup(field, "#fff"), "battleHachures");
     const numbers = [...strokes.matchAll(/[ML](-?\d+) (-?\d+)/g)].map(([, x, y]) => [+x, +y]);
     expect(numbers.length).toBeGreaterThan(0);
     expect(
@@ -83,6 +83,6 @@ describe("battle relief", () => {
   });
 
   it("draws hachures on a gentle field too", () => {
-    expect(group(getReliefMarkup(getField(3), "#fff"), "battleHachures")).toContain("<path");
+    expect(group(BattleReliefView.getMarkup(getField(3), "#fff"), "battleHachures")).toContain("<path");
   });
 });

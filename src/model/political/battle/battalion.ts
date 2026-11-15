@@ -2,28 +2,14 @@
 
 import { FOOT_SPEED } from "@/model/political/military-units";
 import type { Battle, Block } from "./battle";
-import { type Command, getStance, isBeaten, keepsPhase, type Side } from "./battle-rules";
-import { getWorksBetween } from "./battlefield";
-import {
-  ARRIVED,
-  CHARGE_HASTE,
-  canGrip,
-  canShoot,
-  getDistance,
-  getGap,
-  getPace,
-  getRange,
-  inContact,
-  isAboard,
-  normalize,
-  ROUND_TICKS,
-  type Spot
-} from "./movement";
-import { findStretch, isBarredByWorks, isBuilder, isHolding } from "./works";
+import { CHARGE, CHARGE_HASTE, COUNTER, SHAKEN } from "./battle-balance";
+import { BattleRules, type Command, type Side } from "./battle-rules";
+import { Battlefields, type FieldWork } from "./battlefield";
+import { ARRIVED, Movement, ROUND_TICKS, type Spot } from "./movement";
+import { Works } from "./works";
 
 export type Kind = "line" | "shooter" | "rider" | "engine";
 
-export const SHAKEN = 30; // morale under which a battalion does not attack
 const PRIZE = 0.3; // how much nearer a foe that only hits looks to who picks a target
 const UNDER = (1 + PRIZE) * (1 + 1e-9); // the worth over the straight line over this is less than over any way
 
@@ -33,8 +19,6 @@ const EVADE = 55; // shooters step back from foes this near
 const LEASH = 80; // how far shooters step from their place to get in range
 
 // in battalion fronts
-export const CHARGE = 2.75; // how far from its place a battalion goes for a foe when its side closes
-export const COUNTER = 1; // and when it holds
 const WATCH = 5; // how far a guard goes for riders
 const GUARD = 2; // how near a friend it protects a foe is gone for
 const CROWD = 1; // what each friend going for a foe adds to the way to it: they spread along the line
@@ -62,224 +46,240 @@ export interface Sense {
   held: Set<number>; // those at grips
 }
 
-/** Troops in a naval or an air battle are all of a kind: they shoot and close as their side does */
-export function getKind(unit: { range: number; speed: number }, open: boolean): Kind {
-  if (open) return "line";
-  if (unit.range >= LONG_SHOT) return "engine";
-  if (unit.range > 0) return "shooter";
-  return unit.speed >= FOOT_SPEED * 2 ? "rider" : "line";
-}
+class BattalionModule {
+  /** What a battalion weighs in a fight: its troops by the power of its unit and how well it is kept */
+  getStrength(block: Block): number {
+    return block.troops * block.unitPower * block.upkeep;
+  }
 
-/** What an order by hand has the side do where the phase is not the order's to change: in an ambush, in a landing */
-export function getBearing(battle: Battle, side: Side): Command | null {
-  const { order } = battle[side].plan;
-  return order && keepsPhase(battle.type, order) ? order : null;
-}
+  /** Troops in a naval or an air battle are all of a kind: they shoot and close as their side does */
+  getKind(unit: { range: number; speed: number }, open: boolean): Kind {
+    if (open) return "line";
+    if (unit.range >= LONG_SHOT) return "engine";
+    if (unit.range > 0) return "shooter";
+    return unit.speed >= FOOT_SPEED * 2 ? "rider" : "line";
+  }
 
-export function decide(battle: Battle, block: Block, sense: Sense): Intent {
-  const { order } = block;
-  const foes = sense.onField.filter(foe => foe.side !== block.side);
-  const ready = foes.filter(foe => foe.status === "ready");
-  const prey = ready.filter(foe => canGrip(battle, block, foe)); // whom it can come to grips with
-  const stand: Intent = {
-    target: null,
-    to: null,
-    stop: 0,
-    key: -1,
-    shared: false,
-    shoot: false,
-    facing: order.facing,
-    haste: 1,
-    keep: false,
-    build: false
-  };
-  const { front } = battle.field;
-  const far = (foe: Spot, from: Spot = block): number => Math.hypot(foe.x - from.x, foe.y - from.y);
-  const pick = (among: Block[]): Block | null => {
-    // best first by the worth over the straight line: no way is shorter, so a foe that cannot beat the best even so is
-    // passed over without finding the way to it; of foes worth the same the first in the list is kept
-    const bounds = among.map(foe => getWorth(battle, block, foe, sense, far(foe)) / UNDER);
-    const order = among.map((_, i) => i).sort((a, b) => bounds[a] - bounds[b]);
-    let best = -1;
-    let least = Infinity;
-    for (const i of order) {
-      if (bounds[i] > least) break;
-      const score = getWorth(battle, block, among[i], sense);
-      if (score < least || (score === least && i < best)) [best, least] = [i, score];
+  /** What an order by hand has the side do where the phase is not the order's to change: in an ambush, in a landing */
+  getBearing(battle: Battle, side: Side): Command | null {
+    const { order } = battle[side].plan;
+    return order && BattleRules.keepsPhase(battle.type, order) ? order : null;
+  }
+
+  decide(battle: Battle, block: Block, sense: Sense): Intent {
+    const { order } = block;
+    const foes = sense.onField.filter(foe => foe.side !== block.side);
+    const ready = foes.filter(foe => foe.status === "ready");
+    const prey = ready.filter(foe => Movement.canGrip(battle, block, foe)); // whom it can come to grips with
+    const stand: Intent = {
+      target: null,
+      to: null,
+      stop: 0,
+      key: -1,
+      shared: false,
+      shoot: false,
+      facing: order.facing,
+      haste: 1,
+      keep: false,
+      build: false
+    };
+    const { front } = battle.field;
+    const far = (foe: Spot, from: Spot = block): number => Math.hypot(foe.x - from.x, foe.y - from.y);
+    const pick = (among: Block[]): Block | null => {
+      // best first by the worth over the straight line: no way is shorter, so a foe that cannot beat the best even so is
+      // passed over without finding the way to it; of foes worth the same the first in the list is kept
+      const bounds = among.map(foe => this.getWorth(battle, block, foe, sense, far(foe)) / UNDER);
+      const order = among.map((_, i) => i).sort((a, b) => bounds[a] - bounds[b]);
+      let best = -1;
+      let least = Infinity;
+      for (const i of order) {
+        if (bounds[i] > least) break;
+        const score = this.getWorth(battle, block, among[i], sense);
+        if (score < least || (score === least && i < best)) [best, least] = [i, score];
+      }
+      return best < 0 ? null : among[best];
+    };
+    const goHome = (): Intent =>
+      far(order) < ARRIVED * front ? stand : { ...stand, to: order, key: this.getPointKey(battle, order), keep: true };
+    // the last stretch at a run: what it covers in a tick so; engines do not charge
+    const run = (target: Block): number =>
+      block.kind !== "engine" && Movement.getGap(block, target)[0] <= Movement.getPace(battle, block) * CHARGE_HASTE
+        ? CHARGE_HASTE
+        : 1;
+    const charge = (target: Block): Intent => ({ ...stand, target, to: target, key: target.id, haste: run(target) });
+    const shoot = (target: Block, approach = false): Intent => ({
+      ...stand,
+      target,
+      to: approach ? target : null,
+      stop: Movement.getRange(battle, block, target) * 0.85,
+      key: target.id,
+      shoot: true
+    });
+
+    // at grips: the foe it fights already, or the one most to its front
+    const grips = ready.filter(foe => Movement.inContact(battle, foe, block));
+    if (grips.length) {
+      const off = (foe: Block): number =>
+        Math.abs(Movement.normalize(Math.atan2(foe.y - block.y, foe.x - block.x) - block.facing));
+      const target = grips.find(foe => foe.id === block.target) ?? grips.reduce((a, b) => (off(b) < off(a) ? b : a));
+      return { ...stand, target };
     }
-    return best < 0 ? null : among[best];
-  };
-  const goHome = (): Intent =>
-    far(order) < ARRIVED * front ? stand : { ...stand, to: order, key: getPointKey(battle, order), keep: true };
-  // the last stretch at a run: what it covers in a tick so; engines do not charge
-  const run = (target: Block): number =>
-    block.kind !== "engine" && getGap(block, target)[0] <= getPace(battle, block) * CHARGE_HASTE ? CHARGE_HASTE : 1;
-  const charge = (target: Block): Intent => ({ ...stand, target, to: target, key: target.id, haste: run(target) });
-  const shoot = (target: Block, approach = false): Intent => ({
-    ...stand,
-    target,
-    to: approach ? target : null,
-    stop: getRange(battle, block, target) * 0.85,
-    key: target.id,
-    shoot: true
-  });
 
-  // at grips: the foe it fights already, or the one most to its front
-  const grips = ready.filter(foe => inContact(battle, foe, block));
-  if (grips.length) {
-    const off = (foe: Block): number =>
-      Math.abs(normalize(Math.atan2(foe.y - block.y, foe.x - block.x) - block.facing));
-    const target = grips.find(foe => foe.id === block.target) ?? grips.reduce((a, b) => (off(b) < off(a) ? b : a));
-    return { ...stand, target };
-  }
-
-  if (block.task) {
-    const { task } = block;
-    const shot = (among: Block[]): Block | null => pick(among.filter(foe => canShoot(battle, block, foe)));
-    if (task.kind === "move") {
-      if (far(task) >= ARRIVED * front)
-        return { ...stand, to: task, key: getPointKey(battle, task), facing: task.facing };
-      const target = block.range ? shot(ready) : null; // there it shoots what comes in range, and fights what comes at it
-      return target ? shoot(target) : { ...stand, facing: task.facing };
+    if (block.task) {
+      const { task } = block;
+      const shot = (among: Block[]): Block | null => pick(among.filter(foe => Movement.canShoot(battle, block, foe)));
+      if (task.kind === "move") {
+        if (far(task) >= ARRIVED * front)
+          return { ...stand, to: task, key: this.getPointKey(battle, task), facing: task.facing };
+        const target = block.range ? shot(ready) : null; // there it shoots what comes in range, and fights what comes at it
+        return target ? shoot(target) : { ...stand, facing: task.facing };
+      }
+      const other = sense.onField.find(other => other.id === task.target);
+      if (other && task.kind === "attack") return block.range ? shoot(other, true) : charge(other);
+      if (other) {
+        // the foes that come at the friend, the nearest to it first
+        const near = (foe: Block): boolean => far(foe, other) - foe.width / 2 <= GUARD * front;
+        const threat = block.range ? shot(ready.filter(near)) : pick(prey.filter(near));
+        if (threat) return block.range ? shoot(threat) : charge(threat);
+        const by = (other.width + block.width) / 2 + front;
+        if (far(other) > by + ARRIVED * front)
+          return { ...stand, to: other, stop: by, key: other.id, facing: other.facing };
+        return { ...stand, facing: other.facing };
+      }
     }
-    const other = sense.onField.find(other => other.id === task.target);
-    if (other && task.kind === "attack") return block.range ? shoot(other, true) : charge(other);
-    if (other) {
-      // the foes that come at the friend, the nearest to it first
-      const near = (foe: Block): boolean => far(foe, other) - foe.width / 2 <= GUARD * front;
-      const threat = block.range ? shot(ready.filter(near)) : pick(prey.filter(near));
-      if (threat) return block.range ? shoot(threat) : charge(threat);
-      const by = (other.width + block.width) / 2 + front;
-      if (far(other) > by + ARRIVED * front)
-        return { ...stand, to: other, stop: by, key: other.id, facing: other.facing };
-      return { ...stand, facing: other.facing };
+
+    // at work on its stretch while no foe can be upon it within a round; the work is kept for when the foe is gone
+    const { plan } = battle[block.side];
+    if (plan.fortify && Works.isBuilder(battle, block) && far(order) < AT_WORK * front) {
+      const work = Works.findStretch(battle, block);
+      const near = ready.some(foe => far(foe) < Movement.getPace(battle, foe) * ROUND_TICKS + CHARGE * front);
+      if ((!work || work.done < 1) && !near) return { ...stand, build: true };
     }
-  }
 
-  // at work on its stretch while no foe can be upon it within a round; the work is kept for when the foe is gone
-  const { plan } = battle[block.side];
-  if (plan.fortify && isBuilder(battle, block) && far(order) < AT_WORK * front) {
-    const work = findStretch(battle, block);
-    const near = ready.some(foe => far(foe) < getPace(battle, foe) * ROUND_TICKS + CHARGE * front);
-    if ((!work || work.done < 1) && !near) return { ...stand, build: true };
-  }
+    const shaken = block.morale < SHAKEN;
+    const { phase, advancing } = battle[block.side];
+    const told = this.getBearing(battle, block.side);
+    const forward = told ? told === "attack" || told === "defend" : BattleRules.getStance(phase) === "advance";
+    const bold = forward && !shaken;
+    const keen = told === "skirmish"; // shooters go as far as it takes where the formation stays
+    const inRange = (): Block[] => ready.filter(foe => Movement.canShoot(battle, block, foe));
 
-  const shaken = block.morale < SHAKEN;
-  const { phase, advancing } = battle[block.side];
-  const told = getBearing(battle, block.side);
-  const forward = told ? told === "attack" || told === "defend" : getStance(phase) === "advance";
-  const bold = forward && !shaken;
-  const keen = told === "skirmish"; // shooters go as far as it takes where the formation stays
-  const inRange = (): Block[] => ready.filter(foe => canShoot(battle, block, foe));
-
-  if (order.mission === "battery") {
-    const target = pick(inRange());
-    return target ? shoot(target) : goHome();
-  }
-
-  if (order.mission === "support") {
-    // out of reach of those who come for it
-    const threat = ready
-      .filter(
-        foe =>
-          !foe.range &&
-          !sense.held.has(foe.id) &&
-          far(foe) < EVADE &&
-          !isBarredByWorks(battle, foe, [foe.x, foe.y], [block.x, block.y]) // riders before stakes, foes outside wagons
-      )
-      .reduce<Block | null>((a, b) => (a && far(a) <= far(b) ? a : b), null);
-    if (threat) {
-      const away = Math.atan2(block.y - threat.y, block.x - threat.x);
-      const to = { x: block.x + Math.cos(away) * EVADE, y: block.y + Math.sin(away) * EVADE };
-      return { ...stand, to, key: getPointKey(battle, to) };
+    if (order.mission === "battery") {
+      const target = pick(inRange());
+      return target ? shoot(target) : goHome();
     }
-    const target = pick(inRange());
-    if (target) return shoot(target);
-    // nothing in range: a step forward from the place, no further than the leash
-    const leash = keen && plan.fixed ? Infinity : LEASH;
-    const next = bold || keen ? pick(ready.filter(foe => far(foe, order) <= block.range + leash)) : null;
-    return next ? shoot(next, true) : goHome();
+
+    if (order.mission === "support") {
+      // out of reach of those who come for it
+      const threat = ready
+        .filter(
+          foe =>
+            !foe.range &&
+            !sense.held.has(foe.id) &&
+            far(foe) < EVADE &&
+            !Works.isBarredByWorks(battle, foe, [foe.x, foe.y], [block.x, block.y]) // riders before stakes, foes outside wagons
+        )
+        .reduce<Block | null>((a, b) => (a && far(a) <= far(b) ? a : b), null);
+      if (threat) {
+        const away = Math.atan2(block.y - threat.y, block.x - threat.x);
+        const to = { x: block.x + Math.cos(away) * EVADE, y: block.y + Math.sin(away) * EVADE };
+        return { ...stand, to, key: this.getPointKey(battle, to) };
+      }
+      const target = pick(inRange());
+      if (target) return shoot(target);
+      // nothing in range: a step forward from the place, no further than the leash
+      const leash = keen && plan.fixed ? Infinity : LEASH;
+      const next = bold || keen ? pick(ready.filter(foe => far(foe, order) <= block.range + leash)) : null;
+      return next ? shoot(next, true) : goHome();
+    }
+
+    if (order.mission === "flank") {
+      // only who bars the way
+      const barring = pick(prey.filter(foe => far(foe) <= COUNTER * front + foe.width / 2));
+      if (barring && !shaken) return charge(barring);
+      // stormers all make for the middle of the burg
+      const shared = battle.type === "siege";
+      return far(order) < ARRIVED * front
+        ? stand
+        : { ...stand, to: order, key: this.getPointKey(battle, order), shared };
+    }
+
+    if (order.mission === "hunt") {
+      const shooting = Boolean(block.range) && block.kind !== "line";
+      const among = shooting ? foes : foes.filter(foe => Movement.canGrip(battle, block, foe));
+      const inOrder = among.filter(foe => foe.status === "ready");
+      const target = pick(inOrder.length && !bold ? inOrder : among);
+      if (!target) return goHome();
+      if (shooting) return shoot(target, true);
+      return shaken ? stand : charge(target);
+    }
+
+    // line, reserve and guard keep their place and go for what comes within reach of it
+    const guard = order.mission === "guard";
+    const reach = (order.mission === "line" && bold && advancing ? CHARGE : COUNTER) * front; // who waits, holds
+    // behind its own works, a side that holds lets the foe come over them rather than lose them
+    const behind = battle.field.works.length > 0 && Works.isHolding(battle, block.side);
+    const own = (work: FieldWork): boolean => work.side === block.side;
+    const over = (foe: Block): boolean =>
+      behind && Battlefields.hasWorksBetween(battle.field, [block.x, block.y], [foe.x, foe.y], own);
+    const within = prey.filter(foe => {
+      const distance = far(foe, order) - foe.width / 2;
+      const near =
+        foe.id === order.target ||
+        distance <= reach ||
+        (guard && foe.kind === "rider" && distance <= WATCH * front) ||
+        (sense.held.has(foe.id) && distance <= reach * 1.5); // the flank of a foe a neighbour holds
+      return near && !over(foe) && !Movement.isAboard(battle, foe); // the boats are let come: who wades out of them is the prey
+    });
+    // ships and fliers close when their side does, shooting from their place till then; others who shoot do not close
+    const boarding = Boolean(battle.field.open) && bold;
+    if (within.length && !shaken && (!block.range || boarding)) return charge(pick(within)!);
+    if (block.range && (!boarding || far(order) < Movement.getPace(battle, block))) {
+      const target = pick(inRange());
+      if (target) return shoot(target);
+    }
+    return goHome();
   }
 
-  if (order.mission === "flank") {
-    // only who bars the way
-    const barring = pick(prey.filter(foe => far(foe) <= COUNTER * front + foe.width / 2));
-    if (barring && !shaken) return charge(barring);
-    // stormers all make for the middle of the burg
-    const shared = battle.type === "siege";
-    return far(order) < ARRIVED * front ? stand : { ...stand, to: order, key: getPointKey(battle, order), shared };
+  /** The key of the way to a point: the same while the point stays, so a way to a fixed place is found once */
+  private getPointKey(battle: Battle, point: Spot): number {
+    const span = Math.ceil(battle.field.height) * 3; // a point may lie off the field
+    return -1 - (Math.round(point.x) * span + Math.round(point.y) + span / 3);
   }
 
-  if (order.mission === "hunt") {
-    const shooting = Boolean(block.range) && block.kind !== "line";
-    const among = shooting ? foes : foes.filter(foe => canGrip(battle, block, foe));
-    const inOrder = among.filter(foe => foe.status === "ready");
-    const target = pick(inOrder.length && !bold ? inOrder : among);
-    if (!target) return goHome();
-    if (shooting) return shoot(target, true);
-    return shaken ? stand : charge(target);
-  }
+  /** How little a foe is worth going for: the way to it, shortened by all that makes it a better prey */
+  private getWorth(
+    battle: Battle,
+    block: Block,
+    foe: Block,
+    sense: Sense,
+    way = Movement.getDistance(battle, block, foe)
+  ): number {
+    let score = way;
+    const chasing =
+      BattleRules.getStance(battle[block.side].phase) === "advance" &&
+      BattleRules.isBeaten(battle.type, foe.side, battle[foe.side].phase);
+    const { front } = battle.field;
+    if (foe.status === "routed")
+      score = chasing || block.order.mission === "hunt" ? score * 0.9 : score + ROUTED * front;
+    if (foe.id === block.target) score *= 0.75;
+    else if (!block.range) score += (sense.crowd.get(foe.id) ?? 0) * CROWD * front;
+    if (foe.id === block.order.target) score *= 0.5; // the general points at it
 
-  // line, reserve and guard keep their place and go for what comes within reach of it
-  const guard = order.mission === "guard";
-  const reach = (order.mission === "line" && bold && advancing ? CHARGE : COUNTER) * front; // who waits, holds
-  // behind its own works, a side that holds lets the foe come over them rather than lose them
-  const behind = battle.field.works.length > 0 && isHolding(battle, block.side);
-  const over = (foe: Block): boolean =>
-    behind && getWorksBetween(battle.field, [block.x, block.y], [foe.x, foe.y], block.side).length > 0;
-  const within = prey.filter(foe => {
-    const distance = far(foe, order) - foe.width / 2;
-    const near =
-      foe.id === order.target ||
-      distance <= reach ||
-      (guard && foe.kind === "rider" && distance <= WATCH * front) ||
-      (sense.held.has(foe.id) && distance <= reach * 1.5); // the flank of a foe a neighbour holds
-    return near && !over(foe) && !isAboard(battle, foe); // the boats are let come: who wades out of them is the prey
-  });
-  // ships and fliers close when their side does, shooting from their place till then; others who shoot do not close
-  const boarding = Boolean(battle.field.open) && bold;
-  if (within.length && !shaken && (!block.range || boarding)) return charge(pick(within)!);
-  if (block.range && (!boarding || far(order) < getPace(battle, block))) {
-    const target = pick(inRange());
-    if (target) return shoot(target);
+    const edge = (foe.attack - foe.defense) / (foe.attack + foe.defense || 1); // hits harder than it stands
+    if (block.range) return score * (1 - PRIZE * edge);
+
+    const bearing = Math.abs(Movement.normalize(Math.atan2(block.y - foe.y, block.x - foe.x) - foe.facing)); // 0 at its front
+    const held = sense.held.has(foe.id);
+    if (held && bearing > 1.05) score *= bearing > 2.1 ? 0.6 : 0.75; // the flank and the rear of a foe held by a friend
+    if (foe.morale < SHAKEN) score *= 0.85;
+    if (block.kind === "rider") {
+      if (foe.kind === "shooter" || foe.kind === "engine") score *= 0.7;
+      else if (foe.kind === "line" && bearing < 1.05 && !held && foe.morale >= SHAKEN) score *= 1.6; // formed, head on
+    }
+    if (score <= CHARGE * front) score *= 1 - PRIZE * edge;
+    return score;
   }
-  return goHome();
 }
 
-/** The key of the way to a point: the same while the point stays, so a way to a fixed place is found once */
-function getPointKey(battle: Battle, point: Spot): number {
-  const span = Math.ceil(battle.field.height) * 3; // a point may lie off the field
-  return -1 - (Math.round(point.x) * span + Math.round(point.y) + span / 3);
-}
-
-/** How little a foe is worth going for: the way to it, shortened by all that makes it a better prey */
-function getWorth(
-  battle: Battle,
-  block: Block,
-  foe: Block,
-  sense: Sense,
-  way = getDistance(battle, block, foe)
-): number {
-  let score = way;
-  const chasing =
-    getStance(battle[block.side].phase) === "advance" && isBeaten(battle.type, foe.side, battle[foe.side].phase);
-  const { front } = battle.field;
-  if (foe.status === "routed") score = chasing || block.order.mission === "hunt" ? score * 0.9 : score + ROUTED * front;
-  if (foe.id === block.target) score *= 0.75;
-  else if (!block.range) score += (sense.crowd.get(foe.id) ?? 0) * CROWD * front;
-  if (foe.id === block.order.target) score *= 0.5; // the general points at it
-
-  const edge = (foe.attack - foe.defense) / (foe.attack + foe.defense || 1); // hits harder than it stands
-  if (block.range) return score * (1 - PRIZE * edge);
-
-  const bearing = Math.abs(normalize(Math.atan2(block.y - foe.y, block.x - foe.x) - foe.facing)); // 0 at its front
-  const held = sense.held.has(foe.id);
-  if (held && bearing > 1.05) score *= bearing > 2.1 ? 0.6 : 0.75; // the flank and the rear of a foe held by a friend
-  if (foe.morale < SHAKEN) score *= 0.85;
-  if (block.kind === "rider") {
-    if (foe.kind === "shooter" || foe.kind === "engine") score *= 0.7;
-    else if (foe.kind === "line" && bearing < 1.05 && !held && foe.morale >= SHAKEN) score *= 1.6; // formed, head on
-  }
-  if (score <= CHARGE * front) score *= 1 - PRIZE * edge;
-  return score;
-}
+export const Battalions = new BattalionModule();

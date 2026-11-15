@@ -19,34 +19,48 @@ export interface FieldSize {
   front: number; // a full battalion's
 }
 
-/** The field for battalions of so many men; a siege takes in its whole burg and the land about it, top to bottom */
-export function getFieldSize(men: number, siegeRadius = Infinity): FieldSize {
-  const front = men / RANKS;
-  const army = front * FRONTS;
-  const ring = SIEGE_LAND + front;
-  const siege = Number.isFinite(siegeRadius)
-    ? Math.min(toWidth(ring + siegeRadius), Math.max(army, toWidth(ring)) * SIEGE_ZOOM)
-    : 0;
-  const width = Math.min(Math.max(army, siege, MIN_WIDTH), MAX_WIDTH);
-  return { width, height: (width * ROWS) / COLS, cell: width / COLS, front };
+class BattleScaleModule {
+  /** The field for battalions of so many men; a siege takes in its whole burg and the land about it, top to bottom */
+  getFieldSize(men: number, siegeRadius = Infinity): FieldSize {
+    const front = men / RANKS;
+    const army = front * FRONTS;
+    const ring = SIEGE_LAND + front;
+    const siege = Number.isFinite(siegeRadius)
+      ? Math.min(this.toWidth(ring + siegeRadius), Math.max(army, this.toWidth(ring)) * SIEGE_ZOOM)
+      : 0;
+    const width = Math.min(Math.max(army, siege, MIN_WIDTH), MAX_WIDTH);
+    return { width, height: (width * ROWS) / COLS, cell: width / COLS, front };
+  }
+
+  /** The radius a besieged burg is drawn with: its own, smaller where its field is too small for it */
+  fitSiegeBurg(radius: number, size: FieldSize): number {
+    return Math.min(radius, size.height / 2 - SIEGE_LAND - size.front);
+  }
+
+  private toWidth(halfHeight: number): number {
+    return (2 * halfHeight * COLS) / ROWS;
+  }
+
+  toMetresPerTick(kmh: number): number {
+    return (kmh / 3.6) * TICK_SECONDS;
+  }
+
+  toMetresPerSecond(metresPerTick: number): number {
+    return metresPerTick / TICK_SECONDS;
+  }
+
+  /** Ticks in so many minutes */
+  minutesToTicks(minutes: number): number {
+    return Math.round((minutes * 60) / TICK_SECONDS);
+  }
+
+  /** Time elapsed by a tick: m:ss, h:mm:ss past an hour */
+  formatClock(tick: number): string {
+    const seconds = Math.round(tick * TICK_SECONDS);
+    const pad = (value: number): string => String(value).padStart(2, "0");
+    const [hours, minutes] = [Math.floor(seconds / 3600), Math.floor((seconds % 3600) / 60)];
+    return hours ? `${hours}:${pad(minutes)}:${pad(seconds % 60)}` : `${minutes}:${pad(seconds % 60)}`;
+  }
 }
 
-/** The radius a besieged burg is drawn with: its own, smaller where its field is too small for it */
-export const fitSiegeBurg = (radius: number, size: FieldSize): number =>
-  Math.min(radius, size.height / 2 - SIEGE_LAND - size.front);
-
-const toWidth = (halfHeight: number): number => (2 * halfHeight * COLS) / ROWS;
-
-export const toMetresPerTick = (kmh: number): number => (kmh / 3.6) * TICK_SECONDS;
-export const toMetresPerSecond = (metresPerTick: number): number => metresPerTick / TICK_SECONDS;
-
-/** Ticks in so many minutes */
-export const minutesToTicks = (minutes: number): number => Math.round((minutes * 60) / TICK_SECONDS);
-
-/** Time elapsed by a tick: m:ss, h:mm:ss past an hour */
-export function formatClock(tick: number): string {
-  const seconds = Math.round(tick * TICK_SECONDS);
-  const pad = (value: number): string => String(value).padStart(2, "0");
-  const [hours, minutes] = [Math.floor(seconds / 3600), Math.floor((seconds % 3600) / 60)];
-  return hours ? `${hours}:${pad(minutes)}:${pad(seconds % 60)}` : `${minutes}:${pad(seconds % 60)}`;
-}
+export const BattleScale = new BattleScaleModule();

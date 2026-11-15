@@ -4,7 +4,7 @@ import { createRegistry } from "@/utils/registry";
 export const Controllers = createRegistry(
   {
     AiGenerator: () => import("@/controllers/ai-generator").then(m => m.AiGenerator),
-    BattleScreen: () => import("@/controllers/political/military/battle-screen").then(m => m.BattleScreen),
+    BattleScreen: () => import("@/controllers/political/battle/battle-screen").then(m => m.BattleScreen),
     BiomesEditor: () => import("@/controllers/physical/biomes-editor").then(m => m.BiomesEditor),
     BurgCreator: () => import("@/controllers/political/burgs/burg-creator").then(m => m.BurgCreator),
     BurgEditor: () => import("@/controllers/political/burgs/burg-editor").then(m => m.BurgEditor),

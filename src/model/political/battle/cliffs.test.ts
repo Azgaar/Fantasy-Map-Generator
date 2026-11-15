@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Point } from "@/types/global";
 import { COLS, ROWS } from "./battle-scale";
-import { createEmptyBattlefield, type FieldCliff, getCliffsBetween } from "./battlefield";
-import { type CliffGround, type Escarpments, laySeaCliffs, raiseEscarpments, traceEdges } from "./cliffs";
+import { Battlefields, type FieldCliff } from "./battlefield";
+import { type CliffGround, Cliffs, type Escarpments } from "./cliffs";
 
 const CELL = 10;
 const FRONT = 40;
@@ -26,7 +26,7 @@ function ground(
 /** Escarpments of a field whose land is 100 m higher where `high` says, its edge a sheer drop */
 const escarp = (field: CliffGround, high: (node: number) => boolean) => {
   field.height = field.height.map((_, node) => (high(node) ? 100 : 0));
-  return raiseEscarpments(field, 60, () => 1);
+  return Cliffs.raiseEscarpments(field, 60, () => 1);
 };
 
 /**
@@ -34,13 +34,14 @@ const escarp = (field: CliffGround, high: (node: number) => boolean) => {
  * The ground is smooth but across a cliff
  */
 function getJumps({ cliffs, top, step }: Escarpments): number[][] {
-  const field = { ...createEmptyBattlefield(), cell: CELL, cliffs };
+  const field = { ...Battlefields.createEmpty(), cell: CELL, cliffs };
   const jumps: number[][] = [];
   for (let node = 0; node < COLS * ROWS; node++) {
     for (const next of [node % COLS < COLS - 1 ? node + 1 : -1, node + COLS < COLS * ROWS ? node + COLS : -1]) {
       if (next < 0 || top[node] === top[next]) continue;
       const jump = (step[node] + step[next]) / 2;
-      if (jump > 1 && !getCliffsBetween(field, centre(node), centre(next)).length) jumps.push([node, next, jump]);
+      if (jump > 1 && !Battlefields.getCliffsBetween(field, centre(node), centre(next)).length)
+        jumps.push([node, next, jump]);
     }
   }
   return jumps;
@@ -90,7 +91,7 @@ const length = (cliffs: { a: Point; b: Point }[]): number =>
 describe("cliffs", () => {
   it("traces the edge of a block of nodes all round, the block on the left of every stretch", () => {
     const box = [20, 10, 30, 25];
-    const edges = traceEdges(node => inBox(node, box), CELL);
+    const edges = Cliffs.traceEdges(node => inBox(node, box), CELL);
     expect(length(edges)).toBeCloseTo(2 * (10 + 15) * CELL - 4 * (2 - Math.SQRT2) * (CELL / 2), 5); // corners cut
     for (const edge of edges) {
       const [ux, uy] = [edge.b[0] - edge.a[0], edge.b[1] - edge.a[1]];
@@ -105,7 +106,7 @@ describe("cliffs", () => {
 
   it("cliffs a rugged coast in stretches and keeps the shore nearest the middle a beach", () => {
     const sea = (node: number): boolean => Math.floor(node / COLS) < 20; // the sea in the north
-    const cliffs = laySeaCliffs(ground(sea), 40, () => 1);
+    const cliffs = Cliffs.laySeaCliffs(ground(sea), 40, () => 1);
     expect(cliffs.length).toBeGreaterThan(0);
     for (const cliff of cliffs) expect(cliff.a[1]).toBeCloseTo(20 * CELL); // on the shore, between the rows
     const middle = (COLS * CELL) / 2;
@@ -113,14 +114,14 @@ describe("cliffs", () => {
     expect(atMiddle).toEqual([]);
     expect(length(cliffs)).toBeGreaterThan(((COLS - 1) * CELL - 3 * FRONT) * 0.7); // all but the beach and gaps
     for (const piece of getPieces(cliffs)) expect(length(piece)).toBeLessThanOrEqual(6 * FRONT + 2 * CELL); // and its run past the edge
-    expect(laySeaCliffs(ground(sea), 5, () => 1)).toEqual([]); // a gentle coast has none
-    expect(laySeaCliffs(ground(sea), 40, () => 0)).toEqual([]); // nor a coast all beaches
+    expect(Cliffs.laySeaCliffs(ground(sea), 5, () => 1)).toEqual([]); // a gentle coast has none
+    expect(Cliffs.laySeaCliffs(ground(sea), 40, () => 0)).toEqual([]); // nor a coast all beaches
   });
 
   it("leaves no cliff by a road", () => {
     const sea = (node: number): boolean => Math.floor(node / COLS) < 20;
     const road = 200; // a road coming down to the shore at x = 200
-    const cliffs = laySeaCliffs(
+    const cliffs = Cliffs.laySeaCliffs(
       ground(sea, ([x]: Point) => Math.abs(x - road)),
       40,
       () => 1
@@ -168,7 +169,7 @@ describe("cliffs", () => {
   });
 
   it("finds every stretch a way crosses, short or long, on the field or off it, through a node's corner too", () => {
-    const field = createEmptyBattlefield();
+    const field = Battlefields.createEmpty();
     let seed = 7;
     const random = (): number => {
       seed = (seed * 16807) % 2147483647;
@@ -191,7 +192,7 @@ describe("cliffs", () => {
       const reach = random() < 0.5 ? cell * 3 : cell * 120;
       const angle = random() * Math.PI * 2;
       const to: Point = [from[0] + Math.cos(angle) * reach, from[1] + Math.sin(angle) * reach];
-      const found = new Set(getCliffsBetween(field, from, to));
+      const found = new Set(Battlefields.getCliffsBetween(field, from, to));
       for (const cliff of field.cliffs) if (crosses(from, to, cliff.a, cliff.b)) expect(found.has(cliff)).toBe(true);
     }
   });
@@ -207,18 +208,18 @@ describe("cliffs", () => {
         const [x, y] = [node % COLS, Math.floor(node / COLS)];
         return 150 * (Math.sin(x / fx) + Math.cos(y / fy) + Math.sin((x + y) / (fx + fy)));
       });
-      const scarps = raiseEscarpments(field, 60, () => 1)!;
+      const scarps = Cliffs.raiseEscarpments(field, 60, () => 1)!;
       expect(scarps.cliffs.length).toBeGreaterThan(0);
       expect(getJumps(scarps)).toEqual([]);
     }
   });
 
   it("lays nothing on gentle ground, nor on a hillside that is not steep", () => {
-    expect(raiseEscarpments(ground(), 40, () => 1)).toBeNull();
+    expect(Cliffs.raiseEscarpments(ground(), 40, () => 1)).toBeNull();
     const hillside = ground();
     hillside.height = hillside.height.map((_, node) => (node % COLS) * CELL * 0.08); // 4.6°
-    expect(raiseEscarpments(hillside, 60, () => 1)!.cliffs).toEqual([]);
+    expect(Cliffs.raiseEscarpments(hillside, 60, () => 1)!.cliffs).toEqual([]);
     hillside.height = hillside.height.map((_, node) => (node % COLS) * CELL * 0.2); // 11°
-    expect(raiseEscarpments(hillside, 60, () => 1)!.cliffs.length).toBeGreaterThan(0);
+    expect(Cliffs.raiseEscarpments(hillside, 60, () => 1)!.cliffs.length).toBeGreaterThan(0);
   });
 });

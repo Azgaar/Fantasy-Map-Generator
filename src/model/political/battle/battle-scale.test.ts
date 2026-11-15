@@ -1,22 +1,15 @@
 import { describe, expect, it } from "vitest";
-import {
-  fitSiegeBurg,
-  formatClock,
-  getFieldSize,
-  minutesToTicks,
-  toMetresPerSecond,
-  toMetresPerTick
-} from "./battle-scale";
+import { BattleScale } from "./battle-scale";
 
 describe("battle scale", () => {
   it("stands a battalion a metre a man across five ranks", () => {
-    expect(getFieldSize(300).front).toBe(60);
-    expect(getFieldSize(200).front).toBe(40);
-    expect(getFieldSize(1000).front).toBe(200);
+    expect(BattleScale.getFieldSize(300).front).toBe(60);
+    expect(BattleScale.getFieldSize(200).front).toBe(40);
+    expect(BattleScale.getFieldSize(1000).front).toBe(200);
   });
 
   it("sizes the field by the battalions, 0.6 as deep as it is wide", () => {
-    const size = (men: number) => getFieldSize(men);
+    const size = (men: number) => BattleScale.getFieldSize(men);
     expect(size(300).width).toBeCloseTo(1364, 0);
     expect(size(300).height).toBeCloseTo(818, 0);
     expect(size(200).width).toBeCloseTo(909, 0);
@@ -25,41 +18,41 @@ describe("battle scale", () => {
   });
 
   it("keeps a node 1% of the field's width", () => {
-    expect(getFieldSize(300).cell).toBeCloseTo(13.64, 2);
-    expect(getFieldSize(1000).cell).toBeCloseTo(45.45, 2);
+    expect(BattleScale.getFieldSize(300).cell).toBeCloseTo(13.64, 2);
+    expect(BattleScale.getFieldSize(1000).cell).toBeCloseTo(45.45, 2);
   });
 
   it("takes a besieged burg and the land about it in, top to bottom", () => {
-    expect(getFieldSize(300, 60).width).toBeCloseTo(1533, 0); // a village: the ring and room about it
-    expect(getFieldSize(300, 200).width).toBeCloseTo(2000, 0); // a town
-    expect(fitSiegeBurg(200, getFieldSize(300, 200))).toBe(200); // at its true size
-    expect(getFieldSize(1000, 60).width).toBeCloseTo(4545, 0); // big battalions keep their field
-    expect(getFieldSize(300, 60).front).toBe(60); // battalions keep their real size
+    expect(BattleScale.getFieldSize(300, 60).width).toBeCloseTo(1533, 0); // a village: the ring and room about it
+    expect(BattleScale.getFieldSize(300, 200).width).toBeCloseTo(2000, 0); // a town
+    expect(BattleScale.fitSiegeBurg(200, BattleScale.getFieldSize(300, 200))).toBe(200); // at its true size
+    expect(BattleScale.getFieldSize(1000, 60).width).toBeCloseTo(4545, 0); // big battalions keep their field
+    expect(BattleScale.getFieldSize(300, 60).front).toBe(60); // battalions keep their real size
   });
 
   it("zooms out for a siege at most 1.5 times, drawing a burg too big for it smaller", () => {
-    const city = getFieldSize(300, 800);
-    expect(city.width).toBeCloseTo(1.5 * getFieldSize(300).width, 0);
-    const radius = fitSiegeBurg(800, city);
+    const city = BattleScale.getFieldSize(300, 800);
+    expect(city.width).toBeCloseTo(1.5 * BattleScale.getFieldSize(300).width, 0);
+    const radius = BattleScale.fitSiegeBurg(800, city);
     expect(radius).toBeCloseTo(214, 0);
     expect(city.height / 2).toBeCloseTo(radius + 340 + 60, 5); // the ring fits above and below
-    expect(getFieldSize(300, 5000).width).toBe(city.width);
+    expect(BattleScale.getFieldSize(300, 5000).width).toBe(city.width);
   });
 
   it("keeps the field between 250 m and 10 km wide", () => {
-    expect(getFieldSize(20).width).toBe(250);
-    expect(getFieldSize(5000).width).toBe(10000);
+    expect(BattleScale.getFieldSize(20).width).toBe(250);
+    expect(BattleScale.getFieldSize(5000).width).toBe(10000);
   });
 
   it("turns km/h into metres a tick of eight seconds and back to m/s", () => {
-    expect(toMetresPerTick(3.6)).toBe(8);
-    expect(toMetresPerSecond(toMetresPerTick(12.6))).toBeCloseTo(3.5, 5);
-    expect(minutesToTicks(8)).toBe(60);
+    expect(BattleScale.toMetresPerTick(3.6)).toBe(8);
+    expect(BattleScale.toMetresPerSecond(BattleScale.toMetresPerTick(12.6))).toBeCloseTo(3.5, 5);
+    expect(BattleScale.minutesToTicks(8)).toBe(60);
   });
 
   it("shows the time a tick is at as m:ss, h:mm:ss past an hour", () => {
-    expect(formatClock(0)).toBe("0:00");
-    expect(formatClock(8)).toBe("1:04");
-    expect(formatClock(600)).toBe("1:20:00");
+    expect(BattleScale.formatClock(0)).toBe("0:00");
+    expect(BattleScale.formatClock(8)).toBe("1:04");
+    expect(BattleScale.formatClock(600)).toBe("1:20:00");
   });
 });

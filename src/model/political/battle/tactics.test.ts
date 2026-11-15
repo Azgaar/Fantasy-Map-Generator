@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { MilitaryUnit } from "@/types/military";
-import { type Battle, type BattleRegiment, createBattle, prepare, tick } from "./battle";
+import { type Battle, type BattleRegiment, Battles } from "./battle";
 import type { BattleType } from "./battle-rules";
 import { COLS, ROWS } from "./battle-scale";
-import { type Battlefield, createEmptyBattlefield, getElevation, terrainAt } from "./battlefield";
-import { getOptions } from "./general";
-import { getFooting, inContact, isAboard } from "./movement";
+import { type Battlefield, Battlefields } from "./battlefield";
+import { Generals } from "./general";
+import { Movement } from "./movement";
 
 const TRAITS: Record<string, { speed: number; range: number }> = {
   melee: { speed: 4.3, range: 0 },
@@ -44,7 +44,7 @@ const setup = (
   field: Battlefield,
   axis = 0
 ): Battle =>
-  createBattle({
+  Battles.create({
     type,
     name: "Test",
     place: null,
@@ -64,7 +64,7 @@ const firstLine = (b: Battle, side: "attackers" | "defenders"): Battle["blocks"]
 
 /** The sea on the attackers' side, its shore winding */
 const coast = (): Battlefield => {
-  const field = createEmptyBattlefield();
+  const field = Battlefields.createEmpty();
   for (let row = 0; row < ROWS; row++)
     for (let col = 0; col < 30 + Math.round(Math.sin(row / 6) * 3); col++) field.water[row * COLS + col] = 1;
   return field;
@@ -72,14 +72,14 @@ const coast = (): Battlefield => {
 /** How far the point is from the nearest water, along the row */
 const fromWater = (field: Battlefield, x: number, y: number): number => {
   let distance = 0;
-  while (!terrainAt(field, x - distance, y).water && distance < field.width) distance += 1;
+  while (!Battlefields.terrainAt(field, x - distance, y).water && distance < field.width) distance += 1;
   return distance;
 };
 
 describe("a landing met at the water's edge", () => {
   it("stands the defenders along the shore as it winds, a battalion deep from the water", () => {
     const b = setup("landing", mixed, mixed, coast());
-    prepare(b);
+    Battles.prepare(b);
     b.planned = true;
     const line = firstLine(b, "defenders");
     expect(line.length).toBeGreaterThan(3);
@@ -92,15 +92,15 @@ describe("a landing met at the water's edge", () => {
 
   it("has the attackers wade the shallows out of their boats and fight nobody from them", () => {
     const b = setup("landing", mixed, mixed, coast());
-    prepare(b);
+    Battles.prepare(b);
     b.planned = true; // met at the water's edge, whatever the general would choose
     let wading = 0;
     while (!b.result && b.tick < 600) {
-      tick(b);
+      Battles.tick(b);
       for (const block of b.blocks) {
         if (block.side !== "attackers" || block.action !== "fight") continue;
-        expect(isAboard(b, block)).toBe(false);
-        if (terrainAt(b.field, block.x, block.y).shallow) wading++;
+        expect(Movement.isAboard(b, block)).toBe(false);
+        if (Battlefields.terrainAt(b.field, block.x, block.y).shallow) wading++;
       }
     }
     expect(wading).toBeGreaterThan(10); // the shore is fought for in the shallows
@@ -113,23 +113,23 @@ describe("a landing met at the water's edge", () => {
     const [foe] = firstLine(b, "defenders");
     // wading right before the foe: at grips, at half the footing
     Object.assign(boat, { x: foe.x - foe.depth - 8, y: foe.y, facing: 0 });
-    const shallows = terrainAt(b.field, boat.x, boat.y);
+    const shallows = Battlefields.terrainAt(b.field, boat.x, boat.y);
     expect(shallows.shallow).toBe(true);
-    expect(isAboard(b, boat)).toBe(false);
-    expect(inContact(b, boat, foe)).toBe(true);
-    expect(getFooting(b, boat, shallows)).toBe(0.5);
+    expect(Movement.isAboard(b, boat)).toBe(false);
+    expect(Movement.inContact(b, boat, foe)).toBe(true);
+    expect(Movement.getFooting(b, boat, shallows)).toBe(0.5);
     // a node further out, still in the boat: out of reach of a foe come down to the water
     Object.assign(boat, { x: boat.x - b.field.cell });
-    expect(isAboard(b, boat)).toBe(true);
-    expect(getFooting(b, boat, terrainAt(b.field, boat.x, boat.y))).toBe(1);
-    expect(inContact(b, boat, { ...foe, x: boat.x + boat.depth + 6 })).toBe(false);
+    expect(Movement.isAboard(b, boat)).toBe(true);
+    expect(Movement.getFooting(b, boat, Battlefields.terrainAt(b.field, boat.x, boat.y))).toBe(1);
+    expect(Movement.inContact(b, boat, { ...foe, x: boat.x + boat.depth + 6 })).toBe(false);
   });
 });
 
 describe("a line along the brow", () => {
   /** A ridge across the field before the defenders, winding gently */
   const ridge = (): Battlefield => {
-    const field = createEmptyBattlefield();
+    const field = Battlefields.createEmpty();
     field.relief = 40;
     for (let row = 0; row < ROWS; row++)
       for (let col = 0; col < COLS; col++) {
@@ -143,12 +143,12 @@ describe("a line along the brow", () => {
     const b = setup("field", mixed, mixed, ridge());
     expect(["stand", "crescent"]).toContain(b.defenders.plan.tactic);
     const line = firstLine(b, "defenders");
-    const heights = line.map(block => getElevation(b.field, block.x, block.y));
+    const heights = line.map(block => Battlefields.getElevation(b.field, block.x, block.y));
     expect(Math.min(...heights)).toBeGreaterThan(b.field.relief * 0.8);
   });
 
   it("leaves a line on flat ground straight", () => {
-    const b = setup("field", mixed, mixed, createEmptyBattlefield());
+    const b = setup("field", mixed, mixed, Battlefields.createEmpty());
     const line = firstLine(b, "defenders");
     const along = line.map(block => block.order.along);
     const bow = b.defenders.plan.tactic === "stand";
@@ -160,18 +160,18 @@ describe("a flying wedge", () => {
   const riders = { infantry: 1800, archers: 600, cavalry: 900 };
   const foes = { infantry: 2400, archers: 600, cavalry: 600 };
   const wedge = (axis = 0): Battle => {
-    const b = setup("field", riders, foes, createEmptyBattlefield(), axis);
+    const b = setup("field", riders, foes, Battlefields.createEmpty(), axis);
     b.attackers.tactic = "flying";
-    prepare(b);
+    Battles.prepare(b);
     b.planned = true;
     return b;
   };
 
   it("is weighed by a general strong in riders", () => {
-    const b = setup("field", riders, foes, createEmptyBattlefield());
-    expect(getOptions(b, "attackers").map(option => option.tactic)).toContain("flying");
-    const few = setup("field", { infantry: 3000, archers: 600, cavalry: 300 }, foes, createEmptyBattlefield());
-    expect(getOptions(few, "attackers").map(option => option.tactic)).not.toContain("flying");
+    const b = setup("field", riders, foes, Battlefields.createEmpty());
+    expect(Generals.getOptions(b, "attackers").map(option => option.tactic)).toContain("flying");
+    const few = setup("field", { infantry: 3000, archers: 600, cavalry: 300 }, foes, Battlefields.createEmpty());
+    expect(Generals.getOptions(few, "attackers").map(option => option.tactic)).not.toContain("flying");
   });
 
   it("draws the riders up in a wedge apart from the line, its point ahead", () => {
@@ -195,7 +195,7 @@ describe("a flying wedge", () => {
       let struck: number | null = null;
       let flank = false;
       while (!b.result && b.tick < 600 && struck === null) {
-        tick(b);
+        Battles.tick(b);
         const plan = b.attackers.plan;
         if (!plan.wedge?.charging || plan.wedge.target === null) continue;
         struck = plan.wedge.target;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getStepBit, isClear, spread, trace } from "./pathfinding";
+import { Pathfinding } from "./pathfinding";
 
 // a map drawn in rows: "." open, "#" cannot be entered, "~" dear
 const grid = (rows: string[]) => {
@@ -12,16 +12,16 @@ const grid = (rows: string[]) => {
 describe("pathfinding", () => {
   it("goes straight over open ground, a diagonal step a root of two", () => {
     const g = grid([".....", ".....", "....."]);
-    const reach = spread(g.cols, g.rows, [g.node(0, 0)], g.costs);
+    const reach = Pathfinding.spread(g.cols, g.rows, [g.node(0, 0)], g.costs);
     expect(reach.cost[g.node(4, 0)]).toBeCloseTo(4);
     expect(reach.cost[g.node(2, 2)]).toBeCloseTo(2 * Math.SQRT2);
-    expect(trace(reach, g.node(4, 0))).toEqual([0, 1, 2, 3, 4]);
+    expect(Pathfinding.trace(reach, g.node(4, 0))).toEqual([0, 1, 2, 3, 4]);
   });
 
   it("goes round what cannot be entered and through the gap in it", () => {
     const g = grid([".....", "####.", "....."]);
-    const reach = spread(g.cols, g.rows, [g.node(0, 0)], g.costs);
-    const way = trace(reach, g.node(0, 2));
+    const reach = Pathfinding.spread(g.cols, g.rows, [g.node(0, 0)], g.costs);
+    const way = Pathfinding.trace(reach, g.node(0, 2));
     expect(way).toContain(g.node(4, 1));
     expect(way.every(node => g.costs[node] === 1)).toBe(true);
     expect(reach.cost[g.node(0, 2)]).toBeGreaterThan(8);
@@ -29,26 +29,26 @@ describe("pathfinding", () => {
 
   it("does not cut the corner of dearer ground", () => {
     const g = grid(["..", ".~"]);
-    const reach = spread(g.cols, g.rows, [g.node(0, 1)], g.costs);
+    const reach = Pathfinding.spread(g.cols, g.rows, [g.node(0, 1)], g.costs);
     expect(reach.cost[g.node(1, 0)]).toBeCloseTo(2); // up and along, not across the corner
     const open = grid(["..", ".."]);
-    expect(spread(2, 2, [open.node(0, 1)], open.costs).cost[open.node(1, 0)]).toBeCloseTo(Math.SQRT2);
+    expect(Pathfinding.spread(2, 2, [open.node(0, 1)], open.costs).cost[open.node(1, 0)]).toBeCloseTo(Math.SQRT2);
   });
 
   it("does not squeeze between two nodes that cannot be entered", () => {
     const g = grid([".#", "#."]);
-    const reach = spread(g.cols, g.rows, [g.node(0, 0)], g.costs);
+    const reach = Pathfinding.spread(g.cols, g.rows, [g.node(0, 0)], g.costs);
     expect(reach.cost[g.node(1, 1)]).toBe(Infinity);
-    expect(trace(reach, g.node(1, 1))).toEqual([]);
+    expect(Pathfinding.trace(reach, g.node(1, 1))).toEqual([]);
   });
 
   it("takes the cheap way round rather than the dear one through", () => {
     const wide = grid([".....", ".~~~.", "....."]);
-    const reach = spread(wide.cols, wide.rows, [wide.node(2, 0)], wide.costs);
-    expect(trace(reach, wide.node(2, 2)).every(node => wide.costs[node] === 1)).toBe(true);
+    const reach = Pathfinding.spread(wide.cols, wide.rows, [wide.node(2, 0)], wide.costs);
+    expect(Pathfinding.trace(reach, wide.node(2, 2)).every(node => wide.costs[node] === 1)).toBe(true);
 
     const long = grid(["...", "~~~", "..."]);
-    const across = spread(long.cols, long.rows, [long.node(1, 0)], long.costs);
+    const across = Pathfinding.spread(long.cols, long.rows, [long.node(1, 0)], long.costs);
     expect(across.cost[long.node(1, 2)]).toBeCloseTo(4.5 + 4.5); // in and out of the dear node, half a node each way
   });
 
@@ -58,26 +58,26 @@ describe("pathfinding", () => {
     const closed = new Array(g.costs.length).fill(0);
     for (const row of [0, 1]) {
       for (const dy of [-1, 0, 1]) {
-        closed[g.node(0, row)] |= getStepBit(1, dy);
-        closed[g.node(1, row)] |= getStepBit(-1, dy);
+        closed[g.node(0, row)] |= Pathfinding.getStepBit(1, dy);
+        closed[g.node(1, row)] |= Pathfinding.getStepBit(-1, dy);
       }
     }
-    expect(spread(g.cols, g.rows, [g.node(0, 0)], g.costs, closed).cost[g.node(2, 0)]).toBe(Infinity);
+    expect(Pathfinding.spread(g.cols, g.rows, [g.node(0, 0)], g.costs, closed).cost[g.node(2, 0)]).toBe(Infinity);
 
-    closed[g.node(0, 1)] &= ~getStepBit(1, 0); // a gate in the second row
-    const reach = spread(g.cols, g.rows, [g.node(0, 0)], g.costs, closed);
-    expect(trace(reach, g.node(2, 0))).toEqual([g.node(0, 0), g.node(0, 1), g.node(1, 1), g.node(2, 0)]);
+    closed[g.node(0, 1)] &= ~Pathfinding.getStepBit(1, 0); // a gate in the second row
+    const reach = Pathfinding.spread(g.cols, g.rows, [g.node(0, 0)], g.costs, closed);
+    expect(Pathfinding.trace(reach, g.node(2, 0))).toEqual([g.node(0, 0), g.node(0, 1), g.node(1, 1), g.node(2, 0)]);
   });
 
   it("lets a source leave a node it could not enter", () => {
     const g = grid(["#.."]);
-    const reach = spread(g.cols, g.rows, [g.node(0, 0)], g.costs);
+    const reach = Pathfinding.spread(g.cols, g.rows, [g.node(0, 0)], g.costs);
     expect(reach.cost[g.node(2, 0)]).toBeCloseTo(2);
   });
 
   it("spreads from several sources at once", () => {
     const g = grid(["......."]);
-    const reach = spread(g.cols, g.rows, [0, 6], g.costs);
+    const reach = Pathfinding.spread(g.cols, g.rows, [0, 6], g.costs);
     expect([...reach.cost]).toEqual([0, 1, 2, 3, 2, 1, 0]);
   });
 
@@ -91,13 +91,13 @@ describe("pathfinding", () => {
       const [cols, rows] = [40, 25];
       const costs = Float32Array.from({ length: cols * rows }, () => (random() < 0.15 ? Infinity : 0.8 + random() * 3));
       const source = Math.floor(random() * cols * rows);
-      const all = spread(cols, rows, [source], costs);
-      const lazy = spread(cols, rows, [source], costs, undefined, true);
+      const all = Pathfinding.spread(cols, rows, [source], costs);
+      const lazy = Pathfinding.spread(cols, rows, [source], costs, undefined, true);
       for (let k = 0; k < 10; k++) {
         const goal = Math.floor(random() * cols * rows);
         expect(lazy.costTo(goal)).toBe(all.cost[goal]);
-        expect(trace(lazy, goal)).toEqual(trace(all, goal));
-        const toward = spread(cols, rows, [source], costs, undefined, true, goal);
+        expect(Pathfinding.trace(lazy, goal)).toEqual(Pathfinding.trace(all, goal));
+        const toward = Pathfinding.spread(cols, rows, [source], costs, undefined, true, goal);
         if (all.cost[goal] === Infinity) expect(toward.costTo(goal)).toBe(Infinity);
         else expect(toward.costTo(goal)).toBeCloseTo(all.cost[goal], 9);
       }
@@ -110,7 +110,7 @@ describe("pathfinding", () => {
   it("tells whether a straight way is clear", () => {
     const g = grid([".....", "..#..", "....."]);
     const inWay = (node: number): boolean => g.costs[node] === Infinity;
-    expect(isClear(g.cols, g.rows, 10, [5, 15], [45, 15], inWay)).toBe(false);
-    expect(isClear(g.cols, g.rows, 10, [5, 5], [45, 5], inWay)).toBe(true);
+    expect(Pathfinding.isClear(g.cols, g.rows, 10, [5, 15], [45, 15], inWay)).toBe(false);
+    expect(Pathfinding.isClear(g.cols, g.rows, 10, [5, 5], [45, 5], inWay)).toBe(true);
   });
 });
