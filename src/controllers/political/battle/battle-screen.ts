@@ -93,6 +93,7 @@ interface BattleLogFile {
   log: string[];
   result: string | null;
   settings?: BattleSettings; // the numbers it was fought with; the defaults when absent
+  seed?: number; // the dice are cast by it; absent: cast anew
 }
 
 const SCREEN_SHARE = 0.92; // of the viewport the window may take
@@ -432,7 +433,7 @@ class BattleScreenController {
   private setup(
     attackers: Regiment[],
     defenders: Regiment[],
-    from?: Partial<Pick<BattleLogFile, "type" | "name" | "settings">>
+    from?: Partial<Pick<BattleLogFile, "type" | "name" | "settings" | "seed">>
   ): void {
     const defender = defenders[0];
     const attacker = attackers[0];
@@ -456,6 +457,7 @@ class BattleScreenController {
       attackers: attackers.map(regiment => this.toBattleRegiment(regiment, point)),
       defenders: defenders.map(regiment => this.toBattleRegiment(regiment, point)),
       settings: from?.settings ?? this.battleOptions().simulation,
+      seed: from?.seed ?? Math.floor(Math.random() * 2 ** 31),
       ...this.getClimate(cell)
     });
 
@@ -1298,8 +1300,8 @@ class BattleScreenController {
     this.showSelection(); // the turning handle is there only while troops can be placed
   }
 
-  private dieFace(die: number): string {
-    return `<rect x="1" y="1" width="18" height="18" rx="3.5"/>${(DIE_PIPS[die - 1] ?? [])
+  private dieFace(die: number | null): string {
+    return `<rect x="1" y="1" width="18" height="18" rx="3.5"/>${(die ? DIE_PIPS[die - 1] : [])
       .map(cell => `<circle cx="${5 + (cell % 3) * 5}" cy="${5 + Math.floor(cell / 3) * 5}" r="1.7"/>`)
       .join("")}`;
   }
@@ -1401,10 +1403,12 @@ class BattleScreenController {
     for (const step of banner.querySelectorAll<HTMLElement>(".battleMoraleStep")) step.hidden = Boolean(b.result);
 
     const die = ensureEl<SVGElement & HTMLElement>(`battleDie_${side}`);
-    if (die.dataset.die !== String(data.die)) {
+    const fortune = Battles.getFortune(data.die, b.settings.fortune);
+    die.style.display = data.die === null ? "none" : ""; // no fortune, no dice
+    if (die.dataset.die !== String(data.die) || die.dataset.fortune !== String(fortune)) {
       const factor = side === "attackers" ? t("Attackers fortune") : t("Defenders fortune");
-      die.dataset.die = String(data.die);
-      die.dataset.tip = sentences(`${factor}: ×${+Battles.getFortune(data.die).toFixed(3)}`, t("Click to change"));
+      Object.assign(die.dataset, { die: String(data.die), fortune: String(fortune) });
+      die.dataset.tip = sentences(`${factor}: ×${+fortune.toFixed(3)}`, t("Click to change"));
       die.innerHTML = this.dieFace(data.die);
     }
 
@@ -1598,7 +1602,7 @@ class BattleScreenController {
   private turnDie(side: Side): void {
     const b = this.battle!;
     if (b.result) return;
-    const die = (b[side].die % 6) + 1;
+    const die = ((b[side].die ?? 0) % 6) + 1;
     const previous = b.interventions.at(-1);
     if (previous?.kind === "die" && previous.side === side && previous.tick === b.tick) {
       b.interventions.pop(); // clicks through the faces leave one line in the log
@@ -1756,10 +1760,10 @@ class BattleScreenController {
     const b = this.battle!;
     if (b.tick) return;
     const sides = SIDES.map(side => b[side].regiments.map(regiment => this.regiments.get(this.regimentKey(regiment))!));
-    this.setup(sides[0], sides[1], { type: b.type, name: b.name, settings: b.settings });
-    // what was done to the sides by hand stays done: morale, the ground prepared and the tactics given
+    this.setup(sides[0], sides[1], { type: b.type, name: b.name, settings: b.settings, seed: b.seed });
+    // what was done to the sides by hand stays done: morale, dice, the ground prepared and the tactics given
     for (const change of b.interventions) {
-      if (["morale", "dig", "tactic", "weather", "condition"].includes(change.kind))
+      if (["morale", "die", "dig", "tactic", "weather", "condition"].includes(change.kind))
         Battles.intervene(this.battle!, change);
     }
     this.refresh();
@@ -1979,7 +1983,8 @@ class BattleScreenController {
         return `${BattleScale.formatClock(entry.tick)} ${whose}${this.logText(entry)}`;
       }),
       result: b.result ? this.outcome(b) : null,
-      settings: { ...b.settings }
+      settings: { ...b.settings },
+      seed: b.seed
     };
   }
 
@@ -2007,6 +2012,7 @@ class BattleScreenController {
       attackers: structuredClone(this.getInitialRegiments(b, "attackers")),
       defenders: structuredClone(this.getInitialRegiments(b, "defenders")),
       settings: b.settings,
+      seed: b.seed,
       ...this.getClimate(b.cell)
     });
     return { battle, script: structuredClone([...b.interventions, ...this.script]) };

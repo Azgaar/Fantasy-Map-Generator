@@ -189,7 +189,7 @@ export interface BattleSide {
   captured: number; // and taken prisoner
   power: number;
   phase: string;
-  die: number;
+  die: number | null; // cast at the opening; null: no fortune, ×1
   tactic: TacticName | null; // what its general settled on, thinking the battle through
   waits: boolean; // and that he will wait for the foe rather than go to meet him
   storms: boolean; // or storm the walls at once, a little short of the odds they ask for
@@ -285,6 +285,7 @@ export interface Battle {
   planned: boolean; // the generals have thought the battle through
   rehearsal: boolean; // it is fought in a general's mind
   settings: BattleSettings; // copied in at the setup: a battle under way never changes
+  seed?: number; // the dice are cast by it; none: no fortune
   weather: Weather;
   mud: boolean; // the ground is soaked
   ice: boolean; // the ground and the rivers are frozen
@@ -311,6 +312,7 @@ export interface BattleSetup {
   attackers: BattleRegiment[];
   defenders: BattleRegiment[];
   settings?: BattleSettings;
+  seed?: number;
   weather?: Weather; // clear by default
   mud?: boolean;
   ice?: boolean;
@@ -368,7 +370,7 @@ class BattleModule {
       captured: 0,
       power: 0,
       phase,
-      die: 3,
+      die: null,
       tactic: null,
       waits: false,
       storms: false,
@@ -425,6 +427,7 @@ class BattleModule {
       battle[side].phase = PHASES[battle.type][side][0];
       for (const regiment of battle[side].regiments) this.addBlocks(battle, side, regiment);
     }
+    this.castDice(battle);
     this.updatePower(battle);
     this.setInitialMorale(battle);
     this.drawUp(battle);
@@ -507,7 +510,7 @@ class BattleModule {
       ...this.createSide(battle[name].regiments, battle[name].phase),
       ...(name === side ? option : {})
     });
-    // fortune is not theirs to know: the dice are even, and nobody has moved a battalion by hand;
+    // fortune is not theirs to know: no dice are cast, and nobody has moved a battalion by hand;
     // the ground is a copy: a storm in the mind breaches no walls
     const trial: Battle = {
       ...battle,
@@ -1182,16 +1185,28 @@ class BattleModule {
     return battle.cutOff && block.side === "defenders";
   }
 
-  /** Power multiplier of a die: 0.375 for ⚀ to 1.125 for ⚅, 0.75 on average */
-  getFortune(die: number): number {
-    return 0.75 + (die - 3.5) * 0.15;
+  /** The die of each side, cast once at the opening by the seed and standing to the end; one set by hand stands instead */
+  private castDice(battle: Battle): void {
+    const { seed, settings, rehearsal } = battle;
+    SIDES.forEach((side, i) => {
+      const set = battle.interventions.findLast(change => change.kind === "die" && change.side === side);
+      if (seed === undefined || !settings.fortune || rehearsal) battle[side].die = null;
+      else if (set?.kind === "die") battle[side].die = set.die;
+      else battle[side].die = 1 + Math.floor(Battlefields.mix(seed, i, 0) * 6);
+    });
   }
 
-  /** What a battalion strikes with, or stands with when `standing`; troops on the run hardly strike */
+  /** Blow multiplier of a die: `weight` a face off the average, ×1 on average and with no die */
+  getFortune(die: number | null, weight: number): number {
+    return die === null ? 1 : 1 + (die - 3.5) * weight;
+  }
+
+  /** What a battalion strikes with, or stands with when `standing`; troops on the run hardly strike, fortune tells on blows */
   private getPower(battle: Battle, block: Block, of: number, troops = block.troops, standing = false): number {
     const side = battle[block.side];
     const state = !standing && Movement.isRunning(block) ? BROKEN : side.phase === "shock" ? SHOCK : 1;
-    return troops * block.upkeep * of * state * this.getFortune(side.die) * (0.5 + block.energy / 2);
+    const fortune = standing ? 1 : this.getFortune(side.die, battle.settings.fortune);
+    return troops * block.upkeep * of * state * fortune * (0.5 + block.energy / 2);
   }
 
   /** What speed adds to a blow: a charge's, spent within a round or two at grips; a missile's, the more the nearer it was loosed */

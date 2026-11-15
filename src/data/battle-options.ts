@@ -1,6 +1,7 @@
 /** The battle screen every browser starts from, and the numbers a new battle is set up with. See docs/domain/battles.md */
 
 export const BATTLE_SPEEDS = [0.1, 0.2, 0.5, 1, 2, 4, 8, 16]; // playback, ×1 the speed a tick is drawn at
+export const MAX_FORTUNE = 0.3; // ⚀ still strikes a quarter: at 0.4 it would strike nothing
 export const PAUSE_EVENTS = ["clash", "rout", "surrender", "breach", "broken"] as const;
 export type PauseEvent = (typeof PAUSE_EVENTS)[number];
 
@@ -12,6 +13,7 @@ export interface BattleSettings {
   lullRounds: number; // rounds without losses that end a battle
   orderRounds: number; // an order given by hand stands that long
   planTicks: number; // how far ahead a general plays an open battle through in his mind
+  fortune: number; // blows a face of the die adds or takes away; 0: no dice
 }
 
 export const DEFAULT_BATTLE_SETTINGS: BattleSettings = {
@@ -20,7 +22,8 @@ export const DEFAULT_BATTLE_SETTINGS: BattleSettings = {
   maxRounds: 600,
   lullRounds: 10,
   orderRounds: 10,
-  planTicks: 360
+  planTicks: 360,
+  fortune: 0.2
 };
 
 export interface BattleOptions {

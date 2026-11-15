@@ -54,10 +54,12 @@ function battle(
   defenders: BattleRegiment[],
   type: BattleType = "field",
   axis = 0,
-  settings?: BattleSettings
+  settings?: BattleSettings,
+  seed?: number
 ): Battle {
   return Battles.create({
     settings,
+    seed,
     type,
     name: "Test",
     place: null,
@@ -1225,17 +1227,55 @@ describe("battle deployment", () => {
 });
 
 describe("battle die", () => {
-  it("is never rolled: it stands as it was set by hand and weighs on the fight", () => {
-    const even6 = battle([regiment(1, even)], [regiment(2, even)]);
-    expect([even6.attackers.die, even6.defenders.die]).toEqual([3, 3]);
+  const seeded = (seed: number, fortune = DEFAULT_BATTLE_SETTINGS.fortune): Battle =>
+    battle([regiment(1, even)], [regiment(2, even)], "field", 0, { ...DEFAULT_BATTLE_SETTINGS, fortune }, seed);
+
+  it("is cast once at the opening by the seed, the same for the same seed, and none with no fortune", () => {
+    const b = seeded(7);
+    const dice = [b.attackers.die, b.defenders.die];
+    for (const die of dice) expect(die).toBeGreaterThanOrEqual(1);
+    expect([seeded(7).attackers.die, seeded(7).defenders.die]).toEqual(dice);
+    run(b);
+    expect([b.attackers.die, b.defenders.die]).toEqual(dice); // never cast again
+
+    expect([seeded(7, 0).attackers.die, battle([regiment(1, even)], [regiment(2, even)]).defenders.die]).toEqual([
+      null,
+      null
+    ]);
+    expect(Battles.getFortune(null, 0.2)).toBe(1);
+
+    const unlucky = seeded(7, 0);
+    Battles.intervene(unlucky, { tick: 0, kind: "die", side: "attackers", die: 6 });
+    Battles.prepare(unlucky);
+    expect(unlucky.attackers.die).toBeNull(); // with no fortune a die set by hand is none either
+  });
+
+  it("gives every face alike: ×1 on average, ⚅ three times ⚀", () => {
+    const faces = Array.from({ length: 6 }, () => 0);
+    for (let seed = 0; seed < 600; seed++) {
+      const b = seeded(seed);
+      faces[b.attackers.die! - 1]++;
+      faces[b.defenders.die! - 1]++;
+    }
+    for (const count of faces) expect(Math.abs(count - 200)).toBeLessThan(45);
+    for (const weight of [0.1, 0.2, 0.3])
+      expect(sum([1, 2, 3, 4, 5, 6].map(die => Battles.getFortune(die, weight))) / 6).toBeCloseTo(1);
+    expect(Battles.getFortune(6, 0.2) / Battles.getFortune(1, 0.2)).toBeCloseTo(3);
+    expect(Battles.getFortune(6, 0)).toBe(1);
+  });
+
+  it("stands as set by hand through the setup, and weighs on the fight", () => {
+    const even6 = seeded(7);
     Battles.intervene(even6, { tick: 0, kind: "die", side: "attackers", die: 6 });
-    expect(even6.log[2]).toMatchObject({ event: "die", side: "attackers", params: { die: "6" } }); // after the tactics
-    for (let i = 0; i < ROUND_TICKS * 25 && !even6.result; i++) Battles.tick(even6);
-    expect([even6.attackers.die, even6.defenders.die]).toEqual([6, 3]);
+    Battles.intervene(even6, { tick: 0, kind: "die", side: "defenders", die: 1 });
+    expect(even6.log.at(-1)).toMatchObject({ event: "die", side: "defenders", params: { die: "1" } });
+    Battles.prepare(even6); // the troops lined up anew keep the dice set by hand
+    expect([even6.attackers.die, even6.defenders.die]).toEqual([6, 1]);
     run(even6);
     expect(even6.result!.winner).toBe("attackers");
 
-    const against = battle([regiment(1, even)], [regiment(2, even)]);
+    const against = seeded(7);
+    Battles.intervene(against, { tick: 0, kind: "die", side: "attackers", die: 1 });
     Battles.intervene(against, { tick: 0, kind: "die", side: "defenders", die: 6 });
     expect(run(against).result!.winner).toBe("defenders");
   });

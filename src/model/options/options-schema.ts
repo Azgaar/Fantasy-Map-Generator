@@ -1,7 +1,7 @@
 // All app configuration options, options.map saved to `.map` file as settings; docs/architecture/configuration.md
 
 import { z } from "zod";
-import { BATTLE_SPEEDS, PAUSE_EVENTS, type PauseEvent } from "@/data/battle-options";
+import { BATTLE_SPEEDS, MAX_FORTUNE, PAUSE_EVENTS, type PauseEvent } from "@/data/battle-options";
 import { CULTURE_SETS } from "@/data/culture-sets";
 import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
 import { LANGUAGE_CODES } from "@/data/languages";
@@ -239,7 +239,8 @@ const battle = z.strictObject({
       maxRounds: between(25, 1800),
       lullRounds: between(3, 60),
       orderRounds: between(1, 60),
-      planTicks: between(30, 1200)
+      planTicks: between(30, 1200),
+      fortune: z.number().min(0).max(MAX_FORTUNE)
     })
     .refine(({ maxBattalions, minBattalions }) => minBattalions <= maxBattalions, {
       message: "simulation.minBattalions must not exceed maxBattalions"

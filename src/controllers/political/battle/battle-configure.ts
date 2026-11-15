@@ -1,5 +1,11 @@
 // Configure Battle: the battle screen's view, drawing, playback, simulation numbers and exports, kept per browser
-import { BATTLE_SPEEDS, type BattleOptions, type BattleSettings, DEFAULT_BATTLE_OPTIONS } from "@/data/battle-options";
+import {
+  BATTLE_SPEEDS,
+  type BattleOptions,
+  type BattleSettings,
+  DEFAULT_BATTLE_OPTIONS,
+  MAX_FORTUNE
+} from "@/data/battle-options";
 import { Options } from "@/model/options/options-model";
 import { ROUND_TICKS } from "@/model/political/battle/battle";
 import { TICK_SECONDS } from "@/model/political/battle/battle-scale";
@@ -26,28 +32,32 @@ interface Control {
   tip: string;
   choices?: [value: string, label: string][]; // a list; a checkbox when neither this nor `range`
   range?: [min: number, max: number];
+  step?: number; // of a number, 1 by default
   hint?: (value: number) => string; // what a number comes to
 }
+type Slider = HTMLElement & { value: string; valueAsNumber: number }; // <slider-input>
+type Input = HTMLInputElement | HTMLSelectElement | Slider;
 const camera: [string, string][] = [
   ["follow", t("Follow the troops")],
   ["field", t("Whole field")]
 ];
 
 const STYLE = /* css */ `
-  #battleConfigure { display: flex; flex-direction: column; gap: 0.3em; width: 24em; }
+  #battleConfigure { display: flex; flex-direction: column; gap: 0.3em; }
   #battleConfigure details[open] { padding-bottom: 0.4em; }
   #battleConfigure .grid, #battleConfigureProgress { margin-top: 0.3em; }
-  #battleConfigure summary { display: flex; align-items: center; gap: 0.4em; padding: 0.15em 0; border-bottom: 1px solid #ccc; cursor: pointer; list-style: none; }
+  #battleConfigure summary { display: flex; align-items: center; gap: 0.4em; padding: 0.1em 0; cursor: pointer; list-style: none; }
   #battleConfigure summary::-webkit-details-marker { display: none; }
   #battleConfigure summary::before { content: "▸"; width: 0.8em; color: #666; }
   #battleConfigure details[open] > summary::before { content: "▾"; }
   #battleConfigure summary > b { flex: 1; }
   #battleConfigure summary > button { padding: 0 0.4em; font-size: 0.85em; }
-  #battleConfigure .grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 0.8em; }
-  #battleConfigure .grid > span { display: flex; align-items: center; gap: 0.4em; justify-content: end; }
-  #battleConfigure select { width: 9.5em; }
-  #battleConfigure input[type="number"] { width: 4.5em; }
-  #battleConfigure small { min-width: 6.5em; color: #666; white-space: nowrap; }
+  #battleConfigure .grid { display: grid; grid-template-columns: minmax(0, 1fr) 15em; align-items: center; gap: 0.1em 0.8em; }
+  #battleConfigure .grid > span { display: flex; align-items: center; justify-content: end; }
+  #battleConfigure .grid > span > :is(select, slider-input) { width: 100%; }
+  #battleConfigure slider-input input[type="range"] { flex: 1; min-width: 0; }
+  #battleConfigure slider-input input[type="number"] { width: 3.5em; }
+  #battleConfigure label > small { display: block; color: #666; white-space: nowrap; }
   #battleConfigureProgress { display: flex; align-items: center; gap: 0.6em; }
   #battleConfigureProgress > progress { flex: 1; height: 1.5em; }
   #battleConfigure fieldset { display: contents; }
@@ -209,7 +219,7 @@ class BattleConfigureController {
         {
           key: "maxRounds",
           label: t("Longest battle"),
-          tip: t("Rounds after which a battle that neither ends nor dies down is over"),
+          tip: t("Rounds after which a battle automatically ends"),
           range: [25, 1800],
           hint: value => `${t("rounds")} (${Math.round((value * ROUND_TICKS * TICK_SECONDS) / 360) / 10} ${t("h")})`
         },
@@ -230,9 +240,18 @@ class BattleConfigureController {
         {
           key: "planTicks",
           label: t("Generals think ahead"),
-          tip: t("Ticks the generals play an open battle through in their minds before the start"),
+          tip: t("Ticks the generals play planning the battle"),
           range: [30, 1200],
           hint: value => `${t("ticks")} (${this.minutes(value)})`
+        },
+        {
+          key: "fortune",
+          label: t("Fortune"),
+          tip: t("Fortune dice power. 0: no dice"),
+          range: [0, MAX_FORTUNE],
+          step: 0.01,
+          hint: value =>
+            value ? `⚀ ×${+(1 - 2.5 * value).toFixed(2)} … ⚅ ×${+(1 + 2.5 * value).toFixed(2)}` : t("no dice")
         }
       ]
     },
@@ -297,7 +316,7 @@ class BattleConfigureController {
             ? `<div id="battleConfigureProgress"><progress max="1" value="0"></progress><span></span><button id="battleConfigureSave">${t("Save")}</button></div>`
             : "";
         return /* html */ `<details data-group="${group}">
-          <summary><b>${label}</b><button data-reset="${group}" data-tip="${t("Restore the defaults of the group")}">${t("Restore defaults")}</button></summary>
+          <summary><b>${label}</b><button data-reset="${group}" data-tip="${t("Restore the defaults of the group")}" class="icon-arrows-cw"></button></summary>
           <fieldset><div class="grid">${rows}</div></fieldset>${extra}
         </details>`;
       })
@@ -308,7 +327,8 @@ class BattleConfigureController {
     );
 
     const dialog = ensureEl("battleConfigure");
-    dialog.addEventListener("change", event => this.change(event.target as HTMLInputElement | HTMLSelectElement));
+    dialog.addEventListener("change", event => this.change(event.target as Input));
+    dialog.addEventListener("input", event => this.showHint(event.target as Input)); // as a slider is dragged
     dialog.addEventListener("click", event => {
       const group = (event.target as HTMLElement).closest<HTMLElement>("[data-reset]")?.dataset.reset as Group;
       if (!group) return;
@@ -322,7 +342,8 @@ class BattleConfigureController {
 
     Dialog.open("battleConfigure", {
       title: t("Configure Battle"),
-      position: { my: "right top", at: "right-10 top+10", of: "#battleScreen" },
+      position: { my: "right top", at: "right-10 top+10", of: "svg" },
+      width: "30em",
       maxHeight: window.innerHeight * 0.9,
       onClose: () => {
         this.recording?.abort();
@@ -357,19 +378,31 @@ class BattleConfigureController {
     });
   }
 
-  private renderControl(group: Group, { key, label, tip, choices, range, hint }: Control): string {
+  private renderControl(group: Group, { key, label, tip, choices, range, step = 1, hint }: Control): string {
     const id = `battleConfigure_${group}_${key.replace(".", "_")}`;
-    const data = `id="${id}" data-group="${group}" data-key="${key}" data-tip="${tip}"`;
-    let input = `<input ${data} type="checkbox" class="native" />`;
-    if (choices)
-      input = `<select ${data}>${choices.map(([value, text]) => `<option value="${value}">${text}</option>`).join("")}</select>`;
     if (range) {
       const fallback = DEFAULT_BATTLE_OPTIONS.simulation[key as keyof BattleSettings];
-      const bounds = `min="${range[0]}" max="${range[1]}" step="1" placeholder="${fallback}"`;
       const tips = `${tip}. ${t("Default")}: ${fallback}`;
-      input = `<input id="${id}" data-group="${group}" data-key="${key}" data-tip="${tips}" type="number" ${bounds} />${hint ? `<small></small>` : ""}`;
+      const data = `id="${id}" data-group="${group}" data-key="${key}" data-tip="${tips}"`;
+      const slider = `<slider-input ${data} min="${range[0]}" max="${range[1]}" step="${step}" value="${fallback}"></slider-input>`;
+      return `<label data-tip="${tips}">${label}${hint ? `<small id="${id}_hint"></small>` : ""}</label><span>${slider}</span>`;
     }
+    const data = `id="${id}" data-group="${group}" data-key="${key}" data-tip="${tip}"`;
+    const input = choices
+      ? `<select ${data}>${choices.map(([value, text]) => `<option value="${value}">${text}</option>`).join("")}</select>`
+      : `<input ${data} type="checkbox" class="native" />`;
     return `<label for="${id}" data-tip="${tip}">${label}</label><span>${input}</span>`;
+  }
+
+  private getControl(input: Input): Control | undefined {
+    const { group, key } = input.dataset;
+    return this.groups.find(entry => entry.group === group)?.controls.find(entry => entry.key === key);
+  }
+
+  /** What the number of a slider comes to, under its label */
+  private showHint(input: Input): void {
+    const hint = this.getControl(input)?.hint;
+    if (hint) ensureEl(`${input.id}_hint`).textContent = hint(+input.value);
   }
 
   /** The controls as the options stand */
@@ -381,33 +414,30 @@ class BattleConfigureController {
       .map(speed => `<option value="${speed}">×${BattleAnimation.getPlayback(this.context!.tickMs, speed)}</option>`)
       .join("");
 
-    for (const input of dialog.querySelectorAll<HTMLInputElement>("[data-key]")) {
-      const group = input.dataset.group as Group;
-      const key = input.dataset.key!;
-      const value = this.getValue(group, key);
-      if (input.type === "checkbox") input.checked = Boolean(value);
+    for (const input of dialog.querySelectorAll<Input>("[data-key]")) {
+      const value = this.getValue(input.dataset.group as Group, input.dataset.key!);
+      if (input instanceof HTMLInputElement && input.type === "checkbox") input.checked = Boolean(value);
       else input.value = String(value);
       if (input instanceof HTMLSelectElement && input.selectedIndex < 0) input.selectedIndex = input.length - 1; // the fastest offered
-      const control = this.groups.find(entry => entry.group === group)!.controls.find(entry => entry.key === key)!;
-      if (control.hint) input.nextElementSibling!.textContent = control.hint(+input.value);
+      this.showHint(input);
     }
     const report = options.app.battle.export.format === "report";
     for (const key of ["quality", "speed"])
       ensureEl<HTMLSelectElement>(`battleConfigure_export_${key}`).disabled = report; // a report has neither
   }
 
-  private change(input: HTMLInputElement | HTMLSelectElement): void {
+  private change(input: Input): void {
     const group = input.dataset.group as Group | undefined;
     const key = input.dataset.key;
-    if (!group || !key || !this.context) return;
+    if (!group || !key || !this.context) return; // the inner inputs of a slider: it tells its own change
     let value: unknown = input.value;
     if (input instanceof HTMLInputElement && input.type === "checkbox") value = input.checked;
-    else if (input instanceof HTMLInputElement && input.type === "number") {
+    else if (input.tagName === "SLIDER-INPUT") {
       const fallback = DEFAULT_BATTLE_OPTIONS.simulation[key as keyof BattleSettings];
-      const [min, max] = [+input.min, +input.max];
-      value = Number.isFinite(input.valueAsNumber)
-        ? Math.min(Math.max(Math.round(input.valueAsNumber), min), max)
-        : fallback;
+      const [min, max, step] = ["min", "max", "step"].map(name => Number(input.getAttribute(name)));
+      const typed = (input as Slider).valueAsNumber;
+      const stepped = +(Math.round(typed / step) * step).toFixed(6);
+      value = Number.isFinite(typed) ? Math.min(Math.max(stepped, min), max) : fallback;
       const { simulation } = options.app.battle;
       if (key === "minBattalions") value = Math.min(value as number, simulation.maxBattalions);
       if (key === "maxBattalions") value = Math.max(value as number, simulation.minBattalions);
