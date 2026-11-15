@@ -36,6 +36,7 @@ const LEASH = 80; // how far shooters step from their place to get in range
 export const CHARGE = 2.75; // how far from its place a battalion goes for a foe when its side closes
 export const COUNTER = 1; // and when it holds
 const WATCH = 5; // how far a guard goes for riders
+const GUARD = 2; // how near a friend it protects a foe is gone for
 const CROWD = 1; // what each friend going for a foe adds to the way to it: they spread along the line
 const ROUTED = 9; // and a foe on the run, to who does not chase
 const AT_WORK = 0.21; // so near its place a battalion builds its stretch
@@ -130,6 +131,29 @@ export function decide(battle: Battle, block: Block, sense: Sense): Intent {
       Math.abs(normalize(Math.atan2(foe.y - block.y, foe.x - block.x) - block.facing));
     const target = grips.find(foe => foe.id === block.target) ?? grips.reduce((a, b) => (off(b) < off(a) ? b : a));
     return { ...stand, target };
+  }
+
+  if (block.task) {
+    const { task } = block;
+    const shot = (among: Block[]): Block | null => pick(among.filter(foe => canShoot(battle, block, foe)));
+    if (task.kind === "move") {
+      if (far(task) >= ARRIVED * front)
+        return { ...stand, to: task, key: getPointKey(battle, task), facing: task.facing };
+      const target = block.range ? shot(ready) : null; // there it shoots what comes in range, and fights what comes at it
+      return target ? shoot(target) : { ...stand, facing: task.facing };
+    }
+    const other = sense.onField.find(other => other.id === task.target);
+    if (other && task.kind === "attack") return block.range ? shoot(other, true) : charge(other);
+    if (other) {
+      // the foes that come at the friend, the nearest to it first
+      const near = (foe: Block): boolean => far(foe, other) - foe.width / 2 <= GUARD * front;
+      const threat = block.range ? shot(ready.filter(near)) : pick(prey.filter(near));
+      if (threat) return block.range ? shoot(threat) : charge(threat);
+      const by = (other.width + block.width) / 2 + front;
+      if (far(other) > by + ARRIVED * front)
+        return { ...stand, to: other, stop: by, key: other.id, facing: other.facing };
+      return { ...stand, facing: other.facing };
+    }
   }
 
   // at work on its stretch while no foe can be upon it within a round; the work is kept for when the foe is gone

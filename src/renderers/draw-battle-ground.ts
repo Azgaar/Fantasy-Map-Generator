@@ -4,24 +4,29 @@
 import { hcl } from "d3";
 import { Relief, type ReliefPool } from "@/model/physical/relief-generator";
 import { COLS, ROWS } from "@/model/political/battle/battle-scale";
-import { type Battlefield, mix, nodeAt } from "@/model/political/battle/battlefield";
-import { rn } from "@/utils/number-utils";
+import { type Battlefield, DRY_LAKE, mix, nodeAt } from "@/model/political/battle/battlefield";
+import type { Point } from "@/types/global";
+import { minmax, normalize, rn } from "@/utils/number-utils";
+import { walkLine } from "@/utils/path-utils";
 
 export const PAPER = "#fbf5e9"; // the ground of a biome the map has no colour for
 const TINT_LIGHTNESS = 93;
 const TINT_CHROMA = [0.35, 14]; // of the biome's chroma, and the most
+const DRY_BED = "#ece2c6";
 const SOFT_EDGE = [0.25, 0.75]; // of a twice-blurred grid: woods and bogs fade in between, the edge their outline had halfway
 const SPACING = 11; // points between the spots a prop may stand on
 const GLYPH = 1.4; // points of a glyph unit: a tree is some 6 points across
 const MOST_PROPS = 6000;
 const OPEN_SHARE = 0.35; // of the spots on open ground a biome of the densest relief icons fills; a sparser one by the root of its density
 const WOOD = [0.3, 0.75, 0.55, 0.5]; // trees from, thickening to so much cover, on this share of spots; the wood itself from
+const BOG = [0.3, 0.75, 0.6, 0.5]; // reeds in a bog alike
 const LONE_TREES = 0.2; // a tree of the biome's pool stands on open ground so much more seldom than its other props
 const CLIFF_BAND = 0.8; // of a node either side of a cliff stays clear for its mark
 const SCREE = [2, 0.75]; // nodes below a cliff the scree reaches, and its share at the foot
 const ROCKY_SLOPE = [0.15, 0.35, 0.4]; // rocks from this grade, full at so much steeper, on this share of spots
 const SHORE = [0.2, 0.45, 0.8]; // the band by the sea or a lake drawn as the water's edge, and its share of shingle
 const REEDS = [6, 0.45]; // points between the places along a river bank a clump of reeds may stand, and its share
+const CRACKS = 0.45; // share of the spots on a dry lake bed with a crack
 
 type Kind =
   | "deciduous"
@@ -37,7 +42,8 @@ type Kind =
   | "rock"
   | "scree"
   | "shingle"
-  | "crevasse";
+  | "crevasse"
+  | "crack";
 
 interface Style {
   fill?: string;
@@ -60,12 +66,21 @@ const STYLES: Record<Kind, Style> = {
   rock: { fill: "#ddd7cb", stroke: "#8f877a", width: 0.3, size: 1 },
   scree: { fill: "#ddd7cb", stroke: "#8f877a", width: 0.25, size: 0.55 },
   shingle: { fill: "#bdb29c", stroke: "none", width: 0, size: 1 },
-  crevasse: { stroke: "#a9c2cf", width: 0.4, size: 1.2 }
+  crevasse: { stroke: "#a9c2cf", width: 0.4, size: 1.2 },
+  crack: { stroke: "#bba987", width: 0.35, size: 1 }
 };
 
-const TREES: Kind[] = ["deciduous", "conifer", "coniferSnow", "palm", "acacia", "deadTree"];
-const POOL: Record<string, Kind> = { swamp: "reeds", ...Object.fromEntries(TREES.map(kind => [kind, kind])) };
-for (const kind of ["grass", "cactus", "dune"] as const) POOL[kind] = kind;
+const KINDS = Object.keys(STYLES) as Kind[];
+const TREES = new Set<Kind>(["deciduous", "conifer", "coniferSnow", "palm", "acacia", "deadTree"]);
+const TURNED = new Set<Kind>(["rock", "scree", "crack"]); // lie any way round
+// the relief icons of a biome's pool as props
+const POOL: Record<string, Kind> = {
+  ...Object.fromEntries([...TREES].map(kind => [kind, kind])),
+  swamp: "reeds",
+  grass: "grass",
+  cactus: "cactus",
+  dune: "dune"
+};
 
 const HOT_DESERT = 1;
 const COLD_DESERT = 2;
@@ -77,7 +92,7 @@ const BARE: Partial<Record<number, [Kind, number]>> = {
   [TUNDRA]: ["rock", 0.05],
   [GLACIER]: ["crevasse", 0.12]
 }; // what lies about on ground the relief icons leave bare
-const REEDLESS = [HOT_DESERT, COLD_DESERT, GLACIER];
+const REEDLESS = new Set([HOT_DESERT, COLD_DESERT, GLACIER]);
 
 /** A biome's ground: its map colour made pale, so the plan stays light and every biome reads alike */
 export function getGroundTint(biome: number): string {
@@ -90,75 +105,63 @@ export function getGroundTint(biome: number): string {
 /** A mask of woods or bogs: white within, fading out over a node or two round their edge; nothing on a field without them or a canvas */
 export function getSoftMask(field: Battlefield, grid: number[], id: string): string {
   if (!grid.some(Boolean)) return "";
-  const canvas = document.createElement("canvas");
-  canvas.width = COLS;
-  canvas.height = ROWS;
-  const context = canvas.getContext("2d");
-  if (!context) return "";
   const soft = soften(soften(grid));
-  const image = context.createImageData(COLS, ROWS);
-  soft.forEach((value, i) => {
-    const t = Math.min(Math.max((value - SOFT_EDGE[0]) / (SOFT_EDGE[1] - SOFT_EDGE[0]), 0), 1);
-    image.data.set([255, 255, 255, t * t * (3 - 2 * t) * 255], i * 4);
-  });
-  context.putImageData(image, 0, 0);
-  return /* html */ `<mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="${field.width}" height="${field.height}">
-    <image href="${canvas.toDataURL()}" width="${field.width}" height="${field.height}" preserveAspectRatio="none"/></mask>`;
+  const image = toImage(field, i => [255, 255, 255, smoothstep(normalize(soft[i], SOFT_EDGE[0], SOFT_EDGE[1])) * 255]);
+  return (
+    image &&
+    /* html */ `<mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="${field.width}" height="${field.height}">
+    ${image}</mask>`
+  );
 }
 
-/** Each node's biome tint, smoothed between the nodes; nothing on a field all of one biome */
+/** Each node's biome tint and the dry lake beds, smoothed between the nodes; nothing on a field all of one biome */
 export function getGroundMarkup(field: Battlefield): string {
-  if (!field.biomes.length || field.biomes.every(biome => biome === field.biome)) return "";
-  const canvas = document.createElement("canvas");
-  canvas.width = COLS;
-  canvas.height = ROWS;
-  const context = canvas.getContext("2d");
-  if (!context) return "";
-
+  const dry = field.lake.includes(DRY_LAKE);
+  if (!dry && (!field.biomes.length || field.biomes.every(biome => biome === field.biome))) return "";
   const tints = new Map<number, number[]>();
-  const rgb = (biome: number): number[] => {
-    if (!tints.has(biome)) {
-      const { r, g, b } = hcl(getGroundTint(biome)).rgb();
-      tints.set(biome, [r, g, b, 255]);
-    }
+  const rgba = (color: string): number[] => {
+    const { r, g, b } = hcl(color).rgb();
+    return [r, g, b, 255];
+  };
+  const bed = rgba(DRY_BED);
+  const tint = (biome: number): number[] => {
+    if (!tints.has(biome)) tints.set(biome, rgba(getGroundTint(biome)));
     return tints.get(biome)!;
   };
-  const image = context.createImageData(COLS, ROWS);
-  field.biomes.forEach((biome, i) => {
-    image.data.set(rgb(biome), i * 4);
-  });
-  context.putImageData(image, 0, 0);
-  return `<image class="battleGround" href="${canvas.toDataURL()}" width="${field.width}" height="${field.height}" preserveAspectRatio="none"/>`;
+  const image = toImage(field, i => (field.lake[i] === DRY_LAKE ? bed : tint(field.biomes[i] ?? field.biome)));
+  return image.replace("<image ", `<image class="battleGround" `);
 }
 
-/** Trees in the woods, the props of each biome on open ground, rocks on steep slopes, scree under cliffs, reeds and shingle by the water */
+/** Trees in the woods and reeds in the bogs, the props of each biome on open ground, rocks on steep slopes, scree under cliffs, reeds and shingle by the water */
 export function getPropsMarkup(field: Battlefield): string {
   const pt = field.width / 1000;
   const spacing = SPACING * pt;
   const digits = pt < 4 ? 1 : 0;
   const [sx, sy] = field.site ? field.site.map(Math.round) : [0, 0];
-  const cover = { wood: soften(field.wood), marsh: soften(field.marsh), sea: soften(field.water.map(w => +(w === 1))) };
+  const cover = {
+    wood: soften(field.wood),
+    marsh: soften(field.marsh),
+    sea: soften(field.water.map(w => +(w === 1)))
+  };
   const wind = (mix(sx, sy, 200) - 0.5) * 0.8; // the dunes of a field all face one way
   const biomes = new Map<number, BiomeProps>();
-  const placed: Record<"woods" | "open", Partial<Record<Kind, string[]>>> = { woods: {}, open: {} };
+  const glyphs = () => Object.fromEntries(KINDS.map(kind => [kind, [] as string[]])) as Record<Kind, string[]>;
+  const placed = { covered: glyphs(), open: glyphs() }; // in woods and bogs, or not
   let count = 0;
 
-  const put = (kind: Kind, x: number, y: number, roll: (layer: number) => number, woods = false): void => {
+  const put = (kind: Kind, [x, y]: Point, roll: Roll, covered = false): void => {
     const size = pt * GLYPH * STYLES[kind].size * (0.85 + roll(3) * 0.35);
-    const angle =
-      kind === "dune" ? wind + (roll(4) - 0.5) * 0.3 : kind === "rock" || kind === "scree" ? roll(4) * 6.3 : 0;
-    const group = placed[woods ? "woods" : "open"];
-    group[kind] ??= [];
-    group[kind]!.push(drawGlyph(kind, x, y, size, angle, digits, roll));
+    const angle = kind === "dune" ? wind + (roll(4) - 0.5) * 0.3 : TURNED.has(kind) ? roll(4) * 6.3 : 0;
+    placed[covered ? "covered" : "open"][kind].push(drawGlyph(kind, x, y, size, angle, digits, roll));
     count++;
   };
   const isClear = (node: number): boolean =>
     !field.town[node] && !field.road[node] && !field.walled[node] && !field.deck[node] && field.water[node] !== 2;
 
-  const spots = [Math.ceil(field.width / spacing), Math.ceil(field.height / spacing)];
-  for (let row = 0; row < spots[1] && count < MOST_PROPS; row++) {
-    for (let col = 0; col < spots[0] && count < MOST_PROPS; col++) {
-      const roll = (layer: number): number => mix(sx * 31 + col, sy * 37 + row, 100 + layer);
+  const [cols, rows] = [Math.ceil(field.width / spacing), Math.ceil(field.height / spacing)];
+  for (let row = 0; row < rows && count < MOST_PROPS; row++) {
+    for (let col = 0; col < cols && count < MOST_PROPS; col++) {
+      const roll: Roll = layer => mix(sx * 31 + col, sy * 37 + row, 100 + layer);
       const x = (col + 0.15 + roll(0) * 0.7) * spacing;
       const y = (row + 0.15 + roll(1) * 0.7) * spacing;
       if (x > field.width || y > field.height) continue;
@@ -169,40 +172,40 @@ export function getPropsMarkup(field: Battlefield): string {
         sea: sample(field, cover.sea, x, y)
       };
       if (!isClear(node) || at.sea > SHORE[1]) continue;
-      const biome = field.biomes.length ? field.biomes[node] : field.biome;
+      const biome = biomeAt(field, node);
       if (!biomes.has(biome)) biomes.set(biome, getBiomeProps(biome));
-      const prop = choose(field, node, x, y, roll, at, biome, biomes.get(biome)!);
-      if (prop) put(prop.kind, x, y, roll, prop.woods);
+      const prop = choose(field, node, [x, y], roll, at, biome, biomes.get(biome)!);
+      if (prop) put(prop.kind, [x, y], roll, prop.covered);
     }
   }
 
   // reeds along the river banks, either side
   field.rivers.forEach((river, index) => {
-    walk(river.points, REEDS[0] * pt, (x, y, ux, uy, k) => {
-      const roll = (layer: number): number => mix(sx + index * 7, sy + k, 300 + layer);
+    walkLine(river.points, REEDS[0] * pt, ([x, y], [ux, uy], step) => {
+      const roll: Roll = layer => mix(sx + index * 7, sy + step, 300 + layer);
       if (count >= MOST_PROPS || roll(2) >= REEDS[1]) return;
       const side = roll(5) < 0.5 ? -1 : 1;
-      const off = river.width / 2 + (0.5 + roll(6) * 2) * pt * GLYPH;
-      const [rx, ry] = [x - uy * off * side, y + ux * off * side];
+      const off = (river.width / 2 + (0.5 + roll(6) * 2) * pt * GLYPH) * side;
+      const [rx, ry] = [x - uy * off, y + ux * off];
       if (rx < 0 || ry < 0 || rx > field.width || ry > field.height) return;
       const node = nodeAt(field, rx, ry);
-      const biome = field.biomes.length ? field.biomes[node] : field.biome;
-      if (!field.water[node] && !field.town[node] && !field.road[node] && !REEDLESS.includes(biome))
-        put("reeds", rx, ry, roll);
+      if (isClear(node) && !field.water[node] && !REEDLESS.has(biomeAt(field, node))) put("reeds", [rx, ry], roll);
     });
   });
 
-  const paths = (group: Partial<Record<Kind, string[]>>): string =>
-    (Object.keys(STYLES) as Kind[])
-      .filter(kind => group[kind]?.length)
+  const paths = (group: Record<Kind, string[]>): string =>
+    KINDS.filter(kind => group[kind].length)
       .map(kind => {
         const { fill, stroke, width } = STYLES[kind];
-        return `<path d="${group[kind]!.join("")}" fill="${fill ?? "none"}" stroke="${stroke}" stroke-width="${rn(width * pt, 3)}"/>`;
+        return `<path d="${group[kind].join("")}" fill="${fill ?? "none"}" stroke="${stroke}" stroke-width="${rn(width * pt, 3)}"/>`;
       })
       .join("");
-  return /* html */ `<g class="battleProps battleWoods" stroke-linecap="round" stroke-linejoin="round">${paths(placed.woods)}</g>
+  return /* html */ `<g class="battleProps battleWoods" stroke-linecap="round" stroke-linejoin="round">${paths(placed.covered)}</g>
     <g class="battleProps" stroke-linecap="round" stroke-linejoin="round">${paths(placed.open)}</g>`;
 }
+
+/** A number in [0, 1) fixed by the spot and the layer it is rolled for */
+type Roll = (layer: number) => number;
 
 interface BiomeProps {
   pool: ReliefPool;
@@ -212,7 +215,7 @@ interface BiomeProps {
 
 function getBiomeProps(biome: number): BiomeProps {
   const pool = pack.biomes?.[biome]?.icons ?? {};
-  const trees = Object.fromEntries(Object.entries(pool).filter(([entry]) => TREES.includes(POOL[entry])));
+  const trees = Object.fromEntries(Object.entries(pool).filter(([entry]) => TREES.has(POOL[entry])));
   return { pool, trees, density: Math.sqrt((pack.biomes?.[biome]?.iconsDensity ?? 0) / 250) * OPEN_SHARE };
 }
 
@@ -220,13 +223,12 @@ function getBiomeProps(biome: number): BiomeProps {
 function choose(
   field: Battlefield,
   node: number,
-  x: number,
-  y: number,
-  roll: (layer: number) => number,
+  [x, y]: Point,
+  roll: Roll,
   cover: { wood: number; marsh: number; sea: number },
   biome: number,
   { pool, trees, density }: BiomeProps
-): { kind: Kind; woods?: boolean } | null {
+): { kind: Kind; covered?: boolean } | null {
   const chance = roll(2);
 
   const cliff = getCliffSide(field, x, y);
@@ -241,19 +243,18 @@ function choose(
     return { kind: biome === WETLAND ? "reeds" : "shingle" };
   }
 
-  if (cover.wood > WOOD[0]) {
-    // thinning out to the wood's edge, as it fades
-    const t = Math.min((cover.wood - WOOD[0]) / (WOOD[1] - WOOD[0]), 1);
-    if (chance < WOOD[2] * t * t * (3 - 2 * t)) {
-      const entry = Relief.pickEntry(trees, roll(5));
-      return { kind: entry ? POOL[entry] : "deciduous", woods: cover.wood >= WOOD[3] };
-    }
-    if (cover.wood >= WOOD[3]) return null;
+  // trees in a wood and reeds in a bog, thinning out to its edge as it fades
+  const thick = (value: number, [from, full, share]: number[]): boolean =>
+    value > from && chance < share * smoothstep(normalize(value, from, full));
+  if (thick(cover.wood, WOOD)) {
+    const entry = Relief.pickEntry(trees, roll(5));
+    return { kind: entry ? POOL[entry] : "deciduous", covered: cover.wood >= WOOD[3] };
   }
-  if (cover.marsh > 0.4) return null; // a bog: its own marks
+  if (thick(cover.marsh, BOG)) return { kind: "reeds", covered: cover.marsh >= BOG[3] };
+  if (cover.wood >= WOOD[3] || cover.marsh >= BOG[3]) return null;
+  if (field.lake[node] === DRY_LAKE) return chance < CRACKS ? { kind: "crack" } : null;
 
-  const slope = getSlope(field, node);
-  const rocky = Math.min(Math.max((slope - ROCKY_SLOPE[0]) / ROCKY_SLOPE[1], 0), 1) * ROCKY_SLOPE[2];
+  const rocky = minmax((getSlope(field, node) - ROCKY_SLOPE[0]) / ROCKY_SLOPE[1], 0, 1) * ROCKY_SLOPE[2];
   if (chance < rocky) return { kind: "rock" };
 
   const bare = BARE[biome];
@@ -262,26 +263,18 @@ function choose(
   if (roll(6) >= density) return null;
   const entry = Relief.pickEntry(pool, roll(5));
   const kind = entry ? POOL[entry] : undefined;
-  if (!kind || (TREES.includes(kind) && roll(7) >= LONE_TREES)) return null;
+  if (!kind || (TREES.has(kind) && roll(7) >= LONE_TREES)) return null;
   return { kind };
 }
 
 /** A glyph in field coordinates, `size` a point of it */
-function drawGlyph(
-  kind: Kind,
-  x: number,
-  y: number,
-  size: number,
-  angle: number,
-  digits: number,
-  roll: (layer: number) => number
-): string {
+function drawGlyph(kind: Kind, x: number, y: number, size: number, angle: number, digits: number, roll: Roll): string {
   const [cos, sin] = [Math.cos(angle), Math.sin(angle)];
   const p = (dx: number, dy: number): string =>
     `${rn(x + (dx * cos - dy * sin) * size, digits)} ${rn(y + (dx * sin + dy * cos) * size, digits)}`;
   const circle = (cx: number, cy: number, r: number): string => {
-    const radius = rn(r * size, digits + 1);
-    return `M${p(cx - r, cy)}a${radius} ${radius} 0 1 0 ${rn(radius * 2, digits + 1)} 0a${radius} ${radius} 0 1 0 ${-rn(radius * 2, digits + 1)} 0`;
+    const [radius, across] = [rn(r * size, digits + 1), rn(rn(r * size, digits + 1) * 2, digits + 1)];
+    return `M${p(cx - r, cy)}a${radius} ${radius} 0 1 0 ${across} 0a${radius} ${radius} 0 1 0 ${-across} 0`;
   };
 
   switch (kind) {
@@ -316,13 +309,32 @@ function drawGlyph(
       return circle(-0.9, 0.3, 0.45) + circle(0.6, -0.5, 0.4) + circle(0.5, 0.8, 0.35);
     case "crevasse":
       return `M${p(-2, 0)}Q${p(0, 0.8)} ${p(2, 0)}`;
+    case "crack":
+      return `M${p(-2, 0.3)}L${p(-0.7, -0.2)}L${p(0.3, 0.5)}L${p(2, -0.1)}M${p(-0.7, -0.2)}L${p(-0.4, -1.5)}M${p(0.3, 0.5)}L${p(0.6, 1.6)}`;
   }
+}
+
+const smoothstep = (t: number): number => t * t * (3 - 2 * t);
+
+const biomeAt = (field: Battlefield, node: number): number => (field.biomes.length ? field.biomes[node] : field.biome);
+
+/** The node grid as an image over the field, a pixel a node, smoothed between them; nothing without a canvas */
+function toImage(field: Battlefield, pixel: (node: number) => ArrayLike<number>): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = COLS;
+  canvas.height = ROWS;
+  const context = canvas.getContext("2d");
+  if (!context) return "";
+  const image = context.createImageData(COLS, ROWS);
+  for (let i = 0; i < COLS * ROWS; i++) image.data.set(pixel(i), i * 4);
+  context.putImageData(image, 0, 0);
+  return `<image href="${canvas.toDataURL()}" width="${field.width}" height="${field.height}" preserveAspectRatio="none"/>`;
 }
 
 /** A node grid blurred as the outlines of woods and water are, to be sampled anywhere */
 function soften(grid: ArrayLike<number>): Float32Array {
   const at = (col: number, row: number): number =>
-    grid[Math.min(Math.max(row, 0), ROWS - 1) * COLS + Math.min(Math.max(col, 0), COLS - 1)] ?? 0;
+    grid[minmax(row, 0, ROWS - 1) * COLS + minmax(col, 0, COLS - 1)] ?? 0;
   const soft = new Float32Array(COLS * ROWS);
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
@@ -336,7 +348,7 @@ function soften(grid: ArrayLike<number>): Float32Array {
 
 /** A softened grid between the node centres */
 function sample({ cell }: Battlefield, soft: Float32Array, x: number, y: number): number {
-  const [u, v] = [Math.min(Math.max(x / cell - 0.5, 0), COLS - 1), Math.min(Math.max(y / cell - 0.5, 0), ROWS - 1)];
+  const [u, v] = [minmax(x / cell - 0.5, 0, COLS - 1), minmax(y / cell - 0.5, 0, ROWS - 1)];
   const [col, row] = [Math.min(Math.floor(u), COLS - 2), Math.min(Math.floor(v), ROWS - 2)];
   const [tx, ty] = [u - col, v - row];
   const at = (c: number, r: number): number => soft[r * COLS + c];
@@ -355,7 +367,7 @@ function getCliffSide(
   for (const { a, b } of cliffs) {
     const [ux, uy] = [b[0] - a[0], b[1] - a[1]];
     const length = Math.hypot(ux, uy) || 1;
-    const t = Math.min(Math.max(((x - a[0]) * ux + (y - a[1]) * uy) / (length * length), 0), 1);
+    const t = minmax(((x - a[0]) * ux + (y - a[1]) * uy) / (length * length), 0, 1);
     const distance = Math.hypot(x - a[0] - ux * t, y - a[1] - uy * t) / cell;
     if (best && distance >= best.distance) continue;
     best = { distance, below: ux * (y - a[1]) - uy * (x - a[0]) > 0 };
@@ -374,23 +386,4 @@ function getSlope({ elevation, relief, cell, top, water }: Battlefield, node: nu
   const gx = e === w ? 0 : rise(w, e, e - w);
   const gy = n === s ? 0 : rise(n, s, (s - n) / COLS);
   return Math.hypot(gx, gy);
-}
-
-/** Every so far along a line, its point, the way it runs and the step's number */
-function walk(
-  points: [number, number][],
-  apart: number,
-  visit: (x: number, y: number, ux: number, uy: number, k: number) => void
-): void {
-  let [next, walked, k] = [apart / 2, 0, 0];
-  for (let i = 1; i < points.length; i++) {
-    const [[ax, ay], [bx, by]] = [points[i - 1], points[i]];
-    const length = Math.hypot(bx - ax, by - ay);
-    if (!length) continue;
-    for (; next <= walked + length; next += apart) {
-      const t = (next - walked) / length;
-      visit(ax + (bx - ax) * t, ay + (by - ay) * t, (bx - ax) / length, (by - ay) / length, k++);
-    }
-    walked += length;
-  }
 }

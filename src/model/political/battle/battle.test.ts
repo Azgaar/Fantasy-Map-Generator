@@ -3180,3 +3180,82 @@ describe("a bombardment", () => {
     expect(b.attackers.phase).toBe("withdrawal");
   });
 });
+
+describe("battalion tasks", () => {
+  const started = (): Battle => {
+    const b = battle([regiment(1, even)], [regiment(2, even)]);
+    tick(b);
+    return b;
+  };
+  const task = (
+    b: Battle,
+    blocks: Block[],
+    kind: "move" | "attack" | "protect",
+    x: number,
+    y: number,
+    target?: Block
+  ) =>
+    intervene(b, {
+      tick: b.tick,
+      kind: "task",
+      blocks: blocks.map(block => block.key),
+      task: kind,
+      x,
+      y,
+      target: target?.key ?? null
+    });
+  const own = (b: Battle, unit: string): Block[] =>
+    b.blocks.filter(block => block.side === "attackers" && block.unit === unit);
+
+  it("is not given before the start: there troops are placed by hand", () => {
+    const b = battle([regiment(1, even)], [regiment(2, even)]);
+    task(b, own(b, "infantry"), "move", 100, 100);
+    expect(b.blocks.every(block => block.task === null)).toBe(true);
+  });
+
+  it("sends battalions to a point in the order they stood in, and keeps them there", () => {
+    const b = started();
+    const sent = own(b, "infantry").slice(0, 2);
+    const apart = [sent[1].x - sent[0].x, sent[1].y - sent[0].y];
+    const [x, y] = [sent[0].x - 60, sent[0].y];
+    task(b, sent, "move", x, y);
+    expect(b.log.at(-1)).toMatchObject({ event: "task", side: "attackers", params: { task: "move", count: "2" } });
+    const goals = sent.map(block => [block.task!.x, block.task!.y]);
+    expect(goals[1][0] - goals[0][0]).toBeCloseTo(apart[0]);
+    expect(goals[1][1] - goals[0][1]).toBeCloseTo(apart[1]);
+    for (let i = 0; i < 20; i++) tick(b);
+    for (const [i, block] of sent.entries()) {
+      expect(block.task?.kind).toBe("move");
+      expect(Math.hypot(block.x - goals[i][0], block.y - goals[i][1])).toBeLessThan(b.field.front);
+    }
+  });
+
+  it("sends a battalion at the foe pointed at, and drops the task once the foe is gone", () => {
+    const b = started();
+    const [block] = own(b, "infantry");
+    const foe = b.blocks.find(other => other.side === "defenders")!;
+    task(b, [block], "attack", foe.x, foe.y, foe);
+    tick(b);
+    expect(block.target).toBe(foe.id);
+    foe.status = "fled";
+    tick(b);
+    expect(block.task).toBe(null);
+  });
+
+  it("has a battalion keep by the friend it protects", () => {
+    const b = started();
+    const [guard, friend] = own(b, "infantry");
+    task(b, [guard], "protect", friend.x, friend.y, friend);
+    expect(guard.task).toMatchObject({ kind: "protect", target: friend.id });
+    expect(b.log.at(-1)?.params?.target).toBe("infantry 2");
+  });
+
+  it("stands its time and no longer", () => {
+    const b = started();
+    const [block] = own(b, "archers");
+    task(b, [block], "move", block.x, block.y);
+    while (b.round < b.settings.orderRounds && !b.result) tick(b);
+    if (!b.result) tick(b);
+    expect(block.task).toBe(null);
+  });
+});

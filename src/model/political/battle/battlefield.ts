@@ -2,6 +2,7 @@ import { curveCatmullRom, line } from "d3";
 import { clipPolygon } from "lineclip";
 import { Pack } from "@/model/graph/pack-generator";
 import { Coastline } from "@/model/physical/coastline-generator";
+import { LAKE_SUBTYPES } from "@/model/physical/features-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { getKmInDistanceUnit, getPeople, heightToMeters } from "@/model/units";
@@ -85,6 +86,7 @@ export interface Battlefield extends FieldSize {
   site: Point | null; // the map point a field of the map is built at
   biome: number; // of the site
   biomes: number[]; // of each node, ragged where biomes meet; empty on a field all of `biome`
+  lake: number[]; // of each node in a lake or on a dry lake bed: 1 + its subtype's index in LAKE_SUBTYPES; empty on a field without
   // one value per grid node, row by row
   elevation: number[]; // the lie of the land, 0 the lowest to 1 the highest, the step of high ground in
   top: number[]; // 1 on high ground behind an escarpment; empty on a field without
@@ -134,6 +136,11 @@ const FORD = 72; // length of a ford along the river
 // share of the ground under trees, by biome
 const WOODS: Record<number, number> = { 3: 0.15, 4: 0.2, 5: 0.5, 6: 0.55, 7: 0.7, 8: 0.65, 9: 0.55, 10: 0.05, 12: 0.2 };
 const WETLAND = 12;
+/** A lake's subtype as stored in `field.lake`, and back */
+const toLakeCode = (subtype: string): number => (LAKE_SUBTYPES as readonly string[]).indexOf(subtype) + 1;
+export const getLakeKind = (field: Battlefield, node: number): string | undefined =>
+  LAKE_SUBTYPES[field.lake[node] - 1];
+export const DRY_LAKE = toLakeCode("dry");
 const HIDING_BIOMES = [5, 6, 7, 8, 9, WETLAND]; // forests and wetland
 
 /** A field with no ground, of the size for battalions of the default size; `prepare` sizes it to its battle */
@@ -145,6 +152,7 @@ export function createEmptyBattlefield(open: Battlefield["open"] = null): Battle
     ...getFieldSize(DEFAULT_BATTALION),
     biome: 4,
     biomes: [],
+    lake: [],
     elevation: grid(),
     top: [],
     scarp: [],
@@ -217,15 +225,19 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, type: Ba
     .filter(feature => feature && (feature.land || feature.type === "lake"))
     .map(feature => ({
       land: feature.land,
+      lake: feature.type === "lake" ? toLakeCode(feature.subtype) : 0,
       outline: clipPolygon(
         Coastline.getFeatureShape(feature).points.map(([px, py]) => toField(px, py)),
         [-step, -step, width + step, height + step]
       )
     }))
     .filter(shape => shape.outline.length > 2);
-  const isLand = (node: Point): boolean =>
-    shapes.some(shape => shape.land && isInside(node, shape.outline)) &&
-    !shapes.some(shape => !shape.land && isInside(node, shape.outline));
+  // the lake a point lies in: a dry one is a flat, bare bed of the land
+  const lakeAt = (point: Point): number =>
+    shapes.find(shape => shape.lake && isInside(point, shape.outline))?.lake ?? 0;
+  const isLand = (point: Point, lake = lakeAt(point)): boolean =>
+    (!lake || lake === DRY_LAKE) && shapes.some(shape => shape.land && isInside(point, shape.outline));
+  const lakes = shapes.some(shape => shape.lake) ? nodes.map(lakeAt) : [];
 
   // the ground between the cell centres, within the triangle of the three cells round each node
   const triangles = [...new Set(nearby.flatMap(i => cells.v[i]))]
@@ -262,11 +274,13 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, type: Ba
 
   field.biomes = new Array(COLS * ROWS).fill(field.biome);
   const ground = nodes.map((node, i) => {
-    if (!isLand(node)) return null;
+    if (!isLand(node, lakes[i] ?? 0)) return null;
     const { h, trees, wet, biome } = interpolate(node);
     field.biomes[i] = biome;
     return {
-      height: heightToMeters(Math.max(h, 20)) + (hills(...node) * 0.65 + knolls(...node) * 0.35) * roughness,
+      height:
+        heightToMeters(Math.max(h, 20)) +
+        (lakes[i] === DRY_LAKE ? 0 : hills(...node) * 0.65 + knolls(...node) * 0.35) * roughness,
       trees,
       wet
     };
@@ -286,11 +300,13 @@ export function buildBattlefield(x: number, y: number, size: FieldSize, type: Ba
     }
     const [nx, ny] = nodes[i];
     field.elevation[i] = high > low ? (g.height - low) / (high - low) : 0;
+    if (lakes[i] === DRY_LAKE) return;
     const fromCentre = Math.hypot((nx - width / 2) / width, (ny - height / 2) / height);
     const open = clearing ? Math.min(0.35 + fromCentre * 2.2, 1.15) : 1.15;
     if (groves(nx, ny) < g.trees * open) field.wood[i] = 1;
     else if (bogs(nx, ny) < g.wet * 0.6) field.marsh[i] = 1;
   });
+  if (lakes.length) field.lake = lakes.map((lake, i) => (field.water[i] === 1 || lake === DRY_LAKE ? lake : 0));
 
   // roads and rivers on the curves the map draws them with
   const near = new Set(nearby);

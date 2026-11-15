@@ -2,7 +2,7 @@ import { hcl } from "d3";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Biomes } from "@/model/physical/biomes-generator";
 import { COLS, ROWS } from "@/model/political/battle/battle-scale";
-import { type Battlefield, createEmptyBattlefield } from "@/model/political/battle/battlefield";
+import { type Battlefield, createEmptyBattlefield, DRY_LAKE } from "@/model/political/battle/battlefield";
 import { getGroundTint, getPropsMarkup } from "./draw-battle-ground";
 
 const [GRASSLAND, TAIGA, HOT_DESERT] = [4, 9, 1];
@@ -43,6 +43,25 @@ describe("battle ground", () => {
     expect(woods).toHaveLength(1);
     expect(woods[0]).toMatch(/^#f1f4ef /); // snowy conifers
     expect(pointsOf(woods).every(([x]) => x < field.cell * 40.5)).toBe(true); // the edge fades over the node beyond
+  });
+
+  it("draws reeds in the bogs, with the woods' switch", () => {
+    const field = getField(GRASSLAND, field => {
+      field.wood.fill(0);
+      field.marsh = field.marsh.map((_, i) => +(i % COLS >= 60));
+    });
+    const bogs = pathsOf(getPropsMarkup(field), 0);
+    expect(bogs).toHaveLength(1);
+    expect(bogs[0]).toMatch(/^none /); // reeds are strokes
+    expect(pointsOf(bogs).every(([x]) => x > field.cell * 59.5)).toBe(true);
+  });
+
+  it("cracks a dry lake bed, and only there", () => {
+    const field = getField(HOT_DESERT, field => field.wood.fill(0));
+    const crack = 'stroke="#bba987"';
+    expect(getPropsMarkup(field)).not.toContain(crack);
+    const bed = { ...field, lake: field.water.map((_, i) => (i % COLS >= 50 ? DRY_LAKE : 0)) };
+    expect(getPropsMarkup(bed)).toContain(crack);
   });
 
   it("puts grass on grassland and dunes or cacti on hot desert", () => {

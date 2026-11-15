@@ -86,10 +86,14 @@ import {
   drawArrows,
   drawBattlefield,
   drawBlocks,
+  drawSelection,
   hoverBlock,
   type Positions,
+  previewBlocks,
+  type Selection,
   SIDE_COLORS,
   type SideColors,
+  selectBlocks,
   setLook,
   setView,
   snapshot,
@@ -101,6 +105,7 @@ import { moveRegiment } from "@/renderers/draw-military";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { viewport } from "@/renderers/viewport/viewport";
+import type { Point } from "@/types/global";
 import { Dialog } from "@/ui/dialog/dialog";
 import { applySorting, applySortingByHeader } from "@/ui/dialog/sorting";
 import { showElementTip, showMainTip, tip } from "@/ui/tooltips";
@@ -160,6 +165,7 @@ function open(attacker: Regiment, defender: Regiment): void {
   renderDialog();
   regiments = new Map([attacker, defender].map(regiment => [regimentKey(regiment), regiment]));
   script = [];
+  selected = [];
   setup([attacker], [defender]);
 
   Dialog.open("battleScreen", {
@@ -177,7 +183,7 @@ function open(attacker: Regiment, defender: Regiment): void {
   player.lastFrame = 0;
   player.frame = requestAnimationFrame(loop);
   tip(
-    t("Drag troops to change the deployment, double-click one to turn it, then start the battle"),
+    t("Drag a box to pick troops, drag them to move, turn them by the handle, then start the battle"),
     true,
     "info",
     8000
@@ -249,8 +255,8 @@ function setup(
   refresh();
 }
 
-/** The weather the place is likely to give, the same every time for the same cell */
-function getClimate(cell: number): { weather: Weather; mud: boolean } {
+/** The weather the place's climate is likely to give, the same every time for the same cell */
+function getClimate(cell: number): ReturnType<typeof getClimateWeather> {
   const gridCell = pack.cells.g[cell];
   return getClimateWeather(grid.cells.prec[gridCell] ?? 0, grid.cells.temp[gridCell] ?? 15, cell);
 }
@@ -418,6 +424,8 @@ const STYLE = /* css */ `
   #battleScene.battleMuddy .battleMud, #battleScene.battleIcy .battleFrost { display: inline; }
   #battleScene.battleIcy .battleRiver { stroke: #e3edf3; }
   #battleScene.battleEditable .battleBlock { cursor: grab; }
+  #battleScene .battleSelected > rect { stroke: #111; stroke-width: 2.5px; vector-effect: non-scaling-stroke; }
+  #battleScene .battleTurnHandle { cursor: grab; }
   #battleScene.battlePlanning .battleBlocks { display: none; }
   #battleScene.battleFocus .battleBlock:not(.battleFocused) { opacity: 0.3; }
   #battleLog { --line: #ccc; --muted: #666; height: 100%; }
@@ -721,13 +729,26 @@ function toggleLog(show = !Dialog.isOpen("battleLog"), keep = true): void {
 // the camera
 
 /** Zoom with the wheel or a pinch at the pointer, pan by dragging empty ground: the camera stops following */
+/** What a press on the field turns into once the pointer moves: a look round, a box picking battalions, or a drag of them */
+type Gesture = "pan" | "box" | "move" | "turn";
+
+interface Press {
+  id: number;
+  button: number;
+  shift: boolean;
+  touch: boolean;
+  field: Point; // where it was pressed
+  block: Block | null; // under the pointer
+  handle: boolean; // the turning handle
+  dragged: number; // pixels: a click is no drag
+  gesture: Gesture | null;
+}
+
 function bindCamera(): void {
   const svg = scene();
   const pointers = new Map<number, [number, number]>();
-  let dragged = 0; // pixels a press moved: a click is no pan
-  const onBlock = (event: Event): boolean =>
-    Boolean((event.target as Element).closest(".battleBlock")) && svg.classList.contains("battleEditable");
-  const toField = (x: number, y: number): [number, number] => {
+  let press: Press | null = null;
+  const toField = (x: number, y: number): Point => {
     const rect = svg.getBoundingClientRect();
     const { view } = camera!;
     return [
@@ -739,6 +760,11 @@ function bindCamera(): void {
     cameraMode = "manual";
     camera = { view, target: view };
     updateCamera(0);
+  };
+  const getGesture = ({ touch, button, handle, block }: Press): Gesture => {
+    if (touch || button !== 0) return "pan";
+    if (handle && isEditable()) return "turn";
+    return block && isEditable() ? "move" : "box";
   };
 
   svg.addEventListener(
@@ -752,10 +778,28 @@ function bindCamera(): void {
     },
     { passive: false }
   );
+  svg.addEventListener("contextmenu", event => event.preventDefault()); // a right click gives an order
   svg.addEventListener("pointerdown", event => {
-    if (event.button || onBlock(event)) return; // a drag on a battalion before the start moves it
     pointers.set(event.pointerId, [event.clientX, event.clientY]);
-    dragged = 0;
+    if (!camera || !battle) return;
+    if (pointers.size > 1) {
+      if (press) cancelPress(press);
+      press = null; // two fingers zoom
+      return;
+    }
+    const target = event.target as Element;
+    const el = target.closest(".battleBlock");
+    press = {
+      id: event.pointerId,
+      button: event.button,
+      shift: event.shiftKey,
+      touch: event.pointerType === "touch",
+      field: toField(event.clientX, event.clientY),
+      block: el ? select<Element, Block>(el).datum() : null,
+      handle: Boolean(target.closest(".battleTurnHandle")),
+      dragged: 0,
+      gesture: null
+    };
   });
   svg.addEventListener("pointermove", event => {
     const was = pointers.get(event.pointerId);
@@ -770,23 +814,170 @@ function bindCamera(): void {
       look(zoomView(field, camera.view, factor, toField((now[0] + other[0]) / 2, (now[1] + other[1]) / 2)));
       return;
     }
-    dragged += Math.hypot(now[0] - was[0], now[1] - was[1]);
-    if (dragged < 4) return;
-    if (!svg.hasPointerCapture(event.pointerId)) svg.setPointerCapture(event.pointerId);
-    svg.classList.add("battlePanning");
-    const scale = camera.view.width / svg.getBoundingClientRect().width;
-    look(panView(field, camera.view, (was[0] - now[0]) * scale, (was[1] - now[1]) * scale));
+    if (press?.id !== event.pointerId) return;
+    press.dragged += Math.hypot(now[0] - was[0], now[1] - was[1]);
+    if (!press.gesture) {
+      if (press.dragged < 4) return;
+      press.gesture = getGesture(press);
+      svg.setPointerCapture(event.pointerId);
+      if (press.gesture === "pan") svg.classList.add("battlePanning");
+      if (press.gesture === "move" && !selected.includes(press.block!.key)) setSelected([press.block!.key]);
+    }
+    if (press.gesture === "pan") {
+      const scale = camera.view.width / svg.getBoundingClientRect().width;
+      look(panView(field, camera.view, (was[0] - now[0]) * scale, (was[1] - now[1]) * scale));
+    } else dragTo(press, toField(...now), false);
   });
-  const release = (event: PointerEvent): void => {
+  const release = (event: PointerEvent, done: boolean): void => {
     pointers.delete(event.pointerId);
     if (!pointers.size) svg.classList.remove("battlePanning");
+    if (press?.id !== event.pointerId || !battle || !camera) return;
+    const ended = press;
+    press = null;
+    if (!done) cancelPress(ended);
+    else if (ended.gesture) dragTo(ended, toField(event.clientX, event.clientY), true);
+    else clickField(ended);
   };
-  svg.addEventListener("pointerup", release);
-  svg.addEventListener("pointercancel", release);
+  svg.addEventListener("pointerup", event => release(event, true));
+  svg.addEventListener("pointercancel", event => release(event, false));
   svg.addEventListener("dblclick", event => {
-    if (onBlock(event)) return; // a battalion is turned
+    if ((event.target as Element).closest(".battleBlock")) return; // a battalion is turned
     cameraMode = battleOptions().view.camera;
   });
+}
+
+// selection: battalions are picked by a click or a box; before the start they are dragged and turned together,
+// in the battle they take orders by a right click
+
+let selected: string[] = []; // keys of the battalions picked
+
+/** Troops are placed by hand only before the start, while it stands still */
+const isEditable = (): boolean => scene().classList.contains("battleEditable");
+const getSelected = (): Block[] => battle?.blocks.filter(block => selected.includes(block.key)) ?? [];
+
+function setSelected(keys: string[]): void {
+  selected = keys;
+  showSelection();
+}
+
+function showSelection(): void {
+  const b = battle;
+  if (!b) return;
+  const blocks = getSelected();
+  selectBlocks(
+    scene(),
+    b,
+    blocks.map(block => block.id)
+  );
+  drawSelection(scene(), b, { box: null, ring: isEditable() && blocks.length ? getRing(blocks) : null });
+}
+
+/** The circle round the picked battalions, its handle before them as they mostly face */
+function getRing(blocks: Block[]): NonNullable<Selection["ring"]> {
+  const x = sum(blocks, block => block.x) / blocks.length;
+  const y = sum(blocks, block => block.y) / blocks.length;
+  const reach = Math.max(
+    ...blocks.map(block => Math.hypot(block.x - x, block.y - y) + Math.max(block.width, block.depth) / 2)
+  );
+  const facing = Math.atan2(
+    sum(blocks, block => Math.sin(block.facing)),
+    sum(blocks, block => Math.cos(block.facing))
+  );
+  return { x, y, radius: reach + battle!.field.front * 0.5, facing };
+}
+
+/** Where a drag puts the picked battalions: moved by the drag, or turned round their middle */
+function getPlaces(press: Press, to: Point): Positions {
+  const blocks = getSelected();
+  const places: Positions = new Map();
+  if (press.gesture === "move") {
+    const [dx, dy] = [to[0] - press.field[0], to[1] - press.field[1]];
+    for (const block of blocks) places.set(block.id, { x: block.x + dx, y: block.y + dy, facing: block.facing });
+    return places;
+  }
+  const ring = getRing(blocks);
+  const turn =
+    Math.atan2(to[1] - ring.y, to[0] - ring.x) - Math.atan2(press.field[1] - ring.y, press.field[0] - ring.x);
+  const [cos, sin] = [Math.cos(turn), Math.sin(turn)];
+  for (const { id, x, y, facing } of blocks) {
+    const [ox, oy] = [x - ring.x, y - ring.y];
+    places.set(id, { x: ring.x + ox * cos - oy * sin, y: ring.y + ox * sin + oy * cos, facing: facing + turn });
+  }
+  return places;
+}
+
+/** A box or a drag followed by the pointer; done, it picks the battalions in the box or puts them where they were dragged */
+function dragTo(press: Press, to: Point, done: boolean): void {
+  const b = battle!;
+  if (press.gesture === "box") {
+    if (!done) {
+      drawSelection(scene(), b, { box: [press.field, to], ring: null });
+      return;
+    }
+    const [x0, x1] = [Math.min(press.field[0], to[0]), Math.max(press.field[0], to[0])];
+    const [y0, y1] = [Math.min(press.field[1], to[1]), Math.max(press.field[1], to[1])];
+    const inBox = b.blocks.filter(
+      block => block.x >= x0 && block.x <= x1 && block.y >= y0 && block.y <= y1 && isPickable(block)
+    );
+    // in the battle the orders go to one side: the one with more battalions in the box
+    const side =
+      b.tick && inBox.filter(block => block.side === "attackers").length * 2 < inBox.length ? "defenders" : "attackers";
+    setSelected(inBox.filter(block => !b.tick || block.side === side).map(block => block.key));
+    return;
+  }
+
+  const places = getPlaces(press, to);
+  if (!done) {
+    previewBlocks(scene(), places);
+    if (press.gesture === "turn") {
+      const ring = getRing(getSelected());
+      const turn = [...places.values()][0].facing - getSelected()[0].facing;
+      drawSelection(scene(), b, { box: null, ring: { ...ring, facing: ring.facing + turn } });
+    }
+    return;
+  }
+  for (const block of getSelected()) {
+    const place = places.get(block.id)!;
+    if (place.x !== block.x || place.y !== block.y)
+      intervene(b, { tick: b.tick, kind: "move", block: block.key, x: place.x, y: place.y });
+    if (place.facing !== block.facing)
+      intervene(b, { tick: b.tick, kind: "turn", block: block.key, facing: place.facing });
+  }
+  updateBlocks(scene(), b, null, 1);
+  refresh();
+}
+
+/** A drag let go of as if it had not been */
+function cancelPress(press: Press): void {
+  if (!press.gesture || press.gesture === "pan" || !battle) return;
+  updateBlocks(scene(), battle, null, 1);
+  showSelection();
+}
+
+/** A click picks a battalion or drops the pick; in the battle a right or a shift click gives the picked an order */
+function clickField(press: Press): void {
+  const b = battle!;
+  if (press.handle) return;
+  if (b.tick && !b.result && (press.button === 2 || (press.button === 0 && press.shift))) giveTask(press);
+  else if (press.button === 0) setSelected(press.block && isPickable(press.block) ? [press.block.key] : []);
+}
+
+/** In the battle only battalions that take orders are picked */
+const isPickable = (block: Block): boolean => !battle!.tick || (block.status === "ready" && !block.leaving);
+
+/** The picked battalions of a side go where the user points, attack the foe pointed at or protect the friend */
+function giveTask(press: Press): void {
+  const b = battle!;
+  const own = getSelected().filter(isPickable);
+  if (!own.length) return;
+  const side = own[0].side;
+  const blocks = own.filter(block => block.side === side);
+  const target = press.block?.status === "ready" && !blocks.includes(press.block) ? press.block : null;
+  const task = !target ? "move" : target.side === side ? "protect" : "attack";
+  const [x, y] = target ? [target.x, target.y] : press.field;
+  const keys = blocks.map(block => block.key);
+  intervene(b, { tick: b.tick, kind: "task", blocks: keys, task, x, y, target: target?.key ?? null });
+  refresh();
 }
 
 /** The camera `elapsed` seconds of screen time later, and the overlay that stays put over the view */
@@ -1034,16 +1225,9 @@ const getPauseEvents = (): PauseEvent[] => PAUSE_EVENTS.filter(event => battleOp
 
 function drawScene(): void {
   applyLook();
-  drawBlocks(scene(), battle!, dropBlock, turnBlock);
+  drawBlocks(scene(), battle!, turnBlock);
   setEditable();
   showArrows();
-}
-
-function dropBlock(block: Block, x: number, y: number): void {
-  const b = battle!;
-  intervene(b, { tick: b.tick, kind: "move", block: block.key, x, y });
-  updateBlocks(scene(), b, null, 1);
-  refresh();
 }
 
 function turnBlock(block: Block, facing: number): void {
@@ -1055,13 +1239,14 @@ function turnBlock(block: Block, facing: number): void {
 
 /** Troops can be dragged while the battle stands still */
 function setEditable(): void {
-  scene().classList.toggle("battleEditable", !player.playing && !battle?.result);
+  scene().classList.toggle("battleEditable", !player.playing && !battle?.result && !battle?.tick);
   scene().classList.toggle("battlePlanning", isPlanning()); // no troops till they are drawn up
   const run = ensureEl<HTMLButtonElement>("battleRun");
   run.disabled = isPlanning(); // the label stays, so the controls do not jump
   run.dataset.tip = isPlanning() ? t("Generals are planning") : t("Start or pause the battle");
   run.className = player.playing ? "battlePause" : "icon-play";
   run.textContent = player.playing ? t("Pause") : ` ${battle?.tick ? t("Continue") : t("Start battle")}`;
+  showSelection(); // the turning handle is there only while troops can be placed
 }
 
 // the panels
@@ -1685,6 +1870,14 @@ function logText({ event, side, params }: LogEntry): string {
   if (event === "raised") return t("The siege is raised");
   if (event === "end") return side ? t("Hold the field") : t("The battle dies down");
 
+  if (event === "task") {
+    const who =
+      params!.count === "1" ? capitalize(params!.block) : t("{{number}} battalions", { number: params!.count });
+    if (params!.task === "attack") return t("{{who}} ordered to attack {{target}}", { who, target: params!.target });
+    if (params!.task === "protect") return t("{{who}} ordered to protect {{target}}", { who, target: params!.target });
+    return t("{{who}} ordered to move", { who });
+  }
+
   const block = { block: capitalize(params!.block) };
   if (event === "move") return t("{{block}} are moved", block);
   if (event === "turn") return t("{{block}} are turned", block);
@@ -1841,7 +2034,7 @@ function restore(file: BattleLogFile): boolean {
 
   script = file.interventions
     .filter(change => {
-      if (change.kind === "move") return same;
+      if (change.kind === "move" || change.kind === "task") return same;
       if (change.kind !== "add") return true;
       const regiment = same && find(change.regiment);
       if (regiment) joinBattle(regiment, change.side);
@@ -1976,6 +2169,7 @@ function closeBattleScreen(): void {
   battle = null;
   regiments = new Map();
   script = [];
+  selected = [];
   fileInput?.remove();
   fileInput = null;
   options.app.mode = null; // exit edit mode

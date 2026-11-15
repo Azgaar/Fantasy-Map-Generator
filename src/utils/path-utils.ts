@@ -618,6 +618,22 @@ export function wavyDash(x: number, y: number, length: number, halves: number, a
   return `M${f(x)},${f(y)}q${f(step / 2)},${f(amplitude)} ${f(step)},0${`t${f(step)},0`.repeat(halves - 1)}`;
 }
 
+/** Every `apart` along a line, from half a step in: the point, the unit way the line runs there and the step's number */
+export function walkLine(points: Point[], apart: number, visit: (at: Point, way: Point, step: number) => void): void {
+  let [next, walked, step] = [apart / 2, 0, 0];
+  for (let i = 1; i < points.length; i++) {
+    const [a, b] = [points[i - 1], points[i]];
+    const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (!length) continue;
+    const way: Point = [(b[0] - a[0]) / length, (b[1] - a[1]) / length];
+    for (; next <= walked + length; next += apart) {
+      const t = (next - walked) / length;
+      visit([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t], way, step++);
+    }
+    walked += length;
+  }
+}
+
 const BEZIER_STEPS = 16;
 
 /** Length of the curve `line().curve(curve)` draws through the points, measured without an SVG element */

@@ -140,7 +140,7 @@ export function createStage(battle: Battle, source: BattleSource, mode: ExportCh
     },
     /** Blocks drawn anew, with the unit icons a file has to carry: they are symbols of the page */
     placeBlocks(): void {
-      drawBlocks(svg, battle, noop, noop);
+      drawBlocks(svg, battle, noop);
       for (const use of svg.querySelectorAll("use")) icons.add(use.getAttribute("href")!.slice(1));
       const style = svg.querySelector("style.battleLook")?.outerHTML ?? "";
       defs = `${style}<defs>${markup([...icons].flatMap(id => document.getElementById(id) ?? []))}</defs>`;

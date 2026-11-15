@@ -222,7 +222,20 @@ export interface Block {
   leaving: boolean; // its regiment was taken out of the battle: it marches off the field
   detour: number; // the side it goes round what is in its way by: -1, 1, or 0 on a clear way
   goal: Point | null; // where it is going this tick
+  task: Task | null; // given by hand: it comes before the general's order while it stands
   order: Order;
+}
+
+export type TaskKind = "move" | "attack" | "protect";
+
+/** What the user tells a battalion to do: go to a point, attack a foe or protect a friend */
+export interface Task {
+  kind: TaskKind;
+  x: number;
+  y: number;
+  facing: number; // on the spot it was sent to
+  target: number | null; // the foe or the friend
+  round: number; // it was given
 }
 
 /** A regiment as the battle needs it; troops by unit name */
@@ -255,6 +268,7 @@ export interface BattleSide {
 export type Intervention =
   | { tick: number; kind: "move"; block: string; x: number; y: number }
   | { tick: number; kind: "turn"; block: string; facing: number }
+  | { tick: number; kind: "task"; blocks: string[]; task: TaskKind; x: number; y: number; target: string | null }
   | { tick: number; kind: "order"; side: Side; order: Command }
   | { tick: number; kind: "morale"; side: Side; value: number }
   | { tick: number; kind: "die"; side: Side; die: number }
@@ -267,6 +281,7 @@ export type Intervention =
   | { tick: number; kind: "tactic"; side: Side; tactic: TacticName | null }; // before the start; null: as its general sees fit
 
 export type LogEvent =
+  | "task"
   | "order"
   | "ordered"
   | "move"
@@ -544,6 +559,11 @@ export function intervene(battle: Battle, change: Intervention): void {
     return;
   }
 
+  if (change.kind === "task") {
+    if (battle.tick) assign(battle, change);
+    return;
+  }
+
   if (change.kind === "order") {
     obey(battle, change.side, change.order);
     battle.log.push({ tick: battle.tick, event: "ordered", side: change.side, params: { order: change.order } });
@@ -809,6 +829,7 @@ function act(battle: Battle): void {
   for (const block of onField) {
     block.vx = block.vy = 0;
     block.goal = null;
+    if (block.task && isTaskOver(battle, block, block.task)) block.task = null;
   }
   // the sides take the first move in turn: whoever moves first takes the ground
   for (const block of battle.tick % 2 ? [...onField].reverse() : onField) {
@@ -1285,6 +1306,7 @@ function addBlocks(battle: Battle, side: Side, regiment: BattleRegiment): Block[
         leaving: false,
         detour: 0,
         goal: null,
+        task: null,
         order: { ...NO_ORDER }
       };
       battle.blocks.push(block);
@@ -1390,6 +1412,39 @@ function moveBlock(battle: Battle, key: string, x: number, y: number): void {
 function turnBlock(battle: Battle, key: string, facing: number): void {
   const block = battle.blocks.find(block => block.key === key);
   if (block) block.facing = block.order.facing = normalize(facing);
+}
+
+/** Battalions given a task by hand: those of the side that can still take orders */
+function assign(battle: Battle, change: Extract<Intervention, { kind: "task" }>): void {
+  const target = battle.blocks.find(block => block.key === change.target) ?? null;
+  const blocks = change.blocks
+    .map(key => battle.blocks.find(block => block.key === key))
+    .filter((block): block is Block => block?.status === "ready" && !block.leaving && block !== target);
+  if (!blocks.length || (change.task !== "move" && target?.status !== "ready")) return;
+  // sent to a point, they keep their places to one another and all face the way they go
+  const [cx, cy] = [sum(blocks, block => block.x) / blocks.length, sum(blocks, block => block.y) / blocks.length];
+  const facing = Math.atan2(change.y - cy, change.x - cx);
+  for (const block of blocks) {
+    const at: Point = [change.x + block.x - cx, change.y + block.y - cy];
+    const [x, y] = change.task === "move" ? onField(battle.field, at) : [change.x, change.y];
+    block.task = { kind: change.task, x, y, facing, target: target?.id ?? null, round: battle.round };
+  }
+  const params: Record<string, string> = {
+    block: blockName(blocks[0]),
+    count: String(blocks.length),
+    task: change.task
+  };
+  if (target) params.target = blockName(target);
+  battle.log.push({ tick: battle.tick, event: "task", side: blocks[0].side, params });
+}
+
+/** A task stands till it is done or has stood its time; a battalion that broke or leaves the field drops it */
+function isTaskOver(battle: Battle, block: Block, task: Task): boolean {
+  if (block.status !== "ready" || block.leaving) return true;
+  if (battle.round - task.round >= battle.settings.orderRounds) return true;
+  if (task.kind === "move") return false;
+  const target = battle.blocks.find(other => other.id === task.target);
+  return target?.status !== "ready";
 }
 
 /** A battalion in the log: the side is shown beside it, and the regiment's name would take the line */

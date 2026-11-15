@@ -24,10 +24,10 @@ const stepToEnd = async (page: Page) => {
 
 /** Order the attackers to close with the foe: a general may think better of attacking, and then nobody fights */
 async function orderAttack(page: Page) {
-  await page.locator("#battleBanner_attackers .battleOrdersButton").click();
-  await page.locator("#battleOrdersOrder").selectOption("attack");
-  await page.locator(".dialog-window:has(#battleOrdersScreen) button", { hasText: "Apply" }).click();
-  await expect(page.locator("#battleOrdersScreen")).toHaveCount(0);
+  const banner = page.locator("#battleBanner_attackers");
+  await banner.locator(".battleOrdersButton").click();
+  await banner.locator('.battleOrders [data-order="attack"]').click();
+  await expect(banner.locator(".battleOrder")).toHaveText("Attack");
 }
 
 async function pickType(page: Page, type: string) {
@@ -53,14 +53,14 @@ test.describe("Battle simulator", () => {
     await orderAttack(page);
     expect(await stepToEnd(page)).toBe(true);
     await expect(page.locator("#battleType")).toBeDisabled(); // the type is set before the start
-    await expect(page.locator("#battleLogList")).toContainText("The battle begins");
+    await expect(page.locator("#battleLogList")).toContainText("The armies clash"); // told to attack, they close
     const left = await page.locator(".battleCount").allTextContents();
     expect(left.some(text => Number(text.split("/")[0]) < Number(text.split("/")[1]))).toBe(true);
-    await expect(page.locator("#battleResult")).toBeVisible();
+    await expect(page.locator("#battleSummary")).toBeVisible();
 
     // the same battle again: back to the start, and to the same end
-    await page.locator("#battleResultRestart").click();
-    await expect(page.locator("#battleResult")).toBeHidden();
+    await page.locator('#battleSummary [data-action="restart"]').click();
+    await expect(page.locator("#battleSummary")).toBeHidden();
     expect(await stepToEnd(page)).toBe(true);
     expect(await page.locator(".battleCount").allTextContents()).toEqual(left);
   });
@@ -77,6 +77,28 @@ test.describe("Battle simulator", () => {
     expect(await block.getAttribute("transform")).not.toBe(before);
   });
 
+  test("picks troops by a box and commands them once the battle has started", async ({ page }) => {
+    await startBattle(page);
+    await pickType(page, "field");
+    await expect(page.locator("#battleStep")).toBeEnabled(); // the generals have planned
+    await page.locator("#battleStep").click();
+    const stage = (await page.locator("#battleStage").boundingBox())!;
+
+    // a box over the whole field picks the battalions of one side
+    await page.mouse.move(stage.x + 2, stage.y + 2);
+    await page.mouse.down();
+    await page.mouse.move(stage.x + stage.width - 2, stage.y + stage.height - 2, { steps: 5 });
+    await page.mouse.up();
+    expect(await page.locator("#battleScene .battleSelected").count()).toBeGreaterThan(0);
+
+    // a right click on the ground sends them there; a click drops the pick
+    await page.mouse.click(stage.x + stage.width / 2, stage.y + 10, { button: "right" });
+    await page.locator("#battleLogToggle").click();
+    await expect(page.locator("#battleLogList > div").last()).toContainText("ordered to move");
+    await page.mouse.click(stage.x + stage.width / 2, stage.y + 10);
+    await expect(page.locator("#battleScene .battleSelected")).toHaveCount(0);
+  });
+
   test("turns a battalion by 15 degrees on a double click and writes it to the log", async ({ page }) => {
     await startBattle(page);
     const block = page.locator("#battleScene .battleBlock").first();
@@ -89,29 +111,21 @@ test.describe("Battle simulator", () => {
     await expect(page.locator("#battleLogList > div").last()).toContainText("are turned");
   });
 
-  test("changes a side by hand once: order, power and morale, each written to the log", async ({ page }) => {
+  test("changes a side by hand: order and morale, each written to the log", async ({ page }) => {
     await startBattle(page);
     const banner = page.locator("#battleBanner_attackers");
-    const power = () => page.locator("#battleBalance > i").first().textContent();
-    const before = await power();
-
     await banner.locator(".battleOrdersButton").click();
-    const order = page.locator("#battleOrdersOrder");
-    await order.selectOption("retreat"); // attackers of every battle type can be told to, and none begins with it
-    const label = (await order.locator("option:checked").textContent())!;
-    await page.locator("#battleOrdersPower").fill("5000");
-    await page.locator("#battleOrdersMorale").fill("-10");
-    await page.locator(".dialog-window:has(#battleOrdersScreen) button", { hasText: "Apply" }).click();
-
-    await expect(page.locator("#battleOrdersScreen")).toHaveCount(0);
+    // attackers of every battle type can be told to retreat, and none begins with it
+    const retreat = banner.locator('.battleOrders [data-order="retreat"]');
+    const label = (await retreat.textContent())!.trim();
+    await retreat.click();
     await expect(banner.locator(".battleOrder")).toHaveText(label);
-    expect(await power()).not.toBe(before);
+    await banner.locator('.battleMoraleStep[data-step="-5"]').click();
 
     await page.locator("#battleLogToggle").click();
     const log = page.locator("#battleLogList");
     await expect(log).toContainText(label, { ignoreCase: true });
-    await expect(log).toContainText("+5000");
-    await expect(log).toContainText("−10");
+    await expect(log).toContainText("−5");
   });
 
   test("turns a side's die to the next face on a click", async ({ page }) => {
@@ -138,7 +152,11 @@ test.describe("Battle simulator", () => {
   });
 
   test("shows what the simulation sees when the Battles diagnostics are on", async ({ page }) => {
-    await page.evaluate(() => (window as any).FMG.log.setDebug(["battle"]));
+    await page.evaluate(() => {
+      const { FMG, options } = window as any;
+      FMG.log.setDebug(["battle"]);
+      options.app.battle.view.camera = "field"; // the whole field in view: its middle is under the middle of the stage
+    });
     await startBattle(page);
     await expect(page.locator("#battleScene .battleDebug.ground path").first()).toBeAttached();
     await page.locator("#battleStep").click();
@@ -146,7 +164,7 @@ test.describe("Battle simulator", () => {
     await expect(page.locator("#battleScene .battleDebug.doings")).toContainText("♥");
 
     const stage = (await page.locator("#battleStage").boundingBox())!;
-    await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
+    await page.mouse.move(stage.x + (stage.width * 50.5) / 100, stage.y + (stage.height * 30.5) / 60); // the node's middle
     await expect(page.locator("#battleScene .battleDebugGround")).toContainText("node 50,30");
 
     // off again: the plan is clean at the next frame

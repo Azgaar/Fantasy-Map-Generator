@@ -8,6 +8,7 @@ import { getHeightUnitRatio } from "@/model/units";
 import { getContourLabels } from "@/renderers/heightmap/heightmap-contours";
 import type { Point } from "@/types/global";
 import { rn } from "@/utils/number-utils";
+import { walkLine } from "@/utils/path-utils";
 
 const SAMPLES = 400; // the surface is sampled so many times across the field, whatever its size
 const PAD = 2; // samples added round the field, so lines run off it instead of closing at its edge
@@ -77,7 +78,7 @@ function getHachures(field: Battlefield, surface: Surface, levels: Level[], rati
   const widths = [0.22, 0.32, 0.42, 0.52]; // in points, by slope
   const strokes: string[][] = widths.map(() => []);
   for (const { rings } of levels) {
-    walk(rings, 4 * pt, (x0, y0) => {
+    walkRings(rings, 4 * pt, ([x0, y0]) => {
       if (!inside(x0, y0)) return;
       const i0 = at(x0, y0);
       const slope = Math.hypot(gx[i0], gy[i0]);
@@ -111,7 +112,7 @@ function getContours(field: Battlefield, levels: Level[], surface: Surface, pt: 
   const length = 3.3 * pt;
   const ticks: string[] = [];
   for (const { rings } of levels) {
-    walk(rings, 9 * pt, (x, y) => {
+    walkRings(rings, 9 * pt, ([x, y]) => {
       if (x < 0 || y < 0 || x > field.width || y > field.height) return;
       const i = Math.min(Math.floor(y / step), rows - 1) * cols + Math.min(Math.floor(x / step), cols - 1);
       if (band[i]) return;
@@ -452,23 +453,9 @@ function sampleGround({ cell }: Battlefield, ground: number[], x: number, y: num
   return bspline(across(-1), across(0), across(1), across(2), fy - row);
 }
 
-/** Points every `spacing` metres along the rings */
-function walk(rings: Point[][], spacing: number, visit: (x: number, y: number) => void): void {
-  for (const ring of rings) {
-    let next = spacing / 2;
-    let distance = 0;
-    for (let k = 1; k < ring.length; k++) {
-      const [[x0, y0], [x1, y1]] = [ring[k - 1], ring[k]];
-      const length = Math.hypot(x1 - x0, y1 - y0);
-      while (next <= distance + length) {
-        const t = (next - distance) / (length || 1);
-        visit(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t);
-        next += spacing;
-      }
-      distance += length;
-    }
-  }
-}
+const walkRings = (rings: Point[][], spacing: number, visit: (at: Point) => void): void => {
+  for (const ring of rings) walkLine(ring, spacing, visit);
+};
 
 const toPath = (rings: Point[][]): string =>
   rings

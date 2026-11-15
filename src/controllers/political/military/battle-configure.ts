@@ -82,7 +82,7 @@ const GROUPS: { group: Group; label: string; controls: Control[] }[] = [
         label: t("Heights"),
         tip: t("Label the contour lines and mark hilltops and hollows with their heights")
       },
-      { key: "woods", label: t("Woods and marsh"), tip: t("Draw the patterns of woods and marshes") },
+      { key: "woods", label: t("Woods and marsh"), tip: t("Draw woods and marshes, with the trees and reeds in them") },
       {
         key: "props",
         label: t("Ground props"),

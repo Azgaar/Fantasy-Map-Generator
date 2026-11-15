@@ -1,5 +1,6 @@
 import type { Battlefield, FieldCliff } from "@/model/political/battle/battlefield";
 import type { Point } from "@/types/global";
+import { walkLine } from "@/utils/path-utils";
 
 const INK = "#6c645a"; // the relief's: a cliff is part of the lie of the land, not drawn over it
 const OPACITY = 0.9;
@@ -17,7 +18,7 @@ export function getCliffMarkup(field: Battlefield, pt: number): string {
     line += `M${points.map(format).join("L")}`;
     const [base, wide, apart] = TOOTH.map(size => size * pt);
     const long = Math.min(base + height * TOOTH_PER_METRE * pt, base * 2);
-    walk(points, apart, (at, [ux, uy]) => {
+    walkLine(points, apart, (at, [ux, uy]) => {
       const [dx, dy] = [-uy, ux]; // the top is on the left of the way along: the face is on the right
       const [hx, hy] = [(ux * wide) / 2, (uy * wide) / 2];
       teeth += `M${format([at[0] - hx, at[1] - hy])}L${format([at[0] + hx, at[1] + hy])}L${format([at[0] + dx * long, at[1] + dy * long])}Z`;
@@ -74,23 +75,6 @@ function cut(points: Point[], closed: boolean): Point[] {
   if (closed) cut.push(cut[0]);
   else cut.push(ring.at(-1)!);
   return cut;
-}
-
-/** Every so far along a line, its point and the way it runs */
-function walk(points: Point[], apart: number, visit: (at: Point, way: Point) => void): void {
-  let next = apart / 2;
-  let walked = 0;
-  for (let i = 1; i < points.length; i++) {
-    const [a, b] = [points[i - 1], points[i]];
-    const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (!length) continue;
-    const way: Point = [(b[0] - a[0]) / length, (b[1] - a[1]) / length];
-    for (; next <= walked + length; next += apart) {
-      const t = (next - walked) / length;
-      visit([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t], way);
-    }
-    walked += length;
-  }
 }
 
 const format = ([x, y]: Point): string => `${x.toFixed(1)} ${y.toFixed(1)}`;
