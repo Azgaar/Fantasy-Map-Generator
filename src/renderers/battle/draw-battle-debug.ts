@@ -63,24 +63,26 @@ class BattleDebugRenderer {
     this.shown.set(svg, battle);
     const { field } = battle;
     const key = `${field.breaches.length}|${field.held}`;
-    let ground = svg.querySelector<SVGGElement>(".battleDebug.ground");
+    let ground = svg.querySelector<SVGGElement>("#battleDebugGround");
     if (!ground || ground.dataset.key !== key) {
       root.selectAll(".battleDebug").remove();
       // the ground under the labels and the troops, the troops' doings over everything
       ground = root
-        .insert("g", ".battleLabels")
-        .attr("class", "battleDebug ground")
+        .insert("g", "#battleLabels")
+        .attr("id", "battleDebugGround")
+        .attr("class", "battleDebug")
         .attr("pointer-events", "none")
         .attr("data-key", key)
         .html(this.getGround(field, pt))
         .node()!;
       root
         .append("g")
-        .attr("class", "battleDebug doings")
+        .attr("id", "battleDebugDoings")
+        .attr("class", "battleDebug")
         .attr("pointer-events", "none")
         .attr("font-family", "Arial, sans-serif");
       svg.onpointermove = event => {
-        const text = svg.querySelector(".battleDebugGround");
+        const text = svg.querySelector(".battleDebugNode");
         const shown = this.shown.get(svg);
         if (!text || !shown) return;
         const [x, y] = pointer(event, svg);
@@ -90,7 +92,7 @@ class BattleDebugRenderer {
       };
     }
 
-    root.select(".battleDebug.doings").html(this.getDoings(battle, at, pt));
+    root.select("#battleDebugDoings").html(this.getDoings(battle, at, pt));
   }
 
   /** The grid, what each node is, and the walls as the simulation has them */
@@ -265,8 +267,8 @@ class BattleDebugRenderer {
     html += lines
       .map((text, i) => `<text x="${58 * pt}" y="${(20 + i * 11) * pt}" font-size="${8.5 * pt}" ${HALO}>${text}</text>`)
       .join("");
-    html += `<text class="battleDebugGround" x="${58 * pt}" y="${(20 + lines.length * 11) * pt}" font-size="${8.5 * pt}" ${HALO}>${escapeHtml(
-      document.querySelector(".battleDebugGround")?.textContent ?? "point at the ground to read a node"
+    html += `<text class="battleDebugNode" x="${58 * pt}" y="${(20 + lines.length * 11) * pt}" font-size="${8.5 * pt}" ${HALO}>${escapeHtml(
+      document.querySelector(".battleDebugNode")?.textContent ?? "point at the ground to read a node"
     )}</text>`;
     return html;
   }

@@ -211,17 +211,17 @@ const STYLE = /* css */ `
   #battleBalance > i + i { flex: 1; justify-content: flex-end; padding: 0 1.2em 0 0.7em; background: var(--defenders); clip-path: polygon(0 0, calc(100% - 0.7em) 0, 100% 50%, calc(100% - 0.7em) 100%, 0 100%); }
   #battleBalance > b { position: absolute; top: 50%; left: var(--at, 50%); width: 0.75em; height: 0.75em; border: 1px solid #333; background: #fff; transform: translate(-50%, -50%) rotate(45deg); transition: left 0.25s ease-out; }
 
-  /* the battlefield: as wide as the window, in the plan's shape */
+  /* the battlefield: as wide as the window, in the plan's shape; the scene under the weather, the overlay and the summary */
   #battleStage { position: relative; aspect-ratio: 5 / 3; margin: 1px; outline: 1px solid #999; overflow: hidden; }
+  #battleWeatherLayer, #battleOverlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   #battleScene { display: block; width: 100%; height: 100%; font-family: var(--serif); touch-action: none; }
   #battleScene.battlePanning { cursor: grabbing; }
-  #battleOverlay, #battleWeatherLayer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-  #battleScene.battleMuddy .battleMud, #battleScene.battleIcy .battleFrost { display: inline; }
+  #battleScene.battleMuddy #battleMud, #battleScene.battleIcy #battleFrost { display: inline; }
   #battleScene.battleIcy .battleRiver { stroke: #e3edf3; }
   #battleScene.battleEditable .battleBlock { cursor: grab; }
   #battleScene .battleSelected > .battleHalo { display: inline; }
   #battleScene .battleTurnHandle { cursor: grab; }
-  #battleScene.battlePlanning .battleBlocks { display: none; }
+  #battleScene.battlePlanning #battleBlocks { display: none; }
   #battleScene.battleFocus .battleBlock:not(.battleFocused) { opacity: 0.3; }
   #battleLog { --line: #ccc; --muted: #666; height: 100%; }
   #battleLog .attackers { --side: var(--attackers); }

@@ -4,7 +4,7 @@ import { BattleScale, TICK_SECONDS } from "@/model/political/battle/battle-scale
 import type { Battlefield } from "@/model/political/battle/battlefield";
 import { BattleCamera, type Camera, type View } from "@/renderers/battle/battle-camera";
 import { BattleOverlayView, OVERLAY_HEIGHT, OVERLAY_WIDTH } from "@/renderers/battle/draw-battle-overlay";
-import { BattleSceneView, type SideColors } from "@/renderers/battle/draw-battle-scene";
+import { BattleSceneView, MOVING_LAYERS, type SideColors } from "@/renderers/battle/draw-battle-scene";
 import { downloadFile } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
 import { log } from "@/utils/logger";
@@ -33,7 +33,6 @@ type Quality = ExportChoice["quality"];
 
 const FRAME_MS = 50; // aimed at: GIF delays are in hundredths of a second, short ones play slower
 const END_MS = 3000; // the outcome stands before the loop starts again
-const MOVING = [".battleWorks", ".battleFire", ".battleBlocks", ".battleMissiles", ".battleClashes"]; // layers above the ground
 export const MIN_DELAY_MS = 20; // GIF viewers slow shorter frames down
 const LEAST_FRONTS = 6; // the camera's narrowest view, in battalion fronts: the ground is drawn sharp enough for it
 const GROUND_MOST = 4096; // pixels the ground of a GIF is drawn wide at the most
@@ -313,7 +312,7 @@ class BattleAnimationExport {
     return {
       svg,
       overlay,
-      ground: this.markup([...svg.children]),
+      ground: this.markup([...svg.children].filter(node => !MOVING_LAYERS.includes(node.id))), // the moving layers are recorded apart
       get defs(): string {
         return defs;
       },
@@ -324,7 +323,7 @@ class BattleAnimationExport {
       placeBlocks: (): void => {
         BattleSceneView.drawBlocks(svg, battle, this.noop);
         for (const use of svg.querySelectorAll("use")) icons.add(use.getAttribute("href")!.slice(1));
-        const style = svg.querySelector("style.battleLook")?.outerHTML ?? "";
+        const style = svg.querySelector("#battleLook")?.outerHTML ?? "";
         defs = `${style}<defs>${this.markup([...icons].flatMap(id => document.getElementById(id) ?? []))}</defs>`;
       },
       /** The camera `elapsed` seconds on, and the overlay for the moment */
@@ -355,7 +354,7 @@ class BattleAnimationExport {
     BattleSceneView.updateBlocks(stage.svg, battle, null, 1);
     stage.frame(Infinity); // framed from the first frame
 
-    const layers = MOVING.map(layer => stage.svg.querySelector(layer)!);
+    const layers = MOVING_LAYERS.map(id => stage.svg.querySelector(`#${id}`)!);
     const overlays = [...stage.overlay.children];
     const recorder = new SvgRecorder([...layers, ...overlays], stage.svg);
     const addFrame = gif
@@ -422,7 +421,7 @@ class BattleAnimationExport {
     canvas.width = width;
     canvas.height = this.getHeight(width);
     const context = canvas.getContext("2d", { willReadFrequently: true })!;
-    const moving = MOVING.map(layer => stage.svg.querySelector(layer)!);
+    const moving = MOVING_LAYERS.map(id => stage.svg.querySelector(`#${id}`)!);
     return async (delay: number): Promise<void> => {
       const { view } = stage;
       const [x, y, w, h] = [view.x - scene.x, view.y - scene.y, view.width, view.height].map(value => value * scale);

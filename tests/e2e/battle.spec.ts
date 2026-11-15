@@ -30,6 +30,13 @@ async function orderAttack(page: Page) {
   await expect(banner.locator(".battleOrder")).toHaveText("Attack");
 }
 
+/** The battle log opens from Configure Battle */
+async function openLog(page: Page) {
+  await page.locator("#battleConfigureOpen").click();
+  await page.getByRole("button", { name: "Battle log" }).click();
+  await expect(page.locator("#battleLogList")).toBeVisible();
+}
+
 async function pickType(page: Page, type: string) {
   await page.locator("#battleType").click();
   await page.locator(`#battleScreen .battleTypes [data-type="${type}"]`).click();
@@ -45,7 +52,7 @@ test.describe("Battle simulator", () => {
   test("draws both armies on a battle plan and plays the battle to its end", async ({ page }) => {
     await startBattle(page);
     await expect(page.locator("#battleScreen")).toBeVisible();
-    await expect(page.locator("#battleScene .battleTerrain")).toHaveCount(1);
+    await expect(page.locator("#battleTerrain")).toHaveCount(1);
     expect(await page.locator("#battleScene .battleBlock").count()).toBeGreaterThan(1);
 
     await pickType(page, "field");
@@ -93,7 +100,7 @@ test.describe("Battle simulator", () => {
 
     // a right click on the ground sends them there; a click drops the pick
     await page.mouse.click(stage.x + stage.width / 2, stage.y + 10, { button: "right" });
-    await page.locator("#battleLogToggle").click();
+    await openLog(page);
     await expect(page.locator("#battleLogList > div").last()).toContainText("ordered to move");
     await page.mouse.click(stage.x + stage.width / 2, stage.y + 10);
     await expect(page.locator("#battleScene .battleSelected")).toHaveCount(0);
@@ -107,7 +114,7 @@ test.describe("Battle simulator", () => {
     await block.dblclick();
     expect((((await rotation()) - before) % 360 + 360) % 360).toBeCloseTo(15, 0);
 
-    await page.locator("#battleLogToggle").click();
+    await openLog(page);
     await expect(page.locator("#battleLogList > div").last()).toContainText("are turned");
   });
 
@@ -122,7 +129,7 @@ test.describe("Battle simulator", () => {
     await expect(banner.locator(".battleOrder")).toHaveText(label);
     await banner.locator('.battleMoraleStep[data-step="-5"]').click();
 
-    await page.locator("#battleLogToggle").click();
+    await openLog(page);
     const log = page.locator("#battleLogList");
     await expect(log).toContainText(label, { ignoreCase: true });
     await expect(log).toContainText("−5");
@@ -136,7 +143,7 @@ test.describe("Battle simulator", () => {
     await expect(die).toHaveAttribute("data-die", String((before % 6) + 1));
     await die.click();
     await expect(die).toHaveAttribute("data-die", String(((before + 1) % 6) + 1));
-    await page.locator("#battleLogToggle").click();
+    await openLog(page);
     await expect(page.locator("#battleLogList > div.attackers", { hasText: "Fortune" })).toHaveCount(1);
   });
 
@@ -158,14 +165,14 @@ test.describe("Battle simulator", () => {
       options.app.battle.view.camera = "field"; // the whole field in view: its middle is under the middle of the stage
     });
     await startBattle(page);
-    await expect(page.locator("#battleScene .battleDebug.ground path").first()).toBeAttached();
+    await expect(page.locator("#battleDebugGround path").first()).toBeAttached();
     await page.locator("#battleStep").click();
-    await expect(page.locator("#battleScene .battleDebug.doings")).toContainText("tick 1");
-    await expect(page.locator("#battleScene .battleDebug.doings")).toContainText("♥");
+    await expect(page.locator("#battleDebugDoings")).toContainText("tick 1");
+    await expect(page.locator("#battleDebugDoings")).toContainText("♥");
 
     const stage = (await page.locator("#battleStage").boundingBox())!;
     await page.mouse.move(stage.x + (stage.width * 50.5) / 100, stage.y + (stage.height * 30.5) / 60); // the node's middle
-    await expect(page.locator("#battleScene .battleDebugGround")).toContainText("node 50,30");
+    await expect(page.locator("#battleScene .battleDebugNode")).toContainText("node 50,30");
 
     // off again: the plan is clean at the next frame
     await page.evaluate(() => (window as any).FMG.log.setDebug([]));

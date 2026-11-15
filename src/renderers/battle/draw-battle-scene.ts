@@ -18,6 +18,20 @@ import type { Point } from "@/types/global";
 import { sentences, t } from "@/utils/i18n";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
 
+/**
+ * The scene's layers by id, bottom to top (the diagnostics add `battleDebugGround` under the labels, `battleDebugDoings` on top):
+ * - `battlePaper`: the ground's colour under the whole scene
+ * - `battleTerrain`: the ground, drawn once (tint, cover, relief, props, water, cliffs, rivers, roads, towns)
+ * - `battleWalls`: the field's walls, drawn again on a breach
+ * - `battleEdge`, `battleFrost`, `battleMud`: the field's edge within its scene, frozen and soaked ground
+ * - `battleLabels`: burg and river names
+ * - `battleWorks`, `battleWorkTips`: field works and their hover lines
+ * - `battleFire`, `battleArrows`, `battleHover`: fire lines, where battalions went, the marks of the pointed and picked
+ * - `battleBlocks`, `battleMissiles`, `battleClashes`: battalions, arrows and shells in flight, clashes
+ * - `battleSelection`: the box dragged and the turning handle
+ */
+export const MOVING_LAYERS = ["battleWorks", "battleFire", "battleBlocks", "battleMissiles", "battleClashes"]; // what the animation export records
+
 type Group = ReturnType<typeof select<SVGGElement, unknown>>;
 
 /** Where blocks stood a tick ago, to glide between ticks */
@@ -28,6 +42,15 @@ export type SideColors = Record<Side, string>;
 /** Attackers are red and defenders blue by default whatever their states' colours, so the sides never look alike */
 export const SIDE_COLORS: SideColors = { attackers: "#c8473d", defenders: "#3f72b3" };
 
+/** The box dragged to pick battalions, and the handle that turns the picked ones round their middle */
+export interface Selection {
+  box: [Point, Point] | null;
+  handle: { at: Point; facing: number } | null; // before the picked battalions, the way they face
+}
+
+/** Where each battalion went since the last key moment, sampled once a round: by the screen while paused, and in keyframes */
+export type Trails = Map<number, Point[]>;
+
 /** What a scene shows and how it is coloured, and the zoom its marks are sized for */
 interface Scene {
   look: BattleLook;
@@ -36,21 +59,38 @@ interface Scene {
   hovered: number | null; // the battalion under the pointer
   selected: Set<number>;
 }
+
+/** A shot in the air: a dotted fire line without a missile */
+interface Shot {
+  block: Block;
+  missile: "arrows" | "shell" | undefined;
+  phase: number;
+  from: Point;
+  top: Point;
+  to: Point;
+}
+
+type CoverMasks = Record<"wood" | "marsh", string>;
+
+// what each look switch hides
+const LOOK_LAYERS: [keyof BattleLook, string][] = [
+  ["woods", ".battleWoods"],
+  ["props", ".battleProps"],
+  ["labels", "#battleLabels"],
+  ["icons", ".battleIcon"],
+  ["flags", ".battleFlag"],
+  ["health", ".battleHealth"],
+  ["arrows", "#battleArrows"],
+  ["fire", "#battleFire"],
+  ["missiles", "#battleMissiles"],
+  ["clashes", "#battleClashes"]
+];
+
 const RESCALE = 0.03; // marks are sized anew when the zoom changed by more than this share
-const ICON = 16; // points a unit icon is wide at the most, unzoomed: it grows with the zoom like the block
 
-// what a unit type shoots, the rest are dotted arcs
-const MISSILES: Record<string, "arrows" | "shell"> = { ranged: "arrows", machinery: "shell", naval: "shell" };
-const VOLLEY_TICKS = 4; // arrows are in the air
-const VOLLEY = [
-  [0, 0],
-  [0.07, 4],
-  [0.04, -4]
-]; // how far behind the first arrow each one flies, and how far aside
-const SHELL_TICKS = 6; // from shot to shot
-const SHELL_FLIGHT = 0.6; // share of that the shell flies, then it bursts
-
+// the ground
 const INK = "#3d3a33";
+const PAPERS = { sea: "#d3e0ea", sky: "#eaf1f7" };
 const EDGE = 0.2; // opacity of the line along the field's edge, within its scene
 const WATER = "#b4cbe2";
 // sea and lake water by kind: a sandy strand, a salt crust, ice, lava; the other lakes are open water
@@ -60,20 +100,10 @@ const WATERS: Record<string, { fill: string; strand?: string; rim?: string }> = 
   frozen: { fill: "#e5eef3", rim: "#b9cad6" },
   lava: { fill: "#e9a07a", rim: "#9b4b2e" }
 };
-
-const LOOK_LAYERS: [keyof BattleLook, string][] = [
-  ["woods", ".battleWoods"],
-  ["props", ".battleProps"],
-  ["labels", ".battleLabels, .battleRiverName"],
-  ["icons", ".battleIcon"],
-  ["flags", ".battleFlag"],
-  ["health", ".battleHealth"],
-  ["arrows", ".battleArrows"],
-  ["fire", ".battleFire"],
-  ["missiles", ".battleMissiles"],
-  ["clashes", ".battleClashes"]
-];
-
+const ROAD = [
+  ["#a39d90", 5],
+  ["#fbf8f1", 2.2]
+] as const; // the casing and the way, points wide
 const TOWER_SPACING = 40; // points between the towers of a wall
 const WALL = "#55524b";
 const PIER = "#8f877a";
@@ -82,7 +112,7 @@ const PIER_LONGEST = 300; // metres
 const PIER_SHORTEST = 24; // points: legible on any field
 const PIER_WIDTH = 12; // metres
 
-// Works as old battle plans draw them: flat, one colour a kind, in the plan's ink; sizes in points
+// works as old battle plans draw them: flat, one colour a kind, in the plan's ink; sizes in points
 const WORK_COLORS: Record<WorkKind, string> = { ditch: "#8a6d4b", stakes: "#6b4f32", wagons: "#9a7044" };
 const WAGON_OUTLINE = "#3d2a18";
 const WORK_PATHS: [WorkKind, "standing" | "building" | "down"][] = [
@@ -98,9 +128,7 @@ const HACHURE = [3, 5]; // long, apart
 const STAKE = [4, 3, 0.6]; // long, apart, thick
 // a wagon is a wall of planks on wheels, seen from above: long, thick, a wheel across each end, apart from the next
 const WAGON = { long: 6, thick: 1.2, wheel: [2.4, 0.6], inset: 0.7, apart: 1, outline: 0.25 };
-
 const WORK_HOVER = 8; // points wide a stretch reacts to the pointer
-
 const WORK_LABELS: Record<WorkKind, () => string> = {
   stakes: () => t("Stakes"),
   ditch: () => t("Ditch"),
@@ -108,30 +136,33 @@ const WORK_LABELS: Record<WorkKind, () => string> = {
 };
 const SIDE_LABELS: Record<Side, () => string> = { attackers: () => t("Attackers"), defenders: () => t("Defenders") };
 
+// battalions
+const ICON = 16; // points a unit icon is wide at the most, unzoomed: it grows with the zoom like the block
 const WHITE_FLAG = `<path d="M0 6V-14" stroke-width="1.2"/><path d="M0 -14q3 -1.5 6 0t6 0v7q-3 1.5 -6 0t-6 0z" fill="#fff"/>`;
 const HEALTH_INSET = 1.5; // half the health line: it lies inside the block, against its outline
+const HALO = [4, 0.3]; // a soft glow round a picked battalion: points wide, its opacity
 const TURN_STEP = Math.PI / 12;
-
 const LAG = 0.8; // ticks the shown place trails the battle by: it evens out the jostle of a crowd
 const LEAP = 100; // points: a move further than this is shown at once
-
 const FADE = 12; // ticks a destroyed battalion takes to fade away
 const OUTLINE = 0.45; // opacity of the outline a destroyed battalion leaves where it fell
 
-/** The box dragged to pick battalions, and the handle that turns the picked ones round their middle */
-export interface Selection {
-  box: [Point, Point] | null;
-  handle: { at: Point; facing: number } | null; // before the picked battalions, the way they face
-}
+// shots: what a unit type shoots, the rest are dotted arcs
+const MISSILES: Record<string, "arrows" | "shell"> = { ranged: "arrows", machinery: "shell", naval: "shell" };
+const VOLLEY_TICKS = 4; // arrows are in the air
+const VOLLEY = [
+  [0, 0],
+  [0.07, 4],
+  [0.04, -4]
+]; // how far behind the first arrow each one flies, and how far aside
+const SHELL_TICKS = 6; // from shot to shot
+const SHELL_FLIGHT = 0.6; // share of that the shell flies, then it bursts
 
-const HANDLE = 8; // points: the radius of the turning handle
-// an arc round the disc, open towards the troops, with a head at each end
+// the turning handle: an arc round the disc, open towards the troops, with a head at each end
+const HANDLE = 8; // points: the radius of the disc
 const TURN_ARC = "M-0.89 -4.29A4.3 4.3 0 1 1 -0.89 4.29";
 const TURN_HEADS = "M-2.07 4.04L0.26 2.75L-0.02 5.74ZM-2.07 -4.04L-0.02 -5.74L0.26 -2.75Z";
-const HALO = [4, 0.3]; // a soft glow round a picked battalion: points wide, its opacity
 
-/** Where each battalion went since the last key moment, sampled once a round: by the screen while paused, and in keyframes */
-export type Trails = Map<number, Point[]>;
 const ARROWHEAD = 7; // points
 
 class BattleSceneRenderer {
@@ -151,30 +182,26 @@ class BattleSceneRenderer {
     return this.scenes.get(svg)!;
   }
 
-  private darker(fill: string, k: number): string {
-    return color(fill)!.darker(k).formatHex();
+  private getLayer<E extends Element = SVGGElement>(svg: SVGSVGElement, id: string): E | null {
+    return svg.querySelector<E>(`#${id}`);
   }
 
-  /** The field is drawn in metres; what it shows at a size on screen, as marks and lines, is sized in points of a 1000-wide field */
-  private getPoint(field: Battlefield): number {
-    return field.width / 1000;
-  }
-
-  /** A point of what keeps its size on screen, flags, labels and fire lines: it shrinks on the field as the view zooms in */
-  private getMark(svg: SVGSVGElement, field: Battlefield): number {
-    return this.getPoint(field) / this.getScene(svg).marks;
-  }
-
-  /** Where a mark drawn in points stands: its own lines and sizes are then in points */
-  private markAt(x: number, y: number, pt: number): string {
-    return `translate(${x} ${y}) scale(${pt})`;
-  }
+  // look
 
   /** What to draw and in which colours; applied at once, by a style the scene and its exports carry */
   setLook(svg: SVGSVGElement, look: BattleLook, colors: SideColors): void {
     Object.assign(this.getScene(svg), { look, colors });
-    const style = svg.querySelector("style.battleLook");
+    const style = this.getLayer(svg, "battleLook");
     if (style) style.textContent = this.getLookStyle(look);
+  }
+
+  private getLookStyle(look: BattleLook): string {
+    return `${[
+      ...LOOK_LAYERS.filter(([key]) => !look[key]).map(([, selector]) => selector),
+      ...this.getHiddenRelief(look)
+    ]
+      .map(selector => `${selector} { display: none; }`)
+      .join(" ")} .battleFallen > rect { fill: none; } .battleFallen > :not(rect) { display: none; }`;
   }
 
   // the relief in its chosen style; contour labels only with the contours they run along
@@ -187,14 +214,7 @@ class BattleSceneRenderer {
     ];
   }
 
-  private getLookStyle(look: BattleLook): string {
-    return `${[
-      ...LOOK_LAYERS.filter(([key]) => !look[key]).map(([, selector]) => selector),
-      ...this.getHiddenRelief(look)
-    ]
-      .map(selector => `${selector} { display: none; }`)
-      .join(" ")} .battleFallen > rect { fill: none; } .battleFallen > :not(rect) { display: none; }`;
-  }
+  // view and sizes
 
   /** Show a part of the field; marks are sized anew for the zoom when it changed by more than a few percent */
   setView(svg: SVGSVGElement, field: Battlefield, view: View): void {
@@ -218,7 +238,7 @@ class BattleSceneRenderer {
       name.setAttribute("dy", String(-+name.dataset.width! / 2 - 3 * mark));
       name.setAttribute("stroke-width", String(2.5 * mark));
     }
-    const fire = svg.querySelector(".battleFire");
+    const fire = this.getLayer(svg, "battleFire");
     fire?.setAttribute("stroke-width", String(mark));
     fire?.setAttribute("stroke-dasharray", `${2 * mark} ${5 * mark}`);
     select(svg)
@@ -228,130 +248,144 @@ class BattleSceneRenderer {
       });
   }
 
+  /** The field is drawn in metres; what it shows at a size on screen, as marks and lines, is sized in points of a 1000-wide field */
+  private getPoint(field: Battlefield): number {
+    return field.width / 1000;
+  }
+
+  /** A point of what keeps its size on screen, flags, labels and fire lines: it shrinks on the field as the view zooms in */
+  private getMark(svg: SVGSVGElement, field: Battlefield): number {
+    return this.getPoint(field) / this.getScene(svg).marks;
+  }
+
+  /** Where a mark drawn in points stands: its own lines and sizes are then in points */
+  private markAt(x: number, y: number, pt: number): string {
+    return `translate(${x} ${y}) scale(${pt})`;
+  }
+
+  // the field
+
   /**
    * The field and its scene round it: the ground drawn once from the scene, a faint line along the field's edge, the
    * walls, which the battle breaches, from the field within it. Without a scene, the field's own ground
    */
   drawField(svg: SVGSVGElement, field: Battlefield, scene: Battlefield | null = null): void {
-    const paper =
-      field.open === "sea" ? "#d3e0ea" : field.open === "sky" ? "#eaf1f7" : BattleGroundView.getTint(field.biome);
-    const { width, height } = field;
-    const pt = this.getPoint(field);
-    this.getScene(svg).marks = 1;
-    const box = BattleCamera.getFieldView(field);
     const ground = scene ?? field;
+    const paper = field.open ? PAPERS[field.open] : BattleGroundView.getTint(field.biome);
+    const pt = this.getPoint(field);
     const area = BattleCamera.getSceneBox(field);
     const [dx, dy] = scene ? [area.x, area.y] : [0, 0]; // the scene's corner from the field's
     const whole = `x="${area.x}" y="${area.y}" width="${area.width}" height="${area.height}"`;
-    const outside = `M${-dx} ${-dy}h${width}v${height}h${-width}ZM0 0h${ground.width}v${ground.height}h${-ground.width}Z`;
+    const masks: CoverMasks = field.open
+      ? { wood: "", marsh: "" }
+      : {
+          wood: BattleGroundView.getSoftMask(ground, ground.wood, "battleWoodMask"),
+          marsh: BattleGroundView.getSoftMask(ground, ground.marsh, "battleMarshMask")
+        };
+
+    this.getScene(svg).marks = 1;
+    const box = BattleCamera.getFieldView(field);
     svg.setAttribute("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
     delete svg.dataset.works; // the works layer is drawn empty: `updateBlocks` fills it
     svg.dataset.breaches = String(field.breaches.length);
 
-    svg.innerHTML = /* html */ `<style class="battleLook">${this.getLookStyle(this.getScene(svg).look)}</style><defs>
-        <pattern id="battleTown" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="scale(${pt}) rotate(45)">
-          <rect width="6" height="6" fill="#f4f1ea"/><path d="M0 0v6" stroke="#77736b" stroke-width="2"/>
-        </pattern>
-        <pattern id="battleFord" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="scale(${pt})">
-          <rect width="7" height="7" fill="#e4edf4"/><circle cx="2" cy="2" r="0.9" fill="#8ea5b8"/><circle cx="5.5" cy="5.2" r="0.7" fill="#8ea5b8"/>
-        </pattern>
-        <clipPath id="battleFrame"><rect width="${width}" height="${height}"/></clipPath>
-        <clipPath id="battleGround"><rect width="${ground.width}" height="${ground.height}"/></clipPath>
-        <clipPath id="battleOutside"><path d="${outside}" clip-rule="evenodd"/></clipPath>
-        <mask id="battleRivers" maskUnits="userSpaceOnUse" x="0" y="0" width="${ground.width}" height="${ground.height}"></mask>
-      </defs>
-      <rect ${whole} fill="${paper}"/>
-      <g class="battleTerrain" transform="translate(${dx} ${dy})" clip-path="url(#battleGround)"></g>
-      <g class="battleWalls" clip-path="url(#battleFrame)"></g>
-      ${scene ? `<rect width="${width}" height="${height}" fill="none" stroke="${INK}" stroke-opacity="${EDGE}" stroke-width="${pt}" pointer-events="none"/>` : ""}
-      <rect class="battleFrost" ${whole} fill="#f6f9fb" opacity="0.2" display="none" pointer-events="none"/>
-      <g class="battleMud" display="none" pointer-events="none">
+    svg.innerHTML = /* html */ `<style id="battleLook">${this.getLookStyle(this.getScene(svg).look)}</style>
+      <defs>${this.getDefs(field, ground, [dx, dy], masks)}</defs>
+      <rect id="battlePaper" ${whole} fill="${paper}"/>
+      <g id="battleTerrain" transform="translate(${dx} ${dy})" clip-path="url(#battleGroundClip)"></g>
+      <g id="battleWalls" clip-path="url(#battleFieldClip)"></g>
+      ${scene ? `<rect id="battleEdge" width="${field.width}" height="${field.height}" fill="none" stroke="${INK}" stroke-opacity="${EDGE}" stroke-width="${pt}" pointer-events="none"/>` : ""}
+      <rect id="battleFrost" ${whole} fill="#f6f9fb" opacity="0.2" display="none" pointer-events="none"/>
+      <g id="battleMud" display="none" pointer-events="none">
         <rect ${whole} fill="#6b4a26" opacity="0.04"/>
         <g transform="translate(${dx} ${dy})">${field.open ? "" : BattleWeatherView.getMudMarkup(ground)}</g>
       </g>
-      <g class="battleLabels" pointer-events="none"></g>
-      <g class="battleWorks" fill="none" stroke-width="${1.6 * pt}" pointer-events="none">${WORK_PATHS.map(
-        ([kind, state]) =>
-          `<path data-work="${kind} ${state}" ${kind === "wagons" ? `fill="${WORK_COLORS.wagons}" stroke="${WAGON_OUTLINE}" stroke-width="${WAGON.outline * pt}"` : `stroke="${WORK_COLORS[kind]}"`} ${kind === "stakes" ? `stroke-width="${STAKE[2] * pt}"` : ""} ${state === "building" ? `opacity="0.5"` : ""}/>`
-      ).join("")}</g>
-      <g class="battleWorkTips" stroke="none" pointer-events="stroke"></g>
-      <g class="battleFire" fill="none" stroke-width="${pt}" stroke-dasharray="${2 * pt} ${5 * pt}" opacity="0.55"></g>
-      <g class="battleArrows" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.8" pointer-events="none"></g>
-      <g class="battleHover" fill="none" pointer-events="none"></g>
-      <g class="battleBlocks"></g>
-      <g class="battleMissiles" fill="none" stroke-linecap="round" pointer-events="none"></g>
-      <g class="battleClashes" text-anchor="middle" dominant-baseline="central" fill="#b3261e" pointer-events="none"></g>
-      <g class="battleSelection" fill="none" stroke="#222"></g>`;
+      <g id="battleLabels" pointer-events="none"></g>
+      <g id="battleWorks" fill="none" stroke-width="${1.6 * pt}" pointer-events="none">${this.getWorkPaths(pt)}</g>
+      <g id="battleWorkTips" stroke="none" pointer-events="stroke"></g>
+      <g id="battleFire" fill="none" stroke-width="${pt}" stroke-dasharray="${2 * pt} ${5 * pt}" opacity="0.55"></g>
+      <g id="battleArrows" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.8" pointer-events="none"></g>
+      <g id="battleHover" fill="none" pointer-events="none"></g>
+      <g id="battleBlocks"></g>
+      <g id="battleMissiles" fill="none" stroke-linecap="round" pointer-events="none"></g>
+      <g id="battleClashes" text-anchor="middle" dominant-baseline="central" fill="#b3261e" pointer-events="none"></g>
+      <g id="battleSelection" fill="none" stroke="#222"></g>`;
 
     if (field.open) return;
-    const terrain = select(svg).select<SVGGElement>(".battleTerrain");
-    this.drawTerrain(svg, terrain, ground, paper, pt);
-    if (scene) this.drawWalls(terrain.append("g").attr("clip-path", "url(#battleOutside)"), scene, pt);
-    this.drawWalls(select(svg).select(".battleWalls"), field, pt);
-
-    const labels = select(svg).select<SVGGElement>(".battleLabels");
-    for (const burg of ground.burgs) {
-      // above the burg, or below it when the edge is too close
-      const [x, y] = [burg.x + dx, burg.y + dy];
-      const top = y - burg.radius * 0.9 - 2 * pt;
-      const below = top < box.y + 24 * pt ? y + burg.radius * 0.9 + 13 * pt : top;
-      this.label(labels, field, `${burg.name} ${burg.group}`, x, below, 13, INK);
-    }
-
-    // names run along the rivers, left to right
-    const course = line<Point>().curve(curveCatmullRom.alpha(0.5));
-    field.rivers.forEach((river, i) => {
-      const inside = river.points.filter(
-        ([x, y]) => x > 30 * pt && x < width - 30 * pt && y > 20 * pt && y < height - 20 * pt
-      );
-      if (inside.length < 2 || !river.name) return;
-      if (inside[0][0] > inside.at(-1)![0]) inside.reverse();
-      labels.append("path").attr("id", `battleRiver${i}`).attr("d", course(inside)).attr("fill", "none");
-      labels
-        .append("text")
-        .attr("class", "battleRiverName")
-        .attr("data-width", river.width)
-        .attr("dy", -river.width / 2 - 3 * pt)
-        .attr("font-size", 11 * pt)
-        .attr("font-style", "italic")
-        .attr("fill", "#2b3a7c")
-        .attr("paint-order", "stroke")
-        .attr("stroke", paper)
-        .attr("stroke-width", 2.5 * pt)
-        .append("textPath")
-        .attr("href", `#battleRiver${i}`)
-        .attr("startOffset", "50%")
-        .attr("text-anchor", "middle")
-        .text(river.name);
-    });
+    const root = select(svg);
+    const terrain = root.select<SVGGElement>("#battleTerrain");
+    this.drawTerrain(terrain, ground, paper, masks, pt);
+    if (scene) this.drawWalls(this.addPart(terrain, "Walls").attr("clip-path", "url(#battleOutsideClip)"), scene, pt);
+    this.drawWalls(root.select("#battleWalls"), field, pt);
+    this.drawLabels(root.select("#battleLabels"), field, ground, [dx, dy], paper);
   }
 
-  /** The ground with its waters, roads and towns */
-  private drawTerrain(svg: SVGSVGElement, terrain: Group, field: Battlefield, paper: string, pt: number): void {
+  /** Patterns of towns and fords, the clips of the field, its ground and what lies outside it, masks of rivers and cover */
+  private getDefs(field: Battlefield, ground: Battlefield, [dx, dy]: Point, masks: CoverMasks): string {
     const { width, height } = field;
-    terrain.append("g").html(BattleGroundView.getMarkup(field));
-    // woods and bogs fade out at their edges; without a canvas their outlines are drawn sharp
-    const masks = {
-      wood: BattleGroundView.getSoftMask(field, field.wood, "battleWoodMask"),
-      marsh: BattleGroundView.getSoftMask(field, field.marsh, "battleMarshMask")
-    };
-    svg.querySelector("defs")?.insertAdjacentHTML("beforeend", masks.wood + masks.marsh);
+    const pt = this.getPoint(field);
+    const outside = `M${-dx} ${-dy}h${width}v${height}h${-width}ZM0 0h${ground.width}v${ground.height}h${-ground.width}Z`;
+    // the rivers' water, to keep fords within their banks; a brook is waded anywhere: no fords to show on it
+    const course = line<Point>().curve(curveCatmullRom.alpha(0.5));
+    const banks = field.open
+      ? ""
+      : ground.rivers
+          .filter(river => !river.brook)
+          .map(
+            river =>
+              `<path d="${course(river.points)}" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="${river.width}"/>`
+          )
+          .join("");
+    return /* html */ `<pattern id="battleTownPattern" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="scale(${pt}) rotate(45)">
+        <rect width="6" height="6" fill="#f4f1ea"/><path d="M0 0v6" stroke="#77736b" stroke-width="2"/>
+      </pattern>
+      <pattern id="battleFordPattern" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="scale(${pt})">
+        <rect width="7" height="7" fill="#e4edf4"/><circle cx="2" cy="2" r="0.9" fill="#8ea5b8"/><circle cx="5.5" cy="5.2" r="0.7" fill="#8ea5b8"/>
+      </pattern>
+      <clipPath id="battleFieldClip"><rect width="${width}" height="${height}"/></clipPath>
+      <clipPath id="battleGroundClip"><rect width="${ground.width}" height="${ground.height}"/></clipPath>
+      <clipPath id="battleOutsideClip"><path d="${outside}" clip-rule="evenodd"/></clipPath>
+      <mask id="battleRiverMask" maskUnits="userSpaceOnUse" x="0" y="0" width="${ground.width}" height="${ground.height}">${banks}</mask>
+      ${masks.wood}${masks.marsh}`;
+  }
+
+  /** A part of the ground layer, `battleTerrain<name>` */
+  private addPart(terrain: Group, name: string): Group {
+    return terrain.append("g").attr("id", `battleTerrain${name}`);
+  }
+
+  /** The ground, bottom to top: its tint, woods and bogs, relief, props, waters, cliffs, rivers, roads and towns */
+  private drawTerrain(terrain: Group, field: Battlefield, paper: string, masks: CoverMasks, pt: number): void {
+    this.addPart(terrain, "Tint").html(BattleGroundView.getMarkup(field));
+    this.drawCover(this.addPart(terrain, "Cover"), field, masks);
+    this.addPart(terrain, "Relief").html(BattleReliefView.getMarkup(field, paper));
+    this.addPart(terrain, "Props").html(BattleGroundView.getPropsMarkup(field));
+    this.drawWater(this.addPart(terrain, "Water"), field, pt);
+    this.addPart(terrain, "Cliffs").html(BattleCliffsView.getMarkup(field, pt));
+    this.drawRivers(this.addPart(terrain, "Rivers"), field);
+    this.drawRoads(this.addPart(terrain, "Roads"), field, pt);
+    this.drawTowns(this.addPart(terrain, "Towns"), field, pt);
+  }
+
+  /** Woods and bogs fade out at their edges; without a canvas their outlines are drawn sharp */
+  private drawCover(group: Group, field: Battlefield, masks: CoverMasks): void {
     const cover = (kind: "wood" | "marsh", fill: string) => {
-      const shape = terrain
+      const shape = group
         .append(masks[kind] ? "rect" : "path")
         .attr("class", "battleWoods")
         .attr("fill", fill);
       if (!masks[kind]) return shape.attr("d", this.outline(field, field[kind], 0.5));
       return shape
-        .attr("width", width)
-        .attr("height", height)
+        .attr("width", field.width)
+        .attr("height", field.height)
         .attr("mask", `url(#battle${capitalize(kind)}Mask)`);
     };
     cover("marsh", "#d3e3e0").attr("opacity", 0.75);
     cover("wood", "#dbe7c9").attr("opacity", 0.75);
-    terrain.append("g").attr("class", "battleRelief").html(BattleReliefView.getMarkup(field, paper));
-    terrain.append("g").html(BattleGroundView.getPropsMarkup(field));
-    // the sea and lakes by their kind: a strand along open water, half of it under the water, a rim round ice and lava
+  }
+
+  /** The sea and lakes by their kind: a strand along open water, half of it under the water, a rim round ice and lava */
+  private drawWater(group: Group, field: Battlefield, pt: number): void {
     const looks = field.water.map((w, i) => {
       const kind = w === 1 ? Battlefields.getLakeKind(field, i) : undefined;
       return kind && kind in WATERS ? kind : "open";
@@ -361,7 +395,7 @@ class BattleSceneRenderer {
       if (!grid.some(Boolean)) continue;
       const d = this.outline(field, grid, 0.5);
       if (strand) {
-        terrain
+        group
           .append("path")
           .attr("class", "battleProps")
           .attr("d", d)
@@ -369,47 +403,42 @@ class BattleSceneRenderer {
           .attr("stroke", strand)
           .attr("stroke-width", 7 * pt);
       }
-      const water = terrain.append("path").attr("d", d).attr("fill", fill);
+      const water = group.append("path").attr("d", d).attr("fill", fill);
       if (rim) water.attr("stroke", rim).attr("stroke-width", 1.2 * pt);
     }
+  }
 
-    terrain.append("g").html(BattleCliffsView.getMarkup(field, pt));
-
-    // no outline: tributaries join without a seam, and the mouth covers the shore line
+  /** Rivers with no outline: tributaries join without a seam, and the mouth covers the shore line; then their fords */
+  private drawRivers(group: Group, field: Battlefield): void {
     const course = line<Point>().curve(curveCatmullRom.alpha(0.5));
-    const banks = select(svg).select("#battleRivers");
     for (const river of field.rivers) {
-      const d = course(river.points);
-      for (const [parent, stroke] of [
-        [terrain, WATER],
-        [banks, "#fff"]
-      ] as const) {
-        if (parent === banks && river.brook) continue; // a brook is waded anywhere: no fords to show on it
-        parent
-          .append("path")
-          .attr("class", parent === terrain ? "battleRiver" : null)
-          .attr("d", d)
-          .attr("fill", "none")
-          .attr("stroke", stroke)
-          .attr("stroke-linecap", "round")
-          .attr("stroke-width", river.width);
-      }
+      group
+        .append("path")
+        .attr("class", "battleRiver")
+        .attr("d", course(river.points))
+        .attr("fill", "none")
+        .attr("stroke", WATER)
+        .attr("stroke-linecap", "round")
+        .attr("stroke-width", river.width);
     }
-    // fords: a stretch of the river shown shallow, with its stones, square across it; kept within its banks
+    // a ford: a stretch of the river shown shallow, with its stones, square across it; kept within its banks
     for (const ford of this.getFords(field)) {
-      terrain
+      group
         .append("path")
         .attr("d", line<Point>()(ford.points))
         .attr("fill", "none")
-        .attr("stroke", "url(#battleFord)")
+        .attr("stroke", "url(#battleFordPattern)")
         .attr("stroke-width", ford.width * 1.5) // wide enough to cover the curve between points: the mask trims it
         .attr("stroke-linejoin", "round")
-        .attr("mask", "url(#battleRivers)");
+        .attr("mask", "url(#battleRiverMask)");
     }
+  }
 
-    // a bridge: its deck under the road, its parapets beside it
+  /** Roads, and a bridge where one crosses a river: its deck under the road, its parapets beside it */
+  private drawRoads(group: Group, field: Battlefield, pt: number): void {
+    const course = line<Point>().curve(curveCatmullRom.alpha(0.5));
     const span = (bridge: Battlefield["bridges"][number], d: string) =>
-      terrain
+      group
         .append("path")
         .attr("transform", `translate(${bridge.x} ${bridge.y}) rotate(${(bridge.angle * 180) / Math.PI})`)
         .attr("d", d);
@@ -420,18 +449,14 @@ class BattleSceneRenderer {
     }
     for (const road of field.roads) {
       const d = course(road);
-      terrain
-        .append("path")
-        .attr("d", d)
-        .attr("fill", "none")
-        .attr("stroke", "#a39d90")
-        .attr("stroke-width", 5 * pt);
-      terrain
-        .append("path")
-        .attr("d", d)
-        .attr("fill", "none")
-        .attr("stroke", "#fbf8f1")
-        .attr("stroke-width", 2.2 * pt);
+      for (const [stroke, width] of ROAD) {
+        group
+          .append("path")
+          .attr("d", d)
+          .attr("fill", "none")
+          .attr("stroke", stroke)
+          .attr("stroke-width", width * pt);
+      }
     }
     for (const bridge of field.bridges) {
       const half = bridge.length / 2;
@@ -440,11 +465,9 @@ class BattleSceneRenderer {
       const posts = `M${-half} ${-post}V${-rail}M${half} ${-post}V${-rail}M${-half} ${post}V${rail}M${half} ${post}V${rail}`;
       span(bridge, parapets + posts)
         .attr("fill", "none")
-        .attr("stroke", "#55524b")
+        .attr("stroke", WALL)
         .attr("stroke-width", 1.4 * pt);
     }
-
-    this.drawTowns(terrain.append("g"), field, pt);
   }
 
   /** Burgs as ground: their streets and the piers from their sea gates */
@@ -453,7 +476,7 @@ class BattleSceneRenderer {
       group
         .append("path")
         .attr("d", this.toPath(burg.outline, true))
-        .attr("fill", "url(#battleTown)")
+        .attr("fill", "url(#battleTownPattern)")
         .attr("stroke", burg.walled ? "none" : WALL)
         .attr("stroke-width", 1.6 * pt);
     }
@@ -548,8 +571,83 @@ class BattleSceneRenderer {
     }
   }
 
-  private toPath(points: Point[], closed = false): string {
-    return `M${points.map(p => p.map(v => v.toFixed(1))).join("L")}${closed ? "Z" : ""}`;
+  /** Burg names over the burgs of the scene, river names along the field's rivers, left to right */
+  private drawLabels(labels: Group, field: Battlefield, ground: Battlefield, [dx, dy]: Point, paper: string): void {
+    const { width, height } = field;
+    const pt = this.getPoint(field);
+    const box = BattleCamera.getFieldView(field);
+    for (const burg of ground.burgs) {
+      // above the burg, or below it when the edge is too close
+      const [x, y] = [burg.x + dx, burg.y + dy];
+      const top = y - burg.radius * 0.9 - 2 * pt;
+      const below = top < box.y + 24 * pt ? y + burg.radius * 0.9 + 13 * pt : top;
+      this.label(labels, field, `${burg.name} ${burg.group}`, x, below, 13, INK);
+    }
+
+    const course = line<Point>().curve(curveCatmullRom.alpha(0.5));
+    field.rivers.forEach((river, i) => {
+      const inside = river.points.filter(
+        ([x, y]) => x > 30 * pt && x < width - 30 * pt && y > 20 * pt && y < height - 20 * pt
+      );
+      if (inside.length < 2 || !river.name) return;
+      if (inside[0][0] > inside.at(-1)![0]) inside.reverse();
+      labels.append("path").attr("id", `battleRiverCourse${i}`).attr("d", course(inside)).attr("fill", "none");
+      labels
+        .append("text")
+        .attr("class", "battleRiverName")
+        .attr("data-width", river.width)
+        .attr("dy", -river.width / 2 - 3 * pt)
+        .attr("font-size", 11 * pt)
+        .attr("font-style", "italic")
+        .attr("fill", "#2b3a7c")
+        .attr("paint-order", "stroke")
+        .attr("stroke", paper)
+        .attr("stroke-width", 2.5 * pt)
+        .append("textPath")
+        .attr("href", `#battleRiverCourse${i}`)
+        .attr("startOffset", "50%")
+        .attr("text-anchor", "middle")
+        .text(river.name);
+    });
+  }
+
+  /** A label in points, kept within the field's view */
+  private label(parent: Group, field: Battlefield, text: string, x: number, y: number, size: number, fill: string) {
+    const pt = this.getPoint(field);
+    const box = BattleCamera.getFieldView(field);
+    const [left, top] = [
+      Math.min(Math.max(x, box.x + 60 * pt), box.x + box.width - 60 * pt),
+      Math.min(Math.max(y, box.y + 24 * pt), box.y + box.height - 12 * pt)
+    ];
+    return parent
+      .append("g")
+      .attr("class", "battleLabel")
+      .attr("data-x", left)
+      .attr("data-y", top)
+      .attr("transform", this.markAt(left, top, pt))
+      .append("text")
+      .attr("text-anchor", "middle")
+      .attr("font-size", size)
+      .attr("font-family", "Georgia, serif")
+      .attr("fill", fill)
+      .attr("paint-order", "stroke")
+      .attr("stroke", "#fbf5e9")
+      .attr("stroke-width", 3)
+      .text(text);
+  }
+
+  // works
+
+  /** A path for each kind and state of works, filled by `drawWorks` */
+  private getWorkPaths(pt: number): string {
+    return WORK_PATHS.map(([kind, state]) => {
+      const paint =
+        kind === "wagons"
+          ? `fill="${WORK_COLORS.wagons}" stroke="${WAGON_OUTLINE}" stroke-width="${WAGON.outline * pt}"`
+          : `stroke="${WORK_COLORS[kind]}"`;
+      const thick = kind === "stakes" ? `stroke-width="${STAKE[2] * pt}"` : "";
+      return `<path data-work="${kind} ${state}" ${paint} ${thick} ${state === "building" ? `opacity="0.5"` : ""}/>`;
+    }).join("");
   }
 
   /** What the works look like now: they are drawn again when it changes */
@@ -571,10 +669,10 @@ class BattleSceneRenderer {
       paths[key] = (paths[key] ?? "") + this.drawStretch(work, state === "down", pt);
     }
     // an empty path is drawn as a point of nothing: an empty "d" would not animate in an exported SVG
-    for (const path of svg.querySelectorAll<SVGPathElement>(".battleWorks > path"))
+    for (const path of svg.querySelectorAll<SVGPathElement>("#battleWorks > path"))
       path.setAttribute("d", paths[path.dataset.work!] || "M0 0");
     // hover lines for the tooltip, kept out of the layers the animation export records
-    svg.querySelector(".battleWorkTips")!.innerHTML = field.works
+    this.getLayer(svg, "battleWorkTips")!.innerHTML = field.works
       .map(
         work =>
           `<line x1="${work.a[0].toFixed(1)}" y1="${work.a[1].toFixed(1)}" x2="${work.b[0].toFixed(1)}" y2="${work.b[1].toFixed(1)}" stroke-width="${(WORK_HOVER * pt).toFixed(2)}" data-tip="${escapeHtml(this.getWorkTip(work))}"/>`
@@ -646,16 +744,17 @@ class BattleSceneRenderer {
     return d;
   }
 
+  // battalions
+
   /** Blocks, redrawn when their set changes; `onTurn` lets the user turn one */
   drawBlocks(svg: SVGSVGElement, battle: Battle, onTurn: (block: Block, facing: number) => void): void {
-    const root = select(svg);
     const allied = (side: Block["side"]): boolean => new Set(battle[side].regiments.map(r => r.state)).size > 1;
     const flagged = { attackers: allied("attackers"), defenders: allied("defenders") };
     const mark = this.getMark(svg, battle.field);
     const pt = this.getPoint(battle.field);
     const { colors } = this.getScene(svg);
-    const groups = root
-      .select(".battleBlocks")
+    const groups = select(svg)
+      .select("#battleBlocks")
       .selectAll<SVGGElement, Block>("g.battleBlock")
       .data(battle.blocks, block => block.key)
       .join("g")
@@ -719,39 +818,37 @@ class BattleSceneRenderer {
       halo.setAttribute(name, String(value));
   }
 
-  /** Put a block's group at a place; its icon stays upright whatever the block faces */
-  private setTransform(group: SVGGElement, x: number, y: number, facing: number): void {
-    const angle = ((facing * 180) / Math.PI).toFixed(1);
-    group.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${angle})`);
-    group.children[2].setAttribute("transform", `rotate(${-Number(angle)})`);
-  }
-
-  private getOpacity(block: Block, time: number, outline: boolean): number {
-    if (block.status === "routed" || block.status === "surrendered") return 0.7;
-    if (block.status !== "destroyed") return 1;
-    if (outline) return OUTLINE;
-    if (!this.fallen.has(block)) this.fallen.set(block, time);
-    return +Math.min(Math.max(1 - (time - this.fallen.get(block)!) / FADE, 0), 1).toFixed(2);
-  }
-
-  private swing(from: number, to: number): number {
-    return Math.atan2(Math.sin(to - from), Math.cos(to - from));
-  }
-
   /** Put blocks where they are `progress` of the way through the tick, eased; with no `previous` right where they are */
   updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Positions | null, progress: number): void {
-    const root = select(svg);
-    if (svg.dataset.breaches !== String(battle.field.breaches.length)) {
-      svg.dataset.breaches = String(battle.field.breaches.length);
-      this.drawWalls(select(svg).select(".battleWalls"), battle.field, this.getPoint(battle.field)); // the walls came down
-    }
-    if (svg.dataset.works !== this.getWorksKey(battle.field)) this.drawWorks(svg, battle.field); // works grow and fall
-    const pt = this.getPoint(battle.field);
-    const mark = this.getMark(svg, battle.field);
-    const { look, colors } = this.getScene(svg);
-    const outline = look.fallen === "outline";
-    const fire = { attackers: this.darker(colors.attackers, 1), defenders: this.darker(colors.defenders, 1) };
+    this.updateField(svg, battle.field);
     const time = battle.tick + progress;
+    const at = this.getShownPositions(svg, battle, previous, progress, time);
+    this.updateBattalions(svg, battle, at, time);
+    const shots = battle.result ? [] : this.getShots(battle, at, time);
+    this.drawShots(svg, battle, shots, time);
+    this.drawClashes(svg, battle, shots, at, time);
+    this.drawHover(svg, battle, at);
+    BattleDebugView.update(svg, battle, at, this.getPoint(battle.field));
+  }
+
+  /** Walls come down and works grow and fall as the battle goes */
+  private updateField(svg: SVGSVGElement, field: Battlefield): void {
+    if (svg.dataset.breaches !== String(field.breaches.length)) {
+      svg.dataset.breaches = String(field.breaches.length);
+      this.drawWalls(select(svg).select("#battleWalls"), field, this.getPoint(field));
+    }
+    if (svg.dataset.works !== this.getWorksKey(field)) this.drawWorks(svg, field);
+  }
+
+  /** Where blocks are shown: trailing where they are by an easing that evens out the jostle, at once after a leap */
+  private getShownPositions(
+    svg: SVGSVGElement,
+    battle: Battle,
+    previous: Positions | null,
+    progress: number,
+    time: number
+  ): Positions {
+    const pt = this.getPoint(battle.field);
     const last = this.shown.get(svg);
     const elapsed = previous && last ? time - last.time : -1;
     const ease = 1 - Math.exp(-elapsed / LAG);
@@ -778,9 +875,16 @@ class BattleSceneRenderer {
       });
     }
     this.shown.set(svg, { time, at });
+    return at;
+  }
 
-    root
-      .select(".battleBlocks")
+  /** Each block at its place, faded, outlined and tipped by its state; its health line as long as its troops left */
+  private updateBattalions(svg: SVGSVGElement, battle: Battle, at: Positions, time: number): void {
+    const mark = this.getMark(svg, battle.field);
+    const { look, selected } = this.getScene(svg);
+    const outline = look.fallen === "outline";
+    select(svg)
+      .select("#battleBlocks")
       .selectAll<SVGGElement, Block>("g.battleBlock")
       .data(battle.blocks, block => block.key) // blocks are lined up anew at each change before the start
       .each((block, i, nodes) => {
@@ -792,41 +896,63 @@ class BattleSceneRenderer {
       )
       .attr("opacity", block => this.getOpacity(block, time, outline))
       .classed("battleFallen", block => outline && block.status === "destroyed")
-      .classed("battleSelected", block => this.getScene(svg).selected.has(block.id))
-      .attr("data-tip", block => {
-        const troops = `${capitalize(block.unit.replace(/_/g, " "))}: ${block.troops} / ${block.initial}`;
-        if (block.status !== "ready" && block.status !== "routed") return `${troops}, ${block.status}`;
-        const kmh = BattleScale.toMetresPerSecond(Math.hypot(block.vx, block.vy)) * 3.6;
-        const speed = `${t("Speed")}: ${convertSpeed(kmh)} ${getSpeedUnit()}`;
-        const range = block.range ? `${t("Range")}: ${formatLength(block.range)}` : "";
-        const morale = `${t("Morale")}: ${Math.round(block.morale)}%`;
-        const energy = `${t("Energy")}: ${Math.round(block.energy * 100)}%`;
-        return sentences(troops, morale, energy, BATTLE_ACTION_LABELS[block.action], ...[speed, range].filter(Boolean));
-      })
+      .classed("battleSelected", block => selected.has(block.id))
+      .attr("data-tip", block => this.getBlockTip(block))
       .each(function (block) {
+        const [body, health] = this.children;
         // the line inside the front edge is as long as the share of the troops alive
         const half = ((block.initial ? block.troops / block.initial : 0) * block.width) / 2;
         const x = block.depth / 2 - HEALTH_INSET * mark;
-        (this.children[1] as SVGPathElement).setAttribute("d", `M${x} ${-half}V${half}`);
-        (this.children[1] as SVGPathElement).setAttribute("stroke-width", String(2 * HEALTH_INSET * mark));
-        (this.children[0] as SVGRectElement).setAttribute(
-          "stroke-dasharray",
-          block.status === "routed" ? `${3 * mark} ${2 * mark}` : ""
-        );
+        health.setAttribute("d", `M${x} ${-half}V${half}`);
+        health.setAttribute("stroke-width", String(2 * HEALTH_INSET * mark));
+        body.setAttribute("stroke-dasharray", block.status === "routed" ? `${3 * mark} ${2 * mark}` : "");
         this.querySelector(".battleWhiteFlag")!.setAttribute(
           "display",
           block.status === "surrendered" ? "inline" : "none"
         );
       });
+  }
 
+  private getBlockTip(block: Block): string {
+    const troops = `${capitalize(block.unit.replace(/_/g, " "))}: ${block.troops} / ${block.initial}`;
+    if (block.status !== "ready" && block.status !== "routed") return `${troops}, ${block.status}`;
+    const kmh = BattleScale.toMetresPerSecond(Math.hypot(block.vx, block.vy)) * 3.6;
+    const speed = `${t("Speed")}: ${convertSpeed(kmh)} ${getSpeedUnit()}`;
+    const range = block.range ? `${t("Range")}: ${formatLength(block.range)}` : "";
+    const morale = `${t("Morale")}: ${Math.round(block.morale)}%`;
+    const energy = `${t("Energy")}: ${Math.round(block.energy * 100)}%`;
+    return sentences(troops, morale, energy, BATTLE_ACTION_LABELS[block.action], ...[speed, range].filter(Boolean));
+  }
+
+  /** Put a block's group at a place; its icon stays upright whatever the block faces */
+  private setTransform(group: SVGGElement, x: number, y: number, facing: number): void {
+    const angle = ((facing * 180) / Math.PI).toFixed(1);
+    group.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${angle})`);
+    group.children[2].setAttribute("transform", `rotate(${-Number(angle)})`);
+  }
+
+  private getOpacity(block: Block, time: number, outline: boolean): number {
+    if (block.status === "routed" || block.status === "surrendered") return 0.7;
+    if (block.status !== "destroyed") return 1;
+    if (outline) return OUTLINE;
+    if (!this.fallen.has(block)) this.fallen.set(block, time);
+    return +Math.min(Math.max(1 - (time - this.fallen.get(block)!) / FADE, 0), 1).toFixed(2);
+  }
+
+  // shots and clashes
+
+  /** Blocks doing `action` to a target still on the field, with the target */
+  private getPairs(battle: Battle, action: Block["action"]): [Block, Block][] {
     const byId = new Map(battle.blocks.map(block => [block.id, block]));
-    const pairs = (action: Block["action"]): [Block, Block][] =>
-      battle.blocks
-        .filter(block => block.action === action && block.target !== null && byId.has(block.target))
-        .map(block => [block, byId.get(block.target!)!]);
+    return battle.blocks
+      .filter(block => block.action === action && block.target !== null && byId.has(block.target))
+      .map(block => [block, byId.get(block.target!)!]);
+  }
 
-    const bursts: { key: string; x: number; y: number; size: number; opacity: number }[] = [];
-    const shots = (battle.result ? [] : pairs("shoot")).map(([block, target]) => {
+  /** Each shooter's arc to its target and how far its shot is through its cycle */
+  private getShots(battle: Battle, at: Positions, time: number): Shot[] {
+    const pt = this.getPoint(battle.field);
+    return this.getPairs(battle, "shoot").map(([block, target]) => {
       const a = at.get(block.id)!;
       const b = at.get(target.id)!;
       const missile = MISSILES[block.type];
@@ -840,12 +966,20 @@ class BattleSceneRenderer {
       ];
       const lift = Math.hypot(to[0] - a.x, to[1] - a.y) / 5;
       const top: Point = [(a.x + to[0]) / 2, (a.y + to[1]) / 2 - lift];
-      return { block, missile, phase, from: [a.x, a.y] as Point, top, to };
+      return { block, missile, phase, from: [a.x, a.y], top, to };
     });
+  }
+
+  /** Dotted fire lines of the shooters with no missile, arrows and shells in flight of the others */
+  private drawShots(svg: SVGSVGElement, battle: Battle, shots: Shot[], time: number): void {
+    const mark = this.getMark(svg, battle.field);
+    const { colors } = this.getScene(svg);
+    const fire = { attackers: this.darker(colors.attackers, 1), defenders: this.darker(colors.defenders, 1) };
+    const root = select(svg);
 
     root
-      .select(".battleFire")
-      .selectAll<SVGPathElement, (typeof shots)[number]>("path")
+      .select("#battleFire")
+      .selectAll<SVGPathElement, Shot>("path")
       .data(
         shots.filter(shot => !shot.missile),
         shot => shot.block.key
@@ -856,8 +990,8 @@ class BattleSceneRenderer {
       .attr("d", ({ from, top, to }) => `M${this.fixed(from)}Q${this.fixed(top)} ${this.fixed(to)}`);
 
     root
-      .select(".battleMissiles")
-      .selectAll<SVGPathElement, (typeof shots)[number]>("path")
+      .select("#battleMissiles")
+      .selectAll<SVGPathElement, Shot>("path")
       .data(
         shots.filter(shot => shot.missile),
         shot => shot.block.key
@@ -876,25 +1010,28 @@ class BattleSceneRenderer {
         const [x, y] = this.arcAt(from, top, to, phase / SHELL_FLIGHT);
         return `M${this.fixed([x, y])}h0.01`; // a dot
       });
+  }
 
-    // a shell bursts bigger than a melee
+  /** A star where a shell bursts, bigger than one pulsing between two battalions in melee */
+  private drawClashes(svg: SVGSVGElement, battle: Battle, shots: Shot[], at: Positions, time: number): void {
+    const mark = this.getMark(svg, battle.field);
+    const bursts: { key: string; x: number; y: number; size: number; opacity: number }[] = [];
     for (const { block, missile, phase, to } of shots) {
       if (missile !== "shell" || phase < SHELL_FLIGHT) continue;
       const spent = (phase - SHELL_FLIGHT) / (1 - SHELL_FLIGHT);
       bursts.push({ key: block.key, x: to[0], y: to[1], size: (20 + spent * 16) * mark, opacity: 1 - spent });
     }
-
     if (!battle.result) {
       const pulse = 0.55 + 0.45 * Math.sin(time * 2.2);
-      for (const [block, target] of pairs("fight")) {
+      for (const [block, target] of this.getPairs(battle, "fight")) {
         if (block.id > target.id && target.target === block.id) continue; // one star for the two of them
         const [a, b] = [at.get(block.id)!, at.get(target.id)!];
         bursts.push({ key: block.key, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, size: 13 * mark, opacity: pulse });
       }
     }
 
-    root
-      .select(".battleClashes")
+    select(svg)
+      .select("#battleClashes")
       .selectAll<SVGTextElement, (typeof bursts)[number]>("text")
       .data(bursts, burst => burst.key)
       .join("text")
@@ -903,10 +1040,9 @@ class BattleSceneRenderer {
       .attr("opacity", burst => burst.opacity.toFixed(2))
       .attr("x", burst => burst.x.toFixed(1))
       .attr("y", burst => burst.y.toFixed(1));
-
-    this.drawHover(svg, battle, at);
-    BattleDebugView.update(svg, battle, at, pt);
   }
+
+  // the pointer and the pick
 
   /** The battalion under the pointer shows its foe, where it goes and how far it shoots */
   hoverBlock(svg: SVGSVGElement, battle: Battle, id: number | null): void {
@@ -936,7 +1072,7 @@ class BattleSceneRenderer {
   }
 
   drawSelection(svg: SVGSVGElement, battle: Battle, { box, handle }: Selection): void {
-    const layer = svg.querySelector(".battleSelection");
+    const layer = this.getLayer(svg, "battleSelection");
     if (!layer) return;
     const mark = this.getMark(svg, battle.field);
     const dash = `stroke-dasharray="${4 * mark} ${3 * mark}"`;
@@ -959,7 +1095,7 @@ class BattleSceneRenderer {
   }
 
   private drawHover(svg: SVGSVGElement, battle: Battle, at: Positions): void {
-    const layer = svg.querySelector(".battleHover");
+    const layer = this.getLayer(svg, "battleHover");
     if (!layer) return;
     const { hovered, selected } = this.getScene(svg);
     const shown = battle.result
@@ -1004,31 +1140,10 @@ class BattleSceneRenderer {
     return `<g stroke="${stroke}" stroke-width="${1.5 * mark}">${marks.join("")}</g>`;
   }
 
-  private fixed([x, y]: Point): string {
-    return `${x.toFixed(1)} ${y.toFixed(1)}`;
-  }
-
-  /** Point of the arc from one point over the top to another, and the way it runs there */
-  private arcAt(from: Point, top: Point, to: Point, share: number): [number, number, number] {
-    const rest = 1 - share;
-    const at = (i: 0 | 1): number => rest * rest * from[i] + 2 * rest * share * top[i] + share * share * to[i];
-    const run = (i: 0 | 1): number => rest * (top[i] - from[i]) + share * (to[i] - top[i]);
-    return [at(0), at(1), Math.atan2(run(1), run(0))];
-  }
-
-  /** An arrow with its head at the point, `aside` of the course; sized in points */
-  private arrow(x: number, y: number, angle: number, aside: number, pt: number): string {
-    const [cos, sin] = [Math.cos(angle), Math.sin(angle)];
-    const tip: Point = [x - sin * aside * pt, y + cos * aside * pt];
-    const back = (along: number, across: number): Point => [
-      tip[0] - (cos * along + sin * across) * pt,
-      tip[1] - (sin * along - cos * across) * pt
-    ];
-    return `M${this.fixed(back(9, 0))}L${this.fixed(tip)}M${this.fixed(back(3, 2))}L${this.fixed(tip)}L${this.fixed(back(3, -2))}`;
-  }
+  // movement arrows
 
   drawArrows(svg: SVGSVGElement, battle: Battle, trails: Trails | null): void {
-    const layer = svg.querySelector(".battleArrows");
+    const layer = this.getLayer(svg, "battleArrows");
     if (!layer) return;
     const mark = this.getMark(svg, battle.field);
     const { colors, look } = this.getScene(svg);
@@ -1059,42 +1174,46 @@ class BattleSceneRenderer {
     return new Map(battle.blocks.map(block => [block.id, { x: block.x, y: block.y, facing: block.facing }]));
   }
 
+  // helpers
+
+  private darker(fill: string, k: number): string {
+    return color(fill)!.darker(k).formatHex();
+  }
+
   private stateColor(stateId: number): string {
     const fill = pack.states[stateId]?.color;
     return fill && fill[0] === "#" ? fill : "#999";
   }
 
-  /** A label in points */
-  private label(
-    parent: ReturnType<typeof select<SVGGElement, unknown>>,
-    field: Battlefield,
-    text: string,
-    x: number,
-    y: number,
-    size: number,
-    fill: string
-  ) {
-    const pt = this.getPoint(field);
-    const box = BattleCamera.getFieldView(field);
-    const [left, top] = [
-      Math.min(Math.max(x, box.x + 60 * pt), box.x + box.width - 60 * pt),
-      Math.min(Math.max(y, box.y + 24 * pt), box.y + box.height - 12 * pt)
+  private swing(from: number, to: number): number {
+    return Math.atan2(Math.sin(to - from), Math.cos(to - from));
+  }
+
+  private fixed([x, y]: Point): string {
+    return `${x.toFixed(1)} ${y.toFixed(1)}`;
+  }
+
+  private toPath(points: Point[], closed = false): string {
+    return `M${points.map(p => p.map(v => v.toFixed(1))).join("L")}${closed ? "Z" : ""}`;
+  }
+
+  /** Point of the arc from one point over the top to another, and the way it runs there */
+  private arcAt(from: Point, top: Point, to: Point, share: number): [number, number, number] {
+    const rest = 1 - share;
+    const at = (i: 0 | 1): number => rest * rest * from[i] + 2 * rest * share * top[i] + share * share * to[i];
+    const run = (i: 0 | 1): number => rest * (top[i] - from[i]) + share * (to[i] - top[i]);
+    return [at(0), at(1), Math.atan2(run(1), run(0))];
+  }
+
+  /** An arrow with its head at the point, `aside` of the course; sized in points */
+  private arrow(x: number, y: number, angle: number, aside: number, pt: number): string {
+    const [cos, sin] = [Math.cos(angle), Math.sin(angle)];
+    const tip: Point = [x - sin * aside * pt, y + cos * aside * pt];
+    const back = (along: number, across: number): Point => [
+      tip[0] - (cos * along + sin * across) * pt,
+      tip[1] - (sin * along - cos * across) * pt
     ];
-    return parent
-      .append("g")
-      .attr("class", "battleLabel")
-      .attr("data-x", left)
-      .attr("data-y", top)
-      .attr("transform", this.markAt(left, top, pt))
-      .append("text")
-      .attr("text-anchor", "middle")
-      .attr("font-size", size)
-      .attr("font-family", "Georgia, serif")
-      .attr("fill", fill)
-      .attr("paint-order", "stroke")
-      .attr("stroke", "#fbf5e9")
-      .attr("stroke-width", 3)
-      .text(text);
+    return `M${this.fixed(back(9, 0))}L${this.fixed(tip)}M${this.fixed(back(3, 2))}L${this.fixed(tip)}L${this.fixed(back(3, -2))}`;
   }
 
   /** The stretches of river the ford nodes lie on, each from its first node to its last along the course */

@@ -30,7 +30,7 @@ class BattleOverlayRenderer {
   draw(svg: SVGSVGElement, { title, clock, viewWidth, look }: OverlayState): void {
     if (!svg.childElementCount) {
       svg.setAttribute("viewBox", `0 0 ${OVERLAY_WIDTH} ${OVERLAY_HEIGHT}`);
-      svg.innerHTML = ["Title", "Clock", "Scale", "North"].map(part => `<g class="battleOverlay${part}"></g>`).join("");
+      svg.innerHTML = ["Title", "Clock", "Scale", "North"].map(part => `<g id="battleOverlay${part}"></g>`).join("");
     }
     const drawn = this.scaled.get(svg);
     const width = drawn && Math.abs(viewWidth - drawn) < drawn * RESCALE ? drawn : viewWidth;
@@ -38,10 +38,10 @@ class BattleOverlayRenderer {
 
     const text = (y: number, size: number, value: string, bold = false): string =>
       `<text x="14" y="${y}" font-size="${size}" ${bold ? `font-weight="bold"` : ""} fill="${INK}" ${HALO}>${escapeHtml(value)}</text>`;
-    this.put(svg, ".battleOverlayTitle", look.title ? text(26, 16, title, true) : "");
-    this.put(svg, ".battleOverlayClock", look.title ? text(44, 13, clock) : "");
-    this.put(svg, ".battleOverlayScale", look.scale ? this.getScaleBar(width) : "");
-    this.put(svg, ".battleOverlayNorth", look.north ? NORTH : "");
+    this.put(svg, "#battleOverlayTitle", look.title ? text(26, 16, title, true) : "");
+    this.put(svg, "#battleOverlayClock", look.title ? text(44, 13, clock) : "");
+    this.put(svg, "#battleOverlayScale", look.scale ? this.getScaleBar(width) : "");
+    this.put(svg, "#battleOverlayNorth", look.north ? NORTH : "");
   }
 
   private put(svg: SVGSVGElement, selector: string, markup: string): void {
