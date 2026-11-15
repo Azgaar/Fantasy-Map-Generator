@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BattleCamera, type CameraTroop, type View } from "../battle-camera";
+import { BattleCamera, type CameraTroop, type View } from "./battle-camera";
 
 const field = { width: 1000, height: 600, front: 20 };
 const troop = (x: number, y: number, present = true): CameraTroop => ({ x, y, width: 20, depth: 10, present });

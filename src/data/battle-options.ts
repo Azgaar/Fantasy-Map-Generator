@@ -78,7 +78,7 @@ export const DEFAULT_BATTLE_OPTIONS: BattleOptions = {
     missiles: true,
     clashes: true,
     weather: true,
-    title: true,
+    title: false,
     scale: true,
     north: true
   },

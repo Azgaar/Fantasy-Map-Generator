@@ -3,8 +3,8 @@ import { type Battle, Battles, type Intervention } from "@/model/political/battl
 import { BattleScale, TICK_SECONDS } from "@/model/political/battle/battle-scale";
 import type { Battlefield } from "@/model/political/battle/battlefield";
 import { BattleCamera, type Camera, type View } from "@/renderers/battle/battle-camera";
-import { BattleOverlayView, OVERLAY_HEIGHT, OVERLAY_WIDTH } from "@/renderers/draw-battle-overlay";
-import { BattleSceneView, type SideColors } from "@/renderers/draw-battle-scene";
+import { BattleOverlayView, OVERLAY_HEIGHT, OVERLAY_WIDTH } from "@/renderers/battle/draw-battle-overlay";
+import { BattleSceneView, type SideColors } from "@/renderers/battle/draw-battle-scene";
 import { downloadFile } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
 import { log } from "@/utils/logger";

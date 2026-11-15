@@ -9,11 +9,11 @@ import { type Battlefield, Battlefields, type FieldWork, type WorkKind } from "@
 import { SKIES } from "@/model/political/battle/weather";
 import { convertSpeed, formatLength, getSpeedUnit } from "@/model/units";
 import type { View } from "@/renderers/battle/battle-camera";
-import { BattleCliffsView } from "@/renderers/draw-battle-cliffs";
-import { BattleDebugView } from "@/renderers/draw-battle-debug";
-import { BattleGroundView } from "@/renderers/draw-battle-ground";
-import { BattleReliefView } from "@/renderers/draw-battle-relief";
-import { BattleWeatherView } from "@/renderers/draw-battle-weather";
+import { BattleCliffsView } from "@/renderers/battle/draw-battle-cliffs";
+import { BattleDebugView } from "@/renderers/battle/draw-battle-debug";
+import { BattleGroundView } from "@/renderers/battle/draw-battle-ground";
+import { BattleReliefView } from "@/renderers/battle/draw-battle-relief";
+import { BattleWeatherView } from "@/renderers/battle/draw-battle-weather";
 import type { Point } from "@/types/global";
 import { sentences, t } from "@/utils/i18n";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
@@ -117,10 +117,11 @@ const OUTLINE = 0.45; // opacity of the outline a destroyed battalion leaves whe
 /** The box dragged to pick battalions, and the handle that turns the picked ones round their middle */
 export interface Selection {
   box: [Point, Point] | null;
-  ring: { x: number; y: number; radius: number; facing: number } | null;
+  handle: { at: Point; facing: number } | null; // before the picked battalions, the way they face
 }
 
-const HANDLE = 6; // points: the radius of the turning handle
+const HANDLE = 8; // points: the radius of the turning handle
+const TURN_ARROW = "M-2 -4.5Q2.4 0 -2 4.5M-2 -4.5l2.5 0.3M-2 -4.5l0.8 2.4M-2 4.5l2.5 -0.3M-2 4.5l0.8 -2.4";
 
 /** Where each battalion went since the last key moment, sampled once a round: by the screen while paused, and in keyframes */
 export type Trails = Map<number, Point[]>;
@@ -880,7 +881,7 @@ class BattleSceneRenderer {
       });
   }
 
-  drawSelection(svg: SVGSVGElement, battle: Battle, { box, ring }: Selection): void {
+  drawSelection(svg: SVGSVGElement, battle: Battle, { box, handle }: Selection): void {
     const layer = svg.querySelector(".battleSelection");
     if (!layer) return;
     const mark = this.getMark(svg, battle.field);
@@ -891,13 +892,13 @@ class BattleSceneRenderer {
       const [width, height] = [Math.abs(box[1][0] - box[0][0]), Math.abs(box[1][1] - box[0][1])];
       markup += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${width.toFixed(1)}" height="${height.toFixed(1)}" fill="#fff" fill-opacity="0.15" stroke-width="${mark}" ${dash} pointer-events="none"/>`;
     }
-    if (ring) {
-      const handle: Point = [
-        ring.x + Math.cos(ring.facing) * ring.radius,
-        ring.y + Math.sin(ring.facing) * ring.radius
-      ];
-      markup += `<circle cx="${ring.x.toFixed(1)}" cy="${ring.y.toFixed(1)}" r="${ring.radius.toFixed(1)}" stroke-width="${mark}" ${dash} opacity="0.6" pointer-events="none"/>
-        <circle class="battleTurnHandle" cx="${handle[0].toFixed(1)}" cy="${handle[1].toFixed(1)}" r="${(HANDLE * mark).toFixed(1)}" fill="#fff" stroke-width="${1.5 * mark}"/>`;
+    if (handle) {
+      // a white disc with a two-headed arrow across the way the troops face: it swings them round
+      const angle = ((handle.facing * 180) / Math.PI).toFixed(1);
+      markup += `<g class="battleTurnHandle" data-tip="${escapeHtml(t("Drag to turn the picked troops"))}" transform="translate(${this.fixed(handle.at)}) rotate(${angle}) scale(${mark})">
+          <circle r="${HANDLE}" fill="#fff" stroke-width="1.2"/>
+          <path d="${TURN_ARROW}" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>`;
     }
     layer.innerHTML = markup;
   }
@@ -914,25 +915,33 @@ class BattleSceneRenderer {
             (block.status === "ready" || block.status === "routed") &&
             at.has(block.id)
         );
-    layer.innerHTML = shown.map(block => this.getBlockMarks(svg, battle, at, block)).join("");
+    layer.innerHTML = shown.map(block => this.getBlockMarks(svg, battle, at, block, block.id === hovered)).join("");
   }
 
-  /** A battalion's foe, where it goes and how far it shoots */
-  private getBlockMarks(svg: SVGSVGElement, battle: Battle, at: Positions, block: Block): string {
+  /** A battalion's foe, where it goes, the friend it protects and, under the pointer, how far it shoots */
+  private getBlockMarks(svg: SVGSVGElement, battle: Battle, at: Positions, block: Block, hovered: boolean): string {
     const from = at.get(block.id)!;
     const mark = this.getMark(svg, battle.field);
     const stroke = this.darker(this.getScene(svg).colors[block.side], 0.6);
-    const foe = block.target === null ? undefined : at.get(block.target);
+    const { task } = block;
+    // an order given by hand shows at once, before the battalion acts on it
+    const aim = task && task.target !== null ? at.get(task.target) : undefined;
+    const foe = task?.kind === "attack" ? aim : block.target === null ? undefined : at.get(block.target);
+    const goal: Point | null = task?.kind === "move" ? [task.x, task.y] : task ? null : block.goal;
     const marks: string[] = [];
-    if (block.range) {
+    if (task?.kind === "protect" && aim)
+      marks.push(
+        `<path d="M${this.fixed([from.x, from.y])}L${this.fixed([aim.x, aim.y])}" stroke-dasharray="0 ${3 * mark}" stroke-linecap="round" stroke-width="${2.2 * mark}"/>`
+      );
+    if (block.range && hovered) {
       const radius = block.range * SKIES[battle.weather].range;
       marks.push(
         `<circle cx="${from.x.toFixed(1)}" cy="${from.y.toFixed(1)}" r="${radius.toFixed(1)}" stroke-dasharray="${4 * mark} ${3 * mark}"/>`
       );
     }
-    if (block.goal && (!foe || Math.hypot(block.goal[0] - foe.x, block.goal[1] - foe.y) > block.depth))
+    if (goal && (!foe || Math.hypot(goal[0] - foe.x, goal[1] - foe.y) > block.depth))
       marks.push(
-        `<path d="M${this.fixed([from.x, from.y])}L${this.fixed(block.goal)}" stroke-dasharray="${4 * mark} ${3 * mark}"/>`
+        `<path d="M${this.fixed([from.x, from.y])}L${this.fixed(goal)}" stroke-dasharray="${4 * mark} ${3 * mark}"/>`
       );
     if (foe) marks.push(`<path d="M${this.fixed([from.x, from.y])}L${this.fixed([foe.x, foe.y])}"/>`);
     return `<g stroke="${stroke}" stroke-width="${1.5 * mark}">${marks.join("")}</g>`;

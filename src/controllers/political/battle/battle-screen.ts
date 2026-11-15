@@ -48,7 +48,7 @@ import { Stability } from "@/model/political/stability";
 import { Names } from "@/model/society/names-generator";
 import type { Marker } from "@/model/story/markers-generator";
 import { BattleCamera, type Camera, type CameraMode } from "@/renderers/battle/battle-camera";
-import { BattleOverlayView } from "@/renderers/draw-battle-overlay";
+import { BattleOverlayView } from "@/renderers/battle/draw-battle-overlay";
 import {
   BattleSceneView,
   type Positions,
@@ -56,8 +56,8 @@ import {
   SIDE_COLORS,
   type SideColors,
   type Trails
-} from "@/renderers/draw-battle-scene";
-import { BattleWeatherView } from "@/renderers/draw-battle-weather";
+} from "@/renderers/battle/draw-battle-scene";
+import { BattleWeatherView } from "@/renderers/battle/draw-battle-weather";
 import { moveRegiment } from "@/renderers/draw-military";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
@@ -219,7 +219,7 @@ const STYLE = /* css */ `
   #battleScene.battleMuddy .battleMud, #battleScene.battleIcy .battleFrost { display: inline; }
   #battleScene.battleIcy .battleRiver { stroke: #e3edf3; }
   #battleScene.battleEditable .battleBlock { cursor: grab; }
-  #battleScene .battleSelected > rect { stroke: #111; stroke-width: 2.5px; vector-effect: non-scaling-stroke; }
+  #battleScene .battleSelected > rect { stroke: #fff; stroke-opacity: 0.9; stroke-width: 2px; vector-effect: non-scaling-stroke; }
   #battleScene .battleTurnHandle { cursor: grab; }
   #battleScene.battlePlanning .battleBlocks { display: none; }
   #battleScene.battleFocus .battleBlock:not(.battleFocused) { opacity: 0.3; }
@@ -289,6 +289,14 @@ const STYLE = /* css */ `
 
 /** What a press on the field turns into once the pointer moves: a look round, a box picking battalions, or a drag of them */
 type Gesture = "pan" | "box" | "move" | "turn";
+
+/** The middle of the picked battalions, the way they mostly face, and how far before the middle their front is */
+interface Pivot {
+  x: number;
+  y: number;
+  facing: number;
+  ahead: number;
+}
 
 interface Press {
   id: number;
@@ -896,24 +904,28 @@ class BattleScreenController {
       b,
       blocks.map(block => block.id)
     );
-    BattleSceneView.drawSelection(this.scene(), b, {
-      box: null,
-      ring: this.isEditable() && blocks.length ? this.getRing(blocks) : null
-    });
+    const pivot = this.isEditable() && blocks.length ? this.getPivot(blocks) : null;
+    BattleSceneView.drawSelection(this.scene(), b, { box: null, handle: pivot && this.getHandle(pivot, 0) });
   }
 
-  /** The circle round the picked battalions, its handle before them as they mostly face */
-  private getRing(blocks: Block[]): NonNullable<Selection["ring"]> {
+  /** The middle of the picked battalions, the way they mostly face, and how far before the middle their front is */
+  private getPivot(blocks: Block[]): Pivot {
     const x = sum(blocks, block => block.x) / blocks.length;
     const y = sum(blocks, block => block.y) / blocks.length;
-    const reach = Math.max(
-      ...blocks.map(block => Math.hypot(block.x - x, block.y - y) + Math.max(block.width, block.depth) / 2)
-    );
     const facing = Math.atan2(
       sum(blocks, block => Math.sin(block.facing)),
       sum(blocks, block => Math.cos(block.facing))
     );
-    return { x, y, radius: reach + this.battle!.field.front * 0.5, facing };
+    const [cos, sin] = [Math.cos(facing), Math.sin(facing)];
+    const ahead = Math.max(...blocks.map(block => (block.x - x) * cos + (block.y - y) * sin + block.depth / 2));
+    return { x, y, facing, ahead };
+  }
+
+  /** The turning handle a little before the front of the picked battalions, turned with them by `turn` */
+  private getHandle({ x, y, facing, ahead }: Pivot, turn: number): Selection["handle"] {
+    const way = facing + turn;
+    const off = ahead + this.battle!.field.front * 0.6;
+    return { at: [x + Math.cos(way) * off, y + Math.sin(way) * off], facing: way };
   }
 
   /** Where a drag puts the picked battalions: moved by the drag, or turned round their middle */
@@ -925,13 +937,13 @@ class BattleScreenController {
       for (const block of blocks) places.set(block.id, { x: block.x + dx, y: block.y + dy, facing: block.facing });
       return places;
     }
-    const ring = this.getRing(blocks);
+    const pivot = this.getPivot(blocks);
     const turn =
-      Math.atan2(to[1] - ring.y, to[0] - ring.x) - Math.atan2(press.field[1] - ring.y, press.field[0] - ring.x);
+      Math.atan2(to[1] - pivot.y, to[0] - pivot.x) - Math.atan2(press.field[1] - pivot.y, press.field[0] - pivot.x);
     const [cos, sin] = [Math.cos(turn), Math.sin(turn)];
     for (const { id, x, y, facing } of blocks) {
-      const [ox, oy] = [x - ring.x, y - ring.y];
-      places.set(id, { x: ring.x + ox * cos - oy * sin, y: ring.y + ox * sin + oy * cos, facing: facing + turn });
+      const [ox, oy] = [x - pivot.x, y - pivot.y];
+      places.set(id, { x: pivot.x + ox * cos - oy * sin, y: pivot.y + ox * sin + oy * cos, facing: facing + turn });
     }
     return places;
   }
@@ -941,7 +953,7 @@ class BattleScreenController {
     const b = this.battle!;
     if (press.gesture === "box") {
       if (!done) {
-        BattleSceneView.drawSelection(this.scene(), b, { box: [press.field, to], ring: null });
+        BattleSceneView.drawSelection(this.scene(), b, { box: [press.field, to], handle: null });
         return;
       }
       const [x0, x1] = [Math.min(press.field[0], to[0]), Math.max(press.field[0], to[0])];
@@ -962,9 +974,9 @@ class BattleScreenController {
     if (!done) {
       BattleSceneView.previewBlocks(this.scene(), places);
       if (press.gesture === "turn") {
-        const ring = this.getRing(this.getSelected());
         const turn = [...places.values()][0].facing - this.getSelected()[0].facing;
-        BattleSceneView.drawSelection(this.scene(), b, { box: null, ring: { ...ring, facing: ring.facing + turn } });
+        const handle = this.getHandle(this.getPivot(this.getSelected()), turn);
+        BattleSceneView.drawSelection(this.scene(), b, { box: null, handle });
       }
       return;
     }

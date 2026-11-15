@@ -4,8 +4,8 @@ import { type Battle, Battles, type LogEntry, type LogEvent, ROUND_TICKS } from 
 import { BattleScale } from "@/model/political/battle/battle-scale";
 import { Keyframes } from "@/model/political/battle/keyframes";
 import { BattleCamera } from "@/renderers/battle/battle-camera";
-import { BattleOverlayView, OVERLAY_HEIGHT, OVERLAY_WIDTH } from "@/renderers/draw-battle-overlay";
-import { BattleSceneView, type Trails } from "@/renderers/draw-battle-scene";
+import { BattleOverlayView, OVERLAY_HEIGHT, OVERLAY_WIDTH } from "@/renderers/battle/draw-battle-overlay";
+import { BattleSceneView, type Trails } from "@/renderers/battle/draw-battle-scene";
 import type { Point } from "@/types/global";
 import { downloadFile } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";

@@ -1008,6 +1008,7 @@
   "Download visible part of the map as .png (lossless compressed)": "Download visible part of the map as .png (lossless compressed)",
   "Downloading the archive...": "Downloading the archive...",
   "Downloads": "Downloads",
+  "Drag to turn the picked troops": "Drag to turn the picked troops",
   "Drag control points to change the river course": "Drag control points to change the river course",
   "Drag control points to change the route": "Drag control points to change the route",
   "Drag points to move, click the path to add, double-click a point to remove. Esc to finish.": "Drag points to move, click the path to add, double-click a point to remove. Esc to finish.",
