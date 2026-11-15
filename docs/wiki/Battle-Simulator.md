@@ -77,23 +77,7 @@ Each side is led by a general. Before the battle he weighs both armies and the g
 
 The first deployment on screen is the one the odds alone suggest; while the generals think, for up to a second, the start and step buttons are disabled, and then the troops take their final places. Adding a regiment, giving a side a tactic, or changing the battle type before the start makes them think again; a new battle type drops the tactics given for the old one.
 
-| Tactic                                         | The troops are drawn up                                                                                                                                                                                                                                                                                                                | Likeliest                                                                                                                           |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Frontal assault                                | in lines, shooters behind the first one, riders on both wings, a reserve behind                                                                                                                                                                                                                                                        | by the stronger side                                                                                                                |
-| Oblique attack                                 | with one wing massed, the best troops, the second line, the reserve and all the riders on it, the other wing held back                                                                                                                                                                                                                 | at even odds or weaker, against the weaker wing of the foe                                                                          |
-| Envelopment                                    | with a thinner centre held back and riders massed on both wings                                                                                                                                                                                                                                                                        | with clearly more riders                                                                                                            |
-| Wedge                                          | in a deep column with trailing wings                                                                                                                                                                                                                                                                                                   | against a longer, thinner line                                                                                                      |
-| Harassing fire                                 | with shooters as the first line and the rest behind them                                                                                                                                                                                                                                                                               | with more to shoot with and less to fight with                                                                                      |
-| Flying wedge                                   | in lines like a frontal assault, the riders apart in a wedge of their own beyond the end of the line: when the time comes they ride wide round the end of the foe's line as one body and fall on it from beyond its end once their own line has it engaged, on the wing with the more open ground and the better slope down to the foe | with at least two battalions of riders, a fifth of the power or more                                                                |
-| Defensive line                                 | on the best ground in reach: the high ground, with the ends of the line covered and with something for the foe to cross; the line follows the brow of the slope, the more so the more riders the foe has                                                                                                                               | by defenders at fair odds                                                                                                           |
-| Refused flanks                                 | with the ends of the line bent back                                                                                                                                                                                                                                                                                                    | by defenders outnumbered or with fewer riders                                                                                       |
-| Defence of a crossing                          | round the far end of the ford or bridge the attackers have to come by                                                                                                                                                                                                                                                                  | by defenders behind a river                                                                                                         |
-| Wagenburg                                      | in a ring facing out, line troops on it, shooters and engines in the middle with riders and a reserve about them (on the ring too when it has under three battalions of line troops); the wagons are drawn round it, see [Works](#works)                                                                                               | by defenders whose foe has twice their riders, and riders make two fifths of its power, on ground that covers neither end of a line |
-| Column of march                                | in a column on the road, riders ahead, engines last                                                                                                                                                                                                                                                                                    | by the attackers of an ambush: they are caught                                                                                      |
-| Ambuscade on both sides, Ambuscade on one side | along the road on both sides of it, or all on one, the better covered by trees and high ground; at the edge of the trees nearest the road where there are any, a bowshot off in the open                                                                                                                                               | by the ambushers                                                                                                                    |
-| Siege lines, Garrison on the walls             | out of bowshot, the engines a row behind the first line; shooters towards the besiegers, the rest by the gates and in the middle                                                                                                                                                                                                       | in a siege of a walled burg                                                                                                         |
-| Ring round the walls                           | out of bowshot all round the burg: the strongest battalions by the gates, ships off the quay, the rest between, the engines behind them                                                                                                                                                                                                | besiegers of a walled burg with three times its power and at least six battalions                                                   |
-| Landing in waves                               | line troops first, shooters and riders behind them                                                                                                                                                                                                                                                                                     | by the attackers of a landing                                                                                                       |
+Each tactic is shown with an example under [Tactics](#tactics).
 
 Riders kept in reserve stand behind the ends of the line, and never among trees or in a marsh: there they close in to the line till the ground is open. In a naval or an air battle all troops are of one kind and form lines.
 
@@ -109,16 +93,18 @@ Riders kept in reserve stand behind the ends of the line, and never among trees 
 
 **The order of a side** is what the general has it do, shown beside its title:
 
-| Order        | The side                                                                                                     |
-| ------------ | ------------------------------------------------------------------------------------------------------------ |
-| ✋ Hold      | stands its ground and shoots what comes within range                                                         |
-| ⛏️ Fortify   | holds its ground and builds works before its first line, see [Works](#works)                                 |
-| 🎯 Skirmish  | comes within shot of the foe and shoots                                                                      |
-| ⚔️ Attack    | closes with the foe                                                                                          |
-| 🛡️ Defend    | stands its ground and fights what comes at it                                                                |
-| 🐎 Pursue    | chases the broken foe                                                                                        |
-| 🏃 Retreat   | leaves the field                                                                                             |
-| 🏳️ Surrender | lays down its arms: every battalion in order gives itself up, and every broken one with no way off the field |
+| Order        | The side                                                                                                     | When it is used                                                                                                                                                                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✋ Hold      | stands its ground and shoots what comes within range                                                         | A side that waits for the foe holds while he is still far off; besiegers holding a blockade and a garrison sheltering behind its walls hold too. Give it to keep a side where it is, to let the foe come on, or to wait for reinforcements                |
+| ⛏️ Fortify   | holds its ground and builds works before its first line, see [Works](#works)                                 | A side that holds orders it when it has time before the foe comes. Give it before a fight you mean to receive. When both sides end behind works, nobody may come out and the battle can die down as a standoff                                            |
+| 🎯 Skirmish  | comes within shot of the foe and shoots                                                                      | An attacker with the better shooters shoots for a while before going in, the longer the better his fire; besiegers bombard the walls. Give it to wear the foe down before the clash, or to keep ships and engines at their range                          |
+| ⚔️ Attack    | closes with the foe                                                                                          | An attacker goes in when his fire is no better or has done its work; besiegers storm the walls, a garrison sorties. Give it to force the fight, also on a side whose general meant to wait. Going in at once spares the foe the fire and can cost the day |
+| 🛡️ Defend    | stands its ground and fights what comes at it                                                                | A side that waits defends once the foe is near. Give it to keep a good position, a hill or a crossing, without leaving it                                                                                                                                 |
+| 🐎 Pursue    | chases the broken foe                                                                                        | Ordered when the foe runs or has only a quarter of his battalions left in order; besiegers that took the burg loot it. Give it to finish a beaten foe off: riders and the reserve go after whoever they find                                              |
+| 🏃 Retreat   | leaves the field                                                                                             | Ordered when the day is lost, see above. Give it to save what is left of an army; battalions held at grips with no way out surrender. A besieged garrison cannot retreat                                                                                  |
+| 🏳️ Surrender | lays down its arms: every battalion in order gives itself up, and every broken one with no way off the field | Ordered by a garrison whose burg is taken or starved. Give it to end the battle at once; once the battle is on it cannot be undone                                                                                                                        |
+
+Not every order fits every battle: only a side that may build works can fortify, and a bombardment, where ships and troops never come to grips, knows only hold, skirmish, retreat and surrender.
 
 The order is the short of the _phase_ the side is in, see [Battle types](#battle-types). In a field, a naval and an air battle a side that goes to meet its foe skirmishes and then attacks, and one that waits for him holds and then defends.
 
@@ -178,6 +164,112 @@ The sky slows nobody, and engines and ships shoot in it like bows. Fliers and sh
 **Surrender**. A battalion _surrenders_ and raises a white flag when it cannot get away: when there is no way off the field for it, foes, deep water, walls and cliffs closing every way out, and either its side retreats while it is held at grips or its morale is below 20, about to break. A whole side lays down its arms only when ordered to by hand, or a garrison giving its burg up; its broken battalions with nowhere to run give themselves up with it. It stands where it is, out of nobody's way, strikes no blow and is struck no more. Its men are _captured_: neither casualties nor survivors, but lost to the side unless it holds the field at the end, which frees them. A surrender unsettles the friends nearby and heartens the foe like a flight.
 
 The battle ends when one side has no troops in order: the other one _holds the field_. It also ends when the fighting dies down, after about ten minutes without losses. At the default size a battle takes some 20 minutes: a few minutes of approach, then 12 to 17 of fighting. The beaten side loses a third or so of its army, much of it taken prisoner, the winner about a tenth. At the end a summary shows over the plan: who won, the outcome for each side, the troops left, the casualties, the troops captured and the morale of each side, and the losses of every unit. Close the summary to look at the plan. You can apply the results at any moment with the apply button, you don't need to wait for the end; the cancel button rolls the battle back. If results are applied, casualties and captured troops are taken from the regiments, the regiments' notes (legend) are updated with a short info about the battle and a battlefield _marker_ is added.
+
+## Tactics
+
+A tactic is how a general draws his side up and how the side goes about the fight. The general picks it before the battle by the armies and the ground, and in a field, naval or air battle he first plays the likely ones through in his mind, see [Generals](#generals). Before the start you can give a side any tactic its battle type allows from the order list beside its title; the ones its general is likeliest to pick come first.
+
+The diagrams show each tactic where it works best. The side drawn up in it stands in the shape the simulator gives it, the foe and the ground are drawn round it, and the arrows show how the troops move: solid for the main move, dashed for what follows. Attackers are red, defenders blue; on each battalion a cross marks foot, a slash riders, a dot shooters and a ring engines, and its pale edge is its front.
+
+### Attacking in the open
+
+These tactics are for the side that comes to fight in a field, naval or air battle. In a naval or an air battle all troops form lines, so only the shape of the formation counts.
+
+#### Frontal assault
+
+![Frontal assault: the line goes in, the riders ride round the ends](Battle-tactic-assault.png)
+
+Foot in one or more lines, the best in the middle, shooters behind them, riders on both wings and a fifth of the foot kept back as a reserve. The riders guard the wings until the lines meet, then ride round the ends of the foe's line. It is the plain way to fight and the general's choice when he is the stronger and nothing promises more.
+
+#### Oblique attack
+
+![Oblique attack: the right wing strikes first](Battle-tactic-oblique.png)
+
+One wing is massed with the best foot, the second line, the reserve and all the riders; the other wing is held back in steps. The strong wing strikes first and breaks one end of the foe's line before the weak wing is engaged. A general picks it when he is no stronger than the foe, or when one wing of the foe is clearly weaker: he masses against that one. It needs at least four battalions of foot.
+
+#### Envelopment
+
+![Envelopment: the wings come on ahead of the centre](Battle-tactic-envelopment.png)
+
+The ends of the line stand forward and the centre back, with riders on both wings, so the wings reach the foe first and close round him. A general picks it when he has clearly more riders than the foe, two battalions of them at least.
+
+#### Wedge
+
+![Wedge: the centre leads](Battle-tactic-wedge.png)
+
+The foot form a deep column in the middle, two lines or more, with the wings trailing behind it, shooters at the ends of the first line and riders kept back. The centre hits first to break through. A general picks it against a foe whose line is longer and thinner than his own, when his own foot is the heavier. It needs at least five battalions of foot.
+
+#### Harassing fire
+
+![Harassing fire: shooters form the first line](Battle-tactic-harass.png)
+
+The shooters form the first line and the foot stand behind them, with riders on the wings and no reserve. The side shoots the foe down before it goes in. A general picks it when he has as many battalions of shooters as of foot and is better at shooting than at fighting hand to hand, and against a Wagenburg. Against a foe who comes straight at it the shooters in front are caught at grips.
+
+#### Flying wedge
+
+![Flying wedge: the riders ride round the end of the foe's line](Battle-tactic-flying-wedge.png)
+
+Foot as in a frontal assault, and the riders apart in a wedge of their own beyond one end of the line. When the time comes the wedge rides wide round the end of the foe's line as one body and falls on it from beyond its end once the foot have it engaged, on the wing with the more open ground. A general picks it with at least two battalions of riders that make a fifth of his power.
+
+### Defending in the open
+
+These tactics are for the side that waits for the foe. The general looks for the best ground nearby: high ground, a line whose ends lean on water, woods or a burg, and something the foe has to cross to reach it.
+
+#### Defensive line
+
+![Defensive line on a hill, its ends covered by woods and water](Battle-tactic-defensive-line.png)
+
+One line on the best ground in reach, following the brow of the slope, with shooters behind it, the reserve behind its two ends to cover the flanks and the riders kept back. It is the usual choice of a defender at fair odds.
+
+#### Refused flanks
+
+![Refused flanks: the ends of the line bent back](Battle-tactic-refused-flanks.png)
+
+A line with its ends bent back, so a foe who comes round them meets a front, not a flank. A defender picks it when he is outnumbered or has fewer riders than the foe. Many battalions on a narrow field stand in two lines, and the bent ends show only at the front.
+
+#### Defence of a crossing
+
+![Defence of a crossing: the line wraps round the far end of the ford](Battle-tactic-crossing.png)
+
+The line stands round the far end of the ford or bridge the attackers have to come by, its ends forward, so whoever crosses is under fire from three sides. The side stays behind the river until the foe runs. A defender always picks it when a river with a ford or a bridge lies between him and the attackers; a brook does not count, it is waded anywhere.
+
+#### Wagenburg
+
+![Wagenburg: a ring of wagons against riders](Battle-tactic-wagenburg.png)
+
+A ring facing out: foot on the ring, shooters and engines in the middle with the riders and the reserve, and the wagons drawn round it from the first moment. It does not move and goes out only to sally. Riders cannot cross wagons or fight over them, so it is the answer to a foe strong in horse: a defender picks it when the foe has twice his riders, riders are two fifths of the foe's power, and the open ground covers neither end of a line. Engines knock the wagons down, and foot can fight the holders over them.
+
+### Ambush
+
+#### Column of march and ambuscades
+
+![Ambuscade on both sides of the road](Battle-tactic-ambuscade-both-sides.png)
+
+![Ambuscade on one side of the road](Battle-tactic-ambuscade-one-side.png)
+
+The attackers of an ambush are caught on the march: they stand in a _column of march_ on the road, in as many files as the road allows, and have no plan. The ambushers lie by the road at the edge of the trees nearest it, a short dash away, or a bowshot off in the open. In an _ambuscade on both sides_ they lie on both sides of the road (first picture); in an _ambuscade on one side_ all of them lie on the better covered side (second picture). Their general weighs the two, and with shooters also weighs shooting from cover first and falling on the column only once it wavers.
+
+### Siege
+
+#### Siege lines and garrison on the walls
+
+![Siege lines out of bowshot, the garrison on the walls](Battle-tactic-siege-lines.png)
+
+The besiegers form lines out of bowshot of the walls, their engines a row behind the first line, still in range of the walls. They storm when they are strong enough for the walls as they stand, every breach making it easier, bombard while their engines work, and otherwise blockade. The garrison always mans the walls: shooters on the side facing the besiegers, foot by the gates, riders and engines in the middle. Besiegers who are too few to ring the burg in use siege lines.
+
+#### Ring round the walls
+
+![Ring round the walls of a burg](Battle-tactic-ring.png)
+
+The besiegers stand all round the burg, out of bowshot, the strongest by the gates, ships off the quay and engines behind. While a besieger watches every gate the burg is cut off: the garrison loses heart every round and gives the burg up when it is starved. The general picks the ring with three times the garrison's power and at least six battalions; you can order it with fewer.
+
+### Landing
+
+#### Landing in waves
+
+![Landing in waves against defenders at the water's edge](Battle-tactic-landing.png)
+
+The attackers come over the water in waves, foot first and shooters and riders behind, and wade ashore through the shallows, where they fight at half their strength; nobody fights from a boat. The defenders draw up in a defensive tactic of their own, either at the water's edge or inland to meet the attackers once they have landed. Their general weighs the two.
 
 ## Works
 

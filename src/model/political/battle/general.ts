@@ -7,6 +7,7 @@ import {
   BOLD,
   BREACHES,
   CHARGE,
+  CONTACT,
   COUNTER,
   KEEN,
   RING_BATTALIONS,
@@ -1366,10 +1367,10 @@ class GeneralModule {
     if (phase === names.run) return phase; // a side that turned to run does not come back
 
     const fought = battle.engaged === null ? -1 : battle.round - battle.engaged;
-    if (battle.type === "ambush" && fought < plan.opening && !this.isLost(own, foe)) return names.apart; // surprise and shock
+    if (battle.type === "ambush" && fought < plan.opening && !this.isLost(battle, own, foe)) return names.apart; // surprise and shock
     if (battle.type === "landing") {
       const landing = battle.attackers.phase === "landing";
-      if (side === "attackers" && landing && this.isAfloat(battle) && !this.isLost(own, foe)) return phase; // the fight for the shore
+      if (side === "attackers" && landing && this.isAfloat(battle) && !this.isLost(battle, own, foe)) return phase; // the fight for the shore
       if (side === "defenders") {
         if (battle.attackers.phase === "flee") {
           const ashore = battle.blocks.some(
@@ -1380,7 +1381,7 @@ class GeneralModule {
           );
           return ashore ? "pursue" : "waiting";
         }
-        if (landing && !this.isLost(own, foe)) return battle.round ? phase : "defense";
+        if (landing && !this.isLost(battle, own, foe)) return battle.round ? phase : "defense";
       }
     }
     return this.engage(battle, side, own, foe, gap);
@@ -1390,12 +1391,37 @@ class GeneralModule {
     return block.status === "ready" || block.status === "routed";
   }
 
-  /** The day is lost: too few are left in order to go on */
-  private isLost(own: View, foe: View): boolean {
+  /** The day is lost: too few are left in order to go on, as the blows would land on the ground both sides stand on */
+  private isLost(battle: Battle, own: View, foe: View): boolean {
     if (!own.ready.length) return true;
-    const odds = own.power / (foe.power || 1e-9);
+    const odds =
+      (own.power * this.getPurchase(battle, own, foe)) / (foe.power * this.getPurchase(battle, foe, own) || 1e-9);
     const bled = own.losses >= 1 / 2 ? 1 : own.losses >= 1 / 4 ? 2 / 3 : 1 / 3; // the more is lost the better odds it takes to go on
     return odds < bled || own.morale < 25;
+  }
+
+  /**
+   * How well a side's blows would tell on the foe where it stands: the striker's footing just before the foe's line over the
+   * foe's own footing, and the foe's wagons between, as the blows reckon them. A uniform slope favours neither side.
+   * Field battles only: a landing wades ashore by its plan, ships and fliers have no footing, a siege has its walls
+   */
+  private getPurchase(battle: Battle, from: View, at: View): number {
+    const striker = from.ready[0];
+    if (battle.type !== "field" || !striker || !at.ready.length) return 1;
+    const { field } = battle;
+    let landed = 0;
+    let total = 0;
+    for (const target of at.ready) {
+      const away = Math.atan2(from.y - target.y, from.x - target.x);
+      const reach = target.depth / 2 + CONTACT;
+      const there = { ...striker, x: target.x + Math.cos(away) * reach, y: target.y + Math.sin(away) * reach };
+      const strikes = Movement.getFooting(battle, there, Battlefields.terrainAt(field, there.x, there.y));
+      const stands = Movement.getFooting(battle, target, Battlefields.terrainAt(field, target.x, target.y));
+      const weight = Battalions.getStrength(target);
+      landed += (weight * strikes * Works.getShelter(battle, there, target)) / stands;
+      total += weight;
+    }
+    return total ? landed / total : 1;
   }
 
   /** Two armies in the open: stand off and shoot, close, chase or run */
@@ -1404,7 +1430,11 @@ class GeneralModule {
     const { phase, plan } = data;
     const names = POSTURES[battle.type][side];
     const firing = battle.type === "bombardment"; // ships and troops only shoot: fire against fire
-    if (firing ? this.isLost({ ...own, power: own.fire }, { ...foe, power: foe.fire }) : this.isLost(own, foe))
+    if (
+      firing
+        ? this.isLost(battle, { ...own, power: own.fire }, { ...foe, power: foe.fire })
+        : this.isLost(battle, own, foe)
+    )
       return names.run;
     if (
       BattleRules.isBeaten(battle.type, BattleRules.enemyOf(side), battle[BattleRules.enemyOf(side)].phase) ||
@@ -1423,8 +1453,9 @@ class GeneralModule {
     if (fort === "breached") return names.close; // in by the gaps
     // on broken ground the formation cannot always go where its battalions can: one that comes no nearer goes in
     if (data.advancing && battle.field.cliffs.length && data.plan.idle >= STALLED) return names.close;
-    if (!data.advancing || battle.engaged === null) return phase; // a defender waits; an attacker is still coming up
-    if (!own.fire) return names.close;
+    if (!data.advancing) return phase; // a defender waits
+    if (!own.fire) return names.close; // nothing to stand off with
+    if (battle.engaged === null) return phase; // an attacker is still coming up
 
     // a general shoots while he is better at it than at grips, and no longer than it pays
     const fireShare = own.fire / (own.fire + foe.fire);
@@ -1474,7 +1505,7 @@ class GeneralModule {
     if (phase === "retreat" || phase === "looting") return phase;
     if (battle.defenders.phase === SURRENDER || !foe.ready.length) return "looting";
     const odds = own.power / (foe.power || 1e-9);
-    if (this.isLost(own, foe) && !this.isOnWalls(battle)) return "retreat";
+    if (this.isLost(battle, own, foe) && !this.isOnWalls(battle)) return "retreat";
     // a garrison out in force that is half as strong again: the siege is raised
     if (battle.defenders.phase === "sortie" && this.isStrongGarrison(foe, own)) {
       battle.raised = true;

@@ -1901,7 +1901,7 @@ describe("battle slopes and speed", () => {
 
   it("has riders that charge at full tilt strike harder than those that come on at a walk", () => {
     const losses = (speed: number): number => {
-      const riders = { ...unit("cavalry", "mounted", 2), speed };
+      const riders = { ...unit("cavalry", "mounted", 2), speed, morale: 10 }; // steady too: odds that let it charge
       const b = Battles.create({
         type: "field",
         name: "Test",

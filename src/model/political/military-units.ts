@@ -12,7 +12,7 @@ export function getUnitPower(unit: Traits): number {
   const strength = (unit.attack + unit.defense) / 2;
   const speed = Math.sqrt((unit.speed + FOOT_SPEED) / (FOOT_SPEED * 2));
   const range = 1 + Math.max(unit.range, 0) / RANGE_POWER;
-  const morale = Math.sqrt(Math.max(unit.morale, 0));
+  const morale = Math.max(unit.morale, 0); // losses shake a unit the less the steadier it is
   return strength * speed * range * morale || 0;
 }
 
@@ -54,7 +54,7 @@ export function getDefaultMilitaryUnits(): MilitaryUnit[] {
       urban: 0.2,
       crew: 1,
       attack: 1.1,
-      defense: 0.4,
+      defense: 0.42,
       speed: 4.3,
       range: 160,
       morale: 0.8,
@@ -84,7 +84,7 @@ export function getDefaultMilitaryUnits(): MilitaryUnit[] {
       urban: 0.03,
       crew: 8,
       attack: 16,
-      defense: 3.2,
+      defense: 3.1,
       speed: 1.8,
       range: 380,
       morale: 0.8,

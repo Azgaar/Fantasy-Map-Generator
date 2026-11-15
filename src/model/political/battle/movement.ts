@@ -1144,6 +1144,7 @@ class MovementModule {
   /** Push overlapping blocks apart; those in a fight give less ground */
   separate(battle: Battle, blocks: Block[]): void {
     const clearance = CLEARANCE * battle.field.front;
+    const room = (a: Block, b: Block): number => (a.side === b.side ? clearance : Math.min(clearance, CONTACT * 0.9)); // foes within reach of a blow
     const near = NEAR * battle.field.front;
     // what pushing does not change: as `getLeastGap` and `isRunning` read it
     const radius = blocks.map(block => Math.max(block.width, block.depth) / 2);
@@ -1158,14 +1159,15 @@ class MovementModule {
           const [x, y] = [b.x - a.x, b.y - a.y];
           const apart = clearance + radius[i] + radius[j];
           if (x * x + y * y > apart * apart * FURTHER) continue; // as below, without the exact distance
-          if (Math.hypot(x, y) - radius[i] - radius[j] >= clearance) continue;
+          const keep = room(a, b);
+          if (Math.hypot(x, y) - radius[i] - radius[j] >= keep) continue;
           if (running[i] || running[j] || this.isPacked(battle, a, b)) continue;
           if (a.side === b.side && (filing[i] || filing[j])) continue;
           const [gap, dx, dy] = this.getGap(a, b);
-          if (gap >= clearance || this.isWalledOff(battle.field, [a.x, a.y], [b.x, b.y])) continue;
+          if (gap >= keep || this.isWalledOff(battle.field, [a.x, a.y], [b.x, b.y])) continue;
           const heavyA = a.action === "fight" ? 3 : 1;
           const heavyB = b.action === "fight" ? 3 : 1;
-          const push = clearance - gap;
+          const push = keep - gap;
           a.x -= (dx * push * heavyB) / (heavyA + heavyB);
           a.y -= (dy * push * heavyB) / (heavyA + heavyB);
           b.x += (dx * push * heavyA) / (heavyA + heavyB);
