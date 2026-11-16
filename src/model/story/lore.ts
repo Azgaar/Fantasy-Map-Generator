@@ -11,7 +11,16 @@ class LoreModel {
   /** Set the current year, a whole number that may be negative; history and battle reports are dated by it */
   setYear(year: number): void {
     if (typeof year !== "number" || !Number.isFinite(year)) throw new Error("The year must be a number");
-    options.map.lore.calendar.year = Math.round(year);
+    const { calendar } = options.map.lore;
+    const shift = Math.round(year) - calendar.year;
+    calendar.year += shift;
+
+    // move campaigns
+    const campaigns = new Set(pack.states.flatMap(s => s.campaigns ?? []));
+    for (const campaign of campaigns) {
+      campaign.start += shift;
+      if (campaign.end !== undefined) campaign.end += shift;
+    }
   }
 
   /** Set the era the current year belongs to and its short form, such as "Winter Era" and "WE"; without one the short form is abbreviated from the era */
