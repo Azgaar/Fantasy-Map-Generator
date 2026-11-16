@@ -1183,7 +1183,7 @@ class BattleModule {
     block.status = "ready";
     block.action = "hold";
     // those who fight hand to hand join the reserve; shooters and engines go on shooting from where they stand
-    const role: Role = block.kind === "shooter" ? "support" : block.kind === "engine" ? "battery" : "reserve";
+    const role: Role = block.kind === "ranged" ? "support" : block.kind === "machinery" ? "battery" : "reserve";
     Object.assign(block.order, { role, mission: role, sent: false, target: null });
     Generals.takePlace(battle, block);
     battle.log.push({ tick: battle.tick, event: "rally", side: block.side, params: { block: this.blockName(block) } });
@@ -1379,7 +1379,7 @@ class BattleModule {
           unit: unit.name,
           number: count > 1 ? n + 1 : 0,
           type: unit.type,
-          kind: Battalions.getKind(unit, battle.field.open !== null),
+          kind: Battalions.getKind(unit.type, battle.field.open !== null),
           unitPower: getUnitPower(unit),
           attack: unit.attack,
           defense: unit.defense,

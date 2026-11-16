@@ -176,7 +176,7 @@ describe("a flying wedge", () => {
 
   it("draws the riders up in a wedge apart from the line, its point ahead", () => {
     const b = wedge();
-    const wedged = b.blocks.filter(block => block.side === "attackers" && block.kind === "rider");
+    const wedged = b.blocks.filter(block => block.side === "attackers" && block.kind === "mounted");
     expect(wedged.length).toBeGreaterThanOrEqual(3);
     expect(wedged.every(block => block.order.role === "wedge")).toBe(true);
     const point = wedged.find(block => block.order.along === 0 && block.order.across === 0)!;

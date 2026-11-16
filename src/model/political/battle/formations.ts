@@ -167,7 +167,7 @@ export interface Place {
   facing?: number; // turned from the heading of the formation, when it does not face its way
 }
 
-const ROLES: Record<Block["kind"], Role> = { line: "line", shooter: "support", rider: "wing", engine: "battery" };
+const ROLES: Record<Block["kind"], Role> = { melee: "line", ranged: "support", mounted: "wing", machinery: "battery" };
 const MISSIONS: Record<Role, Mission> = {
   line: "line",
   support: "support",
@@ -189,10 +189,10 @@ class FormationModule {
     const strength = (block: Block): number => block.troops * block.unitPower;
     const of = (kind: Block["kind"]): Block[] =>
       blocks.filter(block => block.kind === kind).sort((a, b) => strength(b) - strength(a) || a.id - b.id);
-    let line = of("line");
-    let shooters = of("shooter");
-    let riders = of("rider");
-    let engines = of("engine");
+    let line = of("melee");
+    let shooters = of("ranged");
+    let riders = of("mounted");
+    let engines = of("machinery");
     // somebody has to stand in front
     if (!line.length) {
       if (shooters.length) [line, shooters] = [shooters, []];
@@ -367,10 +367,10 @@ class FormationModule {
     const strength = (block: Block): number => block.troops * block.unitPower;
     const of = (kind: Block["kind"]): Block[] =>
       blocks.filter(block => block.kind === kind).sort((a, b) => strength(b) - strength(a) || a.id - b.id);
-    const line = of("line");
+    const line = of("melee");
     const kept = line.length >= 4 ? Math.round(line.length * tactic.reserve) : 0;
     const reserve = kept ? line.splice(line.length - kept) : [];
-    const fire = [...of("shooter"), ...of("engine")];
+    const fire = [...of("ranged"), ...of("machinery")];
     const closed = line.length >= 3;
     // shooters and engines spread evenly among the line troops
     const spread = (row: Block[]): { block: Block; at: number }[] =>
@@ -380,7 +380,7 @@ class FormationModule {
       : [...spread(line), ...spread(fire)]
           .sort((a, b) => a.at - b.at || a.block.id - b.block.id)
           .map(({ block }) => block);
-    const inside = [...(closed ? fire : []), ...of("rider"), ...reserve];
+    const inside = [...(closed ? fire : []), ...of("mounted"), ...reserve];
 
     const around = ring.reduce((sum, block) => sum + block.width + gap, 0);
     const radius = Math.max(around / (Math.PI * 2), front * (0.8 + 0.6 * Math.sqrt(inside.length)));
@@ -406,7 +406,7 @@ class FormationModule {
     rows.forEach((row, i) => {
       let offset = -row.reduce((sum, block) => sum + block.width + gap, -gap) / 2;
       for (const block of row) {
-        const role: Role = block.kind === "shooter" || block.kind === "engine" ? ROLES[block.kind] : "reserve";
+        const role: Role = block.kind === "ranged" || block.kind === "machinery" ? ROLES[block.kind] : "reserve";
         places.push({
           block,
           role,

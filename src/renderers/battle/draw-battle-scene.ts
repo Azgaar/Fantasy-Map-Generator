@@ -148,7 +148,12 @@ const FADE = 12; // ticks a destroyed battalion takes to fade away
 const OUTLINE = 0.45; // opacity of the outline a destroyed battalion leaves where it fell
 
 // shots: what a unit type shoots, the rest are dotted arcs
-const MISSILES: Record<string, "arrows" | "shell"> = { ranged: "arrows", machinery: "shell", naval: "shell" };
+const MISSILES: Record<string, "arrows" | "shell"> = {
+  ranged: "arrows",
+  mounted: "arrows",
+  machinery: "shell",
+  naval: "shell"
+};
 const VOLLEY_TICKS = 4; // arrows are in the air
 const VOLLEY = [
   [0, 0],

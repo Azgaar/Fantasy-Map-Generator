@@ -277,7 +277,7 @@ class MovementModule {
     // beyond the longest range there are no heights to read
     const longest = block.range * Math.sqrt(1 + (2 * (battle.field.relief + WALL_HEIGHT)) / block.range);
     if (distance > longest || distance > this.getRange(battle, block, target)) return false;
-    return this.getGap(block, target)[0] >= (block.kind === "engine" ? POINT_BLANK.engine : POINT_BLANK.shooter);
+    return this.getGap(block, target)[0] >= (block.kind === "machinery" ? POINT_BLANK.engine : POINT_BLANK.shooter);
   }
 
   /** Ships carry the attackers of a landing to the shallows; from there they wade ashore */

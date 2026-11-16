@@ -57,7 +57,7 @@ Speeds are in km/h and ranges in metres, whatever the map's units; the tooltip o
 
 A unit of a map saved before these parameters existed had a single power. On load it gets the speed, range and morale of the default unit of its type (of infantry for armored, aviation and magical units), and its attack and defense are split in that unit's proportion so that the power stays what it was.
 
-The available types are melee, ranged, mounted, machinery, naval, armored, aviation, magical and levies. Levies are a normal unit, just weak: poorly armed conscripts with a third of an infantryman's power, who lose heart twice as fast. By default their rural and urban percentages are 0, so they only take in troops other units could not equip, but they can be raised directly like any other unit.
+The available types are melee, ranged, mounted, machinery, naval, armored, aviation, magical and levies. In battle the type alone sets how a unit fights, whatever its speed and range: mounted and aviation units fight as riders, ranged units as shooters, machinery and naval units as engines, and all the other types as line troops. Range only lets a unit shoot: mounted units with a range, such as horse archers, keep to the wings like other riders, shoot and ride off from foot that comes at them, and line troops with a short range, such as javelin men, throw and still close. Levies are a normal unit, just weak: poorly armed conscripts with a third of an infantryman's power, who lose heart twice as fast. By default their rural and urban percentages are 0, so they only take in troops other units could not equip, but they can be raised directly like any other unit.
 
 ## Generation logic
 

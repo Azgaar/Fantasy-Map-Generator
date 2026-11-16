@@ -28,7 +28,7 @@ class WorksModule {
 
   /** Who stakes stop: troops on horse */
   isRider(block: Block): boolean {
-    return block.type !== "aviation" && (block.kind === "rider" || block.type === "mounted");
+    return block.type === "mounted";
   }
 
   /** Whether the stretch stops the block crossing it: wagons the foe, stakes the foe's riders; a side's own never */
@@ -138,7 +138,7 @@ class WorksModule {
   }
 
   private isOnFoot(block: Block): boolean {
-    return (block.kind === "line" || block.kind === "shooter") && block.type !== "naval" && block.type !== "aviation";
+    return (block.kind === "melee" || block.kind === "ranged") && block.type !== "naval" && block.type !== "aviation";
   }
 
   /** Where a battalion's stretch runs: across the front of its place, or of the spot it was told to fortify */
@@ -203,7 +203,7 @@ class WorksModule {
   chooseKind(battle: Battle, side: Side, rate: number, ticks: number, train = true): WorkKind | null {
     if (!rate) return null;
     const foe = BattleRules.enemyOf(side);
-    const mobile = this.getShare(battle, foe, block => this.isRider(block) || block.kind === "shooter") >= STRONG;
+    const mobile = this.getShare(battle, foe, block => this.isRider(block) || block.kind === "ranged") >= STRONG;
     if (train && mobile && this.getWagonTicks(battle, side) <= ticks) return "wagons";
     if (this.getShare(battle, foe, block => this.isRider(block)) < STRONG && BUILD_TICKS.ditch / rate <= ticks)
       return "ditch";
@@ -334,7 +334,8 @@ class WorksModule {
     for (const side of SIDES) {
       if (BattleRules.isBeaten(battle.type, side, battle[side].phase)) continue; // a side on the run or giving itself up batters nothing
       for (const engine of battle.blocks) {
-        if (engine.side !== side || engine.status !== "ready" || engine.leaving || engine.kind !== "engine") continue;
+        if (engine.side !== side || engine.status !== "ready" || engine.leaving || engine.kind !== "machinery")
+          continue;
         const far = (work: FieldWork): number =>
           Math.hypot(this.middle(work)[0] - engine.x, this.middle(work)[1] - engine.y);
         const work = battle.field.works

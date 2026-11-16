@@ -1,6 +1,5 @@
 // The battalion level: what one battalion does this tick, by its order and by what is around it. See docs/domain/battles.md.
 
-import { FOOT_SPEED } from "@/model/political/military-units";
 import type { Battle, Block, TaskKind } from "./battle";
 import { CHARGE, CHARGE_HASTE, COUNTER, SHAKEN } from "./battle-balance";
 import { BattleRules, COMMANDS, type Command, type Side } from "./battle-rules";
@@ -8,13 +7,20 @@ import { Battlefields, type FieldWork } from "./battlefield";
 import { ARRIVED, Movement, ROUND_TICKS, type Spot } from "./movement";
 import { Works } from "./works";
 
-export type Kind = "line" | "shooter" | "rider" | "engine";
+/** How a battalion fights, by its unit type: line troops, shooters, riders, engines */
+export type Kind = "melee" | "ranged" | "mounted" | "machinery";
+const KINDS: Record<string, Kind> = {
+  ranged: "ranged",
+  mounted: "mounted",
+  aviation: "mounted",
+  machinery: "machinery",
+  naval: "machinery"
+};
 
 const PRIZE = 0.3; // how much nearer a foe that only hits looks to who picks a target
 const UNDER = (1 + PRIZE) * (1 + 1e-9); // the worth over the straight line over this is less than over any way
 
 // in metres
-export const LONG_SHOT = 250; // shooters of this range and more are engines
 const EVADE = 55; // shooters step back from foes this near
 const LEASH = 80; // how far shooters step from their place to get in range
 
@@ -53,11 +59,13 @@ class BattalionModule {
   }
 
   /** Troops in a naval or an air battle are all of a kind: they shoot and close as their side does */
-  getKind(unit: { range: number; speed: number }, open: boolean): Kind {
-    if (open) return "line";
-    if (unit.range >= LONG_SHOT) return "engine";
-    if (unit.range > 0) return "shooter";
-    return unit.speed >= FOOT_SPEED * 2 ? "rider" : "line";
+  getKind(type: string, open = false): Kind {
+    return open ? "melee" : (KINDS[type] ?? "melee");
+  }
+
+  /** Comes to grips rather than stands off to shoot: who has no shot, and line troops on land whatever they throw */
+  closes(battle: Battle, block: Block): boolean {
+    return !block.range || (block.kind === "melee" && !battle.field.open);
   }
 
   /** The tasks a battalion can be given on its own spot: shooters skirmish, who comes to grips defends, who is on foot fortifies */
@@ -65,7 +73,7 @@ class BattalionModule {
     const tasks: TaskKind[] = ["hold"];
     if (Works.mayDig(battle, block)) tasks.push("fortify");
     if (block.range) tasks.push("skirmish");
-    if ((block.kind === "line" || block.kind === "rider") && battle.type !== "bombardment") tasks.push("defend");
+    if ((block.kind === "melee" || block.kind === "mounted") && battle.type !== "bombardment") tasks.push("defend");
     if (COMMANDS[battle.type][block.side].retreat) tasks.push("retreat"); // the besieged cannot
     tasks.push("surrender");
     return tasks;
@@ -114,7 +122,7 @@ class BattalionModule {
       far(order) < ARRIVED * front ? stand : { ...stand, to: order, key: this.getPointKey(battle, order), keep: true };
     // the last stretch at a run: what it covers in a tick so; engines do not charge
     const run = (target: Block): number =>
-      block.kind !== "engine" && Movement.getGap(block, target)[0] <= Movement.getPace(battle, block) * CHARGE_HASTE
+      block.kind !== "machinery" && Movement.getGap(block, target)[0] <= Movement.getPace(battle, block) * CHARGE_HASTE
         ? CHARGE_HASTE
         : 1;
     const charge = (target: Block): Intent => ({ ...stand, target, to: target, key: target.id, haste: run(target) });
@@ -136,14 +144,15 @@ class BattalionModule {
       return { ...stand, target };
     }
 
-    // out of reach of those who come for it
+    // out of reach of those who come for it; riders keep that far from the foe's front, not its middle
+    const apart = (foe: Block): number => (block.kind === "mounted" ? Movement.getGap(block, foe)[0] : far(foe));
     const evade = (): Intent | null => {
       const threat = ready
         .filter(
           foe =>
             !foe.range &&
             !sense.held.has(foe.id) &&
-            far(foe) < EVADE &&
+            apart(foe) < EVADE &&
             !Works.isBarredByWorks(battle, foe, [foe.x, foe.y], [block.x, block.y]) // riders before stakes, foes outside wagons
         )
         .reduce<Block | null>((a, b) => (a && far(a) <= far(b) ? a : b), null);
@@ -159,6 +168,10 @@ class BattalionModule {
       const near = ready.some(foe => far(foe) < Movement.getPace(battle, foe) * ROUND_TICKS + CHARGE * front);
       return (!work || work.done < 1) && !near;
     };
+
+    const closes = this.closes(battle, block);
+    // riders who shoot keep out of reach of those who come for them on any errand, as shooters do
+    const skirmishes = block.kind === "mounted" && block.range > 0;
 
     if (block.task) {
       const { task } = block;
@@ -182,12 +195,12 @@ class BattalionModule {
       }
       const other = sense.onField.find(other => other.id === task.target);
       if (other && (task.kind === "attack" || task.kind === "pursue"))
-        return block.range ? shoot(other, true) : charge(other);
+        return closes ? charge(other) : shoot(other, true);
       if (other) {
         // the foes that come at the friend, the nearest to it first
         const near = (foe: Block): boolean => far(foe, other) - foe.width / 2 <= GUARD * front;
-        const threat = block.range ? shot(ready.filter(near)) : pick(prey.filter(near));
-        if (threat) return block.range ? shoot(threat) : charge(threat);
+        const threat = closes ? pick(prey.filter(near)) : shot(ready.filter(near));
+        if (threat) return closes ? charge(threat) : shoot(threat);
         const by = (other.width + block.width) / 2 + front;
         if (far(other) > by + ARRIVED * front)
           return { ...stand, to: other, stop: by, key: other.id, facing: other.facing };
@@ -197,6 +210,8 @@ class BattalionModule {
 
     const { plan } = battle[block.side];
     if (plan.fortify && Works.isBuilder(battle, block) && atWork(order)) return { ...stand, build: true };
+    const away = skirmishes ? evade() : null;
+    if (away) return away;
 
     const shaken = block.morale < SHAKEN;
     const { phase, advancing } = battle[block.side];
@@ -225,7 +240,7 @@ class BattalionModule {
     if (order.mission === "flank") {
       // only who bars the way
       const barring = pick(prey.filter(foe => far(foe) <= COUNTER * front + foe.width / 2));
-      if (barring && !shaken) return charge(barring);
+      if (barring && !shaken) return skirmishes ? shoot(barring, true) : charge(barring);
       // stormers all make for the middle of the burg
       const shared = battle.type === "siege";
       return far(order) < ARRIVED * front
@@ -234,7 +249,7 @@ class BattalionModule {
     }
 
     if (order.mission === "hunt") {
-      const shooting = Boolean(block.range) && block.kind !== "line";
+      const shooting = Boolean(block.range) && block.kind !== "melee"; // in a naval or an air battle all close
       const among = shooting ? foes : foes.filter(foe => Movement.canGrip(battle, block, foe));
       const inOrder = among.filter(foe => foe.status === "ready");
       const target = pick(inOrder.length && !bold ? inOrder : among);
@@ -256,13 +271,14 @@ class BattalionModule {
       const near =
         foe.id === order.target ||
         distance <= reach ||
-        (guard && foe.kind === "rider" && distance <= WATCH * front) ||
+        (guard && foe.kind === "mounted" && distance <= WATCH * front) ||
         (sense.held.has(foe.id) && distance <= reach * 1.5); // the flank of a foe a neighbour holds
       return near && !over(foe) && !Movement.isAboard(battle, foe); // the boats are let come: who wades out of them is the prey
     });
-    // ships and fliers close when their side does, shooting from their place till then; others who shoot do not close
+    // ships and fliers close when their side does, shooting from their place till then; riders who shoot ride within shot
     const boarding = Boolean(battle.field.open) && bold;
-    if (within.length && !shaken && (!block.range || boarding)) return charge(pick(within)!);
+    if (within.length && !shaken && (closes || boarding)) return charge(pick(within)!);
+    if (within.length && !shaken && skirmishes) return shoot(pick(within)!, true);
     if (block.range && (!boarding || far(order) < Movement.getPace(battle, block))) {
       const target = pick(inRange());
       if (target) return shoot(target);
@@ -291,20 +307,21 @@ class BattalionModule {
     const { front } = battle.field;
     if (foe.status === "routed")
       score = chasing || block.order.mission === "hunt" ? score * 0.9 : score + ROUTED * front;
+    const closes = this.closes(battle, block);
     if (foe.id === block.target) score *= 0.75;
-    else if (!block.range) score += (sense.crowd.get(foe.id) ?? 0) * CROWD * front;
+    else if (closes) score += (sense.crowd.get(foe.id) ?? 0) * CROWD * front;
     if (foe.id === block.order.target) score *= 0.5; // the general points at it
 
     const edge = (foe.attack - foe.defense) / (foe.attack + foe.defense || 1); // hits harder than it stands
-    if (block.range) return score * (1 - PRIZE * edge);
+    if (!closes) return score * (1 - PRIZE * edge);
 
     const bearing = Math.abs(Movement.normalize(Math.atan2(block.y - foe.y, block.x - foe.x) - foe.facing)); // 0 at its front
     const held = sense.held.has(foe.id);
     if (held && bearing > 1.05) score *= bearing > 2.1 ? 0.6 : 0.75; // the flank and the rear of a foe held by a friend
     if (foe.morale < SHAKEN) score *= 0.85;
-    if (block.kind === "rider") {
-      if (foe.kind === "shooter" || foe.kind === "engine") score *= 0.7;
-      else if (foe.kind === "line" && bearing < 1.05 && !held && foe.morale >= SHAKEN) score *= 1.6; // formed, head on
+    if (block.kind === "mounted") {
+      if (foe.kind === "ranged" || foe.kind === "machinery") score *= 0.7;
+      else if (foe.kind === "melee" && bearing < 1.05 && !held && foe.morale >= SHAKEN) score *= 1.6; // formed, head on
     }
     if (score <= CHARGE * front) score *= 1 - PRIZE * edge;
     return score;

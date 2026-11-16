@@ -41,7 +41,7 @@ Each module holds one singleton class; its methods are the module's whole interf
 
 ### Appraisal
 
-What a general knows is what a general could see: the troops in order on both sides by kind (**line** troops that fight hand to hand, **shooters**, **riders**, **engines**), their power and morale, the losses so far, the ground. From it:
+What a general knows is what a general could see: the troops in order on both sides by kind, their power and morale, the losses so far, the ground. The kind is how a battalion fights, and it comes from its unit's type alone, never from its speed or range, so a unit's numbers can be set freely (`Battalions.getKind`): **riders** are `mounted` and `aviation`, **shooters** `ranged`, **engines** `machinery` and `naval`, and every other type is **line** troops that fight hand to hand. In a naval and an air battle all troops are line troops. Range says only whether a battalion can shoot: riders that shoot skirmish (see [The battalion](#the-battalion)), line troops that throw still close (`closes`), and only shooters halt the formation where their shots reach. From it:
 
 - **odds**: own power in order to the foe's, as the military screens count it;
 - **fire**: the same for what shoots; **grip** for what fights hand to hand, shooters counted at half and engines and ships at a tenth (`getGrip`);
@@ -158,7 +158,7 @@ Every tick a battalion looks at the foes in sight and at its friends beside it, 
 1. **Broken or withdrawn**: it runs for the edge of the field behind its side. A regiment withdrawn by hand once the battle is on (`withdraw`) has its battalions marked `leaving`: they march off whatever the general says, he no longer counts them, and they do not hold the field. Withdrawn before the start, the regiment is dropped with its add, moves and turns, as if it never came.
 2. **At grips**: it fights; with nobody to its front it turns on whoever has it by the flank.
 3. **Its work**: a builder of a fortifying side at its place builds its stretch (`build`) while no foe in order is within a round's march and a charge of it, see [Works](#works).
-4. **Its own skin**: shooters step back from those who come for them within 55 m, unless works keep them off (riders before stakes, anyone outside wagons); a shaken battalion (morale under 30) does not attack.
+4. **Its own skin**: shooters step back from those who come for them within 55 m, unless works keep them off (riders before stakes, anyone outside wagons); riders that shoot do so on any errand, from foes within 55 m of their front, and ride within shot of a foe they would charge; a shaken battalion (morale under 30) does not attack.
 5. **Its order**, by mission. A line battalion goes for a foe within reach of its place and no further, so the line holds: 2.75 battalion fronts when its side advances and closes, one front when it waits. A foe a neighbour holds is within reach half as far again, to be taken in the flank. Behind its own works, on a side that holds, it does not go for a foe the works lie between: it lets it come into contact.
 6. **Its target** (`getWorth`): of the foes its mission lets it reach, the nearest by the way there, made nearer by all that makes it a better prey: held by a friend and open to a blow in the flank or rear, shaken, hitting harder than it stands, pointed at by the general; for riders a shooter or an engine, and not formed line troops head on. Friends already going for it make it further, so the line spreads.
 
