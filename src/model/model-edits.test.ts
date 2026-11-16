@@ -1170,6 +1170,7 @@ describe("Goods and Markets", () => {
     );
     expect(() => Goods.setProduction(1, { recipes: [{ 9: 1 }] })).toThrow("unknown 9");
     expect(() => Goods.setProduction(1, { deposits: [3, 1] })).toThrow("must not exceed");
+    expect(() => Goods.setProduction(1, { clustering: 1.5 })).toThrow("from 0 to 1");
     expect(() => Goods.setCarriage(1, -1)).toThrow("non-negative");
     Goods.setDevelopment(1, 18);
     expect(options.map.goods[0].development).toBe(18);

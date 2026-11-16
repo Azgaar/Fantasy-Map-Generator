@@ -72,7 +72,7 @@ The catalogue (`GOODS_DATA`, [data/goods.ts](../../src/data/goods.ts)) is map da
 
 - **`value`**: the base price. Prices move within 0.02–5× of it. Values feed cell suitability, so **changing default values changes generated maps**.
 - **`biomeOutput`**: units per rural population point, by biome.
-- **`deposits` and `distribution`**: how many deposits the map gets, a `[min, max]` range whatever the map size, and where they may land (see [Goods spread functions](../wiki/Goods-spread-functions.md)). Deposits form loose clusters (`DEPOSIT_CLUSTERING`); a cell holds at most one.
+- **`deposits` and `distribution`**: how many deposits the map gets, a `[min, max]` range whatever the map size, and where they may land (see [Goods spread functions](../wiki/Goods-spread-functions.md)). Deposits form clusters as tight as the good's `clustering`; a cell holds at most one.
 - **`recipes`**: alternative input sets, each making one unit.
 - **`demandCoverage`**: how much of each need one unit covers, kept low enough that price, not coverage, decides what people buy. The cheapest coverage of each need must stay well below what townspeople earn. Pure ingredients cover no need, so only the trades that use them buy them.
 - **`carriage`**: the price of carrying one unit one decima. Bulky cheap goods stay local; dear goods pay more for guards and insurance, but still travel.

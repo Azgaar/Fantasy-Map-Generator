@@ -2,7 +2,7 @@ import { Controllers } from "@/controllers";
 import { CULTURE_TYPES } from "@/data/culture-types";
 import { CULTURE_TYPE_LABELS, DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "@/model/economy/demand";
-import { DEFAULT_CARRIAGE, Goods } from "@/model/economy/goods-generator";
+import { DEFAULT_CARRIAGE, DEFAULT_CLUSTERING, Goods } from "@/model/economy/goods-generator";
 import { Icons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
 import { Tags } from "@/model/tags";
@@ -96,6 +96,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             +ensureEl<HTMLInputElement>("newGoodDepositsMax").value
           ];
           const depositYield = +ensureEl<HTMLInputElement>("newGoodDepositYield").value;
+          const clustering = +ensureEl<HTMLInputElement>("newGoodClustering").value;
           const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
           const color = ensureEl<HTMLInputElement>("newGoodColor").value;
           const distribution = ensureEl("newGoodDistribution").textContent?.trim() ?? "";
@@ -110,6 +111,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             errors.push(t("Deposits must be a range of non-negative numbers, the minimum first"));
           if (!Number.isFinite(depositYield) || depositYield < 0)
             errors.push(t("Deposit yield must be a valid non-negative number"));
+          if (!Number.isFinite(clustering) || clustering < 0 || clustering > 1)
+            errors.push(t("Clustering must be a number from 0 to 1"));
 
           if (distribution) {
             try {
@@ -157,7 +160,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             const id = editedGood.i;
             const placementChanged =
               distribution !== (editedGood.distribution ?? "") ||
-              String(distribution ? deposits : undefined) !== String(editedGood.deposits);
+              String(distribution ? deposits : undefined) !== String(editedGood.deposits) ||
+              clustering !== (editedGood.clustering ?? DEFAULT_CLUSTERING);
             Goods.rename(id, name);
             Goods.setTags(id, tags);
             Goods.setIcon(id, icon);
@@ -169,6 +173,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             Goods.setProduction(id, {
               deposits: distribution ? deposits : null, // nothing to place otherwise
               depositYield: distribution && depositYield !== 1 ? depositYield : null,
+              clustering: distribution && clustering !== DEFAULT_CLUSTERING ? clustering : null,
               demandCoverage: demandCoverageState,
               multipliers: buildFinalMultipliers() ?? null,
               biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : null,
@@ -200,6 +205,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
               development: development || undefined,
               deposits: distribution ? deposits : undefined, // nothing to place otherwise
               depositYield: distribution && depositYield !== 1 ? depositYield : undefined,
+              clustering: distribution && clustering !== DEFAULT_CLUSTERING ? clustering : undefined,
               unit,
               demandCoverage: demandCoverageState,
               multipliers: buildFinalMultipliers(),
@@ -317,6 +323,10 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
           <label for="newGoodDepositYield" data-tip="${t("Multiplier on each deposit's output: below 1 for poorer deposits, above 1 for richer")}">${t("Deposit yield")}</label>
           <span class="ge-inline"><input id="newGoodDepositYield" class="ge-num" type="number" min="0" step="0.1" value="${editedGood?.depositYield ?? 1}" /> ×</span>
+          <span></span>
+
+          <label for="newGoodClustering" data-tip="${t("Chance a deposit lands beside the previous one: 0 scatters deposits, 1 keeps them in one patch")}">${t("Clustering")}</label>
+          <input id="newGoodClustering" class="ge-num" type="number" min="0" max="1" step="0.1" value="${editedGood?.clustering ?? DEFAULT_CLUSTERING}" />
           <span></span>
         </div>
         <div id="newGoodRawNote" class="ge-note"></div>
