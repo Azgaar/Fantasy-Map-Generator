@@ -2,7 +2,7 @@ import { Controllers } from "@/controllers";
 import { CULTURE_TYPES } from "@/data/culture-types";
 import { CULTURE_TYPE_LABELS, DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "@/model/economy/demand";
-import { DEFAULT_CARRIAGE, Goods } from "@/model/economy/goods-generator";
+import { DEFAULT_CARRIAGE, DEFAULT_CLUSTERING, Goods } from "@/model/economy/goods-generator";
 import { Icons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
 import { Tags } from "@/model/tags";
@@ -21,6 +21,7 @@ import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
+import { interpretDistribution } from "./goods-distribution-editor";
 
 function open(editedGood?: Good, onUpdate?: () => void): void {
   const demandCoverageState: Partial<Record<DemandCategory, number>> = { ...(editedGood?.demandCoverage || {}) };
@@ -63,6 +64,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
   const recipes: Record<number, number>[] = structuredClone(editedGood?.recipes ?? []); // Cancel drops them
   let icon = editedGood?.icon || "goods-unknown";
+  let distribution = editedGood?.distribution ?? "";
 
   let dialog: HTMLElement;
   renderDialog();
@@ -96,9 +98,9 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             +ensureEl<HTMLInputElement>("newGoodDepositsMax").value
           ];
           const depositYield = +ensureEl<HTMLInputElement>("newGoodDepositYield").value;
+          const clustering = +ensureEl<HTMLInputElement>("newGoodClustering").value;
           const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
           const color = ensureEl<HTMLInputElement>("newGoodColor").value;
-          const distribution = ensureEl("newGoodDistribution").textContent?.trim() ?? "";
 
           if (!name) errors.push(t("Name is required"));
           if (!Number.isFinite(value) || value < 0) errors.push(t("Value must be a valid non-negative number"));
@@ -110,6 +112,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             errors.push(t("Deposits must be a range of non-negative numbers, the minimum first"));
           if (!Number.isFinite(depositYield) || depositYield < 0)
             errors.push(t("Deposit yield must be a valid non-negative number"));
+          if (!Number.isFinite(clustering) || clustering < 0 || clustering > 1)
+            errors.push(t("Clustering must be a number from 0 to 1"));
 
           if (distribution) {
             try {
@@ -157,7 +161,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             const id = editedGood.i;
             const placementChanged =
               distribution !== (editedGood.distribution ?? "") ||
-              String(distribution ? deposits : undefined) !== String(editedGood.deposits);
+              String(distribution ? deposits : undefined) !== String(editedGood.deposits) ||
+              clustering !== (editedGood.clustering ?? DEFAULT_CLUSTERING);
             Goods.rename(id, name);
             Goods.setTags(id, tags);
             Goods.setIcon(id, icon);
@@ -169,6 +174,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             Goods.setProduction(id, {
               deposits: distribution ? deposits : null, // nothing to place otherwise
               depositYield: distribution && depositYield !== 1 ? depositYield : null,
+              clustering: distribution && clustering !== DEFAULT_CLUSTERING ? clustering : null,
               demandCoverage: demandCoverageState,
               multipliers: buildFinalMultipliers() ?? null,
               biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : null,
@@ -200,6 +206,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
               development: development || undefined,
               deposits: distribution ? deposits : undefined, // nothing to place otherwise
               depositYield: distribution && depositYield !== 1 ? depositYield : undefined,
+              clustering: distribution && clustering !== DEFAULT_CLUSTERING ? clustering : undefined,
               unit,
               demandCoverage: demandCoverageState,
               multipliers: buildFinalMultipliers(),
@@ -240,7 +247,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       .ge-color           { width:2.4em; height:1.4em; padding:0; border:none; }
       .ge-edit            { justify-self:end; }
       .ge-summary         { line-height:1.35; }
-      .ge-dist            { color:#555; font-family:var(--monospace); word-break:break-all; }
+      .ge-dist            { color:#555; line-height:1.35; }
       .ge-note            { color:#777; font-style:italic; font-size:.9em; }
       .ge-error           { color:#b20000; min-height:1.2em; }
       .ge-recipe-list     { display:flex; flex-direction:column; gap:.45em; }
@@ -303,7 +310,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           <button class="bpEdit icon-pencil ge-edit ge-top" data-tip="${t("Edit biome baseline production")}"></button>
 
           <label class="ge-top" data-tip="${t("Where the raw good is produced")}">${t("Deposit distribution")}</label>
-          <div id="newGoodDistribution" class="ge-dist">${editedGood?.distribution || ""}</div>
+          <div id="newGoodDistribution" class="ge-dist" data-tip="${escapeHtml(distribution)}">${escapeHtml(interpretDistribution(distribution))}</div>
           <button id="newGoodDistributionEditor" class="icon-pencil ge-edit ge-top" data-tip="${t("Open the Distribution visual editor")}"></button>
 
           <label data-tip="${t("Deposits placed on the map, minimum to maximum")}">${t("Deposits")}</label>
@@ -317,6 +324,10 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
           <label for="newGoodDepositYield" data-tip="${t("Multiplier on each deposit's output: below 1 for poorer deposits, above 1 for richer")}">${t("Deposit yield")}</label>
           <span class="ge-inline"><input id="newGoodDepositYield" class="ge-num" type="number" min="0" step="0.1" value="${editedGood?.depositYield ?? 1}" /> ×</span>
+          <span></span>
+
+          <label for="newGoodClustering" data-tip="${t("Chance a deposit lands beside the previous one: 0 scatters deposits, 1 keeps them in one patch")}">${t("Clustering")}</label>
+          <input id="newGoodClustering" class="ge-num" type="number" min="0" max="1" step="0.1" value="${editedGood?.clustering ?? DEFAULT_CLUSTERING}" />
           <span></span>
         </div>
         <div id="newGoodRawNote" class="ge-note"></div>
@@ -356,8 +367,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
     const defaultGoodId = options.map.goods[0]?.i ?? 0;
     const sortedGoods = [...options.map.goods].sort((a, b) => a.name.localeCompare(b.name));
 
-    const isRawProductionEmpty = () =>
-      !Object.values(biomeOutputState).some(v => (v ?? 0) > 0) && !findEl("newGoodDistribution")?.textContent?.trim();
+    const isRawProductionEmpty = () => !Object.values(biomeOutputState).some(v => (v ?? 0) > 0) && !distribution;
 
     // a good is either gathered (raw) or made from recipes (manufactured)
     const updateTypeNotes = () => {
@@ -504,11 +514,13 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
     });
 
     ensureEl("newGoodDistributionEditor").addEventListener("click", () => {
-      const distEl = ensureEl("newGoodDistribution");
       Controllers.DistributionEditor.open((dist: string) => {
-        distEl.textContent = dist;
+        distribution = dist.trim();
+        const distEl = ensureEl("newGoodDistribution");
+        distEl.textContent = interpretDistribution(distribution);
+        distEl.dataset.tip = distribution;
         updateTypeNotes();
-      }, distEl.textContent?.trim() ?? "");
+      }, distribution);
     });
 
     const setIcon = (id: string) => {

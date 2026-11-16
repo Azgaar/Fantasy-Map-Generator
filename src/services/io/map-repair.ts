@@ -58,6 +58,13 @@ class MapRepairService {
       return false;
     });
     if (repairs.length) Lakes.cleanupLakeData();
+    for (const river of pack.rivers) {
+      if (!river.points || river.points.length === river.cells.length) continue;
+      repairs.push(
+        `River ${river.i} has ${river.cells.length} cells, but ${river.points.length} points. Dropping the points`
+      );
+      delete river.points;
+    }
     return repairs;
   }
 
@@ -223,10 +230,19 @@ class MapRepairService {
         delete cells.routes[+from];
         continue;
       }
+      if (!cells.p[+from]) {
+        repairs.push(`Route links from missing cell ${from}. Removing the links`);
+        delete cells.routes[+from];
+        continue;
+      }
       for (const to in links) {
-        if (routeIds.has(links[+to])) continue;
-        repairs.push(`Route ${links[+to]} from ${from} to ${to} is missing. Removing the link`);
-        delete links[+to];
+        if (!cells.p[+to]) {
+          repairs.push(`Route ${links[+to]} from ${from} links to missing cell ${to}. Removing the link`);
+          delete links[+to];
+        } else if (!routeIds.has(links[+to])) {
+          repairs.push(`Route ${links[+to]} from ${from} to ${to} is missing. Removing the link`);
+          delete links[+to];
+        }
       }
     }
 

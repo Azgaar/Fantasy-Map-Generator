@@ -15,6 +15,7 @@ import { DEMAND_PRIORITY } from "./demand";
 type ProductionRules = Partial<{
   deposits: [number, number] | null;
   depositYield: number | null;
+  clustering: number | null;
   recipes: Record<number, number>[] | null;
   biomeOutput: Partial<Record<number, number>> | null;
   multipliers: Good["multipliers"] | null;
@@ -22,7 +23,7 @@ type ProductionRules = Partial<{
 }>;
 
 export const DEFAULT_CARRIAGE = 0.5; // carriage price of a new good
-const DEPOSIT_CLUSTERING = 0.5; // chance a deposit lands beside the previous one of its good
+export const DEFAULT_CLUSTERING = 0.5; // chance a deposit lands beside the previous one of its good
 
 export class GoodsModule {
   readonly iconSet = GOODS_ICON_SET;
@@ -99,11 +100,12 @@ export class GoodsModule {
       return -1;
     };
 
+    const clustering = good.clustering ?? DEFAULT_CLUSTERING;
     let placed = 0;
     let previous = -1;
     while (placed < count) {
       let cellId = -1;
-      if (previous >= 0 && Math.random() < DEPOSIT_CLUSTERING) {
+      if (previous >= 0 && Math.random() < clustering) {
         const near = cells.c[previous].filter(fits);
         if (near.length) cellId = near[Math.floor(Math.random() * near.length)];
       }
@@ -146,6 +148,8 @@ export class GoodsModule {
     return {
       random: (number: number) => number >= 100 || (number > 0 && number / 100 > Math.random()),
       nth: (number: number) => !(cellId % number),
+      minPop: (min: number) => (pack.cells.pop?.[cellId] ?? 0) >= min, // no population yet on a new map
+      maxPop: (max: number) => (pack.cells.pop?.[cellId] ?? 0) <= max,
       minHabitability: (min: number) => pack.biomes[pack.cells.biome[cellId]].habitability >= min,
       habitability: () => pack.biomes[pack.cells.biome[cellId]].habitability > Math.random() * 100,
       elevation: () => pack.cells.h[cellId] / 100 > Math.random(),
@@ -246,7 +250,7 @@ export class GoodsModule {
     Tags.set(this.edit(goodId), tags);
   }
 
-  /** Set how a good is produced: deposits ([min, max] on the map), depositYield (multiplier on each deposit's output), recipes ([{ goodId: amount }]), biomeOutput ({ biomeId: amount }), multipliers ({ cultureType | culture | state | religion | biome | zone: { key: factor } }), demandCoverage ({ category: share }). A key set to null clears it. Takes effect on the next economy run */
+  /** Set how a good is produced: deposits ([min, max] on the map), depositYield (multiplier on each deposit's output), clustering (chance, 0–1, a deposit lands beside the previous one), recipes ([{ goodId: amount }]), biomeOutput ({ biomeId: amount }), multipliers ({ cultureType | culture | state | religion | biome | zone: { key: factor } }), demandCoverage ({ category: share }). A key set to null clears it. Takes effect on the next economy run */
   setProduction(goodId: number, rules: ProductionRules): void {
     if (typeof rules !== "object" || rules === null) throw new Error("The production rules must be an object");
     const nonNegative = (value: unknown, label: string) => {
@@ -274,7 +278,10 @@ export class GoodsModule {
         nonNegative(value[1], "The maximum deposits");
         if (value[0] > value[1]) throw new Error("The minimum deposits must not exceed the maximum");
       } else if (key === "depositYield") nonNegative(value, "The deposit yield");
-      else if (key === "recipes") {
+      else if (key === "clustering") {
+        if (typeof value !== "number" || !(value >= 0 && value <= 1))
+          throw new Error("The clustering must be from 0 to 1");
+      } else if (key === "recipes") {
         if (!Array.isArray(value)) throw new Error("Recipes are a list of { goodId: amount }");
         for (const recipe of value) {
           record(recipe, "A recipe", id => Boolean(this.findGood(+id)));
@@ -301,7 +308,7 @@ export class GoodsModule {
         }
       } else
         throw new Error(
-          `Unknown production rule ${key}; known: deposits, depositYield, recipes, biomeOutput, multipliers, demandCoverage`
+          `Unknown production rule ${key}; known: deposits, depositYield, clustering, recipes, biomeOutput, multipliers, demandCoverage`
         );
       next[key as keyof ProductionRules] = structuredClone(value) as never;
     }

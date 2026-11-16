@@ -1,10 +1,10 @@
-A good **distribution** is an expression that decides whether the good can be placed in a cell. Fantasy Map Generator allows you to write custom distributions, but it requires some understanding of how they work. Goods are generated before states and cultures, so distributions can only rely on geographical data. Once a distribution is changed, the good placement has to be regenerated — the _Goods Editor_ does that for the edited good.
+A good **distribution** is an expression that decides whether the good can be placed in a cell. Fantasy Map Generator allows you to write custom distributions, but it requires some understanding of how they work. Goods are generated before states and cultures, so distributions can only rely on geographical data, and on rural population once deposits are regenerated. Once a distribution is changed, the good placement has to be regenerated — the _Goods Editor_ does that for the edited good.
 
 # How placement works
 
 Every good with a distribution has a **deposits** range: how many deposits it gets on the map, from a minimum to a maximum. On each run the generator picks a whole number in the range; the count does not depend on the map's size.
 
-Goods are placed one by one in random order. The first deposit of a good lands on a random cell where its distribution is `true`. Each next one has a 50% chance to land next to the previous deposit, if the distribution allows one of its neighbours; otherwise it lands on another random cell where the distribution is `true`. Deposits therefore form loose clusters: mining districts and fishing grounds rather than single scattered cells.
+Goods are placed one by one in random order. The first deposit of a good lands on a random cell where its distribution is `true`. Each next one lands next to the previous deposit with the chance set by the good's **clustering** (0.5 by default), if the distribution allows one of its neighbours; otherwise it lands on another random cell where the distribution is `true`. Deposits therefore form clusters: mining districts and fishing grounds rather than single scattered cells.
 
 A cell holds at most one good. Glacier cells are skipped entirely while the Glacier biome habitability is `0`.
 
@@ -18,6 +18,8 @@ Technically a distribution is an expression evaluated for each cell to return `t
 The expression can only call the built-in functions below. They make the syntax easier to read and write:
 * `random(number)`: percentage of true, e.g. `50` will return true in 50% of cases
 * `nth(number)`: true only for every n-th cell (cells whose id is divisible by the number). For example `nth(2)` skips 1/2 (50%) of cells and `nth(5)` skips 4/5 (80%) of cells. Unlike `random()`, this is deterministic for a given cell
+* `minPop(number)`: true if the cell's rural population is at least the number of population points. Burgs are not counted. Population is set after goods, so on a new map every cell has none: use it for regenerated deposits
+* `maxPop(number)`: true if the cell's rural population is at most the number of population points. Water cells have none
 * `minHabitability(number)`: true if biome habitability is at least the supplied value
 * `habitability()`: check against biome habitability. Always true for habitability `>=100`, false for `0`, skips 50% of cells if habitability is `50` and so on
 * `elevation()`: random check against the cell height — the higher the cell, the greater the chance. To make a good more frequent in low areas, negate it: `!elevation()`. The function takes no arguments; anything passed to it is ignored

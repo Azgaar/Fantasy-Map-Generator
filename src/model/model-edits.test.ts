@@ -827,6 +827,7 @@ describe("Lore", () => {
   it("renames the map and sets its calendar and description", () => {
     const lore = { name: "Old", description: "", calendar: { year: 1, era: "Old Era", eraShort: "OE" } };
     vi.stubGlobal("options", { map: { lore } });
+    vi.stubGlobal("pack", { states: [{ i: 0 }] });
     Lore.rename(" Saltmarsh ");
     Lore.setYear(1204.4);
     Lore.setEra("Age of Ash", "AA");
@@ -840,6 +841,16 @@ describe("Lore", () => {
     expect(lore.calendar.eraShort).toBe("WE");
     expect(() => Lore.rename(" ")).toThrow("must not be empty");
     expect(() => Lore.setYear(Number.NaN)).toThrow("The year must be a number");
+  });
+
+  it("moves state campaigns with the year", () => {
+    const war = { name: "War", start: 1195, attacker: 1, defender: 2 };
+    const old = { name: "Old", start: 1000, end: 1010, attacker: 1, defender: 0 };
+    vi.stubGlobal("options", { map: { lore: { calendar: { year: 1200 } } } });
+    vi.stubGlobal("pack", { states: [{ i: 0 }, { i: 1, campaigns: [old, war] }, { i: 2, campaigns: [war] }] });
+    Lore.setYear(1500);
+    expect(war).toEqual({ name: "War", start: 1495, attacker: 1, defender: 2 });
+    expect(old).toMatchObject({ start: 1300, end: 1310 });
   });
 });
 
@@ -1159,6 +1170,7 @@ describe("Goods and Markets", () => {
     );
     expect(() => Goods.setProduction(1, { recipes: [{ 9: 1 }] })).toThrow("unknown 9");
     expect(() => Goods.setProduction(1, { deposits: [3, 1] })).toThrow("must not exceed");
+    expect(() => Goods.setProduction(1, { clustering: 1.5 })).toThrow("from 0 to 1");
     expect(() => Goods.setCarriage(1, -1)).toThrow("non-negative");
     Goods.setDevelopment(1, 18);
     expect(options.map.goods[0].development).toBe(18);

@@ -10,6 +10,7 @@ export interface Good {
   // generation
   deposits?: [number, number]; // deposits on the map, min and max
   depositYield?: number; // multiplier on each deposit's output; absent = 1
+  clustering?: number; // chance, 0–1, a deposit lands beside the previous one of its good; absent = DEFAULT_CLUSTERING
   distribution?: string;
   biomeOutput?: Partial<Record<number, number>>;
   recipes?: Record<number, number>[];

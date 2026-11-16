@@ -181,7 +181,13 @@ class RiverModule {
       // a group the user chose stays
       const isPicked = !river.lock && river.group === this.pickGroup(river.cells ?? []);
       const group = isPicked ? this.pickGroup(riverCells) : river.group;
-      Object.assign(river, { source, length, discharge, width, cells: riverCells, group });
+      // the kept lower course keeps its points, the new upper course runs through cell centers
+      const { cells: oldCells, points: oldPoints } = river;
+      const kept = oldPoints?.length === oldCells.length && new Map(oldCells.map((cell, k) => [cell, oldPoints[k]]));
+      const points = kept
+        ? this.getRiverPoints(riverCells).map((point, k) => kept.get(riverCells[k]) ?? point)
+        : undefined;
+      Object.assign(river, { source, length, discharge, width, cells: riverCells, group, points });
     } else {
       const basin = this.getBasin(parent);
       const name = this.getName(mouth);

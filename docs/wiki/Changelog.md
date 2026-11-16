@@ -15,6 +15,9 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 **[1.159.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.159.0) - 2026-11-22**:
 
 - Battle simulator: animated battles
+- Goods Editor: deposit distribution function UX improvement
+- Goods Editor: control deposit by min/max population
+- Goods Editor: control deposit clustering
 
 **[1.158.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.158.0) - 2026-11-12**:
 

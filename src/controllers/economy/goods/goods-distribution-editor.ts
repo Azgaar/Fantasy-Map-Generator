@@ -2,8 +2,7 @@ import { Goods } from "@/model/economy/goods-generator";
 import { convertTemperature, getHeight } from "@/model/units";
 import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
-import { t } from "@/utils/i18n";
-import { list } from "@/utils/language-utils";
+import { Catalog, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
@@ -108,6 +107,22 @@ const FN_DEFS: FnDef[] = [
     paramLabel: "Habitability (0–100)",
     defaultVal: "20",
     description: t("Cells where biome habitability is at or above a value")
+  },
+  {
+    id: "minPop",
+    label: t("Min Population"),
+    paramType: "number",
+    paramLabel: "Points",
+    defaultVal: "10",
+    description: t("Cells with rural population at or above a value, in population points")
+  },
+  {
+    id: "maxPop",
+    label: t("Max Population"),
+    paramType: "number",
+    paramLabel: "Points",
+    defaultVal: "5",
+    description: t("Cells with rural population at or below a value, in population points")
   },
   {
     id: "habitability",
@@ -219,7 +234,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
 
   function updateOutput() {
     const expr = generateExpression();
-    ensureEl<HTMLInputElement>("distExprOutput").value = expr;
+    ensureEl("distExprOutput").textContent = expr;
     ensureEl<HTMLElement>("distCellCount").textContent = countMatchingCells(expr) || "";
     ensureEl<HTMLElement>("distHumanPreview").textContent = interpretDistribution(expr);
   }
@@ -622,15 +637,13 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       .ded-remove-btn      { flex-shrink:0; align-self:flex-start; }
       .ded-add-or-btn      { align-self:flex-start; }
 
-      .ded-output          { display:flex; align-items:center; gap:6px; flex-shrink:0; padding-top:6px; border-top:1px solid #e0e0e0; }
-      .ded-output-label    { font-weight:bold; color:#555; margin-bottom:3px; }
-      .ded-output-row      { display:flex; align-items:center; gap:6px; }
-      .ded-expr-input      { flex:1; font-family:monospace; min-width:16em; }
+      .ded-output          { display:flex; align-items:flex-start; gap:6px; flex-shrink:0; padding-top:6px; border-top:1px solid #e0e0e0; }
+      .ded-expr            { flex:1; min-width:0; font-family:var(--monospace); overflow-wrap:anywhere; user-select:text; }
       .ded-cell-count      { color:#555; white-space:nowrap; flex-shrink:0; min-width:9em; text-align:right; }
       .ded-human-preview   { color:#555; min-height:1.2em; margin-top:3px; }
 
       .ded-ref             { width:16em; flex-shrink:0; border-left:1px solid var(--light-solid); padding-left:10px; overflow-y:auto; }
-      .ded-ref-title       { font-weight:bold; color:var(--dark-solid); margin-bottom:5px; position:sticky; top:0; padding-bottom:4px; border-bottom:1px solid #e8e8e8; }
+      .ded-ref-title       { font-weight:bold; color:var(--dark-solid); position:sticky; top:0; z-index:1; padding-bottom:4px; margin-bottom:5px; border-bottom:1px solid #e8e8e8; background:var(--bg-dialogs, rgb(250 250 250)); }
       .ded-ref-card        { margin-bottom:7px; padding:5px 7px; border:1px solid #e4e4e4; border-radius:3px; }
       .ded-ref-code        { color:var(--dark-solid); font-weight:bold; }
       .ded-ref-desc        { color:#555; margin-top:2px; }
@@ -646,11 +659,8 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
           <div id="distGroupList" class="ded-group-list"></div>
           <button id="distAddGroup" class="ded-add-or-btn">+ ${t("Add OR group")}</button>
           <div class="ded-output">
-            <div class="ded-output-label">${t("Distribution")}</div>
-            <div class="ded-output-row">
-              <input id="distExprOutput" class="ded-expr-input" readonly value="" />
-              <span id="distCellCount" class="ded-cell-count"></span>
-            </div>
+            <code id="distExprOutput" class="ded-expr"></code>
+            <span id="distCellCount" class="ded-cell-count"></span>
           </div>
           <div id="distHumanPreview" class="ded-human-preview"></div>
         </div>
@@ -782,44 +792,52 @@ export function parseExpression(expr: string): DistCondition[][] | null {
   return groups.length ? groups : null;
 }
 
-function interpretDistribution(dist: string): string {
+export function interpretDistribution(dist: string): string {
   if (!dist) return "";
+  const compound = /&&|\|\|/.test(dist);
+  const anyOf = (items: string[]) => {
+    const text = new Intl.ListFormat(Catalog.language, { type: "disjunction" }).format(items);
+    return compound && items.length > 1 ? `(${text})` : text;
+  };
+  const args = (raw: string) => raw.split(",").map(arg => arg.trim().replace(/["']/g, ""));
+  const SHORE_LABELS: Record<string, string> = {
+    "-2": t("Deep Ocean"),
+    "-1": t("Shallow Ocean"),
+    "1": t("Coastal Land"),
+    "2": t("Near Coast Land")
+  };
 
   return dist
-    .replace(/biome\(([^)]+)\)/g, (_, args) => {
-      const names = args.split(",").map((a: string) => pack.biomes[parseInt(a.trim(), 10)]?.name);
-      return names.length === 1 ? names[0] : `${list(names)}`;
-    })
-    .replace(/minHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => t("min height {{- height}}", { height: getHeight(+h) }))
-    .replace(/maxHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) => t("max height {{- height}}", { height: getHeight(+h) }))
-    .replace(/minTemp\((-?\d+(?:\.\d+)?)\)/g, (_, temp) =>
-      t("min temperature {{- temperature}}", { temperature: convertTemperature(+temp) })
-    )
-    .replace(/maxTemp\((-?\d+(?:\.\d+)?)\)/g, (_, temp) =>
-      t("max temperature {{- temperature}}", { temperature: convertTemperature(+temp) })
-    )
-    .replace(/shore\(([^)]+)\)/g, (_, args) =>
-      args
-        .split(",")
-        .map((a: string) => SHORE_OPTIONS.find(opt => opt.value === a.trim())?.label || a.trim())
-        .join("/")
-    )
-    .replace(/type\(([^)]+)\)/g, (_, args) => {
-      const types = args
-        .replace(/["']/g, "")
-        .split(",")
-        .map((a: string) => a.trim());
-      return `${t("Type")}: ${types.join("/")}`;
-    })
-    .replace(/river\(\)/g, t("river presence"))
-    .replace(/minHabitability\((\d+)\)/g, (_, n) => t("habitability at least {{percent}}%", { percent: n }))
-    .replace(/habitability\(\)/g, t("more habitable areas"))
-    .replace(/elevation\(\)/g, t("more elevated areas"))
-    .replace(/nth\((\d+)\)/g, (_, n) => t("one in {{n}} cells", { n }))
-    .replace(/random\((\d+)\)/g, (_, n) => t("{{percent}}% chance", { percent: n }))
+    .replace(/!\s*elevation\([^)]*\)/g, t("favors lower cells"))
+    .replace(/!\s*habitability\([^)]*\)/g, t("favors less habitable cells"))
     .replace(/\s*&&\s*/g, ` ${t("AND")} `)
     .replace(/\s*\|\|\s*/g, ` ${t("OR")} `)
     .replace(/!\s*/g, `${t("NOT")} `)
+    .replace(/biome\(([^)]+)\)/g, (_, raw) => anyOf(args(raw).map(id => pack.biomes[+id]?.name ?? id)))
+    .replace(/minHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) =>
+      +h === 20 ? t("land") : t("height {{- height}} or above", { height: getHeight(+h) })
+    )
+    .replace(/maxHeight\((-?\d+(?:\.\d+)?)\)/g, (_, h) =>
+      +h === 19 ? t("water") : t("height {{- height}} or below", { height: getHeight(+h) })
+    )
+    .replace(/minTemp\((-?\d+(?:\.\d+)?)\)/g, (_, temp) =>
+      t("temperature {{- temperature}} or above", { temperature: convertTemperature(+temp) })
+    )
+    .replace(/maxTemp\((-?\d+(?:\.\d+)?)\)/g, (_, temp) =>
+      t("temperature {{- temperature}} or below", { temperature: convertTemperature(+temp) })
+    )
+    .replace(/shore\(([^)]+)\)/g, (_, raw) => anyOf(args(raw).map(ring => SHORE_LABELS[ring] ?? ring)))
+    .replace(/type\(([^)]+)\)/g, (_, raw) =>
+      anyOf(args(raw).map(type => FEATURE_TYPE_OPTIONS.find(option => option.value === type)?.label ?? type))
+    )
+    .replace(/river\([^)]*\)/g, t("with a river"))
+    .replace(/minPop\((\d+(?:\.\d+)?)\)/g, (_, points) => t("rural population at least {{points}}", { points }))
+    .replace(/maxPop\((\d+(?:\.\d+)?)\)/g, (_, points) => t("rural population at most {{points}}", { points }))
+    .replace(/minHabitability\((\d+)\)/g, (_, n) => t("habitability at least {{percent}}%", { percent: n }))
+    .replace(/habitability\([^)]*\)/g, t("favors more habitable cells"))
+    .replace(/elevation\([^)]*\)/g, t("favors higher elevated cells"))
+    .replace(/nth\((\d+)\)/g, (_, n) => t("one in {{n}} cells", { n }))
+    .replace(/random\((\d+)\)/g, (_, n) => t("{{percent}}% chance", { percent: n }))
     .replace(/\s+/g, " ")
     .trim();
 }
