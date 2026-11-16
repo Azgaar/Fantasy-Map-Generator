@@ -186,6 +186,15 @@ describe("GoodsModule", () => {
     expect(Array.from(globalThis.pack.cells.good)).toEqual([0, 1, 1, 0]);
   });
 
+  it("places deposits by rural population", () => {
+    globalThis.pack.cells.pop = Float32Array.from([1, 8, 8, 3]);
+    globalThis.options.map.goods[0].distribution = "minPop(5)";
+    globalThis.options.map.goods[1].distribution = "maxPop(3)";
+    goodsModule.generate({ randomSeed: 2 });
+
+    expect(Array.from(globalThis.pack.cells.good)).toEqual([2, 1, 1, 2]);
+  });
+
   it("logs an invalid distribution and places nothing for it, not breaking the rest", () => {
     log.enabled.error = true;
     const error = vi.spyOn(console, "error").mockImplementation(() => {});

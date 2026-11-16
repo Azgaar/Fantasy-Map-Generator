@@ -148,6 +148,8 @@ export class GoodsModule {
     return {
       random: (number: number) => number >= 100 || (number > 0 && number / 100 > Math.random()),
       nth: (number: number) => !(cellId % number),
+      minPop: (min: number) => (pack.cells.pop?.[cellId] ?? 0) >= min, // no population yet on a new map
+      maxPop: (max: number) => (pack.cells.pop?.[cellId] ?? 0) <= max,
       minHabitability: (min: number) => pack.biomes[pack.cells.biome[cellId]].habitability >= min,
       habitability: () => pack.biomes[pack.cells.biome[cellId]].habitability > Math.random() * 100,
       elevation: () => pack.cells.h[cellId] / 100 > Math.random(),
