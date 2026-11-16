@@ -1,5 +1,5 @@
 import { sum } from "d3";
-import { type BattleSettings, DEFAULT_BATTLE_SETTINGS } from "@/data/battle-options";
+import { type BattleSettings, DEFAULT_BATTLE_SETTINGS, MAX_FORTUNE } from "@/data/battle-options";
 import { getUnitPower } from "@/model/political/military-units";
 import type { Point } from "@/types/global";
 import type { MilitaryUnit } from "@/types/military";
@@ -174,6 +174,7 @@ export type TaskKind =
   | "surrender";
 
 const POINTED_TASKS: TaskKind[] = ["move", "attack", "pursue", "protect"];
+const REHEARSED: Intervention["kind"][] = ["dig", "tactic", "order", "morale"]; // set before the start, and kept in the generals' minds
 
 /** What the user tells a battalion to do; retreat and surrender are done at once and stand as no task */
 export interface Task {
@@ -538,7 +539,7 @@ class BattleModule {
       defenders: copy("defenders"),
       blocks: [],
       course: [],
-      interventions: battle.interventions.filter(change => change.kind === "dig" || change.kind === "tactic"), // the ground as prepared, tactics given by hand
+      interventions: battle.interventions.filter(change => REHEARSED.includes(change.kind)), // the ground, tactics, orders and morale set by hand
       log: [],
       result: null,
       planned: true,
@@ -556,7 +557,7 @@ class BattleModule {
       played.set(key, game);
     }
     const held = game.winner === side ? 1 : game.winner ? -1 : 0;
-    return held + game.lost[BattleRules.enemyOf(side)] - game.lost[side];
+    return held * 3 + game.lost[BattleRules.enemyOf(side)] - game.lost[side]; // losses differ by 2 at most: they only break ties
   }
 
   intervene(battle: Battle, change: Intervention): void {
@@ -596,8 +597,9 @@ class BattleModule {
         params: { value: this.signed(change.value) }
       });
     } else if (change.kind === "die") {
-      battle[change.side].die = change.die;
-      battle.log.push({ tick: battle.tick, event: "die", side: change.side, params: { die: String(change.die) } });
+      const die = this.toDie(change.die);
+      battle[change.side].die = die;
+      battle.log.push({ tick: battle.tick, event: "die", side: change.side, params: { die: String(die) } });
     } else if (change.kind === "type") {
       battle.type = change.type;
       battle.interventions = battle.interventions.filter(c => (c.kind !== "order" && c.kind !== "tactic") || c.tick); // given for the old type
@@ -946,7 +948,7 @@ class BattleModule {
       const target = block.action === "flee" ? undefined : byId.get(block.target ?? -1);
       if (target && Movement.inContact(battle, block, target)) block.action = "fight";
       else if (target && shooting.has(block.id) && Movement.canShoot(battle, block, target)) block.action = "shoot";
-      else if (block.action === "fight") block.action = "hold"; // pushed apart from its foe
+      else if (block.action === "fight" || block.action === "shoot") block.action = "hold"; // pushed apart or out of range
       if (!target || block.action !== "fight") block.impetus = 0;
       else if (!block.impetus && Works.isSheltered(battle, block, target))
         block.impetus = 1; // a charge breaks on the works
@@ -964,7 +966,7 @@ class BattleModule {
     block.target = null;
     const safe = SAFE * battle.field.front;
     const chased = others.some(
-      foe => foe.side !== block.side && foe.status === "ready" && Math.hypot(foe.x - block.x, foe.y - block.y) < safe
+      foe => foe.side !== block.side && this.isInOrder(foe) && Math.hypot(foe.x - block.x, foe.y - block.y) < safe
     );
     if (block.status === "routed" && !chased && this.isFighting(battle, block.side)) {
       block.action = "hold";
@@ -1064,6 +1066,7 @@ class BattleModule {
       landed.set(target.id, (landed.get(target.id) ?? 0) + power * cover * KILL_RATE);
     }
 
+    const lost: Block[] = [];
     for (const [id, blows] of landed) {
       const block = byId.get(id)!;
       const ground = Battlefields.terrainAt(battle.field, block.x, block.y);
@@ -1089,9 +1092,10 @@ class BattleModule {
           side: block.side,
           params: { block: this.blockName(block) }
         });
-        this.shake(battle, block, 6);
+        lost.push(block);
       }
     }
+    this.shake(battle, lost, 6); // once all losses are in: no order among them
   }
 
   /** Battalions spend energy by what they do and win it back at rest; slopes and mud tire by taking longer */
@@ -1115,7 +1119,7 @@ class BattleModule {
   private rout(battle: Battle, block: Block): void {
     block.status = "routed";
     battle.log.push({ tick: battle.tick, event: "rout", side: block.side, params: { block: this.blockName(block) } });
-    this.shake(battle, block, 8);
+    this.shake(battle, [block], 8);
   }
 
   /**
@@ -1134,7 +1138,7 @@ class BattleModule {
       side: block.side,
       params: { block: this.blockName(block) }
     });
-    this.shake(battle, block, 6);
+    this.shake(battle, [block], 6);
   }
 
   private yieldBlock(block: Block): void {
@@ -1168,7 +1172,7 @@ class BattleModule {
     let nearest = Infinity;
     const near = AT_HAND * battle.field.front;
     for (const other of battle.blocks) {
-      if (other.status !== "ready") continue;
+      if (!this.isInOrder(other)) continue;
       const distance = Math.hypot(other.x - block.x, other.y - block.y);
       if (other.side !== block.side) nearest = Math.min(nearest, distance);
       if (distance > near) continue;
@@ -1189,13 +1193,18 @@ class BattleModule {
     battle.log.push({ tick: battle.tick, event: "rally", side: block.side, params: { block: this.blockName(block) } });
   }
 
-  /** A loss nearby unsettles friends and heartens foes */
-  private shake(battle: Battle, lost: Block, morale: number): void {
+  /** Losses nearby unsettle friends and hearten foes, all at once */
+  private shake(battle: Battle, lost: Block[], morale: number): void {
+    if (!lost.length) return;
     const reach = SHAKE * battle.field.front;
     for (const block of battle.blocks) {
-      if (block.status !== "ready" || Math.hypot(block.x - lost.x, block.y - lost.y) > reach) continue;
-      const change = block.side === lost.side ? -morale / block.steadiness : this.isHungry(battle, block) ? 0 : morale;
-      block.morale = Math.min(Math.max(block.morale + change, 0), 100);
+      if (block.status !== "ready") continue;
+      let change = 0;
+      for (const one of lost) {
+        if (Math.hypot(block.x - one.x, block.y - one.y) > reach) continue;
+        change += block.side === one.side ? -morale / block.steadiness : this.isHungry(battle, block) ? 0 : morale;
+      }
+      if (change) block.morale = Math.min(Math.max(block.morale + change, 0), 100);
     }
   }
 
@@ -1210,14 +1219,19 @@ class BattleModule {
     SIDES.forEach((side, i) => {
       const set = battle.interventions.findLast(change => change.kind === "die" && change.side === side);
       if (seed === undefined || !settings.fortune || rehearsal) battle[side].die = null;
-      else if (set?.kind === "die") battle[side].die = set.die;
+      else if (set?.kind === "die") battle[side].die = this.toDie(set.die);
       else battle[side].die = 1 + Math.floor(Battlefields.mix(seed, i, 0) * 6);
     });
   }
 
   /** Blow multiplier of a die: `weight` a face off the average, ×1 on average and with no die */
   getFortune(die: number | null, weight: number): number {
-    return die === null ? 1 : 1 + (die - 3.5) * weight;
+    return die === null ? 1 : 1 + (this.toDie(die) - 3.5) * Math.min(Math.max(weight, 0), MAX_FORTUNE);
+  }
+
+  /** A face of the die: a whole number 1 to 6 */
+  private toDie(die: number): number {
+    return Math.min(Math.max(Math.round(die) || 1, 1), 6);
   }
 
   /** What a battalion strikes with, or stands with when `standing`; troops on the run hardly strike, fortune tells on blows */
@@ -1272,20 +1286,23 @@ class BattleModule {
 
   private setInitialMorale(battle: Battle): void {
     for (const side of SIDES) {
-      const own = battle[side];
-      const enemy = battle[BattleRules.enemyOf(side)];
-      const troops = sum(own.regiments, regiment => this.total(regiment));
-      const stability = troops
-        ? sum(own.regiments, regiment => regiment.stability * this.total(regiment)) / troops
-        : 0.5;
-      const ratio = own.power ? enemy.power / own.power : 1;
-      own.morale = BattleRules.getInitialMorale(
-        ratio,
-        stability,
-        own.regiments.map(regiment => regiment.distance)
-      );
-      for (const block of battle.blocks) if (block.side === side) block.morale = own.morale;
+      battle[side].morale = this.getStartingMorale(battle, side, battle[side].regiments);
+      for (const block of battle.blocks) if (block.side === side) block.morale = battle[side].morale;
     }
+  }
+
+  /** Morale troops start with: by the odds, the stability of their states and the way from their bases */
+  private getStartingMorale(battle: Battle, side: Side, regiments: BattleRegiment[]): number {
+    const own = battle[side];
+    const enemy = battle[BattleRules.enemyOf(side)];
+    const troops = sum(regiments, regiment => this.total(regiment));
+    const stability = troops ? sum(regiments, regiment => regiment.stability * this.total(regiment)) / troops : 0.5;
+    const ratio = own.power ? enemy.power / own.power : 1;
+    return BattleRules.getInitialMorale(
+      ratio,
+      stability,
+      regiments.map(regiment => regiment.distance)
+    );
   }
 
   private checkEnd(battle: Battle): void {
@@ -1379,7 +1396,7 @@ class BattleModule {
           unit: unit.name,
           number: count > 1 ? n + 1 : 0,
           type: unit.type,
-          kind: Battalions.getKind(unit.type, battle.field.open !== null),
+          kind: Battalions.getKind(unit.type, unit.range, battle.field.open !== null),
           unitPower: getUnitPower(unit),
           attack: unit.attack,
           defense: unit.defense,
@@ -1420,7 +1437,11 @@ class BattleModule {
 
   /** Latecomers form up behind their side */
   private reinforce(battle: Battle, side: Side, regiment: BattleRegiment): void {
-    Generals.enlist(battle, side, this.addBlocks(battle, side, regiment));
+    const blocks = this.addBlocks(battle, side, regiment);
+    this.updatePower(battle); // the odds with them
+    const morale = this.getStartingMorale(battle, side, [regiment]); // fresh: not the routed's
+    for (const block of blocks) block.morale = morale;
+    Generals.enlist(battle, side, blocks);
   }
 
   /** The approach, turned as little as it takes for the attackers to form up on land */
@@ -1490,7 +1511,7 @@ class BattleModule {
     else if (task === "surrender")
       for (const block of blocks) {
         this.yieldBlock(block);
-        this.shake(battle, block, 6);
+        this.shake(battle, [block], 6);
       }
     else if (!pointed)
       for (const block of blocks)

@@ -15,6 +15,7 @@ const AHEAD = 6; // metres a stretch stands ahead of its battalion's front: at g
 const STRONG = 1 / 3; // share of a foe's power that makes it strong in riders (stakes, not a ditch), or riders and shooters (wagons)
 const AT_ONCE = 3; // stretches of wagons the train builds at once
 const BENDS = [Math.PI / 4, Math.PI / 2]; // turns back of a wagon line at its ends, to a half circle
+const MOST_TURN = (Math.PI * 2) / 3; // between neighbours on a wagon ring
 
 /** Ticks a full battalion takes to build a stretch; wagons are the side's train's, a few stretches at once */
 
@@ -498,13 +499,28 @@ class WorksModule {
     const { plan } = battle[side];
     const ring = this.getRing(battle, side);
     if (!ring.length) return;
-    // the corners lie between neighbours; going round by the angle, the front of a stretch is on its left
-    const corners = ring.map((spot, i): [number, number] => {
+    // a gap wider than a third of the ring gets spots of its own, so no corner lies too far out to close it
+    const spots = ring.flatMap((spot, i) => {
       const next = ring[(i + 1) % ring.length];
+      const turn = i === ring.length - 1 ? Math.PI * 2 + next.angle - spot.angle : next.angle - spot.angle;
+      const parts = Math.max(Math.ceil(turn / MOST_TURN - 1e-9), 1);
+      const radius = Math.max(spot.radius, next.radius);
+      return [
+        spot,
+        ...Array.from({ length: parts - 1 }, (_, k) => ({ angle: spot.angle + (turn * (k + 1)) / parts, radius }))
+      ];
+    });
+    // each spot's stretch square to it at its radius, the corners between neighbours, a step across where the radii differ;
+    // the front of a stretch is on its left
+    const corners = spots.flatMap((spot, i): [number, number][] => {
+      const next = spots[(i + 1) % spots.length];
       const turn = (next.angle - spot.angle + Math.PI * 2) % (Math.PI * 2);
       const angle = spot.angle + turn / 2;
-      const radius = (spot.radius + next.radius) / 2 / Math.max(Math.cos(turn / 2), 0.5);
-      return [plan.x + Math.cos(angle) * radius, plan.y + Math.sin(angle) * radius];
+      const at = (radius: number): [number, number] => [
+        plan.x + (Math.cos(angle) * radius) / Math.cos(turn / 2),
+        plan.y + (Math.sin(angle) * radius) / Math.cos(turn / 2)
+      ];
+      return Math.abs(spot.radius - next.radius) < 0.01 ? [at(spot.radius)] : [at(spot.radius), at(next.radius)];
     });
     corners.forEach((b, i) => {
       const a = corners[(i - 1 + corners.length) % corners.length];

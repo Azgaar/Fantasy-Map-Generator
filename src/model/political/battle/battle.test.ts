@@ -625,11 +625,12 @@ describe("battle generals", () => {
     expect(aided).toBe(true);
   });
 
-  it("fights as its unit type says, whatever its speed and range", () => {
+  it("fights as its unit type says, whatever its speed and range; ships with no shot board", () => {
     const slow = (name: string, type: string) => ({ ...unit(name, type, 1), speed: 3, range: 0 });
     const units = ["melee", "ranged", "mounted", "machinery", "levies", "armored", "magical", "naval", "aviation"].map(
       type => slow(type, type)
     );
+    units.push({ ...slow("gunships", "naval"), range: 270 });
     const troops = Object.fromEntries(units.map(({ name }) => [name, 100]));
     const kinds = (type: BattleType) => {
       const b = Battles.create({
@@ -656,7 +657,8 @@ describe("battle generals", () => {
       levies: "melee",
       armored: "melee",
       magical: "melee",
-      naval: "machinery",
+      naval: "melee",
+      gunships: "machinery",
       aviation: "mounted"
     });
     expect(new Set(Object.values(kinds("naval")))).toEqual(new Set(["melee"])); // all of a kind at sea
@@ -759,23 +761,32 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     return field;
   };
 
-  it("has the ambushers weigh lying on both sides of the road against lying on one, the better covered", () => {
+  it("has the ambushers lie on one side only where trees hide them on that side alone", () => {
     const field = Battlefields.createEmpty();
     for (let row = 8; row < 44; row++) for (let col = 20; col < 80; col++) field.wood[row * COLS + col] = +(row < 26);
     const b = setup("ambush", mixed, mixed, field);
-    expect(b.defenders.plan.tactic).toBe("ambuscadeBothSides");
+    // lying in the open across the road they would be seen: both sides is not weighed
+    expect(Generals.getOptions(b, "defenders").every(option => option.tactic === "ambuscadeOneSide")).toBe(true);
     Battles.plan(b);
-    expect(["ambuscadeBothSides", "ambuscadeOneSide"]).toContain(b.defenders.tactic);
+    expect(b.defenders.tactic).toBe("ambuscadeOneSide");
+    const ambushers = b.blocks.filter(block => block.side === "defenders");
+    expect(ambushers.every(block => block.y < 409)).toBe(true); // all in the wood north of the road
     // in the wood they lie at its edge, a short dash from the road: nearer than a bowshot
-    const wooded = b.blocks.filter(block => block.side === "defenders" && block.y < 409 && block.order.rank === 0);
-    expect(Math.max(...wooded.map(block => block.y))).toBeGreaterThan(409 - 177);
+    const front = ambushers.filter(block => block.order.rank === 0);
+    expect(Math.max(...front.map(block => block.y))).toBeGreaterThan(409 - 177);
     expect(b.attackers.tactic).toBeNull(); // the column is caught: its general has no plan
-    if (b.defenders.tactic === "ambuscadeOneSide") {
-      const ambushers = b.blocks.filter(block => block.side === "defenders");
-      expect(ambushers.every(block => block.y < 409)).toBe(true); // all in the wood north of the road
-    }
     run(b);
     expect(b.result!.winner).toBe("defenders");
+  });
+
+  it("has the ambushers weigh lying on both sides of the road against lying on one where both are wooded", () => {
+    const field = Battlefields.createEmpty();
+    for (let row = 8; row < 52; row++)
+      for (let col = 20; col < 80; col++) field.wood[row * COLS + col] = +(row < 26 || row > 34);
+    const b = setup("ambush", mixed, mixed, field);
+    const tactics = Generals.getOptions(b, "defenders").map(option => option.tactic);
+    expect(tactics).toContain("ambuscadeBothSides");
+    expect(tactics).toContain("ambuscadeOneSide");
   });
 
   it("has ambushers with shooters weigh shooting from cover first, and fall on the column once it wavers", () => {
@@ -1459,7 +1470,7 @@ describe("battle balance", () => {
 
   it("favours the stronger side, whichever it is", () => {
     const strong = { infantry: 780, archers: 260, cavalry: 130 };
-    expect(share(strong, even).wins).toBeGreaterThan(0.75);
+    expect(share(strong, even).wins).toBeGreaterThan(0.7); // 17 of 24 once shots out of range stopped landing
     expect(share(even, strong).losses).toBeGreaterThan(0.75);
   });
 
@@ -2962,27 +2973,32 @@ describe("battle works", () => {
   });
 
   it("has foot fight a wagon ring over the wagons, and get in by the gap engines knock into it", () => {
-    const b = setup("field", { infantry: 900, cavalry: 1600, artillery: 40 }, { infantry: 3600, archers: 900 }); // a ring of ten stretches
-    expect(b.defenders.plan.tactic).toBe("wagenburg");
-    b.planned = true;
-    b.attackers.storms = true; // its general storms the wagons at once rather than batter them first
-    let over = false;
-    let gap: number | null = null;
-    let within = false;
-    while (!b.result) {
-      Battles.tick(b);
-      const wagons = worksOf(b, "defenders");
-      for (const block of of(b, "attackers")) {
-        if (block.status !== "ready") continue;
-        const target = block.target === null ? null : b.blocks[block.target];
-        if (block.action === "fight" && target && block.kind === "melee")
-          over ||=
-            Battlefields.getWorksBetween(b.field, [block.x, block.y], [target.x, target.y], "defenders").length > 0;
-        if (gap !== null && block.kind !== "machinery") within ||= inside([block.x, block.y], wagons);
+    // with engines the gaps open as the foot come up, so the fight over standing wagons is watched without them
+    const run = (artillery: number) => {
+      const b = setup("field", { infantry: 900, cavalry: 1600, artillery }, { infantry: 3600, archers: 900 }); // a ring of ten stretches
+      expect(b.defenders.plan.tactic).toBe("wagenburg");
+      b.planned = true;
+      b.attackers.storms = true; // its general storms the wagons at once rather than batter them first
+      let over = false;
+      let gap: number | null = null;
+      let within = false;
+      while (!b.result) {
+        Battles.tick(b);
+        const wagons = worksOf(b, "defenders");
+        for (const block of of(b, "attackers")) {
+          if (block.status !== "ready") continue;
+          const target = block.target === null ? null : b.blocks[block.target];
+          if (block.action === "fight" && target && block.kind === "melee")
+            over ||=
+              Battlefields.getWorksBetween(b.field, [block.x, block.y], [target.x, target.y], "defenders").length > 0;
+          if (gap !== null && block.kind !== "machinery") within ||= inside([block.x, block.y], wagons);
+        }
+        gap ??= b.log.find(entry => entry.event === "gap")?.tick ?? null;
       }
-      gap ??= b.log.find(entry => entry.event === "gap")?.tick ?? null;
-    }
-    expect(over).toBe(true);
+      return { b, over, gap, within };
+    };
+    expect(run(0).over).toBe(true);
+    const { b, gap, within } = run(40);
     expect(gap).not.toBeNull();
     expect(within).toBe(true);
     expect(worksOf(b, "defenders").filter(work => work.harm >= 1).length).toBeGreaterThan(0); // the wreck stays drawn
@@ -3503,5 +3519,144 @@ describe("battalion tasks", () => {
     expect(left.leaving).toBe(true);
     expect(yielded.status).toBe("surrendered");
     expect(b.log.at(-1)?.params?.task).toBe("surrender");
+  });
+});
+
+describe("battle review fixes", () => {
+  type Inside = {
+    shake: (b: Battle, lost: Block[], morale: number) => void;
+    rehearse: (b: Battle, side: Side, option: object, ticks: number, played: Map<string, object>) => number;
+  };
+  const inside = Battles as unknown as Inside;
+
+  it("keeps fortune within its most and a die set by hand to a face, so no blow goes below nothing", () => {
+    expect(Battles.getFortune(1, 0.5)).toBeCloseTo(Battles.getFortune(1, 0.3));
+    expect(Battles.getFortune(0, 0.2)).toBe(Battles.getFortune(1, 0.2));
+    expect(Battles.getFortune(9, 0.2)).toBe(Battles.getFortune(6, 0.2));
+    expect(Battles.getFortune(2.6, 0.2)).toBe(Battles.getFortune(3, 0.2));
+
+    const b = battle(
+      [regiment(1, even)],
+      [regiment(2, even)],
+      "field",
+      0,
+      { ...DEFAULT_BATTLE_SETTINGS, fortune: 0.5 },
+      7
+    );
+    Battles.intervene(b, { tick: 0, kind: "die", side: "attackers", die: -3 });
+    expect(b.attackers.die).toBe(1);
+    while (!b.result) {
+      Battles.tick(b);
+      for (const block of b.blocks) expect(block.troops).toBeLessThanOrEqual(block.initial);
+    }
+    expect(b.defenders.casualties).toBeGreaterThan(0);
+  });
+
+  it("shoots only at a foe in range once all have moved", () => {
+    const armies: Record<string, number>[][] = [
+      [
+        { infantry: 600, archers: 600, cavalry: 100 },
+        { infantry: 900, archers: 300, cavalry: 200 }
+      ],
+      [{ archers: 900 }, { infantry: 900, cavalry: 300 }]
+    ];
+    for (const [attackers, defenders] of armies)
+      for (const axis of [0, Math.PI / 4, Math.PI / 2]) {
+        const b = battle([regiment(1, attackers)], [regiment(2, defenders)], "field", axis);
+        while (!b.result) {
+          Battles.tick(b);
+          for (const block of b.blocks)
+            if (block.action === "shoot") expect(Movement.canShoot(b, block, b.blocks[block.target!])).toBe(true);
+        }
+      }
+  });
+
+  it("gives latecomers the morale of fresh troops, not that of their routed side", () => {
+    const b = battle([regiment(1, even)], [regiment(2, { infantry: 2400 })]);
+    for (let i = 0; i < 12; i++) Battles.tick(b);
+    for (const block of b.blocks.filter(block => block.side === "defenders").slice(1)) block.morale = 10;
+    for (let i = 0; i < 7; i++) Battles.tick(b);
+    expect(b.defenders.morale).toBeLessThan(15);
+    Battles.intervene(b, { tick: b.tick, kind: "add", side: "defenders", regiment: regiment(2, { infantry: 600 }, 5) });
+    const fresh = b.blocks.filter(block => block.regiment === 5);
+    for (const block of fresh) expect(block.morale).toBeGreaterThanOrEqual(50); // the least the odds leave
+  });
+
+  it("does not count a regiment marching off as friends or foes at hand", () => {
+    const lone = (withdraw: boolean): number => {
+      const b = battle(
+        [regiment(1, { infantry: 300 })],
+        [regiment(2, { infantry: 300 }), regiment(2, { infantry: 600 }, 1)]
+      );
+      Battles.intervene(b, { tick: 0, kind: "order", side: "attackers", order: "hold" });
+      Battles.intervene(b, { tick: 0, kind: "order", side: "defenders", order: "hold" });
+      const [own] = b.blocks;
+      const near = b.blocks.filter(block => block.regiment === 1 && block.side === "defenders");
+      near.forEach((foe, i) => {
+        Battles.intervene(b, { tick: 0, kind: "move", block: foe.key, x: own.x + 91, y: own.y + (i - 0.5) * 60 });
+      });
+      while (b.tick < ROUND_TICKS) Battles.tick(b);
+      if (withdraw) Battles.intervene(b, { tick: b.tick, kind: "withdraw", state: 2, regiment: 1 }); // just as morale is read
+      Battles.tick(b);
+      return b.blocks[own.id].morale;
+    };
+    expect(lone(true)).toBeGreaterThan(lone(false));
+  });
+
+  it("settles the morale of losses together, whatever their order", () => {
+    const b = battle([regiment(1, { infantry: 600 })], [regiment(2, { infantry: 600 })]);
+    const [a1, a2] = b.blocks.filter(block => block.side === "attackers");
+    const [d1] = b.blocks.filter(block => block.side === "defenders");
+    for (const block of [a1, a2, d1]) [block.x, block.y] = [100, 100];
+    for (const lost of [
+      [a2, d1],
+      [d1, a2]
+    ]) {
+      a1.morale = 97;
+      inside.shake(b, lost, 6);
+      expect(a1.morale).toBe(97); // a friend lost and a foe lost weigh the same at steadiness 1
+    }
+  });
+
+  it("ranks holding the field above any difference in losses", () => {
+    const b = battle([regiment(1, even)], [regiment(2, even)]);
+    const played = new Map<string, { winner: Side | null; lost: Record<Side, number> }>();
+    const option = { tactic: null, waits: false, storms: false };
+    inside.rehearse(b, "attackers", option, 0, played);
+    const [key] = played.keys();
+    played.set(key, { winner: "attackers", lost: { attackers: 0.9, defenders: 0 } });
+    const won = inside.rehearse(b, "attackers", option, 0, played);
+    played.set(key, { winner: null, lost: { attackers: 0, defenders: 0.9 } });
+    expect(won).toBeGreaterThan(inside.rehearse(b, "attackers", option, 0, played));
+  });
+
+  it("rehearses the orders and morale given by hand before the start, and no moves", () => {
+    const b = battle([regiment(1, even)], [regiment(2, even)]);
+    const [first] = b.blocks;
+    Battles.intervene(b, { tick: 0, kind: "order", side: "attackers", order: "hold" });
+    Battles.intervene(b, { tick: 0, kind: "morale", side: "defenders", value: -20 });
+    Battles.intervene(b, { tick: 0, kind: "move", block: first.key, x: 100, y: 100 });
+    const seen: { order: string | null; morale: number; at: [number, number] }[] = [];
+    const tick = Battles.tick;
+    Battles.tick = (trial: Battle): void => {
+      if (trial.rehearsal && !trial.tick) {
+        const [own] = trial.blocks;
+        const morale = trial.blocks.find(block => block.side === "defenders")!.morale;
+        seen.push({ order: trial.attackers.plan.order, morale, at: [own.x, own.y] });
+      }
+      tick.call(Battles, trial);
+    };
+    try {
+      Battles.plan(b);
+    } finally {
+      Battles.tick = tick;
+    }
+    expect(seen.length).toBeGreaterThan(0);
+    const live = b.blocks.find(block => block.side === "defenders")!.morale;
+    for (const game of seen) {
+      expect(game.order).toBe("hold");
+      expect(game.morale).toBeCloseTo(live);
+      expect(game.at).not.toEqual([100, 100]);
+    }
   });
 });

@@ -28,7 +28,7 @@ export const PHASES: Record<BattleType, Record<Side, string[]>> = {
   },
   landing: {
     attackers: ["landing", "melee", "pursue", "flee", "surrendering"],
-    defenders: ["defense", "shock", "melee", "waiting", "pursue", "retreat", "surrendering"]
+    defenders: ["defense", "melee", "waiting", "pursue", "retreat", "surrendering"]
   },
   bombardment: {
     attackers: ["bombardment", "withdrawal", "surrendering"],

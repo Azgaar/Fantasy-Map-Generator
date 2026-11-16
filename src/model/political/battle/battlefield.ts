@@ -275,19 +275,37 @@ class BattlefieldModule {
           [-step, -step, width + step, height + step]
         )
       }))
-      .filter(shape => shape.outline.length > 2);
-    // the lake a point lies in: a dry one is a flat, bare bed of the land
-    const lakeAt = (point: Point): number =>
-      shapes.find(shape => shape.lake && this.isInside(point, shape.outline))?.lake ?? 0;
-    const isLand = (point: Point, lake = lakeAt(point)): boolean =>
-      (!lake || lake === DRY_LAKE) && shapes.some(shape => shape.land && this.isInside(point, shape.outline));
-    const lakes = shapes.some(shape => shape.lake) ? nodes.map(lakeAt) : [];
+      .filter(shape => shape.outline.length > 2)
+      .map(shape => ({ ...shape, area: this.getArea(shape.outline) }));
+    // the innermost outline about a point: an island in a lake is land, a lake on it water again
+    const shapeAt = (point: Point): (typeof shapes)[number] | undefined => {
+      let inner: (typeof shapes)[number] | undefined;
+      for (const shape of shapes)
+        if ((!inner || shape.area < inner.area) && this.isInside(point, shape.outline)) inner = shape;
+      return inner;
+    };
+    // a dry lake is a flat, bare bed of the land
+    const isLand = (point: Point, shape = shapeAt(point)): boolean =>
+      Boolean(shape && (shape.land || shape.lake === DRY_LAKE));
+    const inner = nodes.map(shapeAt);
+    const lakes = shapes.some(shape => shape.lake) ? inner.map(shape => shape?.lake ?? 0) : [];
 
-    // the ground between the cell centres, within the triangle of the three cells round each node
+    // the ground between the cell centres, within the triangle of the three cells round each node; a pseudo-cell beyond the
+    // map's edge lends the values of the cell nearest it
+    const toCell = (c: number): number | undefined => {
+      if (c < cells.i.length) return c;
+      const point = grid.boundary?.[c - cells.i.length];
+      return point && Pack.findCell(point[0], point[1]);
+    };
+    const toPoint = (c: number): Point | undefined =>
+      c < cells.i.length ? cells.p[c] : grid.boundary?.[c - cells.i.length];
     const triangles = [...new Set(nearby.flatMap(i => cells.v[i]))]
       .map(v => pack.vertices.c[v])
-      .filter(corners => corners?.every(c => c < cells.i.length))
-      .map(corners => ({ corners, points: corners.map(c => toField(cells.p[c][0], cells.p[c][1])) }));
+      .filter(corners => corners?.every(c => toCell(c) !== undefined && toPoint(c)))
+      .map(corners => ({
+        corners: corners.map(c => toCell(c)!),
+        points: corners.map(c => toField(...(toPoint(c) as [number, number])))
+      }));
     const borders = this.createNoise(field, place, 8, 160);
     const interpolate = (node: Point): { h: number; trees: number; wet: number; biome: number } => {
       for (const { corners, points } of triangles) {
@@ -318,7 +336,7 @@ class BattlefieldModule {
 
     field.biomes = new Array(cols * rows).fill(field.biome);
     const ground = nodes.map((node, i) => {
-      if (!isLand(node, lakes[i] ?? 0)) return null;
+      if (!isLand(node, inner[i])) return null;
       const { h, trees, wet, biome } = interpolate(node);
       field.biomes[i] = biome;
       return {
@@ -682,6 +700,13 @@ class BattlefieldModule {
         if (!isWet(point)) return point;
       }
     return null;
+  }
+
+  private getArea(polygon: Point[]): number {
+    let area = 0;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++)
+      area += polygon[j][0] * polygon[i][1] - polygon[i][0] * polygon[j][1];
+    return Math.abs(area) / 2;
   }
 
   private isInside([x, y]: Point, polygon: Point[]): boolean {

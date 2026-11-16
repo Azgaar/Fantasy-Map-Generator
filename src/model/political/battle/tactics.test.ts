@@ -212,3 +212,52 @@ describe("a flying wedge", () => {
     }
   });
 });
+
+describe("a general's orders", () => {
+  it("has a side told to hold go back to the attack once the order has stood its time, a weaker one too", () => {
+    const b = setup("field", { infantry: 2040, archers: 765, cavalry: 510 }, mixed, Battlefields.createEmpty());
+    b.planned = true; // at odds of 0.85 its general attacks
+    Battles.intervene(b, { tick: 0, kind: "order", side: "attackers", order: "hold" });
+    while (b.round <= b.settings.orderRounds && !b.result) Battles.tick(b);
+    expect([b.attackers.plan.order, b.attackers.advancing]).toEqual([null, true]);
+    Battles.replay(b, []);
+    expect(b.result!.winner).not.toBeNull(); // fought out, not a standoff
+  });
+
+  it("has an order given between rounds rewrite the orders but neither count a round nor march the formation", () => {
+    const b = setup("field", mixed, mixed, Battlefields.createEmpty());
+    for (let i = 0; i < 15; i++) Battles.tick(b);
+    const { plan } = b.attackers;
+    const before = { idle: plan.idle, x: plan.x, y: plan.y, heading: plan.heading };
+    const order = () => Battles.intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "attack" });
+    order();
+    const orders = JSON.stringify(b.blocks.map(block => block.order));
+    order();
+    order();
+    expect({ idle: plan.idle, x: plan.x, y: plan.y, heading: plan.heading }).toEqual(before);
+    expect(JSON.stringify(b.blocks.map(block => block.order))).toBe(orders);
+  });
+
+  it("has an attacker with the worse fire close at once rather than trade shots", () => {
+    const longbows = { ...unit("longbows", "ranged", 1), range: 300 }; // they halt out of reach of the foe's line
+    const b = Battles.create({
+      type: "field",
+      name: "Test",
+      place: null,
+      x: 0,
+      y: 0,
+      cell: 0,
+      axis: 0,
+      field: Battlefields.createEmpty(),
+      units: [...UNITS, longbows],
+      populationScale: 1000,
+      attackers: [regiment(1, { infantry: 2400, longbows: 1080 })],
+      defenders: [regiment(2, { infantry: 2400, longbows: 1320 })]
+    });
+    b.planned = true; // attacks as the odds say
+    while (b.engaged === null && b.tick < 600) Battles.tick(b);
+    expect(b.attackers.advancing).toBe(true);
+    for (let i = 0; i < 6; i++) Battles.tick(b); // the next round at the latest
+    expect(b.attackers.phase).toBe("melee");
+  });
+});

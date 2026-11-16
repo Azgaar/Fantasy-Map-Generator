@@ -184,12 +184,16 @@ class MovementModule {
       return share === null ? distance : Math.min(Math.max(share * (distance + front) - front - 0.5, 0), distance);
     };
     let friend = false; // a friend stands in the way straight on
+    // on a wet field the water is checked node by node between the samples: no slipping through a diagonal chain
+    const costs = !wading && this.getWays(battle).wet ? this.getCosts(battle, block) : null;
+    const shunned = (node: number): boolean => costs![node] === Infinity;
     /** How far the way runs open, sampled along it up to its end */
     const walk = (angle: number, swing: number): number => {
       const [cos, sin] = [Math.cos(angle), Math.sin(angle)];
       const end = short(cos, sin);
       const samples = Math.max(Math.ceil(end / SAMPLE), 1);
       let open = 0;
+      let last = from;
       for (let i = 1; i <= samples; i++) {
         const along = (end * i) / samples;
         const [x, y] = [from[0] + cos * along, from[1] + sin * along];
@@ -198,7 +202,13 @@ class MovementModule {
           if (!swing) friend = inWay.side === block.side;
           break;
         }
-        if (!wading && this.shuns(battle, block, x, y)) break;
+        if (
+          costs
+            ? !Pathfinding.isClear(COLS, ROWS, battle.field.cell, last, [x, y], shunned)
+            : !wading && this.shuns(battle, block, x, y)
+        )
+          break;
+        last = [x, y];
         if (swing && !midstream && this.isWet(battle, block, x, y)) break;
         // nor by a gate when it turns off its way: it would only go back where it came from
         if (Math.abs(swing) > ASKEW && Battlefields.getWallsBetween(battle.field, from, [x, y]).length) break;
@@ -469,9 +479,9 @@ class MovementModule {
     return known.wagons.some(foe) || (Works.isRider(block) && known.staked.some(foe));
   }
 
-  /** All that the going, the water, the walls and the works mean differently for: the unit, its side, whether it runs, the battle */
+  /** All that the going, the water, the walls and the works mean differently for: the unit, its side, whether it runs, the battle, the mud */
   private getKind(battle: Battle, block: Block): string {
-    return `${block.type}|${block.kind}|${block.side}|${this.isRunning(block)}|${battle.type}|${battle[block.side].advancing}|${this.isStorming(battle)}|${battle.field.breaches.length}`;
+    return `${block.type}|${block.kind}|${block.side}|${this.isRunning(block)}|${battle.type}|${battle[block.side].advancing}|${this.isStorming(battle)}|${battle.field.breaches.length}|${battle.mud}`;
   }
 
   /** The steps from node to node that walls shut to the block: a bit a neighbour */
@@ -1050,6 +1060,11 @@ class MovementModule {
         }
       }
     }
+    if (!dx && !dy && least !== Infinity) {
+      // on each other: apart across the facing of the lower id, the same way whichever is asked first
+      const [low, sign] = a.id <= b.id ? [a, 1] : [b, -1];
+      return [least, -Math.sin(low.facing) * sign, Math.cos(low.facing) * sign];
+    }
     return [least, dx / distance, dy / distance];
   }
 
@@ -1150,6 +1165,7 @@ class MovementModule {
     const radius = blocks.map(block => Math.max(block.width, block.depth) / 2);
     const running = blocks.map(block => this.isRunning(block));
     const filing = blocks.map(block => this.isFiling(battle, block));
+    const bounded = battle.field.works.length > 0 || this.getWays(battle).rough; // something a push may not go over
     for (let pass = 0; pass < 3; pass++) {
       for (let i = 0; i < blocks.length; i++) {
         const a = blocks[i];
@@ -1168,13 +1184,32 @@ class MovementModule {
           const heavyA = a.action === "fight" ? 3 : 1;
           const heavyB = b.action === "fight" ? 3 : 1;
           const push = keep - gap;
-          a.x -= (dx * push * heavyB) / (heavyA + heavyB);
-          a.y -= (dy * push * heavyB) / (heavyA + heavyB);
-          b.x += (dx * push * heavyA) / (heavyA + heavyB);
-          b.y += (dy * push * heavyA) / (heavyA + heavyB);
+          // a block that may not be pushed so far leaves the push to the other
+          let shareA = heavyB / (heavyA + heavyB);
+          if (bounded) {
+            const okA = this.canShift(battle, a, -dx * push * shareA, -dy * push * shareA);
+            const okB = this.canShift(battle, b, dx * push * (1 - shareA), dy * push * (1 - shareA));
+            if (!okA && !okB) continue;
+            if (!okA || !okB) {
+              shareA = okA ? 1 : 0;
+              const [mover, sign] = okA ? [a, -1] : [b, 1];
+              if (!this.canShift(battle, mover, sign * dx * push, sign * dy * push)) continue;
+            }
+          }
+          a.x -= dx * push * shareA;
+          a.y -= dy * push * shareA;
+          b.x += dx * push * (1 - shareA);
+          b.y += dy * push * (1 - shareA);
         }
       }
     }
+  }
+
+  /** Whether a push may move the block so far: over no wall, cliff or works that bar it, into no water it keeps out of */
+  private canShift(battle: Battle, block: Block, dx: number, dy: number): boolean {
+    const to: Point = [block.x + dx, block.y + dy];
+    if (this.isBarred(battle, block, [block.x, block.y], to)) return false;
+    return !this.shuns(battle, block, ...to) || this.shuns(battle, block, block.x, block.y);
   }
 
   /** What the last tick left to this one; nothing after a replay from the start */

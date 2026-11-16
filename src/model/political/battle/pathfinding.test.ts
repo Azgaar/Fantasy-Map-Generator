@@ -113,4 +113,15 @@ describe("pathfinding", () => {
     expect(Pathfinding.isClear(g.cols, g.rows, 10, [5, 15], [45, 15], inWay)).toBe(false);
     expect(Pathfinding.isClear(g.cols, g.rows, 10, [5, 5], [45, 5], inWay)).toBe(true);
   });
+
+  it("does not let a straight way slip between two nodes in the way that touch at a corner", () => {
+    const g = grid(["#..", ".#.", "..#"]);
+    const inWay = (node: number): boolean => g.costs[node] === Infinity;
+    expect(Pathfinding.spread(g.cols, g.rows, [g.node(1, 0)], g.costs).cost[g.node(0, 1)]).toBe(Infinity);
+    for (const shift of [-2, -1, 0, 1, 2])
+      expect(Pathfinding.isClear(g.cols, g.rows, 10, [15 + shift, 5 - shift], [5 - shift, 15 + shift], inWay)).toBe(
+        false
+      );
+    expect(Pathfinding.isClear(g.cols, g.rows, 10, [15, 5], [25, 5], inWay)).toBe(true); // beside the chain, not over it
+  });
 });

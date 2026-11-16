@@ -465,10 +465,15 @@ class PathfindingModule {
     inWay: (node: number) => boolean
   ): boolean {
     const steps = Math.max(Math.ceil(Math.hypot(x1 - x0, y1 - y0) / (size / 2)), 1);
+    let [lastCol, lastRow] = [-1, -1];
     for (let i = 0; i <= steps; i++) {
       const col = Math.min(Math.max(Math.floor((x0 + ((x1 - x0) * i) / steps) / size), 0), cols - 1);
       const row = Math.min(Math.max(Math.floor((y0 + ((y1 - y0) * i) / steps) / size), 0), rows - 1);
       if (inWay(row * cols + col)) return false;
+      // no slipping between two nodes in the way that touch at a corner, as `spread` does not
+      if (i && col !== lastCol && row !== lastRow && inWay(lastRow * cols + col) && inWay(row * cols + lastCol))
+        return false;
+      [lastCol, lastRow] = [col, row];
     }
     return true;
   }

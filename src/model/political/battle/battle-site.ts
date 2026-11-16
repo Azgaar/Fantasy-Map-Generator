@@ -5,19 +5,31 @@ import { Coastline } from "@/model/physical/coastline-generator";
 import type { Point } from "@/types/global";
 
 class BattleSiteModule {
-  /** The shore nearest a point, of land or a lake, a cell and a half off at most; null when there is none */
+  /** The shore nearest a point, of the sea or a lake with water, a cell and a half off at most; null when there is none */
   getShore([x, y]: Point): Point | null {
-    let [best, least]: [Point | null, number] = [null, this.getSpacing() * 1.5];
+    const spacing = this.getSpacing();
+    let [best, least]: [Point | null, number] = [null, spacing * 1.5];
     for (const f of new Set(Pack.findAll(x, y, least).map(i => pack.cells.f[i]))) {
       const feature = pack.features[f];
-      if (!feature || !(feature.land || feature.type === "lake")) continue;
+      if (!feature || !(feature.land || this.isWater(feature))) continue;
       const outline = Coastline.getFeatureShape(feature).points.map(([px, py]): Point => [px, py]);
       if (outline.length < 2) continue;
-      const point = this.nearestOnLine([x, y], [...outline, outline[0]]);
-      const distance = Math.hypot(point[0] - x, point[1] - y);
-      if (distance < least) [best, least] = [point, distance];
+      for (let i = 0; i < outline.length; i++) {
+        const point = this.nearestOnLine([x, y], [outline[i], outline[(i + 1) % outline.length]]);
+        const distance = Math.hypot(point[0] - x, point[1] - y);
+        if (distance >= least) continue;
+        // land cut off by the map's edge has no water by it
+        if (feature.land && !Pack.findAll(...point, spacing).some(c => this.isWater(pack.features[pack.cells.f[c]])))
+          continue;
+        [best, least] = [point, distance];
+      }
     }
     return best;
+  }
+
+  /** The sea, or a lake that is not dry */
+  private isWater(feature: (typeof pack.features)[number]): boolean {
+    return Boolean(feature) && !feature.land && !(feature.type === "lake" && feature.subtype === "dry");
   }
 
   /** The distance between the map's cells */

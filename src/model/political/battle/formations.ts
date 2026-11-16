@@ -287,11 +287,11 @@ class FormationModule {
         seat(kept, rank, along, aside(kept), "reserve");
       }
     }
-    const back = along; // of the troops on foot
     for (const guns of wrap(engines, Math.max(half * 2, row))) {
       next();
       seat(guns, rank, along);
     }
+    const back = along; // of the troops on foot and the engines
 
     // the wings: shooters at the ends of the line, riders beyond them and a little back
     const flank = (wing: Block[], side: number, from: number, back: number, role?: Role): number => {
@@ -336,7 +336,28 @@ class FormationModule {
         place.along -= tactic.refuse * front * Math.max(fromStrike - 0.35, 0);
       }
     }
+    this.unstack(shaped, gap / 2);
     return places;
+  }
+
+  /** A place the shape pulled onto one further ahead goes back behind it, so far as to keep the gap */
+  private unstack(places: Place[], gap: number): void {
+    const order = places.map((place, i) => ({ place, i })).sort((a, b) => b.place.along - a.place.along || a.i - b.i);
+    const done: Place[] = [];
+    for (const { place } of order) {
+      const { block } = place;
+      for (let moved = true; moved; ) {
+        moved = false;
+        for (const ahead of done) {
+          if (Math.abs(place.across - ahead.across) >= (block.width + ahead.block.width) / 2) continue;
+          const reach = (block.depth + ahead.block.depth) / 2;
+          if (Math.abs(place.along - ahead.along) >= reach) continue;
+          place.along = ahead.along - reach - gap;
+          moved = true;
+        }
+      }
+      done.push(place);
+    }
   }
 
   /**
@@ -383,16 +404,8 @@ class FormationModule {
     const inside = [...(closed ? fire : []), ...of("mounted"), ...reserve];
 
     const around = ring.reduce((sum, block) => sum + block.width + gap, 0);
-    const radius = Math.max(around / (Math.PI * 2), front * (0.8 + 0.6 * Math.sqrt(inside.length)));
+    let radius = Math.max(around / (Math.PI * 2), front * (0.8 + 0.6 * Math.sqrt(inside.length)));
     const places: Place[] = [];
-    let walked = 0;
-    for (const block of ring) {
-      const angle = ((walked + (block.width + gap) / 2) / around) * Math.PI * 2;
-      walked += block.width + gap;
-      const role = ROLES[block.kind];
-      const [across, along] = [Math.sin(angle) * radius, Math.cos(angle) * radius];
-      places.push({ block, role, mission: MISSIONS[role], rank: 0, across, along, facing: angle });
-    }
     // inside: rows facing the way the formation does, the first row in the middle and the rest out from it
     const rows: Block[][] = [];
     for (const block of inside) {
@@ -403,6 +416,21 @@ class FormationModule {
     const slots = rows
       .map((_, i) => ((rows.length - 1) / 2 - i) * rowGap)
       .sort((a, b) => Math.abs(a) - Math.abs(b) || b - a);
+    // the ring stands out past the far corners of the rows inside it
+    const depth = Math.max(...ring.map(block => block.depth), 0);
+    rows.forEach((row, i) => {
+      const half = row.reduce((sum, block) => sum + block.width + gap, -gap) / 2;
+      const deep = Math.max(...row.map(block => block.depth)) / 2;
+      radius = Math.max(radius, Math.hypot(half, Math.abs(slots[i]) + deep) + depth / 2 + gap);
+    });
+    let walked = 0;
+    for (const block of ring) {
+      const angle = ((walked + (block.width + gap) / 2) / around) * Math.PI * 2;
+      walked += block.width + gap;
+      const role = ROLES[block.kind];
+      const [across, along] = [Math.sin(angle) * radius, Math.cos(angle) * radius];
+      places.push({ block, role, mission: MISSIONS[role], rank: 0, across, along, facing: angle });
+    }
     rows.forEach((row, i) => {
       let offset = -row.reduce((sum, block) => sum + block.width + gap, -gap) / 2;
       for (const block of row) {

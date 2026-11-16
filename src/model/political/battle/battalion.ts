@@ -58,9 +58,10 @@ class BattalionModule {
     return block.troops * block.unitPower * block.upkeep;
   }
 
-  /** Troops in a naval or an air battle are all of a kind: they shoot and close as their side does */
-  getKind(type: string, open = false): Kind {
-    return open ? "melee" : (KINDS[type] ?? "melee");
+  /** Troops in a naval or an air battle are all of a kind: they shoot and close as their side does. Ships with no shot board */
+  getKind(type: string, range: number, open = false): Kind {
+    if (open || (type === "naval" && !range)) return "melee";
+    return KINDS[type] ?? "melee";
   }
 
   /** Comes to grips rather than stands off to shoot: who has no shot, and line troops on land whatever they throw */

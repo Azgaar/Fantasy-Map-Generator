@@ -155,7 +155,7 @@ class GeneralModule {
 
   /** How much of its strength a battalion brings hand to hand: shooters and riders who shoot fight on, engines and ships hardly */
   private getGrip(block: Block): number {
-    const kind = Battalions.getKind(block.type); // as its unit fights, in a naval or an air battle too
+    const kind = Battalions.getKind(block.type, block.range); // as its unit fights, in a naval or an air battle too
     return kind === "machinery" ? 0.1 : kind === "ranged" || (kind === "mounted" && block.range) ? 0.5 : 1;
   }
 
@@ -500,7 +500,8 @@ class GeneralModule {
    * What a general plays through in his mind before the battle, the likeliest first.
    * In the open: every tactic open to him, and for an attacker who is the weaker to stand and wait instead; where water or
    * walls make the going slow to reckon only such an attacker does it, with his likeliest tactic.
-   * In an ambush: to lie on both sides of the road or on one. The column has no plan: it is caught.
+   * In an ambush: to lie on both sides of the road or on one; only on one where trees hide them on one side alone.
+   * The column has no plan: it is caught.
    * In a landing and a bombardment: for ready defenders, to meet it at the shore or to wait inland.
    * In a siege: for besiegers a little short of the odds the walls ask for, to storm at once all the same or to keep to the rule.
    */
@@ -510,7 +511,10 @@ class GeneralModule {
     if (type === "ambush") {
       if (side === "attackers" || byHand) return [];
       const shooters = battle.blocks.some(block => block.side === side && block.kind === "ranged");
-      const tactics: TacticName[] = ["ambuscadeBothSides", "ambuscadeOneSide"];
+      // where trees hide them on one side only, those across the road would be seen from it
+      const [a, b] = this.findLairs(battle).lairs;
+      const tactics: TacticName[] =
+        a.hidden === b.hidden ? ["ambuscadeBothSides", "ambuscadeOneSide"] : ["ambuscadeOneSide"];
       return [
         ...tactics.map(tactic => this.option(tactic)),
         ...(shooters ? tactics.map(tactic => this.option(tactic, true)) : [])
@@ -909,6 +913,26 @@ class GeneralModule {
   private layAmbush(battle: Battle, blocks: Block[]): void {
     const { field } = battle;
     const sorted = [...blocks].sort((a, b) => a.kind.localeCompare(b.kind) || a.id - b.id);
+    const { road, lairs } = this.findLairs(battle);
+    const chosen = this.getHandTactic(battle, "defenders") ?? battle.defenders.tactic;
+    const tactic: TacticName = chosen === "ambuscadeOneSide" ? "ambuscadeOneSide" : "ambuscadeBothSides";
+    const wings =
+      tactic === "ambuscadeOneSide"
+        ? [{ troops: sorted, frame: (lairs[1].cover > lairs[0].cover ? lairs[1] : lairs[0]).frame }]
+        : lairs.map((lair, side) => ({ troops: sorted.filter((_, i) => i % 2 === side), frame: lair.frame }));
+    const hunting = !battle.defenders.waits; // who shoot first keep where they lie till the column wavers
+    for (const { troops, frame } of wings) {
+      const places = Formations.form(troops, TACTICS[tactic], 1, this.reach(field, road.heading) * 1.7, field.front);
+      for (const place of places)
+        if (hunting && place.role !== "support" && place.role !== "battery") place.mission = "hunt";
+      this.seat(battle, "defenders", this.createPlan(tactic, frame, true), places);
+    }
+    battle.defenders.plan.half = 0;
+  }
+
+  /** Where ambushers would lie on either side of the road, how well covered, and whether trees hide them there */
+  private findLairs(battle: Battle): { road: Frame; lairs: { frame: Frame; cover: number; hidden: boolean }[] } {
+    const { field } = battle;
     const { route, middle, half } = this.getColumn(
       battle,
       battle.blocks.filter(block => block.side === "attackers")
@@ -935,20 +959,11 @@ class GeneralModule {
         if (hidden(lie(side, distance))) return lie(side, distance);
       return lie(side, Math.max(far, AMBUSH[0]));
     };
-    const chosen = this.getHandTactic(battle, "defenders") ?? battle.defenders.tactic;
-    const tactic: TacticName = chosen === "ambuscadeOneSide" ? "ambuscadeOneSide" : "ambuscadeBothSides";
-    const wings =
-      tactic === "ambuscadeOneSide"
-        ? [{ troops: sorted, frame: cover(at(1)) > cover(at(0)) ? at(1) : at(0) }]
-        : [0, 1].map(side => ({ troops: sorted.filter((_, i) => i % 2 === side), frame: at(side) }));
-    const hunting = !battle.defenders.waits; // who shoot first keep where they lie till the column wavers
-    for (const { troops, frame } of wings) {
-      const places = Formations.form(troops, TACTICS[tactic], 1, this.reach(field, road.heading) * 1.7, field.front);
-      for (const place of places)
-        if (hunting && place.role !== "support" && place.role !== "battery") place.mission = "hunt";
-      this.seat(battle, "defenders", this.createPlan(tactic, frame, true), places);
-    }
-    battle.defenders.plan.half = 0;
+    const lairs = [0, 1].map(side => {
+      const frame = at(side);
+      return { frame, cover: cover(frame), hidden: hidden(frame) };
+    });
+    return { road, lairs };
   }
 
   /** The besiegers stand out of bowshot of the walls, their engines a row behind the first line, still in range */
@@ -1305,7 +1320,8 @@ class GeneralModule {
         side,
         this.survey(battle, side),
         this.survey(battle, BattleRules.enemyOf(side)),
-        battle[side].plan.gap
+        battle[side].plan.gap,
+        false
       );
   }
 
@@ -1324,7 +1340,10 @@ class GeneralModule {
     const { plan } = battle[side];
     if (plan.byHand === null || battle.round - plan.byHand < battle.settings.orderRounds) return;
     Object.assign(plan, { order: null, byHand: null });
+    // in the open the general goes over to the attack as he would have, but does not call off one under way
     if (!this.isOpenFight(battle)) battle[side].advancing = this.isAttacking(battle, side, false);
+    else if (!BattleRules.isBeaten(battle.type, side, battle[side].phase))
+      battle[side].advancing ||= this.isAttacking(battle, side, plan.tactic === "crossing");
   }
 
   /** The space between the nearest troops in order of the two sides, engines apart */
@@ -1465,6 +1484,7 @@ class GeneralModule {
     if (own.ready.some(block => block.action === "shoot")) plan.fired ??= battle.round;
     // made for shooting: it closes to its range and no nearer, unless its shots fall short of where it halts (big battalions)
     if (own.grip <= own.fire && (plan.fired !== null || plan.reach >= plan.halt)) return phase;
+    if (fireShare < 0.5) return names.close; // the worse fire: nothing to gain by trading shots
     if (plan.fired === null) return battle.round - battle.engaged >= 4 ? names.close : phase; // out of his range
     const patience = this.clamp(Math.round(4 + 16 * (fireShare - 0.5)), 4, 12);
     return battle.round - plan.fired >= patience ? names.close : phase;
@@ -1527,7 +1547,7 @@ class GeneralModule {
       return "storming";
     }
     battle.storm = null;
-    return own.ready.some(block => block.type === "machinery") ? "bombardment" : "blockade";
+    return own.ready.some(block => block.kind === "machinery") ? "bombardment" : "blockade";
   }
 
   private withstand(battle: Battle, own: View, foe: View): string {
@@ -1556,7 +1576,7 @@ class GeneralModule {
       if (strong ? !spent && own.power >= foe.power : prey && !spent && battle.round - out < SORTIE_ROUNDS)
         return phase;
     } else if ((prey || strong) && own.morale >= heart + 10 && battle.round - plan.since >= 3) return "sortie";
-    return own.ready.some(block => block.type === "machinery") ? "bombardment" : "sheltering";
+    return own.ready.some(block => block.kind === "machinery") ? "bombardment" : "sheltering";
   }
 
   private isStrongGarrison(own: View, foe: View): boolean {
@@ -1683,8 +1703,8 @@ class GeneralModule {
 
   // Orders
 
-  /** Move the formation and tell every battalion in order what to do this round */
-  private direct(battle: Battle, side: Side, own: View, foe: View, gap: number): void {
+  /** Move the formation and tell every battalion in order what to do this round; off a round (an order by hand) only the orders */
+  private direct(battle: Battle, side: Side, own: View, foe: View, gap: number, round = true): void {
     const data = battle[side];
     const { plan, phase } = data;
     const names = POSTURES[battle.type][side];
@@ -1696,18 +1716,20 @@ class GeneralModule {
 
     // who comes to whom: a defender goes over when the attack is spent or does not come at all.
     // On broken ground the way round counts: who walks round a cliff to the foe comes on
-    const walk = field.cliffs.length ? this.getWalkBetween(battle) : Infinity;
-    const closing = field.cliffs.length ? walk < plan.walk - PACE * CLOSING : gap < plan.gap - PACE * CLOSING;
-    plan.walk = walk;
-    // nor while its body does, behind the first who met: a long march on a big field
-    const apart = this.far(own, foe);
-    const nearing = apart < plan.apart - PACE * CLOSING;
-    plan.apart = apart;
-    if (data.advancing && (closing || nearing)) battle.lastLoss = battle.tick; // no lull while a side comes on
-    plan.idle = closing || gap < CHARGE * field.front ? 0 : plan.idle + 1;
-    plan.gap = gap;
-    plan.bled = own.losses > plan.losses && !own.ready.some(block => block.action === "fight") ? plan.bled + 1 : 0;
-    plan.losses = own.losses;
+    if (round) {
+      const walk = field.cliffs.length ? this.getWalkBetween(battle) : Infinity;
+      const closing = field.cliffs.length ? walk < plan.walk - PACE * CLOSING : gap < plan.gap - PACE * CLOSING;
+      plan.walk = walk;
+      // nor while its body does, behind the first who met: a long march on a big field
+      const apart = this.far(own, foe);
+      const nearing = apart < plan.apart - PACE * CLOSING;
+      plan.apart = apart;
+      if (data.advancing && (closing || nearing)) battle.lastLoss = battle.tick; // no lull while a side comes on
+      plan.idle = closing || gap < CHARGE * field.front ? 0 : plan.idle + 1;
+      plan.gap = gap;
+      plan.bled = own.losses > plan.losses && !own.ready.some(block => block.action === "fight") ? plan.bled + 1 : 0;
+      plan.losses = own.losses;
+    }
     const holds = plan.tactic === "crossing"; // who holds a crossing stays behind it till the foe runs
     const sheltered = Works.holdsWorks(battle, side); // and who holds works, till the foe is spent
     if (siege) data.advancing = side === "attackers" || phase === "sortie" || phase === "pursue";
@@ -1732,15 +1754,15 @@ class GeneralModule {
       battle.lastLoss = battle.tick;
 
     // on broken ground a formation that went in and comes no nearer lets its battalions find their own ways to the foe
-    if (field.cliffs.length && data.advancing && phase === names.close && plan.idle >= STALLED)
+    if (round && field.cliffs.length && data.advancing && phase === names.close && plan.idle >= STALLED)
       for (const block of own.ready) if (!block.order.sent) Object.assign(block.order, { mission: "hunt", sent: true });
 
     if (siege && side === "attackers" && !Movement.isStorming(battle))
       [plan.x, plan.y] = plan.camp; // back to the lines
-    else if (!plan.fixed && (data.advancing || !(plan.fortify || sheltered)))
+    else if (round && !plan.fixed && (data.advancing || !(plan.fortify || sheltered)))
       this.moveFrame(battle, side, own, foe, gap); // the formation stays with its works till it advances
     const frameFoes = foe.ready.map(block => ({ block, at: this.toFrame(plan, block) }));
-    if (plan.wedge && stance !== "flee") this.moveWedge(battle, side, own, frameFoes, gap);
+    if (round && plan.wedge && stance !== "flee") this.moveWedge(battle, side, own, frameFoes, gap);
 
     for (const block of own.ready) {
       const order = block.order;
