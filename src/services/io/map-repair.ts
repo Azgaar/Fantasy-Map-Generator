@@ -58,6 +58,13 @@ class MapRepairService {
       return false;
     });
     if (repairs.length) Lakes.cleanupLakeData();
+    for (const river of pack.rivers) {
+      if (!river.points || river.points.length === river.cells.length) continue;
+      repairs.push(
+        `River ${river.i} has ${river.cells.length} cells, but ${river.points.length} points. Dropping the points`
+      );
+      delete river.points;
+    }
     return repairs;
   }
 
