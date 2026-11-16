@@ -547,7 +547,40 @@ describe("battle generals", () => {
     Battles.intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "attack" });
     expect([b.attackers.phase, b.attackers.advancing]).toEqual(["melee", true]);
     for (let i = 0; i < ROUND_TICKS * 6; i++) Battles.tick(b);
-    expect(gap()).toBeLessThan(apart / 2);
+    expect(gap()).toBeLessThan(apart * 0.6); // the line's pace: its flying wedge waits for it
+  });
+
+  it("moves the formation of an army of riders alone", () => {
+    const b = Battles.create({
+      type: "field",
+      name: "Test",
+      place: null,
+      x: 0,
+      y: 0,
+      cell: 0,
+      axis: 0,
+      field: Battlefields.createEmpty(),
+      units: UNITS.map(unit => (unit.type === "mounted" ? { ...unit, range: 160 } : unit)), // they shoot: no closing at once
+      populationScale: 1000,
+      attackers: [regiment(1, { cavalry: 900 })],
+      defenders: [regiment(2, { infantry: 1200 })]
+    });
+    Battles.plan(b);
+    const stood = b.attackers.plan.x;
+    for (let i = 0; i < ROUND_TICKS * 3; i++) Battles.tick(b);
+    expect(b.attackers.plan.x).toBeGreaterThan(stood + b.field.front);
+  });
+
+  it("keeps the battalions in order on the field: only those on the run leave it", () => {
+    const b = battle([regiment(1, big)], [regiment(2, weaker)]);
+    const { width, height } = b.field;
+    while (!b.result) {
+      Battles.tick(b);
+      for (const block of b.blocks.filter(block => block.status === "ready" && block.action !== "flee"))
+        expect(block.x >= 0 && block.y >= 0 && block.x <= width && block.y <= height, `${block.key} at ${b.tick}`).toBe(
+          true
+        );
+    }
   });
 
   it("leaves the phase of an ambush to the fight: an order there changes what the troops do", () => {
@@ -1118,6 +1151,59 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     }
     expect(phases).toContain("bombardment/sortie");
     expect(b.round).toBeLessThan(60); // no siege of hours under fire it cannot answer
+  });
+
+  it("has engines too few to bring the walls down hold their fire: the siege dies down", () => {
+    const b = setup(
+      "siege",
+      { infantry: 1300, archers: 300, artillery: 4 },
+      { infantry: 1200, archers: 300 },
+      walled()
+    );
+    const phases = new Set<string>();
+    while (!b.result) {
+      Battles.tick(b);
+      phases.add(b.attackers.phase);
+    }
+    expect([...phases]).toEqual(["bombardment", "blockade"]);
+    expect(b.round).toBeLessThan(60); // it ran to the backstop, 600 rounds
+    expect(b.result.winner).toBe(null);
+  });
+
+  it("opens no more breaches than weaken the walls", () => {
+    const b = setup(
+      "siege",
+      { infantry: 800, archers: 300, artillery: 30 },
+      { infantry: 1200, archers: 300 },
+      walled()
+    );
+    while (!b.result) Battles.tick(b);
+    expect(b.field.breaches.length).toBe(3);
+    expect(b.round).toBeLessThan(DEFAULT_BATTLE_SETTINGS.maxRounds - 1); // nor is it fought to the backstop
+  });
+
+  it("counts the parts of a ship its battalions lost by fleet, so fleets lose ships", () => {
+    const b = Battles.create({
+      type: "naval",
+      name: "Test",
+      place: null,
+      x: 0,
+      y: 0,
+      cell: 0,
+      axis: 0,
+      field: Battlefields.createEmpty("sea"),
+      units: getDefaultMilitaryUnits(),
+      populationScale: 1000,
+      attackers: [regiment(1, { fleet: 6 })],
+      defenders: [regiment(2, { fleet: 6 })]
+    });
+    while (!b.result) Battles.tick(b);
+    for (const side of ["attackers", "defenders"] as const) {
+      const lost = sum(b.blocks.filter(block => block.side === side).map(block => block.initial - block.troops));
+      expect(lost, side).toBeGreaterThan(0);
+      const { initial, left, captured } = Battles.getTroops(b, side);
+      expect(left + captured + lost).toBe(initial);
+    }
   });
 
   it("has a garrison out of its burg give it up when stormers stand in it", () => {

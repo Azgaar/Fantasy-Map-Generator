@@ -96,6 +96,7 @@ interface BattleLogFile {
   result: string | null;
   settings?: BattleSettings; // the numbers it was fought with; the defaults when absent
   seed?: number; // the dice are cast by it; absent: cast anew
+  axis?: number; // the way the attackers came; absent: from where the first of them stands
 }
 
 const SCREEN_SHARE = 0.92; // of the viewport the window may take
@@ -437,14 +438,14 @@ class BattleScreenController {
   private setup(
     attackers: Regiment[],
     defenders: Regiment[],
-    from?: Partial<Pick<BattleLogFile, "type" | "name" | "settings" | "seed">>
+    from?: Partial<Pick<BattleLogFile, "type" | "name" | "settings" | "seed" | "axis">>
   ): void {
     const defender = defenders[0];
     const attacker = attackers[0];
     const { x, y } = this.battle ?? defender;
     const cell = Pack.findCell(x, y) ?? 0;
     const type = from?.type ?? this.defineType(attacker, defender, cell);
-    const place = this.definePlace(cell);
+    const place = this.battle ? this.battle.place : this.definePlace(cell); // kept, as the name is
     const point = { x, y };
 
     this.battle = Battles.create({
@@ -454,7 +455,7 @@ class BattleScreenController {
       x,
       y,
       cell,
-      axis: Math.atan2(y - (attacker.py ?? attacker.y), x - (attacker.px ?? attacker.x)),
+      axis: from?.axis ?? Math.atan2(y - (attacker.py ?? attacker.y), x - (attacker.px ?? attacker.x)),
       field: this.buildField(x, y, type),
       units: options.map.military.units,
       populationScale: options.map.units.population.scale,
@@ -1182,11 +1183,11 @@ class BattleScreenController {
 
   /** Let the generals think once the screen has shown that they do: it takes up to a second */
   private schedulePlan(): void {
-    const b = this.battle!;
     if (this.planning || !this.isPlanning()) return;
     this.planning = window.setTimeout(() => {
       this.planning = 0;
-      if (this.battle !== b) return;
+      const b = this.battle; // the one on screen by now
+      if (!b) return;
       Battles.plan(b);
       BattleSceneView.updateBlocks(this.scene(), b, null, 1);
       this.refresh();
@@ -1486,6 +1487,7 @@ class BattleScreenController {
       this.renderRegiments(side);
     }
 
+    el.querySelector<HTMLButtonElement>(".battleAddRegiment")!.disabled = Boolean(b.result);
     const fighting = regiments.filter(regiment => !Battles.isWithdrawn(b, regiment)).length;
     for (const regiment of regiments) {
       const row = ensureEl(`battleRegiment_${this.regimentKey(regiment)}`);
@@ -1707,13 +1709,14 @@ class BattleScreenController {
     this.refresh();
   }
 
-  /** Hearten or shake a side by hand: clicks in a row leave one line in the log */
+  /** Hearten or shake a side by hand: before the start clicks in a row make one change, with one line in the log */
   private changeMorale(side: Side, value: number): void {
     const b = this.battle!;
     if (b.result) return;
     const previous = b.interventions.at(-1);
     Battles.intervene(b, { tick: b.tick, kind: "morale", side, value });
-    if (previous?.kind === "morale" && previous.side === side && previous.tick === b.tick) {
+    // in the battle each click is applied at once and stands as it was made
+    if (!b.tick && previous?.kind === "morale" && previous.side === side) {
       b.interventions.pop();
       b.log.pop();
       previous.value += value;
@@ -1725,7 +1728,7 @@ class BattleScreenController {
         b.interventions.pop();
         b.log.pop();
       }
-      if (!b.tick) Battles.prepare(b); // the troops are lined up anew with the morale as it now stands
+      Battles.prepare(b); // the troops are lined up anew with the morale as it now stands
     }
     this.refresh();
   }
@@ -1805,10 +1808,16 @@ class BattleScreenController {
     const b = this.battle!;
     if (b.tick) return;
     const sides = SIDES.map(side => b[side].regiments.map(regiment => this.regiments.get(this.regimentKey(regiment))!));
-    this.setup(sides[0], sides[1], { type: b.type, name: b.name, settings: b.settings, seed: b.seed });
-    // what was done to the sides by hand stays done: morale, dice, the ground prepared and the tactics given
+    this.setup(sides[0], sides[1], {
+      type: b.type,
+      name: b.name,
+      settings: b.settings,
+      seed: b.seed,
+      axis: b.approach
+    });
+    // what was done to the sides by hand stays done: morale, dice, orders, the ground prepared and the tactics given
     for (const change of b.interventions) {
-      if (["morale", "die", "dig", "tactic", "weather", "condition"].includes(change.kind))
+      if (["morale", "die", "order", "dig", "tactic", "weather", "condition"].includes(change.kind))
         Battles.intervene(this.battle!, change);
     }
     this.refresh();
@@ -1876,13 +1885,17 @@ class BattleScreenController {
       }
 
       Dialog.close("regimentSelectorScreen");
-      const { field } = b;
+      const battle = this.battle!; // the one on screen by now: it may be another, or over
+      if (battle.result) return;
+      const { field } = battle;
       selected.forEach(line => {
         const regiment = pack.states[+line.dataset.s!].military!.find(r => r.i === +line.dataset.i!)!;
+        if (this.regiments.has(this.regimentKey(regiment))) return; // it came with a loaded log since
         this.joinBattle(regiment, side);
-        Battles.intervene(b, { tick: b.tick, kind: "add", side, regiment: this.toBattleRegiment(regiment, b) });
+        const data = this.toBattleRegiment(regiment, battle);
+        Battles.intervene(battle, { tick: battle.tick, kind: "add", side, regiment: data });
       });
-      if (b.field !== field) this.drawField(); // more troops, a larger field
+      if (battle.field !== field) this.drawField(); // more troops, a larger field
       this.drawScene();
       this.refresh();
     };
@@ -2027,7 +2040,8 @@ class BattleScreenController {
       }),
       result: b.result ? this.outcome(b) : null,
       settings: { ...b.settings },
-      seed: b.seed
+      seed: b.seed,
+      axis: b.approach
     };
   }
 
@@ -2130,7 +2144,9 @@ class BattleScreenController {
     const staying = new Set([...attackers, ...defenders]);
     for (const regiment of this.regiments.values()) if (!staying.has(regiment)) this.leaveBattle(regiment);
     this.regiments = new Map();
-    this.setup(attackers, defenders, { ...file, settings: { ...DEFAULT_BATTLE_SETTINGS, ...file.settings } }); // at the same place
+    // at the same place; the approach of a battle of other regiments is not this one's
+    const axis = same ? file.axis : b.approach;
+    this.setup(attackers, defenders, { ...file, axis, settings: { ...DEFAULT_BATTLE_SETTINGS, ...file.settings } });
     SIDES.forEach((side, i) => {
       for (const regiment of [attackers, defenders][i]) {
         if (regiment.px === undefined) this.joinBattle(regiment, side);
@@ -2147,7 +2163,9 @@ class BattleScreenController {
         return Boolean(regiment);
       })
       .sort((a, b) => a.tick - b.tick);
+    const { field } = this.battle!;
     Battles.applyDue(this.battle!, this.script);
+    if (this.battle!.field !== field) this.drawField(); // regiments added before the start, a larger field
     this.drawScene();
     this.setName(file.name);
     this.refresh();
@@ -2192,7 +2210,8 @@ class BattleScreenController {
         const initial = sum(Object.values(data.troops));
 
         if (regiment.note) {
-          const share = initial ? sum(Object.values(losses)) / initial : 1;
+          const lost = sum(Object.values(losses)) + sum(Object.values(captured)); // prisoners are lost to it too
+          const share = initial ? lost / initial : 1;
           const initialText = initial ? ` Initial forces: ${unitsText(data.troops)}.` : "";
           const casualtiesText = sum(Object.values(losses)) ? ` Casualties: ${unitsText(losses)}.` : "";
           const capturedText = sum(Object.values(captured)) ? ` Captured: ${unitsText(captured)}.` : "";

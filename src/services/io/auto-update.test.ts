@@ -11,6 +11,7 @@ import { DEAL_KINDS } from "@/model/economy/deals";
 import { Pack } from "@/model/graph/pack-generator";
 import { Options } from "@/model/options/options-model";
 import { Military } from "@/model/political/military-generator";
+import { getDefaultMilitaryUnits } from "@/model/political/military-units";
 import { Names } from "@/model/society/names-generator";
 import { Styles } from "@/model/styles/styles";
 import * as versioning from "@/services/versioning";
@@ -1304,6 +1305,7 @@ describe("v1.157.0 armies", () => {
       deals: [{ seller: 1, sellerType: "burg", buyer: 1, buyerType: "market", good: 1, units: 1, price: 1 }]
     } as unknown as typeof pack;
     options.map.goods = [{ i: 1, name: "Wood", value: 1, carriage: 0.5 }] as never;
+    options.map.military.units = getDefaultMilitaryUnits(); // an earlier test leaves only levies
 
     await resolveVersionConflicts("1.156.0", []);
 

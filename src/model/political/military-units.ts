@@ -1,6 +1,7 @@
 import { GOODS_DATA } from "@/data/goods";
 import { Icons } from "@/model/icons";
 import type { MilitaryUnit } from "@/types/military";
+import { rn } from "@/utils/number-utils";
 
 export const FOOT_SPEED = 4.3; // km/h of troops on foot: 1.2 m/s
 const RANGE_POWER = 680; // metres of range that double the power
@@ -14,6 +15,18 @@ export function getUnitPower(unit: Traits): number {
   const range = 1 + Math.max(unit.range, 0) / RANGE_POWER;
   const morale = Math.max(unit.morale, 0); // losses shake a unit the less the steadier it is
   return strength * speed * range * morale || 0;
+}
+
+/** A unit saved with a single power gets the traits of its type's default unit, scaled to keep that power */
+export function upgradeMilitaryUnit(value: unknown): unknown {
+  if (!value || typeof value !== "object" || !("power" in value)) return value;
+  const { power, ...unit } = value as Record<string, unknown>;
+  if ("attack" in unit) return unit;
+  const defaults = getDefaultMilitaryUnits();
+  const model = defaults.find(({ type }) => type === unit.type) ?? defaults.find(({ type }) => type === "melee")!;
+  const { attack, defense, speed, range, morale } = model;
+  const scale = Math.max(Number(power) || 0, 0) / getUnitPower(model);
+  return { ...unit, attack: rn(attack * scale, 2), defense: rn(defense * scale, 2), speed, range, morale };
 }
 
 export function getDefaultMilitaryUnits(): MilitaryUnit[] {

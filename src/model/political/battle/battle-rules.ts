@@ -288,6 +288,7 @@ class BattleRulesModule {
     if (!total && !winner) return ["standoff", "standoff"];
     if (Math.max(attackersLosses, defendersLosses) < 0.05 && !winner) return ["minor skirmishes", "minor skirmishes"];
     let relative = total ? defendersLosses / total : 0.5;
+    if (winner === null) relative = Math.min(Math.max(relative, 0.31), 0.69); // nobody was driven off: no more than a plain victory
     if (winner === "attackers") relative = Math.max(relative, 0.61);
     if (winner === "defenders") relative = Math.min(relative, 0.39);
     if (relative > 0.95) return ["attackers flawless victory", "disorderly retreat of defenders"];

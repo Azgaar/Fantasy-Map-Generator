@@ -91,7 +91,6 @@ class BattleReportExport {
     Battles.applyDue(battle, script);
     Battles.plan(battle);
     const stage = BattleAnimation.createStage(battle, source, choice.camera);
-    stage.placeBlocks();
     const end = Math.max(...keys);
     const frames: Keyframe[] = [];
     let trails: Trails = new Map();
@@ -103,7 +102,7 @@ class BattleReportExport {
       }
       if (keys.has(battle.tick)) {
         const { field } = battle;
-        BattleSceneView.updateBlocks(stage.svg, battle, null, 1);
+        stage.placeBlocks(); // drawn anew, reinforcements too: those destroyed since the last keyframe are gone
         const troops = BattleCamera.toCameraTroops(battle.blocks);
         const view =
           choice.camera === "field" ? BattleCamera.getFieldView(field) : BattleCamera.frameTroops(field, troops);
@@ -121,9 +120,7 @@ class BattleReportExport {
       }
       if (battle.result || battle.tick >= end) break;
       if (signal.aborted) return null;
-      const blocks = battle.blocks.length;
       Battles.applyDue(battle, script);
-      if (battle.blocks.length !== blocks) stage.placeBlocks(); // a recorded reinforcement
       Battles.tick(battle);
       if (battle.tick % 20 === 0) {
         onProgress(battle.tick / end);

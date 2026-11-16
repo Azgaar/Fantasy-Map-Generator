@@ -791,6 +791,9 @@ class BattleSceneRenderer {
       if (editable()) onTurn(block, block.facing + TURN_STEP);
     });
 
+    // those destroyed before the blocks were drawn fell unseen: they do not fade anew
+    for (const block of battle.blocks)
+      if (block.status === "destroyed" && !this.fallen.has(block)) this.fallen.set(block, -Infinity);
     this.updateBlocks(svg, battle, null, 1);
   }
 

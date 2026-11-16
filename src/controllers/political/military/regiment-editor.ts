@@ -452,9 +452,9 @@ async function attackRegimentOnClick(this: SVGGElement, event: MouseEvent): Prom
     tip(t("Regiment has no troops to battle"), false, "error");
     return;
   }
-  const openSea = (pack.cells.t[Pack.findCell(defender.x, defender.y) ?? -1] ?? 0) < -1;
+  const atSea = (pack.cells.h[Pack.findCell(defender.x, defender.y) ?? -1] ?? 20) < 20; // by the coast too: no ground to fight on
   const reachesSea = Military.getUnitTypes(attacker).some(type => type === "naval" || type === "aviation");
-  if (openSea && !attacker.n && !reachesSea) {
+  if (atSea && !attacker.n && !reachesSea) {
     tip(t("Land troops cannot reach a fleet on the open sea"), false, "error");
     return;
   }

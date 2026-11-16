@@ -61,7 +61,8 @@ interface Ways {
 
 const OPEN_STEPS = new Uint16Array(COLS * ROWS); // no step is shut: never written to
 
-const WET = 3; // a node's cost from which it is water to wade through or to keep out of
+// a node's cost from which it is water to wade through or to keep out of: over the worst dry going, 4.4 for riders in a soaked, frozen wood
+const WET = 6;
 
 const KEPT = 5; // nodes a block goes before the distances from where it was are found anew
 
@@ -166,6 +167,8 @@ class MovementModule {
     const pace = this.getStride(battle, block, heading, haste);
     const distance = Math.min(pace, limit);
     const wading = !this.isMoored(battle, block) && this.shuns(battle, block, block.x, block.y); // may wade out; a ship aground stays
+    const ashore = wading && !this.isDeep(battle, block, block.x, block.y); // off a ford or a bridge, but not into the deep
+    const inOrder = !this.isRunning(block); // those in order keep to the field
     // a step aside ends in the water only midstream, when the way ahead is water too
     const ahead: [number, number] = [block.x + Math.cos(heading) * distance, block.y + Math.sin(heading) * distance];
     const midstream = this.isWet(battle, block, block.x, block.y) && this.isWet(battle, block, ...ahead);
@@ -191,7 +194,7 @@ class MovementModule {
     const walk = (angle: number, swing: number): number => {
       const [cos, sin] = [Math.cos(angle), Math.sin(angle)];
       const end = short(cos, sin);
-      const samples = Math.max(Math.ceil(end / SAMPLE), 1);
+      const samples = Math.max(Math.ceil(end / Math.min(SAMPLE, block.depth)), 1); // nor over a battalion thinner than a sample
       let open = 0;
       let last = from;
       for (let i = 1; i <= samples; i++) {
@@ -208,6 +211,8 @@ class MovementModule {
             : !wading && this.shuns(battle, block, x, y)
         )
           break;
+        if (ashore && this.isDeep(battle, block, x, y)) break;
+        if (inOrder && this.isOff(battle.field, x, y) && !this.isOff(battle.field, ...from)) break;
         last = [x, y];
         if (swing && !midstream && this.isWet(battle, block, x, y)) break;
         // nor by a gate when it turns off its way: it would only go back where it came from
@@ -315,6 +320,13 @@ class MovementModule {
     return Boolean(terrain.water) && !this.isAfloat(battle, block, terrain);
   }
 
+  /** Water troops in order never go into, whoever advances: out of a ford, off a bridge, beyond the shallows of a landing */
+  isDeep(battle: Battle, block: Block, x: number, y: number): boolean {
+    const terrain = Battlefields.terrainAt(battle.field, x, y);
+    if (!terrain.water || terrain.ford || terrain.deck || this.isAfloat(battle, block, terrain)) return false;
+    return !(terrain.shallow && battle.type === "landing");
+  }
+
   /** Ships on the ground of a land battle: they keep to the water, on the run too */
   isMoored(battle: Battle, block: Block): boolean {
     return block.type === "naval" && !battle.field.open;
@@ -375,6 +387,20 @@ class MovementModule {
     return battle.field.held !== null && battle.field.burgs[battle.field.held].walled;
   }
 
+  /** The besiegers' engines in order that have the walls of the burg in range */
+  getBatterers(battle: Battle): Block[] {
+    const { field } = battle;
+    if (!this.hasWalls(battle)) return [];
+    const burg = field.burgs[field.held!];
+    return battle.blocks.filter(
+      block =>
+        block.side === "attackers" &&
+        block.status === "ready" &&
+        block.type === "machinery" &&
+        Math.hypot(block.x - burg.x, block.y - burg.y) <= block.range + burg.radius
+    );
+  }
+
   /** Besiegers go over the walls while they storm the burg or loot it */
   isStorming(battle: Battle): boolean {
     return (
@@ -403,6 +429,11 @@ class MovementModule {
     const walls = Battlefields.getWallsBetween(battle.field, from, to);
     if (walls.length > 0 && walls.some(wall => !this.canCross(battle, block, wall))) return true;
     return this.isCliffed(battle, block, from, to) || Works.isBarredByWorks(battle, block, from, to);
+  }
+
+  /** Beyond the edge of the field: only those on the run go there */
+  isOff(field: Battlefield, x: number, y: number): boolean {
+    return x < 0 || y < 0 || x > field.width || y > field.height;
   }
 
   /** A cliff between two points: nobody but fliers crosses it */
@@ -1209,6 +1240,7 @@ class MovementModule {
   private canShift(battle: Battle, block: Block, dx: number, dy: number): boolean {
     const to: Point = [block.x + dx, block.y + dy];
     if (this.isBarred(battle, block, [block.x, block.y], to)) return false;
+    if (this.isDeep(battle, block, ...to) && !this.isDeep(battle, block, block.x, block.y)) return false; // not off a ford
     return !this.shuns(battle, block, ...to) || this.shuns(battle, block, block.x, block.y);
   }
 
@@ -1282,11 +1314,13 @@ class MovementModule {
       gave: new Map()
     };
     const ahead = (CLEARANCE + NEAR_ENOUGH) * battle.field.front;
+    // who files through its friends does so till it stands clear, moving or not: or they would be thrown apart
+    for (const block of last ? others : [])
+      if (last!.filing.has(block.id) && this.getFriendUnder(battle, block, others)) known.filing.add(block.id);
     for (const { block, from, to, leg } of moves) {
       const heading = Math.atan2(to[1] - from[1], to[0] - from[0]);
       known.heading.set(block.id, heading);
       known.turn.set(block.id, to);
-      if (last?.filing.has(block.id) && this.getFriendUnder(battle, block, others)) known.filing.add(block.id); // till clear
       const [cos, sin] = [Math.cos(heading), Math.sin(heading)];
       const stride = Math.min(leg, this.getStride(battle, { ...block, x: from[0], y: from[1] }, heading));
       if (stride < 1 || (block.x - from[0]) * cos + (block.y - from[1]) * sin >= stride * HELD_UP) continue;

@@ -7,6 +7,7 @@ import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
 import { LANGUAGE_CODES } from "@/data/languages";
 import { MAX_JITTER, SAMPLINGS } from "@/model/graph/lattice";
 import { Icons } from "@/model/icons";
+import { upgradeMilitaryUnit } from "@/model/political/military-units";
 import type { LayerId } from "@/renderers/layers";
 import type { Good } from "@/types/economy";
 import type { HeraldicEmblem } from "@/types/emblems";
@@ -68,26 +69,29 @@ const burgGroup = z.strictObject({
   preview: z.string().optional()
 });
 
-// TODO: migrate on v1.159.0 release
-const militaryUnit = z.strictObject({
-  icon: z.string(),
-  name: z.string(),
-  rural: nonNegative,
-  urban: nonNegative,
-  crew: positive,
-  attack: nonNegative,
-  defense: nonNegative,
-  speed: nonNegative,
-  range: nonNegative,
-  morale: nonNegative,
-  type: z.string(),
-  separate: z.number().int(),
-  biomes: ids,
-  states: ids,
-  cultures: ids,
-  religions: ids,
-  goods: ids
-});
+/** a unit saved before v1.159.0 has a single power */
+const militaryUnit = z.preprocess(
+  upgradeMilitaryUnit,
+  z.strictObject({
+    icon: z.string(),
+    name: z.string(),
+    rural: nonNegative,
+    urban: nonNegative,
+    crew: positive,
+    attack: nonNegative,
+    defense: nonNegative,
+    speed: nonNegative,
+    range: nonNegative,
+    morale: nonNegative,
+    type: z.string(),
+    separate: z.number().int(),
+    biomes: ids,
+    states: ids,
+    cultures: ids,
+    religions: ids,
+    goods: ids
+  })
+);
 
 const transport = z.strictObject({
   i: z.number().int(),

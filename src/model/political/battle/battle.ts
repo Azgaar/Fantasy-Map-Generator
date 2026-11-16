@@ -28,6 +28,7 @@ import {
   SHOCK,
   SPENT,
   STARVED,
+  STORM_ODDS,
   WALLS,
   YIELD
 } from "./battle-balance";
@@ -106,6 +107,7 @@ export interface Muster {
   heading: number;
   until: number; // round it goes at the latest, formed up or not
   launched: number | null; // round it went for the foe
+  homes: Record<number, [x: number, y: number, facing: number]>; // the places its party left, by battalion
 }
 
 /** Riders drawn up in a wedge of their own: where its point is, and the foe it falls on once it charges */
@@ -436,7 +438,11 @@ class BattleModule {
   prepare(battle: Battle): void {
     if (battle.tick) return;
     battle.blocks = [];
-    battle.battalion = this.getBattalionSize(battle);
+    const size = this.getBattalionSize(battle);
+    // battalions of another size are other battalions on another field: those placed by hand are drawn up anew
+    if (battle.battalion && size !== battle.battalion)
+      battle.interventions = battle.interventions.filter(change => change.kind !== "move" && change.kind !== "turn");
+    battle.battalion = size;
     this.setScale(battle);
     battle.field.frozen = battle.ice;
     Movement.forgetWays(battle.field);
@@ -663,6 +669,12 @@ class BattleModule {
         if (change.kind === "move" || change.kind === "turn") return !change.block.startsWith(prefix);
         return true;
       });
+      // a side left with latecomers only: the first of them is the regiment it began with
+      const [first, ...rest] = battle[side].regiments;
+      const isLate = (other: BattleRegiment, change: Intervention): boolean =>
+        change.kind === "add" && change.regiment.state === other.state && change.regiment.i === other.i;
+      if (first && [first, ...rest].every(other => battle.interventions.some(change => isLate(other, change))))
+        battle.interventions = battle.interventions.filter(change => !isLate(first, change));
     }
     battle.log.push({ tick: battle.tick, event: "withdraw", side, params: { regiment: regiment.name } });
   }
@@ -922,19 +934,24 @@ class BattleModule {
       block.facing = Movement.turn(block.facing, bearing, 0.7);
     }
 
-    // nobody is pushed into the water, out of a ford into the deep or through a wall
+    // nobody is pushed into the water, out of a ford into the deep, through a wall or off the field
     const stood = onField.map(block => ({
       x: block.x,
       y: block.y,
       dry: !Movement.isWet(battle, block, block.x, block.y),
-      safe: !Movement.shuns(battle, block, block.x, block.y)
+      safe: !Movement.shuns(battle, block, block.x, block.y),
+      shoal: !Movement.isDeep(battle, block, block.x, block.y)
     }));
     Movement.separate(battle, onField);
     onField.forEach((block, i) => {
-      const { x, y, dry, safe } = stood[i];
+      const { x, y, dry, safe, shoal } = stood[i];
       const pushed =
         (dry && Movement.isWet(battle, block, block.x, block.y)) ||
         (safe && Movement.shuns(battle, block, block.x, block.y)) ||
+        (shoal && !Movement.isRunning(block) && Movement.isDeep(battle, block, block.x, block.y)) ||
+        (!Movement.isRunning(block) &&
+          !Movement.isOff(battle.field, x, y) &&
+          Movement.isOff(battle.field, block.x, block.y)) ||
         Battlefields.getWallsBetween(battle.field, [x, y], [block.x, block.y]).length > 0 || // not even by a gate
         Movement.isCliffed(battle, block, [x, y], [block.x, block.y]) ||
         Works.isBarredByWorks(battle, block, [x, y], [block.x, block.y]);
@@ -945,7 +962,8 @@ class BattleModule {
     // who strikes is settled once all have moved, so neither side gets the first blow
     const byId = new Map(onField.map(block => [block.id, block]));
     for (const block of onField) {
-      const target = block.action === "flee" ? undefined : byId.get(block.target ?? -1);
+      const aimed = block.action === "flee" ? undefined : byId.get(block.target ?? -1);
+      const target = aimed?.status === "ready" || aimed?.status === "routed" ? aimed : undefined; // not one that got away this tick
       if (target && Movement.inContact(battle, block, target)) block.action = "fight";
       else if (target && shooting.has(block.id) && Movement.canShoot(battle, block, target)) block.action = "shoot";
       else if (block.action === "fight" || block.action === "shoot") block.action = "hold"; // pushed apart or out of range
@@ -1009,16 +1027,10 @@ class BattleModule {
     const { field } = battle;
     const { phase } = battle.attackers;
     if (field.held === null || (phase !== "bombardment" && phase !== "storming")) return; // engines cover a storm too
+    const engines = Movement.getBatterers(battle);
+    const breaches = field.breaches.filter(breach => breach.burg === field.held).length;
+    if (!engines.length || breaches >= STORM_ODDS.length - 1) return; // more breaches make the walls no weaker
     const burg = field.burgs[field.held];
-    if (!burg.walled) return;
-    const engines = battle.blocks.filter(
-      block =>
-        block.side === "attackers" &&
-        block.status === "ready" &&
-        block.type === "machinery" &&
-        Math.hypot(block.x - burg.x, block.y - burg.y) <= block.range + burg.radius
-    );
-    if (!engines.length) return;
     battle.lastLoss = battle.tick; // no lull while the engines are at the walls
     battle.battered +=
       sum(engines, engine => this.getPower(battle, engine, engine.attack)) * (KILL_RATE / BREACH_BLOWS);
@@ -1324,6 +1336,7 @@ class BattleModule {
     // a side holds the field while it has troops in order and has neither turned to run nor given itself up
     const holds = SIDES.map((side, i) => ready[i] && !BattleRules.isBeaten(battle.type, side, battle[side].phase));
     const winner = holds[0] === holds[1] ? null : holds[0] ? "attackers" : "defenders";
+    this.settleLosses(battle);
     // who holds the field frees its own who gave themselves up
     for (const block of battle.blocks)
       if (block.side === winner && block.status === "surrendered") block.status = "ready";
@@ -1332,6 +1345,28 @@ class BattleModule {
     if (battle.raised) status[0] = "attackers raised the siege";
     battle.result = { winner, status };
     battle.log.push({ tick: battle.tick, event: "end", side: winner });
+  }
+
+  /**
+   * A battalion loses whole men or ships; when the battle is over the parts its battalions lost are counted together by
+   * regiment and unit, so a fleet of two-ship battalions that each lost a third of a ship has lost a ship
+   */
+  private settleLosses(battle: Battle): void {
+    const units = new Map<string, Block[]>();
+    for (const block of battle.blocks) {
+      if (!block.troops) continue;
+      const key = `${block.side}-${block.state}-${block.regiment}-${block.unit}`;
+      units.set(key, [...(units.get(key) ?? []), block]);
+    }
+    for (const blocks of units.values()) {
+      const more = Math.round(sum(blocks, block => block.harm - 0.5)); // each began half a man in, to round to the nearest
+      const hardest = blocks.sort((a, b) => b.harm - a.harm || a.id - b.id).slice(0, Math.max(more, 0));
+      for (const block of hardest) {
+        block.troops -= 1;
+        block.harm -= 1;
+        if (!block.troops) block.status = "destroyed";
+      }
+    }
   }
 
   private getMen(unit: MilitaryUnit, troops: number): number {
