@@ -230,10 +230,19 @@ class MapRepairService {
         delete cells.routes[+from];
         continue;
       }
+      if (!cells.p[+from]) {
+        repairs.push(`Route links from missing cell ${from}. Removing the links`);
+        delete cells.routes[+from];
+        continue;
+      }
       for (const to in links) {
-        if (routeIds.has(links[+to])) continue;
-        repairs.push(`Route ${links[+to]} from ${from} to ${to} is missing. Removing the link`);
-        delete links[+to];
+        if (!cells.p[+to]) {
+          repairs.push(`Route ${links[+to]} from ${from} links to missing cell ${to}. Removing the link`);
+          delete links[+to];
+        } else if (!routeIds.has(links[+to])) {
+          repairs.push(`Route ${links[+to]} from ${from} to ${to} is missing. Removing the link`);
+          delete links[+to];
+        }
       }
     }
 
