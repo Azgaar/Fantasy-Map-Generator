@@ -65,7 +65,7 @@ const columns: EditorColumn<MarketDealRow>[] = [
     tip: sentences(t("Whether the market buys or sells"), t("Click to sort by {{column}}", { column: t("Type") })),
     width: "4em",
     sortType: "alpha",
-    sortBy: row => row.side
+    sortBy: getSideBadge
   },
   {
     key: "burg",
@@ -267,14 +267,13 @@ function renderDealLine(row: MarketDealRow): string {
     : isSale
       ? t("The market sells the goods to the burg")
       : t("The market buys the goods from the burg");
-  const badge = isOrder ? t("State") : isSale ? t("Sell") : t("Buy");
 
   return /* html */ `<div class="states marketDeal" data-burg-id="${burgId}" data-good="${escapeHtml(good.name)}" data-side="${side}" data-burg="${escapeHtml(burg)}" data-units="${rn(units, 2)}" data-income="${rn(income, 2)}">
       <svg data-col="icon" data-tip="${t("Good icon")}" width="1.3em" height="1.3em" class="goodIcon">
         ${goodBadge(good)}
       </svg>
       <div data-col="good" data-tip="${t("Name")}" class="goodName">${escapeHtml(good.name)}</div>
-      <div data-col="side" data-tip="${sideTip}"><span class="marketBadge ${isSale ? "positive" : "negative"}">${badge.toUpperCase()}</span></div>
+      <div data-col="side" data-tip="${sideTip}"><span class="marketBadge ${isSale ? "positive" : "negative"}">${getSideBadge(row)}</span></div>
       <div data-col="burg" class="marketDealBurg pointer" data-tip="${t("Click to zoom")}">${escapeHtml(burg)}</div>
       <div data-col="units" data-tip="${cellTips.units}">${rn(units, 2)}</div>
       <div data-col="net" data-tip="${cellTips.net}">${money(net, isSale)}</div>
@@ -283,6 +282,11 @@ function renderDealLine(row: MarketDealRow): string {
       <div data-col="tariff" data-tip="${cellTips.tariff}">${tariffCell(tariff, isImport)}</div>
       <div data-col="income" class="${tone(income)}" data-tip="${t("Market revenue")}: ${formula}">${formatPrice(rn(income, 2))}</div>
     </div>`;
+}
+
+function getSideBadge({ deal, side }: MarketDealRow): string {
+  const badge = deal[3] === DEAL_KINDS.order ? t("State") : side === "sell" ? t("Sell") : t("Buy");
+  return badge.toUpperCase();
 }
 
 /** Sums of the market's deals in money: what it paid and got, and the carriage and taxes inside */
