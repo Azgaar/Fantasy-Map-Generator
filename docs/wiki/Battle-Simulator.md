@@ -151,7 +151,7 @@ You can give a side another order by hand; its general keeps to it for eight min
 | Heavy rain   | 62.5% | 35%        | –                                                        | –        | –             |
 | Snow         | 80%   | 80%        | –                                                        | –        | –             |
 | Fog          | 70%   | 60%        | –                                                        | –        | –             |
-| Muddy ground | –     | –          | half in the open, 75% in woods and bogs, 80% on roads    | 75%      | –             |
+| Muddy ground | –     | –          | half in the open (riders 30%), 75% in woods and bogs, 80% on roads | 75%      | –             |
 | Ice          | –     | –          | 75%; frozen rivers can be crossed anywhere, as at a ford | –        | –             |
 | Heat         | –     | –          | –                                                        | –        | twice as fast |
 

@@ -263,7 +263,9 @@ class MovementModule {
     if (terrain.water)
       return this.isAfloat(battle, block, terrain) ? 1 : terrain.ford || terrain.shallow ? FORDING : WADING;
     if (terrain.wood) return (block.type === "mounted" ? 0.4 : 0.65) * (mud ? MUD.cover : 1) * ice;
-    return (terrain.marsh ? 0.5 * (mud ? MUD.cover : 1) : mud ? MUD.open : 1) * ice;
+    if (terrain.marsh) return 0.5 * (mud ? MUD.cover : 1) * ice;
+    const horse = block.type === "mounted" ? MUD.riders : 1; // hooves sink deeper than feet
+    return (mud ? MUD.open * horse : 1) * ice;
   }
 
   /**

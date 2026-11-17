@@ -20,8 +20,9 @@ export const SKIES: Record<Weather, Sky> = {
   fog: { range: 0.7, shot: 0.6 }
 };
 
-// pace kept on soaked ground: open ground and roads churn up, woods and bogs were soft already; and the footing
-export const MUD = { open: 0.5, road: 0.8, cover: 0.75, footing: 0.75 };
+// pace kept on soaked ground: open ground and roads churn up, woods and bogs were soft already; and the footing.
+// Riders keep a share of the open ground's pace again: a horse sinks deeper than a man and is slow to get out
+export const MUD = { open: 0.5, riders: 0.6, road: 0.8, cover: 0.75, footing: 0.75 };
 export const ICE = 0.75; // pace kept on frozen ground; frozen rivers are crossed anywhere, as at a ford
 export const HEAT = 2; // how much faster troops tire in the heat
 

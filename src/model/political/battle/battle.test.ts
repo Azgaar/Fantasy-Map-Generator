@@ -1898,7 +1898,7 @@ describe("battle weather", () => {
     expect(b.log.at(-1)).toEqual({ tick: 0, event: "weather", params: { weather: "fog" } });
   });
 
-  it("slows troops on soaked ground, the open the most and roads the least, and weakens their footing", () => {
+  it("slows troops on soaked ground, the open the most and riders there more, roads the least, and weakens their footing", () => {
     const b = field();
     const going = (name: string, ground: "open" | "road" | "wood" = "open"): number => {
       const block = of(b, name);
@@ -1908,7 +1908,8 @@ describe("battle weather", () => {
     const dry = [going("infantry", "wood"), going("cavalry", "wood")];
     Battles.intervene(b, { tick: 0, kind: "condition", condition: "mud", on: true });
     expect(b.mud).toBe(true);
-    expect([going("infantry"), going("cavalry")]).toEqual([0.5, 0.5]);
+    expect(going("infantry")).toBe(0.5);
+    expect(going("cavalry")).toBeCloseTo(0.3); // a horse sinks deeper
     expect(going("infantry", "road")).toBeCloseTo(0.96);
     expect([going("infantry", "wood"), going("cavalry", "wood")]).toEqual(dry.map(pace => pace * 0.75));
     expect(going("fliers")).toBe(1);

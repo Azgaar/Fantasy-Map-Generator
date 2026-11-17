@@ -274,7 +274,7 @@ Effects, as shares of what a battalion has in clear weather on dry ground:
 | Heat     | –     | –              | –                                                     | –       | ×2, rest excepted |
 
 - **Sky** (`SKIES`): range (`getRange`, after height) and the force of a shot (`fight`) count for every shooter, engines and ships too. The sky slows nobody.
-- **Mud** (`MUD`, `getGoing`, `getFooting`): fliers and ships do not mind it. Slower troops close slower, so a charge through mud strikes softer, and take longer, so they tire more.
+- **Mud** (`MUD`, `getGoing`, `getFooting`): fliers and ships do not mind it. Riders on open ground keep 0.6 of the foot's pace there (`MUD.riders`): a horse sinks deeper than a man, so mud gives the pursuit no more to the horse than dry ground does. Slower troops close slower, so a charge through mud strikes softer, and take longer, so they tire more.
 - **Ice** (`ICE`): fliers do not mind it. Every river node counts as a ford (`isFordable`, `field.frozen`, set from `battle.ice` by `prepare` and by the intervention, the ways found anew): troops cross at a ford's pace (0.4) and footing (0.5), and a side that does not advance holds its bank as at any ford. Lakes and the sea do not freeze, and ships keep their water.
 - **Heat** (`HEAT`, `tire`): every deed but rest costs twice its energy.
 
