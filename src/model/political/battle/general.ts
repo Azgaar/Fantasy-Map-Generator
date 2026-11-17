@@ -57,6 +57,7 @@ const MUSTER_CLEAR = 1.75; // fronts a place of a sortie forming up keeps from t
 const BEYOND = 1.15; // the ground beyond the ends of a line that covers them
 const BANK = 1.7; // a line holding a crossing stands so far behind its bank
 const STALLED = 4; // rounds an advancing side comes no nearer on a field with cliffs before it goes in
+const DECLINED = 8; // rounds attackers that will not go in, with nobody coming at them, stand off before they leave the field
 const EDGE = 0.5; // and one holding the water's edge, its middle a battalion deep from it: who comes at it is still wading
 const BEND = 1.5; // how far a line bent to the ground goes ahead of its frame or back
 const KINK = 0.35; // and how much further than its neighbour, a front along a front across
@@ -1482,6 +1483,11 @@ class GeneralModule {
     // the attack is called off: it costs far more blood than it draws
     const [fallen, felled] = [data.casualties, battle[BattleRules.enemyOf(side)].casualties];
     if (data.advancing && fallen >= REPULSED && fallen >= felled * 3) return names.run;
+    // the attackers will not go in and nobody comes at them: who sought the battle leaves the field
+    const standing = !data.advancing && !battle[BattleRules.enemyOf(side)].advancing && phase === names.apart;
+    const idle =
+      standing && battle.round - plan.since >= DECLINED && !own.ready.some(block => block.action === "fight");
+    if (side === "attackers" && this.isOpenFight(battle) && idle) return names.run;
     if (phase === names.close || phase === names.chase) return names.close;
     if (!this.isOpenFight(battle)) return names.close;
 

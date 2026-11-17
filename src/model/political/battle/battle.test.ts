@@ -429,7 +429,7 @@ describe("battle generals", () => {
     expect(b.defenders.plan.tactic).not.toBe("crossing");
   });
 
-  it("has a weaker attacker think better of forcing a ford: both stand and the battle dies down", () => {
+  it("has a weaker attacker think better of forcing a ford: it stands off a while and leaves the field", () => {
     const field = Battlefields.createEmpty();
     for (let row = 0; row < ROWS; row++) {
       for (let col = 58; col < 62; col++) {
@@ -456,10 +456,9 @@ describe("battle generals", () => {
     expect(b.attackers.waits).toBe(true);
     expect(b.attackers.advancing).toBe(false);
     run(b);
-    expect(b.result!.winner).toBeNull();
+    expect(b.result!.winner).toBe("defenders");
     expect(b.attackers.casualties + b.defenders.casualties).toBe(0);
-    expect(b.defenders.advancing).toBe(false); // who holds a crossing stays behind it
-    expect(b.round).toBeLessThan(22); // nobody fights, the reserve turns out at the ends: it dies down soon
+    expect(b.round).toBeLessThan(22); // nobody fights: it is over soon
 
     // ordered to close by hand, he attacks after all
     const ordered = Battles.create({
@@ -1625,8 +1624,8 @@ describe("battle balance", () => {
     expect(share(even, strong).losses).toBeGreaterThan(0.75);
   });
 
-  it("ends within the lull when neither side comes on, the ends of the line not trading turned-out flanks", () => {
-    // the weaker attacker waits, the defenders are not strong enough to go for it; its riders stand far behind its middle
+  it("ends soon when neither side comes on, the ends of the line not trading turned-out flanks", () => {
+    // the weaker attacker waits, the defenders are not strong enough to go for it, and it leaves; its riders stand far behind its middle
     const b = Battles.create({
       type: "field",
       name: "Test",
@@ -1644,7 +1643,7 @@ describe("battle balance", () => {
     run(b);
     expect(b.engaged).not.toBeNull();
     expect(b.tick).toBeLessThan(BattleScale.minutesToTicks(30));
-    expect(b.result!.winner).toBeNull();
+    expect(b.result!.winner).toBe("defenders");
   });
 
   it("favours the ambushers", () => {
@@ -3239,7 +3238,7 @@ describe("battle works", () => {
     expect(comes({ infantry: 2000, archers: 600, cavalry: 900 })).toEqual(["wagons", true]);
   });
 
-  it("has a weaker attacker think better of an assault on a foe dug in: both stand and the battle dies down", () => {
+  it("has a weaker attacker think better of an assault on a foe dug in: it stands off a while and leaves the field", () => {
     const weaker = { infantry: 1900, archers: 700, cavalry: 500 };
     const b = battle([regiment(1, weaker)], [regiment(2, big)]);
     dig(b, "defenders");
@@ -3247,9 +3246,9 @@ describe("battle works", () => {
     Battles.plan(b);
     expect(b.attackers.waits).toBe(true);
     run(b);
-    expect(b.result!.winner).toBeNull();
+    expect(b.result!.winner).toBe("defenders");
     expect(b.attackers.casualties + b.defenders.casualties).toBe(0);
-    expect(b.round).toBeLessThan(45); // once the works stand and nobody comes
+    expect(b.round).toBeLessThan(45);
   });
 
   it("replays a battle with works the same, the interventions with it", () => {

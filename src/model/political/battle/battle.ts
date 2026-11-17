@@ -314,6 +314,7 @@ export interface Battle {
 /** How a game the generals play in their minds ended */
 interface Rehearsal {
   winner: Side | null;
+  fought: boolean; // a blow was struck hand to hand before anybody ran: a side that left before is not beaten
   lost: Record<Side, number>; // share of each side's troops
 }
 
@@ -555,14 +556,20 @@ class BattleModule {
     const key = SIDES.map(name => `${trial[name].plan.tactic}|${trial[name].waits}|${trial[name].storms}`).join("|");
     let game = played.get(key);
     if (!game) {
-      for (let i = 0; i < ticks && !trial.result; i++) this.tick(trial);
+      let fought = false;
+      for (let i = 0; i < ticks && !trial.result; i++) {
+        this.tick(trial);
+        const running = SIDES.some(name => BattleRules.isBeaten(trial.type, name, trial[name].phase)); // a pursuit is no battle
+        fought ||= !running && trial.blocks.some(block => block.action === "fight");
+      }
       game = {
         winner: trial.result?.winner ?? null,
+        fought,
         lost: { attackers: this.getLost(trial.attackers), defenders: this.getLost(trial.defenders) }
       };
       played.set(key, game);
     }
-    const held = game.winner === side ? 1 : game.winner ? -1 : 0;
+    const held = game.winner === side ? 1 : game.winner && game.fought ? -1 : 0;
     return held * 3 + game.lost[BattleRules.enemyOf(side)] - game.lost[side]; // losses differ by 2 at most: they only break ties
   }
 
