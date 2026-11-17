@@ -74,4 +74,19 @@ describe("formations", () => {
     expect(Formations.form([], TACTICS.assault, 1, 30, 1)).toEqual([]);
     expect(Formations.form([], TACTICS.wagenburg, 1, 30, 1)).toEqual([]);
   });
+  it("lays ambushers with the shooters in front and the line troops a step behind, each with a clear way on", () => {
+    for (const name of ["ambuscadeBothSides", "ambuscadeOneSide"] as const) {
+      const places = Formations.form([...many(5, "melee"), ...many(3, "ranged", 0.7)], TACTICS[name], 1, 30, 1);
+      const shooters = places.filter(place => place.block.kind === "ranged");
+      const line = places.filter(place => place.block.kind === "melee");
+      expect(shooters.every(place => place.rank === 0 && place.along === 0)).toBe(true);
+      expect(line.every(place => place.along === -0.5)).toBe(true); // a battalion's depth behind
+      for (const foot of line)
+        for (const shooter of shooters)
+          expect(Math.abs(foot.across - shooter.across)).toBeGreaterThan((foot.block.width + shooter.block.width) / 2);
+      // spread along the line, not bunched at an end of it
+      const ends = Math.max(...line.map(place => Math.abs(place.across)));
+      expect(shooters.every(place => Math.abs(place.across) < ends)).toBe(true);
+    }
+  });
 });

@@ -136,6 +136,13 @@ class BattalionModule {
       shoot: true
     });
 
+    // the broken are shot too, once no foe in order is in range
+    const inRange = (): Block[] => {
+      const reached = foes.filter(foe => Movement.canShoot(battle, block, foe));
+      const inOrder = reached.filter(foe => foe.status === "ready");
+      return inOrder.length ? inOrder : reached;
+    };
+
     // at grips: the foe it fights already, or the one most to its front
     const grips = ready.filter(foe => Movement.inContact(battle, foe, block));
     if (grips.length) {
@@ -191,7 +198,7 @@ class BattalionModule {
           return { ...stand, build: true, facing: task.facing };
         if (far(task) >= ARRIVED * front)
           return { ...stand, to: task, key: this.getPointKey(battle, task), facing: task.facing };
-        const target = block.range ? shot(ready) : null; // there it shoots what comes in range, and fights what comes at it
+        const target = block.range ? pick(inRange()) : null; // there it shoots what comes in range, and fights what comes at it
         return target ? shoot(target) : { ...stand, facing: task.facing };
       }
       const other = sense.onField.find(other => other.id === task.target);
@@ -214,13 +221,14 @@ class BattalionModule {
     const away = skirmishes ? evade() : null;
     if (away) return away;
 
-    const shaken = block.morale < SHAKEN;
     const { phase, advancing } = battle[block.side];
     const told = this.getBearing(battle, block.side);
+    // a column caught on the march fights who falls on it and shoots back, but goes for nobody till the shock is over
+    const stunned = phase === "shock" && !told;
+    const shaken = block.morale < SHAKEN || stunned;
     const forward = told ? told === "attack" || told === "defend" : BattleRules.getStance(phase) === "advance";
     const bold = forward && !shaken;
     const keen = told === "skirmish"; // shooters go as far as it takes where the formation stays
-    const inRange = (): Block[] => ready.filter(foe => Movement.canShoot(battle, block, foe));
 
     if (order.mission === "battery") {
       const target = pick(inRange());

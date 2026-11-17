@@ -156,6 +156,7 @@ export interface Block {
   hit: boolean; // took losses this round
   harm: number; // the part of a man lost so far
   leaving: boolean; // its regiment was taken out of the battle: it marches off the field
+  parole: boolean; // told by hand to give itself up: nobody frees it before the end
   detour: number; // the side it goes round what is in its way by: -1, 1, or 0 on a clear way
   goal: Point | null; // where it is going this tick
   task: Task | null; // given by hand: it comes before the general's order while it stands
@@ -244,6 +245,7 @@ export type LogEvent =
   | "rout"
   | "rally"
   | "surrender"
+  | "freed"
   | "destroyed"
   | "fled"
   | "breach"
@@ -859,12 +861,15 @@ class BattleModule {
    */
   private steady(battle: Battle): void {
     for (const block of [...battle.blocks].sort((a, b) => a.morale - b.morale || a.id - b.id)) {
+      if (block.status === "surrendered" && this.isFreed(battle, block)) this.rally(battle, block, "freed");
       if (block.status !== "ready" && block.status !== "routed") continue;
       const { friends, foes, nearest } = this.getHand(battle, block);
 
       const hungry = this.isHungry(battle, block);
       if (block.status === "routed") {
-        if (nearest < SAFE * battle.field.front || !this.isFighting(battle, block.side) || hungry) continue;
+        const shot = block.hit;
+        block.hit = false;
+        if (nearest < SAFE * battle.field.front || shot || !this.isFighting(battle, block.side) || hungry) continue;
         block.morale += REST;
         if (block.morale >= RALLY) this.rally(battle, block);
         continue;
@@ -990,9 +995,11 @@ class BattleModule {
   private flee(battle: Battle, block: Block, others: Block[]): void {
     block.target = null;
     const safe = SAFE * battle.field.front;
-    const chased = others.some(
-      foe => foe.side !== block.side && this.isInOrder(foe) && Math.hypot(foe.x - block.x, foe.y - block.y) < safe
-    );
+    const chased =
+      block.hit || // shot at from further off
+      others.some(
+        foe => foe.side !== block.side && this.isInOrder(foe) && Math.hypot(foe.x - block.x, foe.y - block.y) < safe
+      );
     if (block.status === "routed" && !chased && this.isFighting(battle, block.side)) {
       block.action = "hold";
       return;
@@ -1201,15 +1208,29 @@ class BattleModule {
     return { friends, foes, nearest };
   }
 
-  /** A broken battalion that got away stands again, behind its side */
-  private rally(battle: Battle, block: Block): void {
+  /**
+   * Nobody holds those who gave themselves up any more: the foe has turned to run, or friends in order stand by them
+   * with no foe in order at hand. Not while their side has given up, nor those told by hand to lay down their arms
+   */
+  private isFreed(battle: Battle, block: Block): boolean {
+    if (block.parole || block.leaving || !this.isFighting(battle, block.side)) return false;
+    const foe = BattleRules.enemyOf(block.side);
+    if (BattleRules.isBeaten(battle.type, foe, battle[foe].phase)) return true;
+    const { friends, foes } = this.getHand(battle, block);
+    return friends > 0 && !foes;
+  }
+
+  /** A broken battalion that got away stands again, behind its side; so does one freed, with the heart of one rallied */
+  private rally(battle: Battle, block: Block, event: "rally" | "freed" = "rally"): void {
     block.status = "ready";
     block.action = "hold";
+    block.task = null;
+    block.morale = Math.max(block.morale, RALLY);
     // those who fight hand to hand join the reserve; shooters and engines go on shooting from where they stand
     const role: Role = block.kind === "ranged" ? "support" : block.kind === "machinery" ? "battery" : "reserve";
     Object.assign(block.order, { role, mission: role, sent: false, target: null });
     Generals.takePlace(battle, block);
-    battle.log.push({ tick: battle.tick, event: "rally", side: block.side, params: { block: this.blockName(block) } });
+    battle.log.push({ tick: battle.tick, event, side: block.side, params: { block: this.blockName(block) } });
   }
 
   /** Losses nearby unsettle friends and hearten foes, all at once */
@@ -1465,6 +1486,7 @@ class BattleModule {
           hit: false,
           harm: 0.5, // losses are rounded to the nearest man, or ship
           leaving: false,
+          parole: false,
           detour: 0,
           goal: null,
           task: null,
@@ -1553,6 +1575,7 @@ class BattleModule {
     else if (task === "surrender")
       for (const block of blocks) {
         this.yieldBlock(block);
+        block.parole = true;
         this.shake(battle, [block], 6);
       }
     else if (!pointed)

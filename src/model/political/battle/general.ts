@@ -37,7 +37,7 @@ const BOWSHOT = 205; // what the besiegers keep out of when the garrison has no 
 const RING = 340; // and how far out of the walls they stand at most
 const WATCH = 70; // how much further than the ring stands from the walls a besieger keeps a gate shut
 const BROW = 1; // how much better the ground has to be for a place of a line to bend to it
-const AMBUSH = [110, 230]; // how far from the road ambushers lie, at the nearest and the furthest
+const AMBUSH = [45, 120]; // how far from the column ambushers lie: a javelin's throw under trees, within their own bowshot in the open
 const SORTIE = 400; // how far from the burg a sortie goes
 
 // in battalion fronts
@@ -63,9 +63,16 @@ const BEND = 1.5; // how far a line bent to the ground goes ahead of its frame o
 const KINK = 0.35; // and how much further than its neighbour, a front along a front across
 const CLIMB = 1.5; // the slope below a line the foe charges up
 const FILE = 0.6; // between the battalions of a column, besides their depth
+const KEPT_MARCHES = 64; // ways of a column with no road, kept
+const WADE = 2; // ways on open ground a way through a ford or a bog costs a column with no road to keep to
+const SURPRISE = 5; // rounds of fighting the surprise of an ambush lasts: four minutes for the column to find its feet
 const WAVERING = 70; // morale of an ambushed column at which ambushers who shoot first fall on it
-const ROAD_REACH = 0.25; // a road so near the middle of the field, in its heights, is the one an ambushed column is on
-const COVER = [-3.4, -1.7, 0, 1.7, 3.4]; // where along their line ambushers look for cover
+const ROAD_REACH = 0.35; // a road so near the middle of the field, in its heights, is the one an ambushed column is on
+const COVER = [-1, -0.5, 0, 0.5, 1]; // where along their line ambushers look at the ground, in shares of its half
+const LAIR = 3.4; // battalion fronts, half the line they look over at the most
+const HIDDEN = 0.6; // of a line under trees hides it
+const SEEN = 0.8; // of the nearest they lie from the column: nearer than that at any point of it they would be seen
+const OVERLOOK = 10; // metres above the road that tell fully on where ambushers lie: they charge downhill
 const ROUND_END = 2; // riders going round the foe's line pass its end by so much
 const FOES_NEAR = 3.6; // a gap in the line with foes so near is filled
 const THREAT = 9; // foes come round further than that from the formation are no threat to it
@@ -135,6 +142,7 @@ const DEFENCES: TacticName[] = ["defensiveLine", "refusedFlanks", "crossing", "w
 
 class GeneralModule {
   private readonly walks = new WeakMap<Battle, { tick: number; walk: number }>();
+  private readonly marches = new Map<string, Point[]>();
 
   private far(a: { x: number; y: number }, b: { x: number; y: number }): number {
     return Math.hypot(a.x - b.x, a.y - b.y);
@@ -180,9 +188,7 @@ class GeneralModule {
     }
     for (const side of SIDES)
       battle[side].advancing = this.isAttacking(battle, side, battle[side].plan.tactic === "crossing");
-    // an ambush is the longer a surprise the weaker the column
-    const odds = this.getOdds(battle, "attackers");
-    battle.attackers.plan.opening = battle.defenders.plan.opening = Math.min(Math.max(Math.round(4 / odds), 2), 8);
+    battle.attackers.plan.opening = battle.defenders.plan.opening = SURPRISE;
   }
 
   /** Who comes to whom in the open: attackers unless much the weaker, defenders when much the stronger and behind no river */
@@ -317,8 +323,10 @@ class GeneralModule {
       };
       const shift = front * STEP_IN;
       const wing = place.block.kind === "mounted" && place.role !== "wedge";
+      const post = place.across;
       for (let i = 0; i < 12 && wing && Math.abs(place.across) > shift && bad(); i++)
         place.across -= Math.sign(place.across) * shift;
+      if (wing && bad()) place.across = post; // no open ground to the middle of the line: they keep their wing
       const { block, role, mission, rank, across, along } = place;
       const frame = this.frameOf(plan, role);
       const [x, y] = this.onField(field, this.toField(frame, across, along));
@@ -518,8 +526,8 @@ class GeneralModule {
       const shooters = battle.blocks.some(block => block.side === side && block.kind === "ranged");
       // where trees hide them on one side only, those across the road would be seen from it
       const [a, b] = this.findLairs(battle).lairs;
-      const tactics: TacticName[] =
-        a.hidden === b.hidden ? ["ambuscadeBothSides", "ambuscadeOneSide"] : ["ambuscadeOneSide"];
+      const alike = a.hidden === b.hidden && a.fits === b.fits; // nor across water from it
+      const tactics: TacticName[] = alike ? ["ambuscadeBothSides", "ambuscadeOneSide"] : ["ambuscadeOneSide"];
       return [
         ...tactics.map(tactic => this.option(tactic)),
         ...(shooters ? tactics.map(tactic => this.option(tactic, true)) : [])
@@ -826,7 +834,8 @@ class GeneralModule {
       middle[0] + Math.cos(axis) * out * sign,
       middle[1] + Math.sin(axis) * out * sign
     ]);
-    const points = this.densify(onRoad ? (ahead(road) ? road : [...road].reverse()) : straight, field.cell / 2);
+    const way = onRoad ? (ahead(road) ? road : [...road].reverse()) : this.findMarch(field, straight);
+    const points = Battlefields.densify(way, field.cell / 2);
 
     const lengths = [0];
     for (let i = 1; i < points.length; i++)
@@ -860,19 +869,39 @@ class GeneralModule {
     return { at, middle: lengths[nearest], room: [lengths[first], lengths[last]] };
   }
 
-  /** The line with a point every `step` or so along it */
-  private densify(line: Point[], step: number): Point[] {
-    const points: Point[] = [line[0]];
-    for (let i = 1; i < line.length; i++) {
-      const [[ax, ay], [bx, by]] = [line[i - 1], line[i]];
-      const parts = Math.max(Math.ceil(Math.hypot(bx - ax, by - ay) / step), 1);
-      for (let k = 1; k <= parts; k++) points.push([ax + ((bx - ax) * k) / parts, ay + ((by - ay) * k) / parts]);
+  /** Where no road leads a column marches straight on, or round the water, the bogs and the cliffs that would lead it into */
+  private findMarch(field: Battlefield, straight: Point[]): Point[] {
+    const at = ([x, y]: Point): number => Battlefields.nodeAt(field, x, y);
+    const line = Battlefields.densify(straight, field.cell / 2).filter(point => field.water[at(point)] !== 1);
+    if (line.length < 2) return straight;
+    const cliffs = field.cliffs.length > 0;
+    const cliffed = cliffs && Battlefields.getCliffsBetween(field, straight[0], straight[1]).length > 0;
+    if (!cliffed && line.every(point => !field.water[at(point)] && !field.marsh[at(point)])) return straight;
+    const toll = (node: number): number => {
+      if (field.water[node] === 1) return Infinity;
+      if (field.water[node]) return Battlefields.isFordable(field, node) ? WADE : Infinity;
+      return field.marsh[node] ? WADE : 0;
+    };
+    const shut = (from: Point, to: Point): boolean => Battlefields.getCliffsBetween(field, from, to).length > 0;
+    // the generals ask again and again, of copies of the field too: kept by the ground it was found over
+    let hash = 2166136261;
+    for (const grid of [field.water, field.marsh, field.ford])
+      for (let i = 0; i < grid.length; i++) hash = (Math.imul(hash ^ grid[i], 16777619) + i) | 0;
+    const key = [hash, field.width, field.frozen, field.cliffs.length, ...straight.flat()].join();
+    let way = this.marches.get(key);
+    if (!way) {
+      if (this.marches.size >= KEPT_MARCHES) this.marches.clear();
+      way = Battlefields.leadWay(field, line, toll, cliffs ? shut : undefined) ?? straight;
+      this.marches.set(key, way);
     }
-    return points;
+    return way;
   }
 
-  /** The column on the march: riders ahead, engines last, in as many files as it takes to fit the road on the field */
-  private getColumn(battle: Battle, blocks: Block[]) {
+  /**
+   * The column on the march: riders ahead, engines last, in as many files as it takes to fit the road on the field;
+   * its middle where the ambush is sprung (`at`, along the road), else at the middle of the field, as far as the road lets it
+   */
+  private getColumn(battle: Battle, blocks: Block[], at?: number) {
     const order = ["mounted", "melee", "ranged", "machinery"];
     const { field } = battle;
     const route = this.getRoute(battle);
@@ -882,20 +911,20 @@ class GeneralModule {
     const files = Math.max(Math.ceil((column.length * pitch) / room), 1);
     const rows = Math.ceil(column.length / files);
     const spacing = Math.max(...blocks.map(block => block.width), 0) + GAP * field.front;
-    // the middle of the column at the middle of the field, as far as the road there lets it
     const length = (rows - 1) * pitch;
-    const middle = this.clamp(
-      route.middle,
-      route.room[0] + length / 2,
-      Math.max(route.room[1] - length / 2, route.room[0] + length / 2)
-    );
-    return { route, column, pitch, files, rows, middle, half: (files * spacing) / 2, spacing };
+    const span = [route.room[0] + length / 2, Math.max(route.room[1] - length / 2, route.room[0] + length / 2)];
+    const middle = this.clamp(at ?? route.middle, span[0], span[1]);
+    return { route, column, pitch, files, rows, middle, span, length, half: (files * spacing) / 2, spacing };
   }
 
   /** An ambush: the attackers are caught on the march, in a column along the road */
   private marchColumn(battle: Battle, blocks: Block[]): void {
     const { field } = battle;
-    const { route, column, pitch, files, rows, middle, spacing } = this.getColumn(battle, blocks);
+    const { route, column, pitch, files, rows, middle, spacing } = this.getColumn(
+      battle,
+      blocks,
+      this.findLairs(battle).middle
+    );
     const frame = route.at(middle);
     const spots = column.map((block, i) => {
       const row = Math.floor(i / files);
@@ -940,40 +969,101 @@ class GeneralModule {
     battle.defenders.plan.half = 0;
   }
 
-  /** Where ambushers would lie on either side of the road, how well covered, and whether trees hide them there */
-  private findLairs(battle: Battle): { road: Frame; lairs: { frame: Frame; cover: number; hidden: boolean }[] } {
+  /**
+   * Where the ambushers spring the ambush and where they lie: the stretch of the road the column fits that gives them
+   * the best ground, and on either side of it the lair worth most. Trees hide a line, reeds half as well; high ground
+   * lets it charge downhill; water, a cliff or the field's edge between it and the column bar it, a bog on the way
+   * slows it. Hidden it lies as near as it may, a short dash from the road; in the open a bowshot off
+   */
+  private findLairs(battle: Battle): {
+    road: Frame;
+    middle: number; // of the column, along the road
+    lairs: { frame: Frame; cover: number; hidden: boolean; fits: boolean }[];
+  } {
     const { field } = battle;
-    const { route, middle, half } = this.getColumn(
-      battle,
-      battle.blocks.filter(block => block.side === "attackers")
-    );
-    const road = route.at(middle);
-    const lie = (side: number, distance: number): Frame => {
+    const { front, cell } = field;
+    const column = battle.blocks.filter(block => block.side === "attackers");
+    const { route, half, length, span, middle: centre } = this.getColumn(battle, column);
+    const liers = battle.blocks.filter(block => block.side === "defenders");
+    const line = liers.filter(block => block.kind === "melee" || block.kind === "ranged").length || liers.length;
+    const reach = this.clamp((line * front * (1 + GAP)) / 4, front, LAIR * front); // half the line of one wing of two
+    const margin = this.getMargin(field) + front;
+    const onField = ([x, y]: Point): boolean =>
+      x >= margin && y >= margin && x <= field.width - margin && y <= field.height - margin;
+    const cliffs = field.cliffs.length > 0;
+    const [nearest, furthest] = AMBUSH;
+
+    const rate = (road: Frame, trail: Point[], side: number, distance: number, far: number) => {
       const out = road.heading + (side ? Math.PI / 2 : -Math.PI / 2);
       const away = half + distance; // from the flank of the column
-      return { x: road.x + Math.cos(out) * away, y: road.y + Math.sin(out) * away, heading: out + Math.PI };
+      const frame = { x: road.x + Math.cos(out) * away, y: road.y + Math.sin(out) * away, heading: out + Math.PI };
+      let [cover, barred, slowed, rise] = [0, 0, 0, 0];
+      for (const share of COVER) {
+        const point = this.toField(frame, share * reach, 0);
+        const here = Battlefields.terrainAt(field, ...point);
+        const near = least(trail, ([x, y]) => Math.hypot(x - point[0], y - point[1]))!;
+        const run = Math.hypot(near[0] - point[0], near[1] - point[1]);
+        if (!onField(point) || here.water || run - half < nearest * SEEN) {
+          barred++;
+          continue;
+        }
+        // the dash to the column: what lies on it
+        let [wet, soft] = [cliffs && Battlefields.getCliffsBetween(field, point, near).length > 0, here.marsh];
+        const steps = Math.ceil(run / cell);
+        for (let k = 1; k < steps && !wet; k++) {
+          const t = k / steps;
+          const on = Battlefields.terrainAt(
+            field,
+            point[0] + (near[0] - point[0]) * t,
+            point[1] + (near[1] - point[1]) * t
+          );
+          if (on.water && !on.ford) wet = true;
+          else if (on.water || on.marsh) soft = true;
+        }
+        if (wet) barred++;
+        else if (soft) slowed++;
+        cover += here.wood ? 1 : here.marsh ? 0.5 : 0;
+        rise += (here.height - Battlefields.terrainAt(field, ...near).height) * field.relief;
+      }
+      const count = COVER.length;
+      const hidden = cover / count >= HIDDEN;
+      const off = far > nearest ? (distance - nearest) / (far - nearest) : 0;
+      const worth =
+        (cover / count) * 2 +
+        this.clamp(rise / count / OVERLOOK, -0.5, 0.5) -
+        (slowed / count) * 0.5 -
+        (barred / count) * 3 +
+        (hidden ? -off : off) * 0.5;
+      return { frame, cover: worth, hidden, fits: !barred };
     };
-    // trees and high ground hide those who lie in wait, along the stretch of road their line looks over
-    const along = COVER.map(share => share * field.front);
-    const cover = (frame: Frame): number =>
-      sum(along, across => {
-        const { wood, height } = Battlefields.terrainAt(field, ...this.toField(frame, across, 0));
-        return +wood + height;
+
+    const spring = (at: number) => {
+      const road = route.at(at);
+      const trail: Point[] = [];
+      for (let along = at - length / 2; along <= at + length / 2 + cell / 2; along += cell) {
+        const { x, y } = route.at(along);
+        trail.push([x, y]);
+      }
+      const far = Math.max(Math.min(this.reach(field, road.heading + Math.PI / 2) * 0.75 - half, furthest), nearest);
+      const lairs = [0, 1].map(side => {
+        let best = rate(road, trail, side, far, far);
+        for (let distance = nearest; distance < far; distance += cell) {
+          const lair = rate(road, trail, side, distance, far);
+          if (lair.cover > best.cover) best = lair;
+        }
+        return best;
       });
-    const hidden = (frame: Frame): boolean =>
-      sum(along, across => +Battlefields.terrainAt(field, ...this.toField(frame, across, 0)).wood) >= 3;
-    /** Where they lie on a side: at the edge of the trees nearest the road, a short dash from it; a bowshot off in the open */
-    const at = (side: number): Frame => {
-      const far = Math.min(this.reach(field, road.heading + Math.PI / 2) * 0.75 - half, AMBUSH[1]);
-      for (let distance = AMBUSH[0]; distance < far; distance += field.cell)
-        if (hidden(lie(side, distance))) return lie(side, distance);
-      return lie(side, Math.max(far, AMBUSH[0]));
+      const [low, high] = [lairs[0].cover, lairs[1].cover].sort((a, b) => a - b);
+      const worth = high + low / 2 - (Math.abs(at - centre) / Math.max(span[1] - span[0], 1)) * 0.2;
+      return { road, middle: at, lairs, worth };
     };
-    const lairs = [0, 1].map(side => {
-      const frame = at(side);
-      return { frame, cover: cover(frame), hidden: hidden(frame) };
-    });
-    return { road, lairs };
+
+    let best = spring(centre); // on even ground the middle of the field
+    for (let at = span[0]; at <= span[1]; at += front) {
+      const site = spring(at);
+      if (site.worth > best.worth) best = site;
+    }
+    return best;
   }
 
   /** The besiegers stand out of bowshot of the walls, their engines a row behind the first line, still in range */
@@ -1272,7 +1362,7 @@ class GeneralModule {
     for (const side of SIDES)
       battle[side].plan.arrival = this.getArrival(battle, side, views[BattleRules.enemyOf(side)], gap);
     for (const side of SIDES) this.release(battle, side);
-    this.spring(battle, views.defenders, views.attackers, gap);
+    this.spring(battle, views.defenders, views.attackers);
     const phases = SIDES.map(side =>
       this.choosePhase(battle, side, views[side], views[BattleRules.enemyOf(side)], gap)
     );
@@ -1339,12 +1429,12 @@ class GeneralModule {
       );
   }
 
-  /** Ambushers who shoot from cover fall on the column once it wavers, comes at them, or the surprise is spent */
-  private spring(battle: Battle, own: View, foe: View, gap: number): void {
+  /** Ambushers who shoot from cover fall on the column once it wavers, has come to grips with them, or the surprise is spent */
+  private spring(battle: Battle, own: View, foe: View): void {
     const data = battle.defenders;
     if (!this.isShootingFirst(battle, "defenders") || data.plan.order) return;
     const fought = battle.engaged === null ? 0 : battle.round - battle.engaged;
-    const upon = gap <= CHARGE * battle.field.front;
+    const upon = own.ready.some(block => block.action === "fight"); // they lie a javelin's throw off: nearness says nothing
     if (own.fire && !upon && foe.morale >= WAVERING && fought < data.plan.opening) return;
     Object.assign(data, { waits: false, advancing: true });
   }

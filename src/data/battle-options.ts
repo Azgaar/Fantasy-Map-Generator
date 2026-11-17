@@ -63,7 +63,7 @@ export interface BattleOptions {
 }
 
 export const DEFAULT_BATTLE_OPTIONS: BattleOptions = {
-  view: { camera: "follow", speed: 1, log: false },
+  view: { camera: "field", speed: 1, log: false },
   rendering: {
     relief: "hachures",
     shade: true,
@@ -87,7 +87,7 @@ export const DEFAULT_BATTLE_OPTIONS: BattleOptions = {
   },
   playback: { step: "tick", pause: { clash: false, rout: false, surrender: false, breach: false, broken: false } },
   simulation: DEFAULT_BATTLE_SETTINGS,
-  export: { format: "gif", quality: "medium", speed: 1, camera: "follow" }
+  export: { format: "gif", quality: "medium", speed: 1, camera: "field" }
 };
 
 export type BattleLook = BattleOptions["rendering"];

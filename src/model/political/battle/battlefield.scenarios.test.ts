@@ -58,6 +58,40 @@ describe("battlefield on a real map", () => {
     }
   });
 
+  it("sites an ambush on the road of its cell, and bridges every river square to the stream", async () => {
+    await generateMap({ seed: "probe-1", template: "mediterranean", points: 4000 });
+    const { cells } = pack;
+    const land = Array.from(cells.i).filter(i => cells.h[i] >= 20 && !cells.burg[i]);
+    const roads = land.filter(i => BattleSite.hasRoad(i));
+    expect(roads.length).toBeGreaterThan(20);
+    expect(land.some(i => !BattleSite.hasRoad(i))).toBe(true);
+
+    const middle: [number, number] = [size.width / 2, size.height / 2];
+    for (const cell of roads.filter(i => !cells.r[i]).slice(0, 12)) {
+      const [x, y] = cells.p[cell];
+      const off = BattleSite.getSpacing() / 4; // a regiment stands where it likes in its cell
+      const field = Battlefields.cut(Battlefields.build(x + off, y - off, size, "ambush"), size);
+      const nearest = Math.min(...field.roads.map(road => Battlefields.distanceToLine(middle, road)));
+      expect(nearest, `cell ${cell}`).toBeLessThan(size.height / 4); // led over the ground, it is still the column's road
+    }
+
+    let bridges = 0;
+    for (const cell of roads.filter(i => cells.r[i])) {
+      const field = Battlefields.cut(Battlefields.build(...cells.p[cell], size), size);
+      for (const bridge of field.bridges) {
+        const at: [number, number] = [bridge.x, bridge.y];
+        const stretches = field.rivers.flatMap(river => river.points.slice(1).map((b, j) => [river.points[j], b]));
+        const [a, b] = stretches.reduce((best, next) =>
+          Battlefields.distanceToLine(at, next) < Battlefields.distanceToLine(at, best) ? next : best
+        );
+        const skew = Math.abs(Math.cos(bridge.angle - Math.atan2(b[1] - a[1], b[0] - a[0]))); // 0 square to the stream
+        expect(skew, `cell ${cell}`).toBeLessThan(Math.sin((15 * Math.PI) / 180));
+        bridges++;
+      }
+    }
+    expect(bridges).toBeGreaterThan(3);
+  });
+
   it("finds no shore on the map's edge", async () => {
     await generateMap({ seed: "probe-2", template: "taklamakan", points: 4000 });
     const { width, height } = options.map.graph;

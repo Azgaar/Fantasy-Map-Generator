@@ -75,6 +75,88 @@ describe("cut", () => {
   });
 });
 
+describe("leadWay", () => {
+  const field = (): Battlefield => ({ ...Battlefields.createEmpty(), ...size });
+  const line = (f: Battlefield): [number, number][] => [
+    [f.cell, f.height / 2],
+    [f.width - f.cell, f.height / 2]
+  ];
+  const free = (): number => 0;
+
+  it("goes straight over level open ground", () => {
+    const f = field();
+    const way = Battlefields.leadWay(f, line(f), free)!;
+    expect(way[0]).toEqual(line(f)[0]);
+    expect(way.at(-1)).toEqual(line(f)[1]);
+    for (const [, y] of way) expect(Math.abs(y - f.height / 2)).toBeLessThan(f.cell);
+  });
+
+  it("goes round a hill rather than over it", () => {
+    const f = field();
+    f.relief = 60;
+    f.elevation = f.elevation.map((_, node) => {
+      const [x, y] = Battlefields.nodeCentre(f, node);
+      return Math.exp(-((x - f.width / 2) ** 2 + (y - f.height / 2) ** 2) / (2 * (2.5 * f.front) ** 2));
+    });
+    const way = Battlefields.leadWay(f, line(f), free)!;
+    const highest = Math.max(...way.map(([x, y]) => Battlefields.terrainAt(f, x, y).height));
+    expect(highest).toBeLessThan(0.6); // the line the map draws goes over the top, at 1
+    expect(Math.max(...way.map(([, y]) => Math.abs(y - f.height / 2)))).toBeGreaterThan(2 * f.front);
+  });
+
+  it("keeps off what its toll bars, crosses what is dear once, and finds no way where there is none", () => {
+    const f = field();
+    const col = Math.floor(COLS / 2);
+    const gap = 12; // the row of the only way through
+    const lake = (node: number): number => (node % COLS === col && Math.floor(node / COLS) !== gap ? Infinity : 0);
+    const through = Battlefields.leadWay(f, line(f), lake)!;
+    for (const [x, y] of through) expect(lake(Battlefields.nodeAt(f, x, y))).toBe(0);
+    expect(Battlefields.leadWay(f, line(f), node => (node % COLS === col ? Infinity : 0))).toBeNull();
+
+    const river = (node: number): number => (Math.abs((node % COLS) - col) < 2 ? 8 : 0);
+    const over = Battlefields.leadWay(f, line(f), river)!.map(([x, y]) => river(Battlefields.nodeAt(f, x, y)) > 0);
+    expect(over.filter((wet, i) => wet && !over[i - 1])).toHaveLength(1);
+    expect(over.filter(Boolean).length).toBeLessThanOrEqual(4); // square to it
+  });
+});
+
+describe("squareCrossings", () => {
+  type Inside = { squareCrossings: (field: Battlefield, road: [number, number][]) => [number, number][] };
+  const square = (field: Battlefield, road: [number, number][]) =>
+    (Battlefields as unknown as Inside).squareCrossings(field, road);
+
+  it("lays a road straight across a river it crosses askew, and leaves the rest of it alone", () => {
+    const f: Battlefield = { ...Battlefields.createEmpty(), ...size };
+    const [mx, my] = [f.width / 2, f.height / 2];
+    f.rivers = [
+      {
+        ...{ width: 30, name: "", brook: false },
+        points: [
+          [mx - my, 0],
+          [mx + my, f.height]
+        ] // at 45° to the road
+      }
+    ];
+    const road = Battlefields.densify(
+      [
+        [0, my],
+        [f.width, my]
+      ],
+      f.cell / 2
+    );
+    const led = square(f, road);
+    const at = led.findIndex(([x, y]) => Math.abs(x - mx) < 1e-6 && Math.abs(y - my) < 1e-6);
+    expect(at).toBeGreaterThan(0);
+    const [[ax, ay], [bx, by]] = [led[at - 1], led[at + 1]];
+    expect(Math.abs((bx - ax) * 1 + (by - ay) * 1)).toBeLessThan(1e-6); // square to the stream, which runs along (1, 1)
+    expect(Math.hypot(bx - ax, by - ay)).toBeGreaterThan(30 + 28); // from beyond a bridge's end to beyond the other
+    expect(led.slice(0, 10)).toEqual(road.slice(0, 10));
+    expect(led.slice(-10)).toEqual(road.slice(-10));
+    // a road with no river to cross is not touched
+    expect(square({ ...f, rivers: [] }, road)).toBe(road);
+  });
+});
+
 describe("wagon ring", () => {
   const unit = (name: string, type: string, speed: number, range: number): MilitaryUnit => ({
     ...{ icon: "", name, rural: 0, urban: 0, crew: 1, attack: 1, defense: 1, morale: 1, separate: 0 },

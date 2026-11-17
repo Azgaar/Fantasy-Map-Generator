@@ -468,14 +468,16 @@ const ambushField = (both, title) => {
     side: "blue",
     kind: i % 3 === 2 ? "shooter" : "line",
     x: (both ? 420 : 300) + i * (both ? 140 : 105),
-    y: 285,
+    y: i % 3 === 2 ? 300 : 270, // shooters in front, the line a step behind the gaps between them
     angle: 90
   }));
   const south = both
-    ? Array.from({ length: 5 }, (_, i) => ({ side: "blue", kind: i % 3 === 1 ? "shooter" : "line", x: 490 + i * 140, y: 515, angle: -90 }))
+    ? Array.from({ length: 5 }, (_, i) => ({ side: "blue", kind: i % 3 === 1 ? "shooter" : "line", x: 490 + i * 140, y: i % 3 === 1 ? 500 : 530, angle: -90 }))
     : [];
-  const fall = [...north.filter((_, i) => i % 2 === 0)].map(u => arrow(`M${u.x} ${u.y + 25} L ${u.x} ${roadY - 30}`, "blue", { width: 8 }));
-  const rise = south.filter((_, i) => i % 2 === 0).map(u => arrow(`M${u.x} ${u.y - 25} L ${u.x} ${roadY + 30}`, "blue", { width: 8 }));
+  const charging = u => u.kind === "line";
+  const fall = north.filter(charging).filter((_, i) => i % 2 === 0).map(u => arrow(`M${u.x} ${u.y + 25} L ${u.x} ${roadY - 30}`, "blue", { width: 8 }));
+  const rise = south.filter(charging).filter((_, i) => i % 2 === 0).map(u => arrow(`M${u.x} ${u.y - 25} L ${u.x} ${roadY + 30}`, "blue", { width: 8 }));
+  const shots = [...north, ...south].filter(u => u.kind === "shooter");
   return svg(
     title,
     woods([[170, 110], [700, 90], [1250, 120], [1290, 220], [1250, 318], [700, 322], [180, 318], [120, 220]], 5) +
@@ -483,13 +485,14 @@ const ambushField = (both, title) => {
       road(`M0 ${roadY} L ${W} ${roadY}`, 30) +
       units(column) +
       arrow(`M1180 ${roadY} L 1300 ${roadY}`, "red", { width: 7, dashed: true }) +
+      fire(shots, shots.map(u => ({ x: u.x, y: roadY })), "blue") +
       units(north) +
       units(south) +
       fall.join("") +
       rise.join("") +
       label("column of march,", 150, roadY - 45) +
       label("caught on the road", 150, roadY + 60) +
-      label("ambushers lie at the edge of the trees", 1110, 72) +
+      label("shooters in front loose at once, the line charges between them", 1000, 72) +
       (both ? "" : label("open ground: nobody to fear on this side", 700, 640, { color: C.muted }))
   );
 };

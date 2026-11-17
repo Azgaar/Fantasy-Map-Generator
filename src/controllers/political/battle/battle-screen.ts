@@ -37,6 +37,7 @@ import {
   type Side
 } from "@/model/political/battle/battle-rules";
 import { BattleScale } from "@/model/political/battle/battle-scale";
+import { BattleSite } from "@/model/political/battle/battle-site";
 import { Battlefields, type WorkKind } from "@/model/political/battle/battlefield";
 import type { TacticName } from "@/model/political/battle/formations";
 import { Generals } from "@/model/political/battle/general";
@@ -511,7 +512,7 @@ class BattleScreenController {
     if (attacker.n && !defender.n && typesA.some(type => type !== "naval")) return "landing";
     if (pack.burgs[burg]?.walls) return "siege";
     if (attacker.n && !defender.n) return "bombardment"; // ships alone cannot land
-    const hidden = !burg && Battlefields.hidesTroops(pack.cells.biome[cell]);
+    const hidden = !burg && Battlefields.hidesTroops(pack.cells.biome[cell]) && BattleSite.hasRoad(cell); // a column is caught on a road
     if (hidden && Military.getRegimentPower(defender) < Military.getRegimentPower(attacker) * AMBUSH_ODDS)
       return "ambush";
     return "field";
@@ -1998,6 +1999,7 @@ class BattleScreenController {
     if (event === "rout") return t("{{block}} break and run", block);
     if (event === "rally") return t("{{block}} rally", block);
     if (event === "surrender") return t("{{block}} surrender", block);
+    if (event === "freed") return t("{{block}} take up arms again", block);
     if (event === "destroyed") return t("{{block}} are destroyed", block);
     return t("{{block}} leave the field", block);
   };

@@ -5,6 +5,7 @@ import type { Block, Mission, Role } from "./battle";
 export const ROW_GAP = 0.9; // between the lines of a formation
 export const GAP = 0.23; // between neighbours in a line
 const ROW = 2.7; // a row of shooters, reserves or engines is at least so long
+const STAGGER = 0.5; // line troops stand so far behind the shooters ahead of them: a battalion's depth
 
 /** How a general draws his troops up; every number is read by the one builder below */
 export interface Tactic {
@@ -14,7 +15,7 @@ export interface Tactic {
   massed: boolean; // one wing is the stronger: the best troops, the second line and the reserve behind it
   refuse: number; // how far back the other wing ends up
   bow: number; // how far ahead of the centre the ends of the line stand; behind when negative
-  shooters: "behind" | "front" | "wings";
+  shooters: "behind" | "front" | "wings" | "ahead"; // ahead: before the gaps of the first line, which goes through them
   riders: "wings" | "strike" | "behind" | "wedge"; // a wedge of their own, apart from the line
   ring?: boolean; // a ring facing out, the riders and the reserve inside
   ends?: boolean; // the reserve stands behind the ends of the line, to turn out at them
@@ -137,7 +138,7 @@ export const TACTICS: Record<TacticName, Tactic> = {
     massed: false,
     refuse: 0,
     bow: 0,
-    shooters: "behind",
+    shooters: "ahead",
     riders: "wings"
   },
   ambuscadeOneSide: {
@@ -147,7 +148,7 @@ export const TACTICS: Record<TacticName, Tactic> = {
     massed: false,
     refuse: 0,
     bow: 0,
-    shooters: "behind",
+    shooters: "ahead",
     riders: "wings"
   },
   lines: { lines: 1, reserve: 0.2, span: 1, massed: false, refuse: 0, bow: 0, shooters: "behind", riders: "wings" },
@@ -240,10 +241,14 @@ class FormationModule {
     const span = Math.max(room * tactic.span - wings, room * 0.4);
 
     // the lines: as many as the room asks for, the first the longest and the best
-    const count = Math.max(Math.ceil(widthOf(line) / span), Math.min(tactic.lines, Math.floor(line.length / 2)), 1);
+    // shooters ahead stand in one row with the first line, so it is the shorter by them
+    const ahead = tactic.shooters === "ahead" && shooters.length > 0;
+    const abreast = ahead ? [...line, ...shooters] : line;
+    const count = Math.max(Math.ceil(widthOf(abreast) / span), Math.min(tactic.lines, Math.floor(line.length / 2)), 1);
     const first = Math.ceil(line.length / count);
     const lines = [line.slice(0, first), ...wrap(line.slice(first), widthOf(line.slice(0, first)))];
-    const half = widthOf(lines[0]) / 2;
+    const front0 = ahead ? this.mingle(arrange(lines[0]), shooters) : arrange(lines[0]);
+    const half = widthOf(front0) / 2;
     const aside = (row: Block[]): number => (tactic.massed ? strike * (half - widthOf(row) / 2) : 0); // behind the massed wing
 
     const split = (row: Block[]): [Block[], Block[]] => [
@@ -256,8 +261,21 @@ class FormationModule {
       rank += 1;
       along -= rowGap;
     };
-    seat(arrange(lines[0]), 0, 0);
-    if (tactic.shooters !== "wings") {
+    if (ahead) {
+      // each has its own stretch of the row: the shooters in front, the line troops a step behind, with a clear way on
+      let offset = -half;
+      for (const block of front0) {
+        const [role, back] = [ROLES[block.kind], block.kind === "ranged" ? 0 : STAGGER * front];
+        places.push({
+          ...{ block, role, mission: MISSIONS[role], rank: back ? 1 : 0 },
+          ...{ across: offset + block.width / 2, along: -back }
+        });
+        offset += block.width + gap;
+      }
+      rank = 1;
+      along = -STAGGER * front;
+    } else seat(front0, 0, 0);
+    if (tactic.shooters !== "wings" && !ahead) {
       for (const shot of wrap(shooters, Math.max(half * 2, row))) {
         next();
         seat(shot, rank, along);
@@ -338,6 +356,16 @@ class FormationModule {
     }
     this.unstack(shaped, gap / 2);
     return places;
+  }
+
+  /** One row of the line troops with the shooters spread evenly among them */
+  private mingle(line: Block[], shooters: Block[]): Block[] {
+    const row: (Block | undefined)[] = new Array(line.length + shooters.length);
+    shooters.forEach((block, i) => {
+      row[Math.floor(((i + 0.5) * row.length) / shooters.length)] = block;
+    });
+    let next = 0;
+    return Array.from(row, block => block ?? line[next++]);
   }
 
   /** A place the shape pulled onto one further ahead goes back behind it, so far as to keep the gap */

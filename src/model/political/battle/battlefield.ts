@@ -7,6 +7,7 @@ import { Rivers } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { getKmInDistanceUnit, getPeople, heightToMeters } from "@/model/units";
 import type { Point } from "@/types/global";
+import { FlatQueue } from "@/utils/flat-queue";
 import { BattleRules, type BattleType } from "./battle-rules";
 import { BattleScale, COLS, DEFAULT_BATTALION, type FieldSize, ROWS, SURROUND } from "./battle-scale";
 import { BattleSite } from "./battle-site";
@@ -143,6 +144,20 @@ export const DRY_LAKE = LAKE_SUBTYPES.indexOf("dry") + 1;
 const HIDING_BIOMES = [5, 6, 7, 8, 9, WETLAND]; // forests and wetland
 
 const VIEW_MARGIN = 0.2; // of the field's width, lines are kept beyond its edge
+
+// how a road is led over the ground
+const EASY = 0.08; // rise over run a road takes in its stride: one twice as steep costs five times the way
+const SPAN = 8; // ways on level ground a way over a river costs: a road bridges it once, where it is narrow
+const BOG = 2; // and a way over a bog
+const ROUGH = 1; // and at most over ground too fine for the plan to show: on a plain a road still winds a little
+const DRIFT = 4; // battalion fronts off the line the map draws at which the way costs twice
+const EVENED = 8; // times a way found from node to node is evened out
+const APPROACH = 14; // metres of a bridge on either bank: a road is straight that far, and a node more
+const LEAD = 2; // of that, from the middle of the stream, a road is led to the bridge anew
+// the steps a way is found by: to the 8 nodes about a node and the 8 a knight's move off, so it keeps to no grid line
+const WAYS: [number, number][] = [-2, -1, 0, 1, 2]
+  .flatMap(dy => [-2, -1, 0, 1, 2].map((dx): [number, number] => [dx, dy]))
+  .filter(([dx, dy]) => Math.abs(dx * dy) === 2 || Math.max(Math.abs(dx), Math.abs(dy)) === 1);
 const GATE = 0.5; // width of a gate as drawn, in battalion fronts
 const GATEWAY = 1.2; // and as troops take it: a battalion gets through without jamming
 const BREACH = 0.7; // and of a breach
@@ -248,7 +263,7 @@ class BattlefieldModule {
     const held = cells.burg[cell] ? pack.burgs[cells.burg[cell]] : null;
     const heldRadius = held ? this.getBurgRadius(held) : 0;
     const drawnRadius = siege ? BattleScale.fitSiegeBurg(heldRadius, size) : heldRadius;
-    const [sx, sy] = this.findSite(cell, place, pixel, drawnRadius, BattleRules.isFromSea(type));
+    const [sx, sy] = this.findSite(cell, place, pixel, drawnRadius, BattleRules.isFromSea(type), type === "ambush");
     const toField = (mx: number, my: number): Point => [(mx - sx) * pixel + width / 2, (my - sy) * pixel + height / 2];
     const inView = ([fx, fy]: Point, margin = 0): boolean =>
       fx > -margin && fx < width + margin && fy > -margin && fy < height + margin;
@@ -375,13 +390,6 @@ class BattlefieldModule {
     const margin = width * VIEW_MARGIN;
     const box: Box = [-margin, -margin, width + margin, height + margin];
     const touches = (a: Point, b: Point): boolean => this.clipSegment(a, b, box) !== null;
-    for (const route of pack.routes) {
-      if (route.group === "searoutes" || !route.points.some(p => near.has(p[2]))) continue;
-      const course = route.points.map(p => lineToField(p[0], p[1]));
-      const points = this.clipToView(this.smooth(this.sliceAround(course, touches), step / 2, box), box);
-      if (points.length) field.roads.push(points);
-    }
-
     pack.rivers.forEach((river, index) => {
       if (!river.cells.some(c => near.has(c))) return;
       const course = Rivers.addMeandering(river.cells, river.points ?? null);
@@ -426,6 +434,34 @@ class BattlefieldModule {
         outline: this.getOutline({ x: bx, y: by, radius }, polygon, point => !isLand(point))
       });
     }
+
+    // roads go as the ground lets them, between where the map brings them onto the scene and where it takes them off it
+    const inRiver = nodes.map(
+      (node, i) =>
+        field.water[i] !== 1 && field.rivers.some(r => this.distanceToLine(node, r.points) < r.width / 2 + step * 0.3)
+    );
+    const [coarse, fine] = [this.createNoise(field, place, 15, 310), this.createNoise(field, place, 16, 130)]; // two lattices: neither shows
+    const toll = (node: number): number => {
+      if (field.water[node] === 1) return Infinity;
+      const rough = coarse(...nodes[node]) * 0.6 + fine(...nodes[node]) * 0.4;
+      return (inRiver[node] ? SPAN : 0) + (field.marsh[node] ? BOG : 0) + rough * ROUGH;
+    };
+    // a road is a curve through points far apart: it may bow into the view where the straight line between two does not
+    const bowsIn = (a: Point, b: Point): boolean => {
+      const bow = Math.hypot(b[0] - a[0], b[1] - a[1]) / 4;
+      return this.clipSegment(a, b, [box[0] - bow, box[1] - bow, box[2] + bow, box[3] + bow]) !== null;
+    };
+    const lines = pack.routes
+      .filter(route => route.group !== "searoutes" && route.points.some(p => near.has(p[2])))
+      .map(route => route.points.map(p => lineToField(p[0], p[1])))
+      .map(course => this.clipToView(this.smooth(this.sliceAround(course, bowsIn), step / 2, box), box))
+      .filter(line => line.length);
+    // roads meet where the map has them meet: at a burg, and where one ends on another
+    const joints = [
+      ...field.burgs.map((burg): Point => [burg.x, burg.y]),
+      ...lines.flatMap(line => [line[0], line.at(-1)!])
+    ];
+    for (const line of lines) field.roads.push(this.squareCrossings(field, this.leadRoad(field, line, joints, toll)));
 
     // a brook is waded anywhere, a river at a ford now and then, a great river nowhere: it wants a bridge
     const fords: { points: Point[]; width: number }[] = [];
@@ -474,7 +510,7 @@ class BattlefieldModule {
         field.wood[i] = field.marsh[i] = 0;
       }
       if (field.water[i] === 1) return;
-      if (field.rivers.some(r => this.distanceToLine(node, r.points) < r.width / 2 + step * 0.3)) {
+      if (inRiver[i]) {
         field.water[i] = 2;
         field.wood[i] = field.marsh[i] = 0;
         if (fords.some(f => this.distanceToLine(node, f.points) < f.width / 2 + step * 0.3)) field.ford[i] = 1;
@@ -1175,16 +1211,21 @@ class BattlefieldModule {
 
   /**
    * Where in its cell a battle is fought, in map pixels: at the burg or by the river it is named after,
-   * on the crossing of a road over the river if there is one
+   * on the crossing of a road over the river if there is one; an ambush on the road of its cell nearest the place
    */
-  private findSite(cell: number, place: Point, pixel: number, burgRadius: number, fromSea: boolean): Point {
+  private findSite(
+    cell: number,
+    place: Point,
+    pixel: number,
+    burgRadius: number,
+    fromSea: boolean,
+    onRoad = false
+  ): Point {
     const { cells } = pack;
     const burg = cells.burg[cell] ? pack.burgs[cells.burg[cell]] : null;
     if (burg?.port) return this.getHarbour(burg, pixel, burgRadius);
     if (fromSea) return BattleSite.getShore(place) ?? (burg ? [burg.x, burg.y] : place); // the fight is for the water's edge
     if (burg) return [burg.x, burg.y];
-    const river = cells.r[cell] && pack.rivers.find(river => river.i === cells.r[cell]);
-    if (!river) return place;
 
     // the curves as drawn, about the cell only
     const [cx, cy] = cells.p[cell];
@@ -1199,11 +1240,19 @@ class BattlefieldModule {
         0.05,
         [cx - reach, cy - reach, cx + reach, cy + reach]
       );
+    const roads = pack.routes
+      .filter(route => route.group !== "searoutes" && route.points.some(p => p[2] === cell))
+      .map(route => local(route.points));
+    if (onRoad) {
+      const far = (point: Point): number => Math.hypot(point[0] - place[0], point[1] - place[1]);
+      const spots = roads.filter(road => road.length > 1).map(road => BattleSite.nearestOnLine(place, road));
+      if (spots.length) return spots.reduce((a, b) => (far(b) < far(a) ? b : a));
+    }
+    const river = cells.r[cell] && pack.rivers.find(river => river.i === cells.r[cell]);
+    if (!river) return place;
     const course = local(Rivers.addMeandering(river.cells, river.points ?? null));
     let site = BattleSite.nearestOnLine(place, course);
-    for (const route of pack.routes) {
-      if (route.group === "searoutes" || !route.points.some(p => p[2] === cell)) continue;
-      const road = local(route.points);
+    for (const road of roads) {
       for (let i = 1; i < road.length; i++) {
         for (let j = 1; j < course.length; j++) {
           const point = this.cross(road[i - 1], road[i], course[j - 1], course[j]);
@@ -1344,6 +1393,178 @@ class BattlefieldModule {
       if (from > to) return null;
     }
     return [from, to];
+  }
+
+  /**
+   * A road of the map as it goes over the ground of the scene: led anew from where it comes onto the scene to where it
+   * leaves it, by the joints it passes; where no way is found it keeps the line the map draws
+   */
+  private leadRoad(field: Battlefield, drawn: Point[], joints: Point[], toll: (node: number) => number): Point[] {
+    const line = this.densify(drawn, field.cell / 2);
+    const inside = ([x, y]: Point): boolean => x >= 0 && y >= 0 && x <= field.width && y <= field.height;
+    const first = line.findIndex(inside);
+    const last = line.findLastIndex(inside);
+    if (first < 0 || last - first < 2) return drawn;
+    const stops = new Set([first, last]);
+    for (const joint of joints) {
+      const i = this.nearestIndex(line, joint);
+      if (i > first && i < last && Math.hypot(line[i][0] - joint[0], line[i][1] - joint[1]) < field.cell) stops.add(i);
+    }
+    const led: Point[] = line.slice(0, first);
+    const order = [...stops].sort((a, b) => a - b);
+    for (let k = 1; k < order.length; k++) {
+      const leg = line.slice(order[k - 1], order[k] + 1);
+      const way = this.leadWay(field, leg, toll) ?? leg;
+      led.push(...(k > 1 ? way.slice(1) : way));
+    }
+    return [...led, ...line.slice(last + 1)];
+  }
+
+  /**
+   * A road bridges a river square to the stream: where it crosses one on the scene, it is laid straight across from a
+   * bridge's approach on one bank to that on the other, and what led up to the crossing is dropped and evened out to it.
+   * Left as it is where the banks have no room for that, or where it would cross again
+   */
+  private squareCrossings(field: Battlefield, road: Point[]): Point[] {
+    const inside = ([x, y]: Point): boolean => x >= 0 && y >= 0 && x <= field.width && y <= field.height;
+    const far = (a: Point, b: Point): number => Math.hypot(a[0] - b[0], a[1] - b[1]);
+    let line = road;
+    for (const river of field.rivers) {
+      const { points: course, width } = river;
+      /** Where a stretch of the road crosses the river, and the way the river runs there */
+      const crossAt = (a: Point, b: Point): { at: Point; flow: Point } | null => {
+        for (let j = 1; j < course.length; j++) {
+          const at = this.cross(a, b, course[j - 1], course[j]);
+          if (!at) continue;
+          const length = far(course[j - 1], course[j]) || 1;
+          return {
+            at,
+            flow: [(course[j][0] - course[j - 1][0]) / length, (course[j][1] - course[j - 1][1]) / length]
+          };
+        }
+        return null;
+      };
+      const count = (points: Point[]): number =>
+        points.reduce((sum, point, k) => sum + +(k > 0 && crossAt(points[k - 1], point) !== null), 0);
+      const reach = width / 2 + APPROACH + field.cell; // from the middle of the stream to the end of the approach
+
+      for (let i = 1; i < line.length; i++) {
+        const crossing = crossAt(line[i - 1], line[i]);
+        if (!crossing || !inside(crossing.at)) continue;
+        const { at, flow } = crossing;
+        // what leads up to the crossing and away from it goes: from further off the road comes to the bridge anew
+        let [from, to] = [i - 1, i];
+        while (from > 0 && far(line[from], at) < reach * LEAD) from--;
+        while (to < line.length - 1 && far(line[to], at) < reach * LEAD) to++;
+        const along = (line[to][0] - line[from][0]) * -flow[1] + (line[to][1] - line[from][1]) * flow[0];
+        const sign = along < 0 ? -1 : 1;
+        const [nx, ny] = [-flow[1] * sign, flow[0] * sign]; // across the stream, the way the road goes
+        const [near, off]: Point[] = [
+          [at[0] - nx * reach, at[1] - ny * reach],
+          [at[0] + nx * reach, at[1] + ny * reach]
+        ];
+        const dry = (point: Point): boolean =>
+          field.water[this.nodeAt(field, ...point)] !== 1 && this.distanceToLine(point, course) > width / 2;
+        const clear =
+          count(line.slice(from, to + 1)) % 2 === 1 && // not a bend it only dips into
+          dry(near) &&
+          dry(off) &&
+          count([near, off]) === 1 &&
+          count([line[from], near]) + count([off, line[to]]) === 0;
+        if (!clear) continue;
+        line = [...line.slice(0, from + 1), near, at, off, ...line.slice(to)];
+        i = from + 3;
+      }
+    }
+    return line;
+  }
+
+  /**
+   * The way a road takes from the first point of a line to its last: the cheapest over the grid, where a climb costs by
+   * its steepness, a node by its toll (Infinity bars it) and by how far off the line it lies, evened out to a curve.
+   * `shut` bars a step between two nodes. Null where there is no way
+   */
+  leadWay(
+    field: Battlefield,
+    line: Point[],
+    toll: (node: number) => number,
+    shut?: (from: Point, to: Point) => boolean
+  ): Point[] | null {
+    const { cols, rows, cell, front } = field;
+    const [from, to] = [line[0], line.at(-1)!];
+    const [start, goal] = [this.nodeAt(field, ...from), this.nodeAt(field, ...to)];
+    if (start === goal) return [from, to];
+    const every = Math.max(Math.round(line.length / 12), 1);
+    const guide = [...line.filter((_, i) => i % every === 0), to];
+    const height = (node: number): number => field.elevation[node] * field.relief;
+
+    const cost = new Float64Array(cols * rows).fill(Infinity);
+    const prev = new Int32Array(cols * rows).fill(-1);
+    const dues = new Float64Array(cols * rows).fill(-1); // what a way over a node costs, a way on level open ground being 1
+    const due = (node: number): number => {
+      if (dues[node] < 0) {
+        const off = this.distanceToLine(this.nodeCentre(field, node), guide) / (DRIFT * front);
+        dues[node] = 1 + toll(node) + off * off;
+      }
+      return dues[node];
+    };
+    const queue = new FlatQueue<number>();
+    cost[start] = 0;
+    queue.push(start, 0);
+    while (queue.length) {
+      const reached = queue.peekValue();
+      const node = queue.pop();
+      if (node === goal) break;
+      if (reached > cost[node]) continue;
+      const [col, row] = [node % cols, Math.floor(node / cols)];
+      for (const [dx, dy] of WAYS) {
+        const [x, y] = [col + dx, row + dy];
+        if (x < 0 || y < 0 || x >= cols || y >= rows) continue;
+        const next = y * cols + x;
+        let rate = due(next);
+        if (dx * dx + dy * dy > 2) {
+          // a long step goes between two nodes: over the dearer of them
+          const [sx, sy] = [Math.abs(dx) > 1 ? dx / 2 : 0, Math.abs(dy) > 1 ? dy / 2 : 0];
+          const [near, far] = [(row + sy) * cols + col + sx, (row + dy - sy) * cols + col + dx - sx];
+          rate = (rate + Math.max(due(near), due(far))) / 2;
+        }
+        if (rate === Infinity) continue;
+        if (shut?.(this.nodeCentre(field, node), this.nodeCentre(field, next))) continue;
+        const length = Math.hypot(dx, dy) * cell;
+        const grade = (height(next) - height(node)) / length / EASY;
+        const total = reached + length * (rate + grade * grade);
+        if (total >= cost[next]) continue;
+        cost[next] = total;
+        prev[next] = node;
+        queue.push(next, total);
+      }
+    }
+    if (prev[goal] < 0) return null;
+
+    let way: Point[] = [to];
+    for (let node = prev[goal]; node !== start; node = prev[node]) way.push(this.nodeCentre(field, node));
+    way.push(from);
+    way.reverse();
+    // evened out, but never into what bars it
+    for (let pass = 0; pass < EVENED; pass++)
+      way = way.map(([x, y], i): Point => {
+        if (!i || i === way.length - 1) return [x, y];
+        const [[ax, ay], [bx, by]] = [way[i - 1], way[i + 1]];
+        const even: Point = [(ax + x * 2 + bx) / 4, (ay + y * 2 + by) / 4];
+        return due(this.nodeAt(field, ...even)) === Infinity || shut?.([x, y], even) ? [x, y] : even;
+      });
+    return way;
+  }
+
+  /** The line with a point every `step` or so along it */
+  densify(line: Point[], step: number): Point[] {
+    const points: Point[] = [line[0]];
+    for (let i = 1; i < line.length; i++) {
+      const [[ax, ay], [bx, by]] = [line[i - 1], line[i]];
+      const parts = Math.max(Math.ceil(Math.hypot(bx - ax, by - ay) / step), 1);
+      for (let k = 1; k <= parts; k++) points.push([ax + ((bx - ax) * k) / parts, ay + ((by - ay) * k) / parts]);
+    }
+    return points;
   }
 
   /** A line wound about its course, sideways by up to the amplitude, a bend about every wavelength */

@@ -27,6 +27,11 @@ class BattleSiteModule {
     return best;
   }
 
+  /** A road or a trail leads through the cell: a column on the march can be caught there */
+  hasRoad(cell: number): boolean {
+    return pack.routes.some(route => route.group !== "searoutes" && route.points.some(point => point[2] === cell));
+  }
+
   /** The sea, or a lake that is not dry */
   private isWater(feature: (typeof pack.features)[number]): boolean {
     return Boolean(feature) && !feature.land && !(feature.type === "lake" && feature.subtype === "dry");
