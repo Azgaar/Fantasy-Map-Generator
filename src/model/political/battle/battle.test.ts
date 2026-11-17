@@ -77,6 +77,7 @@ function battle(
 }
 
 const even = { infantry: 600, archers: 200, cavalry: 100 };
+const bold = { infantry: 900, archers: 300, cavalry: 150 }; // strong enough to go over a river or round a cliff at all
 // lengths are metres: battalions of 300 men stand on a field 1364 × 818 m, of 200 men (as `even`) on one 909 × 545 m
 const sum = (values: number[]): number => values.reduce((a, b) => a + b, 0);
 const run = (b: Battle): Battle => {
@@ -758,6 +759,70 @@ describe("battle generals", () => {
       slowest = Math.max(slowest, performance.now() - from);
     }
     expect(slowest).toBeLessThan(100);
+  });
+
+  const fight = (
+    attackers: Record<string, number>,
+    defenders: Record<string, number>,
+    draw?: (field: Battlefield) => void,
+    type: BattleType = "field"
+  ): Battle => {
+    const field = Battlefields.createEmpty();
+    draw?.(field);
+    return Battles.create({
+      type,
+      name: "Test",
+      place: null,
+      x: 0,
+      y: 0,
+      cell: 0,
+      axis: 0,
+      field,
+      units: getDefaultMilitaryUnits(),
+      populationScale: 1000,
+      attackers: [regiment(1, attackers)],
+      defenders: [regiment(2, defenders)]
+    });
+  };
+  const mixed = { infantry: 2400, archers: 900, cavalry: 600 };
+  const scaled = (army: Record<string, number>, k: number) =>
+    Object.fromEntries(Object.entries(army).map(([unit, troops]) => [unit, troops * k]));
+  const ford = (field: Battlefield): void => {
+    for (let row = 0; row < ROWS; row++)
+      for (let col = 49; col < 52; col++) {
+        field.water[row * COLS + col] = 2;
+        if (row >= 26 && row < 32) field.ford[row * COLS + col] = 1;
+      }
+  };
+
+  it("has an attacker short of the odds a river asks for think it through whether to attack at all, but not in the open", () => {
+    const waits = (b: Battle): boolean => Generals.getOptions(b, "attackers").some(option => option.waits);
+    expect(waits(fight(scaled(mixed, 1.2), mixed, ford))).toBe(true);
+    expect(waits(fight(scaled(mixed, 1.2), mixed))).toBe(false);
+    expect(waits(fight(scaled(mixed, 1.5), mixed, ford))).toBe(false);
+  });
+
+  it("calls off an attack that costs three times the blood it draws", () => {
+    const b = run(fight({ infantry: 950, cavalry: 1600 }, { infantry: 3000, archers: 600 })); // riders on a wagon ring
+    expect(b.defenders.plan.tactic).toBe("wagenburg");
+    expect(b.result!.winner).toBe("defenders");
+    expect(b.attackers.casualties).toBeLessThan(0.25);
+    expect(b.attackers.casualties).toBeGreaterThan(b.defenders.casualties * 3);
+  });
+
+  it("has ambushers much the weaker who shoot from cover slip away once the surprise is spent", () => {
+    const b = fight(mixed, { infantry: 1500, archers: 600 }, undefined, "ambush"); // a bowshot off the road in the open
+    Battles.plan(b);
+    b.defenders.waits = true; // they shoot first
+    Generals.deploy(b);
+    let grips = false;
+    while (!b.result && b.defenders.phase !== "retreat") {
+      Battles.tick(b);
+      grips ||= b.blocks.some(block => block.side === "defenders" && block.action === "fight");
+    }
+    expect(b.defenders.phase).toBe("retreat");
+    expect(b.round).toBeLessThan(6);
+    expect(grips).toBe(false);
   });
 });
 
@@ -1661,7 +1726,7 @@ describe("battle ground", () => {
   });
 
   it("has the defenders hold the bank of a river and the attackers cross it", () => {
-    const b = battle([regiment(1, even)], [regiment(2, even)]);
+    const b = battle([regiment(1, bold)], [regiment(2, even)]);
     for (let row = 0; row < ROWS; row++) {
       for (let col = 44; col < 48; col++) {
         b.field.water[row * COLS + col] = 2;
@@ -2213,12 +2278,16 @@ describe("battle ways", () => {
 
   it("takes a bridge rather than wade a river", () => {
     const river = (bridge: boolean): Battle =>
-      onField(field => {
-        band(field, "water", 2, [42, 50], [0, ROWS]); // so wide that the bridge is worth the march for all
-        if (!bridge) return;
-        band(field, "water", 0, [42, 50], [27, 33]);
-        band(field, "road", 1, [42, 50], [27, 33]);
-      });
+      onField(
+        field => {
+          band(field, "water", 2, [42, 50], [0, ROWS]); // so wide that the bridge is worth the march for all
+          if (!bridge) return;
+          band(field, "water", 0, [42, 50], [27, 33]);
+          band(field, "road", 1, [42, 50], [27, 33]);
+        },
+        "field",
+        [regiment(1, bold)]
+      );
     const waded = wetTicks(river(false));
     const bridged = wetTicks(river(true));
     expect(waded).toBeGreaterThan(100);
@@ -2226,12 +2295,16 @@ describe("battle ways", () => {
   });
 
   it("has the defenders hold their end of a bridge", () => {
-    const b = onField(field => {
-      band(field, "water", 2, [42, 50], [0, ROWS]);
-      band(field, "water", 0, [42, 50], [27, 33]);
-      band(field, "road", 1, [42, 50], [27, 33]);
-      band(field, "deck", 1, [42, 50], [27, 33]);
-    });
+    const b = onField(
+      field => {
+        band(field, "water", 2, [42, 50], [0, ROWS]);
+        band(field, "water", 0, [42, 50], [27, 33]);
+        band(field, "road", 1, [42, 50], [27, 33]);
+        band(field, "deck", 1, [42, 50], [27, 33]);
+      },
+      "field",
+      [regiment(1, bold)]
+    );
     const crossed = { attackers: 0, defenders: 0 };
     while (!settled(b)) {
       Battles.tick(b);
@@ -2245,10 +2318,14 @@ describe("battle ways", () => {
   });
 
   it("wades a river at its ford and nowhere else", () => {
-    const b = onField(field => {
-      band(field, "water", 2, [44, 48], [0, ROWS]);
-      band(field, "ford", 1, [44, 48], [8, 13]); // far to the north
-    });
+    const b = onField(
+      field => {
+        band(field, "water", 2, [44, 48], [0, ROWS]);
+        band(field, "ford", 1, [44, 48], [8, 13]); // far to the north
+      },
+      "field",
+      [regiment(1, bold)]
+    );
     let forded = 0;
     while (!settled(b)) {
       Battles.tick(b);
@@ -2275,7 +2352,7 @@ describe("battle ways", () => {
   });
 
   it("fords a river that keeps the sides apart", () => {
-    const b = onField(field => band(field, "water", 2, [44, 48], [0, ROWS]));
+    const b = onField(field => band(field, "water", 2, [44, 48], [0, ROWS]), "field", [regiment(1, bold)]);
     const fords = b.field.ford.filter(Boolean).length;
     expect(fords).toBeGreaterThan(0);
     expect(fords).toBeLessThan(4 * 12); // a ford, not the whole river
@@ -2299,7 +2376,7 @@ describe("battle ways", () => {
   };
 
   it("leads troops round a cliff to the foe, and nobody over it", () => {
-    const b = onField(field => cliff(field, [45, 0], [45, 45])); // open in the south
+    const b = onField(field => cliff(field, [45, 0], [45, 45]), "field", [regiment(1, bold)]); // open in the south
     let crossed = 0;
     while (!settled(b)) {
       const before = new Map(b.blocks.map(block => [block.id, [block.x, block.y] as [number, number]]));
@@ -2382,9 +2459,9 @@ describe("battle ways", () => {
       });
     };
     for (const [seed, axis, share] of [
-      [3, 0, 1.3],
+      [3, 0, 1.5],
       [5, 0, 0.7],
-      [5, 4.5, 1.3]
+      [5, 4.5, 1.5]
     ]) {
       const b = run(escarped(seed, axis, share));
       expect(b.result!.winner, `${seed} ${axis} ${share}`).not.toBeNull();

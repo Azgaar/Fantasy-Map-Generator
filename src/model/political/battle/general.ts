@@ -12,11 +12,13 @@ import {
   COUNTER,
   KEEN,
   KILL_RATE,
+  REPULSED,
   RING_BATTALIONS,
   RING_ODDS,
   SHAKEN,
   STARVED,
-  STORM_ODDS
+  STORM_ODDS,
+  WARY
 } from "./battle-balance";
 import { BattleRules, COMMANDS, type Command, POSTURES, SIDES, type Side, SURRENDER } from "./battle-rules";
 import { COLS, ROWS } from "./battle-scale";
@@ -550,10 +552,15 @@ class GeneralModule {
     // with engines before wagons: to batter them first, or to storm them at once
     const engines = blocks.some(block => block.kind === "machinery");
     if (engines && (barring || ring)) options.push(this.option(names[0], false, true));
-    // an attacker who is the weaker may think better of it; one who is not came to fight
+    // an attacker who is the weaker, or short of the odds strong ground asks for, may think better of it
     const free = !battle[side].plan.order; // not ordered what to do by hand
+    const [own, foe] = [this.survey(battle, side), this.survey(battle, BattleRules.enemyOf(side))];
+    const strong = rough || this.getPurchase(battle, own, foe) < this.getPurchase(battle, foe, own); // the foe's ground
     const cautious =
-      side === "attackers" && free && this.isAttacking(battle, side, false) && this.getOdds(battle, side) < 1;
+      side === "attackers" &&
+      free &&
+      this.isAttacking(battle, side, false) &&
+      own.power < foe.power * (strong ? WARY : 1);
     if (cautious) options.push(this.option(null, true));
     return options.length < 2 ? [] : options;
   }
@@ -1394,6 +1401,11 @@ class GeneralModule {
 
     const fought = battle.engaged === null ? -1 : battle.round - battle.engaged;
     if (battle.type === "ambush" && fought < plan.opening && !this.isLost(battle, own, foe)) return names.apart; // surprise and shock
+    // the surprise spent, ambushers much the weaker who shot from cover slip away unless the column wavers
+    const loose = !own.ready.some(block => block.action === "fight");
+    const slips =
+      side === "defenders" && loose && fought >= plan.opening && own.power * KEEN < foe.power && foe.morale >= WAVERING;
+    if (battle.type === "ambush" && slips) return names.run;
     if (battle.type === "landing") {
       const landing = battle.attackers.phase === "landing";
       if (side === "attackers" && landing && this.isAfloat(battle) && !this.isLost(battle, own, foe)) return phase; // the fight for the shore
@@ -1467,6 +1479,9 @@ class GeneralModule {
       foe.share <= 0.25
     )
       return names.chase;
+    // the attack is called off: it costs far more blood than it draws
+    const [fallen, felled] = [data.casualties, battle[BattleRules.enemyOf(side)].casualties];
+    if (data.advancing && fallen >= REPULSED && fallen >= felled * 3) return names.run;
     if (phase === names.close || phase === names.chase) return names.close;
     if (!this.isOpenFight(battle)) return names.close;
 
@@ -1780,7 +1795,7 @@ class GeneralModule {
       // shot at with little to answer with, and better at grips: it will not stand there and take it
       const outshot = plan.bled >= 2 && own.fire < foe.fire / 2 && own.grip / (own.grip + foe.grip) > 1 / 3;
       // the foe digs a ditch or rings its wagons: a side no weaker comes on before they stand
-      const provoked = !sheltered && odds >= 1 && Works.isDigging(battle, BattleRules.enemyOf(side));
+      const provoked = !sheltered && odds >= 1 && !data.waits && Works.isDigging(battle, BattleRules.enemyOf(side));
       if (spent || waited || outshot || provoked) data.advancing = true;
     }
     plan.fortify = this.fortifies(battle, side);
