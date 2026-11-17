@@ -3962,3 +3962,156 @@ describe("battle review fixes", () => {
     }
   });
 });
+
+describe("battle second review fixes", () => {
+  const ARTILLERY = unit("artillery", "machinery", 6);
+  const walled = (radius = 95): Battlefield => {
+    const field = Battlefields.createEmpty();
+    field.roads.push([
+      [0, 409],
+      [1364, 409]
+    ]);
+    field.burgs.push({ x: 682.2, y: 409, radius, name: "Burg", group: "city", walled: true, outline: [] });
+    Battlefields.raiseWalls(field);
+    return field;
+  };
+  const siege = (attackers: Record<string, number>, defenders: Record<string, number>, field = walled()): Battle =>
+    Battles.create({
+      type: "siege",
+      name: "Test",
+      place: "Burg",
+      x: 0,
+      y: 0,
+      cell: 0,
+      axis: 0,
+      field,
+      units: [...UNITS, ARTILLERY],
+      populationScale: 1000,
+      attackers: [regiment(1, attackers)],
+      defenders: [regiment(2, defenders)]
+    });
+  const near = (b: Battle, block: Block): number => {
+    const burg = b.field.burgs[b.field.held!];
+    return Math.hypot(block.x - burg.x, block.y - burg.y);
+  };
+
+  it("raises a blockade bled by engines it cannot answer, though a whole man falls only now and then", () => {
+    const b = run(siege({ infantry: 1500 }, { archers: 300, artillery: 12 }));
+    expect(b.tick).toBeLessThan(b.settings.maxRounds * ROUND_TICKS);
+    expect(b.raised).toBe(true);
+    expect(b.attackers.phase).toBe("retreat");
+  });
+
+  it("has a ring that called its storm off stand round the walls again, not at their foot", () => {
+    const b = siege({ infantry: 6400, archers: 800 }, { infantry: 900 });
+    Battles.plan(b);
+    const ring = new Map(b.blocks.map(block => [block.id, near(b, block)]));
+    expect(b.attackers.plan.tactic).toBe("ring");
+    while (b.attackers.phase !== "storming" && b.tick < 60) Battles.tick(b);
+    expect(b.attackers.phase).toBe("storming");
+    Battles.intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "hold" });
+    for (let i = 0; i < ROUND_TICKS * 2; i++) Battles.tick(b);
+    expect(b.attackers.phase).toBe("blockade");
+    for (const block of b.blocks.filter(block => block.side === "attackers" && block.kind !== "machinery"))
+      expect(Math.hypot(block.order.x - b.field.burgs[0].x, block.order.y - b.field.burgs[0].y)).toBeCloseTo(
+        ring.get(block.id)!,
+        0
+      );
+  });
+
+  it("has a garrison of shooters and engines stay on the walls, with nobody to send out", () => {
+    const b = run(siege({ infantry: 900, archers: 300, artillery: 40 }, { archers: 1500 }));
+    expect(b.log.some(entry => entry.event === "order" && entry.params?.order === "attack")).toBe(false);
+    expect(b.raised).toBe(false);
+  });
+
+  it("posts latecomers to a garrison within its walls apart, riders in the reserve", () => {
+    const b = siege({ infantry: 3000, archers: 600, artillery: 40 }, { infantry: 900, archers: 300 });
+    for (let i = 0; i < ROUND_TICKS * 2; i++) Battles.tick(b);
+    Battles.intervene(b, {
+      tick: b.tick,
+      kind: "add",
+      side: "defenders",
+      regiment: regiment(3, { infantry: 900, cavalry: 300 })
+    });
+    const late = b.blocks.filter(block => block.state === 3);
+    const spots = new Set(late.map(block => `${Math.round(block.x)},${Math.round(block.y)}`));
+    expect(spots.size).toBe(late.length);
+    for (const block of late) expect(Battlefields.terrainAt(b.field, block.x, block.y).walled).toBe(1);
+    expect(late.filter(block => block.kind === "mounted").every(block => block.order.role === "reserve")).toBe(true);
+  });
+
+  it("stands the garrison of a burg smaller than a node of the grid by its burg, and batters no wall that is all gateway", () => {
+    const b = siege({ infantry: 30000, artillery: 300 }, { infantry: 2000 }, walled(12));
+    for (const block of b.blocks.filter(block => block.side === "defenders"))
+      expect(near(b, block)).toBeLessThan(b.field.front * 3);
+    if (!Battlefields.getSolidWalls(b.field, b.field.held).length) {
+      for (let i = 0; i < ROUND_TICKS * 30 && !b.result; i++) Battles.tick(b);
+      expect(b.battered).toBe(0);
+    }
+  });
+
+  it("moves a battalion drawn up in the water or a besieger within the walls to the nearest ground, however far", () => {
+    const b = siege({ infantry: 2000, archers: 300 }, { infantry: 900 });
+    for (let row = 0; row < ROWS; row++) for (let col = 0; col < 38; col++) b.field.water[row * COLS + col] = 1;
+    Movement.forgetWays(b.field);
+    const [wet, within] = b.blocks.filter(block => block.side === "attackers");
+    [wet.x, wet.y] = [5 * b.field.cell, 30 * b.field.cell]; // dry ground 33 nodes off
+    [within.x, within.y] = [b.field.burgs[0].x, b.field.burgs[0].y];
+    Generals.settle(b);
+    for (const block of [wet, within]) {
+      const terrain = Battlefields.terrainAt(b.field, block.x, block.y);
+      expect(terrain.water).toBe(0);
+      expect(terrain.walled).toBe(0);
+    }
+  });
+
+  it("marks every node a wall runs through as its foot, however large the nodes", () => {
+    const field = walled(300);
+    Object.assign(field, BattleScale.getFieldSize(2000));
+    Battlefields.raiseWalls(field);
+    for (const wall of field.walls)
+      for (let t = 0; t <= 1; t += 0.1) {
+        const [x, y] = [wall.a[0] + (wall.b[0] - wall.a[0]) * t, wall.a[1] + (wall.b[1] - wall.a[1]) * t];
+        expect(field.rampart[Battlefields.nodeAt(field, x, y)]).toBeGreaterThan(0);
+      }
+  });
+
+  it("reads the cliff's height by where the cliff runs between the nodes, not by the node a point is in", () => {
+    const field = Battlefields.createEmpty();
+    field.relief = 30;
+    field.top = new Array(COLS * ROWS).fill(0);
+    field.scarp = new Array(COLS * ROWS).fill(30);
+    const [c, r] = [40, 30];
+    const high = (r + 1) * COLS + c + 1; // the one high corner of the square: the cliff cuts it off
+    field.top[high] = 1;
+    field.elevation[high] = 1;
+    const at = (dx: number, dy: number): number =>
+      Battlefields.getElevation(field, (c + 0.5 + dx) * field.cell, (r + 0.5 + dy) * field.cell, false);
+    expect(at(0.6, 0.6)).toBeLessThan(15); // in the high node, but on the foot's side of the cliff
+    expect(at(0.85, 0.85)).toBeGreaterThan(15);
+  });
+
+  it("has defenders in a flying wedge pick its wing by the attackers in sight, not by where they stood before", () => {
+    for (const axis of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+      const b = Battles.create({
+        type: "field",
+        name: "Test",
+        place: null,
+        x: 0,
+        y: 0,
+        cell: 0,
+        axis,
+        field: Battlefields.createEmpty(),
+        units: getDefaultMilitaryUnits(),
+        populationScale: 1000,
+        attackers: [regiment(1, { infantry: 1800, cavalry: 900 })],
+        defenders: [regiment(2, { infantry: 2400, archers: 600, cavalry: 300 })]
+      });
+      Battles.intervene(b, { tick: 0, kind: "tactic", side: "defenders", tactic: "flyingWedge" });
+      const strike = b.defenders.plan.strike;
+      Generals.deploy(b); // drawn up again with the attackers where they stand now
+      expect(b.defenders.plan.strike, `axis ${axis}`).toBe(strike);
+    }
+  });
+});

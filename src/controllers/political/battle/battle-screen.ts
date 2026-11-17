@@ -8,6 +8,7 @@ import {
 } from "@/data/battle-options";
 import {
   BATTLE_ORDER_LABELS,
+  BATTLE_OUTCOME_LABELS,
   BATTLE_TACTIC_LABELS,
   BATTLE_TYPE_LABELS,
   CONDITION_LABELS,
@@ -16,6 +17,7 @@ import {
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
+import { battleSettings } from "@/model/options/options-schema";
 import { Battalions } from "@/model/political/battle/battalion";
 import {
   type Battle,
@@ -24,6 +26,7 @@ import {
   type Block,
   type Intervention,
   type LogEntry,
+  type LogEvent,
   ROUND_TICKS,
   type TaskKind
 } from "@/model/political/battle/battle";
@@ -359,6 +362,7 @@ class BattleScreenController {
   // in the battle they take orders by a right click, or from the menu a click on a picked one opens
 
   private selected: string[] = []; // keys of the battalions picked
+  private box: [Point, Point] | null = null; // dragged out to pick battalions, kept while the battle plays on
   private tasked: { keys: string[]; at: Point } | null = null; // the battalions the task menu is for, and where it opened
   private pointer: { x: number; y: number } | null = null; // over the battle screen
   private shownTip: string | null = null;
@@ -657,6 +661,8 @@ class BattleScreenController {
       input.style.setProperty("--fill", String(+input.value / (BATTLE_SPEEDS.length - 1)));
       this.setSpeed(BATTLE_SPEEDS[+input.value]);
     });
+    // dragged by the mouse, the slider lets the focus go: Space starts and stops the battle again
+    ensureEl("battleSpeed").addEventListener("pointerup", event => (event.target as HTMLElement).blur());
     ensureEl("battleType").addEventListener("click", event => this.togglePicker(event));
     ensureEl("battleType").nextElementSibling!.addEventListener("click", event => this.changeType(event));
     ensureEl("battleWeather").addEventListener("click", event => this.togglePicker(event));
@@ -915,7 +921,7 @@ class BattleScreenController {
       blocks.map(block => block.id)
     );
     const pivot = this.isEditable() && blocks.length ? this.getPivot(blocks) : null;
-    BattleSceneView.drawSelection(this.scene(), b, { box: null, handle: pivot && this.getHandle(pivot, 0) });
+    BattleSceneView.drawSelection(this.scene(), b, { box: this.box, handle: pivot && this.getHandle(pivot, 0) });
   }
 
   /** The middle of the picked battalions, the way they mostly face, and how far before the middle their front is */
@@ -962,8 +968,9 @@ class BattleScreenController {
   private dragTo(press: Press, to: Point, done: boolean): void {
     const b = this.battle!;
     if (press.gesture === "box") {
+      this.box = done ? null : [press.field, to];
       if (!done) {
-        BattleSceneView.drawSelection(this.scene(), b, { box: [press.field, to], handle: null });
+        BattleSceneView.drawSelection(this.scene(), b, { box: this.box, handle: null });
         return;
       }
       const [x0, x1] = [Math.min(press.field[0], to[0]), Math.max(press.field[0], to[0])];
@@ -988,6 +995,10 @@ class BattleScreenController {
       BattleSceneView.drawSelection(this.scene(), b, { box: null, handle: this.getHandle(this.getPivot(placed), 0) });
       return;
     }
+    if (b.tick) {
+      this.cancelPress(press); // the battle began under the drag: troops are placed only before the start
+      return;
+    }
     for (const block of this.getSelected()) {
       const place = places.get(block.id)!;
       if (place.x !== block.x || place.y !== block.y)
@@ -1001,6 +1012,7 @@ class BattleScreenController {
 
   /** A drag let go of as if it had not been */
   private cancelPress(press: Press): void {
+    this.box = null;
     if (!press.gesture || press.gesture === "pan" || !this.battle) return;
     BattleSceneView.updateBlocks(this.scene(), this.battle, null, 1);
     this.showSelection();
@@ -1555,7 +1567,7 @@ class BattleScreenController {
             </summary>
             <div class="battleUnits">${units}</div>
             <div class="battleRegimentInfo">${escapeHtml(state.fullName ?? "")} <span class="${upkeep < 100 ? "negative" : ""}" data-tip="${t("Troops fight with this share of their power")}">(${t("upkeep {{upkeep}}%", { upkeep })})</span><br>
-              <span data-tip="${t("Supply line length, affects morale")}">${t("Distance to base")}: ${regiment.distance} ${options.map.units.distance.unit}</span></div>
+              <span data-tip="${t("Supply line length, affects morale")}">${t("Distance to base")}: ${regiment.distance} ${escapeHtml(options.map.units.distance.unit)}</span></div>
           </details>`;
       })
       .join("");
@@ -1629,7 +1641,7 @@ class BattleScreenController {
           <span class="battleEmblems">${this.emblems(states)}</span>
           <span>
             <b>${escapeHtml(list(states.map(state => pack.states[state].name)))}</b>
-            <i>${escapeHtml(capitalize(status.replace(/^(attackers|defenders) | of (attackers|defenders)$/, "")))}</i>
+            <i>${escapeHtml(this.getOutcomeLabel(status))}</i>
           </span>
         </header>
         <div class="battleSummaryStats">
@@ -1652,7 +1664,7 @@ class BattleScreenController {
     if (b.result) return;
     const die = ((b[side].die ?? 0) % 6) + 1;
     const previous = b.interventions.at(-1);
-    if (previous?.kind === "die" && previous.side === side && previous.tick === b.tick) {
+    if (previous?.kind === "die" && previous.side === side && previous.tick === b.tick && this.isLastLogged(b, "die")) {
       b.interventions.pop(); // clicks through the faces leave one line in the log
       b.log.pop();
     }
@@ -1715,9 +1727,10 @@ class BattleScreenController {
     const b = this.battle!;
     if (b.result) return;
     const previous = b.interventions.at(-1);
+    const logged = this.isLastLogged(b, "morale");
     Battles.intervene(b, { tick: b.tick, kind: "morale", side, value });
     // in the battle each click is applied at once and stands as it was made
-    if (!b.tick && previous?.kind === "morale" && previous.side === side) {
+    if (!b.tick && previous?.kind === "morale" && previous.side === side && logged) {
       b.interventions.pop();
       b.log.pop();
       previous.value += value;
@@ -1761,7 +1774,7 @@ class BattleScreenController {
   private changeWeather(event: Event): void {
     const target = event.target as HTMLElement;
     const b = this.battle!;
-    if (target.tagName !== "BUTTON") return;
+    if (target.tagName !== "BUTTON" || b.result) return;
     const condition = target.dataset.condition as Condition | undefined;
     const change: Intervention = condition
       ? { tick: b.tick, kind: "condition", condition, on: !b[condition] }
@@ -1771,7 +1784,8 @@ class BattleScreenController {
     const repeated =
       last?.tick === b.tick &&
       last.kind === change.kind &&
-      (last.kind !== "condition" || (change.kind === "condition" && last.condition === change.condition));
+      (last.kind !== "condition" || (change.kind === "condition" && last.condition === change.condition)) &&
+      this.isLastLogged(b, change.kind);
     if (repeated) {
       b.interventions.pop();
       b.log.pop();
@@ -1855,15 +1869,17 @@ class BattleScreenController {
         const dist = added ? 0 : distance(r);
         const why = added
           ? t("Regiment is already in the battle")
-          : r.n && shipless
-            ? t("Ships have no water to keep to on this field")
-            : "";
+          : !Military.getTroops(r.a)
+            ? t("Regiment has no troops to battle")
+            : r.n && shipless
+              ? t("Ships have no water to keep to on this field")
+              : "";
         return /* html */ `<div ${why ? `class="inactive" data-why="${escapeHtml(why)}"` : ""} data-s=${s.i} data-i=${r.i} data-state="${escapeHtml(s.name)}"
           data-regiment="${escapeHtml(r.name)}" data-total=${Military.getTroops(r.a)} data-distance="${dist}" data-tip="${why || t("Click to select regiment")}">
           <span><svg viewBox="0 0 10 10"><rect width="10" height="10" fill="${s.color}" stroke="#333"/></svg>${escapeHtml(s.name)}</span>
           <span>${Icons.html(r.icon ?? "")} ${escapeHtml(r.name)}</span>
           <span>${Military.getTroops(r.a)}</span>
-          <span>${dist} ${options.map.units.distance.unit}</span>
+          <span>${dist} ${escapeHtml(options.map.units.distance.unit)}</span>
         </div>`;
       })
       .join("");
@@ -1958,19 +1974,20 @@ class BattleScreenController {
   // the log
 
   /** A line of the log; whose it is the mark beside it shows */
+  /** A log line as plain text: who renders it as markup escapes it */
   private readonly logText = ({ event, side, params }: LogEntry): string => {
     if (event === "order") return `${t("Orders")}: ${BATTLE_ORDER_LABELS[params!.order as Command]}`;
     if (event === "ordered")
-      return t("Ordered to {{order}}", { order: BATTLE_ORDER_LABELS[params!.order as Command].toLowerCase() });
+      return t("Ordered to {{- order}}", { order: BATTLE_ORDER_LABELS[params!.order as Command].toLowerCase() });
     if (event === "tactic")
       return `${t("Tactic")}: ${params!.tactic ? BATTLE_TACTIC_LABELS[params!.tactic] : t("General's choice")}`;
     if (event === "die") return `${t("Fortune")}: ${params!.die}`;
     if (event === "morale") return `${t("Morale")}: ${params!.value}`;
-    if (event === "join") return t("{{regiment}} joins the battle", params);
-    if (event === "withdraw") return t("{{regiment}} is withdrawn", params);
-    if (event === "breach") return t("The walls of {{burg}} are breached", params);
-    if (event === "cut") return t("{{burg}} is cut off", params);
-    if (event === "supplied") return t("Supplies reach {{burg}}", params);
+    if (event === "join") return t("{{- regiment}} joins the battle", params);
+    if (event === "withdraw") return t("{{- regiment}} is withdrawn", params);
+    if (event === "breach") return t("The walls of {{- burg}} are breached", params);
+    if (event === "cut") return t("{{- burg}} is cut off", params);
+    if (event === "supplied") return t("Supplies reach {{- burg}}", params);
     if (event === "dig") return params!.on === "true" ? t("Dug in") : t("Not dug in");
     if (event === "weather") return `${t("Weather")}: ${WEATHER_LABELS[params!.weather as Weather]}`;
     if (event === "condition") return CONDITION_LOG[params!.condition as Condition][+(params!.on === "true")];
@@ -1983,26 +2000,40 @@ class BattleScreenController {
 
     if (event === "task") {
       const who =
-        params!.count === "1" ? capitalize(params!.block) : t("{{number}} battalions", { number: params!.count });
-      if (params!.task === "attack") return t("{{who}} ordered to attack {{target}}", { who, target: params!.target });
-      if (params!.task === "pursue") return t("{{who}} ordered to pursue {{target}}", { who, target: params!.target });
+        params!.count === "1" ? capitalize(params!.block) : t("{{- number}} battalions", { number: params!.count });
+      if (params!.task === "attack")
+        return t("{{- who}} ordered to attack {{- target}}", { who, target: params!.target });
+      if (params!.task === "pursue")
+        return t("{{- who}} ordered to pursue {{- target}}", { who, target: params!.target });
       if (params!.task === "protect")
-        return t("{{who}} ordered to protect {{target}}", { who, target: params!.target });
-      if (params!.task === "move") return t("{{who}} ordered to move", { who });
+        return t("{{- who}} ordered to protect {{- target}}", { who, target: params!.target });
+      if (params!.task === "move") return t("{{- who}} ordered to move", { who });
       const order = BATTLE_ORDER_LABELS[params!.task as Command].toLowerCase();
-      return t("{{who}} ordered to {{order}}", { who, order });
+      return t("{{- who}} ordered to {{- order}}", { who, order });
     }
 
     const block = { block: capitalize(params!.block) };
-    if (event === "move") return t("{{block}} are moved", block);
-    if (event === "turn") return t("{{block}} are turned", block);
-    if (event === "rout") return t("{{block}} break and run", block);
-    if (event === "rally") return t("{{block}} rally", block);
-    if (event === "surrender") return t("{{block}} surrender", block);
-    if (event === "freed") return t("{{block}} take up arms again", block);
-    if (event === "destroyed") return t("{{block}} are destroyed", block);
-    return t("{{block}} leave the field", block);
+    if (event === "move") return t("{{- block}} are moved", block);
+    if (event === "turn") return t("{{- block}} are turned", block);
+    if (event === "rout") return t("{{- block}} break and run", block);
+    if (event === "rally") return t("{{- block}} rally", block);
+    if (event === "surrender") return t("{{- block}} surrender", block);
+    if (event === "freed") return t("{{- block}} take up arms again", block);
+    if (event === "destroyed") return t("{{- block}} are destroyed", block);
+    return t("{{- block}} leave the field", block);
   };
+
+  /** The log's last line is the last change's: a withdrawal before the start takes its change back and leaves its line */
+  private isLastLogged(b: Battle, event: LogEvent): boolean {
+    const entry = b.log.at(-1);
+    return entry?.event === event && entry.tick === b.tick;
+  }
+
+  /** An outcome as a side sees it, in the interface's language */
+  private getOutcomeLabel(status: string): string {
+    const outcome = status.replace(/^(attackers|defenders) | of (attackers|defenders)$/, "");
+    return BATTLE_OUTCOME_LABELS[outcome] ?? capitalize(outcome);
+  }
 
   private sideLabel(side: Side): string {
     return side === "attackers" ? t("Attackers") : t("Defenders");
@@ -2107,7 +2138,16 @@ class BattleScreenController {
     let file: BattleLogFile;
     try {
       file = JSON.parse(data);
-      if (file.version !== LOG_VERSION || !Array.isArray(file.interventions)) throw new Error("Not a battle log");
+      const sides = [file.attackers, file.defenders];
+      const settings = battleSettings.safeParse({ ...DEFAULT_BATTLE_SETTINGS, ...file.settings });
+      const valid =
+        file.version === LOG_VERSION &&
+        Array.isArray(file.interventions) &&
+        sides.every(side => Array.isArray(side) && side.length) &&
+        BATTLE_TYPES.includes(file.type) &&
+        typeof file.name === "string" &&
+        settings.success;
+      if (!valid) throw new Error("Not a battle log");
     } catch {
       tip(t("The file is not a battle log"), false, "error");
       return;
@@ -2158,7 +2198,7 @@ class BattleScreenController {
 
     this.script = file.interventions
       .filter(change => {
-        if (change.kind === "move" || change.kind === "task") return same;
+        if (change.kind === "move" || change.kind === "turn" || change.kind === "task") return same;
         if (change.kind !== "add") return true;
         const regiment = same && find(change.regiment);
         if (regiment) this.joinBattle(regiment, change.side);
@@ -2179,6 +2219,7 @@ class BattleScreenController {
   private applyResults(): void {
     const b = this.battle!;
     this.pause();
+    if (!b.result) Battles.settleLosses(b); // ended by hand: the parts of men lost are counted as at the end
     const battleStatus = Battles.getResult(b).status;
     const { year, eraShort } = options.map.lore.calendar;
     const unitsText = (units: Record<string, number>): string =>
@@ -2270,7 +2311,12 @@ class BattleScreenController {
     }
     marker.note = legend;
 
-    tip(t("{{battle}} is over. {{result}}", { battle: b.name, result }), true, "success", 4000);
+    tip(
+      t("{{battle}} is over. {{result}}", { battle: b.name, result: this.getOutcomeLabel(status) }),
+      true,
+      "success",
+      4000
+    );
     this.closeBattleScreen();
   }
 
@@ -2297,6 +2343,7 @@ class BattleScreenController {
     this.regiments = new Map();
     this.script = [];
     this.selected = [];
+    this.box = null;
     this.trails = new Map();
     this.pointer = null;
     this.shownTip = null;

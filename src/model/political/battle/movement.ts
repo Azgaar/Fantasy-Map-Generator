@@ -1024,11 +1024,16 @@ class MovementModule {
       for (let y = Math.max(row - 1, 0); y <= Math.min(row + 1, ROWS - 1); y++) {
         for (let x = Math.max(col - 1, 0); x <= Math.min(col + 1, COLS - 1); x++) {
           const near = y * COLS + x;
-          if (deep(near)) field.ford[near] = 1;
-          else if (still(near)) {
-            field.water[near] = 0;
-            field.marsh[near] = 1; // shallows: slow going and poor footing
-          }
+          // on the ground drawn round the field too
+          const grounds = battle.scene ? [field, battle.scene] : [field];
+          const at = (ground: Battlefield): number =>
+            ground === field ? near : Battlefields.toSceneNode(ground, near);
+          if (deep(near)) for (const ground of grounds) ground.ford[at(ground)] = 1;
+          else if (still(near))
+            for (const ground of grounds) {
+              ground.water[at(ground)] = 0;
+              ground.marsh[at(ground)] = 1; // shallows: slow going and poor footing
+            }
         }
       }
     }

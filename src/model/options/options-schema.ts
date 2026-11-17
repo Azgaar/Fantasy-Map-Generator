@@ -208,6 +208,21 @@ const between = (min: number, max: number) => z.number().int().min(min).max(max)
 const battleSpeed = z.number().refine(speed => BATTLE_SPEEDS.includes(speed));
 const battleCamera = z.enum(["follow", "field"]);
 
+/** the numbers a battle is fought with, stored in its log too */
+export const battleSettings = z
+  .strictObject({
+    maxBattalions: between(10, 200),
+    minBattalions: between(2, 40),
+    maxRounds: between(25, 1800),
+    lullRounds: between(3, 60),
+    orderRounds: between(1, 60),
+    planTicks: between(30, 1200),
+    fortune: z.number().min(0).max(MAX_FORTUNE)
+  })
+  .refine(({ maxBattalions, minBattalions }) => minBattalions <= maxBattalions, {
+    message: "simulation.minBattalions must not exceed maxBattalions"
+  });
+
 /** the battle screen's choices; the simulation numbers are copied into each battle when it is set up */
 const battle = z.strictObject({
   view: z.strictObject({ camera: battleCamera, speed: battleSpeed, log: z.boolean() }),
@@ -236,19 +251,7 @@ const battle = z.strictObject({
     step: z.enum(["tick", "round"]),
     pause: z.strictObject(Object.fromEntries(PAUSE_EVENTS.map(event => [event, z.boolean()])) as PauseFlags)
   }),
-  simulation: z
-    .strictObject({
-      maxBattalions: between(10, 200),
-      minBattalions: between(2, 40),
-      maxRounds: between(25, 1800),
-      lullRounds: between(3, 60),
-      orderRounds: between(1, 60),
-      planTicks: between(30, 1200),
-      fortune: z.number().min(0).max(MAX_FORTUNE)
-    })
-    .refine(({ maxBattalions, minBattalions }) => minBattalions <= maxBattalions, {
-      message: "simulation.minBattalions must not exceed maxBattalions"
-    }),
+  simulation: battleSettings,
   export: z.strictObject({
     format: z.enum(["gif", "svg", "report"]),
     quality: z.enum(["low", "medium", "high"]),

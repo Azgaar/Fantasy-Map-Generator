@@ -11,7 +11,7 @@ import { FlatQueue } from "@/utils/flat-queue";
 import { BattleRules, type BattleType } from "./battle-rules";
 import { BattleScale, COLS, DEFAULT_BATTALION, type FieldSize, ROWS, SURROUND } from "./battle-scale";
 import { BattleSite } from "./battle-site";
-import { type CliffGround, Cliffs } from "./cliffs";
+import { type CliffGround, Cliffs, CORNERS } from "./cliffs";
 
 type Box = [number, number, number, number]; // x0, y0, x1, y1
 
@@ -282,14 +282,15 @@ class BattlefieldModule {
     const shapes = [...new Set(nearby.map(i => cells.f[i]))]
       .map(f => pack.features[f])
       .filter(feature => feature && (feature.land || feature.type === "lake"))
-      .map(feature => ({
-        land: feature.land,
-        lake: feature.type === "lake" ? this.toLakeCode(feature.subtype) : 0,
-        outline: clipPolygon(
-          Coastline.getFeatureShape(feature).points.map(([px, py]) => toField(px, py)),
-          [-step, -step, width + step, height + step]
-        )
-      }))
+      .map(feature => {
+        const points = Coastline.getFeatureShape(feature).points.map(([px, py]) => toField(px, py));
+        const box: [number, number, number, number] = [-step, -step, width + step, height + step];
+        return {
+          land: feature.land,
+          lake: feature.type === "lake" ? this.toLakeCode(feature.subtype) : 0,
+          outline: points.length > 2 ? clipPolygon(points, box) : [] // a feature with no outline drawn
+        };
+      })
       .filter(shape => shape.outline.length > 2)
       .map(shape => ({ ...shape, area: this.getArea(shape.outline) }));
     // the innermost outline about a point: an island in a lake is land, a lake on it water again
@@ -530,14 +531,17 @@ class BattlefieldModule {
   }
 
   /** The battle's field of the size its scene was built for: the middle of the scene; burgs that reach it come along */
+  /** The node of the scene a node of the field cut from its middle lies on */
+  toSceneNode(scene: Battlefield, node: number): number {
+    const [left, top] = SURROUND;
+    return (Math.floor(node / COLS) + top) * scene.cols + (node % COLS) + left;
+  }
+
   cut(scene: Battlefield, size: FieldSize): Battlefield {
     const [left, top] = SURROUND;
     const [dx, dy] = [left * scene.cell, top * scene.cell];
     const field: Battlefield = { ...this.createEmpty(), site: scene.site, ...size, biome: scene.biome };
-    const nodes = Array.from(
-      { length: COLS * ROWS },
-      (_, i) => (Math.floor(i / COLS) + top) * scene.cols + (i % COLS) + left
-    );
+    const nodes = Array.from({ length: COLS * ROWS }, (_, i) => this.toSceneNode(scene, i));
     const slice = (grid: number[]): number[] => (grid.length ? nodes.map(node => grid[node]) : []);
     const move = ([x, y]: Point): Point => [x - dx, y - dy];
     Object.assign(field, {
@@ -824,24 +828,38 @@ class BattlefieldModule {
     });
 
     // the foot of the walls: where they are climbed, where a gate is forced, where the rubble of a breach lies
+    const raise = (node: number, value: number): void => {
+      field.rampart[node] = Math.max(field.rampart[node], value);
+    };
     const mark = (point: Point, reach: number, value: number): void => {
       for (let y = point[1] - reach; y <= point[1] + reach; y += field.cell / 2) {
         for (let x = point[0] - reach; x <= point[0] + reach; x += field.cell / 2) {
           if (x < 0 || y < 0 || x >= field.width || y >= field.height) continue;
           const node = this.nodeAt(field, x, y);
           const [nx, ny] = this.nodeCentre(field, node);
-          if (Math.hypot(nx - point[0], ny - point[1]) <= reach)
-            field.rampart[node] = Math.max(field.rampart[node], value);
+          if (Math.hypot(nx - point[0], ny - point[1]) <= reach) raise(node, value);
         }
       }
     };
+    // and every node a wall runs through, however large the nodes: a corner it clips between two samples too
     for (const wall of field.walls) {
-      for (const t of [0, 0.5, 1]) {
-        mark(
-          [wall.a[0] + (wall.b[0] - wall.a[0]) * t, wall.a[1] + (wall.b[1] - wall.a[1]) * t],
-          RAMPART,
-          wall.gate ? 2 : 1
-        );
+      const value = wall.gate ? 2 : 1;
+      const parts = Math.max(Math.ceil(Math.hypot(wall.b[0] - wall.a[0], wall.b[1] - wall.a[1]) / (field.cell / 2)), 2);
+      let last: [number, number] | null = null;
+      for (let i = 0; i <= parts; i++) {
+        const point: Point = [
+          wall.a[0] + ((wall.b[0] - wall.a[0]) * i) / parts,
+          wall.a[1] + ((wall.b[1] - wall.a[1]) * i) / parts
+        ];
+        mark(point, RAMPART, value);
+        if (point[0] < 0 || point[1] < 0 || point[0] >= field.width || point[1] >= field.height) continue;
+        const [col, row] = [Math.floor(point[0] / field.cell), Math.floor(point[1] / field.cell)];
+        raise(row * field.cols + col, value);
+        if (last && col !== last[0] && row !== last[1]) {
+          raise(last[1] * field.cols + col, value);
+          raise(row * field.cols + last[0], value);
+        }
+        last = [col, row];
       }
     }
     for (const gap of field.breaches) mark([gap.x, gap.y], breach / 2, 3);
@@ -919,6 +937,11 @@ class BattlefieldModule {
   /** The gates of a burg, as drawn: the stretches of its gateways that are no jambs */
   getGates(field: Battlefield, burg: number | null): FieldWall[] {
     return field.walls.filter(wall => wall.burg === burg && wall.gate && !wall.jamb);
+  }
+
+  /** The stretches of a burg's wall that engines can breach: neither a gate nor beside one */
+  getSolidWalls(field: Battlefield, burg: number | null): FieldWall[] {
+    return field.walls.filter(wall => wall.burg === burg && !wall.gate);
   }
 
   /** The stretches of wall, gates among them, that the straight way between two points crosses */
@@ -1095,8 +1118,24 @@ class BattlefieldModule {
     const under = between(
       (col, row) => elevation[row * cols + col] * relief - top[row * cols + col] * scarp[row * cols + col]
     );
-    const step = top[node] ? between((col, row) => scarp[row * cols + col]) : 0;
+    const step = this.isOnTop(top, cols, c, r, dx, dy) ? between((col, row) => scarp[row * cols + col]) : 0;
     return under + step + walls;
+  }
+
+  /**
+   * Whether a point between four nodes is on the top side of a cliff, as the cliff runs between them: through the middles
+   * of the sides between a top node and one at its foot (see `traceEdges`), cutting the corners off squares it crosses
+   */
+  private isOnTop(top: number[], cols: number, c: number, r: number, dx: number, dy: number): boolean {
+    const corners = CORNERS.map(([x, y]) => ({ x, y, high: top[(r + y) * cols + c + x] === 1 }));
+    const high = corners.filter(corner => corner.high);
+    const low = corners.filter(corner => !corner.high);
+    if (!low.length || !high.length) return !low.length;
+    const cut = ({ x, y }: { x: number; y: number }): boolean => Math.abs(dx - x) + Math.abs(dy - y) < 0.5;
+    if (high.length === 1) return cut(high[0]);
+    if (high.length === 2 && (high[0].x === high[1].x || high[0].y === high[1].y))
+      return top[(r + Math.round(dy)) * cols + c + Math.round(dx)] === 1; // straight across the square
+    return !low.some(cut);
   }
 
   /**
@@ -1251,6 +1290,7 @@ class BattlefieldModule {
     const river = cells.r[cell] && pack.rivers.find(river => river.i === cells.r[cell]);
     if (!river) return place;
     const course = local(Rivers.addMeandering(river.cells, river.points ?? null));
+    if (!course.length) return place; // a river of a cell, on an edited map
     let site = BattleSite.nearestOnLine(place, course);
     for (const road of roads) {
       for (let i = 1; i < road.length; i++) {

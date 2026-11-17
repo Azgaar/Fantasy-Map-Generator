@@ -1,6 +1,6 @@
 import { color, contours, curveBasisClosed, curveCatmullRom, line, select } from "d3";
 import { type BattleLook, DEFAULT_BATTLE_OPTIONS } from "@/data/battle-options";
-import { BATTLE_ACTION_LABELS } from "@/data/id-labels";
+import { BATTLE_ACTION_LABELS, BATTLE_STATUS_LABELS } from "@/data/id-labels";
 import { Icons } from "@/model/icons";
 import type { Battle, Block } from "@/model/political/battle/battle";
 import type { Side } from "@/model/political/battle/battle-rules";
@@ -30,7 +30,15 @@ import { capitalize, escapeHtml } from "@/utils/string-utils";
  * - `battleBlocks`, `battleMissiles`, `battleClashes`: battalions, arrows and shells in flight, clashes
  * - `battleSelection`: the box dragged and the turning handle
  */
-export const MOVING_LAYERS = ["battleWorks", "battleFire", "battleBlocks", "battleMissiles", "battleClashes"]; // what the animation export records
+// what the animation export records; the walls too, for their breaches
+export const MOVING_LAYERS = [
+  "battleWalls",
+  "battleWorks",
+  "battleFire",
+  "battleBlocks",
+  "battleMissiles",
+  "battleClashes"
+];
 
 type Group = ReturnType<typeof select<SVGGElement, unknown>>;
 
@@ -923,7 +931,8 @@ class BattleSceneRenderer {
 
   private getBlockTip(block: Block): string {
     const troops = `${capitalize(block.unit.replace(/_/g, " "))}: ${block.troops} / ${block.initial}`;
-    if (block.status !== "ready" && block.status !== "routed") return `${troops}, ${block.status}`;
+    if (block.status !== "ready" && block.status !== "routed")
+      return `${troops}, ${BATTLE_STATUS_LABELS[block.status]}`;
     const kmh = BattleScale.toMetresPerSecond(Math.hypot(block.vx, block.vy)) * 3.6;
     const speed = `${t("Speed")}: ${convertSpeed(kmh)} ${getSpeedUnit()}`;
     const range = block.range ? `${t("Range")}: ${formatLength(block.range)}` : "";

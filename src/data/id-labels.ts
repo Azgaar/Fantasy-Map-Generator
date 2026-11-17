@@ -313,6 +313,26 @@ export const BATTLE_TACTIC_LABELS: Record<string, string> = {
   waves: t("Landing in waves")
 };
 
+/** Outcomes as a side sees them, the side's name left out (see `BattleRules.getStatus`) */
+export const BATTLE_OUTCOME_LABELS: Record<string, string> = {
+  standoff: t("Standoff"),
+  "minor skirmishes": t("Minor skirmishes"),
+  "flawless victory": t("Flawless victory"),
+  "decisive victory": t("Decisive victory"),
+  victory: t("Victory"),
+  stalemate: t("Stalemate"),
+  defeat: t("Defeat"),
+  "disastrous defeat": t("Disastrous defeat"),
+  "disorderly retreat": t("Disorderly retreat"),
+  "raised the siege": t("Raised the siege")
+};
+
+export const BATTLE_STATUS_LABELS: Record<string, string> = {
+  surrendered: t("Surrendered"),
+  fled: t("Fled"),
+  destroyed: t("Destroyed")
+};
+
 export const BATTLE_ACTION_LABELS: Record<string, string> = {
   hold: t("Holding"),
   move: t("Moving"),

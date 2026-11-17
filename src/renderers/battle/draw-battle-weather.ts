@@ -127,6 +127,7 @@ interface Layer {
   gl: WebGLRenderingContext;
   uniforms: Record<"size" | "time" | (typeof SKY)[number], WebGLUniformLocation | null>;
   sky: Sky;
+  running: boolean; // a frame is asked for: one loop a canvas
 }
 
 const PUDDLES = 0.15; // share of the open level nodes holding a puddle where the ground is wettest
@@ -154,9 +155,10 @@ class BattleWeatherRenderer {
     canvas.hidden = this.isEmpty(sky);
     const layer = this.getLayer(canvas);
     if (!layer) return;
-    const running = !this.isEmpty(layer.sky);
     layer.sky = sky;
-    if (!running && !canvas.hidden) requestAnimationFrame(time => this.render(canvas, layer, time));
+    if (layer.running || canvas.hidden) return;
+    layer.running = true;
+    requestAnimationFrame(time => this.render(canvas, layer, time));
   }
 
   private getLayer(canvas: HTMLCanvasElement): Layer | null {
@@ -179,7 +181,7 @@ class BattleWeatherRenderer {
     const uniforms = Object.fromEntries(
       ["size", "time", ...SKY].map(name => [name, uniform(name)])
     ) as Layer["uniforms"];
-    return { gl, uniforms, sky: { rain: 0, snow: 0, fog: 0, heat: 0 } };
+    return { gl, uniforms, sky: { rain: 0, snow: 0, fog: 0, heat: 0 }, running: false };
   }
 
   private compile(gl: WebGLRenderingContext): WebGLProgram | null {
@@ -201,7 +203,7 @@ class BattleWeatherRenderer {
   /** A frame, and the next one while the canvas is on the screen and there is weather to show */
   private render(canvas: HTMLCanvasElement, layer: Layer, time: number): void {
     if (!canvas.isConnected || this.isEmpty(layer.sky)) {
-      layer.sky = { rain: 0, snow: 0, fog: 0, heat: 0 };
+      layer.running = false;
       return;
     }
     const { gl, uniforms } = layer;

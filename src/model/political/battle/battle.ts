@@ -50,6 +50,7 @@ const MARCHING = 0.7; // further from its place a battalion faces the way it mar
 
 // of a pace a tick
 const MARCH = 1.4; // the way a battalion makes in a round to be on the march
+const PUSH = 0.25; // battalion fronts a battalion is pushed aside in a tick at the most, or its pace
 
 export type BlockStatus = "ready" | "routed" | "surrendered" | "fled" | "destroyed";
 export type BlockAction = "hold" | "move" | "shoot" | "fight" | "flee" | "build";
@@ -91,7 +92,7 @@ export interface Plan {
   apart: number; // between the middles of the sides, last round
   walk: number; // on a field with cliffs: the shortest way round them from the side to the foe, last round
   idle: number; // rounds it has not closed
-  losses: number; // share of the troops lost by the last round
+  losses: number; // share of the troops lost by the last round, the parts of men too
   bled: number; // rounds in a row it lost men to shots alone
   fortify: boolean; // the side builds works
   arrival: number; // ticks till the foe is upon it, as the general reckons it this round; Infinity when it does not come
@@ -544,6 +545,7 @@ class BattleModule {
     const trial: Battle = {
       ...battle,
       field: structuredClone(battle.field),
+      scene: null, // drawn only
       attackers: copy("attackers"),
       defenders: copy("defenders"),
       blocks: [],
@@ -957,6 +959,10 @@ class BattleModule {
     Movement.separate(battle, onField);
     onField.forEach((block, i) => {
       const { x, y, dry, safe, shoal } = stood[i];
+      // friends on each other part over a few ticks: no hop of a front when one steps out of the crowd within the walls
+      const shift = Math.hypot(block.x - x, block.y - y);
+      const most = Math.max(Movement.getPace(battle, block), battle.field.front * PUSH);
+      if (shift > most) [block.x, block.y] = [x + ((block.x - x) * most) / shift, y + ((block.y - y) * most) / shift];
       const pushed =
         (dry && Movement.isWet(battle, block, block.x, block.y)) ||
         (safe && Movement.shuns(battle, block, block.x, block.y)) ||
@@ -1043,7 +1049,8 @@ class BattleModule {
     if (field.held === null || (phase !== "bombardment" && phase !== "storming")) return; // engines cover a storm too
     const engines = Movement.getBatterers(battle);
     const breaches = field.breaches.filter(breach => breach.burg === field.held).length;
-    if (!engines.length || breaches >= STORM_ODDS.length - 1) return; // more breaches make the walls no weaker
+    const walls = Battlefields.getSolidWalls(field, field.held);
+    if (!engines.length || !walls.length || breaches >= STORM_ODDS.length - 1) return; // more breaches make the walls no weaker
     const burg = field.burgs[field.held];
     battle.lastLoss = battle.tick; // no lull while the engines are at the walls
     battle.battered +=
@@ -1054,8 +1061,6 @@ class BattleModule {
     const engine = engines.reduce((a, b) => (b.troops > a.troops ? b : a));
     const middle = (wall: FieldWall): [number, number] => [(wall.a[0] + wall.b[0]) / 2, (wall.a[1] + wall.b[1]) / 2];
     const far = (wall: FieldWall): number => Math.hypot(middle(wall)[0] - engine.x, middle(wall)[1] - engine.y);
-    const walls = field.walls.filter(wall => wall.burg === field.held && !wall.gate);
-    if (!walls.length) return;
     Battlefields.openBreach(field, field.held, middle(walls.reduce((a, b) => (far(b) < far(a) ? b : a))));
     battle.log.push({ tick: battle.tick, event: "breach", side: "attackers", params: { burg: burg.name } });
   }
@@ -1379,7 +1384,7 @@ class BattleModule {
    * A battalion loses whole men or ships; when the battle is over the parts its battalions lost are counted together by
    * regiment and unit, so a fleet of two-ship battalions that each lost a third of a ship has lost a ship
    */
-  private settleLosses(battle: Battle): void {
+  settleLosses(battle: Battle): void {
     const units = new Map<string, Block[]>();
     for (const block of battle.blocks) {
       if (!block.troops) continue;

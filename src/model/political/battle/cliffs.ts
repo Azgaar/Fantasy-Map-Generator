@@ -63,7 +63,7 @@ interface Edge {
 }
 
 // the corners of a grid square clockwise from the top left, and the sides between them: side k from corner k to k + 1
-const CORNERS: Point[] = [
+export const CORNERS: Point[] = [
   [0, 0],
   [1, 0],
   [1, 1],
