@@ -381,7 +381,19 @@ class GeneralModule {
       const frame = this.frameOf(plan, role);
       const [x, y] = this.onField(field, this.toField(frame, across, along));
       const facing = frame.heading + (place.facing ?? 0);
-      block.order = { role, mission, rank, across, along, ahead: aheads.get(block) ?? null, x, y, facing, target: null, sent: false };
+      block.order = {
+        role,
+        mission,
+        rank,
+        across,
+        along,
+        ahead: aheads.get(block) ?? null,
+        x,
+        y,
+        facing,
+        target: null,
+        sent: false
+      };
       [block.x, block.y, block.facing] = [x, y, facing];
     }
   }
@@ -1367,7 +1379,19 @@ class GeneralModule {
       const role = block.kind === "mounted" ? "reserve" : ROLES[block.kind];
       const mission = role === "wing" ? "reserve" : role;
       const [across, along] = this.toFrame(frame, { x, y });
-      block.order = { role, mission, rank: 0, across, along, ahead: null, x, y, facing: frame.heading, target: null, sent: false };
+      block.order = {
+        role,
+        mission,
+        rank: 0,
+        across,
+        along,
+        ahead: null,
+        x,
+        y,
+        facing: frame.heading,
+        target: null,
+        sent: false
+      };
       [block.x, block.y, block.facing] = [x, y, frame.heading];
     }
   }
