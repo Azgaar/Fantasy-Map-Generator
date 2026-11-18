@@ -104,6 +104,7 @@ export interface Plan {
   hooks: [left: number[], right: number[]]; // battalions turned out at the ends of the line, the nearest the end first
   lure: [x: number, y: number] | null; // where the foe stood when the side fell back to draw him out: it feigns once
   defiant: boolean; // told by hand to fight a day its general gave up for lost before it began
+  stands: boolean; // ordered by hand out of a retreat: its general does not turn back to it
 }
 
 /** The party of a sortie formed up outside the gate it goes out by, before it falls on the foe */
@@ -163,6 +164,7 @@ export interface Block {
   harm: number; // the part of a man lost so far
   leaving: boolean; // its regiment was taken out of the battle: it marches off the field
   parole: boolean; // told by hand to give itself up: nobody frees it before the end
+  stays: boolean; // told by hand to fight on as its side withdraws: it does till it breaks
   detour: number; // the side it goes round what is in its way by: -1, 1, or 0 on a clear way
   goal: Point | null; // where it is going this tick
   task: Task | null; // given by hand: it comes before the general's order while it stands
@@ -396,7 +398,8 @@ const NO_PLAN: Plan = {
   muster: null,
   hooks: [[], []],
   lure: null,
-  defiant: false
+  defiant: false,
+  stands: false
 };
 
 class BattleModule {
@@ -939,11 +942,12 @@ class BattleModule {
     }
     // the sides take the first move in turn: whoever moves first takes the ground
     for (const block of battle.tick % 2 ? [...onField].reverse() : onField) {
-      if (block.status === "routed" || block.order.mission === "withdraw" || block.leaving) {
+      if (block.task && block.order.mission === "withdraw") block.stays = true;
+      if (block.status === "routed" || block.leaving || (block.order.mission === "withdraw" && !block.stays)) {
         this.flee(battle, block, onField);
         continue;
       }
-      if (block.order.mission === "feint") {
+      if (block.order.mission === "feint" && !block.task) {
         this.feign(battle, block, onField);
         continue;
       }
@@ -1221,7 +1225,7 @@ class BattleModule {
   }
 
   private rout(battle: Battle, block: Block): void {
-    block.status = "routed";
+    Object.assign(block, { status: "routed", stays: false });
     battle.log.push({ tick: battle.tick, event: "rout", side: block.side, params: { block: this.blockName(block) } });
     this.shake(battle, [block], 8);
   }
@@ -1565,6 +1569,7 @@ class BattleModule {
           harm: 0.5, // losses are rounded to the nearest man, or ship
           leaving: false,
           parole: false,
+          stays: false,
           detour: 0,
           goal: null,
           task: null,

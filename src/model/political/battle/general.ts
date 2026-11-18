@@ -284,7 +284,8 @@ class GeneralModule {
       muster: null,
       hooks: [[], []],
       lure: null,
-      defiant: false
+      defiant: false,
+      stands: false
     };
   }
 
@@ -1544,9 +1545,16 @@ class GeneralModule {
     const data = battle[side];
     const phase = COMMANDS[battle.type][side][command];
     if (!phase || (data.phase === SURRENDER && battle.tick)) return; // not an order for such a battle, or arms laid down
+    // told to fight on from a retreat, it does in any battle, and its general gives up the field no more
+    const lifted = data.phase === POSTURES[battle.type][side].run && command !== "retreat" && command !== "surrender";
+    if (lifted) {
+      data.plan.stands = true;
+      if (side === "attackers") battle.raised = false;
+    } else if (command === "retreat") data.plan.stands = false;
     if (
-      !BattleRules.keepsPhase(battle.type, command) &&
-      (this.getOrder(battle, side) !== command || data.phase === FEINT)
+      lifted ||
+      (!BattleRules.keepsPhase(battle.type, command) &&
+        (this.getOrder(battle, side) !== command || data.phase === FEINT))
     ) {
       if (data.phase === FEINT && phase === POSTURES[battle.type][side].close) this.turnAbout(battle, side);
       data.phase = phase;
@@ -1612,6 +1620,7 @@ class GeneralModule {
     const { chase, run } = POSTURES[battle.type][side];
     // the fight takes its course, but the side neither runs nor gives chase against its order
     if (plan.order && (next === chase || next === run)) return phase;
+    if (plan.stands && next === run) return phase;
     return next;
   }
 
@@ -2169,9 +2178,9 @@ class GeneralModule {
       const order = block.order;
       if (stance === "flee") {
         order.mission = phase === FEINT ? "feint" : "withdraw";
+        [order.sent, order.target] = [false, null]; // or one sent off would keep running once the side turns about
         if (phase === FEINT) {
           // to its place in the formation fallen back
-          [order.sent, order.target] = [false, null];
           [order.x, order.y] = this.onField(field, this.toField(plan, order.across, order.along));
           order.facing = plan.heading;
         }

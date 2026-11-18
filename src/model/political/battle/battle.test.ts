@@ -551,6 +551,36 @@ describe("battle generals", () => {
     expect(gap()).toBeLessThan(apart * 0.6); // the line's pace: its flying wedge waits for it
   });
 
+  it("has a side ordered by hand out of its general's retreat fight on once the order has stood its time", () => {
+    const settings = { ...DEFAULT_BATTLE_SETTINGS, orderRounds: 3 };
+    const b = battle([regiment(1, { infantry: 600 })], [regiment(2, { infantry: 3000 })], "field", 0, settings);
+    for (let i = 0; i < ROUND_TICKS; i++) Battles.tick(b);
+    expect([b.attackers.plan.tactic, b.attackers.phase]).toEqual(["strategicRetreat", "retreat"]);
+    Battles.intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "attack" });
+    let foughtOn = false; // in order once the order ran out
+    while (!b.result) {
+      Battles.tick(b);
+      expect(b.attackers.phase).not.toBe("retreat");
+      const ready = b.blocks.filter(block => block.side === "attackers" && block.status === "ready");
+      for (const block of ready) expect(block.action).not.toBe("flee");
+      foughtOn ||= b.attackers.plan.order === null && ready.length > 0;
+    }
+    expect(foughtOn).toBe(true);
+  });
+
+  it("has a battalion sent at a foe stop running once its side is ordered back from a retreat", () => {
+    const b = battle([regiment(1, even)], [regiment(2, even)]);
+    for (let i = 0; i < ROUND_TICKS * 2; i++) Battles.tick(b);
+    const foe = b.blocks.find(block => block.side === "defenders")!;
+    const sent = b.blocks.find(block => block.side === "attackers")!;
+    Object.assign(sent.order, { mission: "hunt", sent: true, target: foe.id });
+    Battles.intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "retreat" });
+    for (let i = 0; i < ROUND_TICKS; i++) Battles.tick(b);
+    Battles.intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "attack" });
+    for (let i = 0; i < ROUND_TICKS; i++) Battles.tick(b);
+    expect([sent.status, sent.order.mission === "withdraw", sent.action === "flee"]).toEqual(["ready", false, false]);
+  });
+
   it("moves the formation of an army of riders alone", () => {
     const b = Battles.create({
       type: "field",
@@ -3021,6 +3051,25 @@ describe("battle works", () => {
     for (const block of of(wagenburg, "defenders")) expect(inside([block.x, block.y], wagons), block.key).toBe(true);
   });
 
+  it("rings a Wagenburg dragged by hand where it stands now", () => {
+    const b = battle([regiment(1, { infantry: 900, archers: 300, cavalry: 1600 })], [regiment(2, noRiders)]);
+    Battles.intervene(b, { tick: 0, kind: "tactic", side: "defenders", tactic: "wagenburg" });
+    dig(b, "defenders");
+    const span = (): number => {
+      const ends = worksOf(b, "defenders").flatMap(work => [work.a, work.b]);
+      return Math.max(...ends.map(([x]) => x)) - Math.min(...ends.map(([x]) => x));
+    };
+    const before = span();
+    const { plan } = b.defenders;
+    const [dx, dy] = [b.field.width * 0.2 - plan.x, b.field.height * 0.2 - plan.y]; // off into a corner of the field
+    for (const block of of(b, "defenders"))
+      Battles.intervene(b, { tick: 0, kind: "move", block: block.key, x: block.x + dx, y: block.y + dy });
+    const wagons = worksOf(b, "defenders");
+    for (const work of wagons) expect(wagons.filter(other => other.a === work.b)).toHaveLength(1);
+    for (const block of of(b, "defenders")) expect(inside([block.x, block.y], wagons), block.key).toBe(true);
+    expect(span()).toBeLessThan(before * 1.2); // the ring follows the troops, not the spot they were drawn up on
+  });
+
   it("has a side behind its works come out when it is shot at with nothing to answer, and stay when it is not", () => {
     const shot = battle(
       [regiment(1, { infantry: 900, archers: 2400 })],
@@ -3680,6 +3729,28 @@ describe("battalion tasks", () => {
     });
   const own = (b: Battle, unit: string): Block[] =>
     b.blocks.filter(block => block.side === "attackers" && block.unit === unit);
+
+  it("has a battalion told by hand to fight as its side withdraws fight on till it breaks", () => {
+    const b = battle([regiment(1, even)], [regiment(2, even)]);
+    for (let i = 0; i < ROUND_TICKS * 2; i++) Battles.tick(b);
+    Battles.intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "retreat" });
+    const [stays, ...rest] = own(b, "infantry");
+    const foe = b.blocks.find(block => block.side === "defenders")!;
+    task(b, [stays], "attack", foe.x, foe.y, foe);
+    for (let i = 0; i < ROUND_TICKS * (b.settings.orderRounds + 2); i++) {
+      Battles.tick(b);
+      if (stays.status !== "ready") break;
+      Object.assign(stays, { morale: 100 }); // not broken by the odds meanwhile
+      expect(stays.action).not.toBe("flee");
+    }
+    expect([stays.task, rest.every(block => block.status !== "ready" || block.action === "flee")]).toEqual([
+      null,
+      true
+    ]);
+    Object.assign(stays, { morale: 0 });
+    Battles.tick(b);
+    expect([stays.status, stays.stays]).toEqual(["routed", false]);
+  });
 
   it("is not given before the start: there troops are placed by hand", () => {
     const b = battle([regiment(1, even)], [regiment(2, even)]);

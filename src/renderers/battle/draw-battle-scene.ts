@@ -7,7 +7,7 @@ import type { Side } from "@/model/political/battle/battle-rules";
 import { BattleScale } from "@/model/political/battle/battle-scale";
 import { type Battlefield, Battlefields, type FieldWork, type WorkKind } from "@/model/political/battle/battlefield";
 import { Sight } from "@/model/political/battle/sight";
-import { Works } from "@/model/political/battle/works";
+import { GAP_WAGONS, Works } from "@/model/political/battle/works";
 import { convertSpeed, formatLength, getSpeedUnit } from "@/model/units";
 import { BattleCamera, type View } from "@/renderers/battle/battle-camera";
 import { BattleCliffsView } from "@/renderers/battle/draw-battle-cliffs";
@@ -730,10 +730,12 @@ class BattleSceneRenderer {
     svg.dataset.works = this.getWorksKey(field);
     const pt = this.getPoint(field);
     const paths: Record<string, string> = {};
+    const add = (key: string, d: string): void => {
+      paths[key] = (paths[key] ?? "") + d;
+    };
     for (const work of field.works) {
-      const state = work.harm >= 1 ? "down" : work.done >= 1 ? "standing" : "building";
-      const key = `${work.kind} ${state}`;
-      paths[key] = (paths[key] ?? "") + this.drawStretch(work, state === "down", pt);
+      add(`${work.kind} ${work.done >= 1 ? "standing" : "building"}`, this.drawStretch(work, false, pt));
+      if (work.harm > 0) add(`${work.kind} down`, this.drawStretch(work, true, pt));
     }
     // an empty path is drawn as a point of nothing: an empty "d" would not animate in an exported SVG
     for (const path of svg.querySelectorAll<SVGPathElement>("#battleWorks > path"))
@@ -752,7 +754,7 @@ class BattleSceneRenderer {
     const percent = (share: number): number => Math.floor(share * 100);
     const status =
       work.harm >= 1
-        ? t("Knocked down")
+        ? t("Broken through")
         : work.done < 1
           ? t("Building: {{percent}}%", { percent: percent(work.done) })
           : !work.up
@@ -763,8 +765,11 @@ class BattleSceneRenderer {
     return sentences(`${WORK_LABELS[work.kind]()} (${SIDE_LABELS[work.side]()})`, status);
   }
 
-  /** The path of a stretch, its front on the left of `a` → `b`: hachures and stakes on the foe's side */
-  private drawStretch(work: FieldWork, down: boolean, pt: number): string {
+  /**
+   * The path of a stretch, its front on the left of `a` → `b`: hachures and stakes on the foe's side
+   * @param wrecks the wagons knocked out of it instead, askew in its middle
+   */
+  private drawStretch(work: FieldWork, wrecks: boolean, pt: number): string {
     const [ax, ay] = work.a;
     const full = Math.hypot(work.b[0] - ax, work.b[1] - ay) || 1;
     const [ux, uy] = [(work.b[0] - ax) / full, (work.b[1] - ay) / full];
@@ -798,15 +803,17 @@ class BattleSceneRenderer {
           .map(([x0, x1, y0, y1]) => `M${corner(x0, y0)}L${corner(x1, y0)}L${corner(x1, y1)}L${corner(x0, y1)}Z`)
           .join("");
       };
-      if (down) {
-        // three wagons askew in the gap, as a breach leaves rubble
-        return [0.3, 0.5, 0.72]
-          .map((share, i) => wagon(full * share, (i - 1) * round * pt, [0.7, -0.5, 2.6][i]))
-          .join("");
-      }
       const count = Math.max(Math.floor((full + apart * pt) / ((long + apart) * pt)), 1);
       const pitch = full / count; // end to end along the whole stretch
-      for (let i = 0; (i + 0.5) * pitch <= length; i++) d += wagon((i + 0.5) * pitch, 0, 0);
+      const knocked = Math.min(Math.round(work.harm * GAP_WAGONS), count); // one a shot, from the middle
+      const first = Math.floor((count - knocked) / 2);
+      for (let i = 0; (i + 0.5) * pitch <= length; i++) {
+        const j = i - first; // of the knocked ones
+        if ((j >= 0 && j < knocked) !== wrecks) continue;
+        d += wrecks
+          ? wagon((i + 0.5) * pitch, (j - 1) * round * pt, [0.7, -0.5][j % 2])
+          : wagon((i + 0.5) * pitch, 0, 0);
+      }
     }
     return d;
   }

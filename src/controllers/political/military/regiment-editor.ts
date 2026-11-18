@@ -171,7 +171,7 @@ function updateRegimentData(regiment: Regiment): void {
 }
 
 function updateRegimentPower(regiment: Regiment): void {
-  const upkeep = rn(Military.getBattleUpkeep(regiment.state) * 100);
+  const upkeep = rn(Military.getUpkeep(regiment.state) * 100);
   ensureEl("regimentPower").textContent =
     `${si(Military.getTroops(Military.getRegimentPower(regiment)))} (${upkeep}% ${t("upkeep")})`;
 }

@@ -710,9 +710,9 @@ class MilitaryModule {
     return this.getNominalPower(stateId) * UPKEEP_COST;
   }
 
-  /** How strongly a state's forces fight for their upkeep: it multiplies their power in battle */
+  /** How strongly a state's forces fight for their upkeep, its square root: small arrears tell little, deep ones much */
   getBattleUpkeep(stateId: number): number {
-    return Math.max(MIN_UPKEEP, this.getUpkeep(stateId));
+    return Math.max(MIN_UPKEEP, Math.sqrt(this.getUpkeep(stateId)));
   }
 
   /** The state's forces' battle power: troops × unit power × battle upkeep */

@@ -17,6 +17,7 @@ const STRONG = 1 / 3; // share of a foe's power that makes it strong in riders (
 const AT_ONCE = 3; // stretches of wagons the train builds at once
 const BENDS = [Math.PI / 4, Math.PI / 2]; // turns back of a wagon line at its ends, to a half circle
 const MOST_TURN = (Math.PI * 2) / 3; // between neighbours on a wagon ring
+export const GAP_WAGONS = 2; // wagons knocked out of a stretch, one a shot, that open a gap troops get in by
 
 /** Ticks a full battalion takes to build a stretch; wagons are the side's train's, a few stretches at once */
 
@@ -216,7 +217,7 @@ class WorksModule {
   hasWorkLeft(battle: Battle, side: Side): boolean {
     const wagons = battle.field.works.filter(work => work.side === side && work.kind === "wagons");
     if (wagons.some(work => !work.up)) return true;
-    if (battle[side].plan.tactic === "wagenburg") return !wagons.length && this.getRing(battle, side).length > 0;
+    if (battle[side].plan.tactic === "wagenburg") return !wagons.length && this.getRing(battle, side) !== null;
     return battle.blocks.some(block => {
       if (block.side !== side || block.status !== "ready" || block.leaving || !this.isBuilder(battle, block))
         return false;
@@ -328,8 +329,8 @@ class WorksModule {
   }
 
   /**
-   * Each engine in range of the foe's wagons knocks down the stretch nearest it, one a round: a gap a stretch wide that
-   * troops get in by. True when one comes down
+   * Each engine in range of the foe's wagons knocks a wagon out of the stretch nearest it, one a round: `GAP_WAGONS` of
+   * them open a gap troops get in by. True when one opens
    */
   breakWagons(battle: Battle): boolean {
     let broken = false;
@@ -339,16 +340,17 @@ class WorksModule {
         if (engine.side !== side) continue;
         const work = this.getBattered(battle, engine);
         if (!work) continue;
-        work.harm = 1;
-        broken = true;
+        work.harm = Math.min(work.harm + 1 / GAP_WAGONS, 1);
         battle.lastLoss = battle.tick; // no lull while the engines are at the wagons
+        if (work.harm < 1) continue;
+        broken = true;
         battle.log.push({ tick: battle.tick, event: "gap", side: work.side });
       }
     }
     return broken;
   }
 
-  /** The stretch of the foe's wagons an engine knocks down: the standing one nearest it in its reach, that it sees */
+  /** The stretch of the foe's wagons an engine shells: the standing one nearest it in its reach, that it sees */
   getBattered(battle: Battle, engine: Block): FieldWork | null {
     if (engine.status !== "ready" || engine.leaving || engine.kind !== "machinery") return null;
     if (BattleRules.isBeaten(battle.type, engine.side, battle[engine.side].phase)) return null;
@@ -486,27 +488,37 @@ class WorksModule {
     }
   }
 
-  /** Where the wagons of a Wagenburg go: about each battalion standing on its ring, by the angle; none for fewer than three */
-  private getRing(battle: Battle, side: Side): { angle: number; radius: number }[] {
-    const { plan } = battle[side];
-    const ring = battle.blocks
-      .filter(block => block.side === side && block.status === "ready" && block.order.rank === 0)
+  /**
+   * Where the wagons of a Wagenburg go: about each battalion standing on its ring, by the angle from the middle of them
+   * where they stand now, moved by hand or not; none for fewer than three
+   */
+  private getRing(battle: Battle, side: Side): { centre: Point; spots: { angle: number; radius: number }[] } | null {
+    const blocks = battle.blocks.filter(
+      block => block.side === side && block.status === "ready" && block.order.rank === 0
+    );
+    if (blocks.length < 3) return null;
+    const cx = blocks.reduce((sum, block) => sum + block.order.x, 0) / blocks.length;
+    const cy = blocks.reduce((sum, block) => sum + block.order.y, 0) / blocks.length;
+    const spots = blocks
       .map(block => {
         const { x, y } = block.order;
-        const angle = Math.atan2(y - plan.y, x - plan.x);
+        const angle = Math.atan2(y - cy, x - cx);
         // out past the corners of its front: a battalion stands wholly within the wagons
-        const radius = Math.hypot(Math.hypot(x - plan.x, y - plan.y) + block.depth / 2, block.width / 2) + AHEAD;
+        const radius = Math.hypot(Math.hypot(x - cx, y - cy) + block.depth / 2, block.width / 2) + AHEAD;
         return { angle, radius };
       })
       .sort((a, b) => a.angle - b.angle);
-    return ring.length < 3 ? [] : ring;
+    return { centre: [cx, cy], spots };
   }
 
   /** A wagon ring round a Wagenburg: a stretch before each battalion standing on it, joined end to end */
   private layRing(battle: Battle, side: Side, done: boolean): void {
-    const { plan } = battle[side];
-    const ring = this.getRing(battle, side);
-    if (!ring.length) return;
+    const found = this.getRing(battle, side);
+    if (!found) return;
+    const {
+      centre: [cx, cy],
+      spots: ring
+    } = found;
     // a gap wider than a third of the ring gets spots of its own, so no corner lies too far out to close it
     const spots = ring.flatMap((spot, i) => {
       const next = ring[(i + 1) % ring.length];
@@ -525,8 +537,8 @@ class WorksModule {
       const turn = (next.angle - spot.angle + Math.PI * 2) % (Math.PI * 2);
       const angle = spot.angle + turn / 2;
       const at = (radius: number): [number, number] => [
-        plan.x + (Math.cos(angle) * radius) / Math.cos(turn / 2),
-        plan.y + (Math.sin(angle) * radius) / Math.cos(turn / 2)
+        cx + (Math.cos(angle) * radius) / Math.cos(turn / 2),
+        cy + (Math.sin(angle) * radius) / Math.cos(turn / 2)
       ];
       return Math.abs(spot.radius - next.radius) < 0.01 ? [at(spot.radius)] : [at(spot.radius), at(next.radius)];
     });

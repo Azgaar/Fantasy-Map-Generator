@@ -6,7 +6,7 @@ const WIDEST = 1000; // men a battalion stands in five ranks at most: a bigger o
 export const DEFAULT_BATTALION = 300; // men: the size the battle was balanced at
 export const COLS = 100; // the grid of a field of any size: a node is 1% of its width
 export const ROWS = 60;
-export const SURROUND = [4, 4]; // grid nodes of ground round each side of the field, across and down: drawn, never fought on
+export const SURROUND = [2, 2]; // grid nodes of ground round each side of the field, across and down: drawn, never fought on
 export const SCENE = [COLS + SURROUND[0] * 2, ROWS + SURROUND[1] * 2]; // grid nodes of the field and the ground round it
 export const VIEW_ASPECT = SCENE[0] / SCENE[1]; // the screen and the exports take in the whole scene, even margins round the field
 

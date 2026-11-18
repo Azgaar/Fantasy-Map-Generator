@@ -66,7 +66,7 @@ export interface FieldWork {
   builder: number | null; // the battalion building it; null for wagons and for works laid in advance
   done: number; // 0 to 1
   up: boolean; // finished by the start of this round: only then it counts
-  harm: number; // 0 to 1: engines knocking down a stretch of wagons; at 1 it is down, kept for the drawing
+  harm: number; // 0 to 1: share of a gap engines knocked into a stretch of wagons; at 1 it is open, kept for the drawing
 }
 
 export interface FieldBreach {
