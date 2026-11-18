@@ -300,6 +300,7 @@ export const BATTLE_TACTIC_LABELS: Record<string, string> = {
   wedge: t("Wedge"),
   harass: t("Harassing fire"),
   flyingWedge: t("Flying wedge"),
+  feignedRetreat: t("Feigned retreat"),
   defensiveLine: t("Defensive line"),
   refusedFlanks: t("Refused flanks"),
   crossing: t("Defence of a crossing"),

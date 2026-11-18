@@ -211,6 +211,10 @@ The shooters form the first line and the foot stand behind them, with riders on 
 
 Foot as in a frontal assault, and the riders apart in a wedge of their own beyond one end of the line. When the time comes the wedge rides wide round the end of the foe's line as one body and falls on it from beyond its end once the foot have it engaged, on the wing with the more open ground. A general picks it with at least two battalions of riders that make a fifth of his power.
 
+#### Feigned retreat
+
+Drawn up as a frontal assault. Once the attack has stalled, a few minutes into the fight with as many men lost as taken and the troops still fresh, the whole side falls back as if beaten, once a battle. An attack that goes well never feints. To the foe it looks like a retreat, and he gives chase, leaving his ground: a hill, a ford, his own ditch. The side runs back a short way, then turns on its pursuers, who are caught out of order and lose heart. If the foe will not follow, the side turns back to the attack. Pursuers cut down some of the runners, and a side that truly loses heart on the way runs for good. Only in field battles; a general considers it with at least two battalions of riders that make a third of his power, the more so against a foe on strong ground, and takes it if it ends best when he thinks the battle through.
+
 ### Defending in the open
 
 These tactics are for the side that waits for the foe. The general looks for the best ground nearby: high ground, a line whose ends lean on water, woods or a burg, and something the foe has to cross to reach it.

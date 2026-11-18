@@ -36,6 +36,7 @@ export const REST = 4; // morale a round a battalion left alone recovers
 export const SHAKEN = 30; // morale under which a battalion does not attack
 export const BREAK = 15; // morale at which it breaks and runs
 export const RALLY = 35; // and at which a broken one that got away stands again
+export const DUPED = 15; // morale who chased a feigned flight loses when it turns on them
 export const YIELD = 20; // morale under which a battalion with no way out gives itself up
 export const HUNGER = 1; // morale a round a garrison cut off loses, down to STARVED
 export const STARVED = 20; // morale hunger takes a garrison cut off down to: there it gives the burg up

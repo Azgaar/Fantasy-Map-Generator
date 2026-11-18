@@ -227,10 +227,9 @@ const STYLE = /* css */ `
   #battleScene.battleMuddy #battleMud, #battleScene.battleIcy #battleFrost { display: inline; }
   #battleScene.battleIcy .battleRiver { stroke: #e3edf3; }
   #battleScene.battleEditable .battleBlock { cursor: grab; }
-  #battleScene .battleSelected > .battleHalo { display: inline; }
+  #battleScene .battleSelected > .battleHalo, #battleScene.battleFocus .battleFocused > .battleHalo { display: inline; }
   #battleScene .battleTurnHandle { cursor: grab; }
   #battleScene.battlePlanning #battleBlocks { display: none; }
-  #battleScene.battleFocus .battleBlock:not(.battleFocused) { opacity: 0.3; }
   #battleLog { --line: #ccc; --muted: #666; height: 100%; }
   #battleLog .attackers { --side: var(--attackers); }
   #battleLog .defenders { --side: var(--defenders); }
@@ -1994,6 +1993,8 @@ class BattleScreenController {
     if (event === "fortified") return `${t("Works stand")}: ${WORK_LABELS[params!.kind as WorkKind]}`;
     if (event === "gap") return t("The wagons are broken through");
     if (event === "clash") return t("The armies clash");
+    if (event === "feint") return t("The army feigns a retreat");
+    if (event === "turned") return t("The army turns on its pursuers");
     if (event === "broken") return t("The army breaks");
     if (event === "raised") return t("The siege is raised");
     if (event === "end") return side ? t("Hold the field") : t("The battle dies down");

@@ -10,6 +10,7 @@ import {
   CHARGE,
   CONTACT,
   COUNTER,
+  DUPED,
   KEEN,
   KILL_RATE,
   REPULSED,
@@ -20,7 +21,7 @@ import {
   STORM_ODDS,
   WARY
 } from "./battle-balance";
-import { BattleRules, COMMANDS, type Command, POSTURES, SIDES, type Side, SURRENDER } from "./battle-rules";
+import { BattleRules, COMMANDS, type Command, FEINT, POSTURES, SIDES, type Side, SURRENDER } from "./battle-rules";
 import { COLS, ROWS } from "./battle-scale";
 import { type Battlefield, Battlefields, type FieldWall } from "./battlefield";
 import { Formations, GAP, type Place, ROW_GAP, TACTICS, type TacticName } from "./formations";
@@ -58,6 +59,10 @@ const BEYOND = 1.15; // the ground beyond the ends of a line that covers them
 const BANK = 1.7; // a line holding a crossing stands so far behind its bank
 const STALLED = 4; // rounds an advancing side comes no nearer on a field with cliffs before it goes in
 const DECLINED = 8; // rounds attackers that will not go in, with nobody coming at them, stand off before they leave the field
+const FEINT_AFTER = 4; // rounds of fighting before a side drawn up to feign flight may
+const FEINT_ROUNDS = 4; // and the longest it runs before it turns
+const FEINT_BACK = 4; // fronts it falls back by
+const LURED = 2; // fronts the foe comes out after it for the trap to be sprung
 const EDGE = 0.5; // and one holding the water's edge, its middle a battalion deep from it: who comes at it is still wading
 const BEND = 1.5; // how far a line bent to the ground goes ahead of its frame or back
 const KINK = 0.35; // and how much further than its neighbour, a front along a front across
@@ -137,7 +142,7 @@ const ROLES: Record<Block["kind"], Exclude<Order["role"], "wedge">> = {
 type Seen = { block: Block; at: [across: number, along: number] }[];
 
 // a side drawn up on its ground (`drawUp`) may take any of these by hand; the crossing and the Wagenburg where they apply
-const ATTACKS: TacticName[] = ["assault", "oblique", "envelopment", "wedge", "harass", "flyingWedge"];
+const ATTACKS: TacticName[] = ["assault", "oblique", "envelopment", "wedge", "harass", "flyingWedge", "feignedRetreat"];
 const DEFENCES: TacticName[] = ["defensiveLine", "refusedFlanks", "crossing", "wagenburg"];
 
 class GeneralModule {
@@ -265,7 +270,8 @@ class GeneralModule {
       arrival: Infinity,
       wedge: null,
       muster: null,
-      hooks: [[], []]
+      hooks: [[], []],
+      lure: null
     };
   }
 
@@ -452,6 +458,13 @@ class GeneralModule {
             riders >= 2 && own.riders >= own.power * 0.2
               ? 0.55 + Math.min(riderOdds - 1, 1.5) * 0.5 + (odds - 1) * 0.3
               : 0
+          ],
+          // riders who can run and turn again draw a foe off strong ground
+          [
+            "feignedRetreat",
+            battle.type === "field" && riders >= 2 && own.riders >= own.power / 3
+              ? 0.5 + (this.getPurchase(battle, own, foe) < this.getPurchase(battle, foe, own) ? 0.4 : 0) + ends
+              : 0
           ]
         ]
       : [
@@ -494,7 +507,10 @@ class GeneralModule {
   private getDrawUpTactics(battle: Battle, side: Side, crossing: boolean): TacticName[] {
     if (battle.type === "landing" && side === "attackers") return ["waves"];
     return [...ATTACKS, ...DEFENCES].filter(
-      name => (name !== "crossing" || crossing) && (name !== "wagenburg" || Works.mayBuild(battle, side))
+      name =>
+        (name !== "crossing" || crossing) &&
+        (name !== "wagenburg" || Works.mayBuild(battle, side)) &&
+        (name !== "feignedRetreat" || battle.type === "field")
     );
   }
 
@@ -1416,7 +1432,11 @@ class GeneralModule {
       this.choosePhase(battle, side, views[side], views[BattleRules.enemyOf(side)], gap)
     );
     SIDES.forEach((side, i) => {
-      if (phases[i] !== battle[side].phase) battle[side].plan.since = battle.round;
+      const was = battle[side].phase;
+      if (phases[i] === was) return;
+      battle[side].plan.since = battle.round;
+      if (phases[i] === FEINT) battle.log.push({ tick: battle.tick, event: "feint", side });
+      else if (was === FEINT && phases[i] === POSTURES[battle.type][side].close) this.turnAbout(battle, side);
     });
     [battle.attackers.phase, battle.defenders.phase] = phases;
     for (const side of SIDES) this.direct(battle, side, views[side], views[BattleRules.enemyOf(side)], gap);
@@ -1459,7 +1479,13 @@ class GeneralModule {
     const data = battle[side];
     const phase = COMMANDS[battle.type][side][command];
     if (!phase || (data.phase === SURRENDER && battle.tick)) return; // not an order for such a battle, or arms laid down
-    if (!BattleRules.keepsPhase(battle.type, command) && this.getOrder(battle, side) !== command) data.phase = phase;
+    if (
+      !BattleRules.keepsPhase(battle.type, command) &&
+      (this.getOrder(battle, side) !== command || data.phase === FEINT)
+    ) {
+      if (data.phase === FEINT && phase === POSTURES[battle.type][side].close) this.turnAbout(battle, side);
+      data.phase = phase;
+    }
     Object.assign(data.plan, { order: command, byHand: battle.round, since: battle.round });
     // the order also says who comes to whom; in a siege the phase does. Told to go for the foe, a general who meant to wait attacks
     if (battle.type !== "siege" && command !== "retreat" && command !== "surrender") {
@@ -1538,6 +1564,7 @@ class GeneralModule {
     if (battle.type === "siege" && battle.field.held !== null)
       return side === "attackers" ? this.besiege(battle, own, foe) : this.withstand(battle, own, foe);
     if (phase === names.run) return phase; // a side that turned to run does not come back
+    if (phase === FEINT) return this.feign(battle, side, own, foe);
 
     const fought = battle.engaged === null ? -1 : battle.round - battle.engaged;
     if (battle.type === "ambush" && fought < plan.opening && !this.isLost(battle, own, foe)) return names.apart; // surprise and shock
@@ -1614,11 +1641,13 @@ class GeneralModule {
         : this.isLost(battle, own, foe)
     )
       return names.run;
+    const enemy = battle[BattleRules.enemyOf(side)];
     if (
-      BattleRules.isBeaten(battle.type, BattleRules.enemyOf(side), battle[BattleRules.enemyOf(side)].phase) ||
+      BattleRules.isBeaten(battle.type, BattleRules.enemyOf(side), enemy.phase) ||
+      enemy.phase === FEINT ||
       foe.share <= 0.25
     )
-      return names.chase;
+      return names.chase; // a foe who feigns flight is taken at his word
     // the attack is called off: it costs far more blood than it draws
     const [fallen, felled] = [data.casualties, battle[BattleRules.enemyOf(side)].casualties];
     if (data.advancing && fallen >= REPULSED && fallen >= felled * 3) return names.run;
@@ -1627,6 +1656,7 @@ class GeneralModule {
     const idle =
       standing && battle.round - plan.since >= DECLINED && !own.ready.some(block => block.action === "fight");
     if (side === "attackers" && this.isOpenFight(battle) && idle) return names.run;
+    if (this.feints(battle, side, own)) return this.fallBack(battle, side, foe);
     if (phase === names.close || phase === names.chase) return names.close;
     if (!this.isOpenFight(battle)) return names.close;
 
@@ -1654,6 +1684,70 @@ class GeneralModule {
     if (plan.fired === null) return battle.round - battle.engaged >= 4 ? names.close : phase; // out of his range
     const patience = this.clamp(Math.round(4 + 16 * (fireShare - 0.5)), 4, 12);
     return battle.round - plan.fired >= patience ? names.close : phase;
+  }
+
+  // A feigned retreat
+
+  /**
+   * Drawn up to feign flight, a field side at grips falls back as if broken, once in the battle: when its attack has stalled,
+   * a while into the fight it has lost as many men as it took, while it is still fresh enough to turn
+   */
+  private feints(battle: Battle, side: Side, own: View): boolean {
+    const { plan, phase } = battle[side];
+    if (battle.type !== "field" || plan.tactic !== "feignedRetreat" || plan.lure) return false;
+    if (phase !== POSTURES.field[side].close || battle.engaged === null) return false;
+    if (battle.round - battle.engaged < FEINT_AFTER || !own.ready.some(block => block.action === "fight")) return false;
+    if (own.morale < WAVERING) return false; // too worn to turn again: it would run for good
+    return this.getFallen(battle, side) >= this.getFallen(battle, BattleRules.enemyOf(side));
+  }
+
+  /** Men a side has lost so far */
+  private getFallen(battle: Battle, side: Side): number {
+    return sum(battle.blocks, block => (block.side === side ? block.initial - block.troops : 0));
+  }
+
+  /** The formation falls back behind where it stood; the general marks where the foe stands, to see him come out */
+  private fallBack(battle: Battle, side: Side, foe: View): string {
+    const { plan } = battle[side];
+    const { field } = battle;
+    plan.lure = [foe.x, foe.y];
+    plan.x -= Math.cos(plan.heading) * FEINT_BACK * field.front;
+    plan.y -= Math.sin(plan.heading) * FEINT_BACK * field.front;
+    const places = battle.blocks
+      .filter(block => block.side === side && this.isInOrder(block))
+      .map(block => block.order);
+    this.keepOnField(field, plan, places);
+    return FEINT;
+  }
+
+  /**
+   * A side feigning flight turns once the foe has come out after it, has stood his ground after all, or it is back at its
+   * places, or has run its course; a side that loses heart on the way runs for good
+   */
+  private feign(battle: Battle, side: Side, own: View, foe: View): string {
+    const { plan } = battle[side];
+    const names = POSTURES[battle.type][side];
+    if (own.morale < SHAKEN || this.isLost(battle, own, foe)) return names.run;
+    const rounds = battle.round - plan.since;
+    if (rounds < 1) return FEINT;
+    const [x, y] = plan.lure!;
+    const lured = Math.hypot(foe.x - x, foe.y - y) >= LURED * battle.field.front;
+    const stood = rounds >= 2 && battle[BattleRules.enemyOf(side)].phase !== names.chase; // he saw the foe run a round ago
+    const back = own.ready.every(block => block.action === "hold");
+    return lured || stood || back || rounds >= FEINT_ROUNDS ? names.close : FEINT;
+  }
+
+  /** The feint is over: the side goes for the foe, and who chased it out of order is caught so */
+  private turnAbout(battle: Battle, side: Side): void {
+    battle[side].advancing = true;
+    battle.log.push({ tick: battle.tick, event: "turned", side });
+    const enemy = BattleRules.enemyOf(side);
+    if (battle[enemy].phase !== POSTURES[battle.type][enemy].chase) return;
+    for (const block of battle.blocks) {
+      const { role } = block.order;
+      if (block.side !== enemy || !this.isInOrder(block) || role === "support" || role === "battery") continue;
+      block.morale = Math.max(block.morale - DUPED / block.steadiness, 0);
+    }
   }
 
   // A siege
@@ -1964,7 +2058,7 @@ class GeneralModule {
 
     if (siege && side === "attackers" && !Movement.isStorming(battle))
       [plan.x, plan.y] = plan.camp; // back to the lines
-    else if (round && !plan.fixed && (data.advancing || !(plan.fortify || sheltered)))
+    else if (round && !plan.fixed && phase !== FEINT && (data.advancing || !(plan.fortify || sheltered)))
       this.moveFrame(battle, side, own, foe, gap); // the formation stays with its works till it advances
     const frameFoes = foe.ready.map(block => ({ block, at: this.toFrame(plan, block) }));
     if (round && plan.wedge && stance !== "flee") this.moveWedge(battle, side, own, frameFoes, gap);
@@ -1972,7 +2066,13 @@ class GeneralModule {
     for (const block of own.ready) {
       const order = block.order;
       if (stance === "flee") {
-        order.mission = "withdraw";
+        order.mission = phase === FEINT ? "feint" : "withdraw";
+        if (phase === FEINT) {
+          // to its place in the formation fallen back
+          [order.sent, order.target] = [false, null];
+          [order.x, order.y] = this.onField(field, this.toField(plan, order.across, order.along));
+          order.facing = plan.heading;
+        }
         continue;
       }
       if (order.sent) {

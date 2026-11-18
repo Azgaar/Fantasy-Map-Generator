@@ -28,6 +28,7 @@ export type TacticName =
   | "wedge"
   | "harass"
   | "flyingWedge"
+  | "feignedRetreat"
   | "defensiveLine"
   | "refusedFlanks"
   | "crossing"
@@ -83,6 +84,17 @@ export const TACTICS: Record<TacticName, Tactic> = {
     bow: 0,
     shooters: "behind",
     riders: "wedge"
+  },
+  // drawn up as an assault: the feint is in the phases, not the formation
+  feignedRetreat: {
+    lines: 1,
+    reserve: 0.2,
+    span: 1,
+    massed: false,
+    refuse: 0,
+    bow: 0,
+    shooters: "behind",
+    riders: "wings"
   },
   // defence
   defensiveLine: {

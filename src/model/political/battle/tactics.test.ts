@@ -213,6 +213,77 @@ describe("a flying wedge", () => {
   });
 });
 
+describe("a feigned retreat", () => {
+  const riders = { infantry: 1800, archers: 600, cavalry: 900 };
+  const foes = { infantry: 2400, archers: 600, cavalry: 600 };
+  const feint = (): Battle => {
+    const b = setup("field", riders, foes, Battlefields.createEmpty());
+    Battles.intervene(b, { tick: 0, kind: "dig", side: "defenders", on: true }); // the attack stalls at the works
+    Battles.intervene(b, { tick: 0, kind: "tactic", side: "attackers", tactic: "feignedRetreat" });
+    b.planned = true;
+    return b;
+  };
+
+  it("is weighed by a general strong in riders, in the field only", () => {
+    const b = setup("field", riders, foes, Battlefields.createEmpty());
+    expect(Generals.getOptions(b, "attackers").map(option => option.tactic)).toContain("feignedRetreat");
+    const few = setup("field", { infantry: 3000, archers: 600, cavalry: 300 }, foes, Battlefields.createEmpty());
+    expect(Generals.getOptions(few, "attackers").map(option => option.tactic)).not.toContain("feignedRetreat");
+    const air = setup("air", riders, foes, Battlefields.createEmpty("sky"));
+    expect(Generals.getTactics(air, "attackers")).not.toContain("feignedRetreat");
+  });
+
+  it("falls back as if broken once, draws the foe out after it and turns on him", () => {
+    const b = feint();
+    let lure: [number, number] | null = null;
+    let chased = false;
+    while (!b.result && b.tick < 1200 && !b.log.some(entry => entry.event === "turned")) {
+      Battles.tick(b);
+      lure ??= b.attackers.plan.lure;
+      if (b.attackers.phase === "feint") {
+        chased ||= b.defenders.phase === "pursue";
+        expect(Generals.getOrder(b, "attackers")).toBe("retreat"); // it looks like one
+        expect(b.blocks.some(block => block.side === "attackers" && block.status === "fled")).toBe(false); // on the field
+      }
+    }
+    const events = b.log.filter(entry => ["feint", "turned", "broken"].includes(entry.event));
+    expect(events.map(entry => [entry.event, entry.side])).toEqual([
+      ["feint", "attackers"],
+      ["turned", "attackers"]
+    ]);
+    expect(chased).toBe(true);
+    expect(b.attackers.phase).toBe("melee");
+    const [x, y] = lure!;
+    const out = (): number => {
+      const ready = b.blocks.filter(block => block.side === "defenders" && block.status === "ready");
+      const troops = ready.reduce((total, block) => total + block.troops, 0);
+      const middle = ready.reduce(
+        (at, block) => [at[0] + block.x * block.troops, at[1] + block.y * block.troops],
+        [0, 0]
+      );
+      return Math.hypot(middle[0] / troops - x, middle[1] / troops - y);
+    };
+    expect(out()).toBeGreaterThan(b.field.front); // he came out after it
+    Battles.replay(b, []);
+    expect(b.log.filter(entry => entry.event === "feint")).toHaveLength(1);
+  });
+
+  it("does not feint while its attack goes its way, nor once it is worn", () => {
+    const b = setup("field", riders, foes, Battlefields.createEmpty()); // in the open it takes more than it loses for long
+    Battles.intervene(b, { tick: 0, kind: "tactic", side: "attackers", tactic: "feignedRetreat" });
+    b.planned = true;
+    Battles.replay(b, []);
+    expect(b.log.some(entry => entry.event === "feint")).toBe(false);
+  });
+
+  it("is a real retreat when ordered to retreat in the middle of it", () => {
+    const b = feint();
+    while (b.attackers.phase !== "feint" && b.tick < 1200) Battles.tick(b);
+    Battles.intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "retreat" });
+    expect(b.attackers.phase).toBe("retreat");
+  });
+});
+
 describe("a general's orders", () => {
   it("has a side told to hold go back to the attack once the order has stood its time, a weaker one too", () => {
     const b = setup("field", { infantry: 2040, archers: 765, cavalry: 510 }, mixed, Battlefields.createEmpty());

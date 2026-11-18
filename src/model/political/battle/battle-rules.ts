@@ -7,12 +7,13 @@ export const SIDES: Side[] = ["attackers", "defenders"];
 export const BATTLE_TYPES: BattleType[] = ["field", "naval", "siege", "ambush", "landing", "bombardment", "air"];
 
 export const SURRENDER = "surrendering"; // the phase a side lays down its arms in, of any battle type; final
+export const FEINT = "feint"; // a field side that runs to draw the foe out, and turns on him
 
 /** Phases a side can be in, the first one is where it starts */
 export const PHASES: Record<BattleType, Record<Side, string[]>> = {
   field: {
-    attackers: ["skirmish", "melee", "pursue", "retreat", "surrendering"],
-    defenders: ["skirmish", "melee", "pursue", "retreat", "surrendering"]
+    attackers: ["skirmish", "melee", "pursue", "retreat", FEINT, "surrendering"],
+    defenders: ["skirmish", "melee", "pursue", "retreat", FEINT, "surrendering"]
   },
   naval: {
     attackers: ["shelling", "boarding", "chase", "withdrawal", "surrendering"],
@@ -60,6 +61,7 @@ const PHASE_COMMAND: Record<string, Command> = {
   retreat: "retreat",
   withdrawal: "retreat",
   flee: "retreat",
+  [FEINT]: "retreat", // to the foe and to the eye
   surrendering: "surrender"
 };
 

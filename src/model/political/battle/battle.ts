@@ -37,7 +37,7 @@ import { BattleScale } from "./battle-scale";
 import { type Battlefield, Battlefields, type FieldWall } from "./battlefield";
 import type { TacticName } from "./formations";
 import { Generals, type Option } from "./general";
-import { type Move, Movement, ROUND_TICKS } from "./movement";
+import { ARRIVED, type Move, Movement, ROUND_TICKS } from "./movement";
 import { type Condition, HEAT, SKIES, type Weather } from "./weather";
 import { Works } from "./works";
 
@@ -55,7 +55,7 @@ const PUSH = 0.25; // battalion fronts a battalion is pushed aside in a tick at 
 export type BlockStatus = "ready" | "routed" | "surrendered" | "fled" | "destroyed";
 export type BlockAction = "hold" | "move" | "shoot" | "fight" | "flee" | "build";
 export type Role = "line" | "support" | "battery" | "wing" | "reserve" | "wedge";
-export type Mission = "line" | "support" | "battery" | "guard" | "reserve" | "flank" | "hunt" | "withdraw";
+export type Mission = "line" | "support" | "battery" | "guard" | "reserve" | "flank" | "hunt" | "withdraw" | "feint";
 
 /** What the general tells a battalion: its place in the formation and what to do there */
 export interface Order {
@@ -99,6 +99,7 @@ export interface Plan {
   wedge: Wedge | null; // the riders' own formation, when they fight apart
   muster: Muster | null; // a sortie's party forming up outside the walls
   hooks: [left: number[], right: number[]]; // battalions turned out at the ends of the line, the nearest the end first
+  lure: [x: number, y: number] | null; // where the foe stood when the side fell back to draw him out: it feigns once
 }
 
 /** The party of a sortie formed up outside the gate it goes out by, before it falls on the foe */
@@ -259,6 +260,8 @@ export type LogEvent =
   | "gap"
   | "raised"
   | "clash"
+  | "feint"
+  | "turned"
   | "broken"
   | "end";
 
@@ -381,7 +384,8 @@ const NO_PLAN: Plan = {
   arrival: Infinity,
   wedge: null,
   muster: null,
-  hooks: [[], []]
+  hooks: [[], []],
+  lure: null
 };
 
 class BattleModule {
@@ -912,6 +916,10 @@ class BattleModule {
         this.flee(battle, block, onField);
         continue;
       }
+      if (block.order.mission === "feint") {
+        this.feign(battle, block, onField);
+        continue;
+      }
 
       const { target, to, stop, key, shared, shoot, facing, haste, keep, build } = Battalions.decide(
         battle,
@@ -995,6 +1003,22 @@ class BattleModule {
         block.impetus = Math.min(1 + BattleScale.toMetresPerSecond(Math.max(closing, 0)) / IMPETUS, MAX_IMPETUS);
       }
     }
+  }
+
+  /** Run back to its place in the formation fallen back, as if broken; there it stands, its back to the foe no more */
+  private feign(battle: Battle, block: Block, others: Block[]): void {
+    block.target = null;
+    const { order } = block;
+    const [dx, dy] = [order.x - block.x, order.y - block.y];
+    const distance = Math.hypot(dx, dy);
+    if (distance < ARRIVED * battle.field.front) {
+      block.action = "hold";
+      block.facing = Movement.turn(block.facing, order.facing, 1.2);
+      return;
+    }
+    block.action = "flee";
+    block.facing = Movement.turn(block.facing, Math.atan2(dy, dx), 1.2);
+    Movement.step(battle, block, dx, dy, distance, others, FLIGHT);
   }
 
   /** Run for the edge of the field; the broken stop once no foe in order is near, to gather themselves, while their side fights on */

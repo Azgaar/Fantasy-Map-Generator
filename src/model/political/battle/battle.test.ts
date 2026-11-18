@@ -307,7 +307,7 @@ describe("battle generals", () => {
     for (const side of ["attackers", "defenders"] as const) {
       const offered = Generals.getTactics(b, side);
       expect(offered[0]).toBe(b[side].plan.tactic);
-      expect([...offered].sort()).toEqual([...all, "wagenburg"].sort()); // no river to hold a crossing of
+      expect([...offered].sort()).toEqual([...all, "feignedRetreat", "wagenburg"].sort()); // no river to hold a crossing of
       for (const tactic of offered) {
         Battles.intervene(b, { tick: 0, kind: "tactic", side, tactic });
         expect(b[side].plan.tactic).toBe(tactic);
