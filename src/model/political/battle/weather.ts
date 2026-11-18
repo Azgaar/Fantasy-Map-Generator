@@ -8,16 +8,16 @@ export const CONDITIONS = ["mud", "ice", "heat"] as const;
 export type Condition = (typeof CONDITIONS)[number];
 
 interface Sky {
-  range: number; // share of its range a shooter keeps
-  shot: number; // and of the force of its shots: wet strings and powder, missiles lost in the murk
+  sight: number; // metres the murk lets a battalion see by day: see sight.ts
+  shot: number; // share of the force of shots kept: wet strings and powder
 }
 
 export const SKIES: Record<Weather, Sky> = {
-  clear: { range: 1, shot: 1 },
-  rain: { range: 0.75, shot: 0.6 },
-  downpour: { range: 0.625, shot: 0.35 },
-  snow: { range: 0.8, shot: 0.8 },
-  fog: { range: 0.7, shot: 0.6 }
+  clear: { sight: Infinity, shot: 1 },
+  rain: { sight: 1500, shot: 0.6 },
+  downpour: { sight: 400, shot: 0.35 },
+  snow: { sight: 600, shot: 0.8 },
+  fog: { sight: 150, shot: 1 }
 };
 
 // pace kept on soaked ground: open ground and roads churn up, woods and bogs were soft already; and the footing.

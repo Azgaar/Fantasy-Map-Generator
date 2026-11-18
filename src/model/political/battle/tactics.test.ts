@@ -284,6 +284,74 @@ describe("a feigned retreat", () => {
   });
 });
 
+describe("a strategic retreat", () => {
+  const few = { infantry: 600, archers: 150 };
+  const firstOrder = (b: Battle, side: "attackers" | "defenders"): string | undefined => {
+    Battles.tick(b);
+    const entry = b.log.find(entry => entry.event === "order" && entry.side === side);
+    return entry?.params?.order as string | undefined;
+  };
+
+  it("is the tactic of a general who sees the day lost before it begins: he leaves the field at once", () => {
+    for (const side of ["attackers", "defenders"] as const) {
+      const b =
+        side === "attackers"
+          ? setup("field", few, mixed, Battlefields.createEmpty())
+          : setup("field", mixed, few, Battlefields.createEmpty());
+      expect(b[side].plan.tactic, side).toBe("strategicRetreat");
+      expect(b.log.find(entry => entry.event === "tactic" && entry.side === side)?.params?.tactic).toBe(
+        "strategicRetreat"
+      );
+      expect(Generals.getOptions(b, side)).toEqual([]); // nothing to think through
+      expect(Generals.getTactics(b, side)[0]).toBe("strategicRetreat");
+      expect(firstOrder(b, side), side).toBe("retreat");
+      expect(b.log.some(entry => entry.event === "broken")).toBe(false); // it leaves as it meant to
+    }
+  });
+
+  it("is taken when the troops lose heart before the start, and never at fair odds", () => {
+    const fair = setup("field", mixed, mixed, Battlefields.createEmpty());
+    expect(fair.attackers.plan.tactic).not.toBe("strategicRetreat");
+    expect(fair.defenders.plan.tactic).not.toBe("strategicRetreat");
+    Battles.intervene(fair, { tick: 0, kind: "morale", side: "defenders", value: -80 });
+    Battles.prepare(fair);
+    expect(fair.defenders.plan.tactic).toBe("strategicRetreat");
+  });
+
+  it("gives way to a tactic given by hand: the side stands, or goes in, and fights till it bleeds", () => {
+    for (const side of ["attackers", "defenders"] as const) {
+      for (const tactic of ["defensiveLine", "assault"] as const) {
+        const b =
+          side === "attackers"
+            ? setup("field", few, mixed, Battlefields.createEmpty())
+            : setup("field", mixed, few, Battlefields.createEmpty());
+        Battles.intervene(b, { tick: 0, kind: "tactic", side, tactic });
+        expect(b[side].plan.tactic).toBe(tactic);
+        const orders: string[] = [];
+        while (!b.result && b.tick < 2400) {
+          Battles.tick(b);
+          orders.push(Generals.getOrder(b, side));
+        }
+        const at = `${side} ${tactic}`;
+        expect(orders[0], at).not.toBe("retreat");
+        if (tactic === "assault") expect(orders, at).toContain("attack"); // it goes for the foe
+        expect(b[side].casualties + b[side].captured, at).toBeGreaterThanOrEqual(1 / 4); // the odds did not send it off
+      }
+    }
+  });
+
+  it("gives way to an order given by hand while it stands, and is taken by hand at any odds", () => {
+    const ordered = setup("field", few, mixed, Battlefields.createEmpty());
+    Battles.intervene(ordered, { tick: 0, kind: "order", side: "attackers", order: "attack" });
+    Battles.prepare(ordered);
+    expect(ordered.attackers.plan.tactic).not.toBe("strategicRetreat");
+    expect(firstOrder(ordered, "attackers")).toBe("attack");
+    const even = setup("field", mixed, mixed, Battlefields.createEmpty());
+    Battles.intervene(even, { tick: 0, kind: "tactic", side: "attackers", tactic: "strategicRetreat" });
+    expect(firstOrder(even, "attackers")).toBe("retreat");
+  });
+});
+
 describe("a general's orders", () => {
   it("has a side told to hold go back to the attack once the order has stood its time, a weaker one too", () => {
     const b = setup("field", { infantry: 2040, archers: 765, cavalry: 510 }, mixed, Battlefields.createEmpty());

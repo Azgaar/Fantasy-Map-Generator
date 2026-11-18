@@ -1,12 +1,13 @@
 // What stays put over the battle field while the view moves: the title and clock, the scale bar and the North arrow
 
 import type { BattleLook } from "@/data/battle-options";
+import { VIEW_ASPECT } from "@/model/political/battle/battle-scale";
 import { getLengthUnit } from "@/model/units";
 import { escapeHtml } from "@/utils/string-utils";
 
-/** The overlay is drawn in points of a view 1000 wide, in the field's proportions */
+/** The overlay is drawn in points of a view 1000 wide, in the scene's proportions */
 export const OVERLAY_WIDTH = 1000;
-export const OVERLAY_HEIGHT = 600;
+export const OVERLAY_HEIGHT = OVERLAY_WIDTH / VIEW_ASPECT;
 const INK = "#3d3a33";
 const HALO = `paint-order="stroke" stroke="#fbf5e9" stroke-width="3" stroke-linejoin="round"`;
 const RESCALE = 0.03; // the scale bar is redrawn when the view's width changed by more than this share

@@ -229,6 +229,7 @@ const battle = z.strictObject({
   rendering: z.strictObject({
     relief: z.enum(["hachures", "contours", "none"]),
     shade: z.boolean(),
+    light: z.boolean(),
     heights: z.boolean(),
     woods: z.boolean(),
     props: z.boolean(),

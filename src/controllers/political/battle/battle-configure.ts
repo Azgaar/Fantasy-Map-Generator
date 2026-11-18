@@ -107,6 +107,13 @@ class BattleConfigureController {
           tip: t("Shade the slopes turned from the light, so the hills stand out")
         },
         {
+          key: "light",
+          label: t("Time of day light"),
+          tip: t(
+            "Light the plan by the hour and the sky: the sun and the shadows of the heights on the ground, cloud, dusk and night over everything. Off, the plan is lit as a map, from the north-west"
+          )
+        },
+        {
           key: "heights",
           label: t("Heights"),
           tip: t("Label the contour lines and mark hilltops and hollows with their heights")

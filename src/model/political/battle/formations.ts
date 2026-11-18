@@ -33,6 +33,7 @@ export type TacticName =
   | "refusedFlanks"
   | "crossing"
   | "wagenburg"
+  | "strategicRetreat"
   | "column"
   | "ambuscadeBothSides"
   | "ambuscadeOneSide"
@@ -140,6 +141,17 @@ export const TACTICS: Record<TacticName, Tactic> = {
     shooters: "behind",
     riders: "behind",
     ring: true
+  },
+  // the day lost before it begins: drawn up as a defensive line, the retreat is in the phases
+  strategicRetreat: {
+    lines: 1,
+    reserve: 0.2,
+    span: 1,
+    massed: false,
+    refuse: 0,
+    bow: 0,
+    shooters: "behind",
+    riders: "behind"
   },
   // of a battle type
   column: { lines: 1, reserve: 0, span: 1, massed: false, refuse: 0, bow: 0, shooters: "behind", riders: "wings" },

@@ -3,9 +3,10 @@
 
 import { pointer, select } from "d3";
 import type { Battle } from "@/model/political/battle/battle";
-import { BattleScale, COLS, ROWS } from "@/model/political/battle/battle-scale";
+import { COLS, ROWS } from "@/model/political/battle/battle-scale";
 import { type Battlefield, Battlefields, type FieldWork } from "@/model/political/battle/battlefield";
 import { Movement } from "@/model/political/battle/movement";
+import { BattleTime } from "@/model/political/battle/time";
 import { Works } from "@/model/political/battle/works";
 import { log } from "@/utils/logger";
 import { escapeHtml } from "@/utils/string-utils";
@@ -254,7 +255,7 @@ class BattleDebugRenderer {
     const state = [
       `tick ${battle.tick}`,
       `round ${Math.floor(battle.tick / 6) + 1}`,
-      BattleScale.formatClock(battle.tick),
+      BattleTime.formatClock(battle.hour, battle.tick),
       `field ${Math.round(battle.field.width)} m, front ${Math.round(battle.field.front)} m`,
       `engaged ${battle.engaged ?? "no"}`,
       `storm ${battle.storm ?? "no"}`,

@@ -27,7 +27,7 @@ const MOST_TOPS = 5;
 const MOST_HOLLOWS = 3;
 const CLIFF_BAND = 0.8; // of a node either side of a cliff, the relief is left out: the cliff's own mark shows the drop
 
-interface Surface {
+export interface Surface {
   step: number; // metres between samples
   cols: number;
   rows: number;
@@ -46,21 +46,28 @@ interface Level {
 }
 
 class BattleReliefRenderer {
-  /** The relief groups, each shown or hidden by the battle look */
-  getMarkup(field: Battlefield, halo: string): string {
+  /** The relief groups, each shown or hidden by the battle look; the soft shadow left out where the light is drawn over it */
+  getMarkup(field: Battlefield, halo: string, shade = true): string {
     if (!field.relief) return "";
     const pt = Battlefields.getPoint(field);
     const surface = this.getSurface(field);
     const ratio = getHeightUnitRatio();
     const levels = this.getLevels(field, surface, ratio, MOST_LINES);
     const strength = Math.min(Math.max(field.relief / FULL_RELIEF, 0.15), 1);
-    return /* html */ `<g class="battleShade">${this.getShade(field, surface, strength)}</g>
+    return /* html */ `<g class="battleShade">${shade ? this.getShade(field, surface, strength) : ""}</g>
       <g class="battleHachures">${this.getHachures(field, surface, this.getLevels(field, surface, ratio, MOST_ROWS), ratio, strength)}</g>
       <g class="battleContours">${this.getContours(field, levels, surface, pt)}</g>
       <g class="battleContourLabels" fill="${INK}" stroke="${halo}" stroke-width="${3 * pt}" stroke-linejoin="round"
         paint-order="stroke" font-size="${9 * pt}" font-family="Georgia, serif" text-anchor="middle">${this.getLevelLabels(field, levels, surface, pt)}</g>
       <g class="battleHeights" fill="${INK}" stroke="${halo}" stroke-width="${3 * pt}" stroke-linejoin="round"
         paint-order="stroke" font-size="${10 * pt}" font-family="Georgia, serif">${this.getHeightMarks(field, ratio, pt)}</g>`;
+  }
+
+  /** The surface the light falls on, how much its slopes are steepened to show their form, and how strongly a field this high is shaded */
+  getLitSurface(field: Battlefield): { surface: Surface; exaggeration: number; strength: number } {
+    const surface = this.getSurface(field);
+    const exaggeration = Math.min(Math.max(SHADED_SLOPE / surface.steep, 2), 12);
+    return { surface, exaggeration, strength: Math.min(Math.max(field.relief / FULL_RELIEF, 0.15), 1) };
   }
 
   /** Hachures: strokes from each level down the fall line toward the next, thicker where steeper */

@@ -2,16 +2,18 @@ import { color, contours, curveBasisClosed, curveCatmullRom, line, select } from
 import { type BattleLook, DEFAULT_BATTLE_OPTIONS } from "@/data/battle-options";
 import { BATTLE_ACTION_LABELS, BATTLE_STATUS_LABELS } from "@/data/id-labels";
 import { Icons } from "@/model/icons";
-import type { Battle, Block } from "@/model/political/battle/battle";
+import { type Battle, Battles, type Block } from "@/model/political/battle/battle";
 import type { Side } from "@/model/political/battle/battle-rules";
 import { BattleScale } from "@/model/political/battle/battle-scale";
 import { type Battlefield, Battlefields, type FieldWork, type WorkKind } from "@/model/political/battle/battlefield";
-import { SKIES } from "@/model/political/battle/weather";
+import { Sight } from "@/model/political/battle/sight";
+import { Works } from "@/model/political/battle/works";
 import { convertSpeed, formatLength, getSpeedUnit } from "@/model/units";
 import { BattleCamera, type View } from "@/renderers/battle/battle-camera";
 import { BattleCliffsView } from "@/renderers/battle/draw-battle-cliffs";
 import { BattleDebugView } from "@/renderers/battle/draw-battle-debug";
 import { BattleGroundView } from "@/renderers/battle/draw-battle-ground";
+import { BattleLightView, LAMP } from "@/renderers/battle/draw-battle-light";
 import { BattleReliefView } from "@/renderers/battle/draw-battle-relief";
 import { BattleWeatherView } from "@/renderers/battle/draw-battle-weather";
 import type { Point } from "@/types/global";
@@ -24,10 +26,13 @@ import { capitalize, escapeHtml } from "@/utils/string-utils";
  * - `battleTerrain`: the ground, drawn once (tint, cover, relief, props, water, cliffs, rivers, roads, towns)
  * - `battleWalls`: the field's walls, drawn again on a breach
  * - `battleEdge`, `battleFrost`, `battleMud`: the field's edge within its scene, frozen and soaked ground
+ * - `battleLightShade`: the ground shaded by the sun and the sky of the moment
  * - `battleLabels`: burg and river names
  * - `battleWorks`, `battleWorkTips`: field works and their hover lines
  * - `battleFire`, `battleArrows`, `battleHover`: fire lines, where battalions went, the marks of the pointed and picked
  * - `battleBlocks`, `battleMissiles`, `battleClashes`: battalions, arrows and shells in flight, clashes
+ * - `battleLight`: the tint of the hour and the sky over all of it, battalions too, lifted round each battalion by its
+ *   light at night (`battleLamps`); laid on as one, multiplied; the pointer goes through
  * - `battleSelection`: the box dragged and the turning handle
  */
 // what the animation export records; the walls too, for their breaches
@@ -37,7 +42,8 @@ export const MOVING_LAYERS = [
   "battleFire",
   "battleBlocks",
   "battleMissiles",
-  "battleClashes"
+  "battleClashes",
+  "battleLight"
 ];
 
 type Group = ReturnType<typeof select<SVGGElement, unknown>>;
@@ -70,6 +76,7 @@ interface Scene {
 
 /** A shot in the air: a dotted fire line without a missile */
 interface Shot {
+  key: string; // the shooter's, and another for an engine's shot at walls or works
   block: Block;
   missile: "arrows" | "shell" | undefined;
   phase: number;
@@ -95,6 +102,7 @@ const LOOK_LAYERS: [keyof BattleLook, string][] = [
 ];
 
 const RESCALE = 0.03; // marks are sized anew when the zoom changed by more than this share
+const REBAKE = 400; // ms at least between bakes of the shade while the sun drifts
 
 // the ground
 const INK = "#3d3a33";
@@ -180,6 +188,7 @@ const ARROWHEAD = 7; // points
 
 class BattleSceneRenderer {
   private readonly scenes = new WeakMap<SVGSVGElement, Scene>();
+  private readonly baked = new WeakMap<SVGSVGElement, { time: number; sky: string; at: number }>(); // the shade drawn
   private readonly shown = new WeakMap<SVGSVGElement, { time: number; at: Positions }>();
   private readonly fallen = new WeakMap<Block, number>(); // when a battalion was first drawn destroyed
 
@@ -204,6 +213,7 @@ class BattleSceneRenderer {
   /** What to draw and in which colours; applied at once, by a style the scene and its exports carry */
   setLook(svg: SVGSVGElement, look: BattleLook, colors: SideColors): void {
     Object.assign(this.getScene(svg), { look, colors });
+    this.baked.delete(svg); // the light may be off or on now
     const style = this.getLayer(svg, "battleLook");
     if (style) style.textContent = this.getLookStyle(look);
   }
@@ -297,8 +307,8 @@ class BattleSceneRenderer {
         };
 
     this.getScene(svg).marks = 1;
-    const box = BattleCamera.getFieldView(field);
-    svg.setAttribute("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
+    this.baked.delete(svg); // a new ground: shaded anew
+    svg.setAttribute("viewBox", `${area.x} ${area.y} ${area.width} ${area.height}`);
     delete svg.dataset.works; // the works layer is drawn empty: `updateBlocks` fills it
     svg.dataset.breaches = String(field.breaches.length);
 
@@ -313,6 +323,7 @@ class BattleSceneRenderer {
         <rect ${whole} fill="#6b4a26" opacity="0.04"/>
         <g transform="translate(${dx} ${dy})">${field.open ? "" : BattleWeatherView.getMudMarkup(ground)}</g>
       </g>
+      <g id="battleLightShade" class="battleShade" transform="translate(${dx} ${dy})" clip-path="url(#battleGroundClip)" style="mix-blend-mode: multiply" pointer-events="none"></g>
       <g id="battleLabels" pointer-events="none"></g>
       <g id="battleWorks" fill="none" stroke-width="${1.6 * pt}" pointer-events="none">${this.getWorkPaths(pt)}</g>
       <g id="battleWorkTips" stroke="none" pointer-events="stroke"></g>
@@ -322,6 +333,7 @@ class BattleSceneRenderer {
       <g id="battleBlocks"></g>
       <g id="battleMissiles" fill="none" stroke-linecap="round" pointer-events="none"></g>
       <g id="battleClashes" text-anchor="middle" dominant-baseline="central" fill="#b3261e" pointer-events="none"></g>
+      <g id="battleLight" pointer-events="none" style="mix-blend-mode: multiply"><rect id="battleTint" ${whole} fill="#fff"/><g id="battleLamps" fill="url(#battleLampGlow)"></g></g>
       <g id="battleSelection" fill="none" stroke="#222"></g>`;
 
     if (field.open) return;
@@ -331,6 +343,47 @@ class BattleSceneRenderer {
     if (scene) this.drawWalls(this.addPart(terrain, "Walls").attr("clip-path", "url(#battleOutsideClip)"), scene, pt);
     this.drawWalls(root.select("#battleWalls"), field, pt);
     this.drawLabels(root.select("#battleLabels"), field, ground, [dx, dy], paper);
+  }
+
+  /**
+   * The light of the battle's moment: the tint follows the time at once, the ground's shade is baked anew once the sun moved
+   * a minute's way, no more often than `REBAKE` while it drifts; at once when the sky, the hour or the look changed
+   */
+  drawLight(svg: SVGSVGElement, battle: Battle): void {
+    const tint = this.getLayer(svg, "battleTint");
+    if (!tint) return;
+    const lighting = BattleLightView.getLighting(battle, this.getScene(svg).look.light);
+    const color = BattleLightView.toColor(lighting.tint);
+    if (tint.getAttribute("fill") !== color) tint.setAttribute("fill", color);
+    this.drawLamps(svg, battle, this.shown.get(svg)?.at ?? null);
+    const last = this.baked.get(svg);
+    const now = performance.now();
+    const drift = last?.sky === lighting.sky ? Math.abs(lighting.time - last.time) : Infinity;
+    if (drift < 1 / 60 || (drift < 0.25 && now - last!.at < REBAKE)) return;
+    this.baked.set(svg, { time: lighting.time, sky: lighting.sky, at: now });
+    const shade = battle.field.open ? null : BattleLightView.bake(battle.scene ?? battle.field, lighting);
+    this.getLayer(svg, "battleLightShade")!.innerHTML = shade
+      ? `<image href="${shade.href}" width="${shade.width}" height="${shade.height}" preserveAspectRatio="none"/>`
+      : "";
+  }
+
+  /** A glow as far as it sees about each battalion with its torches lit, where it is shown, as strong as it is dark */
+  private drawLamps(svg: SVGSVGElement, battle: Battle, at: Positions | null): void {
+    const layer = this.getLayer(svg, "battleLamps");
+    if (!layer) return;
+    const night = BattleLightView.getNight(battle, this.getScene(svg).look.light);
+    const present = (block: Block) => block.status === "ready" || block.status === "routed";
+    const lit = night ? battle.blocks.filter(block => present(block) && Sight.isLit(battle, block)) : [];
+    const sight = night ? Sight.getSight(battle) : 0;
+    const place = (block: Block) => at?.get(block.id) ?? block;
+    select(layer)
+      .selectAll<SVGCircleElement, Block>("circle")
+      .data(lit, block => block.id)
+      .join("circle")
+      .attr("cx", block => place(block).x.toFixed(1))
+      .attr("cy", block => place(block).y.toFixed(1))
+      .attr("r", block => (sight + Math.hypot(block.width, block.depth) / 2).toFixed(1))
+      .attr("opacity", night.toFixed(2));
   }
 
   /** Patterns of towns and fords, the clips of the field, its ground and what lies outside it, masks of rivers and cover */
@@ -355,6 +408,7 @@ class BattleSceneRenderer {
       <pattern id="battleFordPattern" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="scale(${pt})">
         <rect width="7" height="7" fill="#e4edf4"/><circle cx="2" cy="2" r="0.9" fill="#8ea5b8"/><circle cx="5.5" cy="5.2" r="0.7" fill="#8ea5b8"/>
       </pattern>
+      <radialGradient id="battleLampGlow">${LAMP.stops.map(([offset, color, opacity]) => `<stop offset="${offset}" stop-color="${color}" stop-opacity="${opacity}"/>`).join("")}</radialGradient>
       <clipPath id="battleFieldClip"><rect width="${width}" height="${height}"/></clipPath>
       <clipPath id="battleGroundClip"><rect width="${ground.width}" height="${ground.height}"/></clipPath>
       <clipPath id="battleOutsideClip"><path d="${outside}" clip-rule="evenodd"/></clipPath>
@@ -371,7 +425,7 @@ class BattleSceneRenderer {
   private drawTerrain(terrain: Group, field: Battlefield, paper: string, masks: CoverMasks, pt: number): void {
     this.addPart(terrain, "Tint").html(BattleGroundView.getMarkup(field));
     this.drawCover(this.addPart(terrain, "Cover"), field, masks);
-    this.addPart(terrain, "Relief").html(BattleReliefView.getMarkup(field, paper));
+    this.addPart(terrain, "Relief").html(BattleReliefView.getMarkup(field, paper, !BattleLightView.isSupported()));
     this.addPart(terrain, "Props").html(BattleGroundView.getPropsMarkup(field));
     this.drawWater(this.addPart(terrain, "Water"), field, pt);
     this.addPart(terrain, "Cliffs").html(BattleCliffsView.getMarkup(field, pt));
@@ -588,7 +642,7 @@ class BattleSceneRenderer {
   private drawLabels(labels: Group, field: Battlefield, ground: Battlefield, [dx, dy]: Point, paper: string): void {
     const { width, height } = field;
     const pt = this.getPoint(field);
-    const box = BattleCamera.getFieldView(field);
+    const box = BattleCamera.getSceneBox(field);
     for (const burg of ground.burgs) {
       // above the burg, or below it when the edge is too close
       const [x, y] = [burg.x + dx, burg.y + dy];
@@ -627,7 +681,7 @@ class BattleSceneRenderer {
   /** A label in points, kept within the field's view */
   private label(parent: Group, field: Battlefield, text: string, x: number, y: number, size: number, fill: string) {
     const pt = this.getPoint(field);
-    const box = BattleCamera.getFieldView(field);
+    const box = BattleCamera.getSceneBox(field);
     const [left, top] = [
       Math.min(Math.max(x, box.x + 60 * pt), box.x + box.width - 60 * pt),
       Math.min(Math.max(y, box.y + 24 * pt), box.y + box.height - 12 * pt)
@@ -840,10 +894,11 @@ class BattleSceneRenderer {
     const time = battle.tick + progress;
     const at = this.getShownPositions(svg, battle, previous, progress, time);
     this.updateBattalions(svg, battle, at, time);
-    const shots = battle.result ? [] : this.getShots(battle, at, time);
+    const shots = battle.result ? [] : [...this.getShots(battle, at, time), ...this.getWorkShots(battle, at, time)];
     this.drawShots(svg, battle, shots, time);
     this.drawClashes(svg, battle, shots, at, time);
     this.drawHover(svg, battle, at);
+    this.drawLamps(svg, battle, at);
     BattleDebugView.update(svg, battle, at, this.getPoint(battle.field));
   }
 
@@ -968,23 +1023,41 @@ class BattleSceneRenderer {
 
   /** Each shooter's arc to its target and how far its shot is through its cycle */
   private getShots(battle: Battle, at: Positions, time: number): Shot[] {
+    return this.getPairs(battle, "shoot").map(([block, target]) =>
+      this.aim(battle, block, at, at.get(target.id)!, time)
+    );
+  }
+
+  /** Engines shelling the walls they batter or the wagons they knock down, between their shots at troops */
+  private getWorkShots(battle: Battle, at: Positions, time: number): Shot[] {
+    const shots: Shot[] = [];
+    for (const engine of battle.blocks) {
+      if (engine.kind !== "machinery" || !at.has(engine.id)) continue;
+      const work = Works.getBattered(battle, engine);
+      const point =
+        Battles.getWallShot(battle, engine) ?? (work && [(work.a[0] + work.b[0]) / 2, (work.a[1] + work.b[1]) / 2]);
+      if (point)
+        shots.push(this.aim(battle, engine, at, { x: point[0], y: point[1] }, time + SHELL_TICKS / 2, ":works"));
+    }
+    return shots;
+  }
+
+  /** A shot's arc from a shooter where it is shown to a point, and how far through its cycle it is */
+  private aim(battle: Battle, block: Block, at: Positions, b: { x: number; y: number }, time: number, kind = ""): Shot {
     const pt = this.getPoint(battle.field);
-    return this.getPairs(battle, "shoot").map(([block, target]) => {
-      const a = at.get(block.id)!;
-      const b = at.get(target.id)!;
-      const missile = MISSILES[block.type];
-      const cycle = time / (missile === "shell" ? SHELL_TICKS : VOLLEY_TICKS) + block.id * 0.37; // each in its own time
-      const phase = cycle % 1;
-      // every shell lands a little off the last one
-      const scatter = missile === "shell" ? 9 * pt : 0;
-      const to: Point = [
-        b.x + Math.sin(Math.floor(cycle) * 7 + block.id) * scatter,
-        b.y + Math.cos(Math.floor(cycle) * 11 + block.id) * scatter
-      ];
-      const lift = Math.hypot(to[0] - a.x, to[1] - a.y) / 5;
-      const top: Point = [(a.x + to[0]) / 2, (a.y + to[1]) / 2 - lift];
-      return { block, missile, phase, from: [a.x, a.y], top, to };
-    });
+    const a = at.get(block.id)!;
+    const missile = MISSILES[block.type];
+    const cycle = time / (missile === "shell" ? SHELL_TICKS : VOLLEY_TICKS) + block.id * 0.37; // each in its own time
+    const phase = cycle % 1;
+    // every shell lands a little off the last one
+    const scatter = missile === "shell" ? 9 * pt : 0;
+    const to: Point = [
+      b.x + Math.sin(Math.floor(cycle) * 7 + block.id) * scatter,
+      b.y + Math.cos(Math.floor(cycle) * 11 + block.id) * scatter
+    ];
+    const lift = Math.hypot(to[0] - a.x, to[1] - a.y) / 5;
+    const top: Point = [(a.x + to[0]) / 2, (a.y + to[1]) / 2 - lift];
+    return { key: block.key + kind, block, missile, phase, from: [a.x, a.y], top, to };
   }
 
   /** Dotted fire lines of the shooters with no missile, arrows and shells in flight of the others */
@@ -999,7 +1072,7 @@ class BattleSceneRenderer {
       .selectAll<SVGPathElement, Shot>("path")
       .data(
         shots.filter(shot => !shot.missile),
-        shot => shot.block.key
+        shot => shot.key
       )
       .join("path")
       .attr("stroke", shot => fire[shot.block.side])
@@ -1011,7 +1084,7 @@ class BattleSceneRenderer {
       .selectAll<SVGPathElement, Shot>("path")
       .data(
         shots.filter(shot => shot.missile),
-        shot => shot.block.key
+        shot => shot.key
       )
       .join("path")
       .attr("stroke", shot => fire[shot.block.side])
@@ -1033,10 +1106,10 @@ class BattleSceneRenderer {
   private drawClashes(svg: SVGSVGElement, battle: Battle, shots: Shot[], at: Positions, time: number): void {
     const mark = this.getMark(svg, battle.field);
     const bursts: { key: string; x: number; y: number; size: number; opacity: number }[] = [];
-    for (const { block, missile, phase, to } of shots) {
+    for (const { key, missile, phase, to } of shots) {
       if (missile !== "shell" || phase < SHELL_FLIGHT) continue;
       const spent = (phase - SHELL_FLIGHT) / (1 - SHELL_FLIGHT);
-      bursts.push({ key: block.key, x: to[0], y: to[1], size: (20 + spent * 16) * mark, opacity: 1 - spent });
+      bursts.push({ key, x: to[0], y: to[1], size: (20 + spent * 16) * mark, opacity: 1 - spent });
     }
     if (!battle.result) {
       const pulse = 0.55 + 0.45 * Math.sin(time * 2.2);
@@ -1145,7 +1218,7 @@ class BattleSceneRenderer {
         `<path d="M${this.fixed([from.x, from.y])}L${this.fixed([aim.x, aim.y])}" stroke-dasharray="0 ${3 * mark}" stroke-linecap="round" stroke-width="${2.2 * mark}"/>`
       );
     if (block.range && ranged) {
-      const radius = block.range * SKIES[battle.weather].range;
+      const radius = Sight.getReach(battle, block);
       marks.push(
         `<circle cx="${from.x.toFixed(1)}" cy="${from.y.toFixed(1)}" r="${radius.toFixed(1)}" stroke-dasharray="${4 * mark} ${3 * mark}"/>`
       );

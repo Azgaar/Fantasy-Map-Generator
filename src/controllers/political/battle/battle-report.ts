@@ -1,8 +1,8 @@
 // The battle as one offline page: its summary, and a keyframe of the field at each key moment with its log lines
 
 import { type Battle, Battles, type LogEntry, type LogEvent, ROUND_TICKS } from "@/model/political/battle/battle";
-import { BattleScale } from "@/model/political/battle/battle-scale";
 import { Keyframes } from "@/model/political/battle/keyframes";
+import { BattleTime } from "@/model/political/battle/time";
 import { BattleCamera } from "@/renderers/battle/battle-camera";
 import { BattleOverlayView, OVERLAY_HEIGHT, OVERLAY_WIDTH } from "@/renderers/battle/draw-battle-overlay";
 import { BattleSceneView, type Trails } from "@/renderers/battle/draw-battle-scene";
@@ -67,7 +67,7 @@ class BattleReportExport {
         onProgress(0, t("Cancelled"));
         return false;
       }
-      const file = new Blob([this.writeReport(source, text, text.summary(probe.battle), frames)], {
+      const file = new Blob([this.writeReport(source, text, text.summary(probe.battle), frames, probe.battle.hour)], {
         type: "text/html"
       });
       downloadFile(file, `${source.fileName}-report.html`, file.type);
@@ -105,10 +105,10 @@ class BattleReportExport {
         stage.placeBlocks(); // drawn anew, reinforcements too: those destroyed since the last keyframe are gone
         const troops = BattleCamera.toCameraTroops(battle.blocks);
         const view =
-          choice.camera === "field" ? BattleCamera.getFieldView(field) : BattleCamera.frameTroops(field, troops);
+          choice.camera === "field" ? BattleCamera.getSceneBox(field) : BattleCamera.frameTroops(field, troops);
         BattleSceneView.setView(stage.svg, field, view);
         BattleSceneView.drawArrows(stage.svg, battle, frames.length ? trails : null);
-        const clock = BattleScale.formatClock(battle.tick);
+        const clock = BattleTime.formatClock(battle.hour, battle.tick);
         BattleOverlayView.draw(stage.overlay, { title: source.title, clock, viewWidth: view.width, look: source.look });
         const content = BattleAnimation.markup([...stage.svg.children]);
         const box = [view.x, view.y, view.width, view.height].map(value => value.toFixed(1)).join(" ");
@@ -130,13 +130,19 @@ class BattleReportExport {
     return frames;
   }
 
-  private writeReport(source: BattleSource, text: ReportText, summary: string, frames: Keyframe[]): string {
+  private writeReport(
+    source: BattleSource,
+    text: ReportText,
+    summary: string,
+    frames: Keyframe[],
+    hour: number
+  ): string {
     const figures = frames
       .map(({ clock, svg, lines }) => {
         const entries = lines
           .map(
             entry =>
-              `<div><i>${BattleScale.formatClock(entry.tick)}</i><u style="${text.marks(entry)}"></u><span>${escapeHtml(text.describe(entry))}</span></div>`
+              `<div><i>${BattleTime.formatClock(hour, entry.tick)}</i><u style="${text.marks(entry)}"></u><span>${escapeHtml(text.describe(entry))}</span></div>`
           )
           .join("");
         return `<figure>${svg}<figcaption><b>${clock}</b>${entries}</figcaption></figure>`;

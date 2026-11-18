@@ -9,7 +9,7 @@ import { getKmInDistanceUnit, getPeople, heightToMeters } from "@/model/units";
 import type { Point } from "@/types/global";
 import { FlatQueue } from "@/utils/flat-queue";
 import { BattleRules, type BattleType } from "./battle-rules";
-import { BattleScale, COLS, DEFAULT_BATTALION, type FieldSize, ROWS, SURROUND } from "./battle-scale";
+import { BattleScale, COLS, DEFAULT_BATTALION, type FieldSize, ROWS, SCENE, SURROUND } from "./battle-scale";
 import { BattleSite } from "./battle-site";
 import { type CliffGround, Cliffs, CORNERS } from "./cliffs";
 
@@ -244,7 +244,7 @@ class BattlefieldModule {
    */
   build(x: number, y: number, size: FieldSize, type: BattleType = "field"): Battlefield {
     const [clearing, siege] = [type !== "ambush", type === "siege"];
-    const [cols, rows] = [COLS + SURROUND[0] * 2, ROWS + SURROUND[1] * 2];
+    const [cols, rows] = SCENE;
     const field: Battlefield = {
       ...this.createEmpty(null, cols, rows),
       site: [x, y],

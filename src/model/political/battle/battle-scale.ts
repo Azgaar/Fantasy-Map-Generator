@@ -7,6 +7,8 @@ export const DEFAULT_BATTALION = 300; // men: the size the battle was balanced a
 export const COLS = 100; // the grid of a field of any size: a node is 1% of its width
 export const ROWS = 60;
 export const SURROUND = [4, 4]; // grid nodes of ground round each side of the field, across and down: drawn, never fought on
+export const SCENE = [COLS + SURROUND[0] * 2, ROWS + SURROUND[1] * 2]; // grid nodes of the field and the ground round it
+export const VIEW_ASPECT = SCENE[0] / SCENE[1]; // the screen and the exports take in the whole scene, even margins round the field
 
 const FRONTS = 1000 / 44; // battalion fronts across the field
 const SIEGE_LAND = 340; // metres of land round a besieged burg, the ring at most, and a battalion front more behind it
@@ -53,14 +55,6 @@ class BattleScaleModule {
   /** Ticks in so many minutes */
   minutesToTicks(minutes: number): number {
     return Math.round((minutes * 60) / TICK_SECONDS);
-  }
-
-  /** Time elapsed by a tick: m:ss, h:mm:ss past an hour */
-  formatClock(tick: number): string {
-    const seconds = Math.round(tick * TICK_SECONDS);
-    const pad = (value: number): string => String(value).padStart(2, "0");
-    const [hours, minutes] = [Math.floor(seconds / 3600), Math.floor((seconds % 3600) / 60)];
-    return hours ? `${hours}:${pad(minutes)}:${pad(seconds % 60)}` : `${minutes}:${pad(seconds % 60)}`;
   }
 }
 

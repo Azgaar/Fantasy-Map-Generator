@@ -38,6 +38,8 @@ import { type Battlefield, Battlefields, type FieldWall } from "./battlefield";
 import type { TacticName } from "./formations";
 import { Generals, type Option } from "./general";
 import { ARRIVED, type Move, Movement, ROUND_TICKS } from "./movement";
+import { Sight } from "./sight";
+import { BattleTime } from "./time";
 import { type Condition, HEAT, SKIES, type Weather } from "./weather";
 import { Works } from "./works";
 
@@ -64,6 +66,7 @@ export interface Order {
   rank: number; // the line it stands in, 0 the first
   across: number; // its place: to the right of the middle of the formation
   along: number; // and ahead of its first line
+  ahead: number | null; // a shooter's along while its side stands off, before the first line: none if it shoots from its place
   x: number; // the place on the field this round, or the point to go round by
   y: number;
   facing: number;
@@ -100,6 +103,7 @@ export interface Plan {
   muster: Muster | null; // a sortie's party forming up outside the walls
   hooks: [left: number[], right: number[]]; // battalions turned out at the ends of the line, the nearest the end first
   lure: [x: number, y: number] | null; // where the foe stood when the side fell back to draw him out: it feigns once
+  defiant: boolean; // told by hand to fight a day its general gave up for lost before it began
 }
 
 /** The party of a sortie formed up outside the gate it goes out by, before it falls on the foe */
@@ -256,6 +260,7 @@ export type LogEvent =
   | "dig"
   | "weather"
   | "condition"
+  | "time"
   | "fortified"
   | "gap"
   | "raised"
@@ -315,6 +320,8 @@ export interface Battle {
   mud: boolean; // the ground is soaked
   ice: boolean; // the ground and the rivers are frozen
   heat: boolean;
+  hour: number; // of the day the battle starts at, 0 to 23
+  latitude: number; // of the place, in degrees: where the sun stands
 }
 
 /** How a game the generals play in their minds ended */
@@ -343,6 +350,8 @@ export interface BattleSetup {
   mud?: boolean;
   ice?: boolean;
   heat?: boolean;
+  hour?: number; // midday by default
+  latitude?: number;
 }
 
 const NO_ORDER: Order = {
@@ -351,6 +360,7 @@ const NO_ORDER: Order = {
   rank: 0,
   across: 0,
   along: 0,
+  ahead: null,
   x: 0,
   y: 0,
   facing: 0,
@@ -385,7 +395,8 @@ const NO_PLAN: Plan = {
   wedge: null,
   muster: null,
   hooks: [[], []],
-  lure: null
+  lure: null,
+  defiant: false
 };
 
 class BattleModule {
@@ -415,6 +426,8 @@ class BattleModule {
       mud: false,
       ice: false,
       heat: false,
+      hour: 12,
+      latitude: 45,
       scene: null,
       ...rest,
       settings: { ...DEFAULT_BATTLE_SETTINGS, ...settings },
@@ -464,16 +477,16 @@ class BattleModule {
     this.castDice(battle);
     this.updatePower(battle);
     this.setInitialMorale(battle);
-    this.drawUp(battle);
     for (const change of battle.interventions) {
       if (change.kind === "morale") this.addMorale(battle, change.side, change.value);
     }
+    this.drawUp(battle); // with the morale as it stands: a general who sees the day lost leaves the field
   }
 
   /** Stand the battalions there are in their places, by the tactics of the generals and then by the user's hand */
-  private drawUp(battle: Battle): void {
+  private drawUp(battle: Battle, retreating: Side[] = []): void {
     Movement.forgetWays(battle.field);
-    Generals.deploy(battle);
+    Generals.deploy(battle, retreating);
     Movement.separate(battle, battle.blocks); // a crowded line spreads out
     Generals.settle(battle);
     for (const block of battle.blocks) Generals.takePlace(battle, block);
@@ -484,7 +497,19 @@ class BattleModule {
     }
     Generals.digIn(battle);
     Movement.forgetWays(battle.field);
-    this.noteTactics(battle);
+    // a general who sees the day lost before it begins leaves the field: that is his tactic
+    const hopeless = Generals.giveUp(battle, retreating);
+    if (hopeless.length) this.drawUp(battle, [...retreating, ...hopeless]);
+    else this.noteTactics(battle);
+  }
+
+  /** The log tells the time of day the battle starts at, and every turn of it the battle lasts into */
+  private noteTime(battle: Battle): void {
+    if (battle.rehearsal) return;
+    const period = (tick: number) => BattleTime.getPeriod(BattleTime.getTime(battle.hour, tick));
+    const now = period(battle.tick);
+    if (battle.tick && now === period(battle.tick - ROUND_TICKS)) return;
+    battle.log.push({ tick: battle.tick, event: "time", params: { period: now } });
   }
 
   /** The log opens with the tactic each side is drawn up in, whatever was done before the start */
@@ -805,6 +830,7 @@ class BattleModule {
 
   private startRound(battle: Battle): void {
     battle.round = battle.tick / ROUND_TICKS;
+    this.noteTime(battle);
     const cutOff = Generals.isCutOff(battle);
     if (cutOff !== battle.cutOff) {
       const burg = battle.field.burgs[battle.field.held!].name;
@@ -836,6 +862,7 @@ class BattleModule {
     const beaten = SIDES.map(side => BattleRules.isBeaten(battle.type, side, battle[side].phase));
     Generals.command(battle);
     SIDES.forEach((side, i) => {
+      if (battle[side].plan.tactic === "strategicRetreat") return; // it leaves as it meant to, unbroken
       if (!beaten[i] && BattleRules.isBeaten(battle.type, side, battle[side].phase))
         battle.log.push({
           tick: battle.tick,
@@ -1069,13 +1096,12 @@ class BattleModule {
   /** Engines in range of a besieged burg work a breach into its wall, where it is nearest to them: by the weight of their blows */
   private batter(battle: Battle): void {
     const { field } = battle;
-    const { phase } = battle.attackers;
-    if (field.held === null || (phase !== "bombardment" && phase !== "storming")) return; // engines cover a storm too
+    const held = field.held;
+    if (held === null || !this.isBattering(battle)) return;
     const engines = Movement.getBatterers(battle);
-    const breaches = field.breaches.filter(breach => breach.burg === field.held).length;
-    const walls = Battlefields.getSolidWalls(field, field.held);
-    if (!engines.length || !walls.length || breaches >= STORM_ODDS.length - 1) return; // more breaches make the walls no weaker
-    const burg = field.burgs[field.held];
+    const walls = Battlefields.getSolidWalls(field, held);
+    if (!engines.length || !walls.length) return;
+    const burg = field.burgs[held];
     battle.lastLoss = battle.tick; // no lull while the engines are at the walls
     battle.battered +=
       sum(engines, engine => this.getPower(battle, engine, engine.attack)) * (KILL_RATE / BREACH_BLOWS);
@@ -1085,8 +1111,31 @@ class BattleModule {
     const engine = engines.reduce((a, b) => (b.troops > a.troops ? b : a));
     const middle = (wall: FieldWall): [number, number] => [(wall.a[0] + wall.b[0]) / 2, (wall.a[1] + wall.b[1]) / 2];
     const far = (wall: FieldWall): number => Math.hypot(middle(wall)[0] - engine.x, middle(wall)[1] - engine.y);
-    Battlefields.openBreach(field, field.held, middle(walls.reduce((a, b) => (far(b) < far(a) ? b : a))));
+    Battlefields.openBreach(field, held, middle(walls.reduce((a, b) => (far(b) < far(a) ? b : a))));
     battle.log.push({ tick: battle.tick, event: "breach", side: "attackers", params: { burg: burg.name } });
+  }
+
+  /** Whether the besiegers' engines are at the walls: while they bombard or cover a storm, and more breaches still tell */
+  private isBattering(battle: Battle): boolean {
+    const { field } = battle;
+    const { phase } = battle.attackers;
+    if (field.held === null || (phase !== "bombardment" && phase !== "storming")) return false; // engines cover a storm too
+    return field.breaches.filter(breach => breach.burg === field.held).length < STORM_ODDS.length - 1; // more make the walls no weaker
+  }
+
+  /** Where an engine's shots strike the walls it batters: the nearest point of the nearest solid stretch; null if none */
+  getWallShot(battle: Battle, engine: Block): Point | null {
+    if (!this.isBattering(battle) || !Movement.getBatterers(battle).includes(engine)) return null;
+    let best: Point | null = null;
+    let least = Infinity;
+    for (const { a, b } of Battlefields.getSolidWalls(battle.field, battle.field.held)) {
+      const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+      const t = Math.min(Math.max(((engine.x - a[0]) * dx + (engine.y - a[1]) * dy) / (dx * dx + dy * dy || 1), 0), 1);
+      const point: Point = [a[0] + dx * t, a[1] + dy * t];
+      const far = Math.hypot(point[0] - engine.x, point[1] - engine.y);
+      if (far < least) [best, least] = [point, far];
+    }
+    return best;
   }
 
   private fight(battle: Battle): void {
@@ -1262,7 +1311,7 @@ class BattleModule {
     battle.log.push({ tick: battle.tick, event, side: block.side, params: { block: this.blockName(block) } });
   }
 
-  /** Losses nearby unsettle friends and hearten foes, all at once */
+  /** Losses nearby unsettle friends and hearten foes who see them, all at once */
   private shake(battle: Battle, lost: Block[], morale: number): void {
     if (!lost.length) return;
     const reach = SHAKE * battle.field.front;
@@ -1270,7 +1319,7 @@ class BattleModule {
       if (block.status !== "ready") continue;
       let change = 0;
       for (const one of lost) {
-        if (Math.hypot(block.x - one.x, block.y - one.y) > reach) continue;
+        if (Math.hypot(block.x - one.x, block.y - one.y) > reach || !Sight.sees(battle, block, one)) continue;
         change += block.side === one.side ? -morale / block.steadiness : this.isHungry(battle, block) ? 0 : morale;
       }
       if (change) block.morale = Math.min(Math.max(block.morale + change, 0), 100);

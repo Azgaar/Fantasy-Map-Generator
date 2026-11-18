@@ -1,6 +1,6 @@
 // What part of the battle field is in sight: pure, so the screen and the exports frame a battle the same way
 
-import { COLS, ROWS, SURROUND } from "@/model/political/battle/battle-scale";
+import { COLS, ROWS, SURROUND, VIEW_ASPECT } from "@/model/political/battle/battle-scale";
 
 export interface View {
   x: number;
@@ -43,27 +43,18 @@ class BattleCameraModule {
     return { x: -across, y: -down, width: width + across * 2, height: height + down * 2 };
   }
 
-  /** As much of the scene as the field's proportions take in, about its middle */
-  getFieldView(field: CameraField): View {
-    const scene = this.getSceneBox(field);
-    const wide = Math.min(scene.width, (scene.height * field.width) / field.height);
-    const high = (wide * field.height) / field.width;
-    return { x: (field.width - wide) / 2, y: (field.height - high) / 2, width: wide, height: high };
-  }
-
   create(field: CameraField): Camera {
     return {
-      view: this.getFieldView(field),
-      target: this.getFieldView(field)
+      view: this.getSceneBox(field),
+      target: this.getSceneBox(field)
     };
   }
 
-  /** In the field's proportions, inside the whole view, no narrower than a few battalion fronts */
+  /** In the scene's proportions, inside it, no narrower than a few battalion fronts */
   clampView(field: CameraField, { x, y, width }: View): View {
-    const whole = this.getFieldView(field);
-    const aspect = field.width / field.height;
+    const whole = this.getSceneBox(field);
     const wide = Math.min(Math.max(width, field.front * LEAST), whole.width);
-    const high = wide / aspect;
+    const high = wide / VIEW_ASPECT;
     const left = Math.min(Math.max(x, whole.x), whole.x + whole.width - wide);
     const top = Math.min(Math.max(y, whole.y), whole.y + whole.height - high);
     return { x: left, y: top, width: wide, height: high };
@@ -72,7 +63,7 @@ class BattleCameraModule {
   /** Every battalion on the field, with a margin */
   frameTroops(field: CameraField, troops: CameraTroop[]): View {
     const present = troops.filter(troop => troop.present);
-    if (!present.length) return this.getFieldView(field);
+    if (!present.length) return this.getSceneBox(field);
     const pad = MARGIN * field.front;
     let [left, top, right, bottom] = [Infinity, Infinity, -Infinity, -Infinity];
     for (const { x, y, width, depth } of present) {
@@ -82,8 +73,8 @@ class BattleCameraModule {
       right = Math.max(right, x + reach);
       bottom = Math.max(bottom, y + reach);
     }
-    const width = Math.max(right - left, ((bottom - top) * field.width) / field.height);
-    const height = (width * field.height) / field.width;
+    const width = Math.max(right - left, (bottom - top) * VIEW_ASPECT);
+    const height = width / VIEW_ASPECT;
     return this.clampView(field, { x: (left + right - width) / 2, y: (top + bottom - height) / 2, width, height });
   }
 
@@ -97,7 +88,7 @@ class BattleCameraModule {
 
   /** The camera `elapsed` seconds of screen time later, whatever the playback speed */
   move(camera: Camera, field: CameraField, troops: CameraTroop[], mode: CameraMode, elapsed: number): Camera {
-    if (mode === "field") return { view: this.getFieldView(field), target: this.getFieldView(field) };
+    if (mode === "field") return { view: this.getSceneBox(field), target: this.getSceneBox(field) };
     if (mode === "manual") {
       const view = this.clampView(field, camera.view);
       return { view, target: view };
@@ -111,7 +102,7 @@ class BattleCameraModule {
     const near = Math.abs(width - target.width) < target.width * 5e-3; // the last bit unseen
     const next = near
       ? target
-      : { x: glide(view.x, target.x), y: glide(view.y, target.y), width, height: (width * field.height) / field.width };
+      : { x: glide(view.x, target.x), y: glide(view.y, target.y), width, height: width / VIEW_ASPECT };
     return { view: next, target };
   }
 

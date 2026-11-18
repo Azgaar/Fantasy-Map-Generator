@@ -12,6 +12,7 @@ import { Cliffs } from "./cliffs";
 import { ROW_GAP } from "./formations";
 import { Generals } from "./general";
 import { Movement } from "./movement";
+import { Sight } from "./sight";
 import { BattleWeather } from "./weather";
 import { Works } from "./works";
 
@@ -307,7 +308,7 @@ describe("battle generals", () => {
     for (const side of ["attackers", "defenders"] as const) {
       const offered = Generals.getTactics(b, side);
       expect(offered[0]).toBe(b[side].plan.tactic);
-      expect([...offered].sort()).toEqual([...all, "feignedRetreat", "wagenburg"].sort()); // no river to hold a crossing of
+      expect([...offered].sort()).toEqual([...all, "feignedRetreat", "wagenburg", "strategicRetreat"].sort()); // no river to hold a crossing of
       for (const tactic of offered) {
         Battles.intervene(b, { tick: 0, kind: "tactic", side, tactic });
         expect(b[side].plan.tactic).toBe(tactic);
@@ -318,7 +319,7 @@ describe("battle generals", () => {
     const naval = battle([regiment(1, big)], [regiment(2, big)], "naval");
     naval.field = Battlefields.createEmpty("sea");
     Battles.prepare(naval);
-    expect([...Generals.getTactics(naval, "defenders")].sort()).toEqual([...all].sort()); // no wagons at sea
+    expect([...Generals.getTactics(naval, "defenders")].sort()).toEqual([...all, "strategicRetreat"].sort()); // no wagons at sea
   });
 
   it("thinks the battle through before it begins: the attackers take the tactic that ends best for them", () => {
@@ -1051,6 +1052,18 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     expect([b.attackers.phase, b.defenders.phase]).toEqual(["landing", PHASES.landing.defenders[0]]);
     for (let i = 0; i < ROUND_TICKS * 3; i++) Battles.tick(b);
     expect(Generals.getCommands(b)[0]).toBe("attack"); // the order has stood its ten rounds
+  });
+
+  it("has besiegers storm by night walls they only blockade by day: the garrison sees the stormers late", () => {
+    const night = setup("siege", { infantry: 2600, archers: 400 }, { infantry: 900, archers: 600 }, walled());
+    night.hour = 1;
+    Battles.plan(night);
+    expect(night.attackers.storms).toBe(true);
+    expect(run(night).result!.winner).toBe("attackers");
+    const day = setup("siege", { infantry: 2600, archers: 400 }, { infantry: 900, archers: 600 }, walled());
+    Battles.plan(day);
+    Battles.tick(day);
+    expect(day.attackers.phase).toBe("blockade");
   });
 
   it("has besiegers a little short of the odds weigh storming at once, and engines alone storm nothing", () => {
@@ -1859,6 +1872,19 @@ describe("battle ground", () => {
   });
 });
 
+describe("battle time", () => {
+  it("logs the time of day at the start and each turn of it the battle lasts into", () => {
+    const b = battle([regiment(1, even)], [regiment(2, even)]);
+    b.hour = 19.99; // dusk falls within the first round
+    for (let tick = 0; tick <= ROUND_TICKS; tick++) Battles.tick(b);
+    const times = b.log.filter(entry => entry.event === "time").map(entry => [entry.tick, entry.params!.period]);
+    expect(times).toEqual([
+      [0, "evening"],
+      [ROUND_TICKS, "dusk"]
+    ]);
+  });
+});
+
 describe("battle weather", () => {
   const units = [
     unit("infantry", "melee", 1),
@@ -1884,17 +1910,16 @@ describe("battle weather", () => {
     });
   const of = (b: Battle, name: string): Block => b.blocks.find(block => block.unit === name)!;
 
-  it("shortens the range in rain and fog", () => {
+  it("shortens the range only by the sight the sky leaves", () => {
     const b = field();
     const [archers, engines, foe] = [of(b, "archers"), of(b, "artillery"), of(b, "infantry")];
     const range = (block: Block): number => Movement.getRange(b, block, foe);
+    foe.action = "move";
     expect([range(archers), range(engines)]).toEqual([160, 380]);
     Battles.intervene(b, { tick: 0, kind: "weather", weather: "rain" });
-    expect(range(archers)).toBeCloseTo(120);
-    Battles.intervene(b, { tick: 0, kind: "weather", weather: "downpour" });
-    expect([range(archers), range(engines)]).toEqual([100, 237.5]);
+    expect([range(archers), range(engines)]).toEqual([160, 380]); // seen 1.5 km off: rain only wets the shots
     Battles.intervene(b, { tick: 0, kind: "weather", weather: "fog" });
-    expect([range(archers), range(engines)]).toEqual([112, 266]);
+    expect([range(archers), range(engines)]).toEqual([150, 150]);
     expect(b.log.at(-1)).toEqual({ tick: 0, event: "weather", params: { weather: "fog" } });
   });
 
@@ -1918,10 +1943,17 @@ describe("battle weather", () => {
     expect(b.log.at(-1)).toEqual({ tick: 0, event: "condition", params: { condition: "mud", on: "true" } });
   });
 
-  it("shortens the range in snow", () => {
+  it("lets battalions see little at night, their torches showing them further, ambushers lying in wait nearer", () => {
     const b = field();
-    Battles.intervene(b, { tick: 0, kind: "weather", weather: "snow" });
-    expect(Movement.getRange(b, of(b, "archers"), of(b, "infantry"))).toBeCloseTo(128);
+    b.hour = 1;
+    const [archers, foe] = [of(b, "archers"), of(b, "infantry")];
+    expect(Sight.getSight(b)).toBe(120);
+    expect(Sight.getSeenAt(b, foe)).toBe(180); // its torches show it
+    expect(Movement.getRange(b, archers, foe)).toBe(160);
+    expect([false, true].map(covered => Sight.getSeenLying(b, covered))).toEqual([60, 30]);
+    b.hour = 12;
+    expect(Sight.isLimited(b)).toBe(false); // by day under a clear sky all is seen
+    expect(Sight.knows(b, archers, foe)).toBe(true);
   });
 
   it("freezes the rivers over: troops cross them anywhere, as at a ford, and go slower on frozen ground", () => {

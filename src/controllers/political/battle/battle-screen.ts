@@ -12,6 +12,7 @@ import {
   BATTLE_TACTIC_LABELS,
   BATTLE_TYPE_LABELS,
   CONDITION_LABELS,
+  PERIOD_LABELS,
   WEATHER_LABELS
 } from "@/data/id-labels";
 import { Pack } from "@/model/graph/pack-generator";
@@ -39,13 +40,14 @@ import {
   SIDES,
   type Side
 } from "@/model/political/battle/battle-rules";
-import { BattleScale } from "@/model/political/battle/battle-scale";
+import { SCENE, VIEW_ASPECT } from "@/model/political/battle/battle-scale";
 import { BattleSite } from "@/model/political/battle/battle-site";
 import { Battlefields, type WorkKind } from "@/model/political/battle/battlefield";
 import type { TacticName } from "@/model/political/battle/formations";
 import { Generals } from "@/model/political/battle/general";
 import { Movement } from "@/model/political/battle/movement";
 import { Pathfinding } from "@/model/political/battle/pathfinding";
+import { BattleTime, type Period } from "@/model/political/battle/time";
 import { BattleWeather, CONDITIONS, type Condition, WEATHERS, type Weather } from "@/model/political/battle/weather";
 import { Works } from "@/model/political/battle/works";
 import type { Regiment } from "@/model/political/military-generator";
@@ -74,7 +76,7 @@ import { applySorting, applySortingByHeader } from "@/ui/dialog/sorting";
 import { showElementTip, showMainTip, tip } from "@/ui/tooltips";
 import { last } from "@/utils/array-utils";
 import { getColorDistance } from "@/utils/color-utils";
-import { wiki } from "@/utils/common-utils";
+import { getLatitude, wiki } from "@/utils/common-utils";
 import { createFileInput, downloadFile, uploadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
 import { getAdjective, list } from "@/utils/language-utils";
@@ -101,6 +103,7 @@ interface BattleLogFile {
   settings?: BattleSettings; // the numbers it was fought with; the defaults when absent
   seed?: number; // the dice are cast by it; absent: cast anew
   axis?: number; // the way the attackers came; absent: from where the first of them stands
+  hour?: number; // of the day the battle starts at; absent: by the seed
 }
 
 const SCREEN_SHARE = 0.92; // of the viewport the window may take
@@ -143,12 +146,10 @@ const SUMMARY_STYLE = /* css */ `
   #battleSummary > div > footer > button { min-width: 10em; height: 2em; }
   @keyframes battleSummaryFade { from { opacity: 0; } }
   @keyframes battleSummaryRise { from { opacity: 0; transform: translateY(1.5em) scale(0.96); } }
-
 `;
 
 const STYLE = /* css */ `
-  #battleScreen { overflow: hidden; container: battle / size; }
-  /* top to bottom: who fights whom, the battlefield, the controls, the armies; scrolls when the armies outgrow the window */
+  #battleScreen { padding: 0.5em; overflow: hidden; container: battle / size; }
   #battleLayout { --line: #ccc; --muted: #666; --loss: #c5221f; display: flex; flex-direction: column; gap: 0.5em; box-sizing: border-box; width: auto; height: 100%; overflow-y: auto; }
   #battleLayout > * { flex: none; }
   #battleLayout [hidden] { display: none !important; }
@@ -219,8 +220,8 @@ const STYLE = /* css */ `
   #battleBalance > i + i { flex: 1; justify-content: flex-end; padding: 0 1.2em 0 0.7em; background: var(--defenders); clip-path: polygon(0 0, calc(100% - 0.7em) 0, 100% 50%, calc(100% - 0.7em) 100%, 0 100%); }
   #battleBalance > b { position: absolute; top: 50%; left: var(--at, 50%); width: 0.75em; height: 0.75em; border: 1px solid #333; background: #fff; transform: translate(-50%, -50%) rotate(45deg); transition: left 0.25s ease-out; }
 
-  /* the battlefield: as wide as the window, in the plan's shape; the scene under the weather, the overlay and the summary */
-  #battleStage { position: relative; aspect-ratio: 5 / 3; margin: 1px; outline: 1px solid #999; overflow: hidden; }
+  /* the battlefield: as wide as the window, in the scene's shape; the scene under the weather, the overlay and the summary */
+  #battleStage { position: relative; aspect-ratio: ${SCENE[0]} / ${SCENE[1]}; margin: 1px; outline: 1px solid #999; overflow: hidden; }
   #battleWeatherLayer, #battleOverlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   #battleScene { display: block; width: 100%; height: 100%; font-family: var(--serif); touch-action: none; }
   #battleScene.battlePanning { cursor: grabbing; }
@@ -244,7 +245,7 @@ const STYLE = /* css */ `
   #battleFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4em 1em; }
   #battleFooter > div { display: flex; align-items: center; gap: 0.3em; min-width: 0; }
   #battleFooter button { height: 2em; box-sizing: border-box; } /* one height, whatever the icon */
-  #battleRun, #battleResultRestart { min-width: 10em; }
+  #battleRun, #battleResultRestart { min-width: 8em; }
   #battleRun.battlePause::before { content: "❚❚"; margin-right: 0.5em; font-size: 0.7em; vertical-align: 0.15em; }
   #battleSpeed { display: inline-flex; align-items: center; gap: 0.5em; margin: 0 0.6em; }
   #battleSpeed > input {
@@ -260,6 +261,8 @@ const STYLE = /* css */ `
   #battleSpeed > input:hover::-moz-range-thumb { background: var(--header); }
   #battleSpeedLabel { min-width: 2.8em; font-weight: bold; font-variant-numeric: tabular-nums; }
   #battleClock { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #battleLayout .battleMenu.battleHours { display: grid; grid-template-columns: repeat(4, auto); }
+  #battleLayout .battleHours > button { padding: 0.3em 0.6em; font-variant-numeric: tabular-nums; }
 
   /* army sheets: the orders of each side and its regiments */
   #battleSides { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 0.8em; }
@@ -429,11 +432,15 @@ class BattleScreenController {
     const aroundX = width - stage.offsetWidth;
     const aroundY = height - layout.clientHeight + content - stage.offsetHeight + SPARE * em;
     const maxHeight = viewport.height * SCREEN_SHARE;
-    const room = Math.min(viewport.width * SCREEN_SHARE - aroundX, (maxHeight - aroundY) * (5 / 3), FIELD_WIDTH * em);
-    const field = Math.max(Math.floor(room / 5) * 5, 300); // a whole number of pixels both ways
+    const room = Math.min(
+      viewport.width * SCREEN_SHARE - aroundX,
+      (maxHeight - aroundY) * VIEW_ASPECT,
+      FIELD_WIDTH * em
+    );
+    const field = Math.max(Math.floor(room), 300);
     Dialog.update("battleScreen", {
       width: field + aroundX - (width - frame.clientWidth),
-      height: Math.min(field * 0.6 + aroundY, maxHeight),
+      height: Math.min(Math.round(field / VIEW_ASPECT) + aroundY, maxHeight),
       position: POSITION
     });
   }
@@ -442,7 +449,7 @@ class BattleScreenController {
   private setup(
     attackers: Regiment[],
     defenders: Regiment[],
-    from?: Partial<Pick<BattleLogFile, "type" | "name" | "settings" | "seed" | "axis">>
+    from?: Partial<Pick<BattleLogFile, "type" | "name" | "settings" | "seed" | "axis" | "hour">>
   ): void {
     const defender = defenders[0];
     const attacker = attackers[0];
@@ -451,6 +458,7 @@ class BattleScreenController {
     const type = from?.type ?? this.defineType(attacker, defender, cell);
     const place = this.battle ? this.battle.place : this.definePlace(cell); // kept, as the name is
     const point = { x, y };
+    const seed = from?.seed ?? Math.floor(Math.random() * 2 ** 31);
 
     this.battle = Battles.create({
       type,
@@ -466,7 +474,9 @@ class BattleScreenController {
       attackers: attackers.map(regiment => this.toBattleRegiment(regiment, point)),
       defenders: defenders.map(regiment => this.toBattleRegiment(regiment, point)),
       settings: from?.settings ?? this.battleOptions().simulation,
-      seed: from?.seed ?? Math.floor(Math.random() * 2 ** 31),
+      seed,
+      hour: from?.hour ?? BattleTime.getHour(seed),
+      latitude: this.getLatitude(y),
       ...this.getClimate(cell)
     });
 
@@ -475,6 +485,10 @@ class BattleScreenController {
     this.drawField();
     this.drawScene();
     this.refresh();
+  }
+
+  private getLatitude(y: number): number {
+    return getLatitude(y, options.map.geography.coordinates, options.map.graph.height);
   }
 
   /** The weather the place's climate is likely to give, the same every time for the same cell */
@@ -591,7 +605,7 @@ class BattleScreenController {
             ${banner("defenders")}
           </div>
           <div id="battleStage">
-            <svg id="battleScene" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet"></svg>
+            <svg id="battleScene" preserveAspectRatio="xMidYMid meet"></svg>
             <canvas id="battleWeatherLayer" hidden></canvas>
             <svg id="battleOverlay" preserveAspectRatio="xMidYMid meet" font-family="Georgia, serif"></svg>
             <div id="battleSummary" hidden></div>
@@ -608,7 +622,12 @@ class BattleScreenController {
                 <input type="range" min="0" max="${BATTLE_SPEEDS.length - 1}" step="1" value="${BATTLE_SPEEDS.indexOf(this.player.speed)}" style="--steps: ${BATTLE_SPEEDS.length - 1}; --fill: ${BATTLE_SPEEDS.indexOf(this.player.speed) / (BATTLE_SPEEDS.length - 1)}" />
                 <span id="battleSpeedLabel">×${BattleAnimation.getPlayback(TICK_MS, this.player.speed)}</span>
               </label>
-              <span id="battleClock"></span>
+              <span class="battlePicker">
+                <button id="battleClock"></button>
+                <div class="battleMenu battleHours" hidden>
+                  ${Array.from({ length: 24 }, (_, hour) => `<button data-hour="${hour}" data-tip="${PERIOD_LABELS[BattleTime.getPeriod(hour)]}">${BattleTime.formatClock(hour, 0).slice(0, 5)}</button>`).join("")}
+                </div>
+              </span>
             </div>
             <div>
               <span class="battlePicker">
@@ -666,6 +685,8 @@ class BattleScreenController {
     ensureEl("battleType").nextElementSibling!.addEventListener("click", event => this.changeType(event));
     ensureEl("battleWeather").addEventListener("click", event => this.togglePicker(event));
     ensureEl("battleWeather").nextElementSibling!.addEventListener("click", event => this.changeWeather(event));
+    ensureEl("battleClock").addEventListener("click", event => this.togglePicker(event));
+    ensureEl("battleClock").nextElementSibling!.addEventListener("click", event => this.changeHour(event));
     ensureEl("battleRoll").addEventListener("click", () => this.redeploy());
     ensureEl("battleConfigureOpen").addEventListener("click", () =>
       BattleConfigure.open({
@@ -1098,13 +1119,19 @@ class BattleScreenController {
       elapsed
     );
     BattleSceneView.setView(this.scene(), b.field, this.camera.view);
+    this.drawLight();
     const look = this.battleOptions().rendering;
     BattleOverlayView.draw(this.overlay(), {
       title: b.name,
-      clock: BattleScale.formatClock(b.tick),
+      clock: BattleTime.formatClock(b.hour, b.tick),
       viewWidth: this.camera.view.width,
       look
     });
+  }
+
+  /** The light of the hour and the weather; drawn anew only when it changed */
+  private drawLight(): void {
+    BattleSceneView.drawLight(this.scene(), this.battle!);
   }
 
   /** The ground drawn anew: the camera frames it at once, in its chosen mode */
@@ -1409,12 +1436,19 @@ class BattleScreenController {
       button.classList.toggle("current", condition ? b[condition] : button.dataset.weather === b.weather);
     }
     this.drawWeather();
+    this.drawLight();
     const name = ensureEl<HTMLInputElement>("battleNameFull");
     if (document.activeElement !== name) name.value = b.name;
 
     const footer = ensureEl("battleFooter");
-    this.put(footer, "#battleClock", BattleScale.formatClock(b.tick));
-    ensureEl("battleClock").dataset.tip = t("Round {{round}}", { round: Math.floor(b.tick / ROUND_TICKS) + 1 });
+    const clock = ensureEl<HTMLButtonElement>("battleClock");
+    this.put(footer, "#battleClock", BattleTime.formatClock(b.hour, b.tick));
+    clock.disabled = started; // the battle began at its hour
+    clock.dataset.tip = started
+      ? t("Round {{round}}", { round: Math.floor(b.tick / ROUND_TICKS) + 1 })
+      : sentences(t("Time of day the battle starts at"), t("Click to change"));
+    for (const button of clock.nextElementSibling!.children as HTMLCollectionOf<HTMLElement>)
+      button.classList.toggle("current", +button.dataset.hour! === b.hour);
     if (!over) ensureEl("battleSummary").hidden = true;
 
     // setup only; nothing is hidden, so the controls never jump
@@ -1437,7 +1471,7 @@ class BattleScreenController {
     const list = ensureEl("battleLogList");
     while (list.childElementCount > same) list.lastElementChild!.remove();
     const line = (entry: LogEntry): string =>
-      `<div class="${entry.event} ${entry.side ?? ""}"><i>${BattleScale.formatClock(entry.tick)}</i><u></u><span>${escapeHtml(this.logText(entry))}</span></div>`;
+      `<div class="${entry.event} ${entry.side ?? ""}"><i>${BattleTime.formatClock(this.battle!.hour, entry.tick)}</i><u></u><span>${escapeHtml(this.logText(entry))}</span></div>`;
     list.insertAdjacentHTML("beforeend", log.slice(same).map(line).join(""));
     list.scrollTop = list.scrollHeight;
     this.shownLog = [...log];
@@ -1798,6 +1832,17 @@ class BattleScreenController {
     this.refresh();
   }
 
+  /** The hour the battle starts at: only before the start */
+  private changeHour(event: Event): void {
+    const target = event.target as HTMLElement;
+    const b = this.battle!;
+    if (target.tagName !== "BUTTON" || b.tick) return;
+    b.hour = +target.dataset.hour!;
+    this.shownLog = []; // its lines are timed anew
+    this.drawLight();
+    this.refresh();
+  }
+
   private changeType(event: Event): void {
     const target = event.target as HTMLElement;
     const b = this.battle!;
@@ -1827,7 +1872,8 @@ class BattleScreenController {
       name: b.name,
       settings: b.settings,
       seed: b.seed,
-      axis: b.approach
+      axis: b.approach,
+      hour: b.hour
     });
     // what was done to the sides by hand stays done: morale, dice, orders, the ground prepared and the tactics given
     for (const change of b.interventions) {
@@ -1989,6 +2035,7 @@ class BattleScreenController {
     if (event === "supplied") return t("Supplies reach {{- burg}}", params);
     if (event === "dig") return params!.on === "true" ? t("Dug in") : t("Not dug in");
     if (event === "weather") return `${t("Weather")}: ${WEATHER_LABELS[params!.weather as Weather]}`;
+    if (event === "time") return `${t("Time of day")}: ${PERIOD_LABELS[params!.period as Period]}`;
     if (event === "condition") return CONDITION_LOG[params!.condition as Condition][+(params!.on === "true")];
     if (event === "fortified") return `${t("Works stand")}: ${WORK_LABELS[params!.kind as WorkKind]}`;
     if (event === "gap") return t("The wagons are broken through");
@@ -2070,12 +2117,13 @@ class BattleScreenController {
       interventions: [...b.interventions, ...this.script], // with those still to come after a step back
       log: b.log.map(entry => {
         const whose = entry.side ? `${this.sideLabel(entry.side)}: ` : "";
-        return `${BattleScale.formatClock(entry.tick)} ${whose}${this.logText(entry)}`;
+        return `${BattleTime.formatClock(b.hour, entry.tick)} ${whose}${this.logText(entry)}`;
       }),
       result: b.result ? this.outcome(b) : null,
       settings: { ...b.settings },
       seed: b.seed,
-      axis: b.approach
+      axis: b.approach,
+      hour: b.hour
     };
   }
 
@@ -2104,6 +2152,8 @@ class BattleScreenController {
       defenders: structuredClone(this.getInitialRegiments(b, "defenders")),
       settings: b.settings,
       seed: b.seed,
+      hour: b.hour,
+      latitude: b.latitude,
       ...this.getClimate(b.cell)
     });
     return { battle, script: structuredClone([...b.interventions, ...this.script]) };

@@ -51,10 +51,4 @@ describe("battle scale", () => {
     expect(BattleScale.toMetresPerSecond(BattleScale.toMetresPerTick(12.6))).toBeCloseTo(3.5, 5);
     expect(BattleScale.minutesToTicks(8)).toBe(60);
   });
-
-  it("shows the time a tick is at as m:ss, h:mm:ss past an hour", () => {
-    expect(BattleScale.formatClock(0)).toBe("0:00");
-    expect(BattleScale.formatClock(8)).toBe("1:04");
-    expect(BattleScale.formatClock(600)).toBe("1:20:00");
-  });
 });

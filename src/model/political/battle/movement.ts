@@ -14,7 +14,8 @@ import {
   WALL_HEIGHT
 } from "./battlefield";
 import { Pathfinding, type Reach } from "./pathfinding";
-import { ICE, MUD, SKIES } from "./weather";
+import { Sight } from "./sight";
+import { ICE, MUD } from "./weather";
 import { Works } from "./works";
 
 export type Point = [number, number];
@@ -278,13 +279,14 @@ class MovementModule {
 
   /**
    * How far a block shoots at a target, as a missile flies: further from above, shorter from below, not at all half its range up;
-   * shorter in rain and fog
+   * never further than it sees the target
    */
   getRange(battle: Battle, block: Block, target: Block): number {
     const { field } = battle;
     const above =
       Battlefields.getElevation(field, block.x, block.y) - Battlefields.getElevation(field, target.x, target.y);
-    return block.range * SKIES[battle.weather].range * Math.sqrt(Math.max(1 + (2 * above) / block.range, 0));
+    const range = block.range * Math.sqrt(Math.max(1 + (2 * above) / block.range, 0));
+    return Sight.isLimited(battle) ? Math.min(range, Sight.getSeenAt(battle, target)) : range; // nobody shoots at what he does not see
   }
 
   /** In range and not too close to load and aim */
@@ -399,7 +401,7 @@ class MovementModule {
         block.side === "attackers" &&
         block.status === "ready" &&
         block.type === "machinery" &&
-        Math.hypot(block.x - burg.x, block.y - burg.y) <= block.range + burg.radius
+        Math.hypot(block.x - burg.x, block.y - burg.y) <= Sight.getReach(battle, block, true) + burg.radius
     );
   }
 

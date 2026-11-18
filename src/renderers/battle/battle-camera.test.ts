@@ -3,7 +3,8 @@ import { BattleCamera, type CameraTroop, type View } from "./battle-camera";
 
 const field = { width: 1000, height: 600, front: 20 };
 const scene = { x: -40, y: -40, width: 1080, height: 680 }; // four nodes more round each side
-const whole = { x: -40, y: -24, width: 1080, height: 648 }; // in the field's proportions
+const whole = scene;
+const SCENE_ASPECT = 1080 / 680;
 const troop = (x: number, y: number, present = true): CameraTroop => ({ x, y, width: 20, depth: 10, present });
 const aspect = (view: View): number => view.width / view.height;
 const inside = (view: View): boolean =>
@@ -15,17 +16,16 @@ const contains = (view: View, x: number, y: number): boolean =>
   x >= view.x && x <= view.x + view.width && y >= view.y && y <= view.y + view.height;
 
 describe("frameTroops", () => {
-  it("frames every battalion with a margin, in the field's proportions", () => {
+  it("frames every battalion with a margin, in the scene's proportions", () => {
     const view = BattleCamera.frameTroops(field, [troop(300, 300), troop(600, 320)]);
     expect(contains(view, 300 - 10 - 40, 300)).toBe(true);
     expect(contains(view, 600 + 10 + 40, 320)).toBe(true);
-    expect(aspect(view)).toBeCloseTo(5 / 3);
+    expect(aspect(view)).toBeCloseTo(SCENE_ASPECT);
     expect(view.width).toBeLessThan(field.width);
   });
 
-  it("takes in the field and the scene round it, in the field's proportions about its middle", () => {
+  it("takes in the field and even margins of the scene round it", () => {
     expect(BattleCamera.getSceneBox(field)).toEqual(scene);
-    expect(BattleCamera.getFieldView(field)).toEqual(whole);
   });
 
   it("gives the whole scene for troops spread wider than it", () => {
@@ -66,9 +66,9 @@ describe("moveCamera", () => {
     expect(BattleCamera.move(camera, field, troops, "follow", 1 / 60).view).toEqual(target);
   });
 
-  it("keeps the field's proportions while it eases", () => {
+  it("keeps the scene's proportions while it eases", () => {
     const camera = BattleCamera.move(BattleCamera.create(field), field, troops, "follow", 0.2);
-    expect(aspect(camera.view)).toBeCloseTo(5 / 3);
+    expect(aspect(camera.view)).toBeCloseTo(SCENE_ASPECT);
   });
 
   it("ignores small changes of the framing", () => {

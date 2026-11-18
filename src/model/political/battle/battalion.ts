@@ -5,6 +5,7 @@ import { CHARGE, CHARGE_HASTE, COUNTER, SHAKEN } from "./battle-balance";
 import { BattleRules, COMMANDS, type Command, type Side } from "./battle-rules";
 import { Battlefields, type FieldWork } from "./battlefield";
 import { ARRIVED, Movement, ROUND_TICKS, type Spot } from "./movement";
+import { Sight } from "./sight";
 import { Works } from "./works";
 
 /** How a battalion fights, by its unit type: line troops, shooters, riders, engines */
@@ -88,7 +89,8 @@ class BattalionModule {
 
   decide(battle: Battle, block: Block, sense: Sense): Intent {
     const { order } = block;
-    const foes = sense.onField.filter(foe => foe.side !== block.side);
+    const limited = Sight.isLimited(battle);
+    const foes = sense.onField.filter(foe => foe.side !== block.side && (!limited || Sight.knows(battle, block, foe)));
     const ready = foes.filter(foe => foe.status === "ready");
     const prey = ready.filter(foe => Movement.canGrip(battle, block, foe)); // whom it can come to grips with
     const stand: Intent = {
@@ -121,9 +123,11 @@ class BattalionModule {
     };
     const goHome = (): Intent =>
       far(order) < ARRIVED * front ? stand : { ...stand, to: order, key: this.getPointKey(battle, order), keep: true };
-    // the last stretch at a run: what it covers in a tick so; engines do not charge
+    // the last stretch at a run: what it covers in a tick so, at a foe in sight; engines do not charge
     const run = (target: Block): number =>
-      block.kind !== "machinery" && Movement.getGap(block, target)[0] <= Movement.getPace(battle, block) * CHARGE_HASTE
+      block.kind !== "machinery" &&
+      Movement.getGap(block, target)[0] <= Movement.getPace(battle, block) * CHARGE_HASTE &&
+      Sight.sees(battle, block, target)
         ? CHARGE_HASTE
         : 1;
     const charge = (target: Block): Intent => ({ ...stand, target, to: target, key: target.id, haste: run(target) });

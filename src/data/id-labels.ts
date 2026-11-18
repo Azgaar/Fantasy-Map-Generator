@@ -5,6 +5,7 @@ import type { LabelType } from "@/model/annotations/labels-generator";
 import type { ProsperityLevel } from "@/model/economy/prosperity";
 import type { Sampling } from "@/model/graph/lattice";
 import type { BattleType, Command } from "@/model/political/battle/battle-rules";
+import type { Period } from "@/model/political/battle/time";
 import type { Condition, Weather } from "@/model/political/battle/weather";
 import type { TransportDomain } from "@/model/story/journeys/transports-generator";
 import type { DemandCategory } from "@/types/economy";
@@ -276,6 +277,16 @@ export const WEATHER_LABELS: Record<Weather, string> = {
   fog: t("Fog")
 };
 
+export const PERIOD_LABELS: Record<Period, string> = {
+  night: t("Night"),
+  dawn: t("Dawn"),
+  morning: t("Morning"),
+  midday: t("Midday"),
+  afternoon: t("Afternoon"),
+  evening: t("Evening"),
+  dusk: t("Dusk")
+};
+
 export const CONDITION_LABELS: Record<Condition, string> = {
   mud: t("Mud"),
   ice: t("Ice"),
@@ -305,6 +316,7 @@ export const BATTLE_TACTIC_LABELS: Record<string, string> = {
   refusedFlanks: t("Refused flanks"),
   crossing: t("Defence of a crossing"),
   wagenburg: t("Wagenburg"),
+  strategicRetreat: t("Strategic retreat"),
   column: t("Column of march"),
   ambuscadeBothSides: t("Ambuscade on both sides"),
   ambuscadeOneSide: t("Ambuscade on one side"),

@@ -31,6 +31,7 @@ export interface BattleOptions {
   rendering: {
     relief: "hachures" | "contours" | "none";
     shade: boolean;
+    light: boolean;
     heights: boolean;
     woods: boolean;
     props: boolean;
@@ -67,6 +68,7 @@ export const DEFAULT_BATTLE_OPTIONS: BattleOptions = {
   rendering: {
     relief: "hachures",
     shade: true,
+    light: true,
     heights: true,
     woods: true,
     props: true,

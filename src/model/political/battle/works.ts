@@ -7,6 +7,7 @@ import { BattleRules, POSTURES, SIDES, type Side, SURRENDER } from "./battle-rul
 import { Battlefields, type FieldWork, type WorkKind } from "./battlefield";
 import { GAP } from "./formations";
 import type { Point } from "./movement";
+import { Sight } from "./sight";
 
 /** Works are part of the battle; tests switch them off to compare with the battle without them */
 export const WORKS = { on: true };
@@ -335,16 +336,8 @@ class WorksModule {
     for (const side of SIDES) {
       if (BattleRules.isBeaten(battle.type, side, battle[side].phase)) continue; // a side on the run or giving itself up batters nothing
       for (const engine of battle.blocks) {
-        if (engine.side !== side || engine.status !== "ready" || engine.leaving || engine.kind !== "machinery")
-          continue;
-        const far = (work: FieldWork): number =>
-          Math.hypot(this.middle(work)[0] - engine.x, this.middle(work)[1] - engine.y);
-        const work = battle.field.works
-          .filter(
-            work =>
-              work.side !== side && work.kind === "wagons" && Battlefields.isStanding(work) && far(work) <= engine.range
-          )
-          .reduce<FieldWork | null>((a, b) => (a && far(a) <= far(b) ? a : b), null);
+        if (engine.side !== side) continue;
+        const work = this.getBattered(battle, engine);
         if (!work) continue;
         work.harm = 1;
         broken = true;
@@ -353,6 +346,21 @@ class WorksModule {
       }
     }
     return broken;
+  }
+
+  /** The stretch of the foe's wagons an engine knocks down: the standing one nearest it in its reach, that it sees */
+  getBattered(battle: Battle, engine: Block): FieldWork | null {
+    if (engine.status !== "ready" || engine.leaving || engine.kind !== "machinery") return null;
+    if (BattleRules.isBeaten(battle.type, engine.side, battle[engine.side].phase)) return null;
+    const reach = Sight.getReach(battle, engine);
+    const far = (work: FieldWork): number =>
+      Math.hypot(this.middle(work)[0] - engine.x, this.middle(work)[1] - engine.y);
+    return battle.field.works
+      .filter(
+        work =>
+          work.side !== engine.side && work.kind === "wagons" && Battlefields.isStanding(work) && far(work) <= reach
+      )
+      .reduce<FieldWork | null>((a, b) => (a && far(a) <= far(b) ? a : b), null);
   }
 
   /** Works laid in advance before a side's places: what its rule would build with all the time there is */

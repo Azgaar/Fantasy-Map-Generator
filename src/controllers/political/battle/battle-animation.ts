@@ -1,8 +1,11 @@
+import { rgb } from "d3";
 import type { BattleLook, BattleOptions } from "@/data/battle-options";
 import { type Battle, Battles, type Intervention } from "@/model/political/battle/battle";
-import { BattleScale, TICK_SECONDS } from "@/model/political/battle/battle-scale";
+import { TICK_SECONDS } from "@/model/political/battle/battle-scale";
 import type { Battlefield } from "@/model/political/battle/battlefield";
+import { BattleTime } from "@/model/political/battle/time";
 import { BattleCamera, type Camera, type View } from "@/renderers/battle/battle-camera";
+import { LAMP } from "@/renderers/battle/draw-battle-light";
 import { BattleOverlayView, OVERLAY_HEIGHT, OVERLAY_WIDTH } from "@/renderers/battle/draw-battle-overlay";
 import { BattleSceneView, MOVING_LAYERS, type SideColors } from "@/renderers/battle/draw-battle-scene";
 import { downloadFile } from "@/utils/file-utils";
@@ -265,7 +268,7 @@ class BattleAnimationExport {
     const probe = source.start();
     Battles.replay(probe.battle, probe.script);
     const ticks = Math.max(probe.battle.tick, 1);
-    const end = BattleScale.formatClock(ticks);
+    const end = BattleTime.formatClock(probe.battle.hour, ticks);
 
     onProgress(0, "");
     const started = performance.now();
@@ -279,7 +282,7 @@ class BattleAnimationExport {
         signal,
         camera: choice.camera,
         source,
-        onTick: tick => onProgress(tick / ticks, `${BattleScale.formatClock(tick)} / ${end}`)
+        onTick: tick => onProgress(tick / ticks, `${BattleTime.formatClock(probe.battle.hour, tick)} / ${end}`)
       });
       if (!file) {
         onProgress(0, t("Cancelled"));
@@ -306,6 +309,7 @@ class BattleAnimationExport {
     const overlay = document.createElementNS(SVG_NS, "svg");
     BattleSceneView.setLook(svg, source.look, source.colors);
     BattleSceneView.drawField(svg, battle.field, battle.scene);
+    BattleSceneView.drawLight(svg, battle);
     let camera: Camera = BattleCamera.create(battle.field);
     const icons = new Set<string>();
     let defs = "";
@@ -330,7 +334,8 @@ class BattleAnimationExport {
       frame: (elapsed: number): void => {
         camera = BattleCamera.move(camera, battle.field, BattleCamera.toCameraTroops(battle.blocks), mode, elapsed);
         BattleSceneView.setView(svg, battle.field, camera.view);
-        const clock = BattleScale.formatClock(battle.tick);
+        BattleSceneView.drawLight(svg, battle); // the tint goes with the hour; the ground was taken at the start
+        const clock = BattleTime.formatClock(battle.hour, battle.tick);
         BattleOverlayView.draw(overlay, {
           title: source.title,
           clock,
@@ -421,20 +426,43 @@ class BattleAnimationExport {
     canvas.width = width;
     canvas.height = this.getHeight(width);
     const context = canvas.getContext("2d", { willReadFrequently: true })!;
-    const moving = MOVING_LAYERS.map(id => stage.svg.querySelector(`#${id}`)!);
+    // the light multiplies what lies under it, which an image of its own would not have: it is laid on the canvas
+    const moving = MOVING_LAYERS.filter(id => id !== "battleLight").map(id => stage.svg.querySelector(`#${id}`)!);
+    const light = document.createElement("canvas");
+    [light.width, light.height] = [canvas.width, canvas.height];
     return async (delay: number): Promise<void> => {
       const { view } = stage;
       const [x, y, w, h] = [view.x - scene.x, view.y - scene.y, view.width, view.height].map(value => value * scale);
       context.drawImage(ground, x, y, w, h, 0, 0, canvas.width, canvas.height);
-      const frame = this.getFrameMarkup(
-        view,
-        width,
-        stage.defs + this.markup(moving),
-        this.markup([...stage.overlay.children])
-      );
+      const frame = this.getFrameMarkup(view, width, stage.defs + this.markup(moving), "");
       context.drawImage(await this.loadImage(frame), 0, 0);
+      this.drawLight(light, stage.svg, view);
+      context.globalCompositeOperation = "multiply";
+      context.drawImage(light, 0, 0);
+      context.globalCompositeOperation = "source-over";
+      const overlay = this.getFrameMarkup(view, width, "", this.markup([...stage.overlay.children]));
+      context.drawImage(await this.loadImage(overlay), 0, 0);
       gif.add(canvas, delay);
     };
+  }
+
+  /** The tint of the hour with the battalions' glows over it, as the scene's light layer has them, in view */
+  private drawLight(canvas: HTMLCanvasElement, svg: SVGSVGElement, view: View): void {
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = svg.querySelector("#battleTint")!.getAttribute("fill")!;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    const scale = canvas.width / view.width;
+    for (const lamp of svg.querySelectorAll("#battleLamps circle")) {
+      const [cx, cy, r, opacity] = ["cx", "cy", "r", "opacity"].map(name => +lamp.getAttribute(name)!);
+      const [x, y, radius] = [(cx - view.x) * scale, (cy - view.y) * scale, r * scale];
+      const glow = context.createRadialGradient(x, y, 0, x, y, radius);
+      for (const [offset, color, alpha] of LAMP.stops) {
+        const { r: red, g, b } = rgb(color);
+        glow.addColorStop(offset, `rgba(${red}, ${g}, ${b}, ${alpha * opacity})`);
+      }
+      context.fillStyle = glow;
+      context.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+    }
   }
 
   private readonly noop = (): void => {};
