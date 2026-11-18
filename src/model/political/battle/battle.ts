@@ -34,7 +34,7 @@ import {
 } from "./battle-balance";
 import { BattleRules, type BattleType, type Command, PHASES, SIDES, type Side, SURRENDER } from "./battle-rules";
 import { BattleScale } from "./battle-scale";
-import { type Battlefield, Battlefields, type FieldWall } from "./battlefield";
+import { type Battlefield, Battlefields, BURG_END, type FieldWall } from "./battlefield";
 import type { TacticName } from "./formations";
 import { Generals, type Option } from "./general";
 import { ARRIVED, type Move, Movement, ROUND_TICKS } from "./movement";
@@ -53,6 +53,9 @@ const MARCHING = 0.7; // further from its place a battalion faces the way it mar
 // of a pace a tick
 const MARCH = 1.4; // the way a battalion makes in a round to be on the march
 const PUSH = 0.25; // battalion fronts a battalion is pushed aside in a tick at the most, or its pace
+
+const HIGH_GROUND = 20; // metres the defenders' ground above the attackers' turns the attack its way in full
+const AXIS_SHIFTS = [-0.3, 0, 0.3]; // across the field, in shares of its reach: where the sides' ground is looked at
 
 export type BlockStatus = "ready" | "routed" | "surrendered" | "fled" | "destroyed";
 export type BlockAction = "hold" | "move" | "shoot" | "fight" | "flee" | "build";
@@ -292,8 +295,8 @@ export interface Battle {
   x: number;
   y: number;
   cell: number;
-  approach: number; // direction the attackers came from the map, radians
-  axis: number; // direction of the attack on the field: the approach, turned to start from dry land
+  approach: number; // direction the attackers came from the map, radians: breaks a tie of the field's axes
+  axis: number; // direction of the attack on the field, as the field lies (`findAxis`)
   field: Battlefield;
   scene: Battlefield | null; // the field's ground and more round it, drawn only: the field is cut from its middle
   units: MilitaryUnit[];
@@ -1591,28 +1594,59 @@ class BattleModule {
     Generals.enlist(battle, side, blocks);
   }
 
-  /** The approach, turned as little as it takes for the attackers to form up on land */
+  /**
+   * The attack as the field lies: from the water onto the land, else square to the field's edges, both sides on dry
+   * land, a river between them and none through either, the defenders on the higher ground and in the burg. The way
+   * the attackers came breaks a tie
+   */
   private findAxis(battle: Battle): number {
     const { field, approach } = battle;
-    if (BattleRules.isFromSea(battle.type) && !field.open) {
-      // the way the fleet came, unless that is from the land: then straight from the water
-      const landward = this.getLandward(field);
-      return landward === null || Math.abs(Movement.normalize(approach - landward)) < Math.PI / 3 ? approach : landward;
-    }
-    if (field.open) return approach;
-    const dry = (axis: number): boolean =>
-      [-0.3, 0, 0.3].every(shift =>
-        [0.6, 0.8, 1].every(depth => {
-          const across = axis + Math.PI / 2;
-          const [along, aside] = [Generals.reach(field, axis), Generals.reach(field, across)];
-          const x = field.width / 2 - Math.cos(axis) * along * depth + Math.cos(across) * aside * shift;
-          const y = field.height / 2 - Math.sin(axis) * along * depth + Math.sin(across) * aside * shift;
-          return Battlefields.terrainAt(field, x, y).water !== 1;
-        })
+    const landward = BattleRules.isFromSea(battle.type) && !field.open ? this.getLandward(field) : null;
+    if (landward !== null) return landward;
+    const turn = (axis: number): number => Math.abs(Movement.normalize(axis - approach)) / Math.PI;
+    const burg = field.burgs.find(burg => burg.name === battle.place); // the one the battle is fought before
+    const score = (axis: number): number => {
+      if (field.open) return -turn(axis);
+      const across = axis + Math.PI / 2;
+      const [along, aside] = [Generals.reach(field, axis), Generals.reach(field, across)];
+      const point = (depth: number, shift: number): Point => [
+        field.width / 2 + Math.cos(axis) * along * depth + Math.cos(across) * aside * shift,
+        field.height / 2 + Math.sin(axis) * along * depth + Math.sin(across) * aside * shift
+      ];
+      const ground = (depths: number[]) =>
+        AXIS_SHIFTS.flatMap(shift => depths.map(depth => Battlefields.terrainAt(field, ...point(depth, shift))));
+      const [attackers, defenders] = [ground([-0.6, -0.8, -1]), ground([0.2, 0.35, 0.5])];
+      const share = (count: number): number => count / attackers.length;
+      const wet = [...attackers, ...defenders].filter(terrain => terrain.water === 1).length;
+      if (battle.type === "ambush") return -wet - turn(axis) / 2; // a column on the march: no sides drawn up to face
+      const rise = share(sum(defenders, terrain => terrain.height) - sum(attackers, terrain => terrain.height));
+      // the burg on the defenders' side, as far as the field is built to stand it
+      const town = burg
+        ? ((burg.x - field.width / 2) * Math.cos(axis) + (burg.y - field.height / 2) * Math.sin(axis)) /
+          along /
+          BURG_END
+        : 0;
+      const between = AXIS_SHIFTS.filter(shift => this.crossesRiver(field, point(-0.6, shift), point(0.2, shift)));
+      const split = [-0.8, 0.35].filter(depth => this.crossesRiver(field, point(depth, -0.3), point(depth, 0.3)));
+      return (
+        -wet +
+        Math.max(-1, Math.min(1, (rise * field.relief) / HIGH_GROUND)) * 0.6 +
+        Math.max(-1, Math.min(1, town)) * 1.5 +
+        (between.length / AXIS_SHIFTS.length) * 0.8 -
+        split.length * 0.8 -
+        turn(axis) / 2
       );
-    for (const swing of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.2, -2.2, Math.PI])
-      if (dry(approach + swing)) return approach + swing;
-    return approach;
+    };
+    return [0, Math.PI / 2, Math.PI, -Math.PI / 2].reduce((a, b) => (score(b) > score(a) ? b : a));
+  }
+
+  /** Whether a river runs between two points of the field */
+  private crossesRiver(field: Battlefield, [ax, ay]: Point, [bx, by]: Point): boolean {
+    const steps = Math.ceil(Math.hypot(bx - ax, by - ay) / (field.cell / 2));
+    for (let i = 0; i <= steps; i++)
+      if (Battlefields.terrainAt(field, ax + ((bx - ax) * i) / steps, ay + ((by - ay) * i) / steps).water === 2)
+        return true;
+    return false;
   }
 
   /** From the sea or a lake onto the land, as the field lies: the way a fleet comes at the shore */

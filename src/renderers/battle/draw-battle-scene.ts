@@ -12,9 +12,10 @@ import { convertSpeed, formatLength, getSpeedUnit } from "@/model/units";
 import { BattleCamera, type View } from "@/renderers/battle/battle-camera";
 import { BattleCliffsView } from "@/renderers/battle/draw-battle-cliffs";
 import { BattleDebugView } from "@/renderers/battle/draw-battle-debug";
-import { BattleGroundView } from "@/renderers/battle/draw-battle-ground";
+import { BattleGroundView, ROAD } from "@/renderers/battle/draw-battle-ground";
 import { BattleLightView, LAMP } from "@/renderers/battle/draw-battle-light";
 import { BattleReliefView } from "@/renderers/battle/draw-battle-relief";
+import { BattleTownView } from "@/renderers/battle/draw-battle-town";
 import { BattleWeatherView } from "@/renderers/battle/draw-battle-weather";
 import type { Point } from "@/types/global";
 import { sentences, t } from "@/utils/i18n";
@@ -23,7 +24,7 @@ import { capitalize, escapeHtml } from "@/utils/string-utils";
 /**
  * The scene's layers by id, bottom to top (the diagnostics add `battleDebugGround` under the labels, `battleDebugDoings` on top):
  * - `battlePaper`: the ground's colour under the whole scene
- * - `battleTerrain`: the ground, drawn once (tint, cover, relief, props, water, cliffs, rivers, roads, towns)
+ * - `battleTerrain`: the ground, drawn once (tint, cover, relief, props, water, cliffs, rivers, towns, roads, plazas)
  * - `battleWalls`: the field's walls, drawn again on a breach
  * - `battleEdge`, `battleFrost`, `battleMud`: the field's edge within its scene, frozen and soaked ground
  * - `battleLightShade`: the ground shaded by the sun and the sky of the moment
@@ -116,10 +117,6 @@ const WATERS: Record<string, { fill: string; strand?: string; rim?: string }> = 
   frozen: { fill: "#e5eef3", rim: "#b9cad6" },
   lava: { fill: "#e9a07a", rim: "#9b4b2e" }
 };
-const ROAD = [
-  ["#a39d90", 5],
-  ["#fbf8f1", 2.2]
-] as const; // the casing and the way, points wide
 const TOWER_SPACING = 40; // points between the towers of a wall
 const WALL = "#55524b";
 const PIER = "#8f877a";
@@ -386,7 +383,7 @@ class BattleSceneRenderer {
       .attr("opacity", night.toFixed(2));
   }
 
-  /** Patterns of towns and fords, the clips of the field, its ground and what lies outside it, masks of rivers and cover */
+  /** The pattern of fords, the clips of the field, its ground and what lies outside it, masks of rivers and cover */
   private getDefs(field: Battlefield, ground: Battlefield, [dx, dy]: Point, masks: CoverMasks): string {
     const { width, height } = field;
     const pt = this.getPoint(field);
@@ -402,10 +399,7 @@ class BattleSceneRenderer {
               `<path d="${course(river.points)}" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="${river.width}"/>`
           )
           .join("");
-    return /* html */ `<pattern id="battleTownPattern" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="scale(${pt}) rotate(45)">
-        <rect width="6" height="6" fill="#f4f1ea"/><path d="M0 0v6" stroke="#77736b" stroke-width="2"/>
-      </pattern>
-      <pattern id="battleFordPattern" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="scale(${pt})">
+    return /* html */ `<pattern id="battleFordPattern" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="scale(${pt})">
         <rect width="7" height="7" fill="#e4edf4"/><circle cx="2" cy="2" r="0.9" fill="#8ea5b8"/><circle cx="5.5" cy="5.2" r="0.7" fill="#8ea5b8"/>
       </pattern>
       <radialGradient id="battleLampGlow">${LAMP.stops.map(([offset, color, opacity]) => `<stop offset="${offset}" stop-color="${color}" stop-opacity="${opacity}"/>`).join("")}</radialGradient>
@@ -421,7 +415,7 @@ class BattleSceneRenderer {
     return terrain.append("g").attr("id", `battleTerrain${name}`);
   }
 
-  /** The ground, bottom to top: its tint, woods and bogs, relief, props, waters, cliffs, rivers, roads and towns */
+  /** The ground, bottom to top: its tint, woods and bogs, relief, props, waters, cliffs, rivers, towns, roads and plazas */
   private drawTerrain(terrain: Group, field: Battlefield, paper: string, masks: CoverMasks, pt: number): void {
     this.addPart(terrain, "Tint").html(BattleGroundView.getMarkup(field));
     this.drawCover(this.addPart(terrain, "Cover"), field, masks);
@@ -430,8 +424,10 @@ class BattleSceneRenderer {
     this.drawWater(this.addPart(terrain, "Water"), field, pt);
     this.addPart(terrain, "Cliffs").html(BattleCliffsView.getMarkup(field, pt));
     this.drawRivers(this.addPart(terrain, "Rivers"), field);
+    const towns = field.burgs.map((_, index) => BattleTownView.getMarkup(field, index, pt));
+    this.drawTowns(this.addPart(terrain, "Towns"), field, towns.map(town => town.town).join(""), pt);
     this.drawRoads(this.addPart(terrain, "Roads"), field, pt);
-    this.drawTowns(this.addPart(terrain, "Towns"), field, pt);
+    this.addPart(terrain, "Plazas").html(towns.map(town => town.plaza).join(""));
   }
 
   /** Woods and bogs fade out at their edges; without a canvas their outlines are drawn sharp */
@@ -537,16 +533,9 @@ class BattleSceneRenderer {
     }
   }
 
-  /** Burgs as ground: their streets and the piers from their sea gates */
-  private drawTowns(group: Group, field: Battlefield, pt: number): void {
-    for (const burg of field.burgs) {
-      group
-        .append("path")
-        .attr("d", this.toPath(burg.outline, true))
-        .attr("fill", "url(#battleTownPattern)")
-        .attr("stroke", burg.walled ? "none" : WALL)
-        .attr("stroke-width", 1.6 * pt);
-    }
+  /** Burgs as rooftops, and the piers from their sea gates */
+  private drawTowns(group: Group, field: Battlefield, markup: string, pt: number): void {
+    group.html(markup);
     // a stone pier from every sea gate out into the water, its head wider; under the wall it leaves by
     const middle = (wall: { a: Point; b: Point }): Point => [(wall.a[0] + wall.b[0]) / 2, (wall.a[1] + wall.b[1]) / 2];
     field.burgs.forEach((burg, index) => {

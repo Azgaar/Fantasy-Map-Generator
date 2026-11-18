@@ -8,6 +8,10 @@ import { minmax, normalize, rn } from "@/utils/number-utils";
 import { walkLine } from "@/utils/path-utils";
 
 export const PAPER = "#fbf5e9"; // the ground of a biome the map has no colour for
+export const ROAD = [
+  ["#a39d90", 5],
+  ["#fbf8f1", 2.2]
+] as const; // the casing and the way, points wide: the roads, and the streets and market of a burg
 const TINT_LIGHTNESS = 93;
 const TINT_CHROMA = [0.35, 14]; // of the biome's chroma, and the most
 const DRY_BED = "#ece2c6";

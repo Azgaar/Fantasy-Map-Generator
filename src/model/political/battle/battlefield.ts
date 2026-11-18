@@ -17,6 +17,7 @@ type Box = [number, number, number, number]; // x0, y0, x1, y1
 
 // a grid node is smaller than a battalion is deep, so the ways round the terrain follow what is drawn
 const SITE_SHIFT = 300; // a battle by a river is fought off it, at most
+export const BURG_END = 0.4; // of the field's reach from its middle, a burg a field battle is fought before stands at
 
 export interface FieldRiver {
   points: Point[];
@@ -133,8 +134,8 @@ export interface Terrain {
 }
 
 // a river by its width: a brook is waded anywhere, a wider one at its fords, the widest only bridged
-const BROOK = 20;
-const WADEABLE = 40;
+const BROOK = 18;
+const WADEABLE = 26;
 const FORD = 72; // length of a ford along the river
 
 // share of the ground under trees, by biome
@@ -263,8 +264,11 @@ class BattlefieldModule {
     const held = cells.burg[cell] ? pack.burgs[cells.burg[cell]] : null;
     const heldRadius = held ? this.getBurgRadius(held) : 0;
     const drawnRadius = siege ? BattleScale.fitSiegeBurg(heldRadius, size) : heldRadius;
-    const [sx, sy] = this.findSite(cell, place, pixel, drawnRadius, BattleRules.isFromSea(type), type === "ambush");
-    const toField = (mx: number, my: number): Point => [(mx - sx) * pixel + width / 2, (my - sy) * pixel + height / 2];
+    const fromSea = BattleRules.isFromSea(type);
+    const [sx, sy] = this.findSite(cell, place, pixel, drawnRadius, fromSea, type === "ambush");
+    // a field battle at a burg is fought before it: the field's middle off the burg
+    const [mx, my] = held && !siege && !fromSea ? this.getOutskirts([sx, sy], pixel, size) : [sx, sy];
+    const toField = (x: number, y: number): Point => [(x - mx) * pixel + width / 2, (y - my) * pixel + height / 2];
     const inView = ([fx, fy]: Point, margin = 0): boolean =>
       fx > -margin && fx < width + margin && fy > -margin && fy < height + margin;
     const spacing = BattleSite.getSpacing();
@@ -274,7 +278,7 @@ class BattlefieldModule {
       const pull = held ? Math.max(1 - Math.hypot(mx - held.x, my - held.y) / spacing, 0) : 0;
       return toField(mx + ox * pull, my + oy * pull);
     };
-    const nearby = Pack.findAll(sx, sy, spacing * 2 + width / pixel);
+    const nearby = Pack.findAll(mx, my, spacing * 2 + width / pixel);
     if (!nearby.includes(cell)) nearby.push(cell);
     const nodes = Array.from({ length: cols * rows }, (_, i) => this.nodeCentre(field, i));
 
@@ -395,7 +399,8 @@ class BattlefieldModule {
       if (!river.cells.some(c => near.has(c))) return;
       const course = Rivers.addMeandering(river.cells, river.points ?? null);
       const points = course.map(p => lineToField(p[0], p[1]));
-      const middle = this.nearestIndex(points, [width / 2, height / 2]);
+      const anchors = points.filter((_, i) => course[i][2]); // only the cell centres carry flux, the meanders between none
+      const flux = course.filter(p => p[2])[this.nearestIndex(anchors, [width / 2, height / 2])]?.[2] ?? 0;
       if (inView(points[0]) && points.length > 1) {
         // a spring on the field would look cut off: the river comes from beyond the edge
         const [px, py] = points[0];
@@ -406,7 +411,7 @@ class BattlefieldModule {
       }
       const line = this.clipToView(this.smooth(this.sliceAround(points, touches), step / 2, box), box);
       if (!line.length) return;
-      const wide = Math.min(Math.max(12 + (Math.sqrt(course[middle][2]) * 2) / 3, 16), 52);
+      const wide = Math.min(Math.max(12 + (Math.sqrt(flux) * 2) / 3, 16), 52);
       // meanders some twelve widths long, too small for the map to show
       const winding = this.bend(line, wide * 12, wide * 2.5, place, 1000 + index);
       field.rivers.push({
@@ -1303,6 +1308,28 @@ class BattlefieldModule {
     const angle = this.mix(place[0], place[1], -1) * Math.PI * 2;
     const shift = (this.mix(place[0], place[1], -2) * SITE_SHIFT) / pixel;
     return [site[0] + Math.cos(angle) * shift, site[1] + Math.sin(angle) * shift];
+  }
+
+  /**
+   * The middle of a field fought before a burg: the burg at one end of it, where its defenders form up, and dry land for
+   * the attackers at the other; which end by the place, where more than one will do
+   */
+  private getOutskirts([bx, by]: Point, pixel: number, { width, height }: FieldSize): Point {
+    const { cells } = pack;
+    const isLand = ([x, y]: Point): boolean => (cells.h[Pack.findCell(x, y) ?? -1] ?? 0) >= 20;
+    const sites = [
+      [1, 0],
+      [0, 1],
+      [-1, 0],
+      [0, -1]
+    ].map(([dx, dy]) => {
+      const reach = (dx ? width * 0.44 : height / 2 - width * 0.05) / pixel; // as Generals.reach
+      const back = (deep: number): Point => [bx - dx * reach * deep, by - dy * reach * deep];
+      return { site: back(BURG_END), dry: [back(BURG_END), back(BURG_END + 0.8)].filter(isLand).length };
+    });
+    const most = Math.max(...sites.map(site => site.dry));
+    const dry = sites.filter(site => site.dry === most);
+    return dry[Math.floor(this.mix(bx, by, -3) * dry.length)].site;
   }
 
   /** The radius of the burg a siege of the place is for, Infinity where it has none */

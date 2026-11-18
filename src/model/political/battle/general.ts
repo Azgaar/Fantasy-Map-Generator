@@ -72,6 +72,7 @@ const FEINT_BACK = 4; // fronts it falls back by
 const LURED = 2; // fronts the foe comes out after it for the trap to be sprung
 const EDGE = 0.5; // and one holding the water's edge, its middle a battalion deep from it: who comes at it is still wading
 const BEND = 1.5; // how far a line bent to the ground goes ahead of its frame or back
+const FACING = 2; // what attackers give up a shift of the field's reach off the defenders' line for: woods do not draw them aside
 const KINK = 0.35; // and how much further than its neighbour, a front along a front across
 const CLIMB = 1.5; // the slope below a line the foe charges up
 const FILE = 0.6; // between the battalions of a column, besides their depth
@@ -676,12 +677,18 @@ class GeneralModule {
     if (defending && field.held !== null) return [{ ...field.burgs[field.held], heading: forward }, 2];
     const foe = this.survey(battle, BattleRules.enemyOf(side));
     const climb = 0.3 * (1 + foe.riders / (foe.power || 1)); // a slope before the line, the more worth the more riders come
+    // the attackers form up over against the defenders' line and face it
+    const target = defending ? null : this.getDefendersLine(battle);
+    const across = axis + Math.PI / 2;
+    const facing = target
+      ? ((target[0] - field.width / 2) * Math.cos(across) + (target[1] - field.height / 2) * Math.sin(across)) / width
+      : 0;
 
-    const at = (deep: number, shift: number): Frame => ({
-      x: field.width / 2 + Math.cos(axis) * along * deep + Math.cos(axis + Math.PI / 2) * width * shift,
-      y: field.height / 2 + Math.sin(axis) * along * deep + Math.sin(axis + Math.PI / 2) * width * shift,
-      heading: forward
-    });
+    const at = (deep: number, shift: number): Frame => {
+      const x = field.width / 2 + Math.cos(axis) * along * deep + Math.cos(across) * width * shift;
+      const y = field.height / 2 + Math.sin(axis) * along * deep + Math.sin(across) * width * shift;
+      return { x, y, heading: target ? Math.atan2(target[1] - y, target[0] - x) : forward };
+    };
     /** The ends of a line there that water, wood or a burg covers. The edge of the field is where the view ends, no cover */
     const getEnds = (frame: Frame): number => {
       let ends = 0;
@@ -715,7 +722,7 @@ class GeneralModule {
 
     // a line is worth the ground under it, what covers its ends and what the foe has to cross to come at it
     const score = (frame: Frame, deep: number, shift: number): number => {
-      let value = -Math.abs(shift) / 4 - Math.abs(deep - home) / 2 - wetPlaces(frame);
+      let value = -Math.abs(shift - facing) * (target ? FACING : 0.25) - Math.abs(deep - home) / 2 - wetPlaces(frame);
       // no line across a cliff, half of it above and half below
       for (const share of [-1, -0.5, 0, 0.5])
         if (
@@ -748,7 +755,7 @@ class GeneralModule {
     // attackers come nearer only when water cuts the ground they came to; from the sea they start where they lie
     for (const deep of defending ? [0.35, 0.2, 0.5] : afloat ? [home] : [home, home + 0.15, home + 0.3]) {
       if (!defending && deep !== home && dry) break;
-      for (const shift of [0, -0.2, 0.2, -0.4, 0.4]) {
+      for (const shift of [0, -0.2, 0.2, -0.4, 0.4].map(offset => offset + facing)) {
         const frame = at(deep, shift);
         const value = score(frame, deep, shift);
         if (value > most) [best, most, dry] = [frame, value, !wetPlaces(frame)];
@@ -762,6 +769,14 @@ class GeneralModule {
     for (let i = 0; i < 30 && !inside(this.toField(frame, 0, -depth)); i++)
       [frame.x, frame.y] = this.toField(frame, 0, step);
     return [frame, getEnds(frame)];
+  }
+
+  /** The middle of the defenders' first line, once they are drawn up on the ground: null where they man walls or lie in wait */
+  private getDefendersLine(battle: Battle): Point | null {
+    const { type } = battle;
+    if (type === "ambush" || (type === "siege" && Movement.hasWalls(battle))) return null;
+    const { x, y } = battle.defenders.plan;
+    return x || y ? [x, y] : null;
   }
 
   /**
@@ -1127,8 +1142,8 @@ class GeneralModule {
         (cover / count) * 2 +
         this.clamp(rise / count / OVERLOOK, -0.5, 0.5) -
         (slowed / count) * 0.5 -
-        (barred / count) * 3 +
-        (hidden ? -off : off) * 0.5;
+        (barred / count) * 3 -
+        off * 0.5; // as near as they may, to close before the column finds its feet
       return { frame, cover: worth, hidden, fits: !barred };
     };
 
