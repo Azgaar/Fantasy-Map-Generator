@@ -16,8 +16,15 @@ const TORCH = 1.5; // torches carried in the dark show a battalion so much furth
 
 class SightModule {
   private readonly known = new WeakMap<Battle, { round: number; sides: Record<Side, Set<number>> }>();
-  // asked for at every turn of a tick: the last battle's answer is kept
-  private last = { battle: null as Battle | null, tick: -1, hour: -1, weather: "", daylight: 1, limited: false };
+  // asked for at every turn of a tick: the last battle's answer is kept, the battle itself not, so a closed one is freed
+  private last = {
+    battle: null as WeakRef<Battle> | null,
+    tick: -1,
+    hour: -1,
+    weather: "",
+    daylight: 1,
+    limited: false
+  };
 
   /** Whether sight is short at all: by day under a clear sky everybody sees the whole field */
   isLimited(battle: Battle): boolean {
@@ -99,7 +106,7 @@ class SightModule {
   private remember(battle: Battle) {
     const { last } = this;
     if (
-      last.battle === battle &&
+      last.battle?.deref() === battle &&
       last.tick === battle.tick &&
       last.hour === battle.hour &&
       last.weather === battle.weather
@@ -107,7 +114,14 @@ class SightModule {
       return last;
     const daylight = BattleTime.getDaylight(BattleTime.getTime(battle.hour, battle.tick));
     const limited = Number.isFinite(SKIES[battle.weather].sight) || daylight < 1;
-    this.last = { battle, tick: battle.tick, hour: battle.hour, weather: battle.weather, daylight, limited };
+    this.last = {
+      battle: new WeakRef(battle),
+      tick: battle.tick,
+      hour: battle.hour,
+      weather: battle.weather,
+      daylight,
+      limited
+    };
     return this.last;
   }
 }

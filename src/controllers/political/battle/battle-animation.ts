@@ -1,6 +1,6 @@
 import { rgb } from "d3";
 import type { BattleLook, BattleOptions } from "@/data/battle-options";
-import { type Battle, Battles, type Intervention } from "@/model/political/battle/battle";
+import { type Battle, Battles, type Intervention, type Settled } from "@/model/political/battle/battle";
 import { TICK_SECONDS } from "@/model/political/battle/battle-scale";
 import type { Battlefield } from "@/model/political/battle/battlefield";
 import { BattleTime } from "@/model/political/battle/time";
@@ -17,6 +17,7 @@ import { escapeHtml } from "@/utils/string-utils";
 export interface BattleStart {
   battle: Battle;
   script: Intervention[];
+  settled: Settled | null; // what the generals settled on: they do not think it through again
 }
 
 /** What the screen hands an export: the battle from its start, and how it is drawn on screen */
@@ -266,7 +267,7 @@ class BattleAnimationExport {
 
     // a quick run to the end tells how long the battle is
     const probe = source.start();
-    Battles.replay(probe.battle, probe.script);
+    Battles.replay(probe.battle, probe.script, probe.settled);
     const ticks = Math.max(probe.battle.tick, 1);
     const end = BattleTime.formatClock(probe.battle.hour, ticks);
 
@@ -274,8 +275,7 @@ class BattleAnimationExport {
     const started = performance.now();
     try {
       const gif = format === "gif" ? await this.createGifWriter() : null;
-      const { battle, script } = source.start();
-      const file = await this.recordBattle(battle, script, {
+      const file = await this.recordBattle(source.start(), {
         gif,
         width,
         tickMs,
@@ -348,12 +348,11 @@ class BattleAnimationExport {
 
   /** Play a battle set up anew from its start to the end into a looping animation */
   private async recordBattle(
-    battle: Battle,
-    script: Intervention[],
+    { battle, script, settled }: BattleStart,
     { gif, width, tickMs, signal, camera, source, onTick }: RecordOptions
   ): Promise<Blob | null> {
     Battles.applyDue(battle, script);
-    Battles.plan(battle); // the first frame shows the troops as the generals drew them up
+    Battles.plan(battle, settled); // the first frame shows the troops as the generals drew them up
     const stage = this.createStage(battle, source, camera);
     stage.placeBlocks();
     BattleSceneView.updateBlocks(stage.svg, battle, null, 1);

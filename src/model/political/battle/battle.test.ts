@@ -3,7 +3,15 @@ import { type BattleSettings, DEFAULT_BATTLE_SETTINGS } from "@/data/battle-opti
 import { getDefaultMilitaryUnits } from "@/model/political/military-units";
 import type { MilitaryUnit } from "@/types/military";
 import { Battalions } from "./battalion";
-import { type Battle, type BattleRegiment, Battles, type Block, ROUND_TICKS, type TaskKind } from "./battle";
+import {
+  type Battle,
+  type BattleRegiment,
+  Battles,
+  type Block,
+  type Intervention,
+  ROUND_TICKS,
+  type TaskKind
+} from "./battle";
 import { CONTACT } from "./battle-balance";
 import { BattleRules, type BattleType, PHASES, POSTURES, type Side } from "./battle-rules";
 import { BattleScale, COLS, ROWS } from "./battle-scale";
@@ -790,6 +798,27 @@ describe("battle generals", () => {
       slowest = Math.max(slowest, performance.now() - from);
     }
     expect(slowest).toBeLessThan(100);
+  });
+
+  it("replays a battle with the plan its generals settled on: the same battle, not thought through again", () => {
+    const dig: Intervention = { tick: 0, kind: "dig", side: "defenders", on: true };
+    const original = battle([regiment(1, big)], [regiment(2, big)]);
+    Battles.intervene(original, dig);
+    Battles.plan(original);
+    expect(original.settled).not.toBeNull();
+    run(original);
+
+    const ticks = vi.spyOn(Battles, "tick");
+    const replay = battle([regiment(1, big)], [regiment(2, big)]);
+    Battles.replay(replay, [dig], original.settled);
+    expect(ticks.mock.calls.some(([b]) => b.rehearsal)).toBe(false);
+    ticks.mockRestore();
+    expect(replay.settled).toEqual(original.settled);
+    expect(replay.log).toEqual(original.log);
+    expect(replay.blocks).toEqual(original.blocks);
+
+    Battles.rethink(original); // the armies or the ground changed: what was settled does not stand
+    expect(original.settled).toBeNull();
   });
 
   const fight = (
@@ -1913,6 +1942,26 @@ describe("battle time", () => {
       [0, "evening"],
       [ROUND_TICKS, "dusk"]
     ]);
+  });
+
+  it("has the generals think again and draw up anew for another hour: as a battle set at that hour", () => {
+    const changed = battle([regiment(1, even)], [regiment(2, even)]);
+    Battles.plan(changed);
+    const noon = structuredClone(changed.blocks);
+    Battles.setHour(changed, 1);
+    expect(changed.planned).toBe(false);
+    expect(changed.settled).toBeNull();
+    Battles.plan(changed);
+    const night = Battles.create({
+      ...changed,
+      attackers: [regiment(1, even)],
+      defenders: [regiment(2, even)],
+      hour: 1
+    });
+    Battles.plan(night);
+    expect(night.blocks).not.toEqual(noon); // in the dark the defenders draw up nearer
+    expect(changed.settled).toEqual(night.settled);
+    expect(changed.blocks).toEqual(night.blocks);
   });
 });
 

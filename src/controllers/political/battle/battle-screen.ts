@@ -1236,7 +1236,7 @@ class BattleScreenController {
     const start = this.startAnew(b);
     const anew = start.battle;
     Battles.applyDue(anew, start.script);
-    Battles.plan(anew);
+    Battles.plan(anew, start.settled);
     while (anew.tick < target && !anew.result) {
       Battles.applyDue(anew, start.script);
       Battles.tick(anew);
@@ -1796,9 +1796,10 @@ class BattleScreenController {
     const target = event.target as HTMLElement;
     const b = this.battle!;
     if (target.tagName !== "BUTTON" || b.tick) return;
-    b.hour = +target.dataset.hour!;
+    Battles.setHour(b, +target.dataset.hour!);
     this.shownLog = []; // its lines are timed anew
     this.drawLight();
+    this.drawScene();
     this.refresh();
   }
 
@@ -2075,7 +2076,7 @@ class BattleScreenController {
       latitude: b.latitude,
       ...this.getClimate(b.cell)
     });
-    return { battle, script: structuredClone([...b.interventions, ...this.script]) };
+    return { battle, script: structuredClone([...b.interventions, ...this.script]), settled: b.settled };
   }
 
   /** The battle for an export: from its start, drawn as on screen, and worded for a report */

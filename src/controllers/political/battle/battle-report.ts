@@ -60,7 +60,7 @@ class BattleReportExport {
     onProgress(0, "");
     try {
       const probe = source.start();
-      Battles.replay(probe.battle, probe.script);
+      Battles.replay(probe.battle, probe.script, probe.settled);
       const ticks = Keyframes.select(probe.battle.log, text.kinds);
       const frames = await this.takeKeyframes(source, choice, new Set(ticks), signal, share => onProgress(share, ""));
       if (!frames) {
@@ -87,9 +87,9 @@ class BattleReportExport {
     signal: AbortSignal,
     onProgress: (share: number) => void
   ): Promise<Keyframe[] | null> {
-    const { battle, script } = source.start();
+    const { battle, script, settled } = source.start();
     Battles.applyDue(battle, script);
-    Battles.plan(battle);
+    Battles.plan(battle, settled);
     const stage = BattleAnimation.createStage(battle, source, choice.camera);
     const end = Math.max(...keys);
     const frames: Keyframe[] = [];

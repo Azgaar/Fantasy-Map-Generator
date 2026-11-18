@@ -288,6 +288,9 @@ export interface BattleResult {
   status: [string, string]; // as the attackers and the defenders see it
 }
 
+/** What each general settled on before the start */
+export type Settled = Record<Side, Option>;
+
 export interface Battle {
   type: BattleType;
   name: string;
@@ -318,6 +321,7 @@ export interface Battle {
   log: LogEntry[];
   result: BattleResult | null;
   planned: boolean; // the generals have thought the battle through
+  settled: Settled | null; // what they settled on: a replay takes it and does not think it through again
   rehearsal: boolean; // it is fought in a general's mind
   settings: BattleSettings; // copied in at the setup: a battle under way never changes
   seed?: number; // the dice are cast by it; none: no fortune
@@ -455,6 +459,7 @@ class BattleModule {
       log: [],
       result: null,
       planned: false,
+      settled: null,
       rehearsal: false
     };
     this.prepare(battle);
@@ -533,10 +538,24 @@ class BattleModule {
    * expects it, and takes the one that ends best.
    * Done once, before the first tick at the latest; a change of the armies or of the ground makes them think again.
    */
-  plan(battle: Battle): void {
+  plan(battle: Battle, settled: Settled | null = null): void {
     if (battle.tick || battle.planned) return;
     battle.planned = true;
     if (battle.rehearsal) return;
+    battle.settled = settled ?? this.think(battle);
+    let changed = false;
+    for (const side of SIDES) {
+      const { tactic, waits, storms } = battle.settled[side];
+      if (waits || (tactic && tactic !== battle[side].plan.tactic)) changed = true;
+      Object.assign(battle[side], { tactic, waits, storms });
+    }
+    if (changed)
+      this.drawUp(battle); // the same battalions, in other places
+    else Movement.forgetWays(battle.field);
+  }
+
+  /** Each general plays the options open to him and takes the one that ends best */
+  private think(battle: Battle): Settled {
     // each against the foe as the odds make him expect it: neither knows what the other has settled on
     const options = SIDES.map(side => Generals.getOptions(battle, side));
     const wagenburg = [...options.flat(), ...SIDES.map(side => battle[side].plan)].some(
@@ -553,17 +572,9 @@ class BattleModule {
         const outcome = this.rehearse(battle, side, option, ticks, played);
         if (outcome > most) [best, most] = [option, outcome];
       }
-      return best;
+      return best ?? { tactic: null, waits: false, storms: false };
     });
-    let changed = false;
-    SIDES.forEach((side, i) => {
-      const { tactic = null, waits = false, storms = false } = settled[i] ?? {};
-      if (waits || (tactic && tactic !== battle[side].plan.tactic)) changed = true;
-      Object.assign(battle[side], { tactic, waits, storms });
-    });
-    if (changed)
-      this.drawUp(battle); // the same battalions, in other places
-    else Movement.forgetWays(battle.field);
+    return { attackers: settled[0], defenders: settled[1] };
   }
 
   /**
@@ -728,7 +739,16 @@ class BattleModule {
   /** The armies or the ground changed before the start: what the general settled on does not stand */
   rethink(battle: Battle): void {
     battle.planned = false;
+    battle.settled = null;
     for (const side of SIDES) Object.assign(battle[side], { tactic: null, waits: false, storms: false });
+  }
+
+  /** The hour the battle starts at, before the start: the dark changes how far the troops see, so the generals think again */
+  setHour(battle: Battle, hour: number): void {
+    if (battle.tick || battle.hour === hour) return;
+    battle.hour = hour;
+    this.rethink(battle);
+    this.prepare(battle);
   }
 
   /** Drop the user's moves made before the start */
@@ -744,10 +764,11 @@ class BattleModule {
       this.intervene(battle, { ...script.shift()!, tick: battle.tick });
   }
 
-  /** Run a recorded battle to its end */
-  replay(battle: Battle, interventions: Intervention[]): void {
+  /** Run a recorded battle to its end, with the generals' plan when it is known */
+  replay(battle: Battle, interventions: Intervention[], settled: Settled | null = null): void {
     const script = [...interventions];
     this.applyDue(battle, script);
+    this.plan(battle, settled);
     while (!battle.result) {
       this.tick(battle);
       this.applyDue(battle, script);
