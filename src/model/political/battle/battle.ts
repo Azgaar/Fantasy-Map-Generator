@@ -1163,7 +1163,7 @@ class BattleModule {
       // cover takes its share of the losses: walls from without, woods and houses from shots
       const besieging = to.walled > 0 && from.walled !== to.walled;
       const cover =
-        (besieging ? 1 / WALLS : shot && (to.wood || to.town) ? COVER : 1) * Works.getShelter(battle, block, target);
+        (besieging ? 1 / WALLS : shot && (to.wood || to.burg) ? COVER : 1) * Works.getShelter(battle, block, target);
 
       if (shot) power *= SKIES[battle.weather].shot;
       else block.impetus = 1 + (block.impetus - 1) * SPENT;
@@ -1489,11 +1489,13 @@ class BattleModule {
   /** The field sized by the battalions; a siege is about the walls. A field of the map is built anew to it */
   private setScale(battle: Battle): void {
     const { field } = battle;
-    const radius = battle.type === "siege" && field.site ? Battlefields.getSiegeRadius(field.site) : Infinity;
-    const size = BattleScale.getFieldSize(battle.battalion, radius);
+    const siege = battle.type === "siege" ? field.site : null;
+    const radius = siege ? Battlefields.getSiegeRadius(siege) : Infinity;
+    const ring = siege ? Generals.getSiegeRing(battle) : undefined;
+    const size = BattleScale.getFieldSize(battle.battalion, radius, ring);
     if (field.width === size.width && field.front === size.front) return;
     if (field.site) {
-      battle.scene = Battlefields.build(field.site[0], field.site[1], size, battle.type);
+      battle.scene = Battlefields.build(field.site[0], field.site[1], size, battle.type, ring);
       battle.field = Battlefields.cut(battle.scene, size);
     } else {
       const ratio = size.width / field.width; // cliffs are ground, drawn on the nodes as water is
@@ -1604,7 +1606,7 @@ class BattleModule {
     const landward = BattleRules.isFromSea(battle.type) && !field.open ? this.getLandward(field) : null;
     if (landward !== null) return landward;
     const turn = (axis: number): number => Math.abs(Movement.normalize(axis - approach)) / Math.PI;
-    const burg = field.burgs.find(burg => burg.name === battle.place); // the one the battle is fought before
+    const burg = Generals.getFieldBurg(battle);
     const score = (axis: number): number => {
       if (field.open) return -turn(axis);
       const across = axis + Math.PI / 2;
@@ -1621,7 +1623,7 @@ class BattleModule {
       if (battle.type === "ambush") return -wet - turn(axis) / 2; // a column on the march: no sides drawn up to face
       const rise = share(sum(defenders, terrain => terrain.height) - sum(attackers, terrain => terrain.height));
       // the burg on the defenders' side, as far as the field is built to stand it
-      const town = burg
+      const toBurg = burg
         ? ((burg.x - field.width / 2) * Math.cos(axis) + (burg.y - field.height / 2) * Math.sin(axis)) /
           along /
           BURG_END
@@ -1631,7 +1633,7 @@ class BattleModule {
       return (
         -wet +
         Math.max(-1, Math.min(1, (rise * field.relief) / HIGH_GROUND)) * 0.6 +
-        Math.max(-1, Math.min(1, town)) * 1.5 +
+        Math.max(-1, Math.min(1, toBurg)) * 1.5 +
         (between.length / AXIS_SHIFTS.length) * 0.8 -
         split.length * 0.8 -
         turn(axis) / 2

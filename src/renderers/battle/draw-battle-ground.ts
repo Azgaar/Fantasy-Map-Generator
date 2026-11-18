@@ -177,7 +177,7 @@ class BattleGroundRenderer {
     };
     const nearCliff = this.getCliffReach(field);
     const isClear = (node: number): boolean =>
-      !field.town[node] && !field.road[node] && !field.walled[node] && !field.deck[node] && field.water[node] !== 2;
+      !field.burg[node] && !field.road[node] && !field.walled[node] && !field.deck[node] && field.water[node] !== 2;
 
     const [cols, rows] = [Math.ceil(field.width / spacing), Math.ceil(field.height / spacing)];
     for (let row = 0; row < rows && count < MOST_PROPS; row++) {

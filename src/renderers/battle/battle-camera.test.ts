@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { BattleCamera, type CameraTroop, type View } from "./battle-camera";
 
 const field = { width: 1000, height: 600, front: 20 };
-const scene = { x: -40, y: -40, width: 1080, height: 680 }; // four nodes more round each side
+const scene = { x: -20, y: -20, width: 1040, height: 640 }; // two nodes more round each side
 const whole = scene;
-const SCENE_ASPECT = 1080 / 680;
+const SCENE_ASPECT = 1040 / 640;
 const troop = (x: number, y: number, present = true): CameraTroop => ({ x, y, width: 20, depth: 10, present });
 const aspect = (view: View): number => view.width / view.height;
 const inside = (view: View): boolean =>

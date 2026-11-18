@@ -35,7 +35,7 @@ class SightModule {
   getSeenAt(battle: Battle, foe: Block): number {
     if (!this.isLimited(battle)) return Infinity;
     const node = Battlefields.nodeAt(battle.field, foe.x, foe.y);
-    const covered = battle.field.wood[node] || battle.field.town[node] ? COVER : 1;
+    const covered = battle.field.wood[node] || battle.field.burg[node] ? COVER : 1;
     const still = this.isLying(battle, foe) ? STILL : 1;
     return Math.max(this.getSight(battle, this.isLit(battle, foe)) * covered * still, CLOSE);
   }

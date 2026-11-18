@@ -1156,16 +1156,16 @@ class MovementModule {
       discs ??= this.getDiscs(block, x, y);
       return discs;
     };
-    let towns: number[] | null = null;
+    let burgs: number[] | null = null;
     // friends packed within the walls it stands in or steps into are not in its way: or nobody would get out by a gate
     const packed = (other: Block): boolean => {
-      const town = Battlefields.terrainAt(battle.field, other.x, other.y).walled;
-      if (!town || other.side !== block.side) return false;
-      towns ??= [
+      const burg = Battlefields.terrainAt(battle.field, other.x, other.y).walled;
+      if (!burg || other.side !== block.side) return false;
+      burgs ??= [
         Battlefields.terrainAt(battle.field, x, y).walled,
         Battlefields.terrainAt(battle.field, block.x, block.y).walled
       ];
-      return towns.includes(town);
+      return burgs.includes(burg);
     };
     return others.find(
       other =>
@@ -1192,8 +1192,8 @@ class MovementModule {
   /** Friends within the walls of one burg: packed in its streets, they keep no lines and do not stand in each other's way */
   private isPacked(battle: Battle, a: Block, b: Block): boolean {
     if (a.side !== b.side) return false;
-    const town = Battlefields.terrainAt(battle.field, a.x, a.y).walled;
-    return town > 0 && Battlefields.terrainAt(battle.field, b.x, b.y).walled === town;
+    const burg = Battlefields.terrainAt(battle.field, a.x, a.y).walled;
+    return burg > 0 && Battlefields.terrainAt(battle.field, b.x, b.y).walled === burg;
   }
 
   /** Push overlapping blocks apart; those in a fight give less ground */

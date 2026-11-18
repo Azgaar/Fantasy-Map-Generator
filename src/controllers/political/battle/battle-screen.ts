@@ -1,11 +1,5 @@
 import { select, sum } from "d3";
-import {
-  BATTLE_SPEEDS,
-  type BattleSettings,
-  DEFAULT_BATTLE_SETTINGS,
-  PAUSE_EVENTS,
-  type PauseEvent
-} from "@/data/battle-options";
+import { BATTLE_SPEEDS, PAUSE_EVENTS, type PauseEvent } from "@/data/battle-options";
 import {
   BATTLE_ORDER_LABELS,
   BATTLE_OUTCOME_LABELS,
@@ -18,7 +12,6 @@ import {
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
-import { battleSettings } from "@/model/options/options-schema";
 import { Battalions } from "@/model/political/battle/battalion";
 import {
   type Battle,
@@ -77,7 +70,6 @@ import { showElementTip, showMainTip, tip } from "@/ui/tooltips";
 import { last } from "@/utils/array-utils";
 import { getColorDistance } from "@/utils/color-utils";
 import { getLatitude, wiki } from "@/utils/common-utils";
-import { createFileInput, downloadFile, uploadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
 import { getAdjective, list } from "@/utils/language-utils";
 import { ensureEl, findEl } from "@/utils/node-utils";
@@ -89,23 +81,6 @@ import type { ReportText } from "./battle-report";
 
 const TICK_MS = 160; // a tick at normal speed: fifty times as fast as the battle
 const MORALE_STEP = 5; // a click on the morale bar adds or takes away
-const LOG_VERSION = 2;
-
-interface BattleLogFile {
-  version: number;
-  name: string;
-  type: BattleType;
-  attackers: { state: number; i: number }[];
-  defenders: { state: number; i: number }[];
-  interventions: Intervention[];
-  log: string[];
-  result: string | null;
-  settings?: BattleSettings; // the numbers it was fought with; the defaults when absent
-  seed?: number; // the dice are cast by it; absent: cast anew
-  axis?: number; // the way the attackers came; absent: from where the first of them stands
-  hour?: number; // of the day the battle starts at; absent: by the seed
-}
-
 const SCREEN_SHARE = 0.92; // of the viewport the window may take
 const SPARE = 2; // em left under the army sheets
 const FIELD_WIDTH = 77; // em the battlefield opens at, at most: the window can be dragged larger
@@ -235,7 +210,7 @@ const STYLE = /* css */ `
   #battleLog .attackers { --side: var(--attackers); }
   #battleLog .defenders { --side: var(--defenders); }
   #battleLogList { box-sizing: border-box; height: 100%; padding: 0.3em 0.6em; overflow-y: auto; line-height: 1.4; user-select: text; }
-  #battleLogList > div { display: grid; grid-template-columns: 2.6em 0.6em minmax(0, 1fr); gap: 0.4em; align-items: baseline; }
+  #battleLogList > div { display: grid; grid-template-columns: max-content 0.6em minmax(0, 1fr); gap: 0.4em; align-items: baseline; }
   #battleLogList > div > i { color: var(--muted); font-style: normal; font-variant-numeric: tabular-nums; text-align: right; }
   #battleLogList > div > u { width: 0.6em; height: 0.6em; background: var(--side, transparent); }
   #battleLogList > div.order { color: var(--muted); }
@@ -352,8 +327,7 @@ class BattleScreenController {
   };
   private battle: Battle | null = null;
   private regiments = new Map<string, Regiment>(); // the map's regiments in the battle, by state and id
-  private script: Intervention[] = []; // changes of a loaded log still to come
-  private fileInput: HTMLInputElement | null = null;
+  private script: Intervention[] = []; // changes still to come after a step back
   private planning = 0; // timer of the generals' thinking the battle through
   private camera: Camera | null = null;
   private cameraMode: CameraMode = "follow"; // manual while the user looks round by hand
@@ -445,11 +419,11 @@ class BattleScreenController {
     });
   }
 
-  /** A new battle of the regiments; `from` carries over the settings of a loaded log */
+  /** A new battle of the regiments; `from` carries over the settings of a battle played again */
   private setup(
     attackers: Regiment[],
     defenders: Regiment[],
-    from?: Partial<Pick<BattleLogFile, "type" | "name" | "settings" | "seed" | "axis" | "hour">>
+    from?: Pick<Battle, "type" | "name" | "settings" | "seed" | "hour"> & { axis: number }
   ): void {
     const defender = defenders[0];
     const attacker = attackers[0];
@@ -527,7 +501,7 @@ class BattleScreenController {
     if (attacker.n && defender.n) return "naval";
     if (flying(typesA) && flying(Military.getUnitTypes(defender))) return "air";
     if (attacker.n && !defender.n && typesA.some(type => type !== "naval")) return "landing";
-    if (pack.burgs[burg]?.walls) return "siege";
+    if (pack.burgs[burg]?.walls && (!attacker.n || pack.burgs[burg].port)) return "siege"; // ships besiege a port only
     if (attacker.n && !defender.n) return "bombardment"; // ships alone cannot land
     const hidden = !burg && Battlefields.hidesTroops(pack.cells.biome[cell]) && BattleSite.hasRoad(cell); // a column is caught on a road
     if (hidden && Military.getRegimentPower(defender) < Military.getRegimentPower(attacker) * AMBUSH_ODDS)
@@ -759,9 +733,6 @@ class BattleScreenController {
         this.withdrawRegiment(button.closest<HTMLElement>(".battleRegiment")!.dataset.key!);
       });
     }
-
-    this.fileInput = createFileInput(".json");
-    this.fileInput.onchange = () => uploadFile(this.fileInput!, this.loadLog);
   }
 
   /** The battle log, a window of its own beside the battle screen */
@@ -770,9 +741,6 @@ class BattleScreenController {
     BattleConfigure.setLogShown(show);
     if (!show) Dialog.close("battleLog");
     if (!show || Dialog.isOpen("battleLog")) return;
-    const download = t(
-      "Download the battle log: it can be loaded to replay the battle or to repeat its setup in another one"
-    );
     Dialog.open("battleLog", {
       title: t("Battle log"),
       width: "22em",
@@ -782,15 +750,6 @@ class BattleScreenController {
       resizable: true,
       persistent: true, // its markup is the battle screen's
       position: { my: "left top", at: "right+8 top", of: "#battleScreen" },
-      titlebarButtons: [
-        { label: t("Download"), tip: download, className: "icon-download", onClick: () => this.downloadLog() },
-        {
-          label: t("Load"),
-          tip: t("Load a battle log"),
-          className: "icon-upload",
-          onClick: () => this.fileInput?.click()
-        }
-      ],
       onClose: () => {
         BattleConfigure.setLogShown(false);
         Options.set(o => (o.app.battle.view.log = false));
@@ -1952,7 +1911,7 @@ class BattleScreenController {
       const { field } = battle;
       selected.forEach(line => {
         const regiment = pack.states[+line.dataset.s!].military!.find(r => r.i === +line.dataset.i!)!;
-        if (this.regiments.has(this.regimentKey(regiment))) return; // it came with a loaded log since
+        if (this.regiments.has(this.regimentKey(regiment))) return; // already in the battle
         this.joinBattle(regiment, side);
         const data = this.toBattleRegiment(regiment, battle);
         Battles.intervene(battle, { tick: battle.tick, kind: "add", side, regiment: data });
@@ -2083,15 +2042,6 @@ class BattleScreenController {
     return BATTLE_OUTCOME_LABELS[outcome] ?? capitalize(outcome);
   }
 
-  private sideLabel(side: Side): string {
-    return side === "attackers" ? t("Attackers") : t("Defenders");
-  }
-
-  private outcome(b: Battle): string {
-    const [attackers, defenders] = Battles.getResult(b).status;
-    return attackers === defenders ? capitalize(attackers) : `${capitalize(attackers)}, ${defenders}`;
-  }
-
   /** The regiments the battle began with: latecomers are in the interventions */
   private getInitialRegiments(b: Battle, side: Side): BattleRegiment[] {
     const late = new Set(
@@ -2104,38 +2054,7 @@ class BattleScreenController {
     return name.replace(/[^\p{L}\p{N}]+/gu, "-");
   }
 
-  private buildLog(): BattleLogFile {
-    const b = this.battle!;
-    const ids = (side: Side): { state: number; i: number }[] =>
-      this.getInitialRegiments(b, side).map(({ state, i }) => ({ state, i }));
-    return {
-      version: LOG_VERSION,
-      name: b.name,
-      type: b.type,
-      attackers: ids("attackers"),
-      defenders: ids("defenders"),
-      interventions: [...b.interventions, ...this.script], // with those still to come after a step back
-      log: b.log.map(entry => {
-        const whose = entry.side ? `${this.sideLabel(entry.side)}: ` : "";
-        return `${BattleTime.formatClock(b.hour, entry.tick)} ${whose}${this.logText(entry)}`;
-      }),
-      result: b.result ? this.outcome(b) : null,
-      settings: { ...b.settings },
-      seed: b.seed,
-      axis: b.approach,
-      hour: b.hour
-    };
-  }
-
-  private downloadLog(): void {
-    downloadFile(
-      JSON.stringify(this.buildLog(), null, 2),
-      `${this.getFileName(this.battle!.name)}-log.json`,
-      "application/json"
-    );
-  }
-
-  /** The battle from its start, untouched by the one on screen: every change made, and those of a loaded log to come */
+  /** The battle from its start, untouched by the one on screen: every change made, and those to come after a step back */
   private startAnew(b: Battle): BattleStart {
     const battle = Battles.create({
       type: b.type,
@@ -2185,49 +2104,15 @@ class BattleScreenController {
     };
   }
 
-  private readonly loadLog = (data: string): void => {
-    let file: BattleLogFile;
-    try {
-      file = JSON.parse(data);
-      const sides = [file.attackers, file.defenders];
-      const settings = battleSettings.safeParse({ ...DEFAULT_BATTLE_SETTINGS, ...file.settings });
-      const valid =
-        file.version === LOG_VERSION &&
-        Array.isArray(file.interventions) &&
-        sides.every(side => Array.isArray(side) && side.length) &&
-        BATTLE_TYPES.includes(file.type) &&
-        typeof file.name === "string" &&
-        settings.success;
-      if (!valid) throw new Error("Not a battle log");
-    } catch {
-      tip(t("The file is not a battle log"), false, "error");
-      return;
-    }
-
-    const same = this.restore(file);
-    tip(
-      same
-        ? t("Battle log is loaded. Start the battle to replay it")
-        : t("Battle log is loaded: its settings are applied to this battle"),
-      true,
-      "success",
-      4000
-    );
-  };
-
   /** Back to the start, to play the same battle again: every change made on the way comes at its moment */
   private restart(): void {
-    this.restore(this.buildLog());
-  }
-
-  /** Set a logged battle up to replay when its regiments are here, or else repeat its settings with the current ones */
-  private restore(file: BattleLogFile): boolean {
     const b = this.battle!;
     this.pause();
     const find = (ref: { state: number; i: number }): Regiment | undefined =>
       pack.states[ref.state]?.military?.find(regiment => regiment.i === ref.i && regiment.a);
-    const sides = [file.attackers, file.defenders].map(side => side.map(find));
+    const sides = SIDES.map(side => this.getInitialRegiments(b, side).map(find));
     const same = sides.every(side => side.length && side.every(Boolean));
+    const interventions = [...b.interventions, ...this.script];
 
     // regiments leave the old battle and join the new one on the map
     const current = SIDES.map(side =>
@@ -2237,9 +2122,8 @@ class BattleScreenController {
     const staying = new Set([...attackers, ...defenders]);
     for (const regiment of this.regiments.values()) if (!staying.has(regiment)) this.leaveBattle(regiment);
     this.regiments = new Map();
-    // at the same place; the approach of a battle of other regiments is not this one's
-    const axis = same ? file.axis : b.approach;
-    this.setup(attackers, defenders, { ...file, axis, settings: { ...DEFAULT_BATTLE_SETTINGS, ...file.settings } });
+    const { type, name, seed, hour, approach } = b;
+    this.setup(attackers, defenders, { type, name, seed, hour, axis: approach, settings: { ...b.settings } });
     SIDES.forEach((side, i) => {
       for (const regiment of [attackers, defenders][i]) {
         if (regiment.px === undefined) this.joinBattle(regiment, side);
@@ -2247,7 +2131,7 @@ class BattleScreenController {
       }
     });
 
-    this.script = file.interventions
+    this.script = interventions
       .filter(change => {
         if (change.kind === "move" || change.kind === "turn" || change.kind === "task") return same;
         if (change.kind !== "add") return true;
@@ -2260,9 +2144,8 @@ class BattleScreenController {
     Battles.applyDue(this.battle!, this.script);
     if (this.battle!.field !== field) this.drawField(); // regiments added before the start, a larger field
     this.drawScene();
-    this.setName(file.name);
+    this.setName(name);
     this.refresh();
-    return same;
   }
 
   // the end
@@ -2398,8 +2281,6 @@ class BattleScreenController {
     this.trails = new Map();
     this.pointer = null;
     this.shownTip = null;
-    this.fileInput?.remove();
-    this.fileInput = null;
     options.app.mode = null; // exit edit mode
     Dialog.destroy("battleScreen");
     Dialog.destroy("regimentSelectorScreen");

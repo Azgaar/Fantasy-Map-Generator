@@ -76,7 +76,7 @@ describe("battle ground", () => {
     const field = getField(GRASSLAND, field => {
       field.wood.fill(0);
       field.road = field.road.map((_, i) => +(i % COLS < 30));
-      field.town = field.town.map((_, i) => +(i % COLS >= 30 && i % COLS < 60));
+      field.burg = field.burg.map((_, i) => +(i % COLS >= 30 && i % COLS < 60));
       field.water = field.water.map((_, i) => +(i % COLS >= 60));
     });
     expect(BattleGroundView.getPropsMarkup(field)).not.toContain("<path");

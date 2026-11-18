@@ -23,7 +23,7 @@ import {
 } from "./battle-balance";
 import { BattleRules, COMMANDS, type Command, FEINT, POSTURES, SIDES, type Side, SURRENDER } from "./battle-rules";
 import { COLS, ROWS } from "./battle-scale";
-import { type Battlefield, Battlefields, type FieldWall } from "./battlefield";
+import { type Battlefield, Battlefields, type FieldBurg, type FieldWall } from "./battlefield";
 import { Formations, GAP, type Place, ROW_GAP, TACTICS, type TacticName } from "./formations";
 import { Movement, PACE, type Point, ROUND_TICKS } from "./movement";
 import { Pathfinding } from "./pathfinding";
@@ -37,6 +37,7 @@ const MUSTER_SLACK = 1.5; // and half as long again as the march of its slowest 
 // in metres
 const BOWSHOT = 205; // what the besiegers keep out of when the garrison has no shooters
 const RING = 340; // and how far out of the walls they stand at most
+const RING_GAP = 14; // metres beyond the garrison's reach the ring stands
 const WATCH = 70; // how much further than the ring stands from the walls a besieger keeps a gate shut
 const BROW = 1; // how much better the ground has to be for a place of a line to bend to it
 const AMBUSH = [45, 120]; // how far from the column ambushers lie: a javelin's throw under trees, within their own bowshot in the open
@@ -696,10 +697,20 @@ class GeneralModule {
         const point = this.toField(frame, sign * (half + front * BEYOND), 0);
         const beyond = Battlefields.terrainAt(field, ...point);
         const cliff = Battlefields.getCliffsBetween(field, this.toField(frame, sign * half, 0), point).length > 0;
-        if (beyond.water || beyond.wood || beyond.town || cliff) ends += 1;
+        if (beyond.water || beyond.wood || beyond.burg || cliff) ends += 1;
       }
       return ends;
     };
+    // the defenders of a burg hold it: their first line across its front half, the rest within
+    const burg = defending ? this.getFieldBurg(battle) : null;
+    if (burg) {
+      const frame = {
+        x: burg.x + (Math.cos(forward) * burg.radius) / 2,
+        y: burg.y + (Math.sin(forward) * burg.radius) / 2,
+        heading: forward
+      };
+      return [frame, getEnds(frame)];
+    }
     // nobody stands in the water or beyond it, as seen from the middle of the formation
     const line = places.filter(place => place.role !== "wedge");
     const isAcross = (frame: Frame, [x, y]: Point): boolean => {
@@ -738,7 +749,7 @@ class GeneralModule {
         if (terrain.water && !field.open) value -= 2;
         if (terrain.wood || terrain.marsh) value -= 0.2;
         if (!defending) continue;
-        value += terrain.height + (terrain.town ? 0.2 : 0);
+        value += terrain.height + (terrain.burg ? 0.2 : 0);
         for (const ahead of [0.07, 0.13].map(share => share * field.width)) {
           const before = Battlefields.terrainAt(field, ...this.toField(frame, share * half, ahead));
           if (before.water || before.marsh) value += 0.15;
@@ -769,6 +780,12 @@ class GeneralModule {
     for (let i = 0; i < 30 && !inside(this.toField(frame, 0, -depth)); i++)
       [frame.x, frame.y] = this.toField(frame, 0, step);
     return [frame, getEnds(frame)];
+  }
+
+  /** The burg a field battle is fought before, the one it is named after: its defenders hold it */
+  getFieldBurg(battle: Battle): FieldBurg | null {
+    if (battle.type !== "field") return null;
+    return battle.field.burgs.find(burg => burg.name === battle.place) ?? null;
   }
 
   /** The middle of the defenders' first line, once they are drawn up on the ground: null where they man walls or lie in wait */
@@ -804,8 +821,7 @@ class GeneralModule {
     const last = way.findLastIndex(wet);
     if (last < way.length * 0.4 || last >= way.length - 2) return null;
     const [x, y] = Battlefields.nodeCentre(field, way[last]);
-    const [bx, by] = Battlefields.nodeCentre(field, way[Math.min(last + 8, way.length - 1)]); // the way on from the crossing
-    const heading = Math.atan2(y - by, x - bx);
+    const heading = axis + Math.PI; // the line faces the attack, not the way over
     const back = field.front * BANK;
     return { x: x - Math.cos(heading) * back, y: y - Math.sin(heading) * back, heading };
   }
@@ -1218,13 +1234,26 @@ class GeneralModule {
     this.seat(battle, "attackers", this.createPlan("lines", frame), places);
   }
 
-  /** How far out of the walls the besiegers stand: out of bowshot */
-  private getRingDistance(battle: Battle): number {
-    const bowshot = Math.max(
-      ...battle.blocks.map(block => (block.side === "defenders" ? Sight.getReach(battle, block, true) : 0)),
-      BOWSHOT
+  /** How far out of the walls the besiegers will stand, by the garrison's arms: the field of a siege is sized to it */
+  getSiegeRing(battle: Battle): number {
+    const ranges = battle.defenders.regiments.flatMap(regiment =>
+      Object.entries(regiment.troops)
+        .filter(([, troops]) => troops > 0)
+        .map(([name]) => battle.units.find(unit => unit.name === name)?.range ?? 0)
     );
-    return Math.min(bowshot + 14, RING);
+    return this.getRing(ranges);
+  }
+
+  private getRingDistance(battle: Battle): number {
+    return this.getRing(
+      battle.blocks.map(block => (block.side === "defenders" ? Sight.getReach(battle, block, true) : 0))
+    );
+  }
+
+  /** Out of the reach of the garrison's shooters: those that outrange the ring, engines, it cannot keep out of */
+  private getRing(reaches: number[]): number {
+    const outranged = reaches.filter(reach => reach + RING_GAP <= RING);
+    return Math.max(...outranged, BOWSHOT) + RING_GAP;
   }
 
   /** Whether a besieger keeps the gate shut: near it, with the ring all but at the gate; neighbours a battalion along do too */

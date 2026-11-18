@@ -25,9 +25,10 @@ describe("battle scale", () => {
 
   it("takes a besieged burg and the land about it in, top to bottom", () => {
     expect(BattleScale.getFieldSize(300, 60).width).toBeCloseTo(1533, 0); // a village: the ring and room about it
-    expect(BattleScale.getFieldSize(300, 200).width).toBeCloseTo(2000, 0); // a town
+    expect(BattleScale.getFieldSize(300, 60, 219).width).toBeCloseTo(1130, 0); // the ring out of a bowshot
+    expect(BattleScale.getFieldSize(300, 200).width).toBeCloseTo(2000, 0); // a burg
     expect(BattleScale.fitSiegeBurg(200, BattleScale.getFieldSize(300, 200))).toBe(200); // at its true size
-    expect(BattleScale.getFieldSize(1000, 60).width).toBeCloseTo(4545, 0); // big battalions keep their field
+    expect(BattleScale.getFieldSize(1000, 60).width).toBeCloseTo(2727, 0); // big battalions keep most of their field
     expect(BattleScale.getFieldSize(300, 60).front).toBe(60); // battalions keep their real size
   });
 

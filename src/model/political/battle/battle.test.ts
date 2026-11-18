@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { type BattleSettings, DEFAULT_BATTLE_SETTINGS } from "@/data/battle-options";
 import { getDefaultMilitaryUnits } from "@/model/political/military-units";
 import type { MilitaryUnit } from "@/types/military";
@@ -776,12 +776,13 @@ describe("battle generals", () => {
       expect(Math.hypot(block.x - places[i][0], block.y - places[i][1])).toBeLessThan(41);
   });
 
-  it("plans within its time: a second and a half to think it through and draw up, a tenth of a second a round", () => {
+  it("plans within its time: two and a half seconds to think it through and draw up, a tenth of a second a round", () => {
     const huge = { infantry: 12000, archers: 4000, cavalry: 3000 };
+    Battles.plan(battle([regiment(1, even)], [regiment(2, even)])); // warmed up: the planning is timed, not the compiling
     const started = performance.now();
     const b = battle([regiment(1, huge)], [regiment(2, huge)]);
     Battles.plan(b);
-    expect(performance.now() - started).toBeLessThan(1500);
+    expect(performance.now() - started).toBeLessThan(2500); // ~0.85 s alone, up to ~2.1 s beside the other test files
     let slowest = 0;
     while (!b.result) {
       const from = performance.now();
@@ -2429,7 +2430,7 @@ describe("battle ways", () => {
   };
 
   it("leads troops round a lake to the foe", () => {
-    const b = onField(field => band(field, "water", 1, [40, 45], [0, 45])); // open in the south
+    const b = onField(field => band(field, "water", 1, [40, 45], [0, 45]), "field", [regiment(1, bold)]); // open in the south
     expect(wetTicks(b)).toBe(0);
     Battles.replay(b, []);
     expect(b.attackers.casualties).toBeGreaterThan(0);
@@ -2494,7 +2495,7 @@ describe("battle ways", () => {
         const node = Battlefields.nodeAt(b.field, block.x, block.y);
         if (!b.field.water[node]) continue;
         expect(b.field.ford[node], `${block.side} in deep water at tick ${b.tick}`).toBe(1);
-        expect(block.side).toBe("attackers"); // the defenders hold the bank
+        if (block.side === "defenders") expect(b.defenders.phase).toBe("pursue"); // they hold the bank till the foe breaks
         forded++;
       }
     }
@@ -2521,7 +2522,7 @@ describe("battle ways", () => {
   });
 
   it("opens a ford where water keeps the sides apart", () => {
-    const b = onField(field => band(field, "water", 1, [40, 45], [0, ROWS]));
+    const b = onField(field => band(field, "water", 1, [40, 45], [0, ROWS]), "field", [regiment(1, bold)]);
     const forded = b.field.water.filter((water, node) => !water && node % COLS >= 40 && node % COLS < 45);
     expect(forded.length).toBeGreaterThan(0);
     expect(forded.length).toBeLessThan(5 * ROWS);
@@ -2538,15 +2539,27 @@ describe("battle ways", () => {
   it("leads troops round a cliff to the foe, and nobody over it", () => {
     const b = onField(field => cliff(field, [45, 0], [45, 45]), "field", [regiment(1, bold)]); // open in the south
     let crossed = 0;
-    while (!settled(b)) {
-      const before = new Map(b.blocks.map(block => [block.id, [block.x, block.y] as [number, number]]));
-      Battles.tick(b);
+    let before = new Map<number, [number, number]>();
+    const mark = (): void => {
       for (const block of b.blocks) {
         const from = before.get(block.id);
         if (from && block.status !== "fled" && Battlefields.getCliffsBetween(b.field, from, [block.x, block.y]).length)
           crossed++;
       }
+      before = new Map(b.blocks.map(block => [block.id, [block.x, block.y]]));
+    };
+    // every move apart: a step under a cliff's end and a push up past it go round it, not over
+    const separate = Movement.separate.bind(Movement);
+    const spy = vi.spyOn(Movement, "separate").mockImplementation((battle, blocks) => {
+      if (battle === b) mark();
+      separate(battle, blocks);
+    });
+    while (!settled(b)) {
+      mark();
+      Battles.tick(b);
     }
+    mark();
+    spy.mockRestore();
     expect(crossed).toBe(0);
     Battles.replay(b, []);
     expect(b.attackers.casualties).toBeGreaterThan(0);
@@ -2733,7 +2746,7 @@ describe("battle ways", () => {
     expect(span(taken) / span(drawn)).toBeGreaterThan(1.8); // 1.2 fronts against half a front, at every gate
   });
 
-  it("takes an army through a walled town by its gates without a jam", () => {
+  it("takes an army through a walled burg by its gates without a jam", () => {
     const field = Battlefields.createEmpty();
     field.roads.push(
       [
@@ -2745,7 +2758,7 @@ describe("battle ways", () => {
         [682, 818]
       ]
     );
-    field.burgs.push({ x: 682.2, y: 409, radius: 330, name: "Town", group: "city", walled: true, outline: [] });
+    field.burgs.push({ x: 682.2, y: 409, radius: 330, name: "Burg", group: "city", walled: true, outline: [] });
     Battlefields.raiseWalls(field);
     const armies = (infantry: number) => [regiment(1, { infantry, archers: infantry * 0.3, cavalry: infantry * 0.2 })];
     const b = Battles.create({
@@ -3853,7 +3866,7 @@ describe("battalion tasks", () => {
     task(b, [defended], "defend", 0, 0);
     const foes = b.blocks.filter(other => other.side === "defenders" && other.unit === "infantry");
     for (const [i, block] of [held, defended].entries()) {
-      const reach = (block.depth + foes[i].depth) / 2 + b.field.front * 0.3; // within a counter-charge, not at grips
+      const reach = (block.depth + foes[i].depth) / 2 + CONTACT * 2; // within a counter-charge, not at grips
       Object.assign(foes[i], {
         x: block.x + Math.cos(block.facing) * reach,
         y: block.y + Math.sin(block.facing) * reach

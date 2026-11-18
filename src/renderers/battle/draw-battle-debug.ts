@@ -293,7 +293,7 @@ class BattleDebugRenderer {
       terrain.road ? "road" : "",
       terrain.wood ? "wood" : "",
       terrain.marsh ? "marsh" : "",
-      terrain.town ? "town" : "",
+      terrain.burg ? "burg" : "",
       terrain.walled ? `within walls of ${field.burgs[terrain.walled - 1].name}` : "",
       ["", "wall foot", "gateway", "breach"][terrain.rampart],
       field.top[node] ? `high ground +${field.scarp[node].toFixed(1)} m` : "",

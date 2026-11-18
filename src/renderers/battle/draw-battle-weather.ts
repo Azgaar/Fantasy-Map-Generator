@@ -226,7 +226,7 @@ class BattleWeatherRenderer {
     const { cell, cols, rows } = field;
     const [wide, narrow, halos, waters, glints]: string[][] = [[], [], [], [], []];
     for (let node = 0; node < cols * rows; node++) {
-      if (field.water[node] || field.town[node] || field.walled[node]) continue;
+      if (field.water[node] || field.burg[node] || field.walled[node]) continue;
       const [col, row] = [node % cols, Math.floor(node / cols)];
       const patch = this.smooth(this.patchNoise(col, row), 0.45, 0.85);
       const [cx, cy] = Battlefields.nodeCentre(field, node);

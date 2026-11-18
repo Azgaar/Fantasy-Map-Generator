@@ -355,7 +355,7 @@ class BattleConfigureController {
       maxHeight: window.innerHeight * 0.9,
       buttons: [
         {
-          label: t("Battle log"),
+          label: "",
           tip: t("Show the battle log"),
           className: "icon-list-bullet",
           onClick: () => this.context?.toggleLog()

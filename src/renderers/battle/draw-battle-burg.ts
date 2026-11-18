@@ -19,12 +19,12 @@ const ROOFS = ["#c98b6b", "#cfb886", "#9da3a5"]; // tile, thatch toward the edge
 const EAVES = "#66513f"; // the roofs' outline
 const EAVES_WIDTH = 0.3; // points
 
-class BattleTownRenderer {
+class BattleBurgRenderer {
   /**
    * A burg's yards, roofs and the streets from gates no road comes in by, drawn under the roads; and its plaza, drawn over
    * them. The same for the same burg
    */
-  getMarkup(field: Battlefield, index: number, pt: number): { town: string; plaza: string } {
+  getMarkup(field: Battlefield, index: number, pt: number): { burg: string; plaza: string } {
     const { x, y, outline, radius, walled } = field.burgs[index];
     const [sx, sy] = outline[0].map(v => Math.round(v * 10));
     let rolls = 0;
@@ -146,7 +146,7 @@ class BattleTownRenderer {
     const edge = toPath(outline);
     const ways = lanes.map(lane => `M${lane.map(format).join("L")}`).join("");
     const square = toPath((voronoi.cellPolygon(0) ?? []).slice(0, -1) as Point[]);
-    const clip = walled ? ` clip-path="url(#battleTownClip${index})"` : "";
+    const clip = walled ? ` clip-path="url(#battleBurgClip${index})"` : "";
     const ground = walled
       ? `<path d="${edge}" fill="${GROUND}"/><path d="${yards}" fill="${YARD}"/><path d="${edge}" fill="none" stroke="${GROUND}" stroke-width="${walk * 2}"/>`
       : `<path d="${yards}" fill="${YARD}"/>`;
@@ -158,10 +158,10 @@ class BattleTownRenderer {
       </g>
       <g stroke="${EAVES}" stroke-width="${EAVES_WIDTH * pt}" stroke-linejoin="round">${roofs.flatMap(layer => ROOFS.map((fill, k) => (layer[k] ? `<path d="${layer[k]}" fill="${fill}"/>` : ""))).join("")}</g>`;
     const plaza = `<path d="${square}" fill="${paving}"${clip}/>`;
-    if (!walled) return { town: markup, plaza };
-    const town = /* html */ `<clipPath id="battleTownClip${index}"><path d="${edge}"/></clipPath>
+    if (!walled) return { burg: markup, plaza };
+    const burg = /* html */ `<clipPath id="battleBurgClip${index}"><path d="${edge}"/></clipPath>
       <g${clip}>${markup}</g>`;
-    return { town, plaza };
+    return { burg, plaza };
   }
 
   /** A street from each gate no road comes in by to the middle */
@@ -206,7 +206,7 @@ class BattleTownRenderer {
   }
 }
 
-export const BattleTownView = new BattleTownRenderer();
+export const BattleBurgView = new BattleBurgRenderer();
 
 function distance(a: Point, b: Point): number {
   return Math.hypot(b[0] - a[0], b[1] - a[1]);
