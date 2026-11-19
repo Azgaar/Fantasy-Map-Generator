@@ -334,7 +334,7 @@ class BattleSceneRenderer {
       <rect id="battleFrost" ${whole} fill="#f6f9fb" opacity="0.2" display="none" pointer-events="none"/>
       <g id="battleMud" display="none" pointer-events="none">
         <rect ${whole} fill="#6b4a26" opacity="0.04"/>
-        <g transform="translate(${dx} ${dy})">${field.open ? "" : BattleWeatherView.getMudMarkup(ground)}</g>
+        <g transform="translate(${dx} ${dy})" mask="url(#battleMudMask)">${field.open ? "" : BattleWeatherView.getMudMarkup(ground)}</g>
       </g>
       <g id="battleLightShade" class="battleShade" transform="translate(${dx} ${dy})" clip-path="url(#battleGroundClip)" style="mix-blend-mode: multiply" pointer-events="none"></g>
       <g id="battleLabels" pointer-events="none"></g>
@@ -418,6 +418,17 @@ class BattleSceneRenderer {
               `<path d="${course(river.points)}" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="${river.width}"/>`
           )
           .join("");
+    // the land, for the mud to keep off the water
+    const lakes = ground.water.map(w => +(w === 1));
+    const waters = field.open ? "" : this.outline(ground, lakes, 0.5);
+    const streams = field.open
+      ? ""
+      : ground.rivers
+          .map(
+            river =>
+              `<path d="${course(river.points)}" fill="none" stroke="#000" stroke-linecap="round" stroke-width="${river.width}"/>`
+          )
+          .join("");
     return /* html */ `<pattern id="battleFordPattern" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="scale(${pt})">
         <rect width="7" height="7" fill="#e4edf4"/><circle cx="2" cy="2" r="0.9" fill="#8ea5b8"/><circle cx="5.5" cy="5.2" r="0.7" fill="#8ea5b8"/>
       </pattern>
@@ -426,6 +437,8 @@ class BattleSceneRenderer {
       <clipPath id="battleGroundClip"><rect width="${ground.width}" height="${ground.height}"/></clipPath>
       <clipPath id="battleOutsideClip"><path d="${outside}" clip-rule="evenodd"/></clipPath>
       <mask id="battleRiverMask" maskUnits="userSpaceOnUse" x="0" y="0" width="${ground.width}" height="${ground.height}">${banks}</mask>
+      <mask id="battleMudMask" maskUnits="userSpaceOnUse" x="0" y="0" width="${ground.width}" height="${ground.height}">
+        <rect width="${ground.width}" height="${ground.height}" fill="#fff"/><path d="${waters}" fill="#000"/>${streams}</mask>
       ${masks.wood}${masks.marsh}`;
   }
 

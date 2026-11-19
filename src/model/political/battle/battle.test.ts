@@ -1207,7 +1207,12 @@ describe("battle generals of an ambush, a landing and a siege", () => {
   });
 
   it("posts the garrison's engines on the walls before the besiegers, where they reach the furthest", () => {
-    const b = setup("siege", { infantry: 2400, archers: 400 }, { infantry: 900, archers: 300, artillery: 100 }, walled());
+    const b = setup(
+      "siege",
+      { infantry: 2400, archers: 400 },
+      { infantry: 900, archers: 300, artillery: 100 },
+      walled()
+    );
     const burg = b.field.burgs[b.field.held!];
     const engines = b.blocks.filter(block => block.side === "defenders" && block.kind === "machinery");
     expect(engines.length).toBeGreaterThan(0);
