@@ -129,11 +129,14 @@ const WATERS: Record<string, { fill: string; strand?: string; rim?: string }> = 
 };
 const TOWER_SPACING = 40; // points between the towers of a wall
 const WALL = "#55524b";
-const PIER = "#8f877a";
-const PIER_REACH = 0.25; // of a burg's radius a pier goes out into the water
-const PIER_LONGEST = 300; // metres
-const PIER_SHORTEST = 24; // points: legible on any field
-const PIER_WIDTH = 12; // metres
+const PIER = "#b39a70"; // timber
+const PIER_INK = "#5e4a33";
+const PIER_PILE = "#40321f";
+const PIER_WIDTH = 12; // metres across the head, 4.5 points at least
+const PIER_REACH = 0.25; // of a burg's radius a pier goes out into the water, 5 widths at least
+const PIER_LONGEST = 150; // metres
+const PIER_HEAD = 0.12; // of a burg's radius the head runs along the shore, 3 widths at least
+const PIER_HEAD_LONGEST = 60; // metres
 
 // works as old battle plans draw them: flat, one colour a kind, in the plan's ink; sizes in points
 const WORK_COLORS: Record<WorkKind, string> = { ditch: "#8a6d4b", stakes: "#6b4f32", wagons: "#9a7044" };
@@ -544,13 +547,12 @@ class BattleSceneRenderer {
   /** Burgs as rooftops, and the piers from their sea gates */
   private drawBurgs(group: Group, field: Battlefield, markup: string, pt: number): void {
     group.html(markup);
-    // a stone pier from every sea gate out into the water, its head wider; under the wall it leaves by
     const middle = (wall: { a: Point; b: Point }): Point => [(wall.a[0] + wall.b[0]) / 2, (wall.a[1] + wall.b[1]) / 2];
     field.burgs.forEach((burg, index) => {
-      const reach = Math.max(Math.min(burg.radius * PIER_REACH, PIER_LONGEST), PIER_SHORTEST * pt);
-      const width = Math.max(PIER_WIDTH, 4 * pt);
+      const width = Math.max(PIER_WIDTH, 4.5 * pt);
+      const reach = Math.min(Math.max(burg.radius * PIER_REACH, width * 5), PIER_LONGEST);
+      const head = Math.min(Math.max(burg.radius * PIER_HEAD, width * 3), PIER_HEAD_LONGEST);
       for (const quay of Battlefields.getQuays(field, burg)) {
-        const { away, dry } = quay;
         // in the middle of the gate by it
         const opening = field.walls.filter(wall => {
           const [mx, my] = middle(wall);
@@ -562,22 +564,44 @@ class BattleSceneRenderer {
         const at: Point = opening.length
           ? ([0, 1].map(axis => opening.reduce((sum, wall) => sum + middle(wall)[axis], 0) / opening.length) as Point)
           : quay.at;
-        const length = dry + reach; // over the strand, then out into the water
         group
-          .append("path")
-          .attr(
-            "d",
-            `M${-width} ${-width / 2}H${length - width}V${-width * 1.3}H${length}V${width * 1.3}H${length - width}V${width / 2}H${-width}Z`
-          )
+          .append("g")
           .attr(
             "transform",
-            `translate(${at[0].toFixed(1)} ${at[1].toFixed(1)}) rotate(${((away * 180) / Math.PI).toFixed(1)})`
+            `translate(${at[0].toFixed(1)} ${at[1].toFixed(1)}) rotate(${((quay.away * 180) / Math.PI).toFixed(1)})`
           )
-          .attr("fill", PIER)
-          .attr("stroke", WALL)
-          .attr("stroke-width", 0.6 * pt);
+          .html(this.getPierMarkup(quay.dry + reach, width, head, pt));
       }
     });
+  }
+
+  /** A timber pier, its sea gate at 0 0 and the water along x: a stem out over the strand and the water, a short head along the shore */
+  private getPierMarkup(reach: number, width: number, head: number, pt: number): string {
+    const [near, far, half, narrow] = [reach, reach + width, head / 2, width * 0.4].map(value => +value.toFixed(1));
+    const plank = Math.max(3.5, 1.4 * pt);
+    let planks = "";
+    for (let x = plank; x < near; x += plank) planks += `M${x.toFixed(1)} ${-narrow}V${narrow}`;
+    for (let y = -half + plank; y < half; y += plank) planks += `M${near} ${y.toFixed(1)}H${far}`;
+    // a pile at every corner, the rest evenly between them: round the head but where the stem comes on, then back along the stem
+    const spacing = Math.max(width * 1.2, 6 * pt);
+    const spread = (from: number, to: number): number[] => {
+      const count = Math.max(Math.round(Math.abs(to - from) / spacing), 1);
+      return Array.from({ length: count + 1 }, (_, i) => +(from + ((to - from) * i) / count).toFixed(1));
+    };
+    const across = spread(-half, half);
+    const along = spread(near, width / 2);
+    const piles = [
+      ...across.map(y => [far, y]),
+      ...across.filter(y => Math.abs(y) > narrow + width * 0.3).map(y => [near, y]),
+      ...along.flatMap(x => [
+        [x, -narrow],
+        [x, narrow]
+      ])
+    ];
+    const deck = `M0 ${-narrow}H${near}V${-half}H${far}V${half}H${near}V${narrow}H0Z`;
+    return `<path d="${deck}" fill="${PIER}" stroke="${PIER_INK}" stroke-width="${0.6 * pt}" stroke-linejoin="round"/>
+      <path d="${planks}" fill="none" stroke="${PIER_INK}" stroke-opacity="0.4" stroke-width="${0.35 * pt}"/>
+      <path d="${piles.map(([x, y]) => `M${x} ${y}h0`).join("")}" fill="none" stroke="${PIER_PILE}" stroke-width="${1.7 * pt}" stroke-linecap="round"/>`;
   }
 
   /** What stands of the walls; drawn again when a breach is made */

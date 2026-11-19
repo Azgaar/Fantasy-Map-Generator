@@ -894,39 +894,47 @@ class BattlefieldModule {
 
   /**
    * Where a burg on the sea or a lake has its piers, a sea gate in its wall by each: on the stretches of its edge that look
-   * out on the most water, apart from each other, more of them the larger the burg. Each with the way out to the water and
-   * how far it is dry that way
+   * out on the most water, apart from each other, more of them the larger the burg. Each with the way out to the water,
+   * square to the shore, and how far it is dry that way
    */
   getQuays(field: Battlefield, burg: FieldBurg): { at: Point; away: number; dry: number }[] {
     const count = burg.piers ?? this.countPiers(burg.radius);
     const apart = burg.radius * 0.5;
+    const isSea = (x: number, y: number): boolean =>
+      x >= 0 && y >= 0 && x < field.width && y < field.height && field.water[this.nodeAt(field, x, y)] === 1;
     const fronts = this.getStretches(burg.outline, this.getOpening(field, GATE) / 2)
       .map(([a, b]) => {
         const at: Point = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-        // square to the wall, on its water side
-        const square = Math.atan2(b[1] - a[1], b[0] - a[0]) + Math.PI / 2;
-        const wet = (angle: number): number => {
-          let water = 0;
-          for (let i = 0; i < 8; i++) {
-            const [x, y] = [at[0] + Math.cos(angle) * field.cell * i, at[1] + Math.sin(angle) * field.cell * i];
-            if (x >= 0 && y >= 0 && x < field.width && y < field.height && field.water[this.nodeAt(field, x, y)] === 1)
-              water++;
-          }
-          return water;
-        };
-        const [out, back] = [wet(square), wet(square + Math.PI)];
-        return out >= back ? { at, away: square, water: out } : { at, away: square + Math.PI, water: back };
+        // square to the wall, out of the burg
+        let square = Math.atan2(b[1] - a[1], b[0] - a[0]) + Math.PI / 2;
+        const [nearX, nearY] = [Math.cos(square) * field.cell * 0.25, Math.sin(square) * field.cell * 0.25];
+        if (this.isInside([at[0] + nearX, at[1] + nearY], burg.outline)) square += Math.PI;
+        let water = 0;
+        for (let i = 0; i < 8; i++) {
+          if (isSea(at[0] + Math.cos(square) * field.cell * i, at[1] + Math.sin(square) * field.cell * i)) water++;
+        }
+        return { at, square, water };
       })
       .filter(front => front.water >= QUAY_WATER)
       .sort((a, b) => b.water - a.water);
     const quays: { at: Point; away: number; dry: number }[] = [];
-    for (const { at, away } of fronts) {
+    for (const { at, square } of fronts) {
       if (quays.length === count) break;
       if (quays.some(quay => Math.hypot(quay.at[0] - at[0], quay.at[1] - at[1]) < apart)) continue;
+      // square to the shore about the place rather than to its one stretch of wall: towards the open water round it
+      const isOpen = (x: number, y: number): boolean => isSea(x, y) && !this.isInside([x, y], burg.outline);
+      let [seaX, seaY] = [0, 0];
+      for (let ring = 2; ring <= 8; ring++) {
+        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 12) {
+          const [x, y] = [Math.cos(angle), Math.sin(angle)];
+          if (isOpen(at[0] + x * field.cell * ring, at[1] + y * field.cell * ring)) [seaX, seaY] = [seaX + x, seaY + y];
+        }
+      }
+      const away = Math.hypot(seaX, seaY) > 1 ? Math.atan2(seaY, seaX) : square;
       let dry = 0;
       const isWater = (): boolean => {
         const [x, y] = [at[0] + Math.cos(away) * dry, at[1] + Math.sin(away) * dry];
-        return x < 0 || y < 0 || x >= field.width || y >= field.height || field.water[this.nodeAt(field, x, y)] === 1;
+        return x < 0 || y < 0 || x >= field.width || y >= field.height || isOpen(x, y);
       };
       while (dry < field.cell * 8 && !isWater()) dry += field.cell / 4;
       quays.push({ at, away, dry });
