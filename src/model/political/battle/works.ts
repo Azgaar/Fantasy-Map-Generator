@@ -6,20 +6,19 @@ import { BUILD_TICKS, SHELTER } from "./battle-balance";
 import { BattleRules, POSTURES, SIDES, type Side, SURRENDER } from "./battle-rules";
 import { Battlefields, type FieldWork, type WorkKind } from "./battlefield";
 import { GAP } from "./formations";
-import type { Point } from "./movement";
+import { ARRIVED, Movement, type Point, type Spot } from "./movement";
 import { Sight } from "./sight";
 
 /** Works are part of the battle; tests switch them off to compare with the battle without them */
 export const WORKS = { on: true };
 
+export const AT_WORK = 0.21; // fronts from its place or its spot within which a battalion builds
 const AHEAD = 6; // metres a stretch stands ahead of its battalion's front: at grips it lies between the two
 const STRONG = 1 / 3; // share of a foe's power that makes it strong in riders (stakes, not a ditch), or riders and shooters (wagons)
-const AT_ONCE = 3; // stretches of wagons the train builds at once
+const CROWD = 0.75; // builders stand no nearer than this share of their fronts: corner to corner at a turned-back end
 const BENDS = [Math.PI / 4, Math.PI / 2]; // turns back of a wagon line at its ends, to a half circle
 const MOST_TURN = (Math.PI * 2) / 3; // between neighbours on a wagon ring
 export const GAP_WAGONS = 2; // wagons knocked out of a stretch, one a shot, that open a gap troops get in by
-
-/** Ticks a full battalion takes to build a stretch; wagons are the side's train's, a few stretches at once */
 
 class WorksModule {
   private readonly barring = new WeakMap<FieldWork[], { length: number; lists: FieldWork[][] }>(); // by side and riding; works only ever join the list
@@ -144,6 +143,41 @@ class WorksModule {
     return (block.kind === "melee" || block.kind === "ranged") && block.type !== "naval" && block.type !== "aviation";
   }
 
+  /** A battalion that may build wagons: in order, on foot, of the line or the reserve, or shooters in the first rank */
+  private isWagoner(battle: Battle, block: Block): boolean {
+    const { order } = block;
+    return (
+      block.status === "ready" &&
+      !block.leaving &&
+      !block.task &&
+      !order.sent &&
+      (order.role === "line" || order.role === "reserve" || (order.role === "support" && order.rank === 0)) &&
+      this.isOnFoot(block) &&
+      !battle[block.side].plan.hooks.some(hook => hook.includes(block.id))
+    );
+  }
+
+  /** The stretch of wagons a battalion is to build: it goes up to it and builds there */
+  getWagonJob(battle: Battle, block: Block): FieldWork | undefined {
+    return battle.field.works.find(work => work.builder === block.id && work.kind === "wagons" && work.done < 1);
+  }
+
+  /** A battalion at the stretch it is to build: building, just come up to it, or holding off a foe there */
+  private isAtWork(battle: Battle, block: Block, work: FieldWork): boolean {
+    if (block.action === "build") return true;
+    const { x, y } = this.getWorkSpot(block, work);
+    const far = Math.hypot(block.x - x, block.y - y) / battle.field.front;
+    return block.action === "move" ? far < ARRIVED : block.action === "fight" && far < AT_WORK;
+  }
+
+  /** Where a battalion stands to build a stretch: its front at the stretch's back, facing out */
+  getWorkSpot(block: Block, work: FieldWork): Spot & { facing: number } {
+    const facing = Math.atan2(work.b[1] - work.a[1], work.b[0] - work.a[0]) - Math.PI / 2; // the front is on the left of a → b
+    const [x, y] = this.middle(work);
+    const back = block.depth / 2 + 1;
+    return { x: x - Math.cos(facing) * back, y: y - Math.sin(facing) * back, facing };
+  }
+
   /** Where a battalion's stretch runs: across the front of its place, or of the spot it was told to fortify */
   getStretchLine(battle: Battle, block: Block): [[number, number], [number, number]] {
     const { x, y, facing } = block.task?.kind === "fortify" ? block.task : block.order;
@@ -191,9 +225,10 @@ class WorksModule {
     return all ? some / all : 0;
   }
 
-  /** Ticks the train takes to build the front of the side's wagon line, a few stretches at once: the back is closed last */
+  /** Ticks the side takes to build the front of its wagon line, a battalion at each stretch: the back is closed last */
   private getWagonTicks(battle: Battle, side: Side): number {
-    return Math.ceil(this.getWagonLine(battle, side, false).length / AT_ONCE) * BUILD_TICKS.wagons;
+    const wagoners = battle.blocks.filter(block => block.side === side && this.isWagoner(battle, block)).length;
+    return Math.ceil(this.getWagonLine(battle, side, false).length / Math.max(wagoners, 1)) * BUILD_TICKS.wagons;
   }
 
   /**
@@ -201,7 +236,7 @@ class WorksModule {
    * shooters, a ditch against one weak in riders, else stakes; none when neither is done in time
    * @param rate share of a full battalion's work it does a tick
    * @param ticks till the foe is there
-   * @param train the side's train builds wagons: not for a battalion fortifying by hand
+   * @param train the side's train brings wagons: not for a battalion fortifying by hand
    */
   chooseKind(battle: Battle, side: Side, rate: number, ticks: number, train = true): WorkKind | null {
     if (!rate) return null;
@@ -239,7 +274,7 @@ class WorksModule {
     );
   }
 
-  /** A stretch its side still works on: wagons, the train's, or one before a builder's place; one left behind is not */
+  /** A stretch its side still works on: wagons, or one before a builder's place; one left behind is not */
   private isInHand(battle: Battle, work: FieldWork): boolean {
     if (work.kind === "wagons") return true;
     return battle.blocks.some(
@@ -262,13 +297,13 @@ class WorksModule {
   }
 
   /**
-   * A tick of building: each battalion at work on its stretch of stakes or a ditch, the train of a fortifying side on its
-   * wagons, a few stretches at once
+   * A tick of building: each battalion at work on its stretch of stakes or a ditch; the wagons of a fortifying side by
+   * the battalions sent to them, once they have come up to them
    * @param elapsed ticks since the general reckoned when the foe comes
    */
   buildWorks(battle: Battle, elapsed: number): void {
     for (const block of battle.blocks) {
-      if (block.action !== "build") continue;
+      if (block.action !== "build" || this.getWagonJob(battle, block)) continue;
       let work = this.findStretch(battle, block);
       if (!work) {
         const rate = block.troops / battle.battalion;
@@ -278,7 +313,7 @@ class WorksModule {
         if (kind === "wagons" && !this.hasWagons(battle, block.side)) this.layWagons(battle, block.side, false);
         work = this.findStretch(battle, block);
         if (!work) {
-          if (kind === "wagons") kind = "stakes"; // the train laid its line before this place
+          if (kind === "wagons") kind = "stakes"; // the wagon line was laid before this place
           const [a, b] = this.getStretchLine(battle, block);
           work = { a, b, kind, side: block.side, builder: block.id, done: 0, up: false, harm: 0 };
           battle.field.works.push(work);
@@ -291,11 +326,61 @@ class WorksModule {
       const { plan } = battle[side];
       if (!plan.fortify) continue;
       if (plan.tactic === "wagenburg" && !this.hasWagons(battle, side)) this.layRing(battle, side, false);
-      const pending = battle.field.works
-        .filter(work => work.side === side && work.kind === "wagons" && work.done < 1)
-        .sort((a, b) => b.done - a.done) // those begun first
-        .slice(0, AT_ONCE);
-      for (const work of pending) work.done = this.advance(work.done, 1 / BUILD_TICKS.wagons);
+      const left = battle.field.works.filter(work => work.side === side && work.kind === "wagons" && work.done < 1);
+      const wagoners = battle.blocks.filter(block => block.side === side && this.isWagoner(battle, block));
+      const busy = new Map<Block, { spot: Spot; left: number }>(); // where each builder stands, ticks its stretch takes yet
+      for (const work of left) {
+        const builder = wagoners.find(block => block.id === work.builder);
+        if (!builder) work.builder = null;
+        else {
+          if (this.isAtWork(battle, builder, work)) work.done = this.advance(work.done, 1 / BUILD_TICKS.wagons);
+          const spot = this.getWorkSpot(builder, work);
+          if (work.done < 1) busy.set(builder, { spot, left: (1 - work.done) * BUILD_TICKS.wagons }); // done: free at once
+        }
+      }
+      this.sendWagoners(battle, left, wagoners, busy);
+    }
+  }
+
+  /**
+   * Who builds the stretches of wagons nobody builds: the battalion that could begin it soonest, the walk there and what
+   * it is at now, from the next tick. A stretch waits for a busy one, and for a builder standing where it would stand.
+   * The first line builds only before its places while the side has others to send: they lay the rest
+   */
+  private sendWagoners(
+    battle: Battle,
+    left: FieldWork[],
+    wagoners: Block[],
+    busy: Map<Block, { spot: Spot; left: number }>
+  ): void {
+    const open = left.filter(work => work.builder === null);
+    if (!open.length) return;
+    const spare = wagoners.some(block => block.order.rank > 0);
+    const reach = AT_WORK * battle.field.front;
+    const pairs = open.flatMap(work =>
+      wagoners
+        .filter(block => block.action !== "fight")
+        .map(block => {
+          const spot = this.getWorkSpot(block, work);
+          const from = busy.get(block)?.spot ?? block;
+          const walk = Math.hypot(from.x - spot.x, from.y - spot.y) / Movement.getPace(battle, block);
+          return { work, block, spot, ticks: walk + (busy.get(block)?.left ?? 0) };
+        })
+        .filter(
+          ({ block, spot }) =>
+            !spare || block.order.rank > 0 || Math.hypot(block.order.x - spot.x, block.order.y - spot.y) < reach
+        )
+    );
+    pairs.sort((a, b) => a.ticks - b.ticks);
+    const decided = new Set<FieldWork>();
+    for (const { work, block, spot } of pairs) {
+      if (decided.has(work)) continue;
+      decided.add(work);
+      const apart = ([other, { spot: at }]: [Block, { spot: Spot }]): boolean =>
+        Math.hypot(spot.x - at.x, spot.y - at.y) >= ((block.width + other.width) / 2) * CROWD;
+      if (busy.has(block) || ![...busy].every(apart)) continue;
+      work.builder = block.id;
+      busy.set(block, { spot, left: BUILD_TICKS.wagons });
     }
   }
 

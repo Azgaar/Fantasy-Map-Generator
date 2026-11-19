@@ -637,7 +637,7 @@ class BattleSceneRenderer {
       const [x, y] = [burg.x + dx, burg.y + dy];
       const top = y - burg.radius * 0.9 - 2 * pt;
       const below = top < box.y + 24 * pt ? y + burg.radius * 0.9 + 13 * pt : top;
-      this.label(labels, field, `${burg.name} ${burg.group}`, x, below, 13, INK);
+      this.label(labels, field, burg.name, x, below, 13, INK);
     }
 
     const course = line<Point>().curve(curveCatmullRom.alpha(0.5));

@@ -287,7 +287,8 @@ class GeneralModule {
       hooks: [[], []],
       lure: null,
       defiant: false,
-      stands: false
+      stands: false,
+      declined: false
     };
   }
 
@@ -1593,6 +1594,7 @@ class GeneralModule {
     const lifted = data.phase === POSTURES[battle.type][side].run && command !== "retreat" && command !== "surrender";
     if (lifted) {
       data.plan.stands = true;
+      data.plan.declined = false;
       if (side === "attackers") battle.raised = false;
     } else if (command === "retreat") data.plan.stands = false;
     if (
@@ -1803,7 +1805,10 @@ class GeneralModule {
     const standing = !data.advancing && !battle[BattleRules.enemyOf(side)].advancing && phase === names.apart;
     const idle =
       standing && battle.round - plan.since >= DECLINED && !own.ready.some(block => block.action === "fight");
-    if (side === "attackers" && this.isOpenFight(battle) && idle) return names.run;
+    if (side === "attackers" && this.isOpenFight(battle) && idle) {
+      plan.declined = true;
+      return names.run;
+    }
     if (this.feints(battle, side, own)) return this.fallBack(battle, side, foe);
     if (phase === names.close || phase === names.chase) return names.close;
     if (!this.isOpenFight(battle)) return names.close;

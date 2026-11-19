@@ -77,4 +77,5 @@ export const BREACHES = 2; // gaps the engines knock in the foe's wagons before 
 
 // Works
 
+// ticks a full battalion takes to build a stretch; a stretch of wagons takes as long by any battalion at it
 export const BUILD_TICKS: Record<WorkKind, number> = { stakes: 15, wagons: 10, ditch: 60 };

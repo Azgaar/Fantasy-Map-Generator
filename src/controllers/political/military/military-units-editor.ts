@@ -26,7 +26,7 @@ import {
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
-import { rn } from "@/utils/number-utils";
+import { minmax, rn } from "@/utils/number-utils";
 import { escapeHtml, sanitizeId } from "@/utils/string-utils";
 
 const dialogId = "militaryOptions" as const;
@@ -94,6 +94,7 @@ function renderDialog(): void {
 
   const body = ensureEl("militaryOptionsBody");
   body.addEventListener("input", onFieldInput);
+  body.addEventListener("change", showSavedValue);
   body.addEventListener("click", onCellClick);
 }
 
@@ -217,6 +218,14 @@ function getUnitLine({ id, unit }: UnitRow, tips: ReturnType<typeof getTips>): s
     </div>`;
 }
 
+/** A typed value out of bounds shows the one kept once the field is left */
+function showSavedValue(event: Event): void {
+  const el = event.target as HTMLInputElement;
+  const row = getRow(el);
+  const field = el.dataset.field as NumberField;
+  if (row && el.type === "number" && NUMBERS.includes(field)) el.value = String(row.unit[field]);
+}
+
 function onFieldInput(event: Event): void {
   const el = event.target as HTMLInputElement | HTMLSelectElement;
   const row = getRow(el);
@@ -226,7 +235,8 @@ function onFieldInput(event: Event): void {
   if (field === "name" || field === "type") row.unit[field] = el.value;
   else if (field === "separate") row.unit.separate = +(el as HTMLInputElement).checked;
   else {
-    row.unit[field as NumberField] = +el.value || 0;
+    const { min, max } = el as HTMLInputElement; // typed values are not held to them by the input
+    row.unit[field as NumberField] = minmax(+el.value || 0, +min, max ? +max : Infinity);
     el.dataset.tip = getValueTip(getTips(), field as NumberField, row.unit[field as NumberField]);
   }
 

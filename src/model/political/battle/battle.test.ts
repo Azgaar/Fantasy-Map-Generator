@@ -2991,20 +2991,30 @@ describe("battle works", () => {
       defenders: [regiment(2, defenders)]
     });
 
-  it("has a line told to fortify against shooters lay a wagon line, three stretches at a time, its ends turned back", () => {
+  it("has a line told to fortify against shooters lay a wagon line, each battalion at its stretch, its ends turned back", () => {
     const b = battle([regiment(1, { infantry: 2500, archers: 1500 })], [regiment(2, { ...big, cavalry: 450 })]);
     order(b, "attackers", "hold"); // the foe keeps away
     order(b, "defenders", "fortify");
     b.planned = true;
-    ticks(b, 10);
+    ticks(b, 3);
     const line = builders(b, "defenders");
     const wagons = worksOf(b, "defenders");
-    expect(wagons.every(work => work.kind === "wagons" && work.builder === null)).toBe(true); // the train's
+    expect(wagons.every(work => work.kind === "wagons")).toBe(true);
     expect(wagons).toHaveLength(line.length + 4); // two stretches turned back at either end
-    expect(wagons.filter(work => work.done === 1)).toHaveLength(3);
+    // each battalion of the line comes up to the stretch before it; others are sent to the ends
+    for (const block of line) {
+      const work = Works.findStretch(b, block)!;
+      const spot = Works.getWorkSpot(block, work);
+      expect([work.builder, block.action]).toEqual([block.id, "build"]);
+      expect(Math.hypot(block.x - spot.x, block.y - spot.y)).toBeLessThan(b.field.front * 0.07);
+    }
+    const ends = wagons.filter(work => !line.some(block => Works.findStretch(b, block) === work));
+    expect(ends.filter(work => work.builder !== null).every(work => b.blocks[work.builder!].order.rank > 0)).toBe(true);
+    ticks(b, 8); // ten ticks from the one it came up to the stretch
+    expect(wagons.filter(work => work.done === 1)).toHaveLength(line.length);
     expect(wagons.some(work => work.up)).toBe(false); // it counts from the next round
     ticks(b, 4);
-    expect(wagons.filter(work => work.up)).toHaveLength(3);
+    expect(wagons.filter(work => work.up)).toHaveLength(line.length);
     for (const block of line) expect(Works.findStretch(b, block)?.kind).toBe("wagons");
     // one line end to end, before the battalions, on the foe's side
     const joined = (point: [number, number]): number =>
@@ -3033,10 +3043,9 @@ describe("battle works", () => {
     expect(Math.max(...wagons.map(work => Math.max(work.a[0], work.b[0])))).toBeGreaterThan(
       Math.max(...side.map(block => block.x))
     );
-    // the front stands first: the stretches begun are those before the line
-    const begun = wagons.filter(work => work.done > 0);
-    expect(begun).toHaveLength(3);
-    expect(begun.every(work => line.some(block => Works.findStretch(b, block) === work))).toBe(true);
+    // the front stands first: the line builds the stretches before it at once, the back waits for who walks to it
+    for (const block of line) expect(Works.findStretch(b, block)!.done).toBeGreaterThan(0.5);
+    expect(wagons.some(work => work.done === 0)).toBe(true);
   });
 
   it("closes a wagon line where the first line does not stand level: no gap between the stretches", () => {
@@ -3107,7 +3116,7 @@ describe("battle works", () => {
     expect(horse()).toBeLessThan(far * 0.6);
     const wagons = worksOf(wagenburg, "defenders");
     expect(wagons.length).toBe(of(wagenburg, "defenders").filter(block => block.order.rank === 0).length);
-    expect(wagons.every(work => work.kind === "wagons" && work.up && work.builder === null)).toBe(true);
+    expect(wagons.every(work => work.kind === "wagons" && work.up && work.builder !== null)).toBe(true); // by battalions
     // a closed ring round the whole army
     for (const work of wagons) expect(wagons.filter(other => other.a === work.b)).toHaveLength(1);
     for (const block of of(wagenburg, "defenders")) expect(inside([block.x, block.y], wagons), block.key).toBe(true);

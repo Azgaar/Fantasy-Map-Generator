@@ -65,7 +65,7 @@ export interface FieldWork {
   b: Point;
   kind: WorkKind;
   side: "attackers" | "defenders"; // who holds it
-  builder: number | null; // the battalion building it; null for wagons and for works laid in advance
+  builder: number | null; // the battalion building it; null for works laid in advance and wagons nobody is sent to
   done: number; // 0 to 1
   up: boolean; // finished by the start of this round: only then it counts
   harm: number; // 0 to 1: share of a gap engines knocked into a stretch of wagons; at 1 it is open, kept for the drawing

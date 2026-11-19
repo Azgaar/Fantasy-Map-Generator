@@ -52,7 +52,7 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (code === "F9") Services.Load.quickLoad();
   else if (code === "Tab") toggleOptions(event);
   else if (code === "Escape") {
-    Dialog.closeAll();
+    Dialog.closeAll(undefined, { byEscape: true });
     hideOptions();
   } else if (code === "Delete") removeElementOnKey();
   else if (code === "KeyO" && findEl("canvas3d")) Controllers.View3d.toggleOptions();

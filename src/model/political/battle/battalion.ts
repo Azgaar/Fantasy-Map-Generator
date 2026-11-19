@@ -6,7 +6,7 @@ import { BattleRules, COMMANDS, type Command, type Side } from "./battle-rules";
 import { Battlefields, type FieldWork } from "./battlefield";
 import { ARRIVED, Movement, ROUND_TICKS, type Spot } from "./movement";
 import { Sight } from "./sight";
-import { Works } from "./works";
+import { AT_WORK, Works } from "./works";
 
 /** How a battalion fights, by its unit type: line troops, shooters, riders, engines */
 export type Kind = "melee" | "ranged" | "mounted" | "machinery";
@@ -30,7 +30,6 @@ const WATCH = 5; // how far a guard goes for riders
 const GUARD = 2; // how near a friend it protects a foe is gone for
 const CROWD = 1; // what each friend going for a foe adds to the way to it: they spread along the line
 const ROUTED = 9; // and a foe on the run, to who does not chase
-const AT_WORK = 0.21; // so near its place a battalion builds its stretch
 
 /** What a battalion means to do this tick */
 export interface Intent {
@@ -178,7 +177,7 @@ class BattalionModule {
       if (far(place) >= AT_WORK * front) return false;
       const work = Works.findStretch(battle, block);
       const near = ready.some(foe => far(foe) < Movement.getPace(battle, foe) * ROUND_TICKS + CHARGE * front);
-      return (!work || work.done < 1) && !near;
+      return (!work || (work.kind !== "wagons" && work.done < 1)) && !near; // wagons are built by who is sent to them
     };
 
     const closes = this.closes(battle, block);
@@ -221,6 +220,14 @@ class BattalionModule {
     }
 
     const { plan } = battle[block.side];
+    const job = plan.fortify ? Works.getWagonJob(battle, block) : undefined;
+    if (job) {
+      // up to the wagons: it builds once there, and goes on with what it began when pushed a little off
+      const spot = Works.getWorkSpot(block, job);
+      const there = far(spot) < ARRIVED * front || (job.done > 0 && far(spot) < AT_WORK * front);
+      if (there) return { ...stand, build: true, facing: spot.facing };
+      return { ...stand, to: spot, key: this.getPointKey(battle, spot), facing: spot.facing };
+    }
     if (plan.fortify && Works.isBuilder(battle, block) && atWork(order)) return { ...stand, build: true };
     const away = skirmishes ? evade() : null;
     if (away) return away;

@@ -108,6 +108,7 @@ export interface Plan {
   lure: [x: number, y: number] | null; // where the foe stood when the side fell back to draw him out: it feigns once
   defiant: boolean; // told by hand to fight a day its general gave up for lost before it began
   stands: boolean; // ordered by hand out of a retreat: its general does not turn back to it
+  declined: boolean; // attackers who would not go in and left the field unbroken
 }
 
 /** The party of a sortie formed up outside the gate it goes out by, before it falls on the foe */
@@ -406,7 +407,8 @@ const NO_PLAN: Plan = {
   hooks: [[], []],
   lure: null,
   defiant: false,
-  stands: false
+  stands: false,
+  declined: false
 };
 
 class BattleModule {
@@ -883,13 +885,16 @@ class BattleModule {
     if (battle.engaged === null && battle.round && (fighting || (!marching && !held))) {
       battle.engaged = battle.round;
       battle.lastLoss = battle.tick;
-      battle.log.push({ tick: battle.tick, event: "clash" });
     }
+    // the armies clash at the first blow struck hand to hand, not when they halt apart
+    if (battle.blocks.some(block => block.action === "fight") && !battle.log.some(entry => entry.event === "clash"))
+      battle.log.push({ tick: battle.tick, event: "clash" });
 
     const beaten = SIDES.map(side => BattleRules.isBeaten(battle.type, side, battle[side].phase));
     Generals.command(battle);
     SIDES.forEach((side, i) => {
-      if (battle[side].plan.tactic === "strategicRetreat") return; // it leaves as it meant to, unbroken
+      const { tactic, declined } = battle[side].plan;
+      if (tactic === "strategicRetreat" || declined) return; // it leaves as it meant to, unbroken
       if (!beaten[i] && BattleRules.isBeaten(battle.type, side, battle[side].phase))
         battle.log.push({
           tick: battle.tick,

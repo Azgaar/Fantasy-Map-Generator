@@ -379,8 +379,17 @@ class BattleScreenController {
       minHeight: 320,
       position: POSITION,
       resizable: true,
+      closeOnEscape: false, // Escape closes a menu or drops the pick: the battle is cancelled by its button only
       onClose: this.cancelResults
     });
+    ensureEl("battleScreen")
+      .closest<HTMLElement>(".dialog-window")!
+      .addEventListener("keydown", event => {
+        if (event.key !== "Escape") return;
+        const menus = ensureEl("battleLayout").querySelectorAll<HTMLElement>(".battleMenu:not([hidden])");
+        if (menus.length) this.closePickers();
+        else this.setSelected([]);
+      });
     this.fitDialog();
     this.toggleLog(this.battleOptions().view.log, false);
     this.player.lastFrame = 0;
@@ -1661,6 +1670,7 @@ class BattleScreenController {
       b.log.pop();
     }
     Battles.intervene(b, { tick: b.tick, kind: "die", side, die });
+    if (!b.tick) this.drawScene(); // the troops are lined up anew: a general may see the day lost
     this.refresh();
   }
 
@@ -1736,6 +1746,7 @@ class BattleScreenController {
       }
       Battles.prepare(b); // the troops are lined up anew with the morale as it now stands
     }
+    if (!b.tick) this.drawScene();
     this.refresh();
   }
 
@@ -1809,6 +1820,7 @@ class BattleScreenController {
     if (target.tagName !== "BUTTON" || target.dataset.type === b.type || b.tick) return;
     const type = target.dataset.type as BattleType;
     const named = b.name === BattleRules.getName(b.type, b.place);
+    this.script = []; // stepped back to the start, another battle: what came after is not to come
 
     Battles.intervene(b, { tick: b.tick, kind: "type", type });
     if (!b.tick) {
@@ -1826,6 +1838,7 @@ class BattleScreenController {
   private redeploy(): void {
     const b = this.battle!;
     if (b.tick) return;
+    this.script = []; // stepped back to the start, the troops drawn up anew: what came after is not to come
     const sides = SIDES.map(side => b[side].regiments.map(regiment => this.regiments.get(this.regimentKey(regiment))!));
     this.setup(sides[0], sides[1], {
       type: b.type,
