@@ -9,9 +9,11 @@ import {
   type Battlefield,
   Battlefields,
   type FieldRiver,
+  type FieldWall,
   type FieldWork,
   type WorkKind
 } from "@/model/political/battle/battlefield";
+import { Movement } from "@/model/political/battle/movement";
 import { Sight } from "@/model/political/battle/sight";
 import { GAP_WAGONS, Works } from "@/model/political/battle/works";
 import { convertSpeed, formatLength, getSpeedUnit } from "@/model/units";
@@ -30,19 +32,19 @@ import { capitalize, escapeHtml } from "@/utils/string-utils";
 /**
  * The scene's layers by id, bottom to top (the diagnostics add `battleDebugGround` under the labels, `battleDebugDoings` on top):
  * - `battlePaper`: the ground's colour under the whole scene
- * - `battleTerrain`: the ground, drawn once (tint, cover, relief, props, water, cliffs, rivers, burgs, roads, plazas)
- * - `battleWalls`: the field's walls, drawn again on a breach
+ * - `battleTerrain`: the ground, drawn once (tint, cover, relief, props, water, cliffs, rivers, burgs, roads, plazas, heights)
+ * - `battleWalls`: the field's walls, drawn again on a breach or when stormers leave ladders against them
  * - `battleEdge`, `battleFrost`, `battleMud`: the field's edge within its scene, frozen and soaked ground
  * - `battleLightShade`: the ground shaded by the sun and the sky of the moment
  * - `battleLabels`: burg and river names
- * - `battleWorks`, `battleWorkTips`: field works and their hover lines
+ * - `battleWorks`, `battleWorkTips`, `battleWallTips`: field works, and the hover lines of works and walls
  * - `battleFire`, `battleArrows`, `battleHover`: fire lines, where battalions went, the marks of the pointed and picked
  * - `battleBlocks`, `battleMissiles`, `battleClashes`: battalions, arrows and shells in flight, clashes
  * - `battleLight`: the tint of the hour and the sky over all of it, battalions too, lifted round each battalion by its
  *   light at night (`battleLamps`); laid on as one, multiplied; the pointer goes through
  * - `battleSelection`: the box dragged and the turning handle
  */
-// what the animation export records; the walls too, for their breaches
+// what the animation export records; the walls too, for their breaches and ladders
 export const MOVING_LAYERS = [
   "battleWalls",
   "battleWorks",
@@ -128,6 +130,9 @@ const WATERS: Record<string, { fill: string; strand?: string; rim?: string }> = 
   lava: { fill: "#e9a07a", rim: "#9b4b2e" }
 };
 const TOWER_SPACING = 40; // points between the towers of a wall
+const LADDER_SPACING = 9; // points between the ladders stormers set up
+const GATE_SWING = 1.2; // radians the leaves of an open gate stand swung out from the gap
+const TIMBER = 1.8; // points thick a gate's leaf or plank is drawn
 const WALL = "#55524b";
 const PIER = "#b39a70"; // timber
 const PIER_INK = "#5e4a33";
@@ -318,7 +323,7 @@ class BattleSceneRenderer {
     this.baked.delete(svg); // a new ground: shaded anew
     svg.setAttribute("viewBox", `${area.x} ${area.y} ${area.width} ${area.height}`);
     delete svg.dataset.works; // the works layer is drawn empty: `updateBlocks` fills it
-    svg.dataset.breaches = String(field.breaches.length);
+    svg.dataset.walls = this.getWallsKey(field);
 
     svg.innerHTML = /* html */ `<style id="battleLook">${this.getLookStyle(this.getScene(svg).look)}</style>
       <defs>${this.getDefs(field, ground, [dx, dy], masks)}</defs>
@@ -335,6 +340,7 @@ class BattleSceneRenderer {
       <g id="battleLabels" pointer-events="none"></g>
       <g id="battleWorks" fill="none" stroke-width="${1.6 * pt}" pointer-events="none">${this.getWorkPaths(pt)}</g>
       <g id="battleWorkTips" stroke="none" pointer-events="stroke"></g>
+      <g id="battleWallTips" stroke="none" fill="none" pointer-events="stroke"></g>
       <g id="battleFire" fill="none" stroke-width="${pt}" stroke-dasharray="${2 * pt} ${5 * pt}" opacity="0.55"></g>
       <g id="battleArrows" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.8" pointer-events="none"></g>
       <g id="battleHover" fill="none" pointer-events="none"></g>
@@ -349,7 +355,9 @@ class BattleSceneRenderer {
     const terrain = root.select<SVGGElement>("#battleTerrain");
     this.drawTerrain(terrain, ground, paper, masks, pt);
     if (scene) this.drawWalls(this.addPart(terrain, "Walls").attr("clip-path", "url(#battleOutsideClip)"), scene, pt);
+    this.addPart(terrain, "Heights").html(BattleReliefView.getHeightsMarkup(ground, paper)); // over all the ground
     this.drawWalls(root.select("#battleWalls"), field, pt);
+    this.drawWallTips(svg, field);
     this.drawLabels(root.select("#battleLabels"), field, ground, [dx, dy], paper);
   }
 
@@ -604,10 +612,11 @@ class BattleSceneRenderer {
       <path d="${piles.map(([x, y]) => `M${x} ${y}h0`).join("")}" fill="none" stroke="${PIER_PILE}" stroke-width="${1.7 * pt}" stroke-linecap="round"/>`;
   }
 
-  /** What stands of the walls; drawn again when a breach is made */
+  /** What stands of the walls, and the ladders against them; drawn again when a breach is made or ladders are left */
   private drawWalls(group: Group, field: Battlefield, pt: number): void {
     group.selectAll("*").remove();
     const walls = field.walls.filter(wall => !wall.gate || wall.jamb); // the gate as drawn, narrower than the gateway
+    this.drawGates(group, field, pt); // the doors under the walls and towers
     group
       .append("path")
       .attr("d", walls.map(wall => this.toPath([wall.a, wall.b])).join(""))
@@ -642,8 +651,9 @@ class BattleSceneRenderer {
         .attr("stroke-width", 0.8);
     for (const at of rounds) tower(at, "M-4 0a4 4 0 1 0 8 0a4 4 0 1 0-8 0");
     for (const at of gates) tower(at, "M-4.5-4.5h9v9h-9Z");
-    // a breach: rubble in the gap
+    // a breach: rubble in the gap, and the splintered doors of a gate battered down
     for (const breach of field.breaches) {
+      if (breach.gate) this.timber(group, this.getSplinters(breach.x, breach.y, pt), pt);
       const rubble = [0, 1, 2, 3, 4, 5, 6].map(i => {
         const angle = i * 2.4 + breach.x;
         const far = 2 + ((i * 5) % 9);
@@ -657,6 +667,178 @@ class BattleSceneRenderer {
         .attr("stroke-width", 3.2)
         .attr("stroke-linecap", "round");
     }
+    // ladders lean on the wall from outside, square to it: a few along each front that went over
+    const ladder = `M-2 -1.1H9M-2 1.1H9${[0, 2, 4, 6, 8].map(x => `M${x} -1.1V1.1`).join("")}`;
+    for (const { x, y, burg, width } of this.getRaised(field)) {
+      const centre = field.burgs[burg];
+      const own = walls.filter(wall => wall.burg === burg);
+      const tangent = Math.atan2(y - centre.y, x - centre.x) + Math.PI / 2;
+      const count = Math.min(Math.max(Math.round(width / (LADDER_SPACING * pt)), 2), 5);
+      for (let i = 0; i < count; i++) {
+        const along = (i - (count - 1) / 2) * ((width * 0.8) / count);
+        const spot: Point = [x + Math.cos(tangent) * along, y + Math.sin(tangent) * along];
+        const foot = this.getFoot(own, spot);
+        if (!foot || Math.hypot(foot[0][0] - spot[0], foot[0][1] - spot[1]) > field.cell) continue; // breached since
+        const [at, { a, b }] = foot;
+        const square = Math.atan2(b[1] - a[1], b[0] - a[0]) + Math.PI / 2;
+        const outward = Math.cos(square) * (at[0] - centre.x) + Math.sin(square) * (at[1] - centre.y) > 0;
+        const angle = ((outward ? square : square + Math.PI) * 180) / Math.PI;
+        group
+          .append("path")
+          .attr("d", ladder)
+          .attr("transform", `${this.markAt(...at, pt)} rotate(${angle.toFixed(1)})`)
+          .attr("fill", "none")
+          .attr("stroke", PIER_INK)
+          .attr("stroke-width", 0.7)
+          .attr("stroke-linecap", "round");
+      }
+    }
+  }
+
+  /** Hover lines along the walls and gates of each burg, rings over breaches and ladders; kept out of the exported layers */
+  private drawWallTips(svg: SVGSVGElement, field: Battlefield): void {
+    const pt = this.getPoint(field);
+    const width = (WORK_HOVER * pt).toFixed(2);
+    const lines = (walls: FieldWall[]): string =>
+      walls
+        .map(
+          ({ a, b }) =>
+            `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke-width="${width}"/>`
+        )
+        .join("");
+    const ring = (x: number, y: number, r: number, tip: string): string =>
+      `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" pointer-events="all" data-tip="${escapeHtml(tip)}"/>`;
+    const groups = field.burgs.map((_, i) => {
+      const own = field.walls.filter(wall => wall.burg === i);
+      if (!own.length) return "";
+      const gates = own.filter(wall => wall.gate && !wall.jamb);
+      const solid = own.filter(wall => !wall.gate || wall.jamb);
+      return `<g data-wall="wall" data-burg="${i}" data-tip="${escapeHtml(this.getWallTip(field, i, "wall", null))}">${lines(solid)}</g>
+        <g data-wall="gate" data-burg="${i}" data-tip="${escapeHtml(this.getWallTip(field, i, "gate", null))}">${lines(gates)}</g>`;
+    });
+    const breach = Battlefields.getBreachWidth(field) / 2;
+    const breaches = field.breaches.map(({ x, y, burg, gate }) =>
+      ring(x, y, breach, this.getWallTip(field, burg, gate ? "broken" : "breach", null))
+    );
+    const ladders = this.getRaised(field).map(({ x, y, width }) => ring(x, y, width / 2, t("Scaling ladders")));
+    this.getLayer(svg, "battleWallTips")!.innerHTML = [...groups, ...breaches, ...ladders].join("");
+  }
+
+  /** The walls and gates of the burg a siege is for tell how the siege stands */
+  private updateWallTips(svg: SVGSVGElement, battle: Battle): void {
+    const { held } = battle.field;
+    if (held === null) return;
+    for (const group of this.getLayer(svg, "battleWallTips")!.querySelectorAll<SVGGElement>(`g[data-burg="${held}"]`)) {
+      const tip = this.getWallTip(battle.field, held, group.dataset.wall as "wall" | "gate", battle);
+      if (group.dataset.tip !== tip) group.dataset.tip = tip;
+    }
+  }
+
+  /** What a part of a burg's walls is and how it stands; with the battle, as the siege goes */
+  private getWallTip(
+    field: Battlefield,
+    burg: number,
+    part: "wall" | "gate" | "breach" | "broken",
+    battle: Battle | null
+  ): string {
+    const name = field.burgs[burg].name;
+    if (part === "breach") return sentences(t("Breach in the walls of {{burg}}", { burg: name }), t("Open to all"));
+    if (part === "broken") return sentences(t("Gate of {{burg}}", { burg: name }), t("Battered down: open to all"));
+    const besieged = battle !== null && field.held === burg;
+    const storming = besieged && Movement.isStorming(battle);
+    if (part === "gate") {
+      const status = besieged ? t("Shut to the besiegers") : t("Open"); // till engines batter it into a breach
+      return sentences(t("Gate of {{burg}}", { burg: name }), status);
+    }
+    const percent = besieged ? Math.floor(battle.battered * 100) : 0;
+    const status = storming
+      ? t("Stormed: foot climbs it on ladders")
+      : percent > 0
+        ? t("Battered: {{percent}}% of the next breach", { percent })
+        : t("Standing");
+    return sentences(t("Walls of {{burg}}", { burg: name }), status);
+  }
+
+  /**
+   * The gates as drawn, between their towers: two leaves shut across the gap of the burg besieged, swung out at any other
+   */
+  private drawGates(group: Group, field: Battlefield, pt: number): void {
+    const leaves: [Point, Point][] = [];
+    for (const { a, b, burg } of this.getGateSpans(field)) {
+      const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+      const span = Math.hypot(dx, dy) || 1;
+      const [ux, uy] = [dx / span, dy / span];
+      const middle = field.burgs[burg];
+      const side = (middle.x - a[0]) * -uy + (middle.y - a[1]) * ux > 0 ? -1 : 1; // outward, square to the gap
+      const [ox, oy] = [-uy * side, ux * side];
+      const swing = burg === field.held ? 0 : GATE_SWING;
+      const [cos, sin] = [Math.cos(swing), Math.sin(swing)];
+      const leaf = span / 2;
+      leaves.push([a, [a[0] + (ux * cos + ox * sin) * leaf, a[1] + (uy * cos + oy * sin) * leaf]]);
+      leaves.push([b, [b[0] + (-ux * cos + ox * sin) * leaf, b[1] + (-uy * cos + oy * sin) * leaf]]);
+    }
+    if (leaves.length) this.timber(group, leaves, pt);
+  }
+
+  /** The gates of the walls, each from tower to tower: their stretches joined end to end */
+  private getGateSpans(field: Battlefield): { a: Point; b: Point; burg: number }[] {
+    const spans: { a: Point; b: Point; burg: number }[] = [];
+    for (const { a, b, burg, gate, jamb } of field.walls) {
+      if (!gate || jamb) continue;
+      const last = spans[spans.length - 1];
+      if (last && last.burg === burg && last.b === a) last.b = b;
+      else spans.push({ a, b, burg });
+    }
+    return spans;
+  }
+
+  /** Planks of a gate battered down, askew about the point */
+  private getSplinters(x: number, y: number, pt: number): [Point, Point][] {
+    return [0, 1, 2].map(i => {
+      const angle = i * 2.1 + x;
+      const [cx, cy] = [x + Math.cos(angle * 1.7) * 3 * pt, y + Math.sin(angle * 1.7) * 3 * pt];
+      const [hx, hy] = [Math.cos(angle) * 2.2 * pt, Math.sin(angle) * 2.2 * pt];
+      return [
+        [cx - hx, cy - hy],
+        [cx + hx, cy + hy]
+      ];
+    });
+  }
+
+  /** Timber boards in points, each from end to end: pale planks with a dark edge all round */
+  private timber(group: Group, boards: [Point, Point][], pt: number): void {
+    const half = (TIMBER / 2) * pt;
+    const d = boards
+      .map(([a, b]) => {
+        const length = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+        const [nx, ny] = [(-(b[1] - a[1]) / length) * half, ((b[0] - a[0]) / length) * half];
+        const corner = ([x, y]: Point, sign: number): string =>
+          `${(x + nx * sign).toFixed(1)} ${(y + ny * sign).toFixed(1)}`;
+        return `M${corner(a, 1)}L${corner(b, 1)}L${corner(b, -1)}L${corner(a, -1)}Z`;
+      })
+      .join("");
+    group
+      .append("path")
+      .attr("d", d)
+      .attr("fill", PIER)
+      .attr("stroke", PIER_INK)
+      .attr("stroke-width", 0.5 * pt)
+      .attr("stroke-linejoin", "round");
+  }
+
+  /** The nearest point of the stretches to a point, and its stretch */
+  private getFoot<T extends { a: Point; b: Point }>(stretches: T[], [x, y]: Point): [Point, T] | null {
+    let best: [Point, T] | null = null;
+    let least = Infinity;
+    for (const stretch of stretches) {
+      const { a, b } = stretch;
+      const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+      const t = Math.min(Math.max(((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy || 1), 0), 1);
+      const at: Point = [a[0] + dx * t, a[1] + dy * t];
+      const far = Math.hypot(at[0] - x, at[1] - y);
+      if (far < least) [best, least] = [[at, stretch], far];
+    }
+    return best;
   }
 
   /** Burg names over the burgs of the scene, river names along the field's rivers, left to right */
@@ -979,6 +1161,15 @@ class BattleSceneRenderer {
       halo.setAttribute(name, String(value));
   }
 
+  /** Ladders are drawn once they are up */
+  private getRaised(field: Battlefield): Battlefield["ladders"] {
+    return field.ladders.filter(ladders => ladders.raised >= 1);
+  }
+
+  private getWallsKey(field: Battlefield): string {
+    return `${field.breaches.length}|${this.getRaised(field).length}`;
+  }
+
   /** Put blocks where they are `progress` of the way through the tick, eased; with no `previous` right where they are */
   updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Positions | null, progress: number): void {
     this.updateField(svg, battle.field);
@@ -988,6 +1179,7 @@ class BattleSceneRenderer {
     const shots = battle.result ? [] : [...this.getShots(battle, at, time), ...this.getWorkShots(battle, at, time)];
     this.drawShots(svg, battle, shots, time);
     this.drawClashes(svg, battle, shots, at, time);
+    this.updateWallTips(svg, battle);
     this.drawHover(svg, battle, at);
     this.drawLamps(svg, battle, at);
     BattleDebugView.update(svg, battle, at, this.getPoint(battle.field));
@@ -995,9 +1187,10 @@ class BattleSceneRenderer {
 
   /** Walls come down and works grow and fall as the battle goes */
   private updateField(svg: SVGSVGElement, field: Battlefield): void {
-    if (svg.dataset.breaches !== String(field.breaches.length)) {
-      svg.dataset.breaches = String(field.breaches.length);
+    if (svg.dataset.walls !== this.getWallsKey(field)) {
+      svg.dataset.walls = this.getWallsKey(field);
       this.drawWalls(select(svg).select("#battleWalls"), field, this.getPoint(field));
+      this.drawWallTips(svg, field);
     }
     if (svg.dataset.works !== this.getWorksKey(field)) this.drawWorks(svg, field);
   }

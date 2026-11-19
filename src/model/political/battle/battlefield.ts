@@ -75,6 +75,24 @@ export interface FieldBreach {
   x: number;
   y: number;
   burg: number;
+  gate: boolean; // a gate battered down
+}
+
+/** Scaling ladders stormers raise against a wall to go over it, a battalion's front of them */
+export interface FieldLadders {
+  x: number;
+  y: number;
+  burg: number;
+  width: number;
+  raised: number; // 0 to 1: up at 1, only then climbed
+  tick: number; // when they were last worked at: once a tick, whoever is at them
+}
+
+/** A place the besieged hold their walls from: the middle of a stretch, a gate or a breach, and the way out from it */
+export interface WallPost {
+  at: Point;
+  out: number;
+  opening: boolean;
 }
 
 /** A stretch of cliff, its top on the left of the way from `a` to `b`: nobody on the ground crosses it */
@@ -114,6 +132,7 @@ export interface Battlefield extends FieldSize {
   burgs: FieldBurg[];
   walls: FieldWall[]; // what stands of them
   breaches: FieldBreach[];
+  ladders: FieldLadders[];
   works: FieldWork[];
   cliffs: FieldCliff[];
   held: number | null; // the burg the defenders of a siege hold
@@ -163,6 +182,7 @@ const WAYS: [number, number][] = [-2, -1, 0, 1, 2]
 const GATE = 0.5; // width of a gate as drawn, in battalion fronts
 const GATEWAY = 1.2; // and as troops take it: a battalion gets through without jamming
 const BREACH = 0.7; // and of a breach
+const WALL_INSET = 500; // half a wall as drawn is the field's width over this: who holds it stands within that
 const RAMPART = 11; // how far from a wall its foot reaches
 export const WALL_HEIGHT = 15; // of the walls and towers of a burg, in metres
 
@@ -226,6 +246,7 @@ class BattlefieldModule {
       burgs: [],
       walls: [],
       breaches: [],
+      ladders: [],
       works: [],
       cliffs: [],
       held: null,
@@ -824,10 +845,18 @@ class BattlefieldModule {
 
       const near = (point: Point, [x, y]: Point, distance: number): boolean =>
         Math.hypot(point[0] - x, point[1] - y) < distance;
+      // a gate battered down takes its whole gateway with it, its rubble in the middle of it
+      for (const gap of field.breaches) {
+        const by = gap.burg === index && gap.gate ? gates.find(other => near(other.at, [gap.x, gap.y], gateway)) : null;
+        if (by) [gap.x, gap.y] = by.at;
+      }
+      const broken = (by: { at: Point }): boolean =>
+        field.breaches.some(gap => gap.burg === index && gap.gate && near(by.at, [gap.x, gap.y], 1));
       for (const [a, b] of stretches) {
         const mid: Point = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
         if (field.breaches.some(gap => gap.burg === index && near(mid, [gap.x, gap.y], breach / 2))) continue;
         const by = gates.find(other => near(mid, other.at, gateway / 2));
+        if (by && broken(by)) continue;
         const jamb = Boolean(by) && !gates.some(other => near(mid, other.at, gate / 2));
         field.walls.push({ a, b, burg: index, gate: Boolean(by), jamb, water: by?.water ?? 0 });
       }
@@ -869,6 +898,10 @@ class BattlefieldModule {
       }
     }
     for (const gap of field.breaches) mark([gap.x, gap.y], breach / 2, 3);
+  }
+
+  getBreachWidth(field: Battlefield): number {
+    return this.getOpening(field, BREACH);
   }
 
   /** How wide a gate or a breach is: so many battalion fronts, and two grid nodes at least for the ways to go through */
@@ -942,10 +975,69 @@ class BattlefieldModule {
     return quays;
   }
 
-  /** Knock a gap into the wall of a burg at the point */
-  openBreach(field: Battlefield, burg: number, [x, y]: Point): void {
-    field.breaches.push({ x, y, burg });
+  /** Knock a gap into the wall of a burg at the point, or batter down its gate there */
+  openBreach(field: Battlefield, burg: number, [x, y]: Point, gate = false): void {
+    field.breaches.push({ x, y, burg, gate });
     this.raiseWalls(field);
+  }
+
+  /** Where the besieged hold their walls: over each stretch, in each gate but the sea gates and in each breach, with the way out from it */
+  getWallPosts(field: Battlefield, held: number): WallPost[] {
+    const burg = field.burgs[held];
+    const out = ([x, y]: Point, along: number): number => {
+      const normal = along + Math.PI / 2;
+      const outward = Math.cos(normal) * (x - burg.x) + Math.sin(normal) * (y - burg.y) > 0;
+      return outward ? normal : normal + Math.PI;
+    };
+    const posts = field.walls
+      .filter(wall => wall.burg === held && !wall.jamb && wall.water !== 1) // nobody storms a quay from the water
+      .map(({ a, b, gate }) => {
+        const at: Point = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        return { at, out: out(at, Math.atan2(b[1] - a[1], b[0] - a[0])), opening: gate };
+      });
+    for (const { x, y, burg: own } of field.breaches)
+      if (own === held) posts.push({ at: [x, y], out: Math.atan2(y - burg.y, x - burg.x), opening: true });
+    return posts;
+  }
+
+  /** Where a battalion holding a post stands: just within, its front along the wall's line and its ends too; null if that is not within */
+  toPost(field: Battlefield, { width, depth }: { width: number; depth: number }, { at, out }: WallPost): Point | null {
+    const burg = field.burgs[field.held!];
+    const bow = (width * width) / (8 * burg.radius); // the wall curves away under its ends
+    const back = depth / 2 + Math.min(bow, depth) + field.width / WALL_INSET; // clear of the wall as drawn
+    const point: Point = [at[0] - Math.cos(out) * back, at[1] - Math.sin(out) * back];
+    return this.terrainAt(field, ...point).walled === field.held! + 1 ? point : null;
+  }
+
+  /** How far a burg's edge lies from its middle the way of the angle; its radius where the outline gives none */
+  getEdge(burg: FieldBurg, angle: number): number {
+    const [dx, dy] = [Math.cos(angle), Math.sin(angle)];
+    const { outline } = burg;
+    let far = 0;
+    outline.forEach(([ax, ay], i) => {
+      const [bx, by] = outline[(i + 1) % outline.length];
+      const [ex, ey] = [bx - ax, by - ay];
+      const cross = dx * ey - dy * ex;
+      if (!cross) return;
+      const along = ((ax - burg.x) * ey - (ay - burg.y) * ex) / cross;
+      const share = ((ax - burg.x) * dy - (ay - burg.y) * dx) / cross;
+      if (along > 0 && share >= 0 && share <= 1) far = Math.max(far, along);
+    });
+    return far || burg.radius;
+  }
+
+  /** How far a point lies from a burg's edge, the walls standing or breached */
+  getEdgeGap(burg: FieldBurg, [x, y]: Point): number {
+    const { outline } = burg;
+    if (!outline.length) return Math.max(Math.hypot(x - burg.x, y - burg.y) - burg.radius, 0);
+    let least = Infinity;
+    outline.forEach(([ax, ay], i) => {
+      const [bx, by] = outline[(i + 1) % outline.length];
+      const [dx, dy] = [bx - ax, by - ay];
+      const t = Math.min(Math.max(((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1), 0), 1);
+      least = Math.min(least, Math.hypot(ax + dx * t - x, ay + dy * t - y));
+    });
+    return least;
   }
 
   /** The gates of a burg, as drawn: the stretches of its gateways that are no jambs */
@@ -953,9 +1045,9 @@ class BattlefieldModule {
     return field.walls.filter(wall => wall.burg === burg && wall.gate && !wall.jamb);
   }
 
-  /** The stretches of a burg's wall that engines can breach: neither a gate nor beside one */
-  getSolidWalls(field: Battlefield, burg: number | null): FieldWall[] {
-    return field.walls.filter(wall => wall.burg === burg && !wall.gate);
+  /** The stretches of a burg's wall engines batter, gates among them: a gate battered down is a breach */
+  getBurgWalls(field: Battlefield, burg: number | null): FieldWall[] {
+    return field.walls.filter(wall => wall.burg === burg);
   }
 
   /** The stretches of wall, gates among them, that the straight way between two points crosses */
@@ -1077,7 +1169,7 @@ class BattlefieldModule {
   }
 
   /** How far along the way from a point, as a share of it, it first meets one of the stretches; null when it meets none */
-  getCrossing(works: FieldWork[], from: Point, to: Point): number | null {
+  getCrossing(works: Stretch[], from: Point, to: Point): number | null {
     let first: number | null = null;
     for (const work of works) {
       const point = this.cross(from, to, work.a, work.b);

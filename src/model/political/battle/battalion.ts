@@ -43,6 +43,7 @@ export interface Intent {
   haste: number;
   keep: boolean; // to its place in the formation: there by the end of the round, not in a dash and a wait
   build: boolean; // to work on its stretch of the works
+  steady: boolean; // keeps its facing whatever it strikes or shoots: a garrison on its wall
 }
 
 /** What every battalion sees this tick */
@@ -102,7 +103,8 @@ class BattalionModule {
       facing: order.facing,
       haste: 1,
       keep: false,
-      build: false
+      build: false,
+      steady: false
     };
     const { front } = battle.field;
     const far = (foe: Spot, from: Spot = block): number => Math.hypot(foe.x - from.x, foe.y - from.y);
@@ -152,7 +154,16 @@ class BattalionModule {
       const off = (foe: Block): number =>
         Math.abs(Movement.normalize(Math.atan2(foe.y - block.y, foe.x - block.x) - block.facing));
       const target = grips.find(foe => foe.id === block.target) ?? grips.reduce((a, b) => (off(b) < off(a) ? b : a));
-      return { ...stand, target };
+      return { ...stand, target, steady: Movement.holdsWall(battle, block) };
+    }
+    // on the wall top a garrison battalion stands fast: it fights who comes up to it and shoots from there, going only for
+    // stormers that got in over the walls by its post
+    const isIn = (foe: Block): boolean =>
+      Battlefields.terrainAt(battle.field, foe.x, foe.y).walled === battle.field.held! + 1;
+    const inside = (): boolean => prey.some(foe => isIn(foe) && far(foe, order) - foe.width / 2 <= COUNTER * front);
+    if (Movement.holdsWall(battle, block) && !inside()) {
+      const target = pick(inRange()); // who has nothing to shoot throws
+      return target ? { ...shoot(target), steady: true } : { ...stand, steady: true };
     }
 
     // out of reach of those who come for it; riders keep that far from the foe's front, not its middle

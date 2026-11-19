@@ -29,6 +29,7 @@ import {
   SPENT,
   STARVED,
   STORM_ODDS,
+  THROWN,
   WALLS,
   YIELD
 } from "./battle-balance";
@@ -981,7 +982,7 @@ class BattleModule {
         continue;
       }
 
-      const { target, to, stop, key, shared, shoot, facing, haste, keep, build } = Battalions.decide(
+      const { target, to, stop, key, shared, shoot, facing, haste, keep, build, steady } = Battalions.decide(
         battle,
         block,
         sense
@@ -990,7 +991,7 @@ class BattleModule {
       block.target = target?.id ?? null;
       const fires = shoot && !BattleRules.isIdle(battle[block.side].phase);
       if (fires) shooting.add(block.id);
-      const bearing = target ? Math.atan2(target.y - block.y, target.x - block.x) : facing;
+      const bearing = target && !steady ? Math.atan2(target.y - block.y, target.x - block.x) : facing;
 
       if (build) block.action = "build";
       else if (target && Movement.inContact(battle, block, target)) block.action = "fight";
@@ -1114,7 +1115,8 @@ class BattleModule {
   }
 
   // Walls. A wall stops everybody; a gate lets through whom the burg is open to: all but the besiegers of the burg
-  // the defenders of a siege hold. The besiegers get in by storm, over the walls and through the forced gates, or by a breach.
+  // the defenders of a siege hold. The besiegers get in by storm, foot over the walls on ladders, or by a breach their
+  // engines made in the walls or a gate.
 
   /** The burg a siege is for, where the defenders form up: the one the battle is named after, or the nearest */
   private getHeld(battle: Battle): number | null {
@@ -1132,7 +1134,7 @@ class BattleModule {
     const held = field.held;
     if (held === null || !this.isBattering(battle)) return;
     const engines = Movement.getBatterers(battle);
-    const walls = Battlefields.getSolidWalls(field, held);
+    const walls = Battlefields.getBurgWalls(field, held);
     if (!engines.length || !walls.length) return;
     const burg = field.burgs[held];
     battle.lastLoss = battle.tick; // no lull while the engines are at the walls
@@ -1144,7 +1146,8 @@ class BattleModule {
     const engine = engines.reduce((a, b) => (b.troops > a.troops ? b : a));
     const middle = (wall: FieldWall): [number, number] => [(wall.a[0] + wall.b[0]) / 2, (wall.a[1] + wall.b[1]) / 2];
     const far = (wall: FieldWall): number => Math.hypot(middle(wall)[0] - engine.x, middle(wall)[1] - engine.y);
-    Battlefields.openBreach(field, held, middle(walls.reduce((a, b) => (far(b) < far(a) ? b : a))));
+    const hit = walls.reduce((a, b) => (far(b) < far(a) ? b : a));
+    Battlefields.openBreach(field, held, middle(hit), hit.gate);
     battle.log.push({ tick: battle.tick, event: "breach", side: "attackers", params: { burg: burg.name } });
   }
 
@@ -1153,7 +1156,7 @@ class BattleModule {
     const { field } = battle;
     const { phase } = battle.attackers;
     if (field.held === null || (phase !== "bombardment" && phase !== "storming")) return false; // engines cover a storm too
-    return field.breaches.filter(breach => breach.burg === field.held).length < STORM_ODDS.length - 1; // more make the walls no weaker
+    return this.getBreaches(field) < STORM_ODDS.length - 1; // more make the walls no weaker
   }
 
   /** Where an engine's shots strike the walls it batters: the nearest point of the nearest solid stretch; null if none */
@@ -1161,7 +1164,7 @@ class BattleModule {
     if (!this.isBattering(battle) || !Movement.getBatterers(battle).includes(engine)) return null;
     let best: Point | null = null;
     let least = Infinity;
-    for (const { a, b } of Battlefields.getSolidWalls(battle.field, battle.field.held)) {
+    for (const { a, b } of Battlefields.getBurgWalls(battle.field, battle.field.held)) {
       const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
       const t = Math.min(Math.max(((engine.x - a[0]) * dx + (engine.y - a[1]) * dy) / (dx * dx + dy * dy || 1), 0), 1);
       const point: Point = [a[0] + dx * t, a[1] + dy * t];
@@ -1191,7 +1194,7 @@ class BattleModule {
       const cover =
         (besieging ? 1 / WALLS : shot && (to.wood || to.burg) ? COVER : 1) * Works.getShelter(battle, block, target);
 
-      if (shot) power *= SKIES[battle.weather].shot;
+      if (shot) power *= SKIES[battle.weather].shot * (block.range ? 1 : THROWN.strength);
       else block.impetus = 1 + (block.impetus - 1) * SPENT;
       const bearing = Math.atan2(block.y - target.y, block.x - target.x);
       const angle = Math.abs(Movement.normalize(bearing - target.facing));
@@ -1308,15 +1311,29 @@ class BattleModule {
     let foes = 0;
     let nearest = Infinity;
     const near = AT_HAND * battle.field.front;
+    const walls = this.getWallsHeart(battle, block);
     for (const other of battle.blocks) {
       if (!this.isInOrder(other)) continue;
       const distance = Math.hypot(other.x - block.x, other.y - block.y);
       if (other.side !== block.side) nearest = Math.min(nearest, distance);
       if (distance > near) continue;
       if (other.side === block.side) friends += Battalions.getStrength(other);
-      else if (battle.type !== "bombardment" || other.range) foes += Battalions.getStrength(other); // ships and troops only shoot
+      else if (battle.type !== "bombardment" || other.range) foes += Battalions.getStrength(other) / walls(other); // ships and troops only shoot
     }
     return { friends, foes, nearest };
+  }
+
+  /** A garrison within its walls fears foes outside them as much less as the walls ask stormers to outnumber it */
+  private getWallsHeart(battle: Battle, block: Block): (foe: Block) => number {
+    const { field } = battle;
+    const within = (at: Block): boolean => Battlefields.terrainAt(field, at.x, at.y).walled === field.held! + 1;
+    if (block.side !== "defenders" || !Movement.hasWalls(battle) || !within(block)) return () => 1;
+    const odds = STORM_ODDS[Math.min(this.getBreaches(field), STORM_ODDS.length - 1)];
+    return foe => (within(foe) ? 1 : odds);
+  }
+
+  private getBreaches(field: Battlefield): number {
+    return field.breaches.filter(breach => breach.burg === field.held).length;
   }
 
   /**
@@ -1396,6 +1413,7 @@ class BattleModule {
   /** What speed adds to a blow: a charge's, spent within a round or two at grips; a missile's, the more the nearer it was loosed */
   private getImpetus(battle: Battle, block: Block, target: Block): number {
     if (block.action === "fight") return Math.max(block.impetus, 1);
+    if (!block.range) return 1; // stones thrown from the walls
     const share = Math.hypot(target.x - block.x, target.y - block.y) / Movement.getRange(battle, block, target);
     return Math.min(Math.max(1.5 - share, 0.5), 1.5);
   }
@@ -1448,7 +1466,8 @@ class BattleModule {
     const enemy = battle[BattleRules.enemyOf(side)];
     const troops = sum(regiments, regiment => this.total(regiment));
     const stability = troops ? sum(regiments, regiment => regiment.stability * this.total(regiment)) / troops : 0.5;
-    const ratio = own.power ? enemy.power / own.power : 1;
+    const walls = side === "defenders" && Movement.hasWalls(battle) ? STORM_ODDS[0] : 1; // a garrison trusts its walls
+    const ratio = own.power ? enemy.power / own.power / walls : 1;
     return BattleRules.getInitialMorale(
       ratio,
       stability,

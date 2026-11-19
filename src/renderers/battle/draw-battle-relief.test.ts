@@ -49,21 +49,46 @@ describe("battle relief", () => {
 
   it("marks the knoll as a top and the hollow as a hollow, low field or high", () => {
     for (const relief of [3, 100]) {
-      const heights = group(BattleReliefView.getMarkup(getField(relief), "#fff"), "battleHeights");
+      const heights = group(BattleReliefView.getHeightsMarkup(getField(relief), "#fff"), "battleHeights");
       expect(heights.match(/stroke="none"/g)).toHaveLength(1); // ▲
       expect(heights.match(/fill="none"/g)).toHaveLength(1); // ▽
     }
   });
 
-  it("takes a shallow dip in high ground for no hollow", () => {
+  it("takes a shallow dip in high ground for no hollow, but marks the lowest and the highest land", () => {
+    const field = getField(30, (col, row) => -0.02 * bump(col, row, 85, 30));
+    const heights = group(BattleReliefView.getHeightsMarkup(field, "#fff"), "battleHeights");
+    const at = [...heights.matchAll(/translate\(([\d.]+) [\d.]+\)"><path[^>]*(stroke="none"|fill="none")/g)].map(
+      ([, x, kind]) => [Math.floor(+x / field.cell), kind]
+    );
+    expect(at).toEqual([
+      [COLS - 3, 'stroke="none"'], // ▲ on the east edge the slope rises to
+      [2, 'fill="none"'] // ▽ on the west edge, not in the dip
+    ]);
+  });
+
+  it("marks the lowest and the highest land of a plain slope", () => {
     const heights = group(
-      BattleReliefView.getMarkup(
-        getField(30, (col, row) => -0.02 * bump(col, row, 85, 30)),
+      BattleReliefView.getHeightsMarkup(
+        getField(5, () => 0),
         "#fff"
       ),
       "battleHeights"
     );
-    expect(heights).not.toMatch(/fill="none"/);
+    expect(heights.match(/stroke="none"/g)).toHaveLength(1);
+    expect(heights.match(/fill="none"/g)).toHaveLength(1);
+  });
+
+  it("marks nothing on a field under a height unit high", () => {
+    expect(
+      group(
+        BattleReliefView.getHeightsMarkup(
+          getField(0.5, () => 0),
+          "#fff"
+        ),
+        "battleHeights"
+      )
+    ).not.toMatch(/<path/);
   });
 
   it("draws a low field's hachures and shade fainter than a high one's", () => {

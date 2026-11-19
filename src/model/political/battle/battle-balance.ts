@@ -15,10 +15,12 @@ export const IMPETUS = 6.2; // closing speed in m/s that adds a whole blow again
 export const MAX_IMPETUS = 5;
 export const SPENT = 0.85; // share of a charge's impetus left after each tick at grips
 export const WALLS = 4; // how many times weaker a blow or a shot is from without the walls at those within
-export const BREACH_BLOWS = 185; // the blows that open a breach: what would cut down so many men of defense 1
+export const BREACH_BLOWS = 370; // the blows that open a breach: what would cut down so many men of defense 1
+export const LADDER_ROUNDS = 2; // rounds stormers at the foot of a wall take to raise their ladders
 export const COVER = 0.6; // share of the shots that tell on troops in a wood or a burg
 export const SHELTER = 0.5; // what blows and shots over wagons keep; a charge over any work has no impetus
 export const POINT_BLANK = { shooter: 2, engine: 20 }; // under which they cannot shoot
+export const THROWN = { reach: 25, strength: 0.5 }; // stones and spears from the wall top: metres from the front on the level, share of a shot
 
 // Reach
 
@@ -62,6 +64,7 @@ export const WADING = 0.12; // share of the pace kept in deep water
 export const FORDING = 0.4; // and in a ford
 export const RUBBLE = 0.5; // and over the rubble of a breach
 export const SLOPE_FOOTING = 0.5; // the least of its strength a block keeps on a steep slope
+export const STORM_FOOTING = { wall: 0.25, gate: 0.5 }; // and a stormer on ladders and the wall top, or in a gate it forces
 
 // The generals' odds: own power to the foe's
 

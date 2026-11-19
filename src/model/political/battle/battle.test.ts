@@ -1115,19 +1115,20 @@ describe("battle generals of an ambush, a landing and a siege", () => {
   });
 
   it("has besiegers storm by night walls they only blockade by day: the garrison sees the stormers late", () => {
-    const night = setup("siege", { infantry: 2600, archers: 400 }, { infantry: 900, archers: 600 }, walled());
+    const night = setup("siege", { infantry: 3600, archers: 400 }, { infantry: 900, archers: 600 }, walled());
     night.hour = 1;
     Battles.plan(night);
-    expect(night.attackers.storms).toBe(true);
+    Battles.tick(night);
+    expect(night.attackers.phase).toBe("storming");
     expect(run(night).result!.winner).toBe("attackers");
-    const day = setup("siege", { infantry: 2600, archers: 400 }, { infantry: 900, archers: 600 }, walled());
+    const day = setup("siege", { infantry: 3600, archers: 400 }, { infantry: 900, archers: 600 }, walled());
     Battles.plan(day);
     Battles.tick(day);
     expect(day.attackers.phase).toBe("blockade");
   });
 
   it("has besiegers a little short of the odds weigh storming at once, and engines alone storm nothing", () => {
-    const short = setup("siege", { infantry: 3600, archers: 800 }, { infantry: 900, archers: 600 }, walled());
+    const short = setup("siege", { infantry: 3800, archers: 800 }, { infantry: 900, archers: 600 }, walled());
     Battles.plan(short);
     expect(short.attackers.plan.tactic).toBe("lines"); // too weak to ring the burg in
     expect(short.attackers.storms).toBe(true); // no engines to make a breach: waiting gains nothing
@@ -1136,7 +1137,7 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     expect(run(short).result!.winner).toBe("attackers");
 
     // told to, they ring it in all the same, and the burg is cut off
-    const ringed = setup("siege", { infantry: 3600, archers: 800 }, { infantry: 900, archers: 600 }, walled());
+    const ringed = setup("siege", { infantry: 3800, archers: 800 }, { infantry: 900, archers: 600 }, walled());
     expect(Generals.getTactics(ringed, "attackers")).toEqual(["lines", "ring"]);
     Battles.intervene(ringed, { tick: 0, kind: "tactic", side: "attackers", tactic: "ring" });
     expect(ringed.attackers.plan.tactic).toBe("ring");
@@ -1167,6 +1168,54 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     for (const engine of engines) {
       expect(fromBurg(engine)).toBeGreaterThan(Math.max(...first.map(fromBurg)));
       expect(fromBurg(engine)).toBeLessThanOrEqual(engine.range + burg.radius);
+    }
+  });
+
+  it("draws siege engines up in range of the wall before them, not of the burg's far end, and batters only from there", () => {
+    const field = Battlefields.createEmpty();
+    field.roads.push([
+      [0, 409],
+      [1364, 409]
+    ]);
+    // a narrow burg, its narrow side to the besiegers: the wall before them is far nearer its middle than its radius
+    const outline = Array.from({ length: 24 }, (_, i): [number, number] => {
+      const angle = (i / 24) * Math.PI * 2;
+      return [682.2 + Math.cos(angle) * 40, 409 + Math.sin(angle) * 95];
+    });
+    field.burgs.push({ x: 682.2, y: 409, radius: 95, name: "Burg", group: "city", walled: true, outline });
+    Battlefields.raiseWalls(field);
+    const b = setup("siege", { infantry: 2400, archers: 400, artillery: 200 }, { infantry: 900, archers: 600 }, field);
+    Battles.plan(b);
+    const toWall = (block: Block): number =>
+      Math.min(
+        ...outline.map((a, i) => {
+          const e = outline[(i + 1) % outline.length];
+          const [dx, dy] = [e[0] - a[0], e[1] - a[1]];
+          const t = Math.min(Math.max(((block.x - a[0]) * dx + (block.y - a[1]) * dy) / (dx * dx + dy * dy), 0), 1);
+          return Math.hypot(a[0] + dx * t - block.x, a[1] + dy * t - block.y);
+        })
+      );
+    const engines = b.blocks.filter(block => block.side === "attackers" && block.kind === "machinery");
+    expect(engines.length).toBeGreaterThan(0);
+    for (const engine of engines) expect(toWall(engine), engine.key).toBeLessThanOrEqual(engine.range);
+
+    // out of range of the wall before it, though within range of the burg's far end
+    const [engine] = engines;
+    [engine.x, engine.y] = [682.2 - 40 - engine.range - 20, 409];
+    expect(Math.hypot(engine.x - 682.2, engine.y - 409)).toBeLessThan(engine.range + 95);
+    expect(Movement.getBatterers(b)).not.toContain(engine);
+  });
+
+  it("posts the garrison's engines on the walls before the besiegers, where they reach the furthest", () => {
+    const b = setup("siege", { infantry: 2400, archers: 400 }, { infantry: 900, archers: 300, artillery: 100 }, walled());
+    const burg = b.field.burgs[b.field.held!];
+    const engines = b.blocks.filter(block => block.side === "defenders" && block.kind === "machinery");
+    expect(engines.length).toBeGreaterThan(0);
+    for (const engine of engines) {
+      expect(Movement.holdsWall(b, engine), engine.key).toBe(true);
+      const besiegers = Math.atan2(-Math.sin(b.axis), -Math.cos(b.axis)); // they come along the axis
+      const out = Math.atan2(engine.y - burg.y, engine.x - burg.x);
+      expect(Math.cos(out - besiegers), engine.key).toBeGreaterThan(0.5);
     }
   });
 
@@ -1378,7 +1427,7 @@ describe("battle generals of an ambush, a landing and a siege", () => {
   it("opens no more breaches than weaken the walls", () => {
     const b = setup(
       "siege",
-      { infantry: 800, archers: 300, artillery: 30 },
+      { infantry: 800, archers: 300, artillery: 60 },
       { infantry: 1200, archers: 300 },
       walled()
     );
@@ -1411,8 +1460,7 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     }
   });
 
-  it("has a garrison out of its burg give it up when stormers stand in it", () => {
-    // a sortie in force that fails: the besiegers storm the burg it left empty
+  it("has a garrison give its burg up when stormers stand in it", () => {
     const field = Battlefields.createEmpty();
     const k = 300 / 220;
     field.roads.push([
@@ -1432,24 +1480,23 @@ describe("battle generals of an ambush, a landing and a siege", () => {
       field,
       units: getDefaultMilitaryUnits(),
       populationScale: 1000,
-      attackers: [regiment(1, { infantry: 900, archers: 300, artillery: 60 })],
-      defenders: [regiment(2, { infantry: 1500, archers: 300, cavalry: 300 })]
+      attackers: [regiment(1, { infantry: 2500, archers: 300, artillery: 60 })],
+      defenders: [regiment(2, { infantry: 1500, cavalry: 300 })] // no shooters to keep the walls
     });
     const phases = new Set<string>();
     while (!b.result) {
       Battles.tick(b);
       phases.add(`${b.attackers.phase}/${b.defenders.phase}`);
     }
-    expect(phases).toContain("bombardment/sortie");
-    expect(phases).toContain("storming/surrendering");
+    expect([...phases].some(phase => phase.endsWith("/surrendering"))).toBe(true);
     expect(b.result.winner).toBe("attackers");
-    expect(b.round).toBeLessThan(60);
+    expect(b.round).toBeLessThan(150);
   });
 
   it("has a sortie form up in rows outside a gate before it falls on the foe", () => {
     const b = setup(
       "siege",
-      { infantry: 1200, archers: 300 },
+      { infantry: 1200, archers: 500 },
       { infantry: 1200, archers: 300, cavalry: 300 },
       walled()
     );
@@ -2718,19 +2765,71 @@ describe("battle ways", () => {
     expect(Battlefields.getWallsBetween(field, [456, 273], [456, 91])).toEqual([]);
   });
 
+  it("has a gate battered down open its whole gateway, its rubble in the middle of it", () => {
+    const field = Battlefields.createEmpty();
+    burg(field);
+    const gates = Battlefields.getGates(field, 0);
+    const west = gates.filter(wall => wall.a[0] < 456);
+    const [one] = west;
+    Battlefields.openBreach(field, 0, [(one.a[0] + one.b[0]) / 2, (one.a[1] + one.b[1]) / 2], true);
+    expect(Battlefields.getWallsBetween(field, [456, 273], [273, 273])).toEqual([]); // nothing left of it, jambs neither
+    expect(Battlefields.getGates(field, 0).length).toBe(gates.length - west.length);
+    const [gap] = field.breaches;
+    expect(Math.abs(gap.y - 273)).toBeLessThan(field.cell); // where the road comes in
+  });
+
   it("draws the defenders of a siege up within the walls", () => {
     const b = onField(burg, "siege");
     expect(b.field.held).toBe(0);
     for (const block of b.blocks) expect(within(b, block), block.key).toBe(block.side === "defenders");
   });
 
+  it("mans the walls: shooters and some line troops on them, within and facing out, their fronts on the wall's line", () => {
+    const b = onField(burg, "siege");
+    const toWall = (block: Block): number =>
+      Math.min(
+        ...b.field.walls.map(({ a, b: e }) => {
+          const [dx, dy] = [e[0] - a[0], e[1] - a[1]];
+          const t = Math.min(Math.max(((block.x - a[0]) * dx + (block.y - a[1]) * dy) / (dx * dx + dy * dy), 0), 1);
+          return Math.hypot(a[0] + dx * t - block.x, a[1] + dy * t - block.y);
+        })
+      );
+    const posted = b.blocks.filter(block => block.side === "defenders" && toWall(block) < block.depth * 0.75);
+    expect(posted.some(block => block.kind === "ranged")).toBe(true);
+    expect(posted.some(block => block.kind === "melee")).toBe(true);
+    for (const block of posted) {
+      expect(within(b, block), block.key).toBe(true);
+      expect(toWall(block), block.key).toBeGreaterThan(block.depth / 2 - 1); // not past the wall
+      const out = Math.atan2(block.y - 273, block.x - 456);
+      expect(Math.cos(block.facing - out), block.key).toBeGreaterThan(0.5);
+    }
+  });
+
+  it("has line troops on the walls throw at foes below, a short way from their front, and none in the streets", () => {
+    const b = onField(burg, "siege");
+    const defenders = b.blocks.filter(block => block.side === "defenders" && !block.range);
+    const thrower = defenders.find(block => Movement.holdsWall(b, block))!;
+    const street = defenders.find(block => !Movement.holdsWall(b, block))!;
+    const foe = b.blocks.find(block => block.side === "attackers")!;
+    const place = (gap: number): void => {
+      const far = thrower.depth / 2 + foe.depth / 2 + gap;
+      [foe.x, foe.y] = [thrower.x + Math.cos(thrower.facing) * far, thrower.y + Math.sin(thrower.facing) * far];
+      foe.facing = thrower.facing + Math.PI;
+    };
+    place(15);
+    expect(Movement.canShoot(b, thrower, foe)).toBe(true);
+    expect(Movement.canShoot(b, street, foe)).toBe(false);
+    place(80);
+    expect(Movement.canShoot(b, thrower, foe)).toBe(false);
+  });
+
   it("keeps the besiegers out of the walls till they storm them", () => {
-    const b = onField(burg, "siege", [regiment(1, { infantry: 2400, archers: 400 })]); // enough to carry the walls
+    const b = onField(burg, "siege", [regiment(1, { infantry: 3000, archers: 400 })]); // enough to carry the walls
     for (let i = 0; i < 60; i++) {
       Battles.tick(b);
       if (b.attackers.phase === "storming" || b.attackers.phase === "looting") break;
-      for (const block of b.blocks)
-        expect(within(b, block), `${block.key} at tick ${b.tick}`).toBe(block.side === "defenders");
+      for (const block of b.blocks.filter(block => block.side === "attackers"))
+        expect(within(b, block), `${block.key} at tick ${b.tick}`).toBe(false); // the garrison may sally out
     }
 
     Battles.intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "attack" });
@@ -2743,6 +2842,32 @@ describe("battle ways", () => {
     Battles.replay(b, []);
     expect(b.attackers.casualties).toBeGreaterThan(0);
     expect(b.defenders.casualties).toBeGreaterThan(0);
+  });
+
+  it("has foot storm over the walls on ladders, riders get in by a breach only, and gates stay shut", () => {
+    const storm = (troops: Record<string, number>, breach: boolean): { b: Battle; rodeIn: boolean } => {
+      const b = onField(burg, "siege", [regiment(1, troops)]);
+      if (breach) {
+        const [wall] = Battlefields.getWallsBetween(b.field, [456, 273], [456, 91]);
+        Battlefields.openBreach(b.field, 0, [(wall.a[0] + wall.b[0]) / 2, (wall.a[1] + wall.b[1]) / 2]);
+        Movement.forgetWays(b.field);
+      }
+      Battles.intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "attack" });
+      let rodeIn = false;
+      for (let i = 0; i < 300 && !b.result; i++) {
+        Battles.tick(b);
+        const riders = b.blocks.filter(block => block.side === "attackers" && block.kind === "mounted");
+        if (riders.some(block => within(b, block))) rodeIn = true;
+      }
+      return { b, rodeIn };
+    };
+    const foot = storm({ infantry: 3000 }, false); // too many for the garrison to hold every stretch
+    expect(foot.b.field.ladders.some(ladders => ladders.raised >= 1)).toBe(true);
+    const shut = storm({ infantry: 1200, cavalry: 1200 }, false);
+    expect(shut.rodeIn).toBe(false);
+    const breached = storm({ cavalry: 2400 }, true);
+    expect(breached.b.field.ladders).toEqual([]);
+    expect(breached.rodeIn).toBe(true);
   });
 
   it("lets the garrison out by the gates and nobody through the walls", () => {
@@ -2911,9 +3036,9 @@ describe("battle ways", () => {
       while (!b.result && !b.field.breaches.length) Battles.tick(b);
       return b;
     };
-    // a breach takes so many blows: five half batteries of attack 6 make a sixteenth of one a round, fresh
+    // a breach takes so many blows: five half batteries of attack 6 make a thirty-second of one a round, fresh
     const b = bombard(30);
-    expect(b.round).toBe(17);
+    expect(b.round).toBe(37);
     expect(b.log.some(entry => entry.event === "breach")).toBe(true);
     const { x, y } = b.field.breaches[0];
     expect(b.field.rampart[Battlefields.nodeAt(b.field, x, y)]).toBe(3);
@@ -4216,14 +4341,10 @@ describe("battle second review fixes", () => {
     expect(late.filter(block => block.kind === "mounted").every(block => block.order.role === "reserve")).toBe(true);
   });
 
-  it("stands the garrison of a burg smaller than a node of the grid by its burg, and batters no wall that is all gateway", () => {
+  it("stands the garrison of a burg smaller than a node of the grid by its burg", () => {
     const b = siege({ infantry: 30000, artillery: 300 }, { infantry: 2000 }, walled(12));
     for (const block of b.blocks.filter(block => block.side === "defenders"))
       expect(near(b, block)).toBeLessThan(b.field.front * 3);
-    if (!Battlefields.getSolidWalls(b.field, b.field.held).length) {
-      for (let i = 0; i < ROUND_TICKS * 30 && !b.result; i++) Battles.tick(b);
-      expect(b.battered).toBe(0);
-    }
   });
 
   it("moves a battalion drawn up in the water or a besieger within the walls to the nearest ground, however far", () => {

@@ -1,13 +1,24 @@
 import { FOOT_SPEED } from "@/model/political/military-units";
 import type { MilitaryUnit } from "@/types/military";
 import type { Battle, Block } from "./battle";
-import { CONTACT, FORDING, POINT_BLANK, RUBBLE, SLOPE_FOOTING, WADING } from "./battle-balance";
+import {
+  CONTACT,
+  FORDING,
+  LADDER_ROUNDS,
+  POINT_BLANK,
+  RUBBLE,
+  SLOPE_FOOTING,
+  STORM_FOOTING,
+  THROWN,
+  WADING
+} from "./battle-balance";
 import { BattleRules, type Side } from "./battle-rules";
 import { BattleScale, COLS, ROWS } from "./battle-scale";
 import {
   type Battlefield,
   Battlefields,
   type FieldCliff,
+  type FieldLadders,
   type FieldWall,
   type FieldWork,
   type Terrain,
@@ -179,12 +190,12 @@ class MovementModule {
     const reach = NEAR * battle.field.front + distance + 1;
     const nearby = others.filter(other => Math.abs(other.x - from[0]) <= reach && Math.abs(other.y - from[1]) <= reach);
     const works = battle.field.works.length ? battle.field.works.filter(work => Works.bars(work, block)) : NO_WORKS;
-    /** How far the block goes before its front meets works that bar it */
+    /** How far the block goes before its front meets works that bar it, or a wall it has no ladders up against */
     const short = (cos: number, sin: number): number => {
-      if (!works.length) return distance;
       const front = block.depth / 2;
       const to: Point = [from[0] + cos * (distance + front), from[1] + sin * (distance + front)];
-      const share = Battlefields.getCrossing(works, from, to);
+      const bars = [...works, ...this.getBareWalls(battle, block, from, to)];
+      const share = bars.length ? Battlefields.getCrossing(bars, from, to) : null;
       return share === null ? distance : Math.min(Math.max(share * (distance + front) - front - 0.5, 0), distance);
     };
     let friend = false; // a friend stands in the way straight on
@@ -218,11 +229,16 @@ class MovementModule {
         if (swing && !midstream && this.isWet(battle, block, x, y)) break;
         // nor by a gate when it turns off its way: it would only go back where it came from
         if (Math.abs(swing) > ASKEW && Battlefields.getWallsBetween(battle.field, from, [x, y]).length) break;
-        if (this.isBarred(battle, block, from, [x, y])) break;
+        if (this.isBarred(battle, block, from, [x, y]) || this.isLadderless(battle, block, from, [x, y])) break;
         open = along;
       }
       return open;
     };
+
+    if (this.raiseLadders(battle, block, from, heading)) {
+      [block.vx, block.vy] = [0, 0];
+      return true;
+    }
 
     // straight on, as far as it is open, to close up; then round what is in the way: by the side it took last, further and
     // further, but round a friend by the walls no further than askew: there it waits its turn rather than wander off
@@ -239,6 +255,7 @@ class MovementModule {
       block.vx = Math.cos(heading + swing) * pace;
       block.vy = Math.sin(heading + swing) * pace;
       block.detour = swing ? Math.sign(swing) : open === distance ? 0 : block.detour;
+      this.leaveLadders(battle, block, from);
       return true;
     }
     return false;
@@ -282,6 +299,7 @@ class MovementModule {
    * never further than it sees the target
    */
   getRange(battle: Battle, block: Block, target: Block): number {
+    if (!block.range) return 0;
     const { field } = battle;
     const above =
       Battlefields.getElevation(field, block.x, block.y) - Battlefields.getElevation(field, target.x, target.y);
@@ -291,12 +309,39 @@ class MovementModule {
 
   /** In range and not too close to load and aim */
   canShoot(battle: Battle, block: Block, target: Block): boolean {
-    if (!block.range) return false;
+    if (!block.range) return this.canThrow(battle, block, target);
     const distance = Math.hypot(target.x - block.x, target.y - block.y);
     // beyond the longest range there are no heights to read
     const longest = block.range * Math.sqrt(1 + (2 * (battle.field.relief + WALL_HEIGHT)) / block.range);
     if (distance > longest || distance > this.getRange(battle, block, target)) return false;
     return this.getGap(block, target)[0] >= (block.kind === "machinery" ? POINT_BLANK.engine : POINT_BLANK.shooter);
+  }
+
+  /**
+   * Who holds a post on the walls with nothing to shoot throws stones and spears at foes below: so far from its front,
+   * further from above, never further than it sees
+   */
+  private canThrow(battle: Battle, block: Block, target: Block): boolean {
+    if (!this.holdsWall(battle, block)) return false;
+    const { field } = battle;
+    const above =
+      Battlefields.getElevation(field, block.x, block.y) - Battlefields.getElevation(field, target.x, target.y);
+    const reach = THROWN.reach * Math.sqrt(Math.max(1 + (2 * above) / THROWN.reach, 0));
+    const seen = Sight.isLimited(battle) ? Sight.getSeenAt(battle, target) : Infinity;
+    const gap = this.getGap(block, target)[0];
+    return gap >= POINT_BLANK.shooter && gap <= Math.min(reach, seen);
+  }
+
+  /** A garrison battalion at its post on the walls */
+  holdsWall(battle: Battle, block: Block): boolean {
+    const { field } = battle;
+    const { order } = block;
+    if (block.side !== "defenders" || field.held === null || block.task || order.sent) return false;
+    if (Math.hypot(order.x - block.x, order.y - block.y) >= ARRIVED * field.front) return false;
+    return Battlefields.getWallPosts(field, field.held).some(spot => {
+      const at = Battlefields.toPost(field, block, spot);
+      return at !== null && Math.hypot(at[0] - order.x, at[1] - order.y) < 1;
+    });
   }
 
   /** Ships carry the attackers of a landing to the shallows; from there they wade ashore */
@@ -378,7 +423,8 @@ class MovementModule {
 
   /** Share of its strength a block has on the ground it stands on, in attack and in defence */
   getFooting(battle: Battle, block: Block, terrain: Terrain): number {
-    if (terrain.rampart && terrain.rampart < 3 && this.isClimbing(battle, block)) return 0.5;
+    if (terrain.rampart && terrain.rampart < 3 && this.isClimbing(battle, block))
+      return terrain.rampart === 1 ? STORM_FOOTING.wall : STORM_FOOTING.gate;
     if (terrain.water)
       return this.isAfloat(battle, block, terrain) ? 1 : terrain.water === 1 && !terrain.shallow ? 0.25 : 0.5;
     if (block.type === "aviation") return 1;
@@ -401,7 +447,7 @@ class MovementModule {
         block.side === "attackers" &&
         block.status === "ready" &&
         block.type === "machinery" &&
-        Math.hypot(block.x - burg.x, block.y - burg.y) <= Sight.getReach(battle, block, true) + burg.radius
+        Battlefields.getEdgeGap(burg, [block.x, block.y]) <= Sight.getReach(battle, block, true) // the wall before it
     );
   }
 
@@ -417,21 +463,92 @@ class MovementModule {
     return (
       battle.field.held !== null &&
       block.side === "attackers" &&
-      block.type !== "aviation" &&
+      this.canClimb(block) &&
       (this.isStorming(battle) || this.isRunning(block))
     );
+  }
+
+  /** Foot goes up ladders; riders and engines get in by the breaches only */
+  canClimb(block: Block): boolean {
+    return block.kind === "melee" || block.kind === "ranged";
   }
 
   private canCross(battle: Battle, block: Block, wall: FieldWall): boolean {
     if (block.type === "aviation") return true;
     if (wall.burg !== battle.field.held || block.side === "defenders") return wall.gate;
-    return this.isStorming(battle) || this.isRunning(block);
+    // a gate is shut to the besiegers till their engines batter it down: a breach then
+    return (this.isStorming(battle) || this.isRunning(block)) && !wall.gate && this.canClimb(block);
+  }
+
+  /** The ladders raised or being raised against a stretch of wall, by where the block meets it */
+  private findLadders(battle: Battle, block: Block, { a, b }: FieldWall): FieldLadders | null {
+    const [x, y] = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    const near = (ladders: FieldLadders): boolean =>
+      Math.hypot(ladders.x - x, ladders.y - y) < Math.max(ladders.width, block.width) / 2;
+    return battle.field.ladders.find(near) ?? null;
+  }
+
+  /** The stretches of wall between two points a stormer goes over only by ladders and has none up against */
+  private getBareWalls(battle: Battle, block: Block, from: Point, to: Point): FieldWall[] {
+    if (this.isRunning(block) || !this.isClimbing(battle, block)) return [];
+    return Battlefields.getWallsBetween(battle.field, from, to).filter(
+      wall => !wall.gate && !((this.findLadders(battle, block, wall)?.raised ?? 0) >= 1)
+    );
+  }
+
+  /** A stormer goes over a wall only by ladders up: it raises them where its front meets the wall */
+  private isLadderless(battle: Battle, block: Block, from: Point, to: Point): boolean {
+    return this.getBareWalls(battle, block, from, to).length > 0;
+  }
+
+  /** Work the ladders at the wall the block's front is up against: true while they are not up yet and it stands */
+  private raiseLadders(battle: Battle, block: Block, from: Point, heading: number): boolean {
+    const reach = block.depth / 2 + 1;
+    const [wall] = this.getBareWalls(battle, block, from, [
+      from[0] + Math.cos(heading) * reach,
+      from[1] + Math.sin(heading) * reach
+    ]);
+    if (!wall) return false;
+    const found = this.findLadders(battle, block, wall);
+    const ladders = found ?? {
+      x: (wall.a[0] + wall.b[0]) / 2,
+      y: (wall.a[1] + wall.b[1]) / 2,
+      burg: wall.burg,
+      width: block.width,
+      raised: 0,
+      tick: -1
+    };
+    if (!found) battle.field.ladders.push(ladders);
+    if (ladders.tick !== battle.tick) {
+      ladders.tick = battle.tick;
+      ladders.raised = Math.min(ladders.raised + 1 / (LADDER_ROUNDS * ROUND_TICKS), 1);
+    }
+    return ladders.raised < 1;
+  }
+
+  /** Who goes over a wall on the run leaves ladders where none stood */
+  private leaveLadders(battle: Battle, block: Block, from: Point): void {
+    if (!this.isRunning(block) || !this.isClimbing(battle, block)) return;
+    const wall = Battlefields.getWallsBetween(battle.field, from, [block.x, block.y]).find(wall => !wall.gate);
+    if (!wall || this.findLadders(battle, block, wall)) return;
+    const { a, b, burg } = wall;
+    const [x, y] = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    battle.field.ladders.push({ x, y, burg, width: block.width, raised: 1, tick: battle.tick });
+  }
+
+  /** A garrison in order holds its walls while they are stormed: it fights from them, not out of the gates */
+  private isKeptIn(battle: Battle, block: Block, from: Point, to: Point): boolean {
+    const { field } = battle;
+    if (block.side !== "defenders" || !this.isStorming(battle) || this.isRunning(block)) return false;
+    const within = ([x, y]: Point): boolean => Battlefields.terrainAt(field, x, y).walled === field.held! + 1;
+    return within(from) && !within(to);
   }
 
   /** Whether a wall, a shut gate, a cliff or works of the foe stand between two points for the block */
   private isBarred(battle: Battle, block: Block, from: [number, number], to: [number, number]): boolean {
     const walls = Battlefields.getWallsBetween(battle.field, from, to);
     if (walls.length > 0 && walls.some(wall => !this.canCross(battle, block, wall))) return true;
+    if (this.isKeptIn(battle, block, from, to)) return true;
     return this.isCliffed(battle, block, from, to) || Works.isBarredByWorks(battle, block, from, to);
   }
 

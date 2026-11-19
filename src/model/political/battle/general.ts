@@ -23,7 +23,7 @@ import {
 } from "./battle-balance";
 import { BattleRules, COMMANDS, type Command, FEINT, POSTURES, SIDES, type Side, SURRENDER } from "./battle-rules";
 import { COLS, ROWS } from "./battle-scale";
-import { type Battlefield, Battlefields, type FieldBurg, type FieldWall } from "./battlefield";
+import { type Battlefield, Battlefields, type FieldBurg, type FieldWall, type WallPost } from "./battlefield";
 import { Formations, GAP, type Place, ROW_GAP, TACTICS, type TacticName } from "./formations";
 import { Movement, PACE, type Point, ROUND_TICKS } from "./movement";
 import { Pathfinding } from "./pathfinding";
@@ -57,6 +57,8 @@ const AHEAD = 0.45; // what a place ahead costs a battalion put out of water it 
 const WING = 0.7; // a foe so far from the middle of the line is on a wing
 const LEVEL = 0.7; // so near the line or the place, a battalion counts as level with it
 const APART = 0.7; // garrison battalions keep so far apart in the streets
+const ON_WALLS = 0.5; // of the line troops not holding a gate, the share that man the walls; the rest stand in the streets
+const AT_WALLS = 1.5; // fronts from a post a stormer comes at it: a battalion in the streets goes up to hold it
 const MUSTER_OUT = 1; // the nearest row of a sortie forms up so far out of the gate
 const MUSTER_ROW = 4; // battalions abreast at most
 const MUSTER_FURTHEST = 3; // fronts further out of the gate a sortie may form up to find room
@@ -1225,8 +1227,9 @@ class GeneralModule {
     };
     // the line comes nearer than the ring where the engines behind it would not reach the walls
     const reach = Math.min(...engines.map(block => Sight.getReach(battle, block, true))) - rowGap - 14;
-    let distance = burg.radius + Math.min(this.getRingDistance(battle), Math.max(reach, 80));
-    while (distance > burg.radius + 80 && !inside(distance + depth)) distance -= 14;
+    const edge = Battlefields.getEdge(burg, away); // the walls before the line, not the burg's far end
+    let distance = edge + Math.min(this.getRingDistance(battle), Math.max(reach, 80));
+    while (distance > edge + 80 && !inside(distance + depth)) distance -= 14;
     const frame = {
       x: burg.x + Math.cos(away) * distance,
       y: burg.y + Math.sin(away) * distance,
@@ -1289,9 +1292,10 @@ class GeneralModule {
     const around = (distance: number): Point[] =>
       Array.from({ length: 72 }, (_, i): Point => {
         const angle = (i / 72) * Math.PI * 2;
+        const edge = Battlefields.getEdge(burg, angle); // the walls that way
         return this.onField(field, [
-          burg.x + Math.cos(angle) * (burg.radius + distance),
-          burg.y + Math.sin(angle) * (burg.radius * 0.85 + distance)
+          burg.x + Math.cos(angle) * (edge + distance),
+          burg.y + Math.sin(angle) * (edge + distance)
         ]);
       });
     const spots = around(distance);
@@ -1377,7 +1381,7 @@ class GeneralModule {
     });
   }
 
-  /** The besieged man their walls: shooters where the foe stands, line troops by the gates, the rest in the middle */
+  /** The besieged man their walls: engines, shooters and some line troops on them where the foe stands, line troops in the gates, the rest in the middle */
   private manWalls(battle: Battle, blocks: Block[]): void {
     const burg = battle.field.burgs[battle.field.held!];
     battle.defenders.plan = this.createPlan("garrison", { x: burg.x, y: burg.y, heading: battle.axis + Math.PI }, true);
@@ -1390,38 +1394,58 @@ class GeneralModule {
     const held = field.held!;
     const burg = field.burgs[held];
     const frame = battle.defenders.plan;
-    let nodes = field.walled.map((_, node) => node).filter(node => field.walled[node] === held + 1);
-    if (nodes.some(node => !field.rampart[node])) nodes = nodes.filter(node => !field.rampart[node]);
-    if (!nodes.length) nodes = [Battlefields.nodeAt(field, burg.x, burg.y)]; // a burg smaller than a node of the grid
-
-    const apart = field.front * APART;
-    /** The free spot that scores best, apart from those taken */
-    const take = (score: (point: Point) => number): Point => {
-      let best = Battlefields.nodeCentre(field, nodes[0]);
-      let most = -Infinity;
-      for (const node of nodes) {
-        const point = Battlefields.nodeCentre(field, node);
-        const crowd = sum(taken, other => Math.max(apart - Math.hypot(other[0] - point[0], other[1] - point[1]), 0));
-        const value = score(point) - crowd * 4;
-        if (value > most) [best, most] = [point, value];
-      }
-      taken.push(best);
-      return best;
-    };
-    const gates = Battlefields.getGates(field, held).map(wall => wall.a);
+    const take = this.getStreetTaker(field, taken);
     const toFoe = ([x, y]: Point): number =>
       (x - burg.x) * Math.cos(frame.heading) + (y - burg.y) * Math.sin(frame.heading);
-    const toGate = ([x, y]: Point): number =>
-      gates.length ? -Math.min(...gates.map(gate => Math.hypot(gate[0] - x, gate[1] - y))) : 0;
     const toMiddle = ([x, y]: Point): number => -Math.hypot(x - burg.x, y - burg.y);
     const spots: Record<Block["kind"], (point: Point) => number> = {
       ranged: toFoe,
-      melee: point => toGate(point) + toFoe(point) * 0.3,
+      melee: point => toMiddle(point) + toFoe(point) * 0.3, // the gates have their own
       machinery: point => toMiddle(point) + toFoe(point) * 0.5,
       mounted: toMiddle
     };
-    for (const block of blocks) {
-      const [x, y] = take(spots[block.kind]);
+    const posts = Battlefields.getWallPosts(field, held);
+    /** The free post of the kind that scores best for the block: its front on the wall, facing out; none when all are taken */
+    const manned: [Point, number][] = [];
+    const post = (block: Block, opening: boolean): [Point, number] | null => {
+      // a neighbour on the wall is a width away, and a depth more as far as the wall bends between them
+      const clear = (at: Point, out: number): boolean =>
+        manned.every(([other, turn]) => {
+          const apart = block.width * 1.05 + block.depth * Math.abs(Math.sin(out - turn));
+          return Math.hypot(other[0] - at[0], other[1] - at[1]) >= apart;
+        });
+      let best: [Point, number] | null = null;
+      let most = -Infinity;
+      for (const spot of posts) {
+        if (spot.opening !== opening) continue;
+        const at = Battlefields.toPost(field, block, spot);
+        if (
+          !at ||
+          !clear(at, spot.out) ||
+          taken.some(other => Math.hypot(other[0] - at[0], other[1] - at[1]) < block.width)
+        )
+          continue;
+        if (toFoe(at) > most) [best, most] = [[at, spot.out], toFoe(at)];
+      }
+      if (best) {
+        taken.push(best[0]);
+        manned.push(best);
+      }
+      return best;
+    };
+    let streets = 0; // line troops past the gates so far: every other one goes up on the walls
+    // engines take the walls first, where the foe stands: from their height they reach the furthest; then shooters,
+    // then line troops the gates and some the walls. Ships keep to the water
+    const engine = (block: Block): boolean => block.kind === "machinery" && block.type !== "naval";
+    const rank = (block: Block): number => (engine(block) ? 2 : block.kind === "ranged" ? 1 : 0);
+    const order = [...blocks].sort((a, b) => rank(b) - rank(a));
+    for (const block of order) {
+      let posted = engine(block) || block.kind === "ranged" ? post(block, false) : null;
+      if (block.kind === "melee") {
+        posted = post(block, true);
+        if (!posted && streets++ % Math.round(1 / ON_WALLS) === 0) posted = post(block, false);
+      }
+      const [[x, y], facing] = posted ?? [take(spots[block.kind]), frame.heading];
       const role = block.kind === "mounted" ? "reserve" : ROLES[block.kind];
       const mission = role === "wing" ? "reserve" : role;
       const [across, along] = this.toFrame(frame, { x, y });
@@ -1434,11 +1458,102 @@ class GeneralModule {
         ahead: null,
         x,
         y,
-        facing: frame.heading,
+        facing,
         target: null,
         sent: false
       };
-      [block.x, block.y, block.facing] = [x, y, frame.heading];
+      [block.x, block.y, block.facing] = [x, y, facing];
+    }
+  }
+
+  /** A picker of the free spot in the streets that scores best, apart from those taken; it takes the spot */
+  private getStreetTaker(field: Battlefield, taken: Point[]): (score: (point: Point) => number) => Point {
+    const held = field.held!;
+    const burg = field.burgs[held];
+    let nodes = field.walled.map((_, node) => node).filter(node => field.walled[node] === held + 1);
+    if (nodes.some(node => !field.rampart[node])) nodes = nodes.filter(node => !field.rampart[node]);
+    if (!nodes.length) nodes = [Battlefields.nodeAt(field, burg.x, burg.y)]; // a burg smaller than a node of the grid
+    const apart = field.front * APART;
+    return score => {
+      let best = Battlefields.nodeCentre(field, nodes[0]);
+      let most = -Infinity;
+      for (const node of nodes) {
+        const point = Battlefields.nodeCentre(field, node);
+        const crowd = sum(taken, other => Math.max(apart - Math.hypot(other[0] - point[0], other[1] - point[1]), 0));
+        const value = score(point) - crowd * 4;
+        if (value > most) [best, most] = [point, value];
+      }
+      taken.push(best);
+      return best;
+    };
+  }
+
+  /**
+   * The garrison on its walls: under bombardment who holds a post takes cover in the streets, and goes back up
+   * when it ends; in a storm battalions from the streets and from posts nobody comes at go to those stormers come at.
+   * A garrison battalion's across and along keep its post, its x and y where it stands now
+   */
+  private holdWalls(battle: Battle, own: View, foe: View): void {
+    const { field } = battle;
+    const plan = battle.defenders.plan;
+    const held = field.held!;
+    const posts = Battlefields.getWallPosts(field, held);
+    const reach = field.front;
+    const near = (spot: WallPost, at: { x: number; y: number }): number =>
+      Math.hypot(spot.at[0] - at.x, spot.at[1] - at.y);
+    const postOf = (block: Block): Point => this.toField(plan, block.order.across, block.order.along);
+    const isPosted = (block: Block): boolean => {
+      const [x, y] = postOf(block);
+      return posts.some(spot => near(spot, { x, y }) < block.depth + reach / 2);
+    };
+    // under bombardment those on the walls take cover in the streets, as far from the engines as they find room
+    const bombarded = battle.attackers.phase === "bombardment";
+    const posted = own.ready.filter(
+      block => !block.order.sent && !block.task && block.kind !== "machinery" && isPosted(block)
+    );
+    const engines = foe.ready.filter(block => block.kind === "machinery");
+    const take = this.getStreetTaker(
+      field,
+      own.ready.filter(block => !posted.includes(block)).map(block => [block.order.x, block.order.y])
+    );
+    const cover = ([x, y]: Point): number => Math.min(...engines.map(engine => Math.hypot(engine.x - x, engine.y - y)));
+    for (const block of posted)
+      [block.order.x, block.order.y] = bombarded && engines.length ? take(cover) : postOf(block);
+    if (!Movement.isStorming(battle)) return;
+
+    // the posts stormers come at, the breaches and gates first; who stands in the streets or at a post nobody comes at
+    // goes to those nobody holds
+    const within = (block: Block): boolean => Battlefields.terrainAt(field, block.x, block.y).walled === held + 1;
+    const nearest = (at: { x: number; y: number }): WallPost =>
+      posts.reduce((a, b) => (near(b, at) < near(a, at) ? b : a));
+    const threats = new Set<WallPost>();
+    for (const stormer of foe.ready) {
+      if (within(stormer) || stormer.kind === "machinery") continue;
+      const spot = nearest(stormer);
+      if (near(spot, stormer) <= AT_WALLS * reach) threats.add(spot);
+    }
+    const covers = (block: Block, spot: WallPost, [x, y] = postOf(block)): boolean =>
+      near(spot, { x, y }) < block.width / 2 + block.depth; // its front runs over the post
+    const isThreatened = (block: Block): boolean => [...threats].some(spot => covers(block, spot));
+    const spare = own.ready.filter(
+      block =>
+        (block.kind === "melee" || block.kind === "mounted") &&
+        !block.order.sent &&
+        !block.task &&
+        block.morale >= SHAKEN &&
+        !(isPosted(block) && isThreatened(block))
+    );
+    for (const spot of [...threats].sort((a, b) => Number(b.opening) - Number(a.opening))) {
+      if (!spare.length) return;
+      if (own.ready.some(block => covers(block, spot, [block.order.x, block.order.y]))) continue; // held
+      const block = spare.reduce((a, b) => (near(spot, b) < near(spot, a) ? b : a));
+      const at = Battlefields.toPost(field, block, spot);
+      if (!at) continue;
+      spare.splice(spare.indexOf(block), 1);
+      const { order } = block;
+      [order.x, order.y, order.facing] = [...at, spot.out];
+      [order.across, order.along] = this.toFrame(plan, { x: at[0], y: at[1] });
+      order.mission = "line";
     }
   }
 
@@ -1955,7 +2070,9 @@ class GeneralModule {
     // a burg is stormed at the odds its walls ask for; a storm that lost them by a third is called off
     const need = this.getStormOdds(battle);
     const bold = battle.attackers.storms && !battle.round; // its general thought it through and storms at once
-    const stormers = own.ready.some(block => block.kind === "melee" || block.kind === "mounted"); // engines climb no walls
+    // foot climbs the walls; riders get in by a breach only, engines not at all
+    const breached = battle.field.breaches.some(breach => breach.burg === battle.field.held);
+    const stormers = own.ready.some(block => Movement.canClimb(block) || (block.kind === "mounted" && breached));
     const storm =
       stormers && (phase === "storming" ? odds >= (need * 2) / 3 || this.isOnWalls(battle) : odds >= need || bold);
     if (storm) {
@@ -1991,7 +2108,7 @@ class GeneralModule {
    */
   private getBatteringRounds(battle: Battle, odds: number): number {
     const breaches = battle.field.breaches.filter(breach => breach.burg === battle.field.held).length;
-    if (!Battlefields.getSolidWalls(battle.field, battle.field.held).length) return Infinity; // all gateway: nothing to batter
+    if (!Battlefields.getBurgWalls(battle.field, battle.field.held).length) return Infinity; // all broken: nothing to batter
     const enough = STORM_ODDS.findIndex((_, i) => i >= breaches && odds >= this.getWallsOdds(battle, i));
     const aim = enough < 0 ? STORM_ODDS.length - 1 : enough;
     if (aim <= breaches) return Infinity;
@@ -2408,7 +2525,7 @@ class GeneralModule {
 
   /**
    * Where a stormer goes: the middle of the burg, by the cheapest way from where it stands: over the wall before it, or by
-   * a breach or a gate when one is about as near. So the walls are stormed on a broad front. None once it is within.
+   * a breach when one is about as near: riders only so. So the walls are stormed on a broad front. None once it is within.
    */
   private getEntry(battle: Battle, block: Block): Point | null {
     const { field } = battle;
@@ -2487,6 +2604,7 @@ class GeneralModule {
           if (home) [block.order.x, block.order.y, block.order.facing] = home;
         }
         plan.muster = null;
+        this.holdWalls(battle, own, foe);
         return;
       }
       if (plan.muster) {

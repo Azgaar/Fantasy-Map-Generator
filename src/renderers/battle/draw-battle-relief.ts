@@ -25,6 +25,7 @@ const SHADED_SLOPE = 0.3; // the field's steep slope is shaded as if it were thi
 const PROMINENCE = [0.1, 0.3]; // a top rises this share of the field's rise above the pass to higher ground, so many metres at least; a hollow as deep
 const MOST_TOPS = 5;
 const MOST_HOLLOWS = 3;
+const EXTREME_ROOM = 4; // nodes round the highest and the lowest land kept clear of other marks
 const CLIFF_BAND = 0.8; // of a node either side of a cliff, the relief is left out: the cliff's own mark shows the drop
 
 export interface Surface {
@@ -58,9 +59,15 @@ class BattleReliefRenderer {
       <g class="battleHachures">${this.getHachures(field, surface, this.getLevels(field, surface, ratio, MOST_ROWS), ratio, strength)}</g>
       <g class="battleContours">${this.getContours(field, levels, surface, pt)}</g>
       <g class="battleContourLabels" fill="${INK}" stroke="${halo}" stroke-width="${3 * pt}" stroke-linejoin="round"
-        paint-order="stroke" font-size="${9 * pt}" font-family="Georgia, serif" text-anchor="middle">${this.getLevelLabels(field, levels, surface, pt)}</g>
-      <g class="battleHeights" fill="${INK}" stroke="${halo}" stroke-width="${3 * pt}" stroke-linejoin="round"
-        paint-order="stroke" font-size="${10 * pt}" font-family="Georgia, serif">${this.getHeightMarks(field, ratio, pt)}</g>`;
+        paint-order="stroke" font-size="${9 * pt}" font-family="Georgia, serif" text-anchor="middle">${this.getLevelLabels(field, levels, surface, pt)}</g>`;
+  }
+
+  /** The marks of tops and hollows, drawn over the whole ground */
+  getHeightsMarkup(field: Battlefield, halo: string): string {
+    if (!field.relief) return "";
+    const pt = Battlefields.getPoint(field);
+    return /* html */ `<g class="battleHeights" fill="${INK}" stroke="${halo}" stroke-width="${3 * pt}" stroke-linejoin="round"
+        paint-order="stroke" font-size="${10 * pt}" font-family="Georgia, serif">${this.getHeightMarks(field, getHeightUnitRatio(), pt)}</g>`;
   }
 
   /** The surface the light falls on, how much its slopes are steepened to show their form, and how strongly a field this high is shaded */
@@ -172,7 +179,7 @@ class BattleReliefRenderer {
       .join("");
   }
 
-  /** Tops and hollows: ▲ on the highest node of a hill, ▽ in the lowest of a hollow, each with its height */
+  /** Tops and hollows: ▲ on the highest node of a hill, ▽ in the lowest of a hollow, each with its height; none on a flat field */
   private getHeightMarks(field: Battlefield, ratio: number, pt: number): string {
     const { cols, rows } = field;
     const ground = this.getGround(field);
@@ -195,12 +202,20 @@ class BattleReliefRenderer {
       }
       return false;
     };
+    // an edge is a slope running off the field
+    const inner = (i: number): boolean => {
+      const [col, row] = [i % cols, Math.floor(i / cols)];
+      return col >= 2 && row >= 2 && col < cols - 2 && row < rows - 2 && !field.water[i];
+    };
+    const land = ground.map((_, i) => i).filter(inner);
+    if (!land.length) return "";
+    const extreme = (sign: number): number => land.reduce((a, b) => ((ground[b] - ground[a]) * sign > 0 ? b : a));
+    const [highest, lowest] = [extreme(1), extreme(-1)];
+    if ((ground[highest] - ground[lowest]) * ratio < 1) return ""; // flat
     const pick = (sign: number, most: number): number[] => {
       const found: [node: number, prominence: number][] = [];
       ground.forEach((z, i) => {
-        const [col, row] = [i % cols, Math.floor(i / cols)];
-        if (col < 2 || row < 2 || col >= cols - 2 || row >= rows - 2) return; // an edge is a slope running off the field
-        if (field.water[i] || (sign < 0 && nearWater(i))) return;
+        if (!inner(i) || (sign < 0 && nearWater(i))) return;
         // level ground counts once: the first node of it
         if (neighbours(i).some(n => (ground[n] - z) * sign > 0 || (ground[n] === z && n < i))) return;
         const prominence = this.getProminence(field, ground, i, sign);
@@ -219,9 +234,18 @@ class BattleReliefRenderer {
         ? `<path d="M0 ${-h * 0.62}L${w} ${h * 0.38}H${-w}Z" stroke="none"/>`
         : `<path d="M0 ${h * 0.62}L${w} ${-h * 0.38}H${-w}Z" fill="none" stroke="${INK}" stroke-width="${0.8 * pt}" paint-order="normal"/>`;
       const height = Math.round((field.base + ground[i]) * ratio);
-      return `<g transform="translate(${rn(x, 1)} ${rn(y, 1)})">${sign}<text x="${7 * pt}" dy="0.35em">${height}</text></g>`;
+      const left = x + (7 + 6 * String(height).length) * pt > field.width; // the label would run off the field
+      const label = left ? `x="${-7 * pt}" text-anchor="end"` : `x="${7 * pt}"`;
+      return `<g transform="translate(${rn(x, 1)} ${rn(y, 1)})">${sign}<text ${label} dy="0.35em">${height}</text></g>`;
     };
-    return [...pick(1, MOST_TOPS).map(i => mark(i, true)), ...pick(-1, MOST_HOLLOWS).map(i => mark(i, false))].join("");
+    // the highest and the lowest land always marked, a lesser mark by them left out
+    const apart = (a: number, b: number): boolean =>
+      Math.hypot((a % cols) - (b % cols), Math.floor(a / cols) - Math.floor(b / cols)) > EXTREME_ROOM;
+    const withExtreme = (extreme: number, marks: number[], most: number): number[] =>
+      [extreme, ...marks.filter(i => apart(i, extreme))].slice(0, most);
+    const tops = withExtreme(highest, pick(1, MOST_TOPS), MOST_TOPS);
+    const hollows = withExtreme(lowest, pick(-1, MOST_HOLLOWS), MOST_HOLLOWS);
+    return [...tops.map(i => mark(i, true)), ...hollows.map(i => mark(i, false))].join("");
   }
 
   /**
