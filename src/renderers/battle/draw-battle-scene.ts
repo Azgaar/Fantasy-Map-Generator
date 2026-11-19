@@ -5,7 +5,13 @@ import { Icons } from "@/model/icons";
 import { type Battle, Battles, type Block } from "@/model/political/battle/battle";
 import type { Side } from "@/model/political/battle/battle-rules";
 import { BattleScale } from "@/model/political/battle/battle-scale";
-import { type Battlefield, Battlefields, type FieldWork, type WorkKind } from "@/model/political/battle/battlefield";
+import {
+  type Battlefield,
+  Battlefields,
+  type FieldRiver,
+  type FieldWork,
+  type WorkKind
+} from "@/model/political/battle/battlefield";
 import { Sight } from "@/model/political/battle/sight";
 import { GAP_WAGONS, Works } from "@/model/political/battle/works";
 import { convertSpeed, formatLength, getSpeedUnit } from "@/model/units";
@@ -107,6 +113,10 @@ const REBAKE = 400; // ms at least between bakes of the shade while the sun drif
 
 // the ground
 const INK = "#3d3a33";
+const BURG_NAME_GAP = 10; // points between a burg's name and its walls
+const RIVER_NAME_EM = 0.5; // of the font size, a letter of a river name is about as wide
+const RIVER_NAME_STEPS = 8; // a name's stretch is judged and drawn by this many steps along it
+const RIVER_NAME_TURN = 0.15; // radians a stretch turns before its name moves to the outer side
 const PAPERS = { sea: "#d3e0ea", sky: "#eaf1f7" };
 const EDGE = 0.2; // opacity of the line along the field's edge, within its scene
 const WATER = "#b4cbe2";
@@ -254,9 +264,7 @@ class BattleSceneRenderer {
     for (const label of svg.querySelectorAll<SVGGElement>(".battleLabel"))
       label.setAttribute("transform", this.markAt(+label.dataset.x!, +label.dataset.y!, mark));
     for (const name of svg.querySelectorAll<SVGTextElement>(".battleRiverName")) {
-      name.setAttribute("font-size", String(11 * mark));
-      name.setAttribute("dy", String(-+name.dataset.width! / 2 - 3 * mark));
-      name.setAttribute("stroke-width", String(2.5 * mark));
+      this.sizeRiverName(name, mark);
     }
     const fire = this.getLayer(svg, "battleFire");
     fire?.setAttribute("stroke-width", String(mark));
@@ -629,42 +637,105 @@ class BattleSceneRenderer {
 
   /** Burg names over the burgs of the scene, river names along the field's rivers, left to right */
   private drawLabels(labels: Group, field: Battlefield, ground: Battlefield, [dx, dy]: Point, paper: string): void {
-    const { width, height } = field;
     const pt = this.getPoint(field);
     const box = BattleCamera.getSceneBox(field);
     for (const burg of ground.burgs) {
       // above the burg, or below it when the edge is too close
-      const [x, y] = [burg.x + dx, burg.y + dy];
-      const top = y - burg.radius * 0.9 - 2 * pt;
-      const below = top < box.y + 24 * pt ? y + burg.radius * 0.9 + 13 * pt : top;
-      this.label(labels, field, burg.name, x, below, 13, INK);
+      const ys = burg.outline.map(([, oy]) => oy + dy);
+      const x = burg.x + dx;
+      const top = Math.min(...ys) - BURG_NAME_GAP * pt;
+      const below = top < box.y + 24 * pt ? Math.max(...ys) + (BURG_NAME_GAP + 9) * pt : top;
+      const name = `${burg.name} ${burg.group.toLowerCase()}`;
+      this.label(labels, field, name, x, below, 13, INK);
     }
 
     const course = line<Point>().curve(curveCatmullRom.alpha(0.5));
     field.rivers.forEach((river, i) => {
-      const inside = river.points.filter(
-        ([x, y]) => x > 30 * pt && x < width - 30 * pt && y > 20 * pt && y < height - 20 * pt
-      );
-      if (inside.length < 2 || !river.name) return;
-      if (inside[0][0] > inside.at(-1)![0]) inside.reverse();
-      labels.append("path").attr("id", `battleRiverCourse${i}`).attr("d", course(inside)).attr("fill", "none");
-      labels
+      if (!river.name) return;
+      const stretch = this.getRiverStretch(river, field, (river.name.length * RIVER_NAME_EM + 1) * 11 * pt);
+      if (stretch.length < 2) return;
+      if (stretch[0][0] > stretch.at(-1)![0]) stretch.reverse(); // read left to right
+      // the text runs along the course, a turn to its right puts the bend's outer side above it
+      const below = this.getTurn(stretch) < -RIVER_NAME_TURN;
+      labels.append("path").attr("id", `battleRiverCourse${i}`).attr("d", course(stretch)).attr("fill", "none");
+      const name = labels
         .append("text")
         .attr("class", "battleRiverName")
         .attr("data-width", river.width)
-        .attr("dy", -river.width / 2 - 3 * pt)
-        .attr("font-size", 11 * pt)
+        .attr("data-below", below)
         .attr("font-style", "italic")
         .attr("fill", "#2b3a7c")
         .attr("paint-order", "stroke")
-        .attr("stroke", paper)
-        .attr("stroke-width", 2.5 * pt)
+        .attr("stroke", paper);
+      name
         .append("textPath")
         .attr("href", `#battleRiverCourse${i}`)
         .attr("startOffset", "50%")
         .attr("text-anchor", "middle")
         .text(river.name);
+      this.sizeRiverName(name.node()!, pt);
     });
+  }
+
+  /** A river's name at the size it keeps on screen, off the river's bank */
+  private sizeRiverName(name: SVGTextElement, mark: number): void {
+    const size = 11 * mark;
+    const dy = +name.dataset.width! / 2 + 3 * mark;
+    name.setAttribute("font-size", String(size));
+    name.setAttribute("dy", String(name.dataset.below === "true" ? dy + size * 0.75 : -dy));
+    name.setAttribute("stroke-width", String(2.5 * mark));
+  }
+
+  /**
+   * The part of a river's course within the field, cut to the `length` of it that turns least, all of it when shorter.
+   * Turning is judged a letter or two apart, where it bends the name, not between the course's close points
+   */
+  private getRiverStretch({ points }: FieldRiver, field: Battlefield, length: number): Point[] {
+    const { width, height } = field;
+    const pt = width / 1000;
+    const inside = points.filter(([x, y]) => x > 30 * pt && x < width - 30 * pt && y > 20 * pt && y < height - 20 * pt);
+    if (inside.length < 2) return inside;
+    const samples = this.resample(inside, length / RIVER_NAME_STEPS);
+    if (samples.length <= RIVER_NAME_STEPS) return inside;
+
+    // the course goes on under lakes and the sea, straight and unseen: no name there, none at all without a dry stretch
+    const wet = samples.map(([x, y]) => field.water[Battlefields.nodeAt(field, x, y)] === 1);
+    const turns = samples.map((_, k) =>
+      k && k < samples.length - 1 ? Math.abs(this.getTurn(samples.slice(k - 1, k + 2))) : 0
+    );
+    let [best, least] = [0, Infinity];
+    for (let from = 0; from + RIVER_NAME_STEPS < samples.length; from++) {
+      if (wet.slice(from, from + RIVER_NAME_STEPS + 1).includes(true)) continue;
+      const middle = Math.abs(from + RIVER_NAME_STEPS / 2 - (samples.length - 1) / 2) / samples.length; // ties go to the middle
+      const score = turns.slice(from + 1, from + RIVER_NAME_STEPS).reduce((sum, turn) => sum + turn, 0) + middle * 0.1;
+      if (score < least) [best, least] = [from, score];
+    }
+    return Number.isFinite(least) ? samples.slice(best, best + RIVER_NAME_STEPS + 1) : [];
+  }
+
+  /** Points every `step` along a line, from its start */
+  private resample(points: Point[], step: number): Point[] {
+    const samples: Point[] = [points[0]];
+    let walked = 0; // since the last sample
+    for (let k = 1; k < points.length; k++) {
+      const [[ax, ay], [bx, by]] = [points[k - 1], points[k]];
+      const length = Math.hypot(bx - ax, by - ay);
+      let at = step - walked;
+      for (; at <= length; at += step) samples.push([ax + ((bx - ax) * at) / length, ay + ((by - ay) * at) / length]);
+      walked = length - (at - step);
+    }
+    return samples;
+  }
+
+  /** The signed turning of a line in radians, positive turning clockwise on screen */
+  private getTurn(points: Point[]): number {
+    let turn = 0;
+    for (let k = 1; k < points.length - 1; k++) {
+      const [[ax, ay], [bx, by], [cx, cy]] = [points[k - 1], points[k], points[k + 1]];
+      const [ux, uy, vx, vy] = [bx - ax, by - ay, cx - bx, cy - by];
+      turn += Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy);
+    }
+    return turn;
   }
 
   /** A label in points, kept within the field's view */
