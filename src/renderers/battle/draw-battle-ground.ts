@@ -7,7 +7,7 @@ import { type Battlefield, Battlefields, DRY_LAKE } from "@/model/political/batt
 import { minmax, normalize, rn } from "@/utils/number-utils";
 import { walkLine } from "@/utils/path-utils";
 
-export const PAPER = "#fbf5e9"; // the ground of a biome the map has no colour for
+const PAPER = "#fbf5e9"; // the ground of a biome the map has no colour for
 export const ROAD = [
   ["#a39d90", 5],
   ["#fbf8f1", 2.2]

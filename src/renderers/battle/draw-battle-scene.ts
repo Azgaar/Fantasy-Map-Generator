@@ -61,6 +61,7 @@ type Group = ReturnType<typeof select<SVGGElement, unknown>>;
 export type Positions = Map<number, { x: number; y: number; facing: number }>;
 
 export type SideColors = Record<Side, string>;
+export type StateColors = Record<number, string>; // the flags of allied states, by their ids in the battle
 
 /** Attackers are red and defenders blue by default whatever their states' colours, so the sides never look alike */
 export const SIDE_COLORS: SideColors = { attackers: "#c8473d", defenders: "#3f72b3" };
@@ -78,6 +79,7 @@ export type Trails = Map<number, Point[]>;
 interface Scene {
   look: BattleLook;
   colors: SideColors;
+  flags: StateColors;
   marks: number;
   hovered: number | null; // the battalion under the pointer
   selected: Set<number>;
@@ -212,6 +214,7 @@ class BattleSceneRenderer {
       this.scenes.set(svg, {
         look: DEFAULT_BATTLE_OPTIONS.rendering,
         colors: SIDE_COLORS,
+        flags: {},
         marks: 1,
         hovered: null,
         selected: new Set()
@@ -226,8 +229,8 @@ class BattleSceneRenderer {
   // look
 
   /** What to draw and in which colours; applied at once, by a style the scene and its exports carry */
-  setLook(svg: SVGSVGElement, look: BattleLook, colors: SideColors): void {
-    Object.assign(this.getScene(svg), { look, colors });
+  setLook(svg: SVGSVGElement, look: BattleLook, colors: SideColors, flags: StateColors): void {
+    Object.assign(this.getScene(svg), { look, colors, flags });
     this.baked.delete(svg); // the light may be off or on now
     const style = this.getLayer(svg, "battleLook");
     if (style) style.textContent = this.getLookStyle(look);
@@ -1105,7 +1108,7 @@ class BattleSceneRenderer {
     const flagged = { attackers: allied("attackers"), defenders: allied("defenders") };
     const mark = this.getMark(svg, battle.field);
     const pt = this.getPoint(battle.field);
-    const { colors } = this.getScene(svg);
+    const { colors, flags } = this.getScene(svg);
     const groups = select(svg)
       .select("#battleBlocks")
       .selectAll<SVGGElement, Block>("g.battleBlock")
@@ -1119,7 +1122,7 @@ class BattleSceneRenderer {
         const unit = battle.units.find(u => u.name === block.unit);
         // among allies a battalion flies the colour of its state from its rear corner
         const flag = flagged[block.side]
-          ? `<path class="battleFlag" d="M0 0h-8l2.5 3l-2.5 3h8z" fill="${this.stateColor(block.state)}" stroke="${dark}" stroke-width="0.8"/>`
+          ? `<path class="battleFlag" d="M0 0h-8l2.5 3l-2.5 3h8z" fill="${flags[block.state] ?? "#999"}" stroke="${dark}" stroke-width="0.8"/>`
           : "";
         // the body, the health line along its front edge, the unit icon and the white flag of surrender, both upright,
         // and the glow shown when the battalion is picked
@@ -1566,11 +1569,6 @@ class BattleSceneRenderer {
 
   private darker(fill: string, k: number): string {
     return color(fill)!.darker(k).formatHex();
-  }
-
-  private stateColor(stateId: number): string {
-    const fill = pack.states[stateId]?.color;
-    return fill && fill[0] === "#" ? fill : "#999";
   }
 
   private swing(from: number, to: number): number {

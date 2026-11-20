@@ -176,7 +176,7 @@ class BattleLightRenderer {
   }
 
   private getBaker(): Baker | null {
-    if (this.baker !== undefined) return this.baker;
+    if (this.baker !== undefined && !this.baker?.gl.isContextLost()) return this.baker; // a lost context is made anew
     const canvas = typeof document === "undefined" ? null : document.createElement("canvas");
     const gl = canvas?.getContext?.("webgl2", { preserveDrawingBuffer: true, antialias: false }) ?? null;
     const program = gl && this.compile(gl);

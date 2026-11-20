@@ -153,12 +153,19 @@ class BattleWeatherRenderer {
       heat: +(shown && heat)
     };
     canvas.hidden = this.isEmpty(sky);
+    if (canvas.hidden && !this.layers.has(canvas)) return; // clear skies take no WebGL context
     const layer = this.getLayer(canvas);
     if (!layer) return;
     layer.sky = sky;
     if (layer.running || canvas.hidden) return;
     layer.running = true;
     requestAnimationFrame(time => this.render(canvas, layer, time));
+  }
+
+  /** Give the canvas's WebGL context back: browsers keep only a few */
+  release(canvas: HTMLCanvasElement): void {
+    this.layers.get(canvas)?.gl.getExtension("WEBGL_lose_context")?.loseContext();
+    this.layers.delete(canvas);
   }
 
   private getLayer(canvas: HTMLCanvasElement): Layer | null {

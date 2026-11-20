@@ -6,7 +6,7 @@
  * Re-run when a formation changes. Node 24 imports formations.ts as it is: it only imports types.
  *
  * Usage:
- *   npm run battle-diagrams [-- --only oblique,wedge] [--out docs/wiki] [--svg]
+ *   node scripts/battle-diagrams.mjs [--only oblique,wedge] [--out docs/wiki] [--svg]
  */
 
 import fs from "node:fs";

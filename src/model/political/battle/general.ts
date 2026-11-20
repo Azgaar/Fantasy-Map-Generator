@@ -1003,9 +1003,15 @@ class GeneralModule {
     const shut = (from: Point, to: Point): boolean => Battlefields.getCliffsBetween(field, from, to).length > 0;
     // the generals ask again and again, of copies of the field too: kept by the ground it was found over
     let hash = 2166136261;
-    for (const grid of [field.water, field.marsh, field.ford])
-      for (let i = 0; i < grid.length; i++) hash = (Math.imul(hash ^ grid[i], 16777619) + i) | 0;
-    const key = [hash, field.width, field.frozen, field.cliffs.length, ...straight.flat()].join();
+    const mix = (value: number, i: number) => {
+      hash = (Math.imul(hash ^ value, 16777619) + i) | 0;
+    };
+    for (const grid of [field.water, field.marsh, field.ford]) for (let i = 0; i < grid.length; i++) mix(grid[i], i);
+    for (let i = 0; i < field.elevation.length; i++) mix(Math.round(field.elevation[i] * field.relief * 100), i); // the climbs
+    field.cliffs.forEach(({ a, b }, i) => {
+      for (const value of [...a, ...b]) mix(Math.round(value * 100), i);
+    });
+    const key = [hash, field.width, field.frozen, ...straight.flat()].join();
     let way = this.marches.get(key);
     if (!way) {
       if (this.marches.size >= KEPT_MARCHES) this.marches.clear();
@@ -1063,10 +1069,6 @@ class GeneralModule {
     }
   }
 
-  /**
-   * The ambushers lie by the road and fall on the column: on both sides of it, or all on one side, the better covered,
-   * when their general thinks that ends better. One with shooters may have them shoot from cover first (`waits`)
-   */
   /** The side of the road to lie on alone: where the dash is not barred, then under trees, then the better ground */
   private getLair<T extends { cover: number; hidden: boolean; fits: boolean }>([a, b]: T[]): T {
     if (a.fits !== b.fits) return a.fits ? a : b;
@@ -1074,6 +1076,10 @@ class GeneralModule {
     return b.cover > a.cover ? b : a;
   }
 
+  /**
+   * The ambushers lie by the road and fall on the column: on both sides of it, or all on one side, the better covered,
+   * when their general thinks that ends better. One with shooters may have them shoot from cover first (`waits`)
+   */
   private layAmbush(battle: Battle, blocks: Block[]): void {
     const { field } = battle;
     const sorted = [...blocks].sort((a, b) => a.kind.localeCompare(b.kind) || a.id - b.id);
@@ -1086,6 +1092,7 @@ class GeneralModule {
         : lairs.map((lair, side) => ({ troops: sorted.filter((_, i) => i % 2 === side), frame: lair.frame }));
     const hunting = !battle.defenders.waits; // who shoot first keep where they lie till the column wavers
     for (const { troops, frame } of wings) {
+      if (!troops.length) continue; // a single battalion lies on one side
       const places = Formations.form(troops, TACTICS[tactic], 1, this.reach(field, road.heading) * 1.7, field.front);
       for (const place of places)
         if (hunting && place.role !== "support" && place.role !== "battery") place.mission = "hunt";

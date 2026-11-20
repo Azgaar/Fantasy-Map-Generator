@@ -238,4 +238,26 @@ test.describe("Battle simulator", () => {
     expect(after.troops).toBeLessThan(troops);
     expect(after).toMatchObject({ moved: false, markers, battles: battles + 1, mode: null }); // a war of the year may come too
   });
+
+  test("watches a past battle again once a state that fought it is gone", async ({ page }) => {
+    const { defender } = await startBattle(page);
+    await pickType(page, "field");
+    await orderAttack(page);
+    await stepToEnd(page);
+    await page.locator("#battleApply").click();
+    await expect(page.locator("#battleScreen")).toHaveCount(0);
+
+    const id = await page.evaluate(async state => {
+      const { FMG } = window as any;
+      const battle = FMG.Events.list({ type: "battle" }).at(-1);
+      FMG.States.remove(state);
+      (await FMG.Controllers.BattleScreen).watch(battle.i);
+      return battle.i;
+    }, defender[0]);
+    await expect(page.locator("#battleBanner_defenders .battleStates")).toHaveText(`former state ${defender[0]}`);
+    await page.locator("#battleCancel").click();
+    await expect(page.locator("#battleScreen")).toHaveCount(0);
+    await page.evaluate(async event => (await (window as any).FMG.Controllers.BattleScreen).showRecord(event), id);
+    await expect(page.locator("#battleSummary .battleSummarySide.defenders header b")).toHaveText(`former state ${defender[0]}`);
+  });
 });

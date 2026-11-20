@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { BattleRegiment } from "@/model/political/battle/battle";
+import type { BattleReplay } from "@/model/political/battle/replay";
 import { States } from "@/model/political/states-generator";
-import { Events, type MapEvent, type NewEvent } from "./events";
+import { type BattleEvent, Events, type MapEvent, type NewEvent } from "./events";
 import { Notes } from "./notes";
 
 const war = (start: string, extra: Partial<NewEvent> = {}): NewEvent =>
@@ -85,6 +87,55 @@ describe("Events: the list", () => {
     Events.remapStates(new Map([[1, 4]]));
     expect(Events.get(kept)).toMatchObject({ attackers: [4], defenders: [] });
     expect(Events.get(empty)).toMatchObject({ attackers: [4] });
+  });
+
+  it("keeps a replay's state ids as fought and follows them to the present states; moves it with its battle", () => {
+    const fighter = (state: number, i: number) => ({ state, i }) as BattleRegiment;
+    const replay = {
+      x: 10,
+      y: 20,
+      cell: 3,
+      attackers: [fighter(1, 1)],
+      defenders: [fighter(2, 1)],
+      interventions: [{ tick: 5, kind: "add", side: "defenders", regiment: fighter(3, 2) }]
+    } as unknown as BattleReplay;
+    const id = Events.add({
+      type: "battle",
+      name: "Battle",
+      start: "101",
+      end: "101",
+      cell: 3,
+      x: 10,
+      y: 20,
+      attackers: [1],
+      defenders: [2, 3],
+      winner: null,
+      status: ["stalemate", "stalemate"],
+      replay
+    });
+    const battle = () => Events.get(id) as BattleEvent;
+    const name = (fought: number) => Events.getFoughtState(battle(), fought)?.name;
+    expect([1, 2, 3].map(name)).toEqual(["S1", "S2", "S3"]);
+
+    Events.remapStates(
+      new Map([
+        [0, 0],
+        [1, 2],
+        [3, 1]
+      ])
+    ); // state 2 is gone, 1 and 3 renumbered
+    expect([1, 2, 3].map(name)).toEqual(["S2", undefined, "S1"]);
+    expect(battle().replay!.attackers[0].state).toBe(1); // the replay is as it was fought
+    Events.remapStates(
+      new Map([
+        [0, 0],
+        [1, 1]
+      ])
+    );
+    expect([1, 2, 3].map(name)).toEqual([undefined, undefined, "S1"]);
+
+    Events.relocateBattles(() => ({ x: 30, y: 40, cell: 7 }));
+    expect(battle().replay).toMatchObject({ x: 30, y: 40, cell: 7 });
   });
 
   it("makes an event the user's on any change; its tags are normalized and matched", () => {

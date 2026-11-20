@@ -380,7 +380,7 @@ function getValueTip(tips: ReturnType<typeof getTips>, key: NumberField, value: 
 }
 
 const getLimitText = (allowed: number[] | undefined, type: Limit): string => {
-  if (!allowed?.length) return `<span class="unset">all</span>`;
+  if (!allowed?.length) return `<span class="unset">${t("all")}</span>`;
   return type === "states" ? allowed.map(stateEmblemIcon).join("") : String(allowed.length);
 };
 

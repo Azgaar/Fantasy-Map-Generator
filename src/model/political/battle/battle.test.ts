@@ -942,6 +942,12 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     expect(b.result!.winner).toBe("defenders");
   });
 
+  it("has a single ambushing battalion lie on one side of the road", () => {
+    const b = setup("ambush", { infantry: 900 }, { infantry: 50 }, Battlefields.createEmpty());
+    Battles.plan(b);
+    expect(b.blocks.filter(block => block.side === "defenders")).toHaveLength(1);
+  });
+
   it("has the ambushers weigh lying on both sides of the road against lying on one where both are wooded", () => {
     const field = Battlefields.createEmpty();
     for (let row = 8; row < 52; row++)

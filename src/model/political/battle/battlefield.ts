@@ -557,13 +557,13 @@ class BattlefieldModule {
     return field;
   }
 
-  /** The battle's field of the size its scene was built for: the middle of the scene; burgs that reach it come along */
   /** The node of the scene a node of the field cut from its middle lies on */
   toSceneNode(scene: Battlefield, node: number): number {
     const [left, top] = SURROUND;
     return (Math.floor(node / COLS) + top) * scene.cols + (node % COLS) + left;
   }
 
+  /** The battle's field of the size its scene was built for: the middle of the scene; burgs that reach it come along */
   cut(scene: Battlefield, size: FieldSize): Battlefield {
     const [left, top] = SURROUND;
     const [dx, dy] = [left * scene.cell, top * scene.cell];

@@ -107,6 +107,7 @@ class BattleReportExport {
         const view =
           choice.camera === "field" ? BattleCamera.getSceneBox(field) : BattleCamera.frameTroops(field, troops);
         BattleSceneView.setView(stage.svg, field, view);
+        BattleSceneView.drawLight(stage.svg, battle); // the hour of the keyframe
         BattleSceneView.drawArrows(stage.svg, battle, frames.length ? trails : null);
         const clock = BattleTime.formatClock(battle.hour, battle.tick);
         BattleOverlayView.draw(stage.overlay, { title: source.title, clock, viewWidth: view.width, look: source.look });

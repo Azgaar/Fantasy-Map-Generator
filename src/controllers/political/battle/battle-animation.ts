@@ -7,7 +7,12 @@ import { BattleTime } from "@/model/political/battle/time";
 import { BattleCamera, type Camera, type View } from "@/renderers/battle/battle-camera";
 import { LAMP } from "@/renderers/battle/draw-battle-light";
 import { BattleOverlayView, OVERLAY_HEIGHT, OVERLAY_WIDTH } from "@/renderers/battle/draw-battle-overlay";
-import { BattleSceneView, MOVING_LAYERS, type SideColors } from "@/renderers/battle/draw-battle-scene";
+import {
+  BattleSceneView,
+  MOVING_LAYERS,
+  type SideColors,
+  type StateColors
+} from "@/renderers/battle/draw-battle-scene";
 import { downloadFile } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
 import { log } from "@/utils/logger";
@@ -30,6 +35,7 @@ export interface BattleSource {
   screenWidth: number; // of the field on screen, in device pixels
   look: BattleLook;
   colors: SideColors;
+  flags: StateColors;
 }
 
 export type ExportChoice = BattleOptions["export"];
@@ -308,7 +314,7 @@ class BattleAnimationExport {
   createStage(battle: Battle, source: BattleSource, mode: ExportChoice["camera"]): Stage {
     const svg = document.createElementNS(SVG_NS, "svg");
     const overlay = document.createElementNS(SVG_NS, "svg");
-    BattleSceneView.setLook(svg, source.look, source.colors);
+    BattleSceneView.setLook(svg, source.look, source.colors, source.flags);
     BattleSceneView.drawField(svg, battle.field, battle.scene);
     BattleSceneView.drawLight(svg, battle);
     let camera: Camera = BattleCamera.create(battle.field);

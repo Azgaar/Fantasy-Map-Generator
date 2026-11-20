@@ -3,6 +3,7 @@
 import { Pack } from "@/model/graph/pack-generator";
 import { BattleRules, type Side } from "@/model/political/battle/battle-rules";
 import type { BattleReplay } from "@/model/political/battle/replay";
+import type { State } from "@/model/political/states-generator";
 import { Tags } from "@/model/tags";
 import { t } from "@/utils/i18n";
 import { trimVowels } from "@/utils/language-utils";
@@ -48,6 +49,7 @@ export interface BattleEvent extends EventBase {
   winner: Side | null;
   status: [string, string]; // as the attackers and the defenders see it
   replay?: BattleReplay;
+  fought?: Record<number, number>; // the replay's state ids, kept as fought, to the present ones, 0 for one gone
   regiments?: RegimentRef[]; // the regiments that fought, as they are now: merged ones followed, disbanded ones dropped
 }
 
@@ -261,6 +263,10 @@ class EventsModel {
           );
           if (!event.regiments.length) delete event.regiments;
         }
+        if (event.type === "battle" && event.replay) {
+          const fought = this.getFoughtStates(event.replay);
+          event.fought = Object.fromEntries(fought.map(id => [id, ids.get(event.fought?.[id] ?? id) ?? 0]));
+        }
         if (event.type === "war" && !event.attackers.length && !event.defenders.length) gone.push(event);
       } else if (event.type === "alliance") {
         if (event.states.some(id => !ids.has(id))) gone.push(event);
@@ -338,8 +344,10 @@ class EventsModel {
     const offMap = new Set<number>();
     for (const battle of this.list({ type: "battle" })) {
       const moved = place(battle.x, battle.y);
-      if (moved) Object.assign(battle, moved);
-      else offMap.add(battle.i);
+      if (moved) {
+        Object.assign(battle, moved);
+        if (battle.replay) Object.assign(battle.replay, moved); // refought on its ground as it now lies
+      } else offMap.add(battle.i);
     }
     if (offMap.size) this.removeIds(new Set([...offMap].flatMap(id => [id, ...this.parts(id).map(part => part.i)])));
   }
@@ -399,6 +407,18 @@ class EventsModel {
   }
 
   // wording
+
+  /** The state ids a replayed battle was fought by */
+  getFoughtStates(replay: BattleReplay): number[] {
+    const added = replay.interventions.flatMap(change => (change.kind === "add" ? [change.regiment] : []));
+    return [...new Set([...replay.attackers, ...replay.defenders, ...added].map(regiment => regiment.state))];
+  }
+
+  /** The present state a replayed battle's state id stands for; undefined for one gone */
+  getFoughtState(battle: BattleEvent, id: number): State | undefined {
+    const state = pack.states[battle.fought?.[id] ?? id];
+    return state?.i && !state.removed ? state : undefined;
+  }
 
   /** A state by its present name; a removed one keeps only its id */
   stateName(id: number): string {

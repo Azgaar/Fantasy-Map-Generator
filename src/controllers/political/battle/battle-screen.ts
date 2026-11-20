@@ -47,6 +47,7 @@ import { Works } from "@/model/political/battle/works";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
 import { Stability } from "@/model/political/stability";
+import type { State } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names-generator";
 import { Dates } from "@/model/story/dates";
 import type { BattleEvent } from "@/model/story/events";
@@ -59,6 +60,7 @@ import {
   type Selection,
   SIDE_COLORS,
   type SideColors,
+  type StateColors,
   type Trails
 } from "@/renderers/battle/draw-battle-scene";
 import { BattleWeatherView } from "@/renderers/battle/draw-battle-weather";
@@ -412,12 +414,17 @@ class BattleScreenController {
     this.player.speed = this.battleOptions().view.speed;
     this.cameraMode = this.battleOptions().view.camera;
     this.watching = event;
-    this.renderDialog();
-    this.regiments = new Map();
-    this.selected = [];
-    this.startWatching();
-    this.openScreen();
-    ensureEl("battleLayout").classList.add("watching");
+    try {
+      this.renderDialog();
+      this.regiments = new Map();
+      this.selected = [];
+      this.startWatching();
+      this.openScreen();
+      ensureEl("battleLayout").classList.add("watching");
+    } catch (error) {
+      this.closeBattleScreen(); // not left in the battle mode, which blocks the map
+      throw error;
+    }
   }
 
   /** The summary of a past battle, played out undrawn from its replay */
@@ -433,11 +440,12 @@ class BattleScreenController {
       this.recording = false;
     });
     clearMainTip();
+    if (Events.get(eventId) !== event) return; // the map changed while it played out
     const content = document.createElement("div");
     content.innerHTML = /* html */ `<style>${SUMMARY_STYLE} ${RECORD_STYLE}
         #battleSummary { --attackers: ${SIDE_COLORS.attackers}; --defenders: ${SIDE_COLORS.defenders}; }</style>
       ${BattleReplays.matches(battle, event) ? "" : `<p class="battleRecordDiffers">${RECORD_DIFFERS()}</p>`}
-      <div id="battleSummary">${this.getSummary(battle, false)}</div>`;
+      <div id="battleSummary">${this.getSummary(battle, false, event)}</div>`;
     Dialog.message({
       id: "battleRecord",
       title: event.name,
@@ -1208,16 +1216,24 @@ class BattleScreenController {
       return [...troops].sort((a, z) => z[1] - a[1])[0]?.[0] ?? 0;
     };
     const [attackers, defenders] = SIDES.map(side => {
-      const color = pack.states[leading(side)]?.color;
+      const color = this.stateOf(leading(side))?.color;
       return color && /^#[\da-f]{6}$/i.test(color) ? color : SIDE_COLORS[side];
     });
     return getColorDistance(attackers, defenders) < MIN_CONTRAST ? SIDE_COLORS : { attackers, defenders };
   }
 
+  /** The colours allied states fly, by their ids in the battle on screen */
+  private getFlags(): StateColors {
+    const ids = this.watching?.replay
+      ? Events.getFoughtStates(this.watching.replay)
+      : pack.states.flatMap(({ i, removed }) => (i && !removed ? [i] : []));
+    return Object.fromEntries(ids.map(id => [id, this.stateColor(id)]));
+  }
+
   /** What the scene draws and in which colours, from the options */
   private applyLook(): void {
     this.colors = this.getSideColors(this.battle!);
-    BattleSceneView.setLook(this.scene(), this.battleOptions().rendering, this.colors);
+    BattleSceneView.setLook(this.scene(), this.battleOptions().rendering, this.colors, this.getFlags());
     for (const id of ["battleLayout", "battleLog"])
       for (const side of SIDES) ensureEl(id).style.setProperty(`--${side}`, this.colors[side]);
   }
@@ -1449,7 +1465,7 @@ class BattleScreenController {
   }
 
   private stateColor(state: number): string {
-    const color = pack.states[state]?.color;
+    const color = this.stateOf(state)?.color;
     return color?.[0] === "#" ? color : "#999";
   }
 
@@ -1630,14 +1646,14 @@ class BattleScreenController {
     const banner = ensureEl(`battleBanner_${side}`);
     banner.querySelector(".battleEmblems")!.innerHTML = this.emblems(states);
     const title = banner.querySelector<HTMLElement>(".battleStates")!;
-    title.textContent = list(states.map(state => pack.states[state].name));
-    title.dataset.tip = list(states.map(state => pack.states[state].fullName ?? pack.states[state].name));
+    title.textContent = list(states.map(state => this.stateName(state)));
+    title.dataset.tip = list(states.map(state => this.stateOf(state)?.fullName ?? this.stateName(state)));
 
     const container = el.querySelector<HTMLElement>(".battleRegimentList")!;
     const opened = new Set([...container.querySelectorAll("details[open]")].map(details => details.id));
     container.innerHTML = regiments
       .map(regiment => {
-        const state = pack.states[regiment.state];
+        const state = this.stateOf(regiment.state);
         const upkeep = rn(regiment.upkeep * 100);
         const units = b.units
           .filter(unit => regiment.troops[unit.name])
@@ -1660,21 +1676,33 @@ class BattleScreenController {
               <button class="battleWithdraw icon-user-times" data-tip="${t("Withdraw the regiment: before the start it leaves the battle, after it marches off the field")}"></button>
             </summary>
             <div class="battleUnits">${units}</div>
-            <div class="battleRegimentInfo">${escapeHtml(state.fullName ?? "")} <span class="${upkeep < 100 ? "negative" : ""}" data-tip="${t("Troops fight with this share of their power")}">(${t("upkeep {{upkeep}}%", { upkeep })})</span><br>
+            <div class="battleRegimentInfo">${escapeHtml(state?.fullName ?? "")} <span class="${upkeep < 100 ? "negative" : ""}" data-tip="${t("Troops fight with this share of their power")}">(${t("upkeep {{upkeep}}%", { upkeep })})</span><br>
               <span data-tip="${t("Supply line length, affects morale")}">${t("Distance to base")}: ${regiment.distance} ${escapeHtml(options.map.units.distance.unit)}</span></div>
           </details>`;
       })
       .join("");
   }
 
-  private emblems(states: number[]): string {
+  private emblems(states: number[], event = this.watching): string {
     return states
+      .flatMap(id => this.stateOf(id, event) ?? [])
       .slice(0, 4)
-      .map(state => {
-        void EmblemRenderer.trigger(`stateCOA${state}`, pack.states[state].coa);
-        return `<svg data-tip="${escapeHtml(pack.states[state].fullName ?? "")}" viewBox="0 0 200 200"><use href="#stateCOA${state}"></use></svg>`;
+      .map(({ i, coa, fullName }) => {
+        void EmblemRenderer.trigger(`stateCOA${i}`, coa);
+        return `<svg data-tip="${escapeHtml(fullName ?? "")}" viewBox="0 0 200 200"><use href="#stateCOA${i}"></use></svg>`;
       })
       .join("");
+  }
+
+  /** A state of the battle on screen as it is now: a replay's ids are as fought */
+  private stateOf(id: number, event = this.watching): State | undefined {
+    if (event) return Events.getFoughtState(event, id);
+    const state = pack.states[id];
+    return state && !state.removed ? state : undefined;
+  }
+
+  private stateName(id: number, event = this.watching): string {
+    return this.stateOf(id, event)?.name ?? t("former state {{id}}", { id });
   }
 
   /** The end of the battle over the field, as games show it: who won and at what cost */
@@ -1688,7 +1716,8 @@ class BattleScreenController {
   }
 
   /** `appliable`: the battle on screen can still be applied */
-  private readonly getSummary = (b: Battle, appliable = !this.watching): string => {
+  /** `event`: the past battle it is played from */
+  private readonly getSummary = (b: Battle, appliable = !this.watching, event = this.watching): string => {
     const { winner, status } = Battles.getResult(b);
     const headline = winner ? (winner === "attackers" ? t("Attackers win") : t("Defenders win")) : t("No victor");
     return /* html */ `<div class="${winner ?? ""}">
@@ -1697,7 +1726,7 @@ class BattleScreenController {
           <span class="battleSummaryKicker">${escapeHtml(b.name)}</span>
           <h2>${headline}</h2>
         </header>
-        <div class="battleSummarySides">${SIDES.map((side, i) => this.summarySide(b, side, status[i])).join("")}</div>
+        <div class="battleSummarySides">${SIDES.map((side, i) => this.summarySide(b, side, status[i], event)).join("")}</div>
         <footer>
           <button data-action="restart" class="icon-ccw" data-tip="${t("Play the same battle again from the start")}"> ${t("Play again")}</button>
           ${appliable ? `<button data-action="apply" class="icon-check" data-tip="${t("End battle: apply current results and close the screen")}"> ${t("Apply results")}</button>` : ""}
@@ -1705,7 +1734,7 @@ class BattleScreenController {
       </div>`;
   };
 
-  private summarySide(b: Battle, side: Side, status: string): string {
+  private summarySide(b: Battle, side: Side, status: string, event: BattleEvent | null): string {
     const { regiments } = b[side];
     const states = [...new Set(regiments.map(regiment => regiment.state))];
     const { initial, left, captured } = Battles.getTroops(b, side);
@@ -1734,9 +1763,9 @@ class BattleScreenController {
 
     return /* html */ `<section class="battleSummarySide ${side} ${b.result?.winner === side ? "won" : ""}">
         <header>
-          <span class="battleEmblems">${this.emblems(states)}</span>
+          <span class="battleEmblems">${this.emblems(states, event)}</span>
           <span>
-            <b>${escapeHtml(list(states.map(state => pack.states[state].name)))}</b>
+            <b>${escapeHtml(list(states.map(state => this.stateName(state, event))))}</b>
             <i>${escapeHtml(getOutcomeLabel(status))}</i>
           </span>
         </header>
@@ -2195,6 +2224,7 @@ class BattleScreenController {
       screenWidth: this.scene().getBoundingClientRect().width * devicePixelRatio,
       look: { ...this.battleOptions().rendering },
       colors: shown,
+      flags: this.getFlags(),
       report: {
         heading: [this.watching ? Dates.format(this.watching.start, "long") : `${year} ${era}`, b.place] // a past battle by its own date
           .filter(Boolean)
@@ -2322,6 +2352,8 @@ class BattleScreenController {
     this.pointer = null;
     this.shownTip = null;
     options.app.mode = null; // exit edit mode
+    const weather = findEl<HTMLCanvasElement>("battleWeatherLayer");
+    if (weather) BattleWeatherView.release(weather);
     Dialog.destroy("battleScreen");
     Dialog.destroy("regimentSelectorScreen");
     Dialog.destroy("battleLog");
