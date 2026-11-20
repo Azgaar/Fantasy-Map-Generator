@@ -138,6 +138,14 @@ describe("Events: the list", () => {
     expect(battle().replay).toMatchObject({ x: 30, y: 40, cell: 7 });
   });
 
+  it("gives an event a new id when a loaded file has one that is not a whole number", () => {
+    const kept = Events.add(war("100"));
+    pack.events.push({ ...war("101"), i: '0"><img src=x onerror=alert(1)>' } as unknown as MapEvent);
+    const repairs = Events.repair(() => false);
+    expect(repairs).toHaveLength(1);
+    expect(pack.events.map(event => event.i)).toEqual([kept, kept + 1]);
+  });
+
   it("makes an event the user's on any change; its tags are normalized and matched", () => {
     const id = Events.add({ ...war("100"), tags: ["war", "conquest"], auto: true });
     Events.update(id, { tags: "Conquest, Famous!" });

@@ -351,7 +351,7 @@ A `war` has `attackers` and `defenders`: `number[]`, state ids, the first of eac
 - `winner`: `"attackers" | "defenders" | null`
 - `status`: `[string, string]` - the outcome as the attackers and the defenders see it, such as `attackers victory`
 - `regiments`: `{ state, i }[]` - the regiments that fought, the only record of a regiment's battles. Kept by `Events`: they follow a regiment to its new id when states merge or it is attached to another, and are dropped when it is disbanded or raised anew. Optional
-- `replay`: `BattleReplay` - for a battle that was played: the recipe it is played again from (`src/model/political/battle/replay.ts`): its type, seed, hour, approach, ground, settings and units, the regiments of both sides as they joined, every change made on the way with its tick, what the generals settled on and the tick it was applied at. The field is built anew from the map. Optional
+- `replay`: `BattleReplay` - for a battle that was played: the recipe it is played again from (`src/model/political/battle/replay.ts`): its type, seed, hour, approach, ground, settings and units, the regiments of both sides as they joined, every change made on the way with its tick, what the generals settled on and the tick it was applied at. The field is built anew from the map. Its state ids stay as fought: once states are renumbered (regenerated, or lost in a resample), `fought` maps them to the present ones, `0` for a state gone. Optional
 
 ## Labels
 

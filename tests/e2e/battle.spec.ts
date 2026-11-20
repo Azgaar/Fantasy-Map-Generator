@@ -260,4 +260,32 @@ test.describe("Battle simulator", () => {
     await page.evaluate(async event => (await (window as any).FMG.Controllers.BattleScreen).showRecord(event), id);
     await expect(page.locator("#battleSummary .battleSummarySide.defenders header b")).toHaveText(`former state ${defender[0]}`);
   });
+
+  test("keeps a played battle through a save and a load, and its replay plays out as recorded", async ({ page }) => {
+    await startBattle(page);
+    await pickType(page, "field");
+    await orderAttack(page);
+    await stepToEnd(page);
+    await page.locator("#battleApply").click();
+    await expect(page.locator("#battleScreen")).toHaveCount(0);
+
+    const { id, saved, winner } = await page.evaluate(async () => {
+      const { FMG } = window as any;
+      const battle = FMG.Events.list({ type: "battle" }).at(-1);
+      return { id: battle.i, winner: battle.winner, saved: await FMG.Services.Save.prepareMapData() };
+    });
+    await page.locator("#mapToLoad").setInputFiles({ name: "battle.map", mimeType: "text/plain", buffer: Buffer.from(saved) });
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
+
+    const loaded = await page.evaluate(async event => {
+      const { FMG } = window as any;
+      const battle = FMG.Events.get(event);
+      (await FMG.Controllers.BattleScreen).watch(event);
+      return { winner: battle?.winner, replay: Boolean(battle?.replay) };
+    }, id);
+    expect(loaded).toEqual({ winner, replay: true });
+    await stepToEnd(page);
+    await expect(page.locator("#battleSummary")).toBeVisible();
+    await expect(page.locator("#tooltip")).not.toContainText("no longer plays out as it was recorded");
+  });
 });

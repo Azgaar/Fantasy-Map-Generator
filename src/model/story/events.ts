@@ -310,10 +310,11 @@ class EventsModel {
   repair(misplaced: (x: number, y: number, cell: number) => boolean): string[] {
     const repairs: string[] = [];
     const ids = new Set<number>();
-    let nextId = pack.events.reduce((most, event) => Math.max(most, event.i), -1) + 1;
+    const valid = (id: unknown): id is number => Number.isInteger(id) && (id as number) >= 0;
+    let nextId = pack.events.reduce((most, event) => (valid(event.i) ? Math.max(most, event.i) : most), -1) + 1;
     for (const event of pack.events) {
-      if (ids.has(event.i)) {
-        repairs.push(`Event ${event.i} has non-unique id. Changing to ${nextId}`);
+      if (!valid(event.i) || ids.has(event.i)) {
+        repairs.push(`Event ${String(event.i).slice(0, 20)} has an invalid or non-unique id. Changing to ${nextId}`);
         event.i = nextId++;
       }
       ids.add(event.i);

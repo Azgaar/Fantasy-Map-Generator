@@ -33,7 +33,7 @@ const restore = async () => {
 
 const BASE = { icon: "x", name: "legion", rural: 0.2, urban: 0.1, crew: 1, type: "melee", separate: 0 };
 const OLD_UNIT = { ...BASE, power: 1 };
-const A_UNIT = { ...BASE, attack: 1, defense: 1, speed: 4.3, range: 0, morale: 1 }; // a custom unit attacks and defends with its power, as infantry otherwise
+const A_UNIT = { ...BASE, attack: 1, defense: 1, speed: 4.3, range: 0, morale: 1 }; // a melee unit takes the traits of infantry, scaled to its power
 const A_BURG_GROUP = { name: "My Ports", order: 1, active: true };
 const A_LABEL_GROUP = { name: "My States", type: "state", zoom: { min: 2, max: null } };
 

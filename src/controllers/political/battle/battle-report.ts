@@ -5,7 +5,7 @@ import { Keyframes } from "@/model/political/battle/keyframes";
 import { BattleTime } from "@/model/political/battle/time";
 import { BattleCamera } from "@/renderers/battle/battle-camera";
 import { BattleOverlayView, OVERLAY_HEIGHT, OVERLAY_WIDTH } from "@/renderers/battle/draw-battle-overlay";
-import { BattleSceneView, type Trails } from "@/renderers/battle/draw-battle-scene";
+import { BattleSceneView, MOVING_LAYERS, type Trails } from "@/renderers/battle/draw-battle-scene";
 import type { Point } from "@/types/global";
 import { downloadFile } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
@@ -47,6 +47,14 @@ const PAGE_STYLE = /* css */ `
 `;
 
 const REFERENCE = /(?:href="#|url\(#)([^")]+)/g;
+const UNSEEN = ["battleWorkTips", "battleWallTips"]; // the screen's pointer targets
+const SHARED_SIZE = 2000; // characters of a still layer that keyframes draw from one copy in the page
+
+/** The still layers of the keyframes, kept once in the page by their markup, and the field's definitions */
+interface Shared {
+  layers: Map<string, string>; // markup to the id it is used by
+  defs: string;
+}
 
 class BattleReportExport {
   /** Replay the battle from its start and download the report; false when stopped */
@@ -62,14 +70,14 @@ class BattleReportExport {
       const probe = source.start();
       Battles.replay(probe.battle, probe.script, probe.settled, probe.until);
       const ticks = Keyframes.select(probe.battle.log, text.kinds);
-      const frames = await this.takeKeyframes(source, choice, new Set(ticks), signal, share => onProgress(share, ""));
-      if (!frames) {
+      const taken = await this.takeKeyframes(source, choice, new Set(ticks), signal, share => onProgress(share, ""));
+      if (!taken) {
         onProgress(0, t("Cancelled"));
         return false;
       }
-      const file = new Blob([this.writeReport(source, text, text.summary(probe.battle), frames, probe.battle.hour)], {
-        type: "text/html"
-      });
+      const { frames, shared } = taken;
+      const page = this.writeReport(source, text, text.summary(probe.battle), frames, shared, probe.battle.hour);
+      const file = new Blob([page], { type: "text/html" });
       downloadFile(file, `${source.fileName}-report.html`, file.type);
       onProgress(1, t("Saved: {{size}}", { size: BattleAnimation.formatSize(file.size) }));
       return true;
@@ -86,13 +94,14 @@ class BattleReportExport {
     keys: Set<number>,
     signal: AbortSignal,
     onProgress: (share: number) => void
-  ): Promise<Keyframe[] | null> {
+  ): Promise<{ frames: Keyframe[]; shared: Shared } | null> {
     const { battle, script, settled } = source.start();
     Battles.applyDue(battle, script);
     Battles.plan(battle, settled);
     const stage = BattleAnimation.createStage(battle, source, choice.camera);
     const end = Math.max(...keys);
     const frames: Keyframe[] = [];
+    const shared: Shared = { layers: new Map(), defs: "" };
     let trails: Trails = new Map();
     let logged = 0;
 
@@ -111,7 +120,7 @@ class BattleReportExport {
         BattleSceneView.drawArrows(stage.svg, battle, frames.length ? trails : null);
         const clock = BattleTime.formatClock(battle.hour, battle.tick);
         BattleOverlayView.draw(stage.overlay, { title: source.title, clock, viewWidth: view.width, look: source.look });
-        const content = BattleAnimation.markup([...stage.svg.children]);
+        const content = [...stage.svg.children].map(node => this.share(node, shared)).join("");
         const box = [view.x, view.y, view.width, view.height].map(value => value.toFixed(1)).join(" ");
         const svg = `<svg viewBox="0 0 ${OVERLAY_WIDTH} ${OVERLAY_HEIGHT}" font-family="Georgia, serif"><svg viewBox="${box}" width="${OVERLAY_WIDTH}" height="${OVERLAY_HEIGHT}">${content}</svg>${BattleAnimation.markup([...stage.overlay.children])}</svg>`;
         const lines = battle.log.slice(logged);
@@ -128,7 +137,21 @@ class BattleReportExport {
         await new Promise(resolve => setTimeout(resolve));
       }
     }
-    return frames;
+    return { frames, shared };
+  }
+
+  /** A layer as a keyframe draws it: a big still one by a use of its one copy */
+  private share(node: Element, shared: Shared): string {
+    if (node.getAttribute("display") === "none" || UNSEEN.includes(node.id)) return "";
+    const markup = BattleAnimation.markup([node]);
+    if (node.tagName === "defs") {
+      const content = BattleAnimation.markup([...node.children]);
+      shared.defs ||= content; // found by their ids anywhere in the page
+      return content === shared.defs ? "" : markup;
+    }
+    if (markup.length < SHARED_SIZE || MOVING_LAYERS.includes(node.id)) return markup;
+    if (!shared.layers.has(markup)) shared.layers.set(markup, `reportLayer${shared.layers.size}`);
+    return `<use href="#${shared.layers.get(markup)}"/>`;
   }
 
   private writeReport(
@@ -136,6 +159,7 @@ class BattleReportExport {
     text: ReportText,
     summary: string,
     frames: Keyframe[],
+    shared: Shared,
     hour: number
   ): string {
     const figures = frames
@@ -151,10 +175,12 @@ class BattleReportExport {
       .join("");
     const body = `<main class="report"><header><h1>${escapeHtml(source.title)}</h1><p>${escapeHtml(text.heading)}</p></header>
       <div id="battleSummary">${summary}</div>${figures}</main>`;
-    const symbols = this.collectSymbols(body);
+    const layers = [...shared.layers].map(([markup, id]) => `<g id="${id}">${markup}</g>`).join("");
+    const defs = shared.defs + layers;
+    const symbols = this.collectSymbols(body + defs);
     return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
       <title>${escapeHtml(source.title)}</title><style>${text.style}${PAGE_STYLE}</style></head>
-      <body><svg width="0" height="0" style="position: absolute" aria-hidden="true"><defs>${symbols}</defs></svg>${body}</body></html>`;
+      <body><svg width="0" height="0" style="position: absolute" aria-hidden="true"><defs>${defs}${symbols}</defs></svg>${body}</body></html>`;
   }
 
   /** The page's symbols the report refers to, unit icons and emblems, and what they refer to in turn */
