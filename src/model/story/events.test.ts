@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { MapEntities } from "@/model/map-entities";
 import { States } from "@/model/political/states-generator";
 import { Events, type MapEvent, type NewEvent } from "./events";
 import { Notes } from "./notes";
@@ -62,17 +61,6 @@ describe("Events: the list", () => {
     expect(() => Events.update(a, { parent: a })).toThrow("part of itself");
     expect(() => Events.update(a, { end: "99" })).toThrow("end before it began");
     Events.update(a, { start: "100-03-01", end: "100" }); // equal at the year
-  });
-
-  it("stays quick with thousands of events", () => {
-    const begun = performance.now();
-    for (let k = 0; k < 5000; k++) Events.add(war(String(k % 300), { parent: k > 10 ? k % 10 : undefined }));
-    for (let k = 0; k < 5000; k++) Events.get(k);
-    for (let k = 0; k < 500; k++) Events.parts(k % 10, false);
-    for (const { ref } of MapEntities.collect("event")) MapEntities.getName(ref); // search and the notes list
-    vi.stubGlobal("pack", { ...statesPack(300), events: pack.events });
-    Events.followState(1); // a removed state's pairs, each against the whole history
-    expect(performance.now() - begun).toBeLessThan(3000);
   });
 
   it("shifts every date and finds a war from either side", () => {

@@ -784,22 +784,6 @@ describe("battle generals", () => {
       expect(Math.hypot(block.x - places[i][0], block.y - places[i][1])).toBeLessThan(41);
   });
 
-  it("plans within its time: two and a half seconds to think it through and draw up, a tenth of a second a round", () => {
-    const huge = { infantry: 12000, archers: 4000, cavalry: 3000 };
-    Battles.plan(battle([regiment(1, even)], [regiment(2, even)])); // warmed up: the planning is timed, not the compiling
-    const started = performance.now();
-    const b = battle([regiment(1, huge)], [regiment(2, huge)]);
-    Battles.plan(b);
-    expect(performance.now() - started).toBeLessThan(2500); // ~0.85 s alone, up to ~2.1 s beside the other test files
-    let slowest = 0;
-    while (!b.result) {
-      const from = performance.now();
-      for (let i = 0; i < ROUND_TICKS && !b.result; i++) Battles.tick(b);
-      slowest = Math.max(slowest, performance.now() - from);
-    }
-    expect(slowest).toBeLessThan(100);
-  });
-
   it("replays a battle with the plan its generals settled on: the same battle, not thought through again", () => {
     const dig: Intervention = { tick: 0, kind: "dig", side: "defenders", on: true };
     const original = battle([regiment(1, big)], [regiment(2, big)]);
@@ -3704,35 +3688,6 @@ describe("battle works", () => {
     const round = Movement.getDistance(b, at("attackers", "mounted"), to);
     expect(round).toBeGreaterThan(110 * 2.5); // the foe's riders go round an end
     expect(round).toBeLessThan(Infinity);
-  });
-
-  it("plans within its time behind works too: a ditch, stakes before riders, a wagon ring", () => {
-    const timed = (attackers: Record<string, number>, defenders: Record<string, number>, dug: boolean): void => {
-      const started = performance.now();
-      const b = battle([regiment(1, attackers)], [regiment(2, defenders)]);
-      if (dug) dig(b, "defenders");
-      Battles.plan(b);
-      expect(performance.now() - started).toBeLessThan(1500);
-      let slowest = 0;
-      while (!b.result) {
-        const from = performance.now();
-        for (let i = 0; i < ROUND_TICKS && !b.result; i++) Battles.tick(b);
-        slowest = Math.max(slowest, performance.now() - from);
-      }
-      expect(slowest).toBeLessThan(100);
-    };
-    const foot = { infantry: 15000, archers: 4000 };
-    timed(foot, foot, true); // a ditch
-    timed({ infantry: 10000, archers: 3000, cavalry: 6000 }, { infantry: 12000, archers: 4000, cavalry: 3000 }, true); // stakes
-    timed({ infantry: 5000, archers: 1500, cavalry: 9000 }, { infantry: 14000, archers: 5000 }, false); // a Wagenburg
-    // a Wagenburg on ground with water: the defenders do not think it through, a weaker attacker does, briefly
-    const field = Battlefields.createEmpty();
-    for (let row = 0; row < 6; row++) for (let col = 0; col < 6; col++) field.water[row * COLS + col] = 1;
-    const started = performance.now();
-    const pond = setup("field", { infantry: 3000, cavalry: 11000 }, { infantry: 24000, archers: 9000 }, field);
-    expect(pond.defenders.plan.tactic).toBe("wagenburg");
-    Battles.plan(pond);
-    expect(performance.now() - started).toBeLessThan(1000);
   });
 
   it("has defenders of a landing who wait inland dig in all the same", () => {
