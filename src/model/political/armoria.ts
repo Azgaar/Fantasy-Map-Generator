@@ -4,7 +4,8 @@ import type { CustomIcon } from "@/model/icons";
 import type { HeraldicEmblem } from "@/types/emblems";
 import { t } from "@/utils/i18n";
 
-const GUI = "https://azgaar.github.io/Armoria/";
+const GUI = "https://armoria.vercel.app/";
+const LEGACY_GUI = "https://azgaar.github.io/Armoria/";
 const API = "https://armoria.vercel.app/api";
 const LEGACY_API = /^https?:\/\/armoria\.herokuapp\.com\/?(\?)?/; // retired host of older links
 const FILE_KEYWORD = "armoria-coa";
@@ -33,7 +34,8 @@ function parse(input: string): HeraldicEmblem {
     throw new Error(t("The link is not a valid URL"));
   }
   const isArmoria =
-    (url.origin === new URL(GUI).origin && url.pathname.startsWith("/Armoria")) || url.origin === new URL(API).origin;
+    (url.origin === new URL(LEGACY_GUI).origin && url.pathname.startsWith("/Armoria")) ||
+    url.origin === new URL(GUI).origin;
   // a seed or claim link names no COA, and seeds are not stable across Armoria versions
   if (!isArmoria || !url.searchParams.has("coa")) throw new Error(NOT_ARMORIA);
   return parseCoa(url.searchParams.get("coa") ?? "");

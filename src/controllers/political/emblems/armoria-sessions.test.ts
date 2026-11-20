@@ -2,7 +2,7 @@
 import { expect, it } from "vitest";
 import { ArmoriaSessions } from "./armoria-sessions";
 
-const origin = "https://azgaar.github.io";
+const origin = "https://armoria.vercel.app";
 const update = (session: string, overrides: Record<string, unknown> = {}, from = origin) =>
   new MessageEvent("message", {
     origin: from,
@@ -14,6 +14,7 @@ it("accepts every valid update of a live session, and nothing else", () => {
   const map = {};
   const token = sessions.start("state:1", "state:1", map);
   expect(sessions.receive(update(token, {}, "https://example.com"), map)).toBeNull();
+  expect(sessions.receive(update(token, {}, "https://azgaar.github.io"), map)).toBeNull();
   expect(sessions.receive(update(token, { version: 2 }), map)).toBeNull();
   expect(sessions.receive(update(token, { coa: { charges: [] } }), map)).toBeNull();
   expect(sessions.receive(update("unknown"), map)).toBeNull();
