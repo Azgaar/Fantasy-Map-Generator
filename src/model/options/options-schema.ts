@@ -7,7 +7,7 @@ import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
 import { LANGUAGE_CODES } from "@/data/languages";
 import { MAX_JITTER, SAMPLINGS } from "@/model/graph/lattice";
 import { Icons } from "@/model/icons";
-import { upgradeMilitaryUnit } from "@/model/political/military-units";
+import { upgradeLegacyMilitaryUnit } from "@/model/political/military-units";
 import type { LayerId } from "@/renderers/layers";
 import type { Good } from "@/types/economy";
 import type { HeraldicEmblem } from "@/types/emblems";
@@ -71,7 +71,7 @@ const burgGroup = z.strictObject({
 
 /** a unit saved before v1.159.0 has a single power */
 const militaryUnit = z.preprocess(
-  upgradeMilitaryUnit,
+  upgradeLegacyMilitaryUnit,
   z.strictObject({
     icon: z.string(),
     name: z.string(),

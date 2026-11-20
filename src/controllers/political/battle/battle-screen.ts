@@ -85,7 +85,6 @@ import type { ReportText } from "./battle-report";
 const TICK_MS = 160; // a tick at normal speed: fifty times as fast as the battle
 const MORALE_STEP = 5; // a click on the morale bar adds or takes away
 const SCREEN_SHARE = 0.92; // of the viewport the window may take
-const SPARE = 2; // em left under the army sheets
 const FIELD_WIDTH = 77; // em the battlefield opens at, at most: the window can be dragged larger
 const POSITION = { my: "center", at: "center", of: "svg" };
 
@@ -508,7 +507,7 @@ class BattleScreenController {
       layout.lastElementChild!.getBoundingClientRect().bottom - layout.firstElementChild!.getBoundingClientRect().top;
     const em = parseFloat(style.fontSize) || 12;
     const aroundX = width - stage.offsetWidth;
-    const aroundY = height - layout.clientHeight + content - stage.offsetHeight + SPARE * em;
+    const aroundY = height - layout.clientHeight + content - stage.offsetHeight;
     const maxHeight = viewport.height * SCREEN_SHARE;
     const room = Math.min(
       viewport.width * SCREEN_SHARE - aroundX,

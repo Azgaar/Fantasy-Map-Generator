@@ -2322,9 +2322,6 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
   }
 
   if (isOlderThan("1.159.0")) {
-    // TODO: v1.159.0 reworks battles, migrate old data as a separate effort before the release
-    // don't update during development, as the battles are not yet in the release format
-
     // v1.159.0 keeps wars, alliances and vassalages as events and retires the Relations history
     migrateHistory();
     function migrateHistory(): void {
