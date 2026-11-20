@@ -314,11 +314,11 @@ class BattlefieldModule {
         return {
           land: feature.land,
           lake: feature.type === "lake" ? this.toLakeCode(feature.subtype) : 0,
-          outline: points.length > 2 ? clipPolygon(points, box) : [] // a feature with no outline drawn
+          outline: points.length > 2 ? clipPolygon(points, box) : [], // a feature with no outline drawn
+          area: this.getArea(points) // unclipped: an island and its lake both covering the field clip alike
         };
       })
-      .filter(shape => shape.outline.length > 2)
-      .map(shape => ({ ...shape, area: this.getArea(shape.outline) }));
+      .filter(shape => shape.outline.length > 2);
     // the innermost outline about a point: an island in a lake is land, a lake on it water again
     const shapeAt = (point: Point): (typeof shapes)[number] | undefined => {
       let inner: (typeof shapes)[number] | undefined;

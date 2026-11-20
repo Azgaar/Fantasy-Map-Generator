@@ -1856,8 +1856,8 @@ describe("battle balance", () => {
     return { wins: wins / runs, losses: losses / runs };
   };
 
-  it("favours the stronger side, whichever it is", () => {
-    const strong = { infantry: 780, archers: 260, cavalry: 130 };
+  it("favours the stronger side, whichever it is", { timeout: 30_000 }, () => {
+    const strong = { infantry: 780, archers: 260, cavalry: 130 }; // 48 battles: slow on CI
     expect(share(strong, even).wins).toBeGreaterThan(0.65); // 16 of 24 once the attackers formed up over against the defenders
     expect(share(even, strong).losses).toBeGreaterThan(0.75);
   });

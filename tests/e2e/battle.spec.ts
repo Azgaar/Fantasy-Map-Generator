@@ -33,7 +33,7 @@ async function orderAttack(page: Page) {
 /** The battle log opens from Configure Battle */
 async function openLog(page: Page) {
   await page.locator("#battleConfigureOpen").click();
-  await page.getByRole("button", { name: "Battle log" }).click();
+  await page.locator(".dialog-window:has(#battleConfigure) .icon-list-bullet").click();
   await expect(page.locator("#battleLogList")).toBeVisible();
 }
 
@@ -74,6 +74,7 @@ test.describe("Battle simulator", () => {
 
   test("lets troops be dragged before the battle", async ({ page }) => {
     await startBattle(page);
+    await pickType(page, "field"); // the map's own battle is a siege, whose lines may stack battalions by the coast
     const block = page.locator("#battleScene .battleBlock").first();
     const before = await block.getAttribute("transform");
     const box = (await block.boundingBox())!;
@@ -108,6 +109,7 @@ test.describe("Battle simulator", () => {
 
   test("turns a battalion by 15 degrees on a double click and writes it to the log", async ({ page }) => {
     await startBattle(page);
+    await pickType(page, "field");
     const block = page.locator("#battleScene .battleBlock").first();
     const rotation = async () => +(await block.getAttribute("transform"))!.match(/rotate\(([-\d.]+)\)/)![1];
     const before = await rotation();
@@ -152,7 +154,7 @@ test.describe("Battle simulator", () => {
     await startBattle(page);
     const box = async (selector: string) => (await page.locator(selector).boundingBox())!;
     const stage = await box("#battleStage");
-    expect(Math.abs(stage.width / stage.height - 5 / 3)).toBeLessThan(0.01);
+    expect(Math.abs(stage.width / stage.height - 104 / 64)).toBeLessThan(0.01); // the field and the ground round it
     expect((await box("#battleBanner_defenders")).y).toBeLessThan(stage.y);
     expect((await box("#battleSide_attackers")).y).toBeGreaterThan(stage.y + stage.height);
     expect(stage.x + stage.width).toBeLessThanOrEqual(420);
@@ -208,9 +210,12 @@ test.describe("Battle simulator", () => {
     }
   });
 
-  test("applies the losses to the regiments and marks the battlefield", async ({ page }) => {
+  test("applies the losses to the regiments and writes the battle as an event", async ({ page }) => {
     const { attacker, defender, troops } = await startBattle(page);
-    const markers = await page.evaluate(() => (window as any).pack.markers.length);
+    const [markers, battles] = await page.evaluate(() => {
+      const { pack } = window as any;
+      return [pack.markers.length, pack.events.filter((event: any) => event.type === "battle").length];
+    });
     await pickType(page, "field");
     await orderAttack(page);
     await stepToEnd(page);
@@ -226,13 +231,13 @@ test.describe("Battle simulator", () => {
           troops: regiments[0].a + regiments[1].a,
           moved: regiments.some((r: any) => "px" in r),
           markers: pack.markers.length,
-          type: pack.markers.at(-1).type,
+          battles: pack.events.filter((event: any) => event.type === "battle").length,
           mode: options.app.mode
         };
       },
       [attacker, defender]
     );
     expect(after.troops).toBeLessThan(troops);
-    expect(after).toMatchObject({ moved: false, markers: markers + 1, type: "battlefields", mode: null });
+    expect(after).toMatchObject({ moved: false, markers, battles: battles + 1, mode: null }); // a war of the year may come too
   });
 });
