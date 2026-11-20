@@ -25,6 +25,7 @@ export interface BattleContext {
   getSource: () => BattleSource & { report: ReportText };
   pause: () => void;
   toggleLog: () => void;
+  watching: boolean;
 }
 
 interface Control {
@@ -447,6 +448,7 @@ class BattleConfigureController {
     const report = options.app.battle.export.format === "report";
     for (const key of ["quality", "speed"])
       ensureEl<HTMLSelectElement>(`battleConfigure_export_${key}`).disabled = report; // a report has neither
+    this.lockFixed();
   }
 
   private change(input: Input): void {
@@ -511,10 +513,20 @@ class BattleConfigureController {
   private setBusy(busy: boolean): void {
     const dialog = findEl("battleConfigure");
     if (!dialog) return;
-    for (const set of dialog.querySelectorAll("fieldset")) set.disabled = busy;
-    for (const button of dialog.querySelectorAll<HTMLButtonElement>("[data-reset]")) button.disabled = busy;
+    this.lockFixed(busy);
     ensureEl("battleConfigureSave").textContent = busy ? t("Stop") : t("Save");
     if (!busy) this.refresh();
+  }
+
+  /** Nothing changes while recording; a replay's simulation stays as it was fought */
+  private lockFixed(busy = Boolean(this.recording)): void {
+    const dialog = findEl("battleConfigure");
+    if (!dialog) return;
+    for (const section of dialog.querySelectorAll<HTMLElement>("details[data-group]")) {
+      const locked = busy || (section.dataset.group === "simulation" && Boolean(this.context?.watching));
+      section.querySelector("fieldset")!.disabled = locked;
+      section.querySelector<HTMLButtonElement>("[data-reset]")!.disabled = locked;
+    }
   }
 
   /** The battle screen closes: so does the dialog */

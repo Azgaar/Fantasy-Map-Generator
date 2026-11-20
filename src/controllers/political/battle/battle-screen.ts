@@ -143,7 +143,8 @@ const RECORD_STYLE = /* css */ `
 
 const STYLE = /* css */ `
   /* a past battle watched again: it plays, nothing in it is changed */
-  #battleLayout.watching :is(#battleScene, #battleOverlay, .battleDie, .battlePicker, #battleName, .battleAddRegiment, .battleWithdraw) { pointer-events: none; }
+  #battleLayout.watching :is(#battleScene, #battleOverlay, .battleDie) { pointer-events: none; }
+  #battleLayout.watching .battleDie { opacity: 0.5; }
   #battleLayout.watching :is(#battleRoll, #battleApply, #battleNameTools, .battleOrdersButton, .battleMoraleStep, .battleAddRegiment, .battleWithdraw) { display: none; }
   #battleScreen { padding: 0.5em; overflow: hidden; container: battle / size; }
   #battleLayout { --line: #ccc; --muted: #666; --loss: #c5221f; display: flex; flex-direction: column; gap: 0.5em; box-sizing: border-box; width: auto; height: 100%; overflow-y: auto; }
@@ -206,7 +207,7 @@ const STYLE = /* css */ `
   .battleDie:hover > rect { stroke: #333; }
   #battleName { position: relative; width: 16em; max-width: 100%; }
   #battleNameFull { width: 100%; padding: 0 0.4em; border-color: transparent; background: none; font-size: 1.15em; font-weight: bold; text-align: center; text-overflow: ellipsis; }
-  #battleNameFull:hover, #battleNameFull:focus { border-color: #abadb3; background: #fff; }
+  #battleNameFull:not(:disabled):is(:hover, :focus) { border-color: #abadb3; background: #fff; }
   #battleNameTools { position: absolute; top: 0; right: 0; bottom: 0; display: none; background: #fff; }
   #battleName:hover > #battleNameTools, #battleName:focus-within > #battleNameTools { display: flex; }
 
@@ -493,6 +494,11 @@ class BattleScreenController {
 
   /** Size the window by what really stands around the battlefield: as large a plan as the screen has room for */
   private fitDialog(): void {
+    this.fitDialogOnce();
+    this.fitDialogOnce(); // the guessed width stacks the sheets and the header: measure again at the fitted one
+  }
+
+  private fitDialogOnce(): void {
     const frame = ensureEl("battleScreen").closest<HTMLElement>(".dialog-window")!;
     const layout = ensureEl("battleLayout");
     const stage = ensureEl("battleStage");
@@ -758,7 +764,8 @@ class BattleScreenController {
         onChange: group => this.applyOptions(group),
         getSource: () => this.getSource(),
         pause: () => this.pause(),
-        toggleLog: () => this.toggleLog()
+        toggleLog: () => this.toggleLog(),
+        watching: this.watching !== null
       })
     );
     ensureEl<HTMLInputElement>("battleNameFull").addEventListener("change", event => {
@@ -1468,11 +1475,12 @@ class BattleScreenController {
 
     const started = b.tick > 0;
     const over = Boolean(b.result);
+    const watching = this.watching !== null; // a replay is watched as it was fought
     const type = ensureEl<HTMLButtonElement>("battleType");
     type.className = `icon-button-${b.type}`;
     type.textContent = BATTLE_TYPE_LABELS[b.type];
-    type.disabled = started; // the ground is of the type the battle began as
-    type.dataset.tip = started ? t("Battle type") : sentences(t("Battle type"), t("Click to change"));
+    type.disabled = started || watching; // the ground is of the type the battle began as
+    type.dataset.tip = type.disabled ? t("Battle type") : sentences(t("Battle type"), t("Click to change"));
     for (const button of type.nextElementSibling!.children) {
       button.classList.toggle("current", (button as HTMLElement).dataset.type === b.type);
     }
@@ -1480,7 +1488,8 @@ class BattleScreenController {
     weather.className = `icon-button-${b.weather}`;
     const conditions = CONDITIONS.filter(condition => b[condition]).map(condition => CONDITION_WORDS[condition]);
     weather.textContent = [WEATHER_LABELS[b.weather], ...conditions].join(", ");
-    weather.dataset.tip = sentences(t("Weather and ground"), t("Click to change"));
+    weather.disabled = watching;
+    weather.dataset.tip = watching ? t("Weather and ground") : sentences(t("Weather and ground"), t("Click to change"));
     for (const button of weather.nextElementSibling!.children as HTMLCollectionOf<HTMLElement>) {
       const condition = button.dataset.condition as Condition | undefined;
       button.classList.toggle("current", condition ? b[condition] : button.dataset.weather === b.weather);
@@ -1489,14 +1498,17 @@ class BattleScreenController {
     this.drawLight();
     const name = ensureEl<HTMLInputElement>("battleNameFull");
     if (document.activeElement !== name) name.value = b.name;
+    name.disabled = watching;
 
     const footer = ensureEl("battleFooter");
     const clock = ensureEl<HTMLButtonElement>("battleClock");
     this.put(footer, "#battleClock", BattleTime.formatClock(b.hour, b.tick));
-    clock.disabled = started; // the battle began at its hour
+    clock.disabled = started || watching; // the battle began at its hour
     clock.dataset.tip = started
       ? t("Round {{round}}", { round: Math.floor(b.tick / ROUND_TICKS) + 1 })
-      : sentences(t("Time of day the battle starts at"), t("Click to change"));
+      : watching
+        ? t("Time of day the battle starts at")
+        : sentences(t("Time of day the battle starts at"), t("Click to change"));
     for (const button of clock.nextElementSibling!.children as HTMLCollectionOf<HTMLElement>)
       button.classList.toggle("current", +button.dataset.hour! === b.hour);
     if (!over) ensureEl("battleSummary").hidden = true;
