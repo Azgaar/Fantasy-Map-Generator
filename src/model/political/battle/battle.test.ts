@@ -1178,6 +1178,19 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     }
   });
 
+  it("brings the end of siege lines that runs into the sea ashore without stacking its battalions", () => {
+    const field = walled();
+    for (let row = 41; row < ROWS; row++) for (let col = 0; col < COLS; col++) field.water[row * COLS + col] = 1;
+    const b = setup("siege", { infantry: 2400, archers: 400, cavalry: 400 }, { infantry: 900, archers: 600 }, field);
+    Battles.plan(b);
+    expect(b.attackers.plan.tactic).toBe("lines");
+    const own = b.blocks.filter(block => block.side === "attackers");
+    expect(own.every(block => !b.field.water[Battlefields.nodeAt(b.field, block.x, block.y)])).toBe(true);
+    for (const [i, a] of own.entries())
+      for (const other of own.slice(i + 1))
+        expect(Math.hypot(a.x - other.x, a.y - other.y), `${a.key} on ${other.key}`).toBeGreaterThan(a.width / 2);
+  });
+
   it("draws siege engines up in range of the wall before them, not of the burg's far end, and batters only from there", () => {
     const field = Battlefields.createEmpty();
     field.roads.push([

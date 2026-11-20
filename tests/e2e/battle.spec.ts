@@ -74,7 +74,6 @@ test.describe("Battle simulator", () => {
 
   test("lets troops be dragged before the battle", async ({ page }) => {
     await startBattle(page);
-    await pickType(page, "field"); // the map's own battle is a siege, whose lines may stack battalions by the coast
     const block = page.locator("#battleScene .battleBlock").first();
     const before = await block.getAttribute("transform");
     const box = (await block.boundingBox())!;
@@ -109,7 +108,6 @@ test.describe("Battle simulator", () => {
 
   test("turns a battalion by 15 degrees on a double click and writes it to the log", async ({ page }) => {
     await startBattle(page);
-    await pickType(page, "field");
     const block = page.locator("#battleScene .battleBlock").first();
     const rotation = async () => +(await block.getAttribute("transform"))!.match(/rotate\(([-\d.]+)\)/)![1];
     const before = await rotation();

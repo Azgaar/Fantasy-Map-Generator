@@ -1558,7 +1558,8 @@ class GeneralModule {
 
   /**
    * Nobody is drawn up in the water, a ford neither, nor a besieger within the walls: such a block steps to the nearest
-   * ground, rather back than forward. Ships put out to the nearest water they sail, however far
+   * ground, rather back than forward, and not on a battalion of its side standing there. Ships put out to the nearest
+   * water they sail, however far
    */
   settle(battle: Battle, blocks = battle.blocks): void {
     const { field } = battle;
@@ -1568,19 +1569,26 @@ class GeneralModule {
       (block.side === "attackers" &&
         field.held !== null &&
         field.walled[Battlefields.nodeAt(field, x, y)] === field.held + 1); // besiegers stand outside the walls
-    for (const block of blocks) {
-      if (!shunned(block, block.x, block.y)) continue;
+    const radius = (block: Block): number => Math.max(block.width, block.depth) / 2;
+    const unsettled = new Set(blocks.filter(block => shunned(block, block.x, block.y)));
+    const standing = battle.blocks.filter(
+      block => !unsettled.has(block) && (block.status === "ready" || block.status === "routed")
+    );
+    for (const block of unsettled) {
+      const own = standing.filter(other => other.side === block.side);
+      const taken = (x: number, y: number): boolean =>
+        own.some(other => Math.hypot(other.x - x, other.y - y) < radius(block) + radius(other));
       const forward = block.side === "attackers" ? battle.axis : battle.axis + Math.PI;
       const node = Battlefields.nodeAt(field, block.x, block.y);
       const col = node % COLS;
       const row = (node - col) / COLS;
-      const find = (span: number): Point | null => {
+      const find = (span: number, spaced = true): Point | null => {
         let best: Point | null = null;
         let least = Infinity;
         for (let y = Math.max(row - span, 0); y <= Math.min(row + span, ROWS - 1); y++) {
           for (let x = Math.max(col - span, 0); x <= Math.min(col + span, COLS - 1); x++) {
             const [nx, ny] = Battlefields.nodeCentre(field, y * COLS + x);
-            if (shunned(block, nx, ny)) continue;
+            if (shunned(block, nx, ny) || (spaced && taken(nx, ny))) continue;
             const ahead = (nx - block.x) * Math.cos(forward) + (ny - block.y) * Math.sin(forward) > 0;
             const score = Math.hypot(nx - block.x, ny - block.y) + (ahead ? field.front * AHEAD : 0);
             if (score < least) [best, least] = [[nx, ny], score];
@@ -1588,8 +1596,10 @@ class GeneralModule {
         }
         return best;
       };
-      const best = Movement.isMoored(battle, block) ? find(COLS) : (find(8) ?? find(COLS)); // the nearest ground, however far
+      const nearest = Movement.isMoored(battle, block) ? find(COLS) : (find(8) ?? find(COLS)); // the nearest ground, however far
+      const best = nearest ?? find(COLS, false); // no room clear of the others: on them rather than in the water
       if (best) [block.x, block.y] = best;
+      standing.push(block);
       this.takePlace(battle, block);
     }
   }
