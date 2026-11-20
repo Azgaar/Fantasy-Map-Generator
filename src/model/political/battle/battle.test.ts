@@ -1127,6 +1127,13 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     expect(day.attackers.phase).toBe("blockade");
   });
 
+  it("has besiegers short of the odds risk a storm they cannot see the end of", () => {
+    const b = setup("siege", { infantry: 3600, archers: 700 }, { infantry: 900, archers: 600 }, walled());
+    expect(Generals.getOptions(b, "attackers").some(option => option.storms)).toBe(true); // he weighs storming
+    Battles.plan(b);
+    expect(b.attackers.storms).toBe(true); // keeping to the rule would end no better in his mind: he takes the risk
+  });
+
   it("has besiegers a little short of the odds weigh storming at once, and engines alone storm nothing", () => {
     const short = setup("siege", { infantry: 3800, archers: 800 }, { infantry: 900, archers: 600 }, walled());
     Battles.plan(short);
@@ -1252,11 +1259,18 @@ describe("battle generals of an ambush, a landing and a siege", () => {
     }
   });
 
-  it("has besiegers three times as strong ring the burg in and starve it out rather than storm it", () => {
+  it("has besiegers three times as strong ring the burg in and weigh a storm: it takes the burg sooner than hunger", () => {
     const b = setup("siege", { infantry: 4400, archers: 800 }, { infantry: 900, archers: 600 }, walled());
     Battles.plan(b);
     expect(b.attackers.plan.tactic).toBe("ring");
-    expect(b.attackers.storms).toBe(false);
+    expect(b.attackers.storms).toBe(true);
+    expect(run(b).result!.winner).toBe("attackers");
+  });
+
+  it("has a ring that keeps to the rule starve the burg out", () => {
+    const b = setup("siege", { infantry: 4400, archers: 800 }, { infantry: 900, archers: 600 }, walled());
+    b.planned = true; // no storm weighed
+    expect(b.attackers.plan.tactic).toBe("ring");
     // a battalion by every gate, and the burg encircled: besiegers on every side of it
     const burg = b.field.burgs[0];
     const sides = new Set(
@@ -1282,6 +1296,7 @@ describe("battle generals of an ambush, a landing and a siege", () => {
 
   it("feeds a garrison again once nobody keeps a gate shut, and lets it take heart", () => {
     const b = setup("siege", { infantry: 4400, archers: 800 }, { infantry: 900, archers: 600 }, walled());
+    b.planned = true; // the ring keeps to the rule: no storm weighed
     for (let i = 0; i < ROUND_TICKS * 10; i++) Battles.tick(b);
     expect(b.cutOff).toBe(true);
     const hungry = b.defenders.morale;
@@ -4301,7 +4316,9 @@ describe("battle second review fixes", () => {
   };
 
   it("raises a blockade bled by engines it cannot answer, though a whole man falls only now and then", () => {
-    const b = run(siege({ infantry: 1500 }, { archers: 300, artillery: 12 }));
+    const b = siege({ infantry: 1500 }, { archers: 300, artillery: 12 });
+    b.planned = true; // no storm weighed
+    run(b);
     expect(b.tick).toBeLessThan(b.settings.maxRounds * ROUND_TICKS);
     expect(b.raised).toBe(true);
     expect(b.attackers.phase).toBe("retreat");

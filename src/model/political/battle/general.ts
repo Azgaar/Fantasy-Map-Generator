@@ -628,7 +628,6 @@ class GeneralModule {
     if (type === "siege") {
       // a storm of many battalions is too slow to play through in the time there is
       if (side === "defenders" || field.held === null || battle.blocks.length > 28) return [];
-      if (this.isCutOff(battle)) return []; // a burg cut off is starved out, not stormed short of the odds
       const short = this.getOdds(battle, side) / this.getStormOdds(battle);
       return short >= 2 / 3 && short < 1 ? [this.option(null), this.option(null, false, true)] : [];
     }

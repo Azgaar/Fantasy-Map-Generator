@@ -72,6 +72,7 @@ export const BOLD = 0.75; // odds at which attackers still attack
 export const KEEN = 1.25; // and at which defenders come out to meet them
 export const WARY = 1.4; // under which attackers think it through whether to attack at all: strong ground asks so much
 export const REPULSED = 0.15; // share of its troops fallen, three times the foe's, at which an attack is called off
+export const RISK = 0.2; // share of their troops lost over the foe's that attackers weigh an attack or a storm up by
 export const STORM_ODDS = [4, 2.5, 1.8, 1.4]; // besiegers to besieged it takes to storm walls, by the breaches in them
 export const ASSAULT_ODDS = 1.25; // and a burg without walls
 export const RING_ODDS = 3; // besiegers to besieged it takes to ring a walled burg in

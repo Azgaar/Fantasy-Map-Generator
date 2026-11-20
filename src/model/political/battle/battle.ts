@@ -22,6 +22,7 @@ import {
   RALLY,
   REAR,
   REST,
+  RISK,
   RUNNING,
   SAFE,
   SHAKE,
@@ -572,7 +573,9 @@ class BattleModule {
       let best: Option | null = null;
       let most = -Infinity;
       for (const option of options[i]) {
-        const outcome = this.rehearse(battle, side, option, ticks, played);
+        // an attackers' general takes a risk: an attack or a storm he cannot see the end of is worth some losses
+        const bold = side === "attackers" && !option.waits && (option.storms || battle.type !== "siege");
+        const outcome = this.rehearse(battle, side, option, ticks, played) + (bold ? RISK : 0);
         if (outcome > most) [best, most] = [option, outcome];
       }
       return best ?? { tactic: null, waits: false, storms: false };
