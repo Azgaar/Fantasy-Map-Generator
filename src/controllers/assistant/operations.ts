@@ -15,6 +15,7 @@ import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
 import { Religions } from "@/model/society/religions-generator";
+import { Events } from "@/model/story/events";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Lore } from "@/model/story/lore";
 import { Markers } from "@/model/story/markers-generator";
@@ -29,6 +30,7 @@ export const MODELS = {
   Cultures,
   Development,
   Emblems,
+  Events,
   Features,
   Goods,
   Journeys,
@@ -87,7 +89,6 @@ export const METHODS = {
     "setBudget",
     "setAdjustments",
     "setLocked",
-    "setChronicleEntry",
     "setCells",
     "setPopulation"
   ],
@@ -177,6 +178,7 @@ export const METHODS = {
     "attach"
   ],
   Emblems: ["set", "regenerateOne", "place"],
+  Events: ["add", "update", "remove"],
   Journeys: [
     "add",
     "remove",

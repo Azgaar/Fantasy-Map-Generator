@@ -3,10 +3,11 @@ import { Accounts } from "@/model/economy/accounts";
 import { Goods } from "@/model/economy/goods-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import { Events, type War } from "@/model/story/events";
 import type { MilitaryUnit } from "@/types/military";
 import { nth } from "@/utils/language-utils";
 import { rn, si } from "@/utils/number-utils";
-import { gauss, ra, rand } from "@/utils/probability-utils";
+import { ra, rand } from "@/utils/probability-utils";
 import { findAllInQuadtree } from "@/utils/quadtree";
 import { requireName, requireOneOf } from "@/utils/validation-utils";
 import { getUnitPower } from "./military-units";
@@ -284,6 +285,8 @@ class MilitaryModule {
   }
 
   private raise(states: State[]) {
+    const raised = new Set(states.map(state => state.i));
+    Events.dropRegiments(ref => raised.has(ref.state)); // the old regiments are disbanded
     const drafts = this.draft(states);
     for (const state of states) state.military = this.form(drafts.get(state.i)!, state);
     this.deployToFronts(states);
@@ -567,6 +570,8 @@ class MilitaryModule {
     change(military);
     for (const regiment of military) regiment.a = sum(Object.values(regiment.u));
     state.military = military.filter(regiment => regiment.a || !manned.includes(regiment));
+    const emptied = new Set(military.filter(regiment => !state.military!.includes(regiment)).map(({ i }) => i));
+    if (emptied.size) Events.dropRegiments(ref => ref.state === state.i && emptied.has(ref.i));
     for (const regiment of emblemed) regiment.icon = this.getEmblem(regiment);
   }
 
@@ -770,11 +775,10 @@ class MilitaryModule {
       ? `\r\n\r\nRegiment composition in ${options.map.lore.calendar.year} ${options.map.lore.calendar.eraShort}:\r\n${composition}.`
       : "";
 
-    const campaign = s.campaigns ? ra(s.campaigns) : null;
-    const year = campaign
-      ? rand(campaign.start, campaign.end || options.map.lore.calendar.year)
-      : gauss(options.map.lore.calendar.year - 100, 150, 1, options.map.lore.calendar.year - 6);
-    const conflict = campaign ? ` during the ${campaign.name}` : "";
+    const { year: present } = options.map.lore.calendar;
+    const war: War | undefined = ra(Events.list({ type: "war", state: s.i })); // the same rolls with a war or without
+    const year = rand(...(war ? Events.yearsOf(war) : [present - 100, present - 1]));
+    const conflict = war ? ` during the ${war.name}` : "";
     r.note = `Regiment was formed in ${year} ${options.map.lore.calendar.era}${conflict}. ${station}${troops}`;
   }
 
@@ -788,6 +792,7 @@ class MilitaryModule {
     const regiment = this.living(stateId, regimentId);
     const military = pack.states[stateId].military!;
     military.splice(military.indexOf(regiment), 1);
+    Events.dropRegiments(ref => ref.state === stateId && ref.i === regimentId);
   }
 
   /** Raise an empty regiment of a state at a map point, a fleet on water; returns its id */
@@ -948,6 +953,12 @@ class MilitaryModule {
     const record = regiment.note ? ` Its record: ${regiment.note}` : "";
     const merger = `${regiment.name} merged into the regiment (${year} ${eraShort}).${record}`;
     target.note = target.note ? `${target.note}<br><br>${merger}` : merger;
+    Events.moveRegiments([
+      [
+        { state: stateId, i: regimentId },
+        { state: targetStateId, i: targetId }
+      ]
+    ]); // its battles too
     this.remove(stateId, regimentId);
   }
 

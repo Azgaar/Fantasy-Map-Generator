@@ -3,6 +3,7 @@ import { select } from "d3";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { Pack } from "@/model/graph/pack-generator";
 import type { State } from "@/model/political/states-generator";
+import { Events } from "@/model/story/events";
 import { Layers } from "@/renderers/layers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { tip } from "@/ui/tooltips";
@@ -51,7 +52,7 @@ async function paint(cells: number[], shiftKey = false): Promise<void> {
 
 const checkedRelation = () =>
   document.querySelector<HTMLInputElement>('input[name="diplomacyRelation"]:checked')?.value;
-const chronicle = () => states[0].diplomacy as unknown as string[][];
+const chronicle = () => pack.events ?? [];
 const edited = () => element<HTMLSelectElement>("#diplomacyEditorState").value;
 const fill = (id: number) => element(`#state${id}`).getAttribute("fill");
 
@@ -67,7 +68,11 @@ beforeEach(() => {
     { i: 3, name: "Three", fullName: "State Three", diplomacy: ["x", "Neutral", "Ally", "x", "x"] },
     { i: 4, name: "Removed", removed: true, diplomacy: ["x", "x", "x", "x", "x"] }
   ] as State[];
-  vi.stubGlobal("pack", { states, cells: { i: [0, 1, 2, 3, 4, 5], state: Uint16Array.from([0, 1, 2, 3, 4, 99]) } });
+  vi.stubGlobal("pack", {
+    states,
+    events: [],
+    cells: { i: [0, 1, 2, 3, 4, 5], state: Uint16Array.from([0, 1, 2, 3, 4, 99]) }
+  });
   Object.assign(Pack, { findCell: (x: number) => (x < 6 ? x : undefined) });
   options.app.mode = null;
 });
@@ -96,7 +101,7 @@ describe("painting relations", () => {
     expect(element<HTMLButtonElement>("#diplomacyEditorUndo").disabled).toBe(true);
   });
 
-  test("a click changes one state; Apply records the history", async () => {
+  test("a click changes one state; Apply begins the alliance", async () => {
     DiplomacyEditor.open(1);
     choose("Ally");
     await paint([3]);
@@ -104,10 +109,10 @@ describe("painting relations", () => {
     expect(states[1].diplomacy![3]).toBe("Ally");
     expect(chronicle()).toEqual([]);
     action("Apply");
-    expect(chronicle()).toEqual([["Defence pact", "Three entered into defensive pact with One"]]);
+    expect(chronicle()).toMatchObject([{ type: "alliance", states: [3, 1], start: Events.present(), auto: true }]);
   });
 
-  test("Apply records the net change of each pair once", async () => {
+  test("Apply follows the net change of each pair once", async () => {
     DiplomacyEditor.open(1);
     choose("Enemy");
     await paint([2, 3]);
@@ -117,7 +122,7 @@ describe("painting relations", () => {
     await paint([3]);
     action("Apply");
     // Two went Rival → Enemy → Ally; Three went Neutral → Enemy → Neutral
-    expect(chronicle()).toEqual([["Defence pact", "Two entered into defensive pact with One"]]);
+    expect(chronicle()).toMatchObject([{ type: "alliance", states: [2, 1] }]);
   });
 
   test("ignores drags that start outside a state", async () => {
@@ -147,19 +152,14 @@ describe("painting relations", () => {
     fresh.close();
   });
 
-  test("uses the former relation for war termination history", async () => {
+  test("ends the war of a pair that makes peace", async () => {
     states[2].diplomacy![1] = states[1].diplomacy![2] = "Enemy";
+    Events.add({ type: "war", name: "Old War", start: "900", attackers: [1], defenders: [2], auto: true });
     DiplomacyEditor.open(1);
     choose("Friendly");
     await paint([2]);
     action("Apply");
-    expect(chronicle()).toEqual([
-      [
-        "War termination",
-        "Two and One agreed to cease fire and signed a peace treaty",
-        "Two-Onean relations changed to friendly"
-      ]
-    ]);
+    expect(chronicle()).toMatchObject([{ name: "Old War", start: "900", end: Events.present() }]);
   });
 
   test("repairs a broken inverse of the same relation without a record", async () => {

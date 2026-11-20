@@ -87,6 +87,7 @@ function prepareMapData(viewOnly = false): string {
   const settings = JSON.stringify(viewOnly ? { ...options.map, viewOnly } : options.map); // the requests and preferences stay out
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
+  const events = JSON.stringify(pack.events ?? []);
   const legends = JSON.stringify(pack.legends);
   const fonts = JSON.stringify(
     getUsedFonts(
@@ -213,7 +214,8 @@ function prepareMapData(viewOnly = false): string {
     journeys,
     legends,
     pack.cells.prosperity,
-    pack.cells.development
+    pack.cells.development,
+    events
   ].join("\r\n");
   return mapData;
 }

@@ -12,6 +12,7 @@ import type { State } from "@/model/political/states-generator";
 import type { Zone } from "@/model/political/zones-generator";
 import type { Culture } from "@/model/society/cultures-generator";
 import type { Religion } from "@/model/society/religions-generator";
+import type { MapEvent } from "@/model/story/events";
 import type { Marker } from "@/model/story/markers-generator";
 import type { Deal, Market } from "@/types/economy";
 import type { Journey } from "./journey";
@@ -69,6 +70,7 @@ export interface PackedGraph {
   religions: Religion[];
   zones: Zone[];
   markers: Marker[];
+  events: MapEvent[];
   ice: Ice[];
   provinces: Province[];
   markets: Market[];

@@ -326,6 +326,12 @@ export const BATTLE_TACTIC_LABELS: Record<string, string> = {
   waves: t("Landing in waves")
 };
 
+/** An outcome as a side sees it, such as "attackers decisive victory", in the interface's language */
+export function getOutcomeLabel(status: string): string {
+  const outcome = status.replace(/^(attackers|defenders) | of (attackers|defenders)$/, "");
+  return BATTLE_OUTCOME_LABELS[outcome] ?? outcome.charAt(0).toUpperCase() + outcome.slice(1);
+}
+
 /** Outcomes as a side sees them, the side's name left out (see `BattleRules.getStatus`) */
 export const BATTLE_OUTCOME_LABELS: Record<string, string> = {
   standoff: t("Standoff"),

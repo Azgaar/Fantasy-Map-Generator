@@ -1287,7 +1287,7 @@ class BattleSceneRenderer {
       return `${troops}, ${BATTLE_STATUS_LABELS[block.status]}`;
     const kmh = BattleScale.toMetresPerSecond(Math.hypot(block.vx, block.vy)) * 3.6;
     const speed = `${t("Speed")}: ${convertSpeed(kmh)} ${getSpeedUnit()}`;
-    const range = block.range ? `${t("Range")}: ${formatLength(block.range)}` : "";
+    const range = block.range ? `${t("Range", { context: "weapon" })}: ${formatLength(block.range)}` : "";
     const morale = `${t("Morale")}: ${Math.round(block.morale)}%`;
     const energy = `${t("Energy")}: ${Math.round(block.energy * 100)}%`;
     return sentences(troops, morale, energy, BATTLE_ACTION_LABELS[block.action], ...[speed, range].filter(Boolean));

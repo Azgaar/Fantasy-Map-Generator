@@ -145,7 +145,7 @@ function getColumns(): EditorColumn<UnitRow>[] {
     number("attack", t("Attack")),
     number("defense", t("Defense")),
     number("speed", t("Speed")),
-    number("range", t("Range")),
+    number("range", t("Range", { context: "weapon" })),
     number("morale", t("Morale")),
     {
       key: "power",

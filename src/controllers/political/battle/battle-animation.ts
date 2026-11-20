@@ -18,6 +18,7 @@ export interface BattleStart {
   battle: Battle;
   script: Intervention[];
   settled: Settled | null; // what the generals settled on: they do not think it through again
+  until?: number; // a past battle stops at the tick it was applied at
 }
 
 /** What the screen hands an export: the battle from its start, and how it is drawn on screen */
@@ -348,7 +349,7 @@ class BattleAnimationExport {
 
   /** Play a battle set up anew from its start to the end into a looping animation */
   private async recordBattle(
-    { battle, script, settled }: BattleStart,
+    { battle, script, settled, until = Infinity }: BattleStart,
     { gif, width, tickMs, signal, camera, source, onTick }: RecordOptions
   ): Promise<Blob | null> {
     Battles.applyDue(battle, script);
@@ -374,7 +375,7 @@ class BattleAnimationExport {
     const frames = Math.max(1, Math.round(tickMs / FRAME_MS));
     const delay = tickMs / frames;
     await addFrame(delay);
-    while (!battle.result) {
+    while (!battle.result && battle.tick < until) {
       if (signal.aborted) return null;
       const previous = BattleSceneView.snapshot(battle);
       const blocks = battle.blocks.length;

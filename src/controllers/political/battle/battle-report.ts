@@ -60,7 +60,7 @@ class BattleReportExport {
     onProgress(0, "");
     try {
       const probe = source.start();
-      Battles.replay(probe.battle, probe.script, probe.settled);
+      Battles.replay(probe.battle, probe.script, probe.settled, probe.until);
       const ticks = Keyframes.select(probe.battle.log, text.kinds);
       const frames = await this.takeKeyframes(source, choice, new Set(ticks), signal, share => onProgress(share, ""));
       if (!frames) {

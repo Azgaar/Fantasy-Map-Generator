@@ -300,6 +300,14 @@ You can ask questions here or go to our Discord server. If you want a basic guid
 
 We have a Reddit community on https://www.reddit.com/r/FantasyMapGenerator
 
+### Where is the history of my map: its wars, battles and treaties?
+
+Open Tools -> Chronicle. It lists every war, battle, alliance and vassalage and the events you write yourself in order of time, searchable by name or #tag and filterable by type and state. Wars begin and end with the Enemy relation of their states, battles you apply in the Battle Simulator are kept there with their day and time (states not at war get a war of that year for them), and independence, mergers, ceded provinces and moved capitals write themselves down. Click the pencil of an event to edit its name, dates (down to the day and time), sides and tags in the Chronicle Record Editor, or its book to write its note. Add your own with the plus button and set its Type (event, war, battle, alliance or vassalage) in its record. Years before the era read like 45 BWE (45 before Winter Era). It replaced the Relations history: an older map keeps that text as one event named Relations history
+
+### Can I watch a battle again after applying it?
+
+Yes. Open Tools -> Chronicle (a war's battles are under its arrow), or click the battle in the battles list of a regiment in its editor, which opens the Chronicle on it. The play button of its row, or of its record, opens it in the Battle Simulator to replay it from its start and export it as an animation or a report. Only battles have the button, and it is active only for those you played: battles you wrote by hand have no replay. The pencil opens its record, where the Summary button shows its result again. Watching changes nothing on the map. If the ground, the units or the rules changed since, the battle may play out otherwise; the screen says so and the recorded result stands
+
 ### Can I create a battle between armies?
 
 Yes, with the Battle Simulator. Click a regiment, press Attack foreign regiment and click a regiment of another state: the attacker moves to it and the battle opens. The attack, defense, speed, range and morale of the units, set in the Military units editor, decide how they fight. The battle is played on a battle plan drawn from the map around it: troops move, shoot and fight by themselves, and the ground, flanks, morale and energy matter: slopes slow troops and weaken their footing, cliffs on rugged ground bar the way but for gaps and gullies, shooters reach further from above, and troops tire by marching and fighting and recover at rest. The weather button sets clear sky, rain, heavy rain, snow or fog, and mud, ice and heat: rain, snow and fog shorten how far troops see and so how far they shoot, rain and snow weaken shots, mud slows troops off the roads, ice slows them and lets them cross frozen rivers anywhere, and heat tires them twice as fast. Each side has a die, rolled once as the battle opens: fortune makes its blows weaker or stronger, from ×0.5 to ×1.5 by default, so the stronger army does not always win; Configure Battle sets how much it weighs, 0 for no dice. A battle starts at an hour of the day, mostly by day; click the clock before the start to change it: at night troops see a foe only some 120 m off, carry torches, and ambushers and stormers get closer unseen. Space starts and pauses it; paused, regiments can be added, a side given another order or battalions commanded. Zoom with the wheel and drag with the right mouse button to look round. The cog opens Configure Battle: what is drawn, side colors, the events it pauses at, the simulation numbers, and the export as a GIF, an animated SVG or a battle report page with keyframes
@@ -334,7 +342,7 @@ To create a new country open the States editor: Go to "Tools" -> "States". Look 
 
 ### How can I invade one country to another?
 
-Open Tools -> States, click the brush button and paint the invader's state over the conquered land. To mark the war, set the states as Enemy in the Diplomacy editor or add markers
+Open Tools -> States, click the brush button and paint the invader's state over the conquered land. To mark the war, set the states as Enemy in the Diplomacy editor: the war is then kept in the Chronicle (Tools -> Chronicle), where you can date it, write its note and add its battles
 
 ### I would like to use my own list of names for States, Provinces, and Burgs. How can I do it?
 

@@ -767,15 +767,16 @@ class BattleModule {
       this.intervene(battle, { ...script.shift()!, tick: battle.tick });
   }
 
-  /** Run a recorded battle to its end, with the generals' plan when it is known */
-  replay(battle: Battle, interventions: Intervention[], settled: Settled | null = null): void {
+  /** Run a recorded battle to its end, or to the tick it was applied at, with the generals' plan when it is known */
+  replay(battle: Battle, interventions: Intervention[], settled: Settled | null = null, until = Infinity): void {
     const script = [...interventions];
     this.applyDue(battle, script);
     this.plan(battle, settled);
-    while (!battle.result) {
+    while (!battle.result && battle.tick < until) {
       this.tick(battle);
       this.applyDue(battle, script);
     }
+    if (!battle.result) this.settleLosses(battle);
   }
 
   getTroops(battle: Battle, side: Side): { initial: number; left: number; captured: number } {

@@ -2,6 +2,7 @@
 
 import { Pack } from "@/model/graph/pack-generator";
 import { Coastline } from "@/model/physical/coastline-generator";
+import { Names } from "@/model/society/names-generator";
 import type { Point } from "@/types/global";
 
 class BattleSiteModule {
@@ -25,6 +26,15 @@ class BattleSiteModule {
       }
     }
     return best;
+  }
+
+  /** What a battle is named after: the burg, the river or the land, whose name is rolled */
+  getPlaceName(cell: number): string | null {
+    const { cells } = pack;
+    if (cells.burg[cell]) return pack.burgs[cells.burg[cell]].name ?? null;
+    const river = cells.r[cell] && pack.rivers.find(river => river.i === cells.r[cell]);
+    if (river) return `${river.name} ${river.type}`;
+    return Names.getCulture(cells.culture[cell]);
   }
 
   /** A road or a trail leads through the cell: a column on the march can be caught there */

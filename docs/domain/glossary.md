@@ -44,10 +44,17 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **River**: A water flow starting from a source cell and following the heightmap down to a lake or ocean.
 - **Lake**: A fresh or salt water body contained entirely within land cells.
 - **Route**: A road, trail, or sea lane connecting burgs.
-- **Marker**: A specific point of interest placed on the map (e.g., volcano, battlefield, ruin).
+- **Marker**: A specific point of interest placed on the map (e.g., volcano, battlefield, ruin). A played Battle adds none: it is an Event.
 - **Journey**: A route travelled by a party — a quest, a caravan run, a raid — made of ordered Segments. Distinct from a [[Route]], which is a road on the ground that a Journey may follow. Stored in `pack.journeys`.
 - **Zone**: An arbitrary highlighted area of the map defined for custom purposes (e.g., danger zone, magic zone).
 - **Diplomacy**: The system of political relationships (allies, enemies, neutral, vassals) between different States.
+- **Event**: Something dated in the map's history (`pack.events`): a War, an Alliance, a Vassalage, a Battle or any other thing the user writes down. It records what happened and never holds the present state: relations stay on the states, troops on the regiments. Dated by text as exact as known (`120`, `120-03-14T10:00`). _Avoid_: campaign, chronicle entry
+- **War**: An Event with every state on each side, its leaders first. It begins and ends with the `Enemy` relation of its leaders.
+- **Alliance**: An Event of two states' `Ally` relation, from when it was made by hand. Generated alliances have none.
+- **Vassalage**: An Event of a suzerain and its vassal, begun some years ago for every generated vassal.
+- **Battle**: An Event with a place, the states of each side and a winner; one that was played carries its Replay and is part of the War its leaders fight.
+- **Replay**: The recipe a played Battle is built and played again from: its setup, troops and every change made on the way, up to the tick it was applied at. The field is built anew from the map, so a changed map can play it out otherwise; the recorded result stands.
+- **Chronicle**: The dialog that lists every Event in order of time. An Event is edited in the Chronicle Record Editor, opened from its row. _Avoid_: Relations history
 - **Regiment / Military**: The armed forces belonging to States or Burgs, represented by units.
 - **Good**: A resource or product (e.g., wood, iron, grain) with properties like value, demand, and recipes. Raw goods have a `distribution`; manufactured goods have `recipes`.
 - **Development**: A cell's technological development, 1–100 from hunter-gatherers (0 where nobody lives) to a post-human civilization, three points an era up to the Late Middle Ages. Set by the cultures and spread along routes (`pack.cells.development`); a good's tier (`good.development`) is the least development needed to produce it, and past 30 it multiplies output. See [development](development.md). _Avoid_: tech level, civilization level

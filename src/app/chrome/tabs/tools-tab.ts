@@ -19,6 +19,9 @@ const TEMPLATE = /* html */ `
     >
       ${t("Coastlines")}
     </button>
+    <button id="openChronicleButton" data-tip="${t("Chronicle: events history")}">
+      ${t("Chronicle")}
+    </button>
     <button id="editCulturesButton" data-tip="${t("Cultures Editor")}" data-shortcut="Shift + C">
       ${t("Cultures")}
     </button>

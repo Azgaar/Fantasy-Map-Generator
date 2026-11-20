@@ -7,6 +7,7 @@ import { Lakes } from "@/model/physical/lakes";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import type { Regiment } from "@/model/political/military-generator";
+import { Events } from "@/model/story/events";
 import { Transports } from "@/model/story/journeys/transports-generator";
 import { last } from "@/utils/array-utils";
 import { log } from "@/utils/logger";
@@ -30,6 +31,7 @@ class MapRepairService {
       ...this.repairRoutes(),
       ...this.repairMarkers(),
       ...this.repairRegiments(),
+      ...this.repairEvents(),
       ...this.findMissingTransports()
     ];
   }
@@ -273,6 +275,11 @@ class MapRepairService {
     if (remapped) repairs.push(`${remapped} markers are not linked to the cell under them. Relinking them`);
 
     return repairs;
+  }
+
+  /** the history: unique ids, battles on their cells, links that lead nowhere */
+  private repairEvents(): string[] {
+    return Events.repair((x, y, cell) => this.isMisplaced(x, y, cell));
   }
 
   // only a missing cell: a valid one can lie away from the base, as the base moves and a fleet's cell is its port

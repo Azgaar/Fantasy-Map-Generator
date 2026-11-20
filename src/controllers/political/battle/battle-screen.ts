@@ -2,10 +2,10 @@ import { select, sum } from "d3";
 import { BATTLE_SPEEDS, PAUSE_EVENTS, type PauseEvent } from "@/data/battle-options";
 import {
   BATTLE_ORDER_LABELS,
-  BATTLE_OUTCOME_LABELS,
   BATTLE_TACTIC_LABELS,
   BATTLE_TYPE_LABELS,
   CONDITION_LABELS,
+  getOutcomeLabel,
   PERIOD_LABELS,
   WEATHER_LABELS
 } from "@/data/id-labels";
@@ -40,6 +40,7 @@ import type { TacticName } from "@/model/political/battle/formations";
 import { Generals } from "@/model/political/battle/general";
 import { Movement } from "@/model/political/battle/movement";
 import { Pathfinding } from "@/model/political/battle/pathfinding";
+import { BattleReplays } from "@/model/political/battle/replay";
 import { BattleTime, type Period } from "@/model/political/battle/time";
 import { BattleWeather, CONDITIONS, type Condition, WEATHERS, type Weather } from "@/model/political/battle/weather";
 import { Works } from "@/model/political/battle/works";
@@ -47,7 +48,9 @@ import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
 import { Stability } from "@/model/political/stability";
 import { Names } from "@/model/society/names-generator";
-import type { Marker } from "@/model/story/markers-generator";
+import { Dates } from "@/model/story/dates";
+import type { BattleEvent } from "@/model/story/events";
+import { Events } from "@/model/story/events";
 import { BattleCamera, type Camera, type CameraMode } from "@/renderers/battle/battle-camera";
 import { BattleOverlayView } from "@/renderers/battle/draw-battle-overlay";
 import {
@@ -61,17 +64,17 @@ import {
 import { BattleWeatherView } from "@/renderers/battle/draw-battle-weather";
 import { getRegimentStep, moveRegiment } from "@/renderers/draw-military";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
-import { Layers } from "@/renderers/layers";
 import { viewport } from "@/renderers/viewport/viewport";
+import { VERSION } from "@/services/versioning";
 import type { Point } from "@/types/global";
 import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/ui/dialog/sorting";
-import { showElementTip, showMainTip, tip } from "@/ui/tooltips";
-import { last } from "@/utils/array-utils";
+import { clearMainTip, showElementTip, showMainTip, tip } from "@/ui/tooltips";
 import { getColorDistance } from "@/utils/color-utils";
 import { getLatitude, wiki } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { getAdjective, list } from "@/utils/language-utils";
+import { list } from "@/utils/language-utils";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
@@ -123,7 +126,25 @@ const SUMMARY_STYLE = /* css */ `
   @keyframes battleSummaryRise { from { opacity: 0; transform: translateY(1.5em) scale(0.96); } }
 `;
 
+const RECORD_DIFFERS = () =>
+  t(
+    "The battle no longer plays out as it was recorded: the ground, the units or the rules have changed. The record stands"
+  );
+
+/** A past battle's summary in a window of its own */
+const RECORD_STYLE = /* css */ `
+  #battleSummary { --line: #ccc; --muted: #666; --loss: #c5221f; position: static; display: block; padding: 0; background: none; overflow: visible; animation: none; }
+  #battleSummary > div { width: auto; box-shadow: none; animation: none; }
+  #battleSummary .attackers { --side: var(--attackers); }
+  #battleSummary .defenders { --side: var(--defenders); }
+  .battleSummaryClose, #battleSummary footer { display: none !important; }
+  .battleRecordDiffers { margin: 0 0 0.6em; color: #c5221f; }
+`;
+
 const STYLE = /* css */ `
+  /* a past battle watched again: it plays, nothing in it is changed */
+  #battleLayout.watching :is(#battleScene, #battleOverlay, .battleDie, .battlePicker, #battleName, .battleAddRegiment, .battleWithdraw) { pointer-events: none; }
+  #battleLayout.watching :is(#battleRoll, #battleApply, #battleNameTools, .battleOrdersButton, .battleMoraleStep, .battleAddRegiment, .battleWithdraw) { display: none; }
   #battleScreen { padding: 0.5em; overflow: hidden; container: battle / size; }
   #battleLayout { --line: #ccc; --muted: #666; --loss: #c5221f; display: flex; flex-direction: column; gap: 0.5em; box-sizing: border-box; width: auto; height: 100%; overflow-y: auto; }
   #battleLayout > * { flex: none; }
@@ -343,6 +364,8 @@ class BattleScreenController {
   private pointer: { x: number; y: number } | null = null; // over the battle screen
   private shownTip: string | null = null;
   private shownLog: LogEntry[] = []; // the entries the log window shows, to redraw from the first that changed
+  private watching: BattleEvent | null = null; // a past battle played from its replay: nothing on the map moves
+  private recording = false; // a past battle is being played out for its summary
 
   private readonly regimentKey = (regiment: { state: number; i: number }): string => `${regiment.state}-${regiment.i}`;
 
@@ -370,7 +393,79 @@ class BattleScreenController {
     this.script = [];
     this.selected = [];
     this.setup([attacker], [defender]);
+    this.openScreen();
+    tip(
+      t("Drag a box to pick troops, drag them to move, turn them by the handle, then start the battle"),
+      true,
+      "info",
+      8000
+    );
+  }
 
+  /** Watch a past battle again from its replay: no orders and no apply, nothing on the map moves */
+  watch(eventId: number): void {
+    const event = Events.get(eventId);
+    if (options.app.mode || event?.type !== "battle" || !event.replay) return;
+    Dialog.destroy("battleRecord"); // its summary has the screen's ids
+    Dialog.closeAll(".stable");
+    options.app.mode = "battle";
+    this.player.speed = this.battleOptions().view.speed;
+    this.cameraMode = this.battleOptions().view.camera;
+    this.watching = event;
+    this.renderDialog();
+    this.regiments = new Map();
+    this.selected = [];
+    this.startWatching();
+    this.openScreen();
+    ensureEl("battleLayout").classList.add("watching");
+  }
+
+  /** The summary of a past battle, played out undrawn from its replay */
+  async showRecord(eventId: number): Promise<void> {
+    const event = Events.get(eventId);
+    if (event?.type !== "battle" || !event.replay || this.recording) return;
+    const label = t("Playing the battle out");
+    tip(label, true, "info");
+    this.recording = true;
+    const battle = await BattleReplays.play(event.replay, share =>
+      tip(`${label}: ${Math.round(share * 100)}%`, true, "info")
+    ).finally(() => {
+      this.recording = false;
+    });
+    clearMainTip();
+    const content = document.createElement("div");
+    content.innerHTML = /* html */ `<style>${SUMMARY_STYLE} ${RECORD_STYLE}
+        #battleSummary { --attackers: ${SIDE_COLORS.attackers}; --defenders: ${SIDE_COLORS.defenders}; }</style>
+      ${BattleReplays.matches(battle, event) ? "" : `<p class="battleRecordDiffers">${RECORD_DIFFERS()}</p>`}
+      <div id="battleSummary">${this.getSummary(battle, false)}</div>`;
+    Dialog.message({
+      id: "battleRecord",
+      title: event.name,
+      message: content,
+      width: "46em",
+      buttons: [{ label: t("Watch again"), onClick: () => this.watch(eventId) }, { label: t("Close") }]
+    });
+  }
+
+  private startWatching(): void {
+    const { battle, script, settled } = BattleReplays.start(this.watching!.replay!);
+    Battles.applyDue(battle, script);
+    Battles.plan(battle, settled);
+    this.battle = battle;
+    this.script = script;
+    this.player.previous = null;
+    this.resetTrails();
+    this.drawField();
+    this.drawScene();
+    this.refresh();
+  }
+
+  /** Played to its end, or a past battle to the moment it was applied */
+  private isOver(b: Battle): boolean {
+    return Boolean(b.result) || (this.watching !== null && b.tick >= this.watching.replay!.tick);
+  }
+
+  private openScreen(): void {
     Dialog.open("battleScreen", {
       title: this.battle!.name,
       width: viewport.width * SCREEN_SHARE * 0.6, // a guess: fitDialog sets the size
@@ -394,12 +489,6 @@ class BattleScreenController {
     this.toggleLog(this.battleOptions().view.log, false);
     this.player.lastFrame = 0;
     this.player.frame = requestAnimationFrame(this.loop);
-    tip(
-      t("Drag a box to pick troops, drag them to move, turn them by the handle, then start the battle"),
-      true,
-      "info",
-      8000
-    );
   }
 
   /** Size the window by what really stands around the battlefield: as large a plan as the screen has room for */
@@ -439,7 +528,7 @@ class BattleScreenController {
     const { x, y } = this.battle ?? defender;
     const cell = Pack.findCell(x, y) ?? 0;
     const type = from?.type ?? this.defineType(attacker, defender, cell);
-    const place = this.battle ? this.battle.place : this.definePlace(cell); // kept, as the name is
+    const place = this.battle ? this.battle.place : BattleSite.getPlaceName(cell); // kept, as the name is
     const point = { x, y };
     const seed = from?.seed ?? Math.floor(Math.random() * 2 ** 31);
 
@@ -516,14 +605,6 @@ class BattleScreenController {
     if (hidden && Military.getRegimentPower(defender) < Military.getRegimentPower(attacker) * AMBUSH_ODDS)
       return "ambush";
     return "field";
-  }
-
-  private definePlace(cell: number): string | null {
-    const { cells } = pack;
-    if (cells.burg[cell]) return pack.burgs[cells.burg[cell]].name ?? null;
-    const river = cells.r[cell] && pack.rivers.find(river => river.i === cells.r[cell]);
-    if (river) return `${river.name} ${river.type}`;
-    return Names.getCulture(cells.culture[cell]);
   }
 
   private renderDialog(): void {
@@ -1225,11 +1306,11 @@ class BattleScreenController {
   /** A tick or a round on, as the step is set */
   private step(): void {
     const b = this.battle;
-    if (!b || b.result || this.isPlanning()) return;
+    if (!b || this.isOver(b) || this.isPlanning()) return;
     this.pause();
     const round = this.battleOptions().playback.step === "round";
     do this.advance();
-    while (round && b.tick % ROUND_TICKS && !b.result);
+    while (round && b.tick % ROUND_TICKS && !this.isOver(b));
     this.player.previous = null;
     BattleSceneView.updateBlocks(this.scene(), b, null, 1);
     this.showArrows();
@@ -1282,7 +1363,7 @@ class BattleScreenController {
       let progress = (now - this.player.tickStart) / (TICK_MS / this.player.speed);
       // a throttled tab catches up a few ticks a frame
       for (let ticks = 0; progress >= 1 && ticks < 4 && this.player.playing; ticks++) {
-        if (b.result || this.advance()) this.pause();
+        if (this.isOver(b) || this.advance()) this.pause();
         progress -= 1;
       }
       if (progress >= 1) progress = 0;
@@ -1317,8 +1398,9 @@ class BattleScreenController {
       for (const block of b.blocks)
         this.trails.set(block.id, [...(this.trails.get(block.id) ?? []), [block.x, block.y]]);
     }
+    if (this.isOver(b) && !b.result) Battles.settleLosses(b); // a past battle applied before its end stops there
     this.refresh();
-    if (b.result) this.showSummary();
+    if (this.isOver(b)) this.showSummary();
     const stops = this.getPauseEvents();
     const kind = (event: LogEntry["event"]): string => (event === "raised" ? "broken" : event); // the besiegers give up
     return b.log.slice(logged).some(entry => stops.includes(kind(entry.event) as PauseEvent));
@@ -1587,13 +1669,15 @@ class BattleScreenController {
   /** The end of the battle over the field, as games show it: who won and at what cost */
   private showSummary(): void {
     const b = this.battle!;
-    if (!b.result) return;
+    if (!this.isOver(b)) return;
     const el = ensureEl("battleSummary");
     el.innerHTML = this.getSummary(b);
     el.hidden = false;
+    if (this.watching && !BattleReplays.matches(b, this.watching)) tip(RECORD_DIFFERS(), true, "warn", 8000);
   }
 
-  private readonly getSummary = (b: Battle): string => {
+  /** `appliable`: the battle on screen can still be applied */
+  private readonly getSummary = (b: Battle, appliable = !this.watching): string => {
     const { winner, status } = Battles.getResult(b);
     const headline = winner ? (winner === "attackers" ? t("Attackers win") : t("Defenders win")) : t("No victor");
     return /* html */ `<div class="${winner ?? ""}">
@@ -1605,7 +1689,7 @@ class BattleScreenController {
         <div class="battleSummarySides">${SIDES.map((side, i) => this.summarySide(b, side, status[i])).join("")}</div>
         <footer>
           <button data-action="restart" class="icon-ccw" data-tip="${t("Play the same battle again from the start")}"> ${t("Play again")}</button>
-          <button data-action="apply" class="icon-check" data-tip="${t("End battle: apply current results and close the screen")}"> ${t("Apply results")}</button>
+          ${appliable ? `<button data-action="apply" class="icon-check" data-tip="${t("End battle: apply current results and close the screen")}"> ${t("Apply results")}</button>` : ""}
         </footer>
       </div>`;
   };
@@ -1642,7 +1726,7 @@ class BattleScreenController {
           <span class="battleEmblems">${this.emblems(states)}</span>
           <span>
             <b>${escapeHtml(list(states.map(state => pack.states[state].name)))}</b>
-            <i>${escapeHtml(this.getOutcomeLabel(status))}</i>
+            <i>${escapeHtml(getOutcomeLabel(status))}</i>
           </span>
         </header>
         <div class="battleSummaryStats">
@@ -2050,12 +2134,6 @@ class BattleScreenController {
     return entry?.event === event && entry.tick === b.tick;
   }
 
-  /** An outcome as a side sees it, in the interface's language */
-  private getOutcomeLabel(status: string): string {
-    const outcome = status.replace(/^(attackers|defenders) | of (attackers|defenders)$/, "");
-    return BATTLE_OUTCOME_LABELS[outcome] ?? capitalize(outcome);
-  }
-
   /** The regiments the battle began with: latecomers are in the interventions */
   private getInitialRegiments(b: Battle, side: Side): BattleRegiment[] {
     const late = new Set(
@@ -2070,6 +2148,7 @@ class BattleScreenController {
 
   /** The battle from its start, untouched by the one on screen: every change made, and those to come after a step back */
   private startAnew(b: Battle): BattleStart {
+    if (this.watching) return BattleReplays.start(this.watching.replay!);
     const battle = Battles.create({
       type: b.type,
       name: b.name,
@@ -2106,7 +2185,9 @@ class BattleScreenController {
       look: { ...this.battleOptions().rendering },
       colors: shown,
       report: {
-        heading: [`${year} ${era}`, b.place].filter(Boolean).join(" · "),
+        heading: [this.watching ? Dates.format(this.watching.start, "long") : `${year} ${era}`, b.place] // a past battle by its own date
+          .filter(Boolean)
+          .join(" · "),
         summary: this.getSummary,
         style: `body { --line: #ccc; --muted: #666; --loss: #c5221f; --attackers: ${shown.attackers}; --defenders: ${shown.defenders}; }
           #battleSummary .attackers, .report .attackers { --side: var(--attackers); }
@@ -2122,6 +2203,11 @@ class BattleScreenController {
   private restart(): void {
     const b = this.battle!;
     this.pause();
+    if (this.watching) {
+      this.startWatching();
+      ensureEl("battleSummary").hidden = true;
+      return;
+    }
     const find = (ref: { state: number; i: number }): Regiment | undefined =>
       pack.states[ref.state]?.military?.find(regiment => regiment.i === ref.i && regiment.a);
     const sides = SIDES.map(side => this.getInitialRegiments(b, side).map(find));
@@ -2168,49 +2254,17 @@ class BattleScreenController {
     const b = this.battle!;
     this.pause();
     if (!b.result) Battles.settleLosses(b); // ended by hand: the parts of men lost are counted as at the end
-    const battleStatus = Battles.getResult(b).status;
-    const { year, eraShort } = options.map.lore.calendar;
-    const unitsText = (units: Record<string, number>): string =>
-      list(Object.keys(units).flatMap(unit => (units[unit] ? [`${units[unit]} ${unit}`] : [])));
+    const { winner, status } = Battles.getResult(b);
+    BattleReplays.keep(b, this.getClimate(b.cell), VERSION);
 
-    const forcesLegend = (label: string, side: Side): string => {
-      const initial: Record<string, number> = {};
-      const casualties: Record<string, number> = {};
-      const taken: Record<string, number> = {};
-      for (const regiment of b[side].regiments) {
-        const losses = Battles.getLosses(b, regiment);
-        const captured = Battles.getCaptured(b, regiment);
-        for (const unit in regiment.troops) {
-          initial[unit] = (initial[unit] || 0) + regiment.troops[unit];
-          casualties[unit] = (casualties[unit] || 0) + (losses[unit] ?? 0);
-          taken[unit] = (taken[unit] || 0) + (captured[unit] ?? 0);
-        }
-      }
-      let text = sum(Object.values(initial)) ? `<br>${label} initial forces: ${unitsText(initial)}.` : "";
-      if (sum(Object.values(casualties))) text += ` Casualties: ${unitsText(casualties)}.`;
-      if (sum(Object.values(taken))) text += ` Captured: ${unitsText(taken)}.`;
-      return text;
-    };
-
-    SIDES.forEach((side, sideIndex) => {
+    // counted in whole troops and turned back into points once, so no fraction of a man is left over
+    const { scale } = options.map.units.population;
+    for (const side of SIDES) {
       for (const data of b[side].regiments) {
         const regiment = this.regiments.get(this.regimentKey(data));
         if (!regiment) continue;
         const losses = Battles.getLosses(b, data);
         const captured = Battles.getCaptured(b, data);
-        const initial = sum(Object.values(data.troops));
-
-        if (regiment.note) {
-          const lost = sum(Object.values(losses)) + sum(Object.values(captured)); // prisoners are lost to it too
-          const share = initial ? lost / initial : 1;
-          const initialText = initial ? ` Initial forces: ${unitsText(data.troops)}.` : "";
-          const casualtiesText = sum(Object.values(losses)) ? ` Casualties: ${unitsText(losses)}.` : "";
-          const capturedText = sum(Object.values(captured)) ? ` Captured: ${unitsText(captured)}.` : "";
-          regiment.note += `<br><br>${b.name} (${year} ${eraShort}): ${battleStatus[sideIndex]}. The regiment ${BattleRules.getRegimentStatus(share)}.${initialText}${casualtiesText}${capturedText}`;
-        }
-
-        // counted in whole troops and turned back into points once, so no fraction of a man is left over
-        const { scale } = options.map.units.population;
         for (const unit in regiment.u) {
           const died = (losses[unit] ?? 0) + (captured[unit] ?? 0); // prisoners are lost to the regiment too
           regiment.u[unit] = Math.max(Military.getTroops(regiment.u[unit]) - died, 0) / scale;
@@ -2220,52 +2274,12 @@ class BattleScreenController {
           .select(`g#regiment${regiment.state}-${regiment.i} > text`)
           .text(Military.getTotal(regiment));
       }
-    });
-
-    const marker: Marker = {
-      i: (last(pack.markers)?.i ?? -1) + 1,
-      x: b.x,
-      y: b.y,
-      cell: b.cell,
-      icon: Icons.glyph("⚔️"),
-      type: "battlefields",
-      dy: 52,
-      name: b.name,
-      tags: []
-    };
-    pack.markers.push(marker);
-    Layers.draw("markers");
-
-    const getSide = (side: Side, n: number): string => {
-      const regs = b[side].regiments;
-      return regs.length > 1
-        ? `${n ? "regiments" : "forces"} of ${list([...new Set(regs.map(r => pack.states[r.state].name))])}`
-        : `${getAdjective(pack.states[regs[0].state].name)} ${regs[0].name}`;
-    };
-    const getLossesShare = (casualties: number): number => Math.min(rn(casualties * 100), 100);
-
-    const status = battleStatus[Battles.getResult(b).winner === "defenders" ? 1 : 0]; // as the side that holds the field sees it
-    const result = `The ${BattleRules.getTypeName(b.type)} ended in ${status}`;
-    let legend = `${b.name} took place in ${year} ${eraShort}. It was fought between ${getSide("attackers", 1)} and ${getSide("defenders", 0)}. ${result}.
-        <br>Attackers losses: ${getLossesShare(b.attackers.casualties)}%, defenders losses: ${getLossesShare(b.defenders.casualties)}%.`;
-    if (b.attackers.captured || b.defenders.captured)
-      legend += ` Captured: attackers ${getLossesShare(b.attackers.captured)}%, defenders ${getLossesShare(b.defenders.captured)}%.`;
-    legend += forcesLegend("Attackers", "attackers");
-    legend += forcesLegend("Defenders", "defenders");
-
-    if (b.course.length) {
-      const course = b.course.map(r => (r.count > 1 ? `${r.orders} (x${r.count})` : r.orders)).join("<br>");
-      legend += `<br><br>${t("Engagement progression")}:<br>${course}`;
     }
-    marker.note = legend;
 
-    tip(
-      t("{{battle}} is over. {{result}}", { battle: b.name, result: this.getOutcomeLabel(status) }),
-      true,
-      "success",
-      4000
-    );
+    const shown = status[winner === "defenders" ? 1 : 0]; // as the side that holds the field sees it
+    tip(t("{{battle}} is over. {{result}}", { battle: b.name, result: getOutcomeLabel(shown) }), true, "success", 4000);
     this.closeBattleScreen();
+    refreshEditors(); // the battle is in the history and the regiments lost troops
   }
 
   private readonly cancelResults = (): void => {
@@ -2288,6 +2302,7 @@ class BattleScreenController {
     this.planning = 0;
     for (const regiment of this.regiments.values()) this.leaveBattle(regiment);
     this.battle = null;
+    this.watching = null;
     this.regiments = new Map();
     this.script = [];
     this.selected = [];

@@ -258,7 +258,7 @@
 .icon-button-die:before {content:'🎲'; padding-right: .4em;}
 .icon-button-power:before {content:'💪'; padding-right: .6em;}
 
-.icon-button-melee:before {content:'⚔️'; padding-right: .4em;}
+.icon-button-melee:before {content:'⚔️';}
 .icon-button-hold:before {content:'✋'; padding-right: .4em;}
 .icon-button-fortify:before {content:'⛏️'; padding-right: .4em;}
 .icon-button-skirmish:before {content:'🎯'; padding-right: .4em; padding-left: .1em;}
