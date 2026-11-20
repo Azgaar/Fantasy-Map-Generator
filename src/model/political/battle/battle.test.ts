@@ -1921,7 +1921,10 @@ describe("battle ground", () => {
     let worst = 0;
     while (!b.result) {
       Battles.tick(b);
-      const standing = b.blocks.filter(block => block.status === "ready" && block.action !== "flee"); // not on the run
+      // not on the run, nor filing through friends after a jam
+      const standing = b.blocks.filter(
+        block => block.status === "ready" && block.action !== "flee" && !Movement.isFiling(b, block)
+      );
       for (const first of standing) {
         for (const second of standing) if (first.id < second.id) worst = Math.max(worst, overlap(first, second));
       }
@@ -3965,7 +3968,8 @@ describe("battalion tasks", () => {
     ]);
     Object.assign(stays, { morale: 0 });
     Battles.tick(b);
-    expect([stays.status, stays.stays]).toEqual(["routed", false]);
+    expect(["routed", "surrendered"]).toContain(stays.status); // at grips with no way out it gives itself up
+    expect(stays.stays).toBe(false);
   });
 
   it("is not given before the start: there troops are placed by hand", () => {

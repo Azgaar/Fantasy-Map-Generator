@@ -1286,7 +1286,15 @@ class BattleModule {
   }
 
   private yieldBlock(block: Block): void {
-    Object.assign(block, { status: "surrendered", action: "hold", target: null, impetus: 0, vx: 0, vy: 0 });
+    Object.assign(block, {
+      status: "surrendered",
+      stays: false,
+      action: "hold",
+      target: null,
+      impetus: 0,
+      vx: 0,
+      vy: 0
+    });
   }
 
   /**
@@ -1302,6 +1310,7 @@ class BattleModule {
       if (phase === SURRENDER) this.yieldBlock(block);
       else if (
         block.action === "fight" &&
+        !block.stays &&
         BattleRules.isBeaten(battle.type, block.side, phase) &&
         this.isCornered(battle, block)
       )

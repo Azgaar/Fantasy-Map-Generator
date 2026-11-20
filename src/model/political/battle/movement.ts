@@ -1422,7 +1422,7 @@ class MovementModule {
   }
 
   /** Whether the block files through its friends this tick: they are not in its way, nor it in theirs */
-  private isFiling(battle: Battle, block: Block): boolean {
+  isFiling(battle: Battle, block: Block): boolean {
     return this.getTraffic(battle)?.filing.has(block.id) === true;
   }
 
