@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { toColorHex, toHEX } from "./color-utils";
+import { getColorDistance, toColorHex, toHEX } from "./color-utils";
 
 test("toHEX keeps a hex color as it is written", () => {
   expect(toHEX("#abc")).toBe("#abc");
@@ -33,4 +33,10 @@ test("toColorHex passes a non-color value through unchanged", () => {
   expect(toColorHex("#abc")).toBe("#abc");
   expect(toColorHex("url(#hatch)")).toBe("url(#hatch)");
   expect(toColorHex("none")).toBe("none");
+});
+
+test("getColorDistance is nothing for one colour and large for red and blue", () => {
+  expect(getColorDistance("#c8473d", "#c8473d")).toBe(0);
+  expect(getColorDistance("#c8473d", "#3f72b3")).toBeGreaterThan(50);
+  expect(getColorDistance("#c8473d", "#c94a3f")).toBeLessThan(3);
 });

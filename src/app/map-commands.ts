@@ -252,6 +252,13 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.EmblemsEditor.openDefault()
   },
   {
+    id: "openChronicleButton",
+    name: t("Chronicle"),
+    link: true,
+    aliases: "history events wars battles alliances relations timeline",
+    run: () => Controllers.Chronicle.open()
+  },
+  {
     id: "editNotesButton",
     name: t("Notes Editor"),
     link: true,
@@ -500,13 +507,7 @@ export const MAP_COMMANDS: MapCommand[] = [
     aliases: "faith beliefs origins tree",
     run: () => Controllers.ReligionsEditor.showHierarchy()
   },
-  {
-    id: "showRelationsHistory",
-    name: t("Relations history"),
-    link: true,
-    aliases: "diplomacy chronicle wars",
-    run: () => Controllers.DiplomacyOverview.showHistory()
-  },
+
   {
     id: "regenerateStates",
     name: `${t("Regenerate")}: ${t("States")}`,
@@ -711,6 +712,12 @@ export const MAP_COMMANDS: MapCommand[] = [
     name: `${t("Export to CSV")}: ${t("Biomes")}`,
     aliases: "download table environment terrain",
     run: () => Controllers.BiomesEditor.exportCsv()
+  },
+  {
+    id: "exportCsvChronicle",
+    name: `${t("Export to CSV")}: ${t("Chronicle")}`,
+    aliases: "download table history events wars battles",
+    run: () => Controllers.Chronicle.exportCsv()
   },
   {
     id: "exportCsvRelations",

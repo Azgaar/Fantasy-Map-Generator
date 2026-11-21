@@ -22,7 +22,7 @@ import { speak } from "@/services/speech";
 import type { LegendItem } from "@/types/legend";
 import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { closeEntityDialogs, noteIcon } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, noteIcon, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -1052,7 +1052,7 @@ function stateRemove(stateId: number): void {
   select("#debug").selectAll(".highlight").remove();
 
   Layers.draw("burgIcons", "labels", "military", "borders", "provinces", "states");
-  refreshStatesEditor();
+  refreshEditors(); // this one, and the history and relations, which changed too
 }
 
 function toggleLegend(): void {
@@ -1511,7 +1511,7 @@ function mergeStates(statesToMerge: number[], rulingStateId: number, asProvinces
   select("#debug").selectAll(".highlight").remove();
   Layers.draw("states", "borders", "burgIcons", "labels", "provinces", "military", "emblems");
   if (asProvinces) Layers.show("provinces");
-  refreshStatesEditor();
+  refreshEditors(); // this one, and the history and relations, which changed too
 }
 
 function downloadStatesCsv(): void {

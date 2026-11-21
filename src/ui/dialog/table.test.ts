@@ -81,6 +81,14 @@ describe("initEditorTable", () => {
     expect(table.view().page).toBe(1);
   });
 
+  it("reveal goes to the page that holds the item", () => {
+    const table = initEditorTable({ dialogId: "editor", getData: () => items(250), onUpdate: () => {}, pageSize: 100 });
+    table.reveal(201);
+    expect(table.view().page).toBe(3);
+    table.reveal(999); // unknown: the page stays
+    expect(table.view().page).toBe(3);
+  });
+
   it("renders a single page for small datasets", () => {
     const table = initEditorTable({ dialogId: "editor", getData: () => items(5), onUpdate: () => {} });
     table.refresh();

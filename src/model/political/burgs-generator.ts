@@ -10,9 +10,11 @@ import type { River } from "@/model/physical/river-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import type { Province } from "@/model/political/provinces-generator";
+import type { State } from "@/model/political/states-generator";
 import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
+import { Events } from "@/model/story/events";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { BurgProduction } from "@/types/economy";
 import type { Emblem } from "@/types/emblems";
@@ -1028,13 +1030,26 @@ class BurgModule {
     return water || 0;
   }
 
-  /** Make a burg the capital of the state it is in; the old capital becomes an ordinary burg */
+  /** Make a burg the capital of the state it is in; the old capital becomes an ordinary burg. Kept in the history */
   setCapital(burgId: number): void {
+    const burg = this.living(burgId);
+    const already = Boolean(burg.capital);
+    const state = this.placeCapital(burgId);
+    if (already) return;
+    Events.logAct(`capital:${state.i}`, {
+      name: `${state.name} moves its capital to ${burg.name}`,
+      states: [state.i],
+      tag: "capital"
+    });
+  }
+
+  /** The capital moved by the app itself, as when a rebuilt map lost the old one: no history. Returns the state */
+  placeCapital(burgId: number): State {
     const burg = this.living(burgId);
     const state = pack.states[burg.state ?? 0];
     if (!burg.state || !state || state.removed)
       throw new Error(`Burg ${burgId} is in neutral lands, which have no capital`);
-    if (burg.capital) return;
+    if (burg.capital) return state;
     const old = pack.burgs[state.capital];
     state.capital = burgId;
     state.center = burg.cell;
@@ -1044,6 +1059,7 @@ class BurgModule {
       old.capital = 0;
       this.changeGroup(old);
     }
+    return state;
   }
 
   /** Move a burg to a free land cell at a map point; a capital stays inside its state or province. A port trades by the water at its new place, if any */

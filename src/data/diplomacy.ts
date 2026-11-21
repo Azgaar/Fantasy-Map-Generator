@@ -8,8 +8,6 @@ interface Relation {
   describe: (subject: string, object: string) => string;
   color: string;
   tip: string;
-  /** chronicle record of a state taking up the relation towards another; a generic change record if not set */
-  event?: { title: string; text: (subject: string, object: string) => string };
 }
 
 export const RELATIONS: Record<string, Relation> = {
@@ -17,8 +15,7 @@ export const RELATIONS: Record<string, Relation> = {
     label: t("Ally"),
     describe: (subject, object) => t("{{subject}} is an ally of {{object}}", { subject, object }),
     color: "#00b300",
-    tip: t("Allies formed a defensive pact and protect each other in case of third party aggression"),
-    event: { title: "Defence pact", text: (subject, object) => `${subject} entered into defensive pact with ${object}` }
+    tip: t("Allies formed a defensive pact and protect each other in case of third party aggression")
   },
   Friendly: {
     label: t("Friendly"),
@@ -42,39 +39,31 @@ export const RELATIONS: Record<string, Relation> = {
     label: t("Enemy"),
     describe: (subject, object) => t("{{subject}} is at war with {{object}}", { subject, object }),
     color: "#e64b40",
-    tip: t("Enemies are states at war with each other"),
-    event: { title: "War declaration", text: (subject, object) => `${subject} declared a war on its enemy ${object}` }
+    tip: t("Enemies are states at war with each other")
   },
   Unknown: {
     label: t("Unknown"),
     describe: (subject, object) => t("{{subject}} does not know about {{object}}", { subject, object }),
     color: "#a9a9a9",
-    tip: t("Relations are unknown if states do not have enough information about each other"),
-    event: {
-      title: "Relations severance",
-      text: (subject, object) => `${subject} recalled their ambassadors and wiped all the records about ${object}`
-    }
+    tip: t("Relations are unknown if states do not have enough information about each other")
   },
   Rival: {
     label: t("Rival"),
     describe: (subject, object) => t("{{subject}} is a rival of {{object}}", { subject, object }),
     color: "#ad5a1f",
-    tip: t("Rivalry is a state of competing for dominance in the region"),
-    event: { title: "Rivalization", text: (subject, object) => `${subject} and ${object} became rivals` }
+    tip: t("Rivalry is a state of competing for dominance in the region")
   },
   Vassal: {
     label: t("Vassal"),
     describe: (subject, object) => t("{{subject}} is a vassal of {{object}}", { subject, object }),
     color: "#87CEFA",
-    tip: t("Vassal is a state having obligation to its suzerain (selected state)"),
-    event: { title: "Vassalization", text: (subject, object) => `${subject} became a vassal of ${object}` }
+    tip: t("Vassal is a state having obligation to its suzerain (selected state)")
   },
   Suzerain: {
     label: t("Suzerain"),
     describe: (subject, object) => t("{{subject}} is suzerain to {{object}}", { subject, object }),
     color: "#00008B",
-    tip: t("Suzerain is a state having some control over its vassal (selected state)"),
-    event: { title: "Vassalization", text: (subject, object) => `${subject} vassalized ${object}` }
+    tip: t("Suzerain is a state having some control over its vassal (selected state)")
   }
 };
 

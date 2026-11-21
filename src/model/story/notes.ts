@@ -1,6 +1,7 @@
 // Entity notes are optional HTML fields
 import { ENTITY_TYPES, type EntityRef, MapEntities } from "@/model/map-entities";
 import { isSafeHtml } from "@/utils/validation-utils";
+import { Events } from "./events";
 
 export interface NoteEntry {
   ref: EntityRef;
@@ -20,7 +21,9 @@ class NotesStore {
   set(ref: EntityRef, note: string): boolean {
     const item = entity(ref);
     if (!item) return false;
-    if (note) item.note = note;
+    if (ref.type === "event")
+      Events.update(ref.id, { note }); // the event becomes the user's
+    else if (note) item.note = note;
     else delete item.note;
     return true;
   }

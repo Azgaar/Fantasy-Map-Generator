@@ -44,7 +44,10 @@ const TABLE_ACTIONS: Record<string, (table: Table) => void> = {
   "delete-table": table => table.deleteTable()
 };
 
-export const TOOLBAR_HTML = /* html */ `<div id="notesToolbar" role="toolbar" aria-label="${t("Note formatting")}">
+/** The formatting toolbar, with the id its editor finds it by: two editors can be open at once */
+export const getToolbarHtml = (
+  id: string
+): string => /* html */ `<div id="${id}" class="notes-toolbar" role="toolbar" aria-label="${t("Note formatting")}">
     <span class="ql-formats" role="group" aria-label="${t("History")}">
       <button class="ql-undo icon-ccw" data-tip="${t("Undo")}"></button>
       <button class="ql-redo icon-cw" data-tip="${t("Redo")}"></button>
@@ -78,7 +81,7 @@ export const TOOLBAR_HTML = /* html */ `<div id="notesToolbar" role="toolbar" ar
     <span class="ql-formats" role="group" aria-label="${t("Insert")}">
       <button class="ql-link" data-tip="${t("Insert or edit a link (Ctrl+K)")}"></button>
       <button class="ql-image" data-tip="${t("Insert an image from a file")}"></button>
-      <select id="notesTable" class="notes-table" data-tip="${t("Insert a table or edit the one under the cursor")}">
+      <select class="notes-table" data-tip="${t("Insert a table or edit the one under the cursor")}">
         <option value="" selected>${t("Table")}</option>
         <option value="insert">${t("Insert table")}</option>
         <option value="row-above">${t("Add row above")}</option>
@@ -93,6 +96,63 @@ export const TOOLBAR_HTML = /* html */ `<div id="notesToolbar" role="toolbar" ar
       <button class="ql-divider" data-tip="${t("Horizontal rule")}">―</button>
     </span>
   </div>`;
+
+/** The toolbar and the editing surface, the same in every editor */
+export const RICH_TEXT_STYLE = /* css */ `
+      .notes-toolbar { display: flex; flex-wrap: wrap; align-items: center; flex-shrink: 0; gap: 2px 9px; padding: 4px 6px; background: #f6f5f8; border-radius: 3px 3px 0 0; }
+      .notes-toolbar[hidden] { display: none; }
+      /* nothing to format while no note is selected */
+      .notes-toolbar:has(+ .notes-legend.ql-disabled) { opacity: 0.45; pointer-events: none; }
+      .notes-toolbar .ql-formats { display: flex; align-items: center; flex-shrink: 0; margin: 0; }
+      .notes-toolbar button, .notes-toolbar .ql-color-picker, .notes-toolbar .ql-icon-picker { width: 26px; height: 26px; }
+      .notes-toolbar button { padding: 4px; border-radius: 4px; transition: background-color 0.1s; }
+      .notes-toolbar .ql-picker { height: 26px; color: #333; }
+      .notes-toolbar .ql-picker-label { border-radius: 4px; }
+      .notes-toolbar button:hover, .notes-toolbar .ql-picker-label:hover, .notes-toolbar .ql-expanded .ql-picker-label { background: #ece9f3; }
+      .notes-toolbar button.ql-active, .notes-toolbar .ql-picker-label.ql-active { background: #e0d9f0; box-shadow: inset 0 0 0 1px #c4b8e0; }
+      /* Quill tints hover and active blue, which fights the app's violet accent */
+      .notes-toolbar :is(button:hover, button.ql-active, .ql-picker-label:hover, .ql-active) .ql-stroke { stroke: #5e4fa2; }
+      .notes-toolbar :is(button:hover, button.ql-active, .ql-picker-label:hover, .ql-active) .ql-fill { fill: #5e4fa2; }
+      .notes-toolbar button:focus-visible, .notes-toolbar .ql-picker-label:focus-visible { outline: 2px solid #5e4fa2; outline-offset: -2px; }
+      .notes-toolbar .ql-symbol, .notes-toolbar .ql-divider { font-size: 17px; line-height: 17px; color: #444; }
+      .notes-toolbar :is(.ql-symbol, .ql-divider):hover { color: #5e4fa2; }
+      .notes-toolbar .ql-font { width: 112px; margin-right: 3px; }
+      .notes-toolbar .ql-size { width: 76px; }
+      /* Quill previews each size by its own name, which the inline-style values are not */
+      .notes-toolbar .ql-size .ql-picker-item[data-value="10px"]::before { font-size: 10px; }
+      .notes-toolbar .ql-size .ql-picker-item[data-value="18px"]::before { font-size: 18px; }
+      .notes-toolbar .ql-size .ql-picker-item[data-value="32px"]::before { font-size: 32px; }
+      .notes-toolbar .notes-table { width: 68px; }
+      .notes-toolbar :is(.ql-font, .ql-size, .notes-table) .ql-picker-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 18px; font-weight: 400; background: white; border: 1px solid #dedbe2; }
+      .notes-toolbar .ql-font .ql-picker-label::before, .notes-toolbar .ql-font .ql-picker-item::before, .notes-toolbar .notes-table .ql-picker-label::before, .notes-toolbar .notes-table .ql-picker-item::before { content: attr(data-label); }
+      /* Fixed menus escape the dialog's own scroll box */
+      .notes-toolbar .ql-picker-options { position: fixed; /* Quill sizes the menu with min-width: 100%, which once fixed is 100% of the viewport */
+        min-width: 0; z-index: 2000; max-height: 45vh; overflow-y: auto; margin-top: 3px; padding: 4px; border-radius: 4px; box-shadow: 0 4px 14px #00000026; }
+      .notes-toolbar .ql-picker-item { border-radius: 3px; }
+      .notes-toolbar .ql-picker-item:hover { background: #ece9f3; }
+      .notes-toolbar .ql-font .ql-picker-options, .notes-toolbar .notes-table .ql-picker-options { min-width: 180px; }
+      .notes-symbols { margin: 0; padding: 6px; width: 340px; max-width: calc(100vw - 24px); max-height: 40vh; overflow: auto; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 14px #00000026; }
+      .notes-symbols:popover-open { display: grid; grid-template-columns: repeat(auto-fill, minmax(28px, 1fr)); gap: 2px; }
+      .dialog .notes-symbols button { margin: 0; min-height: 28px; padding: 2px; font-size: 18px; background: white; border: 0; border-radius: 3px; }
+      .notes-symbols button:hover, .notes-symbols button:focus-visible { background: #ece9f3; }
+            .notes-legend { border-radius: 0 0 3px 3px; }
+      /* the editing surface should read like the note itself, not like a form field */
+      .notes-legend .ql-editor { padding: 12px 16px; font-family: var(--sans-serif); font-size: 14px; line-height: 1.55; color: #1c1c1c; }
+      .notes-legend .ql-editor p { margin-bottom: 0.35em; }
+      .notes-legend .ql-editor hr { margin: 0.8em 0; border: 0; border-top: 1px solid #c9c5d0; }
+      .notes-legend .ql-editor blockquote { color: #444; }
+      .notes-legend .ql-editor.ql-blank::before { left: 16px; right: 16px; color: #9a96a3; font-style: italic; }
+      /* the link box: Quill's is a bare white strip with blue text links for Edit and Remove */
+      .notes-legend .ql-tooltip { z-index: 3; padding: 6px 10px; color: #333; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 14px #00000026; }
+      .notes-legend .ql-tooltip::before { content: "Link:"; margin-right: 8px; color: #77737f; }
+      .notes-legend .ql-tooltip[data-mode="link"]::before { content: "Enter link:"; }
+      .notes-legend .ql-tooltip input[type="text"] { width: 17em; max-width: 50vw; height: 26px; padding: 3px 6px; border: 1px solid #dedbe2; border-radius: 3px; }
+      .notes-legend .ql-tooltip input[type="text"]:focus { outline: 2px solid #5e4fa2; outline-offset: -2px; }
+      .notes-legend .ql-tooltip a { color: #5e4fa2; }
+      .notes-legend .ql-tooltip a.ql-preview { max-width: 22em; }
+      .notes-legend .ql-tooltip a.ql-action::after, .notes-legend .ql-tooltip a.ql-remove::before { margin-left: 8px; padding: 2px 6px; border: 0; border-radius: 3px; }
+      .notes-legend .ql-tooltip a:hover::after, .notes-legend .ql-tooltip a:hover::before { background: #ece9f3; }
+`;
 
 const URL_SCHEME = /^[a-z][a-z\d+.-]*:/i;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

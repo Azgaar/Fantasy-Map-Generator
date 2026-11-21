@@ -49,6 +49,7 @@ To report a problem or propose a feature, see [Reporting bugs and suggesting ide
 [Development](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Development) ·
 [Markers](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Markers) ·
 [Journeys](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Journeys) ·
+[Chronicle](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Chronicle) ·
 [Economy](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Economy) ·
 [Goods spread functions](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions) ·
 [Military Forces](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces) ·

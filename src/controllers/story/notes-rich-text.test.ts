@@ -6,12 +6,12 @@ import {
   canEditAsRichText,
   createRichTextEditor,
   getEditorHtml,
+  getToolbarHtml,
   insertSymbol,
   linkFromSelection,
   normalizeUrl,
   runTableAction,
-  setEditorHtml,
-  TOOLBAR_HTML
+  setEditorHtml
 } from "./notes-rich-text";
 
 describe("canEditAsRichText", () => {
@@ -44,7 +44,7 @@ describe("rich text editor", () => {
 
   beforeEach(() => {
     onChange.mockReset();
-    document.body.innerHTML = `${TOOLBAR_HTML}<div id="host"></div>`;
+    document.body.innerHTML = `${getToolbarHtml("notesToolbar")}<div id="host"></div>`;
     quill = createRichTextEditor(document.getElementById("host")!, document.getElementById("notesToolbar")!, onChange, [
       "Arial",
       "Almendra SC",

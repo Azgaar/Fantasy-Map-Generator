@@ -7,6 +7,7 @@ import { Pins } from "@/model/options/pins";
 import { Names } from "@/model/society/names-generator";
 import { Lore } from "@/model/story/lore";
 import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 
 import { bindPinIcons } from "@/ui/pin-icons";
 import { t } from "@/utils/i18n";
@@ -163,6 +164,7 @@ function onLoreChange(event: Event): void {
   }
 
   Options.save();
+  if (input.id !== "loreDescription" && input.id !== "loreMapName") refreshEditors(); // dates are worded by the year and the era
 }
 
 function regenerateMapName(): void {
@@ -178,6 +180,7 @@ function regenerateEra(): void {
   Lore.setEra(Names.getEra());
   Options.save();
   fillInputs();
+  refreshEditors();
 }
 
 /** Show the lore again after something else changed it */

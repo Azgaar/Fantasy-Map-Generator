@@ -6,6 +6,7 @@ import { Routes } from "@/model/economy/routes-generator";
 import { Stability, type StabilityPart } from "@/model/political/stability";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
+import { Events } from "@/model/story/events";
 import { requireColor } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { getAdjective } from "@/utils/language-utils";
@@ -162,12 +163,10 @@ class ZonesModule {
   private addInvasion(usedCells: Uint8Array) {
     const { cells, states } = pack;
 
-    const ongoingConflicts = states
-      .filter(s => s.i && !s.removed && s.campaigns)
-      .flatMap(s => s.campaigns!)
-      .filter(c => !c.end);
+    const ongoingConflicts = Events.list({ type: "war", ongoing: true }).filter(war => war.defenders.length);
     if (!ongoingConflicts.length) return;
-    const { defender, attacker, name: war } = ra(ongoingConflicts);
+    const { attackers, defenders, name: war } = ra(ongoingConflicts);
+    const [attacker, defender] = [attackers[0], defenders[0]];
 
     const borderCells = cells.i.filter(cellId => {
       if (usedCells[cellId]) return false;

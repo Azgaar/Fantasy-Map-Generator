@@ -173,7 +173,6 @@ class ProposalCardView {
 
   /** A field's label as the user reads it */
   private fieldLabel(row: ChangeRow): string {
-    if (this.isChronicle(row)) return "Entries";
     if (row.key === "style") {
       // "ocean.groups.base.attrs.fill" → "Ocean · Base · Fill"
       const [element, ...rest] = row.field.split(".");
@@ -217,13 +216,13 @@ class ProposalCardView {
       const idType = MapEntities.referenceType(type, field);
       if (idType) return this.entityName(`${idType}:${value}`) || String(value);
     }
-    if (Array.isArray(value)) return this.isChronicle(row) ? String(value.length) : plural(value.length, "item");
+    if (Array.isArray(value)) return plural(value.length, "item");
     const shown = typeof value === "string" ? value : JSON.stringify(value);
     return shown.length > 80 ? `${shown.slice(0, 80)}…` : shown;
   }
 
   private entityLabel(row: ChangeRow): string {
-    return this.isChronicle(row) ? "Chronicle" : row.entity;
+    return row.entity;
   }
 
   /** The main fields of an added entity, as [label, value] */
@@ -237,10 +236,9 @@ class ProposalCardView {
     });
   }
 
-  /** Items an append row adds: chronicle entries by their titles */
+  /** Items an append row adds */
   private addedText(row: ChangeRow): string {
-    const items = row.after as unknown[];
-    return this.isChronicle(row) ? items.map(entry => (entry as string[])[0]).join(", ") : plural(items.length, "item");
+    return plural((row.after as unknown[]).length, "item");
   }
 
   /** The icon of an entity that has one, as the row holds it or the map does */
@@ -266,10 +264,6 @@ class ProposalCardView {
     template.innerHTML = note;
     for (const image of template.content.querySelectorAll("img")) image.replaceWith(`[${image.alt || "image"}]`);
     return `<div class="assistantNotePreview">${template.innerHTML}</div>`;
-  }
-
-  private isChronicle({ key, field }: ChangeRow): boolean {
-    return key === "state:0" && field === "diplomacy";
   }
 
   /** Chats render before a map exists too */

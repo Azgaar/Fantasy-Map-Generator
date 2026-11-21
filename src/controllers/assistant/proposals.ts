@@ -3,6 +3,7 @@ import { effectAt } from "@/controllers/style/effects";
 import { Pack } from "@/model/graph/pack-generator";
 import { MapEntities } from "@/model/map-entities";
 import { Options } from "@/model/options/options-model";
+import { Events } from "@/model/story/events";
 import { Styles } from "@/model/styles/styles";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { type LayerId, Layers } from "@/renderers/layers";
@@ -137,6 +138,7 @@ class ProposalLifecycle {
   }
 
   private refresh(change: Change): void {
+    Events.reload(); // events are written as rows, past its index
     Layers.draw(...change.layers);
     this.refreshStyle(change.stylePaths);
     Pack.markChanged(); // the draft's edits forgot only the draft's numbers

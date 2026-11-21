@@ -323,8 +323,7 @@ Untranslated `public/modules/**/*.js` reads state through `window.Layers`; the D
   preserves permanent layers and ignores unknown ids; `move` reorders array and SVG together;
   `restore` applies order and state without drawing, handles unknown and missing ids, and round-trips
   `state`; `subscribe` emits once per operation and stops after unsubscribing.
-- **E2E:** `tests/e2e/` covers what unit tests cannot — `layers.spec.ts` (per-layer DOM snapshots),
-  `layer-content.spec.ts` (content after hide/show), `layer-teardown.spec.ts` (user data and edited
+- **E2E:** `tests/e2e/` covers what unit tests cannot — `layer-content.spec.ts` (content after hide/show), `layer-teardown.spec.ts` (user data and edited
   styles survive teardown), `layer-scenarios.spec.ts` (presets, regeneration, reordering, export),
   and `layers-round-trip.spec.ts` (active set and custom order survive save and load — the behaviour
   `data[50]` exists for).

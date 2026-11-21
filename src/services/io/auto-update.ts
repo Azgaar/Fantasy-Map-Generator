@@ -1,5 +1,6 @@
 // Update an old map file to the current version
 
+import Alea from "alea";
 import { extent, min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
 import { isDrawable } from "@/controllers/political/emblems/drawability";
@@ -34,6 +35,9 @@ import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
 import { Religions } from "@/model/society/religions-generator";
+import { Dates } from "@/model/story/dates";
+import { Events } from "@/model/story/events";
+import { History } from "@/model/story/history-generator";
 import { getDefaultMarkerName, type Marker, Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
 import { Styles } from "@/model/styles/styles";
@@ -71,13 +75,6 @@ import { parsePathPoints } from "@/utils/path-utils";
 import { rw } from "@/utils/probability-utils";
 import { parseTransform, safeParseJSON } from "@/utils/string-utils";
 import { Csv } from "./csv";
-
-type LegacyBurgGroup = Omit<MapData["burgs"]["groups"][number], "biomes" | "states" | "cultures" | "religions"> & {
-  biomes?: number[] | string;
-  states?: number[] | string;
-  cultures?: number[] | string;
-  religions?: number[] | string;
-};
 
 const LEGACY_LAYER_IDS: Record<string, LayerId> = {
   toggleTexture: "texture",
@@ -215,7 +212,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     for (const state of pack.states) state.economy ??= noFinance();
     pack.cells.development = new Uint8Array(0);
     States.collectStatistics();
-    States.generateCampaigns();
+    States.generatePastWars();
     States.generateDiplomacy();
     States.defineStateForms();
     Provinces.generate();
@@ -416,7 +413,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
   if (isOlderThan("1.3.0")) {
     // v1.3 added campaings data for all states
-    States.generateCampaigns();
+    States.generatePastWars();
 
     // v1.3 added militry layer
     selectInSvg("#viewbox")
@@ -2323,6 +2320,118 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     }
     migrateEconomyRun();
   }
+
+  if (isOlderThan("1.159.0")) {
+    // v1.159.0 keeps wars, alliances and vassalages as events and retires the Relations history
+    migrateHistory();
+    function migrateHistory(): void {
+      const { year } = options.map.lore.calendar;
+      const random = Alea(`${options.map.seed}:history:update`);
+      const states = (pack.states ?? []) as (State & { campaigns?: LegacyCampaign[] })[];
+      const living = states.filter(state => state.i && !state.removed);
+      const age = () => Math.max(1, Math.round(5 + random() * 60));
+
+      const campaigns = new Map<string, LegacyCampaign>();
+      for (const state of states) {
+        for (const campaign of state.campaigns ?? []) {
+          const key = [campaign.name, campaign.start, campaign.attacker, campaign.defender].join("|");
+          if (!campaigns.has(key)) campaigns.set(key, campaign);
+        }
+        delete state.campaigns;
+      }
+      const isLiving = (id: number) => Boolean(id && states[id] && !states[id].removed);
+      const relation = (a: number, b: number) => (isLiving(a) && isLiving(b) ? states[a].diplomacy?.[b] : undefined);
+
+      const past = [...campaigns.values()]
+        .filter(campaign => campaign.end !== undefined)
+        .sort((a, b) => a.start - b.start || a.name.localeCompare(b.name) || a.attacker - b.attacker);
+      const kept = History.pick(past, History.sampleSize(living.length), random).sort((a, b) => a.start - b.start);
+      const ongoing = [...campaigns.values()].filter(campaign => campaign.end === undefined);
+
+      for (const campaign of [...kept, ...ongoing]) {
+        const { name, start, attacker, defender } = campaign;
+        // old versions left a war going on after peace: one whose leaders are no longer at war is over by now
+        const over = campaign.end === undefined && relation(attacker, defender) !== "Enemy";
+        const end = over ? year : campaign.end;
+        const attackers = [attacker];
+        const defenders = defender ? [defender] : [];
+        if (end === undefined && defender)
+          for (const state of living) {
+            if (state.i === attacker || state.i === defender) continue;
+            const [againstAttacker, againstDefender] = [relation(state.i, attacker), relation(state.i, defender)];
+            if (againstAttacker === "Enemy" && againstDefender !== "Enemy") defenders.push(state.i);
+            if (againstDefender === "Enemy" && againstAttacker !== "Enemy") attackers.push(state.i);
+          }
+        Events.add({
+          type: "war",
+          name,
+          start: Dates.ofYear(start),
+          ...(end !== undefined && { end: Dates.ofYear(Math.max(end, start)) }),
+          attackers,
+          defenders,
+          tags: ["war"],
+          auto: true
+        });
+      }
+
+      for (const state of living) {
+        state.diplomacy?.forEach((value, other) => {
+          if (other <= state.i && value !== "Vassal") return;
+          const atWar = Events.list({ type: "war", ongoing: true, state: state.i, against: other }).length > 0;
+          if (value === "Enemy" && !atWar && isLiving(other)) {
+            Events.add({
+              type: "war",
+              name: Events.pairName(state.i, other, "War"),
+              start: Dates.ofYear(year - age()),
+              attackers: [state.i],
+              defenders: [other],
+              tags: ["war"],
+              auto: true
+            });
+          }
+          const held = Events.list({ type: "vassalage", ongoing: true }).some(
+            event => event.vassal === state.i && event.suzerain === other
+          );
+          if (value === "Vassal" && isLiving(other) && !held)
+            Events.add({
+              type: "vassalage",
+              name: `${state.name} under ${states[other].name}`,
+              start: Dates.ofYear(year - age()),
+              suzerain: other,
+              vassal: state.i,
+              tags: ["vassalage"],
+              auto: true
+            });
+        });
+      }
+
+      const chronicle = (states[0]?.diplomacy ?? []) as unknown[];
+      const entries = chronicle.filter((entry): entry is string[] => Array.isArray(entry) && entry.length > 0);
+      if (entries.length) {
+        const escapeText = (text: string) =>
+          String(text)
+            .replace(/&(?!#?\w+;)/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        const note = entries
+          .map(
+            ([title, ...lines]) =>
+              `<p><b>${escapeText(title)}</b>${lines.map(line => `<br>${escapeText(line)}`).join("")}</p>`
+          )
+          .join("");
+        const present = Dates.ofYear(year);
+        Events.add({
+          type: "custom",
+          name: "Relations history",
+          start: present,
+          end: present,
+          tags: ["relations"],
+          note
+        });
+      }
+      if (states[0]) delete states[0].diplomacy;
+    }
+  }
 }
 
 // rendered for the geometry the steps measure, in a shadow root so its ids never meet the live map's
@@ -2508,7 +2617,8 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
     for (const unit of migrated.military.units) {
       if (!unit || typeof unit !== "object") continue;
       if (!unit.icon) unit.icon = icons[unit.type] ?? "⚔️";
-      if (unit.power === undefined) unit.power = unit.crew;
+      const old = unit as { power?: number; crew: number; attack?: number }; // a single power, split into traits on restore
+      if (old.power === undefined && old.attack === undefined) old.power = old.crew;
     }
   }
 
@@ -2523,4 +2633,19 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
     const count = counts.find(count => rn(Math.sqrt((width * height) / count), 2) === graph?.spacing);
     return count ?? (Array.isArray(graph?.points) && graph.points.length ? graph.points.length : 10000);
   }
+}
+
+type LegacyBurgGroup = Omit<MapData["burgs"]["groups"][number], "biomes" | "states" | "cultures" | "religions"> & {
+  biomes?: number[] | string;
+  states?: number[] | string;
+  cultures?: number[] | string;
+  religions?: number[] | string;
+};
+
+interface LegacyCampaign {
+  name: string;
+  start: number;
+  end?: number;
+  attacker: number;
+  defender: number;
 }

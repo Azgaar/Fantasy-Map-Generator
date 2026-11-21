@@ -16,6 +16,7 @@ type EditorTable<T> = {
   goto: (page: number) => void;
   refresh: () => void;
   reset: () => void;
+  reveal(item: T): void; // refresh on the page that holds the item
 };
 
 /** A table holds its data for the dialog `dialogId` and forgets it when the dialog closes */
@@ -40,10 +41,12 @@ export function initEditorTable<T>({
     watched = null;
   };
 
-  const refresh = () => {
+  const refresh = (reveal?: T) => {
     const size = pageSize ?? defaultPageSize();
     const all = getData();
     const total = all.length;
+    const revealed = reveal === undefined ? -1 : all.indexOf(reveal);
+    if (revealed !== -1) page = Math.floor(revealed / size) + 1;
     const totalPages = Math.max(1, Math.ceil(total / size));
     page = Math.min(Math.max(1, page), totalPages);
     const start = (page - 1) * size;
@@ -62,11 +65,12 @@ export function initEditorTable<T>({
       page = p;
       refresh();
     },
-    refresh,
+    refresh: () => refresh(),
     reset: () => {
       page = 1;
       refresh();
-    }
+    },
+    reveal: (item: T) => refresh(item)
   };
 }
 
