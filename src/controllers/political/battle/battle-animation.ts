@@ -1,8 +1,9 @@
 import { rgb } from "d3";
 import type { BattleLook, BattleOptions } from "@/data/battle-options";
-import { type Battle, Battles, type Intervention, type Settled } from "@/model/political/battle/battle";
+import { type Battle, Battles } from "@/model/political/battle/battle";
 import { TICK_SECONDS } from "@/model/political/battle/battle-scale";
 import type { Battlefield } from "@/model/political/battle/battlefield";
+import type { BattleStart } from "@/model/political/battle/replay";
 import { BattleTime } from "@/model/political/battle/time";
 import { BattleCamera, type Camera, type View } from "@/renderers/battle/battle-camera";
 import { LAMP } from "@/renderers/battle/draw-battle-light";
@@ -17,14 +18,6 @@ import { downloadFile } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
 import { log } from "@/utils/logger";
 import { escapeHtml } from "@/utils/string-utils";
-
-/** A battle set up anew at its start, with the changes to make on the way */
-export interface BattleStart {
-  battle: Battle;
-  script: Intervention[];
-  settled: Settled | null; // what the generals settled on: they do not think it through again
-  until?: number; // a past battle stops at the tick it was applied at
-}
 
 /** What the screen hands an export: the battle from its start, and how it is drawn on screen */
 export interface BattleSource {
@@ -76,9 +69,9 @@ export interface Stage {
   svg: SVGSVGElement;
   overlay: SVGSVGElement;
   ground: string; // the field's markup
-  readonly defs: string; // the symbols and the look the blocks use
+  readonly defs: string; // the symbols and the look the battalions use
   readonly view: View;
-  placeBlocks(): void;
+  placeBattalions(): void;
   frame(elapsed: number): void;
 }
 
@@ -330,16 +323,16 @@ class BattleAnimationExport {
       get view(): View {
         return camera.view;
       },
-      /** Blocks drawn anew, with the unit icons a file has to carry: they are symbols of the page */
-      placeBlocks: (): void => {
-        BattleSceneView.drawBlocks(svg, battle, this.noop);
+      /** Battalions drawn anew, with the unit icons a file has to carry: they are symbols of the page */
+      placeBattalions: (): void => {
+        BattleSceneView.drawBattalions(svg, battle, this.noop);
         for (const use of svg.querySelectorAll("use")) icons.add(use.getAttribute("href")!.slice(1));
         const style = svg.querySelector("#battleLook")?.outerHTML ?? "";
         defs = `${style}<defs>${this.markup([...icons].flatMap(id => document.getElementById(id) ?? []))}</defs>`;
       },
       /** The camera `elapsed` seconds on, and the overlay for the moment */
       frame: (elapsed: number): void => {
-        camera = BattleCamera.move(camera, battle.field, BattleCamera.toCameraTroops(battle.blocks), mode, elapsed);
+        camera = BattleCamera.move(camera, battle.field, BattleCamera.toCameraTroops(battle.battalions), mode, elapsed);
         BattleSceneView.setView(svg, battle.field, camera.view);
         BattleSceneView.drawLight(svg, battle); // the tint goes with the hour; the ground was taken at the start
         const clock = BattleTime.formatClock(battle.hour, battle.tick);
@@ -361,8 +354,8 @@ class BattleAnimationExport {
     Battles.applyDue(battle, script);
     Battles.plan(battle, settled); // the first frame shows the troops as the generals drew them up
     const stage = this.createStage(battle, source, camera);
-    stage.placeBlocks();
-    BattleSceneView.updateBlocks(stage.svg, battle, null, 1);
+    stage.placeBattalions();
+    BattleSceneView.updateBattalions(stage.svg, battle, null, 1);
     stage.frame(Infinity); // framed from the first frame
 
     const layers = MOVING_LAYERS.map(id => stage.svg.querySelector(`#${id}`)!);
@@ -384,12 +377,12 @@ class BattleAnimationExport {
     while (!battle.result && battle.tick < until) {
       if (signal.aborted) return null;
       const previous = BattleSceneView.snapshot(battle);
-      const blocks = battle.blocks.length;
+      const battalions = battle.battalions.length;
       Battles.applyDue(battle, script);
-      if (battle.blocks.length !== blocks) stage.placeBlocks(); // a recorded reinforcement
+      if (battle.battalions.length !== battalions) stage.placeBattalions(); // a recorded reinforcement
       Battles.tick(battle);
       for (let frame = 1; frame <= frames; frame++) {
-        BattleSceneView.updateBlocks(stage.svg, battle, previous, frame / frames);
+        BattleSceneView.updateBattalions(stage.svg, battle, previous, frame / frames);
         stage.frame(delay / 1000);
         await addFrame(delay);
       }

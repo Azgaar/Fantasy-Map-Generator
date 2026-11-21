@@ -30,7 +30,7 @@ const SHORE = [0.2, 0.45, 0.8]; // the band by the sea or a lake drawn as the wa
 const REEDS = [6, 0.45]; // points between the places along a river bank a clump of reeds may stand, and its share
 const CRACKS = 0.45; // share of the spots on a dry lake bed with a crack
 
-type Kind =
+type PropKind =
   | "deciduous"
   | "conifer"
   | "coniferSnow"
@@ -54,7 +54,7 @@ interface Style {
   size: number;
 }
 
-const STYLES: Record<Kind, Style> = {
+const STYLES: Record<PropKind, Style> = {
   deciduous: { fill: "#cadbb0", stroke: "#7c9a62", width: 0.35, size: 1 },
   conifer: { fill: "#bccfa4", stroke: "#6d8a58", width: 0.35, size: 1 },
   coniferSnow: { fill: "#f1f4ef", stroke: "#6d8a58", width: 0.35, size: 1 },
@@ -72,11 +72,11 @@ const STYLES: Record<Kind, Style> = {
   crack: { stroke: "#bba987", width: 0.35, size: 1 }
 };
 
-const KINDS = Object.keys(STYLES) as Kind[];
-const TREES = new Set<Kind>(["deciduous", "conifer", "coniferSnow", "palm", "acacia", "deadTree"]);
-const TURNED = new Set<Kind>(["rock", "scree", "crack"]); // lie any way round
+const KINDS = Object.keys(STYLES) as PropKind[];
+const TREES = new Set<PropKind>(["deciduous", "conifer", "coniferSnow", "palm", "acacia", "deadTree"]);
+const TURNED = new Set<PropKind>(["rock", "scree", "crack"]); // lie any way round
 // the relief icons of a biome's pool as props
-const POOL: Record<string, Kind> = {
+const POOL: Record<string, PropKind> = {
   ...Object.fromEntries([...TREES].map(kind => [kind, kind])),
   swamp: "reeds",
   grass: "grass",
@@ -89,7 +89,7 @@ const COLD_DESERT = 2;
 const TUNDRA = 10;
 const GLACIER = 11;
 const WETLAND = 12;
-const BARE: Partial<Record<number, [Kind, number]>> = {
+const BARE: Partial<Record<number, [PropKind, number]>> = {
   [COLD_DESERT]: ["rock", 0.06],
   [TUNDRA]: ["rock", 0.05],
   [GLACIER]: ["crevasse", 0.12]
@@ -165,11 +165,11 @@ class BattleGroundRenderer {
     };
     const wind = (Battlefields.mix(sx, sy, 200) - 0.5) * 0.8; // the dunes of a field all face one way
     const biomes = new Map<number, BiomeProps>();
-    const glyphs = () => Object.fromEntries(KINDS.map(kind => [kind, [] as string[]])) as Record<Kind, string[]>;
+    const glyphs = () => Object.fromEntries(KINDS.map(kind => [kind, [] as string[]])) as Record<PropKind, string[]>;
     const placed = { covered: glyphs(), open: glyphs() }; // in woods and bogs, or not
     let count = 0;
 
-    const put = (kind: Kind, x: number, y: number, roll: Roll, covered = false): void => {
+    const put = (kind: PropKind, x: number, y: number, roll: Roll, covered = false): void => {
       const size = pt * GLYPH * STYLES[kind].size * (0.85 + roll(3) * 0.35);
       const angle = kind === "dune" ? wind + (roll(4) - 0.5) * 0.3 : TURNED.has(kind) ? roll(4) * 6.3 : 0;
       placed[covered ? "covered" : "open"][kind].push(this.drawGlyph(kind, x, y, size, angle, digits, roll));
@@ -215,7 +215,7 @@ class BattleGroundRenderer {
       });
     });
 
-    const paths = (group: Record<Kind, string[]>): string =>
+    const paths = (group: Record<PropKind, string[]>): string =>
       KINDS.filter(kind => group[kind].length)
         .map(kind => {
           const { fill, stroke, width } = STYLES[kind];
@@ -241,7 +241,7 @@ class BattleGroundRenderer {
     cover: { wood: number; marsh: number; sea: number },
     biome: number,
     { pool, trees, density }: BiomeProps
-  ): { kind: Kind; covered?: boolean } | null {
+  ): { kind: PropKind; covered?: boolean } | null {
     const chance = roll(2);
 
     if (cliff && cliff.distance < CLIFF_BAND) return null;
@@ -280,7 +280,15 @@ class BattleGroundRenderer {
   }
 
   /** A glyph in field coordinates, `size` a point of it */
-  private drawGlyph(kind: Kind, x: number, y: number, size: number, angle: number, digits: number, roll: Roll): string {
+  private drawGlyph(
+    kind: PropKind,
+    x: number,
+    y: number,
+    size: number,
+    angle: number,
+    digits: number,
+    roll: Roll
+  ): string {
     const [cos, sin] = [Math.cos(angle), Math.sin(angle)];
     const p = (dx: number, dy: number): string =>
       `${rn(x + (dx * cos - dy * sin) * size, digits)} ${rn(y + (dx * sin + dy * cos) * size, digits)}`;

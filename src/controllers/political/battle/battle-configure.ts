@@ -16,12 +16,12 @@ import { ensureEl, findEl } from "@/utils/node-utils";
 import { BattleAnimation, type BattleSource, MIN_DELAY_MS } from "./battle-animation";
 import { BattleReport, type ReportText } from "./battle-report";
 
-type Group = keyof BattleOptions;
+type OptionGroup = keyof BattleOptions;
 
 /** What the battle screen lends the dialog */
 export interface BattleContext {
   tickMs: number;
-  onChange: (group: Group) => void;
+  onChange: (group: OptionGroup) => void;
   getSource: () => BattleSource & { report: ReportText };
   pause: () => void;
   toggleLog: () => void;
@@ -66,7 +66,7 @@ const STYLE = /* css */ `
 `;
 
 class BattleConfigureController {
-  private readonly groups: { group: Group; label: string; controls: Control[] }[] = [
+  private readonly groups: { group: OptionGroup; label: string; controls: Control[] }[] = [
     {
       group: "view",
       label: t("View"),
@@ -339,7 +339,7 @@ class BattleConfigureController {
     dialog.addEventListener("change", event => this.change(event.target as Input));
     dialog.addEventListener("input", event => this.showHint(event.target as Input)); // as a slider is dragged
     dialog.addEventListener("click", event => {
-      const group = (event.target as HTMLElement).closest<HTMLElement>("[data-reset]")?.dataset.reset as Group;
+      const group = (event.target as HTMLElement).closest<HTMLElement>("[data-reset]")?.dataset.reset as OptionGroup;
       if (!group) return;
       event.preventDefault(); // the section stays as it is
       this.reset(group);
@@ -376,18 +376,18 @@ class BattleConfigureController {
     button?.classList.toggle("pressed", show);
   }
 
-  private getGroup(group: Group): Record<string, unknown> {
+  private getGroup(group: OptionGroup): Record<string, unknown> {
     return options.app.battle[group] as Record<string, unknown>;
   }
 
-  private getValue(group: Group, key: string): unknown {
+  private getValue(group: OptionGroup, key: string): unknown {
     if (group === "view" && key === "plan") return options.app.debug.includes("battle");
     const [head, tail] = key.split(".");
     const value = this.getGroup(group)[head];
     return tail ? (value as Record<string, unknown>)[tail] : value;
   }
 
-  private setValue(group: Group, key: string, value: unknown): void {
+  private setValue(group: OptionGroup, key: string, value: unknown): void {
     if (group === "view" && key === "plan") {
       const debug = options.app.debug.filter(mode => mode !== "battle");
       Options.set(o => (o.app.debug = value ? [...debug, "battle"] : debug));
@@ -402,7 +402,7 @@ class BattleConfigureController {
     });
   }
 
-  private renderControl(group: Group, { key, label, tip, choices, range, step = 1, hint }: Control): string {
+  private renderControl(group: OptionGroup, { key, label, tip, choices, range, step = 1, hint }: Control): string {
     const id = `battleConfigure_${group}_${key.replace(".", "_")}`;
     if (range) {
       const fallback = DEFAULT_BATTLE_OPTIONS.simulation[key as keyof BattleSettings];
@@ -439,7 +439,7 @@ class BattleConfigureController {
       .join("");
 
     for (const input of dialog.querySelectorAll<Input>("[data-key]")) {
-      const value = this.getValue(input.dataset.group as Group, input.dataset.key!);
+      const value = this.getValue(input.dataset.group as OptionGroup, input.dataset.key!);
       if (input instanceof HTMLInputElement && input.type === "checkbox") input.checked = Boolean(value);
       else input.value = String(value);
       if (input instanceof HTMLSelectElement && input.selectedIndex < 0) input.selectedIndex = input.length - 1; // the fastest offered
@@ -452,7 +452,7 @@ class BattleConfigureController {
   }
 
   private change(input: Input): void {
-    const group = input.dataset.group as Group | undefined;
+    const group = input.dataset.group as OptionGroup | undefined;
     const key = input.dataset.key;
     if (!group || !key || !this.context) return; // the inner inputs of a slider: it tells its own change
     let value: unknown = input.value;
@@ -478,7 +478,7 @@ class BattleConfigureController {
     this.context.onChange(group);
   }
 
-  private reset(group: Group): void {
+  private reset(group: OptionGroup): void {
     if (!this.context || this.recording) return;
     Options.set(o => (o.app.battle[group] = structuredClone(DEFAULT_BATTLE_OPTIONS[group]) as never));
     if (group === "view") this.setValue("view", "plan", false);

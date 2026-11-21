@@ -8,7 +8,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { getKmInDistanceUnit, getPeople, heightToMeters } from "@/model/units";
 import type { Point } from "@/types/global";
 import { FlatQueue } from "@/utils/flat-queue";
-import { BattleRules, type BattleType } from "./battle-rules";
+import { BattleRules, type BattleType, type Side } from "./battle-rules";
 import { BattleScale, COLS, DEFAULT_BATTALION, type FieldSize, ROWS, SCENE, SURROUND } from "./battle-scale";
 import { BattleSite } from "./battle-site";
 import { type CliffGround, Cliffs, CORNERS } from "./cliffs";
@@ -64,7 +64,7 @@ export interface FieldWork {
   a: Point;
   b: Point;
   kind: WorkKind;
-  side: "attackers" | "defenders"; // who holds it
+  side: Side; // who holds it
   builder: number | null; // the battalion building it; null for works laid in advance and wagons nobody is sent to
   done: number; // 0 to 1
   up: boolean; // finished by the start of this round: only then it counts

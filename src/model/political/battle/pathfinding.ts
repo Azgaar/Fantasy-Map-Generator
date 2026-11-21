@@ -20,7 +20,7 @@ const KEPT_REACHES = 256; // spreads from a node: one for every battalion of a l
 const KEPT_GRIDS = 512;
 const HEAP = 1024;
 
-type Grid = Float32Array | Uint16Array;
+type NodeValues = Float32Array | Uint16Array;
 
 /** The node by another that a spread comes to, the other itself when it can, and the cost of the way there */
 interface Nearest {
@@ -36,8 +36,8 @@ class PathfindingModule {
   private readonly ways = new Map<string, number[] | null>();
   private readonly nearest = new Map<string, Nearest>();
   private readonly reaches = new Map<string, Reach>();
-  private readonly gridIds = new WeakMap<Grid, number>();
-  private readonly grids = new Map<number, { grid: Grid; id: number }[]>(); // grids by the hash of their content
+  private readonly gridIds = new WeakMap<NodeValues, number>();
+  private readonly grids = new Map<number, { grid: NodeValues; id: number }[]>(); // grids by the hash of their content
   private lastGridId = 0;
 
   /**
@@ -399,7 +399,14 @@ class PathfindingModule {
     return best;
   }
 
-  private getKey(cols: number, rows: number, start: number, end: number, costs: Grid, closed: Grid): string {
+  private getKey(
+    cols: number,
+    rows: number,
+    start: number,
+    end: number,
+    costs: NodeValues,
+    closed: NodeValues
+  ): string {
     return `${this.getGridId(costs)}|${this.getGridId(closed)}|${cols}|${rows}|${start}|${end}`;
   }
 
@@ -418,7 +425,7 @@ class PathfindingModule {
   }
 
   /** A number for the content of a grid: grids that hold the same get the same one */
-  private getGridId(grid: Grid): number {
+  private getGridId(grid: NodeValues): number {
     const known = this.gridIds.get(grid);
     if (known !== undefined) return known;
     const words = new Int32Array(grid.buffer, grid.byteOffset, grid.byteLength >> 2);
@@ -436,7 +443,7 @@ class PathfindingModule {
     return id;
   }
 
-  private isSameGrid(a: Grid, b: Grid): boolean {
+  private isSameGrid(a: NodeValues, b: NodeValues): boolean {
     if (a.constructor !== b.constructor || a.length !== b.length) return false;
     for (let i = 0; i < a.length; i++) if (!Object.is(a[i], b[i])) return false;
     return true;

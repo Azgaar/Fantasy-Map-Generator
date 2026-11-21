@@ -121,12 +121,12 @@ void main() {
 }`;
 
 const SKY = ["rain", "snow", "fog", "heat"] as const;
-type Sky = Record<(typeof SKY)[number], number>; // how much of each there is to show, 0 to 1
+type SkyShares = Record<(typeof SKY)[number], number>; // how much of each there is to show, 0 to 1
 
 interface Layer {
   gl: WebGLRenderingContext;
   uniforms: Record<"size" | "time" | (typeof SKY)[number], WebGLUniformLocation | null>;
-  sky: Sky;
+  sky: SkyShares;
   running: boolean; // a frame is asked for: one loop a canvas
 }
 
@@ -140,13 +140,13 @@ const blob = line().curve(curveBasisClosed);
 class BattleWeatherRenderer {
   private readonly layers = new WeakMap<HTMLCanvasElement, Layer | null>();
 
-  private isEmpty(sky: Sky): boolean {
+  private isEmpty(sky: SkyShares): boolean {
     return SKY.every(name => !sky[name]);
   }
 
   /** Show the weather on the canvas, or hide it; the canvas keeps the size of its box */
   draw(canvas: HTMLCanvasElement, weather: Weather, heat: boolean, shown: boolean): void {
-    const sky: Sky = {
+    const sky: SkyShares = {
       rain: shown ? RAIN[weather] : 0,
       snow: +(shown && weather === "snow"),
       fog: +(shown && weather === "fog"),

@@ -1,5 +1,6 @@
 // What part of the battle field is in sight: pure, so the screen and the exports frame a battle the same way
 
+import type { CameraChoice } from "@/data/battle-options";
 import { COLS, ROWS, SURROUND, VIEW_ASPECT } from "@/model/political/battle/battle-scale";
 
 export interface View {
@@ -23,7 +24,7 @@ export interface CameraTroop {
   present: boolean; // still on the field: not fled, not destroyed
 }
 
-export type CameraMode = "follow" | "field" | "manual";
+export type CameraMode = CameraChoice | "manual";
 
 /** The view in sight, and the framing it eases toward */
 export interface Camera {
@@ -120,8 +121,8 @@ class BattleCameraModule {
   }
 
   /** Battalions as the camera sees them: the fled and the destroyed are off the field */
-  toCameraTroops(blocks: { x: number; y: number; width: number; depth: number; status: string }[]) {
-    return blocks.map(({ x, y, width, depth, status }) => ({
+  toCameraTroops(battalions: { x: number; y: number; width: number; depth: number; status: string }[]) {
+    return battalions.map(({ x, y, width, depth, status }) => ({
       x,
       y,
       width,

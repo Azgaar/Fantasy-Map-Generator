@@ -2,7 +2,7 @@ import { color, contours, curveBasisClosed, curveCatmullRom, line, select } from
 import { type BattleLook, DEFAULT_BATTLE_OPTIONS } from "@/data/battle-options";
 import { BATTLE_ACTION_LABELS, BATTLE_STATUS_LABELS } from "@/data/id-labels";
 import { Icons } from "@/model/icons";
-import { type Battle, Battles, type Block } from "@/model/political/battle/battle";
+import { type Battalion, type Battle, Battles } from "@/model/political/battle/battle";
 import type { Side } from "@/model/political/battle/battle-rules";
 import { BattleScale } from "@/model/political/battle/battle-scale";
 import {
@@ -39,7 +39,7 @@ import { capitalize, escapeHtml } from "@/utils/string-utils";
  * - `battleLabels`: burg and river names
  * - `battleWorks`, `battleWorkTips`, `battleWallTips`: field works, and the hover lines of works and walls
  * - `battleFire`, `battleArrows`, `battleHover`: fire lines, where battalions went, the marks of the pointed and picked
- * - `battleBlocks`, `battleMissiles`, `battleClashes`: battalions, arrows and shells in flight, clashes
+ * - `battleBattalions`, `battleMissiles`, `battleClashes`: battalions, arrows and shells in flight, clashes
  * - `battleLight`: the tint of the hour and the sky over all of it, battalions too, lifted round each battalion by its
  *   light at night (`battleLamps`); laid on as one, multiplied; the pointer goes through
  * - `battleSelection`: the box dragged and the turning handle
@@ -49,15 +49,15 @@ export const MOVING_LAYERS = [
   "battleWalls",
   "battleWorks",
   "battleFire",
-  "battleBlocks",
+  "battleBattalions",
   "battleMissiles",
   "battleClashes",
   "battleLight"
 ];
 
-type Group = ReturnType<typeof select<SVGGElement, unknown>>;
+type SvgGroup = ReturnType<typeof select<SVGGElement, unknown>>;
 
-/** Where blocks stood a tick ago, to glide between ticks */
+/** Where battalions stood a tick ago, to glide between ticks */
 export type Positions = Map<number, { x: number; y: number; facing: number }>;
 
 export type SideColors = Record<Side, string>;
@@ -88,7 +88,7 @@ interface Scene {
 /** A shot in the air: a dotted fire line without a missile */
 interface Shot {
   key: string; // the shooter's, and another for an engine's shot at walls or works
-  block: Block;
+  battalion: Battalion;
   missile: "arrows" | "shell" | undefined;
   phase: number;
   from: Point;
@@ -170,9 +170,9 @@ const WORK_LABELS: Record<WorkKind, () => string> = {
 const SIDE_LABELS: Record<Side, () => string> = { attackers: () => t("Attackers"), defenders: () => t("Defenders") };
 
 // battalions
-const ICON = 16; // points a unit icon is wide at the most, unzoomed: it grows with the zoom like the block
+const ICON = 16; // points a unit icon is wide at the most, unzoomed: it grows with the zoom like the battalion
 const WHITE_FLAG = `<path d="M0 6V-14" stroke-width="1.2"/><path d="M0 -14q3 -1.5 6 0t6 0v7q-3 1.5 -6 0t-6 0z" fill="#fff"/>`;
-const HEALTH_INSET = 1.5; // half the health line: it lies inside the block, against its outline
+const HEALTH_INSET = 1.5; // half the health line: it lies inside the battalion, against its outline
 const HALO = [4, 0.3]; // a soft glow round a picked battalion: points wide, its opacity
 const TURN_STEP = Math.PI / 12;
 const LAG = 0.8; // ticks the shown place trails the battle by: it evens out the jostle of a crowd
@@ -207,7 +207,7 @@ class BattleSceneRenderer {
   private readonly scenes = new WeakMap<SVGSVGElement, Scene>();
   private readonly baked = new WeakMap<SVGSVGElement, { time: number; sky: string; at: number }>(); // the shade drawn
   private readonly shown = new WeakMap<SVGSVGElement, { time: number; at: Positions }>();
-  private readonly fallen = new WeakMap<Block, number>(); // when a battalion was first drawn destroyed
+  private readonly fallen = new WeakMap<Battalion, number>(); // when a battalion was first drawn destroyed
 
   private getScene(svg: SVGSVGElement): Scene {
     if (!this.scenes.has(svg))
@@ -281,9 +281,9 @@ class BattleSceneRenderer {
     fire?.setAttribute("stroke-width", String(mark));
     fire?.setAttribute("stroke-dasharray", `${2 * mark} ${5 * mark}`);
     select(svg)
-      .selectAll<SVGGElement, Block>(".battleBlock")
-      .each((block, i, nodes) => {
-        this.sizeBlock(nodes[i], block, mark, pt);
+      .selectAll<SVGGElement, Battalion>(".battleBattalion")
+      .each((battalion, i, nodes) => {
+        this.sizeBattalion(nodes[i], battalion, mark, pt);
       });
   }
 
@@ -325,7 +325,7 @@ class BattleSceneRenderer {
     this.getScene(svg).marks = 1;
     this.baked.delete(svg); // a new ground: shaded anew
     svg.setAttribute("viewBox", `${area.x} ${area.y} ${area.width} ${area.height}`);
-    delete svg.dataset.works; // the works layer is drawn empty: `updateBlocks` fills it
+    delete svg.dataset.works; // the works layer is drawn empty: `updateBattalions` fills it
     svg.dataset.walls = this.getWallsKey(field);
 
     svg.innerHTML = /* html */ `<style id="battleLook">${this.getLookStyle(this.getScene(svg).look)}</style>
@@ -347,7 +347,7 @@ class BattleSceneRenderer {
       <g id="battleFire" fill="none" stroke-width="${pt}" stroke-dasharray="${2 * pt} ${5 * pt}" opacity="0.55"></g>
       <g id="battleArrows" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.8" pointer-events="none"></g>
       <g id="battleHover" fill="none" pointer-events="none"></g>
-      <g id="battleBlocks"></g>
+      <g id="battleBattalions"></g>
       <g id="battleMissiles" fill="none" stroke-linecap="round" pointer-events="none"></g>
       <g id="battleClashes" text-anchor="middle" dominant-baseline="central" fill="#b3261e" pointer-events="none"></g>
       <g id="battleLight" pointer-events="none" style="mix-blend-mode: multiply"><rect id="battleTint" ${whole} fill="#fff"/><g id="battleLamps" fill="url(#battleLampGlow)"></g></g>
@@ -391,17 +391,19 @@ class BattleSceneRenderer {
     const layer = this.getLayer(svg, "battleLamps");
     if (!layer) return;
     const night = BattleLightView.getNight(battle, this.getScene(svg).look.light);
-    const present = (block: Block) => block.status === "ready" || block.status === "routed";
-    const lit = night ? battle.blocks.filter(block => present(block) && Sight.isLit(battle, block)) : [];
+    const present = (battalion: Battalion) => battalion.status === "ready" || battalion.status === "routed";
+    const lit = night
+      ? battle.battalions.filter(battalion => present(battalion) && Sight.isLit(battle, battalion))
+      : [];
     const sight = night ? Sight.getSight(battle) : 0;
-    const place = (block: Block) => at?.get(block.id) ?? block;
+    const place = (battalion: Battalion) => at?.get(battalion.id) ?? battalion;
     select(layer)
-      .selectAll<SVGCircleElement, Block>("circle")
-      .data(lit, block => block.id)
+      .selectAll<SVGCircleElement, Battalion>("circle")
+      .data(lit, battalion => battalion.id)
       .join("circle")
-      .attr("cx", block => place(block).x.toFixed(1))
-      .attr("cy", block => place(block).y.toFixed(1))
-      .attr("r", block => (sight + Math.hypot(block.width, block.depth) / 2).toFixed(1))
+      .attr("cx", battalion => place(battalion).x.toFixed(1))
+      .attr("cy", battalion => place(battalion).y.toFixed(1))
+      .attr("r", battalion => (sight + Math.hypot(battalion.width, battalion.depth) / 2).toFixed(1))
       .attr("opacity", night.toFixed(2));
   }
 
@@ -446,12 +448,12 @@ class BattleSceneRenderer {
   }
 
   /** A part of the ground layer, `battleTerrain<name>` */
-  private addPart(terrain: Group, name: string): Group {
+  private addPart(terrain: SvgGroup, name: string): SvgGroup {
     return terrain.append("g").attr("id", `battleTerrain${name}`);
   }
 
   /** The ground, bottom to top: its tint, woods and bogs, relief, props, waters, cliffs, rivers, burgs, roads and plazas */
-  private drawTerrain(terrain: Group, field: Battlefield, paper: string, masks: CoverMasks, pt: number): void {
+  private drawTerrain(terrain: SvgGroup, field: Battlefield, paper: string, masks: CoverMasks, pt: number): void {
     this.addPart(terrain, "Tint").html(BattleGroundView.getMarkup(field));
     this.drawCover(this.addPart(terrain, "Cover"), field, masks);
     this.addPart(terrain, "Relief").html(BattleReliefView.getMarkup(field, paper, !BattleLightView.isSupported()));
@@ -466,7 +468,7 @@ class BattleSceneRenderer {
   }
 
   /** Woods and bogs fade out at their edges; without a canvas their outlines are drawn sharp */
-  private drawCover(group: Group, field: Battlefield, masks: CoverMasks): void {
+  private drawCover(group: SvgGroup, field: Battlefield, masks: CoverMasks): void {
     const cover = (kind: "wood" | "marsh", fill: string) => {
       const shape = group
         .append(masks[kind] ? "rect" : "path")
@@ -483,7 +485,7 @@ class BattleSceneRenderer {
   }
 
   /** The sea and lakes by their kind: a strand along open water, half of it under the water, a rim round ice and lava */
-  private drawWater(group: Group, field: Battlefield, pt: number): void {
+  private drawWater(group: SvgGroup, field: Battlefield, pt: number): void {
     const looks = field.water.map((w, i) => {
       const kind = w === 1 ? Battlefields.getLakeKind(field, i) : undefined;
       return kind && kind in WATERS ? kind : "open";
@@ -507,7 +509,7 @@ class BattleSceneRenderer {
   }
 
   /** Rivers with no outline: tributaries join without a seam, and the mouth covers the shore line; then their fords */
-  private drawRivers(group: Group, field: Battlefield): void {
+  private drawRivers(group: SvgGroup, field: Battlefield): void {
     const course = line<Point>().curve(curveCatmullRom.alpha(0.5));
     for (const river of field.rivers) {
       group
@@ -533,7 +535,7 @@ class BattleSceneRenderer {
   }
 
   /** Roads, and a bridge where one crosses a river: its deck under the road, its parapets beside it */
-  private drawRoads(group: Group, field: Battlefield, pt: number): void {
+  private drawRoads(group: SvgGroup, field: Battlefield, pt: number): void {
     const course = line<Point>().curve(curveCatmullRom.alpha(0.5));
     const span = (bridge: Battlefield["bridges"][number], d: string) =>
       group
@@ -569,7 +571,7 @@ class BattleSceneRenderer {
   }
 
   /** Burgs as rooftops, and the piers from their sea gates */
-  private drawBurgs(group: Group, field: Battlefield, markup: string, pt: number): void {
+  private drawBurgs(group: SvgGroup, field: Battlefield, markup: string, pt: number): void {
     group.html(markup);
     const middle = (wall: { a: Point; b: Point }): Point => [(wall.a[0] + wall.b[0]) / 2, (wall.a[1] + wall.b[1]) / 2];
     field.burgs.forEach((burg, index) => {
@@ -629,7 +631,7 @@ class BattleSceneRenderer {
   }
 
   /** What stands of the walls, and the ladders against them; drawn again when a breach is made or ladders are left */
-  private drawWalls(group: Group, field: Battlefield, pt: number): void {
+  private drawWalls(group: SvgGroup, field: Battlefield, pt: number): void {
     group.selectAll("*").remove();
     const walls = field.walls.filter(wall => !wall.gate || wall.jamb); // the gate as drawn, narrower than the gateway
     this.drawGates(group, field, pt); // the doors under the walls and towers
@@ -778,7 +780,7 @@ class BattleSceneRenderer {
   /**
    * The gates as drawn, between their towers: two leaves shut across the gap of the burg besieged, swung out at any other
    */
-  private drawGates(group: Group, field: Battlefield, pt: number): void {
+  private drawGates(group: SvgGroup, field: Battlefield, pt: number): void {
     const leaves: [Point, Point][] = [];
     for (const { a, b, burg } of this.getGateSpans(field)) {
       const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
@@ -822,7 +824,7 @@ class BattleSceneRenderer {
   }
 
   /** Timber boards in points, each from end to end: pale planks with a dark edge all round */
-  private timber(group: Group, boards: [Point, Point][], pt: number): void {
+  private timber(group: SvgGroup, boards: [Point, Point][], pt: number): void {
     const half = (TIMBER / 2) * pt;
     const d = boards
       .map(([a, b]) => {
@@ -858,7 +860,7 @@ class BattleSceneRenderer {
   }
 
   /** Burg names over the burgs of the scene, river names along the field's rivers, left to right */
-  private drawLabels(labels: Group, field: Battlefield, ground: Battlefield, [dx, dy]: Point, paper: string): void {
+  private drawLabels(labels: SvgGroup, field: Battlefield, ground: Battlefield, [dx, dy]: Point, paper: string): void {
     const pt = this.getPoint(field);
     const box = BattleCamera.getSceneBox(field);
     for (const burg of ground.burgs) {
@@ -961,7 +963,7 @@ class BattleSceneRenderer {
   }
 
   /** A label in points, kept within the field's view */
-  private label(parent: Group, field: Battlefield, text: string, x: number, y: number, size: number, fill: string) {
+  private label(parent: SvgGroup, field: Battlefield, text: string, x: number, y: number, size: number, fill: string) {
     const pt = this.getPoint(field);
     const box = BattleCamera.getSceneBox(field);
     const [left, top] = [
@@ -1102,27 +1104,27 @@ class BattleSceneRenderer {
 
   // battalions
 
-  /** Blocks, redrawn when their set changes; `onTurn` lets the user turn one */
-  drawBlocks(svg: SVGSVGElement, battle: Battle, onTurn: (block: Block, facing: number) => void): void {
-    const allied = (side: Block["side"]): boolean => new Set(battle[side].regiments.map(r => r.state)).size > 1;
+  /** Battalions, redrawn when their set changes; `onTurn` lets the user turn one */
+  drawBattalions(svg: SVGSVGElement, battle: Battle, onTurn: (battalion: Battalion, facing: number) => void): void {
+    const allied = (side: Battalion["side"]): boolean => new Set(battle[side].regiments.map(r => r.state)).size > 1;
     const flagged = { attackers: allied("attackers"), defenders: allied("defenders") };
     const mark = this.getMark(svg, battle.field);
     const pt = this.getPoint(battle.field);
     const { colors, flags } = this.getScene(svg);
     const groups = select(svg)
-      .select("#battleBlocks")
-      .selectAll<SVGGElement, Block>("g.battleBlock")
-      .data(battle.blocks, block => block.key)
+      .select("#battleBattalions")
+      .selectAll<SVGGElement, Battalion>("g.battleBattalion")
+      .data(battle.battalions, battalion => battalion.key)
       .join("g")
-      .attr("class", "battleBlock")
-      .html(block => {
-        const fill = colors[block.side];
+      .attr("class", "battleBattalion")
+      .html(battalion => {
+        const fill = colors[battalion.side];
         const dark = this.darker(fill, 1.4);
-        const { width: w, depth: d } = block;
-        const unit = battle.units.find(u => u.name === block.unit);
+        const { width: w, depth: d } = battalion;
+        const unit = battle.units.find(u => u.name === battalion.unit);
         // among allies a battalion flies the colour of its state from its rear corner
-        const flag = flagged[block.side]
-          ? `<path class="battleFlag" d="M0 0h-8l2.5 3l-2.5 3h8z" fill="${flags[block.state] ?? "#999"}" stroke="${dark}" stroke-width="0.8"/>`
+        const flag = flagged[battalion.side]
+          ? `<path class="battleFlag" d="M0 0h-8l2.5 3l-2.5 3h8z" fill="${flags[battalion.state] ?? "#999"}" stroke="${dark}" stroke-width="0.8"/>`
           : "";
         // the body, the health line along its front edge, the unit icon and the white flag of surrender, both upright,
         // and the glow shown when the battalion is picked
@@ -1132,24 +1134,24 @@ class BattleSceneRenderer {
             <g class="battleWhiteFlag" display="none" stroke="#333" stroke-width="0.8">${WHITE_FLAG}</g></g>${flag}
           <rect class="battleHalo" display="none" fill="none" stroke="${fill}" stroke-opacity="${HALO[1]}" pointer-events="none"/>`;
       })
-      .each((block, i, nodes) => {
-        this.sizeBlock(nodes[i], block, mark, pt);
+      .each((battalion, i, nodes) => {
+        this.sizeBattalion(nodes[i], battalion, mark, pt);
       });
 
     // a double click turns a battalion
     const editable = (): boolean => svg.classList.contains("battleEditable");
-    groups.on("dblclick", (_event, block) => {
-      if (editable()) onTurn(block, block.facing + TURN_STEP);
+    groups.on("dblclick", (_event, battalion) => {
+      if (editable()) onTurn(battalion, battalion.facing + TURN_STEP);
     });
 
-    // those destroyed before the blocks were drawn fell unseen: they do not fade anew
-    for (const block of battle.blocks)
-      if (block.status === "destroyed" && !this.fallen.has(block)) this.fallen.set(block, -Infinity);
-    this.updateBlocks(svg, battle, null, 1);
+    // those destroyed before the battalions were drawn fell unseen: they do not fade anew
+    for (const battalion of battle.battalions)
+      if (battalion.status === "destroyed" && !this.fallen.has(battalion)) this.fallen.set(battalion, -Infinity);
+    this.updateBattalions(svg, battle, null, 1);
   }
 
   /** A battalion and its icon are drawn true to size; its outline and flags keep their size on screen */
-  private sizeBlock(group: SVGGElement, { width: w, depth: d }: Block, mark: number, pt: number): void {
+  private sizeBattalion(group: SVGGElement, { width: w, depth: d }: Battalion, mark: number, pt: number): void {
     const [rect, , upright] = group.children;
     rect.setAttribute("rx", String(1.5 * mark));
     rect.setAttribute("stroke-width", String(1.4 * mark));
@@ -1186,12 +1188,12 @@ class BattleSceneRenderer {
     return `${field.breaches.length}|${this.getRaised(field).length}`;
   }
 
-  /** Put blocks where they are `progress` of the way through the tick, eased; with no `previous` right where they are */
-  updateBlocks(svg: SVGSVGElement, battle: Battle, previous: Positions | null, progress: number): void {
+  /** Put battalions where they are `progress` of the way through the tick, eased; with no `previous` right where they are */
+  updateBattalions(svg: SVGSVGElement, battle: Battle, previous: Positions | null, progress: number): void {
     this.updateField(svg, battle.field);
     const time = battle.tick + progress;
     const at = this.getShownPositions(svg, battle, previous, progress, time);
-    this.updateBattalions(svg, battle, at, time);
+    this.styleBattalions(svg, battle, at, time);
     const shots = battle.result ? [] : [...this.getShots(battle, at, time), ...this.getWorkShots(battle, at, time)];
     this.drawShots(svg, battle, shots, time);
     this.drawClashes(svg, battle, shots, at, time);
@@ -1211,7 +1213,7 @@ class BattleSceneRenderer {
     if (svg.dataset.works !== this.getWorksKey(field)) this.drawWorks(svg, field);
   }
 
-  /** Where blocks are shown: trailing where they are by an easing that evens out the jostle, at once after a leap */
+  /** Where battalions are shown: trailing where they are by an easing that evens out the jostle, at once after a leap */
   private getShownPositions(
     svg: SVGSVGElement,
     battle: Battle,
@@ -1224,22 +1226,22 @@ class BattleSceneRenderer {
     const elapsed = previous && last ? time - last.time : -1;
     const ease = 1 - Math.exp(-elapsed / LAG);
     const at: Positions = new Map();
-    for (const block of battle.blocks) {
-      const from = previous?.get(block.id);
+    for (const battalion of battle.battalions) {
+      const from = previous?.get(battalion.id);
       const to =
         !from || progress >= 1
-          ? block
+          ? battalion
           : {
-              x: from.x + (block.x - from.x) * progress,
-              y: from.y + (block.y - from.y) * progress,
-              facing: from.facing + this.swing(from.facing, block.facing) * progress
+              x: from.x + (battalion.x - from.x) * progress,
+              y: from.y + (battalion.y - from.y) * progress,
+              facing: from.facing + this.swing(from.facing, battalion.facing) * progress
             };
-      const was = elapsed >= 0 ? last!.at.get(block.id) : undefined;
+      const was = elapsed >= 0 ? last!.at.get(battalion.id) : undefined;
       if (!was || Math.hypot(to.x - was.x, to.y - was.y) > LEAP * pt) {
-        at.set(block.id, { x: to.x, y: to.y, facing: to.facing });
+        at.set(battalion.id, { x: to.x, y: to.y, facing: to.facing });
         continue;
       }
-      at.set(block.id, {
+      at.set(battalion.id, {
         x: was.x + (to.x - was.x) * ease,
         y: was.y + (to.y - was.y) * ease,
         facing: was.facing + this.swing(was.facing, to.facing) * ease
@@ -1249,89 +1251,91 @@ class BattleSceneRenderer {
     return at;
   }
 
-  /** Each block at its place, faded, outlined and tipped by its state; its health line as long as its troops left */
-  private updateBattalions(svg: SVGSVGElement, battle: Battle, at: Positions, time: number): void {
+  /** Each battalion at its place, faded, outlined and tipped by its state; its health line as long as its troops left */
+  private styleBattalions(svg: SVGSVGElement, battle: Battle, at: Positions, time: number): void {
     const mark = this.getMark(svg, battle.field);
     const { look, selected } = this.getScene(svg);
     const outline = look.fallen === "outline";
     select(svg)
-      .select("#battleBlocks")
-      .selectAll<SVGGElement, Block>("g.battleBlock")
-      .data(battle.blocks, block => block.key) // blocks are lined up anew at each change before the start
-      .each((block, i, nodes) => {
-        const { x, y, facing } = at.get(block.id)!;
+      .select("#battleBattalions")
+      .selectAll<SVGGElement, Battalion>("g.battleBattalion")
+      .data(battle.battalions, battalion => battalion.key) // battalions are lined up anew at each change before the start
+      .each((battalion, i, nodes) => {
+        const { x, y, facing } = at.get(battalion.id)!;
         this.setTransform(nodes[i], x, y, facing);
       })
-      .attr("display", block =>
-        block.status === "fled" || this.getOpacity(block, time, outline) === 0 ? "none" : null
+      .attr("display", battalion =>
+        battalion.status === "fled" || this.getOpacity(battalion, time, outline) === 0 ? "none" : null
       )
-      .attr("opacity", block => this.getOpacity(block, time, outline))
-      .classed("battleFallen", block => outline && block.status === "destroyed")
-      .classed("battleSelected", block => selected.has(block.id))
-      .attr("data-tip", block => this.getBlockTip(block))
-      .each(function (block) {
+      .attr("opacity", battalion => this.getOpacity(battalion, time, outline))
+      .classed("battleFallen", battalion => outline && battalion.status === "destroyed")
+      .classed("battleSelected", battalion => selected.has(battalion.id))
+      .attr("data-tip", battalion => this.getBattalionTip(battalion))
+      .each(function (battalion) {
         const [body, health] = this.children;
         // the line inside the front edge is as long as the share of the troops alive
-        const half = ((block.initial ? block.troops / block.initial : 0) * block.width) / 2;
-        const x = block.depth / 2 - HEALTH_INSET * mark;
+        const half = ((battalion.initial ? battalion.troops / battalion.initial : 0) * battalion.width) / 2;
+        const x = battalion.depth / 2 - HEALTH_INSET * mark;
         health.setAttribute("d", `M${x} ${-half}V${half}`);
         health.setAttribute("stroke-width", String(2 * HEALTH_INSET * mark));
-        body.setAttribute("stroke-dasharray", block.status === "routed" ? `${3 * mark} ${2 * mark}` : "");
+        body.setAttribute("stroke-dasharray", battalion.status === "routed" ? `${3 * mark} ${2 * mark}` : "");
         this.querySelector(".battleWhiteFlag")!.setAttribute(
           "display",
-          block.status === "surrendered" ? "inline" : "none"
+          battalion.status === "surrendered" ? "inline" : "none"
         );
       });
   }
 
-  private getBlockTip(block: Block): string {
-    const troops = `${capitalize(block.unit.replace(/_/g, " "))}: ${block.troops} / ${block.initial}`;
-    if (block.status !== "ready" && block.status !== "routed")
-      return `${troops}, ${BATTLE_STATUS_LABELS[block.status]}`;
-    const kmh = BattleScale.toMetresPerSecond(Math.hypot(block.vx, block.vy)) * 3.6;
+  private getBattalionTip(battalion: Battalion): string {
+    const troops = `${capitalize(battalion.unit.replace(/_/g, " "))}: ${battalion.troops} / ${battalion.initial}`;
+    if (battalion.status !== "ready" && battalion.status !== "routed")
+      return `${troops}, ${BATTLE_STATUS_LABELS[battalion.status]}`;
+    const kmh = BattleScale.toMetresPerSecond(Math.hypot(battalion.vx, battalion.vy)) * 3.6;
     const speed = `${t("Speed")}: ${convertSpeed(kmh)} ${getSpeedUnit()}`;
-    const range = block.range ? `${t("Range", { context: "weapon" })}: ${formatLength(block.range)}` : "";
-    const morale = `${t("Morale")}: ${Math.round(block.morale)}%`;
-    const energy = `${t("Energy")}: ${Math.round(block.energy * 100)}%`;
-    return sentences(troops, morale, energy, BATTLE_ACTION_LABELS[block.action], ...[speed, range].filter(Boolean));
+    const range = battalion.stats.range
+      ? `${t("Range", { context: "weapon" })}: ${formatLength(battalion.stats.range)}`
+      : "";
+    const morale = `${t("Morale")}: ${Math.round(battalion.morale)}%`;
+    const energy = `${t("Energy")}: ${Math.round(battalion.energy * 100)}%`;
+    return sentences(troops, morale, energy, BATTLE_ACTION_LABELS[battalion.action], ...[speed, range].filter(Boolean));
   }
 
-  /** Put a block's group at a place; its icon stays upright whatever the block faces */
+  /** Put a battalion's group at a place; its icon stays upright whatever the battalion faces */
   private setTransform(group: SVGGElement, x: number, y: number, facing: number): void {
     const angle = ((facing * 180) / Math.PI).toFixed(1);
     group.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${angle})`);
     group.children[2].setAttribute("transform", `rotate(${-Number(angle)})`);
   }
 
-  private getOpacity(block: Block, time: number, outline: boolean): number {
-    if (block.status === "routed" || block.status === "surrendered") return 0.7;
-    if (block.status !== "destroyed") return 1;
+  private getOpacity(battalion: Battalion, time: number, outline: boolean): number {
+    if (battalion.status === "routed" || battalion.status === "surrendered") return 0.7;
+    if (battalion.status !== "destroyed") return 1;
     if (outline) return OUTLINE;
-    if (!this.fallen.has(block)) this.fallen.set(block, time);
-    return +Math.min(Math.max(1 - (time - this.fallen.get(block)!) / FADE, 0), 1).toFixed(2);
+    if (!this.fallen.has(battalion)) this.fallen.set(battalion, time);
+    return +Math.min(Math.max(1 - (time - this.fallen.get(battalion)!) / FADE, 0), 1).toFixed(2);
   }
 
   // shots and clashes
 
-  /** Blocks doing `action` to a target still on the field, with the target */
-  private getPairs(battle: Battle, action: Block["action"]): [Block, Block][] {
-    const byId = new Map(battle.blocks.map(block => [block.id, block]));
-    return battle.blocks
-      .filter(block => block.action === action && block.target !== null && byId.has(block.target))
-      .map(block => [block, byId.get(block.target!)!]);
+  /** Battalions doing `action` to a target still on the field, with the target */
+  private getPairs(battle: Battle, action: Battalion["action"]): [Battalion, Battalion][] {
+    const byId = new Map(battle.battalions.map(battalion => [battalion.id, battalion]));
+    return battle.battalions
+      .filter(battalion => battalion.action === action && battalion.target !== null && byId.has(battalion.target))
+      .map(battalion => [battalion, byId.get(battalion.target!)!]);
   }
 
   /** Each shooter's arc to its target and how far its shot is through its cycle */
   private getShots(battle: Battle, at: Positions, time: number): Shot[] {
-    return this.getPairs(battle, "shoot").map(([block, target]) =>
-      this.aim(battle, block, at, at.get(target.id)!, time)
+    return this.getPairs(battle, "shoot").map(([battalion, target]) =>
+      this.aim(battle, battalion, at, at.get(target.id)!, time)
     );
   }
 
   /** Engines shelling the walls they batter or the wagons they knock down, between their shots at troops */
   private getWorkShots(battle: Battle, at: Positions, time: number): Shot[] {
     const shots: Shot[] = [];
-    for (const engine of battle.blocks) {
+    for (const engine of battle.battalions) {
       if (engine.kind !== "machinery" || !at.has(engine.id)) continue;
       const work = Works.getBattered(battle, engine);
       const point =
@@ -1343,21 +1347,28 @@ class BattleSceneRenderer {
   }
 
   /** A shot's arc from a shooter where it is shown to a point, and how far through its cycle it is */
-  private aim(battle: Battle, block: Block, at: Positions, b: { x: number; y: number }, time: number, kind = ""): Shot {
+  private aim(
+    battle: Battle,
+    battalion: Battalion,
+    at: Positions,
+    b: { x: number; y: number },
+    time: number,
+    kind = ""
+  ): Shot {
     const pt = this.getPoint(battle.field);
-    const a = at.get(block.id)!;
-    const missile = MISSILES[block.type];
-    const cycle = time / (missile === "shell" ? SHELL_TICKS : VOLLEY_TICKS) + block.id * 0.37; // each in its own time
+    const a = at.get(battalion.id)!;
+    const missile = MISSILES[battalion.type];
+    const cycle = time / (missile === "shell" ? SHELL_TICKS : VOLLEY_TICKS) + battalion.id * 0.37; // each in its own time
     const phase = cycle % 1;
     // every shell lands a little off the last one
     const scatter = missile === "shell" ? 9 * pt : 0;
     const to: Point = [
-      b.x + Math.sin(Math.floor(cycle) * 7 + block.id) * scatter,
-      b.y + Math.cos(Math.floor(cycle) * 11 + block.id) * scatter
+      b.x + Math.sin(Math.floor(cycle) * 7 + battalion.id) * scatter,
+      b.y + Math.cos(Math.floor(cycle) * 11 + battalion.id) * scatter
     ];
     const lift = Math.hypot(to[0] - a.x, to[1] - a.y) / 5;
     const top: Point = [(a.x + to[0]) / 2, (a.y + to[1]) / 2 - lift];
-    return { key: block.key + kind, block, missile, phase, from: [a.x, a.y], top, to };
+    return { key: battalion.key + kind, battalion, missile, phase, from: [a.x, a.y], top, to };
   }
 
   /** Dotted fire lines of the shooters with no missile, arrows and shells in flight of the others */
@@ -1375,7 +1386,7 @@ class BattleSceneRenderer {
         shot => shot.key
       )
       .join("path")
-      .attr("stroke", shot => fire[shot.block.side])
+      .attr("stroke", shot => fire[shot.battalion.side])
       .attr("stroke-dashoffset", -time * 3 * mark)
       .attr("d", ({ from, top, to }) => `M${this.fixed(from)}Q${this.fixed(top)} ${this.fixed(to)}`);
 
@@ -1387,7 +1398,7 @@ class BattleSceneRenderer {
         shot => shot.key
       )
       .join("path")
-      .attr("stroke", shot => fire[shot.block.side])
+      .attr("stroke", shot => fire[shot.battalion.side])
       .attr("stroke-width", shot => (shot.missile === "shell" ? 4.5 : 1.2) * mark)
       .attr("d", ({ missile, phase, from, top, to }) => {
         if (missile === "arrows") {
@@ -1413,10 +1424,10 @@ class BattleSceneRenderer {
     }
     if (!battle.result) {
       const pulse = 0.55 + 0.45 * Math.sin(time * 2.2);
-      for (const [block, target] of this.getPairs(battle, "fight")) {
-        if (block.id > target.id && target.target === block.id) continue; // one star for the two of them
-        const [a, b] = [at.get(block.id)!, at.get(target.id)!];
-        bursts.push({ key: block.key, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, size: 13 * mark, opacity: pulse });
+      for (const [battalion, target] of this.getPairs(battle, "fight")) {
+        if (battalion.id > target.id && target.target === battalion.id) continue; // one star for the two of them
+        const [a, b] = [at.get(battalion.id)!, at.get(target.id)!];
+        bursts.push({ key: battalion.key, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, size: 13 * mark, opacity: pulse });
       }
     }
 
@@ -1435,28 +1446,28 @@ class BattleSceneRenderer {
   // the pointer and the pick
 
   /** The battalion under the pointer shows its foe, where it goes and how far it shoots */
-  hoverBlock(svg: SVGSVGElement, battle: Battle, id: number | null): void {
+  hoverBattalion(svg: SVGSVGElement, battle: Battle, id: number | null): void {
     this.getScene(svg).hovered = id;
     const at = this.shown.get(svg)?.at;
     if (at) this.drawHover(svg, battle, at);
   }
 
   /** The battalions the user picked: outlined, with their marks shown as on hover */
-  selectBlocks(svg: SVGSVGElement, battle: Battle, ids: number[]): void {
+  selectBattalions(svg: SVGSVGElement, battle: Battle, ids: number[]): void {
     this.getScene(svg).selected = new Set(ids);
     select(svg)
-      .selectAll<SVGGElement, Block>("g.battleBlock")
-      .classed("battleSelected", block => ids.includes(block.id));
+      .selectAll<SVGGElement, Battalion>("g.battleBattalion")
+      .classed("battleSelected", battalion => ids.includes(battalion.id));
     const at = this.shown.get(svg)?.at;
     if (at) this.drawHover(svg, battle, at);
   }
 
   /** Battalions shown where a drag would put them, before they are put there */
-  previewBlocks(svg: SVGSVGElement, places: Positions): void {
+  previewBattalions(svg: SVGSVGElement, places: Positions): void {
     select(svg)
-      .selectAll<SVGGElement, Block>("g.battleBlock")
-      .each((block, i, nodes) => {
-        const place = places.get(block.id);
+      .selectAll<SVGGElement, Battalion>("g.battleBattalion")
+      .each((battalion, i, nodes) => {
+        const place = places.get(battalion.id);
         if (place) this.setTransform(nodes[i], place.x, place.y, place.facing);
       });
   }
@@ -1490,40 +1501,48 @@ class BattleSceneRenderer {
     const { hovered, selected } = this.getScene(svg);
     const shown = battle.result
       ? []
-      : battle.blocks.filter(
-          block =>
-            (block.id === hovered || selected.has(block.id)) &&
-            (block.status === "ready" || block.status === "routed") &&
-            at.has(block.id)
+      : battle.battalions.filter(
+          battalion =>
+            (battalion.id === hovered || selected.has(battalion.id)) &&
+            (battalion.status === "ready" || battalion.status === "routed") &&
+            at.has(battalion.id)
         );
     layer.innerHTML = shown
-      .map(block => this.getBlockMarks(svg, battle, at, block, block.id === hovered && !selected.has(block.id)))
+      .map(battalion =>
+        this.getBattalionMarks(svg, battle, at, battalion, battalion.id === hovered && !selected.has(battalion.id))
+      )
       .join("");
   }
 
   /** A battalion's foe, where it goes, the friend it protects and, under the pointer unless picked, how far it shoots */
-  private getBlockMarks(svg: SVGSVGElement, battle: Battle, at: Positions, block: Block, ranged: boolean): string {
-    const from = at.get(block.id)!;
+  private getBattalionMarks(
+    svg: SVGSVGElement,
+    battle: Battle,
+    at: Positions,
+    battalion: Battalion,
+    ranged: boolean
+  ): string {
+    const from = at.get(battalion.id)!;
     const mark = this.getMark(svg, battle.field);
-    const stroke = this.darker(this.getScene(svg).colors[block.side], 0.6);
-    const { task } = block;
+    const stroke = this.darker(this.getScene(svg).colors[battalion.side], 0.6);
+    const { task } = battalion.byHand;
     // an order given by hand shows at once, before the battalion acts on it
     const aim = task && task.target !== null ? at.get(task.target) : undefined;
     const chased = task?.kind === "attack" || task?.kind === "pursue";
-    const foe = chased ? aim : block.target === null ? undefined : at.get(block.target);
-    const goal: Point | null = task?.kind === "move" ? [task.x, task.y] : task ? null : block.goal;
+    const foe = chased ? aim : battalion.target === null ? undefined : at.get(battalion.target);
+    const goal: Point | null = task?.kind === "move" ? [task.x, task.y] : task ? null : battalion.goal;
     const marks: string[] = [];
     if (task?.kind === "protect" && aim)
       marks.push(
         `<path d="M${this.fixed([from.x, from.y])}L${this.fixed([aim.x, aim.y])}" stroke-dasharray="0 ${3 * mark}" stroke-linecap="round" stroke-width="${2.2 * mark}"/>`
       );
-    if (block.range && ranged) {
-      const radius = Sight.getReach(battle, block);
+    if (battalion.stats.range && ranged) {
+      const radius = Sight.getReach(battle, battalion);
       marks.push(
         `<circle cx="${from.x.toFixed(1)}" cy="${from.y.toFixed(1)}" r="${radius.toFixed(1)}" stroke-dasharray="${4 * mark} ${3 * mark}"/>`
       );
     }
-    if (goal && (!foe || Math.hypot(goal[0] - foe.x, goal[1] - foe.y) > block.depth))
+    if (goal && (!foe || Math.hypot(goal[0] - foe.x, goal[1] - foe.y) > battalion.depth))
       marks.push(
         `<path d="M${this.fixed([from.x, from.y])}L${this.fixed(goal)}" stroke-dasharray="${4 * mark} ${3 * mark}"/>`
       );
@@ -1539,19 +1558,19 @@ class BattleSceneRenderer {
     const mark = this.getMark(svg, battle.field);
     const { colors, look } = this.getScene(svg);
     const curve = line<Point>().curve(curveCatmullRom.alpha(0.5));
-    const arrows = (trails && look.arrows ? battle.blocks : []).flatMap(block => {
-      if (block.status === "fled" || block.status === "destroyed") return [];
-      const points = [...(trails!.get(block.id) ?? []), [block.x, block.y] as Point].filter(
+    const arrows = (trails && look.arrows ? battle.battalions : []).flatMap(battalion => {
+      if (battalion.status === "fled" || battalion.status === "destroyed") return [];
+      const points = [...(trails!.get(battalion.id) ?? []), [battalion.x, battalion.y] as Point].filter(
         (point, i, all) => !i || Math.hypot(point[0] - all[i - 1][0], point[1] - all[i - 1][1]) > 0.5
       );
       const [first, end] = [points[0], points.at(-1)!];
-      if (points.length < 2 || Math.hypot(end[0] - first[0], end[1] - first[1]) < block.depth) return [];
+      if (points.length < 2 || Math.hypot(end[0] - first[0], end[1] - first[1]) < battalion.depth) return [];
       const before = points.at(-2)!;
       const angle = Math.atan2(end[1] - before[1], end[0] - before[0]);
       const head = ARROWHEAD * mark;
       const corner = (turn: number): string =>
         this.fixed([end[0] - Math.cos(angle + turn) * head, end[1] - Math.sin(angle + turn) * head]);
-      const stroke = this.darker(colors[block.side], 0.6);
+      const stroke = this.darker(colors[battalion.side], 0.6);
       const shaft = [
         ...points.slice(0, -1),
         [end[0] - Math.cos(angle) * head * 0.7, end[1] - Math.sin(angle) * head * 0.7] as Point
@@ -1562,7 +1581,9 @@ class BattleSceneRenderer {
   }
 
   snapshot(battle: Battle): Positions {
-    return new Map(battle.blocks.map(block => [block.id, { x: block.x, y: block.y, facing: block.facing }]));
+    return new Map(
+      battle.battalions.map(battalion => [battalion.id, { x: battalion.x, y: battalion.y, facing: battalion.facing }])
+    );
   }
 
   // helpers

@@ -1,46 +1,47 @@
 // The recipe a battle is played again from; the field is built anew from the map at its place
-import type { BattleSettings } from "@/data/battle-options";
 import { Dates } from "@/model/story/dates";
 import { type BattleEvent, Events } from "@/model/story/events";
-import type { MilitaryUnit } from "@/types/military";
 import { type Battle, type BattleRegiment, Battles, type Intervention, type Settled } from "./battle";
-import { type BattleType, SIDES, type Side } from "./battle-rules";
+import { SIDES, type Side } from "./battle-rules";
 import { TICK_SECONDS } from "./battle-scale";
 import { Battlefields } from "./battlefield";
-import type { Weather } from "./weather";
 
-export interface BattleReplay {
+/** Its tick is the one the battle was applied at */
+export interface BattleReplay
+  extends Pick<
+    Battle,
+    | "type"
+    | "name"
+    | "place"
+    | "x"
+    | "y"
+    | "cell"
+    | "approach"
+    | "units"
+    | "populationScale"
+    | "settings"
+    | "seed"
+    | "hour"
+    | "latitude"
+    | "weather"
+    | "mud"
+    | "ice"
+    | "heat"
+    | "interventions"
+    | "settled"
+    | "tick"
+  > {
   version: string; // of the app it was fought in
-  type: BattleType;
-  name: string;
-  place: string | null;
-  x: number;
-  y: number;
-  cell: number;
-  approach: number;
-  units: MilitaryUnit[];
-  populationScale: number;
-  settings: BattleSettings;
-  seed?: number;
-  hour: number;
-  latitude: number;
-  weather: Weather;
-  mud: boolean;
-  ice: boolean;
-  heat: boolean;
   attackers: BattleRegiment[]; // as they joined at the start; latecomers are in the interventions
   defenders: BattleRegiment[];
-  interventions: Intervention[];
-  settled: Settled | null;
-  tick: number; // the battle was applied at
 }
 
-/** A battle built anew, its changes to come and what its generals settled on */
-export interface ReplayStart {
+/** A battle set up anew at its start, with the changes to make on the way */
+export interface BattleStart {
   battle: Battle;
   script: Intervention[];
-  settled: Settled | null;
-  until: number; // the tick it was applied at
+  settled: Settled | null; // what the generals settled on: they do not think it through again
+  until?: number; // a past battle stops at the tick it was applied at
 }
 
 const TICKS_PER_PAUSE = 200; // a long battle lets the screen breathe while it is played out
@@ -81,7 +82,7 @@ class BattleReplaysModule {
   }
 
   /** The battle at its start, on a field built from the map at its place */
-  start(replay: BattleReplay): ReplayStart {
+  start(replay: BattleReplay): BattleStart {
     const {
       type,
       x,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MilitaryUnit } from "@/types/military";
-import { type Battle, type BattleRegiment, Battles, type Block } from "./battle";
+import { type Battalion, type Battle, type BattleRegiment, Battles } from "./battle";
 import { COLS, ROWS } from "./battle-scale";
 import { type Battlefield, Battlefields } from "./battlefield";
 import { Movement } from "./movement";
@@ -45,8 +45,8 @@ const battle = (field: Battlefield = Battlefields.createEmpty()): Battle =>
     attackers: [regiment(1)],
     defenders: [regiment(2)]
   });
-const pair = (b: Battle): [Block, Block] => {
-  const [first, second] = b.blocks.filter(block => block.side === "attackers");
+const pair = (b: Battle): [Battalion, Battalion] => {
+  const [first, second] = b.battalions.filter(battalion => battalion.side === "attackers");
   return [first, second];
 };
 
@@ -101,15 +101,15 @@ describe("movement", () => {
     const b = battle(field);
     b.field.ford.fill(0); // the ford opened for the sides kept apart
     Movement.forgetWays(b.field);
-    const block = b.blocks.find(block => block.side === "attackers")!;
+    const battalion = b.battalions.find(battalion => battalion.side === "attackers")!;
     const row = 30;
     const from = Battlefields.nodeCentre(field, row * COLS + k + row + 1);
     const to = Battlefields.nodeCentre(field, (row + 1) * COLS + k + row);
     for (let ox = -0.3; ox <= 0.3; ox += 0.1) {
       for (let oy = -0.3; oy <= 0.3; oy += 0.1) {
-        Object.assign(block, { x: from[0] + ox * field.cell, y: from[1] + oy * field.cell, detour: 0 });
-        for (let i = 0; i < 6; i++) Movement.step(b, block, to[0] - from[0], to[1] - from[1], Infinity, []);
-        const node = Battlefields.nodeAt(field, block.x, block.y);
+        Object.assign(battalion, { x: from[0] + ox * field.cell, y: from[1] + oy * field.cell, detour: 0 });
+        for (let i = 0; i < 6; i++) Movement.step(b, battalion, to[0] - from[0], to[1] - from[1], Infinity, []);
+        const node = Battlefields.nodeAt(field, battalion.x, battalion.y);
         expect((node % COLS) - Math.floor(node / COLS)).toBeGreaterThan(k);
       }
     }
@@ -121,8 +121,8 @@ describe("movement", () => {
     const b = battle(field);
     Battles.tick(b);
     const [own, foe] = [
-      b.blocks.filter(block => block.side === "attackers"),
-      b.blocks.filter(block => block.side === "defenders")
+      b.battalions.filter(battalion => battalion.side === "attackers"),
+      b.battalions.filter(battalion => battalion.side === "defenders")
     ];
     const dry = Movement.getWalkGap(b, own, foe);
     Battles.intervene(b, { tick: b.tick, kind: "condition", condition: "mud", on: true });

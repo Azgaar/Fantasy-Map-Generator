@@ -1,7 +1,7 @@
 // The Chronicle Record Editor: one event of the Chronicle, each field saved as it is changed. See docs/prd/events.md#the-chronicle
 import { Controllers } from "@/controllers";
 import { type DateParts, Dates } from "@/model/story/dates";
-import { type EventPatch, Events, type EventType, type MapEvent } from "@/model/story/events";
+import { type EventPatch, Events, type EventType, isSided, type MapEvent } from "@/model/story/events";
 import { Tags } from "@/model/tags";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -176,7 +176,7 @@ function fill(): void {
   control<HTMLInputElement>("parent").value = Events.get(event.parent ?? -1)?.name ?? "";
   control<HTMLInputElement>("tags").value = Tags.format(event.tags);
 
-  if (event.type === "war" || event.type === "battle") {
+  if (isSided(event)) {
     for (const key of ["attackers", "defenders"] as const)
       fillStates(key, event[key], index => played || (ongoing && index === 0), !played);
     if (event.type === "battle") control<HTMLSelectElement>("winner").value = event.winner ?? "";
@@ -329,7 +329,7 @@ function readDate(field: DateField): string | null | undefined {
 
 function getStateIds(event: MapEvent, key: StatesKey): number[] {
   if (key === "states") return event.type === "custom" ? (event.states ?? []) : [];
-  return event.type === "war" || event.type === "battle" ? event[key] : [];
+  return isSided(event) ? event[key] : [];
 }
 
 function onClick(event: MouseEvent): void {

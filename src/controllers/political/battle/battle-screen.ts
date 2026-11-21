@@ -14,10 +14,10 @@ import { Icons } from "@/model/icons";
 import { Options } from "@/model/options/options-model";
 import { Battalions } from "@/model/political/battle/battalion";
 import {
+  type Battalion,
   type Battle,
   type BattleRegiment,
   Battles,
-  type Block,
   type Intervention,
   type LogEntry,
   type LogEvent,
@@ -40,7 +40,7 @@ import type { TacticName } from "@/model/political/battle/formations";
 import { Generals } from "@/model/political/battle/general";
 import { Movement } from "@/model/political/battle/movement";
 import { Pathfinding } from "@/model/political/battle/pathfinding";
-import { BattleReplays } from "@/model/political/battle/replay";
+import { BattleReplays, type BattleStart } from "@/model/political/battle/replay";
 import { BattleTime, type Period } from "@/model/political/battle/time";
 import { BattleWeather, CONDITIONS, type Condition, WEATHERS, type Weather } from "@/model/political/battle/weather";
 import { Works } from "@/model/political/battle/works";
@@ -80,7 +80,7 @@ import { list } from "@/utils/language-utils";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
-import { BattleAnimation, type BattleSource, type BattleStart } from "./battle-animation";
+import { BattleAnimation, type BattleSource } from "./battle-animation";
 import { BattleConfigure } from "./battle-configure";
 import type { ReportText } from "./battle-report";
 
@@ -225,10 +225,10 @@ const STYLE = /* css */ `
   #battleScene.battlePanning { cursor: grabbing; }
   #battleScene.battleMuddy #battleMud, #battleScene.battleIcy #battleFrost { display: inline; }
   #battleScene.battleIcy .battleRiver { stroke: #e3edf3; }
-  #battleScene.battleEditable .battleBlock { cursor: grab; }
+  #battleScene.battleEditable .battleBattalion { cursor: grab; }
   #battleScene .battleSelected > .battleHalo, #battleScene.battleFocus .battleFocused > .battleHalo { display: inline; }
   #battleScene .battleTurnHandle { cursor: grab; }
-  #battleScene.battlePlanning #battleBlocks { display: none; }
+  #battleScene.battlePlanning #battleBattalions { display: none; }
   #battleLog { --line: #ccc; --muted: #666; height: 100%; }
   #battleLog .attackers { --side: var(--attackers); }
   #battleLog .defenders { --side: var(--defenders); }
@@ -313,7 +313,7 @@ interface Press {
   touch: boolean;
   field: Point; // where it was pressed
   client: Point; // and on the screen
-  block: Block | null; // under the pointer
+  battalion: Battalion | null; // under the pointer
   handle: boolean; // the turning handle
   dragged: number; // pixels: a click is no drag
   gesture: Gesture | null;
@@ -797,16 +797,16 @@ class BattleScreenController {
       else if (action === "close" || target.id === "battleSummary") ensureEl("battleSummary").hidden = true;
     });
 
-    // a block under the pointer shows its regiment in the sheet
+    // a battalion under the pointer shows its regiment in the sheet
     this.scene().addEventListener("pointerover", event => {
-      const el = (event.target as Element).closest(".battleBlock");
-      const block = el && select<Element, Block>(el).datum();
-      this.focusRegiment(block ? `${block.state}-${block.regiment}` : null, false);
-      if (this.battle) BattleSceneView.hoverBlock(this.scene(), this.battle, block ? block.id : null);
+      const el = (event.target as Element).closest(".battleBattalion");
+      const battalion = el && select<Element, Battalion>(el).datum();
+      this.focusRegiment(battalion ? `${battalion.state}-${battalion.regiment}` : null, false);
+      if (this.battle) BattleSceneView.hoverBattalion(this.scene(), this.battle, battalion ? battalion.id : null);
     });
     this.scene().addEventListener("pointerleave", () => {
       this.focusRegiment(null);
-      if (this.battle) BattleSceneView.hoverBlock(this.scene(), this.battle, null);
+      if (this.battle) BattleSceneView.hoverBattalion(this.scene(), this.battle, null);
     });
     this.bindCamera();
     const screen = ensureEl("battleScreen");
@@ -887,10 +887,10 @@ class BattleScreenController {
       this.camera = { view, target: view };
       this.updateCamera(0);
     };
-    const getGesture = ({ touch, button, handle, block }: Press): Gesture => {
+    const getGesture = ({ touch, button, handle, battalion }: Press): Gesture => {
       if (touch || button !== 0) return "pan";
       if (handle && this.isEditable()) return "turn";
-      return block && this.isEditable() ? "move" : "box";
+      return battalion && this.isEditable() ? "move" : "box";
     };
 
     svg.addEventListener(
@@ -920,7 +920,7 @@ class BattleScreenController {
         return;
       }
       const target = event.target as Element;
-      const el = target.closest(".battleBlock");
+      const el = target.closest(".battleBattalion");
       press = {
         id: event.pointerId,
         button: event.button,
@@ -928,7 +928,7 @@ class BattleScreenController {
         touch: event.pointerType === "touch",
         field: toField(event.clientX, event.clientY),
         client: [event.clientX, event.clientY],
-        block: el ? select<Element, Block>(el).datum() : null,
+        battalion: el ? select<Element, Battalion>(el).datum() : null,
         handle: Boolean(target.closest(".battleTurnHandle")),
         dragged: 0,
         gesture: null
@@ -961,7 +961,8 @@ class BattleScreenController {
         press.gesture = getGesture(press);
         svg.setPointerCapture(event.pointerId);
         if (press.gesture === "pan") svg.classList.add("battlePanning");
-        if (press.gesture === "move" && !this.selected.includes(press.block!.key)) this.setSelected([press.block!.key]);
+        if (press.gesture === "move" && !this.selected.includes(press.battalion!.key))
+          this.setSelected([press.battalion!.key]);
       }
       if (press.gesture === "pan") {
         const scale = this.camera.view.width / svg.getBoundingClientRect().width;
@@ -981,7 +982,7 @@ class BattleScreenController {
     svg.addEventListener("pointerup", event => release(event, true));
     svg.addEventListener("pointercancel", event => release(event, false));
     svg.addEventListener("dblclick", event => {
-      if ((event.target as Element).closest(".battleBlock")) return; // a battalion is turned
+      if ((event.target as Element).closest(".battleBattalion")) return; // a battalion is turned
       this.cameraMode = this.battleOptions().view.camera;
     });
   }
@@ -991,8 +992,8 @@ class BattleScreenController {
     return this.scene().classList.contains("battleEditable");
   }
 
-  private getSelected(): Block[] {
-    return this.battle?.blocks.filter(block => this.selected.includes(block.key)) ?? [];
+  private getSelected(): Battalion[] {
+    return this.battle?.battalions.filter(battalion => this.selected.includes(battalion.key)) ?? [];
   }
 
   private setSelected(keys: string[]): void {
@@ -1003,26 +1004,28 @@ class BattleScreenController {
   private showSelection(): void {
     const b = this.battle;
     if (!b) return;
-    const blocks = this.getSelected();
-    BattleSceneView.selectBlocks(
+    const battalions = this.getSelected();
+    BattleSceneView.selectBattalions(
       this.scene(),
       b,
-      blocks.map(block => block.id)
+      battalions.map(battalion => battalion.id)
     );
-    const pivot = this.isEditable() && blocks.length ? this.getPivot(blocks) : null;
+    const pivot = this.isEditable() && battalions.length ? this.getPivot(battalions) : null;
     BattleSceneView.drawSelection(this.scene(), b, { box: this.box, handle: pivot && this.getHandle(pivot, 0) });
   }
 
   /** The middle of the picked battalions, the way they mostly face, and how far before the middle their front is */
-  private getPivot(blocks: Block[]): Pivot {
-    const x = sum(blocks, block => block.x) / blocks.length;
-    const y = sum(blocks, block => block.y) / blocks.length;
+  private getPivot(battalions: Battalion[]): Pivot {
+    const x = sum(battalions, battalion => battalion.x) / battalions.length;
+    const y = sum(battalions, battalion => battalion.y) / battalions.length;
     const facing = Math.atan2(
-      sum(blocks, block => Math.sin(block.facing)),
-      sum(blocks, block => Math.cos(block.facing))
+      sum(battalions, battalion => Math.sin(battalion.facing)),
+      sum(battalions, battalion => Math.cos(battalion.facing))
     );
     const [cos, sin] = [Math.cos(facing), Math.sin(facing)];
-    const ahead = Math.max(...blocks.map(block => (block.x - x) * cos + (block.y - y) * sin + block.depth / 2));
+    const ahead = Math.max(
+      ...battalions.map(battalion => (battalion.x - x) * cos + (battalion.y - y) * sin + battalion.depth / 2)
+    );
     return { x, y, facing, ahead };
   }
 
@@ -1035,18 +1038,19 @@ class BattleScreenController {
 
   /** Where a drag puts the picked battalions: moved by the drag, or turned round their middle */
   private getPlaces(press: Press, to: Point): Positions {
-    const blocks = this.getSelected();
+    const battalions = this.getSelected();
     const places: Positions = new Map();
     if (press.gesture === "move") {
       const [dx, dy] = [to[0] - press.field[0], to[1] - press.field[1]];
-      for (const block of blocks) places.set(block.id, { x: block.x + dx, y: block.y + dy, facing: block.facing });
+      for (const battalion of battalions)
+        places.set(battalion.id, { x: battalion.x + dx, y: battalion.y + dy, facing: battalion.facing });
       return places;
     }
-    const pivot = this.getPivot(blocks);
+    const pivot = this.getPivot(battalions);
     const turn =
       Math.atan2(to[1] - pivot.y, to[0] - pivot.x) - Math.atan2(press.field[1] - pivot.y, press.field[0] - pivot.x);
     const [cos, sin] = [Math.cos(turn), Math.sin(turn)];
-    for (const { id, x, y, facing } of blocks) {
+    for (const { id, x, y, facing } of battalions) {
       const [ox, oy] = [x - pivot.x, y - pivot.y];
       places.set(id, { x: pivot.x + ox * cos - oy * sin, y: pivot.y + ox * sin + oy * cos, facing: facing + turn });
     }
@@ -1064,23 +1068,24 @@ class BattleScreenController {
       }
       const [x0, x1] = [Math.min(press.field[0], to[0]), Math.max(press.field[0], to[0])];
       const [y0, y1] = [Math.min(press.field[1], to[1]), Math.max(press.field[1], to[1])];
-      const inBox = b.blocks.filter(
-        block => block.x >= x0 && block.x <= x1 && block.y >= y0 && block.y <= y1 && this.isPickable(block)
+      const inBox = b.battalions.filter(
+        battalion =>
+          battalion.x >= x0 && battalion.x <= x1 && battalion.y >= y0 && battalion.y <= y1 && this.isPickable(battalion)
       );
       // in the battle the orders go to one side: the one with more battalions in the box
       const side =
-        b.tick && inBox.filter(block => block.side === "attackers").length * 2 < inBox.length
+        b.tick && inBox.filter(battalion => battalion.side === "attackers").length * 2 < inBox.length
           ? "defenders"
           : "attackers";
-      this.setSelected(inBox.filter(block => !b.tick || block.side === side).map(block => block.key));
+      this.setSelected(inBox.filter(battalion => !b.tick || battalion.side === side).map(battalion => battalion.key));
       return;
     }
 
     const places = this.getPlaces(press, to);
     if (!done) {
-      BattleSceneView.previewBlocks(this.scene(), places);
+      BattleSceneView.previewBattalions(this.scene(), places);
       // the turning handle goes with the battalions, moved or turned
-      const placed = this.getSelected().map(block => ({ ...block, ...places.get(block.id)! }));
+      const placed = this.getSelected().map(battalion => ({ ...battalion, ...places.get(battalion.id)! }));
       BattleSceneView.drawSelection(this.scene(), b, { box: null, handle: this.getHandle(this.getPivot(placed), 0) });
       return;
     }
@@ -1088,14 +1093,14 @@ class BattleScreenController {
       this.cancelPress(press); // the battle began under the drag: troops are placed only before the start
       return;
     }
-    for (const block of this.getSelected()) {
-      const place = places.get(block.id)!;
-      if (place.x !== block.x || place.y !== block.y)
-        Battles.intervene(b, { tick: b.tick, kind: "move", block: block.key, x: place.x, y: place.y });
-      if (place.facing !== block.facing)
-        Battles.intervene(b, { tick: b.tick, kind: "turn", block: block.key, facing: place.facing });
+    for (const battalion of this.getSelected()) {
+      const place = places.get(battalion.id)!;
+      if (place.x !== battalion.x || place.y !== battalion.y)
+        Battles.intervene(b, { tick: b.tick, kind: "move", battalion: battalion.key, x: place.x, y: place.y });
+      if (place.facing !== battalion.facing)
+        Battles.intervene(b, { tick: b.tick, kind: "turn", battalion: battalion.key, facing: place.facing });
     }
-    BattleSceneView.updateBlocks(this.scene(), b, null, 1);
+    BattleSceneView.updateBattalions(this.scene(), b, null, 1);
     this.refresh();
   }
 
@@ -1103,7 +1108,7 @@ class BattleScreenController {
   private cancelPress(press: Press): void {
     this.box = null;
     if (!press.gesture || press.gesture === "pan" || !this.battle) return;
-    BattleSceneView.updateBlocks(this.scene(), this.battle, null, 1);
+    BattleSceneView.updateBattalions(this.scene(), this.battle, null, 1);
     this.showSelection();
   }
 
@@ -1115,27 +1120,30 @@ class BattleScreenController {
     const b = this.battle!;
     if (press.handle) return;
     const live = b.tick && !b.result;
-    const picked = press.block && this.selected.includes(press.block.key) && this.isPickable(press.block);
+    const picked = press.battalion && this.selected.includes(press.battalion.key) && this.isPickable(press.battalion);
     if (live && (press.button === 2 || (press.button === 0 && press.shift))) this.giveTask(press);
     else if (live && press.button === 0 && picked) this.openTasks(press);
-    else if (press.button === 0) this.setSelected(press.block && this.isPickable(press.block) ? [press.block.key] : []);
+    else if (press.button === 0)
+      this.setSelected(press.battalion && this.isPickable(press.battalion) ? [press.battalion.key] : []);
   }
 
   /** The orders the picked battalions of the clicked one's side take on their own spots, at the click */
   private openTasks(press: Press): void {
     const b = this.battle!;
-    const clicked = press.block!;
-    const blocks = this.getSelected().filter(block => block.side === clicked.side && this.isPickable(block));
-    const tasks = new Set(blocks.flatMap(block => Battalions.getTasks(b, block)));
+    const clicked = press.battalion!;
+    const battalions = this.getSelected().filter(
+      battalion => battalion.side === clicked.side && this.isPickable(battalion)
+    );
+    const tasks = new Set(battalions.flatMap(battalion => Battalions.getTasks(b, battalion)));
     const shown = (Object.keys(BATTLE_ORDER_LABELS) as Command[]).filter(task => tasks.has(task as TaskKind));
     const menu = ensureEl("battleTaskMenu");
     menu.innerHTML = shown
       .map(
         task =>
-          `<button data-task="${task}" data-tip="${this.taskTip(task)}" class="icon-button-${task} ${task === clicked.task?.kind ? "current" : ""}">${BATTLE_ORDER_LABELS[task]}</button>`
+          `<button data-task="${task}" data-tip="${this.taskTip(task)}" class="icon-button-${task} ${task === clicked.byHand.task?.kind ? "current" : ""}">${BATTLE_ORDER_LABELS[task]}</button>`
       )
       .join("");
-    this.tasked = { keys: blocks.map(block => block.key), at: press.field };
+    this.tasked = { keys: battalions.map(battalion => battalion.key), at: press.field };
     this.closePickers();
     menu.hidden = false;
     // at the click, within the plan
@@ -1151,13 +1159,13 @@ class BattleScreenController {
     const task = (event.target as HTMLElement).closest<HTMLElement>("[data-task]")?.dataset.task as TaskKind;
     if (!task || !this.tasked || !b.tick || b.result) return;
     const [x, y] = this.tasked.at;
-    Battles.intervene(b, { tick: b.tick, kind: "task", blocks: this.tasked.keys, task, x, y, target: null });
+    Battles.intervene(b, { tick: b.tick, kind: "task", battalions: this.tasked.keys, task, x, y, target: null });
     this.refresh();
   }
 
   /** In the battle only battalions that take orders are picked */
-  private readonly isPickable = (block: Block): boolean =>
-    !this.battle!.tick || (block.status === "ready" && !block.leaving);
+  private readonly isPickable = (battalion: Battalion): boolean =>
+    !this.battle!.tick || (battalion.status === "ready" && !battalion.leaving);
 
   /** The picked battalions of a side go where the user points, attack the foe pointed at, pursue it broken, or protect the friend */
   private giveTask(press: Press): void {
@@ -1165,14 +1173,14 @@ class BattleScreenController {
     const own = this.getSelected().filter(this.isPickable);
     if (!own.length) return;
     const side = own[0].side;
-    const blocks = own.filter(block => block.side === side);
-    const pointed = press.block && !blocks.includes(press.block) ? press.block : null;
+    const battalions = own.filter(battalion => battalion.side === side);
+    const pointed = press.battalion && !battalions.includes(press.battalion) ? press.battalion : null;
     const broken = pointed?.status === "routed" && pointed.side !== side;
     const target = pointed?.status === "ready" || broken ? pointed : null;
     const task = !target ? "move" : broken ? "pursue" : target.side === side ? "protect" : "attack";
     const [x, y] = target ? [target.x, target.y] : press.field;
-    const keys = blocks.map(block => block.key);
-    Battles.intervene(b, { tick: b.tick, kind: "task", blocks: keys, task, x, y, target: target?.key ?? null });
+    const keys = battalions.map(battalion => battalion.key);
+    Battles.intervene(b, { tick: b.tick, kind: "task", battalions: keys, task, x, y, target: target?.key ?? null });
     this.refresh();
   }
 
@@ -1183,7 +1191,7 @@ class BattleScreenController {
     this.camera = BattleCamera.move(
       this.camera,
       b.field,
-      BattleCamera.toCameraTroops(b.blocks),
+      BattleCamera.toCameraTroops(b.battalions),
       this.cameraMode,
       elapsed
     );
@@ -1231,7 +1239,7 @@ class BattleScreenController {
   /** The colours allied states fly, by their ids in the battle on screen */
   private getFlags(): StateColors {
     const ids = this.watching?.replay
-      ? Events.getFoughtStates(this.watching.replay)
+      ? Events.foughtStateIds(this.watching.replay)
       : pack.states.flatMap(({ i, removed }) => (i && !removed ? [i] : []));
     return Object.fromEntries(ids.map(id => [id, this.stateColor(id)]));
   }
@@ -1246,7 +1254,7 @@ class BattleScreenController {
 
   /** Where each battalion went since the last key moment, shown while paused */
   private resetTrails(): void {
-    this.trails = new Map(this.battle!.blocks.map(block => [block.id, [[block.x, block.y]]]));
+    this.trails = new Map(this.battle!.battalions.map(battalion => [battalion.id, [[battalion.x, battalion.y]]]));
   }
 
   private showArrows(): void {
@@ -1262,7 +1270,7 @@ class BattleScreenController {
       this.cameraMode = this.battleOptions().view.camera;
       if (this.player.speed !== this.battleOptions().view.speed) this.setSpeed(this.battleOptions().view.speed);
       this.toggleLog(this.battleOptions().view.log, false);
-      BattleSceneView.updateBlocks(this.scene(), b, null, 1); // the battle plan overlay
+      BattleSceneView.updateBattalions(this.scene(), b, null, 1); // the battle plan overlay
     } else if (group === "rendering") {
       this.drawScene();
       this.drawWeather();
@@ -1286,8 +1294,8 @@ class BattleScreenController {
     }
     this.scene().classList.toggle("battleFocus", onField && key !== null);
     select(this.scene())
-      .selectAll<SVGGElement, Block>(".battleBlock")
-      .classed("battleFocused", block => `${block.state}-${block.regiment}` === key);
+      .selectAll<SVGGElement, Battalion>(".battleBattalion")
+      .classed("battleFocused", battalion => `${battalion.state}-${battalion.regiment}` === key);
   }
 
   // the player
@@ -1305,7 +1313,7 @@ class BattleScreenController {
       const b = this.battle; // the one on screen by now
       if (!b) return;
       Battles.plan(b);
-      BattleSceneView.updateBlocks(this.scene(), b, null, 1);
+      BattleSceneView.updateBattalions(this.scene(), b, null, 1);
       this.refresh();
     }, 30);
   }
@@ -1325,7 +1333,7 @@ class BattleScreenController {
     this.player.playing = false;
     this.player.previous = null;
     if (this.battle) {
-      BattleSceneView.updateBlocks(this.scene(), this.battle, null, 1);
+      BattleSceneView.updateBattalions(this.scene(), this.battle, null, 1);
       this.showArrows();
     }
     this.setEditable();
@@ -1340,7 +1348,7 @@ class BattleScreenController {
     do this.advance();
     while (round && b.tick % ROUND_TICKS && !this.isOver(b));
     this.player.previous = null;
-    BattleSceneView.updateBlocks(this.scene(), b, null, 1);
+    BattleSceneView.updateBattalions(this.scene(), b, null, 1);
     this.showArrows();
   }
 
@@ -1396,7 +1404,7 @@ class BattleScreenController {
       }
       if (progress >= 1) progress = 0;
       this.player.tickStart = now - progress * (TICK_MS / this.player.speed);
-      if (this.player.playing) BattleSceneView.updateBlocks(this.scene(), b, this.player.previous, progress);
+      if (this.player.playing) BattleSceneView.updateBattalions(this.scene(), b, this.player.previous, progress);
     }
     this.updateCamera(elapsed);
     this.retip();
@@ -1417,14 +1425,14 @@ class BattleScreenController {
   private advance(): boolean {
     const b = this.battle!;
     this.player.previous = BattleSceneView.snapshot(b);
-    const blocks = b.blocks.length;
+    const battalions = b.battalions.length;
     Battles.applyDue(b, this.script);
-    if (b.blocks.length !== blocks) this.drawScene(); // a recorded reinforcement
+    if (b.battalions.length !== battalions) this.drawScene(); // a recorded reinforcement
     const logged = b.log.length;
     Battles.tick(b);
     if (b.tick % ROUND_TICKS === 0) {
-      for (const block of b.blocks)
-        this.trails.set(block.id, [...(this.trails.get(block.id) ?? []), [block.x, block.y]]);
+      for (const battalion of b.battalions)
+        this.trails.set(battalion.id, [...(this.trails.get(battalion.id) ?? []), [battalion.x, battalion.y]]);
     }
     if (this.isOver(b) && !b.result) Battles.settleLosses(b); // a past battle applied before its end stops there
     this.refresh();
@@ -1440,15 +1448,15 @@ class BattleScreenController {
 
   private drawScene(): void {
     this.applyLook();
-    BattleSceneView.drawBlocks(this.scene(), this.battle!, this.turnBlock);
+    BattleSceneView.drawBattalions(this.scene(), this.battle!, this.turnBattalion);
     this.setEditable();
     this.showArrows();
   }
 
-  private readonly turnBlock = (block: Block, facing: number): void => {
+  private readonly turnBattalion = (battalion: Battalion, facing: number): void => {
     const b = this.battle!;
-    Battles.intervene(b, { tick: b.tick, kind: "turn", block: block.key, facing });
-    BattleSceneView.updateBlocks(this.scene(), b, null, 1);
+    Battles.intervene(b, { tick: b.tick, kind: "turn", battalion: battalion.key, facing });
+    BattleSceneView.updateBattalions(this.scene(), b, null, 1);
     this.refresh();
   };
 
@@ -1589,7 +1597,7 @@ class BattleScreenController {
     }
 
     const label = banner.querySelector<HTMLElement>(".battleOrder")!;
-    if (!b.tick && !data.plan.order) {
+    if (!b.tick && !data.plan.byHand.order) {
       const tactic = this.isPlanning() ? "" : BATTLE_TACTIC_LABELS[data.plan.tactic];
       label.className = "battleOrder icon-button-tactic";
       label.dataset.tip = tactic ? `${t("Tactic")}: ${tactic}` : t("Generals are planning");
@@ -1702,7 +1710,7 @@ class BattleScreenController {
 
   /** A state of the battle on screen as it is now: a replay's ids are as fought */
   private stateOf(id: number, event = this.watching): State | undefined {
-    if (event) return Events.getFoughtState(event, id);
+    if (event) return Events.currentStateOf(event, id);
     const state = pack.states[id];
     return state && !state.removed ? state : undefined;
   }
@@ -2151,7 +2159,7 @@ class BattleScreenController {
 
     if (event === "task") {
       const who =
-        params!.count === "1" ? capitalize(params!.block) : t("{{- number}} battalions", { number: params!.count });
+        params!.count === "1" ? capitalize(params!.battalion) : t("{{- number}} battalions", { number: params!.count });
       if (params!.task === "attack")
         return t("{{- who}} ordered to attack {{- target}}", { who, target: params!.target });
       if (params!.task === "pursue")
@@ -2163,15 +2171,15 @@ class BattleScreenController {
       return t("{{- who}} ordered to {{- order}}", { who, order });
     }
 
-    const block = { block: capitalize(params!.block) };
-    if (event === "move") return t("{{- block}} are moved", block);
-    if (event === "turn") return t("{{- block}} are turned", block);
-    if (event === "rout") return t("{{- block}} break and run", block);
-    if (event === "rally") return t("{{- block}} rally", block);
-    if (event === "surrender") return t("{{- block}} surrender", block);
-    if (event === "freed") return t("{{- block}} take up arms again", block);
-    if (event === "destroyed") return t("{{- block}} are destroyed", block);
-    return t("{{- block}} leave the field", block);
+    const battalion = { battalion: capitalize(params!.battalion) };
+    if (event === "move") return t("{{- battalion}} are moved", battalion);
+    if (event === "turn") return t("{{- battalion}} are turned", battalion);
+    if (event === "rout") return t("{{- battalion}} break and run", battalion);
+    if (event === "rally") return t("{{- battalion}} rally", battalion);
+    if (event === "surrender") return t("{{- battalion}} surrender", battalion);
+    if (event === "freed") return t("{{- battalion}} take up arms again", battalion);
+    if (event === "destroyed") return t("{{- battalion}} are destroyed", battalion);
+    return t("{{- battalion}} leave the field", battalion);
   };
 
   /** The log's last line is the last change's: a withdrawal before the start takes its change back and leaves its line */

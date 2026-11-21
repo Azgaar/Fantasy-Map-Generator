@@ -3,7 +3,7 @@ import { pointer } from "d3";
 import { Controllers } from "@/controllers";
 import { Pack } from "@/model/graph/pack-generator";
 import { Dates } from "@/model/story/dates";
-import { Events, type EventType, type MapEvent } from "@/model/story/events";
+import { Events, type EventType, isSided, type MapEvent } from "@/model/story/events";
 import { Tags } from "@/model/tags";
 import { Csv } from "@/services/io/csv";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -44,10 +44,7 @@ const TYPE_LABELS: Record<EventType, string> = {
 
 const NO_REPLAY = () => t("The battle was not played in the Battle Simulator: it has no replay");
 
-const getStateNames = (event: MapEvent): string =>
-  Events.statesOf(event)
-    .map(id => Events.stateName(id))
-    .join(", ");
+const getStateNames = (event: MapEvent): string => Events.stateNames(Events.statesOf(event));
 
 const columns: EditorColumn<MapEvent>[] = [
   { key: "start", label: t("Start"), width: "8em", sortBy: event => Dates.sortKey(event.start), defaultSort: "asc" },
@@ -200,7 +197,8 @@ function renderRow(event: MapEvent, depth: number, hasParts: boolean, opened: bo
     ? `<span class="chronicleToggle pointer ${opened ? "icon-down-open" : "icon-right-open"}" data-tip="${t("Show or hide the parts of the event")}"></span>`
     : `<span class="chronicleToggle"></span>`;
   const [from, to] = [Dates.format(start, "brief"), end === undefined ? "" : Dates.format(end, "brief")];
-  const length = end !== undefined && Events.lasts(event) ? ` (${Dates.formatLength(start, end)})` : "";
+  const duration = Events.durationOf(event);
+  const length = duration ? ` (${duration})` : "";
   const oneDay = from === to && (event.type === "battle" || event.type === "custom"); // its end is read in the tooltip
   const startTip = oneDay && length ? Dates.formatRange(start, end, "long") + length : "";
   const endCell =
@@ -277,21 +275,11 @@ function getTopEvents(): MapEvent[] {
   }
   matched = new Set(all.filter(matches).map(event => event.i));
   shown = new Set(matched);
-  for (const id of matched) for (const parent of getParents(Events.get(id)!)) shown.add(parent.i);
+  for (const id of matched) for (const parent of Events.parents(Events.get(id)!)) shown.add(parent.i);
   return all.filter(event => event.parent === undefined && shown!.has(event.i));
 }
 
 // parts
-
-/** The parents of an event, the nearest first */
-function getParents(event: MapEvent): MapEvent[] {
-  const parents: MapEvent[] = [];
-  for (let parent = Events.get(event.parent ?? -1); parent; parent = Events.get(parent.parent ?? -1)) {
-    if (parents.includes(parent)) break;
-    parents.push(parent);
-  }
-  return parents;
-}
 
 function getShownParts(event: MapEvent): MapEvent[] {
   const parts = Events.parts(event.i, false);
@@ -330,7 +318,7 @@ function toggleAll(): void {
 
 /** Show the event's row: its parents open, on the page that holds it */
 function reveal(event: MapEvent): void {
-  const parents = getParents(event);
+  const parents = Events.parents(event);
   for (const parent of parents) getOpened().add(parent.i);
   table.reveal(parents.at(-1) ?? event);
 }
@@ -430,9 +418,8 @@ function download(): void {
     "Result",
     "Note"
   ];
-  const names = (ids: number[] = []) => ids.map(id => Events.stateName(id)).join(", ");
   const rows = Events.list().map(event => {
-    const sides = event.type === "war" || event.type === "battle";
+    const sided = isSided(event);
     return [
       event.i,
       event.name,
@@ -440,9 +427,9 @@ function download(): void {
       event.end ?? "",
       event.parent ?? "",
       Tags.format(event.tags),
-      sides ? names(event.attackers) : "",
-      sides ? names(event.defenders) : "",
-      sides ? "" : names(Events.statesOf(event)),
+      sided ? Events.stateNames(event.attackers) : "",
+      sided ? Events.stateNames(event.defenders) : "",
+      sided ? "" : Events.stateNames(Events.statesOf(event)),
       Events.describeResult(event),
       event.note ?? ""
     ];

@@ -26,8 +26,10 @@ export const DEFAULT_BATTLE_SETTINGS: BattleSettings = {
   fortune: 0.2
 };
 
+export type CameraChoice = "follow" | "field";
+
 export interface BattleOptions {
-  view: { camera: "follow" | "field"; speed: number; log: boolean };
+  view: { camera: CameraChoice; speed: number; log: boolean };
   rendering: {
     relief: "hachures" | "contours" | "none";
     shade: boolean;
@@ -59,7 +61,7 @@ export interface BattleOptions {
     format: "gif" | "svg" | "report";
     quality: "low" | "medium" | "high";
     speed: number;
-    camera: "follow" | "field";
+    camera: CameraChoice;
   };
 }
 

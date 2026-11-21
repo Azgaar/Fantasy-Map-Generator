@@ -114,7 +114,7 @@ describe("Events: the list", () => {
       replay
     });
     const battle = () => Events.get(id) as BattleEvent;
-    const name = (fought: number) => Events.getFoughtState(battle(), fought)?.name;
+    const name = (fought: number) => Events.currentStateOf(battle(), fought)?.name;
     expect([1, 2, 3].map(name)).toEqual(["S1", "S2", "S3"]);
 
     Events.remapStates(

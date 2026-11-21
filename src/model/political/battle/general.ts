@@ -1,7 +1,8 @@
 // The side level: a general appraises the field, picks a tactic, draws the troops up and gives orders
 import { least, sum } from "d3";
+import type { Point } from "@/types/global";
 import { Battalions } from "./battalion";
-import type { Battle, Block, Muster, Order, Plan, Wedge } from "./battle";
+import type { Battalion, Battle, GeneralChoice, Muster, Order, Plan, Wedge } from "./battle";
 import {
   ASSAULT_ODDS,
   BOLD,
@@ -21,11 +22,21 @@ import {
   STORM_ODDS,
   WARY
 } from "./battle-balance";
-import { BattleRules, COMMANDS, type Command, FEINT, POSTURES, SIDES, type Side, SURRENDER } from "./battle-rules";
+import {
+  BattleRules,
+  COMMANDS,
+  type Command,
+  FEINT,
+  type Phase,
+  POSTURES,
+  SIDES,
+  type Side,
+  SURRENDER
+} from "./battle-rules";
 import { COLS, ROWS } from "./battle-scale";
 import { type Battlefield, Battlefields, type FieldBurg, type FieldWall, type WallPost } from "./battlefield";
-import { Formations, GAP, type Place, ROW_GAP, TACTICS, type TacticName } from "./formations";
-import { Movement, PACE, type Point, ROUND_TICKS } from "./movement";
+import { Formations, GAP, type Place, ROLES, ROW_GAP, TACTICS, type TacticName } from "./formations";
+import { Movement, PACE, ROUND_TICKS } from "./movement";
 import { Pathfinding } from "./pathfinding";
 import { Sight } from "./sight";
 import { Works } from "./works";
@@ -110,8 +121,8 @@ const CLOSING = 0.7; // how much nearer the foe has to come in a round for the s
 const MARGIN = 0.02; // troops keep that far from the edge of the field
 
 /** What a general sees of a side */
-interface View {
-  ready: Block[]; // battalions in order
+interface SideView {
+  ready: Battalion[]; // battalions in order
   power: number; // as the military screens count it
   fire: number; // what it shoots with
   grip: number; // what it fights hand to hand with
@@ -129,13 +140,6 @@ interface Frame {
   heading: number;
 }
 
-/** What a general may settle on before a battle: a tactic, to wait for the foe rather than go to meet him, to storm at once */
-export interface Option {
-  tactic: TacticName | null;
-  waits: boolean;
-  storms: boolean;
-}
-
 /** The way an ambushed column marches: the road through the middle of the field, else straight on along the attack */
 interface Route {
   at: (s: number) => Frame; // the point that far along the way, heading on along it
@@ -143,14 +147,7 @@ interface Route {
   room: [number, number]; // and where it is on the field
 }
 
-const ROLES: Record<Block["kind"], Exclude<Order["role"], "wedge">> = {
-  melee: "line",
-  ranged: "support",
-  mounted: "wing",
-  machinery: "battery"
-};
-
-type Seen = { block: Block; at: [across: number, along: number] }[];
+type Seen = { battalion: Battalion; at: [across: number, along: number] }[];
 
 // a side drawn up on its ground (`drawUp`) may take any of these by hand; the crossing and the Wagenburg where they apply
 const ATTACKS: TacticName[] = ["assault", "oblique", "envelopment", "wedge", "harass", "flyingWedge", "feignedRetreat"];
@@ -165,41 +162,45 @@ class GeneralModule {
   }
 
   /** In order and fighting on: not broken, and not marching off the field */
-  private isInOrder(block: Block): boolean {
-    return block.status === "ready" && !block.leaving;
+  private isInOrder(battalion: Battalion): boolean {
+    return battalion.status === "ready" && !battalion.leaving;
   }
 
-  private survey(battle: Battle, side: Side): View {
-    const all = battle.blocks.filter(block => block.side === side);
-    const ready = all.filter(block => this.isInOrder(block));
-    const troops = sum(ready, block => block.troops) || 1;
+  private survey(battle: Battle, side: Side): SideView {
+    const all = battle.battalions.filter(battalion => battalion.side === side);
+    const ready = all.filter(battalion => this.isInOrder(battalion));
+    const troops = sum(ready, battalion => battalion.troops) || 1;
     return {
       ready,
-      power: sum(ready, block => Battalions.getStrength(block)),
-      fire: sum(ready, block => (block.range ? Battalions.getStrength(block) : 0)),
-      grip: sum(ready, block => Battalions.getStrength(block) * this.getGrip(block)),
-      riders: sum(ready, block => (block.kind === "mounted" ? Battalions.getStrength(block) : 0)),
-      morale: sum(ready, block => block.morale * block.troops) / troops,
+      power: sum(ready, battalion => Battalions.getStrength(battalion)),
+      fire: sum(ready, battalion => (battalion.stats.range ? Battalions.getStrength(battalion) : 0)),
+      grip: sum(ready, battalion => Battalions.getStrength(battalion) * this.getGrip(battalion)),
+      riders: sum(ready, battalion => (battalion.kind === "mounted" ? Battalions.getStrength(battalion) : 0)),
+      morale: sum(ready, battalion => battalion.morale * battalion.troops) / troops,
       losses: battle[side].casualties + battle[side].captured,
       share: all.length ? ready.length / all.length : 0,
-      x: sum(ready, block => block.x * block.troops) / troops,
-      y: sum(ready, block => block.y * block.troops) / troops
+      x: sum(ready, battalion => battalion.x * battalion.troops) / troops,
+      y: sum(ready, battalion => battalion.y * battalion.troops) / troops
     };
   }
 
   /** Share of a side's troops lost to it, the parts of men too */
   private getHarm(battle: Battle, side: Side): number {
-    const blocks = battle.blocks.filter(block => block.side === side);
-    const initial = sum(blocks, block => block.initial);
-    const lost = (block: Block): number =>
-      block.initial - block.troops + block.harm - 0.5 + (block.status === "surrendered" ? block.troops : 0); // harm begins at half a man
-    return initial ? sum(blocks, lost) / initial : 0;
+    const battalions = battle.battalions.filter(battalion => battalion.side === side);
+    const initial = sum(battalions, battalion => battalion.initial);
+    const lost = (battalion: Battalion): number =>
+      battalion.initial -
+      battalion.troops +
+      battalion.harm -
+      0.5 +
+      (battalion.status === "surrendered" ? battalion.troops : 0); // harm begins at half a man
+    return initial ? sum(battalions, lost) / initial : 0;
   }
 
   /** How much of its strength a battalion brings hand to hand: shooters and riders who shoot fight on, engines and ships hardly */
-  private getGrip(block: Block): number {
-    const kind = Battalions.getKind(block.type, block.range); // as its unit fights, in a naval or an air battle too
-    return kind === "machinery" ? 0.1 : kind === "ranged" || (kind === "mounted" && block.range) ? 0.5 : 1;
+  private getGrip(battalion: Battalion): number {
+    const kind = Battalions.getKind(battalion.type, battalion.stats.range); // as its unit fights, in a naval or an air battle too
+    return kind === "machinery" ? 0.1 : kind === "ranged" || (kind === "mounted" && battalion.stats.range) ? 0.5 : 1;
   }
 
   // Deployment
@@ -208,13 +209,13 @@ class GeneralModule {
   deploy(battle: Battle, retreating: Side[] = []): void {
     const { type, field } = battle;
     for (const side of [...SIDES].reverse()) {
-      const blocks = battle.blocks.filter(block => block.side === side);
+      const battalions = battle.battalions.filter(battalion => battalion.side === side);
       const attacking = side === "attackers";
-      if (type === "ambush") attacking ? this.marchColumn(battle, blocks) : this.layAmbush(battle, blocks);
+      if (type === "ambush") attacking ? this.marchColumn(battle, battalions) : this.layAmbush(battle, battalions);
       else if (type === "siege" && field.held !== null && attacking)
-        this.isRinging(battle, blocks) ? this.ringIn(battle, blocks) : this.layLines(battle, blocks);
-      else if (type === "siege" && Movement.hasWalls(battle)) this.manWalls(battle, blocks);
-      else this.drawUp(battle, side, blocks, retreating.includes(side));
+        this.isRinging(battle, battalions) ? this.ringIn(battle, battalions) : this.layLines(battle, battalions);
+      else if (type === "siege" && Movement.hasWalls(battle)) this.manWalls(battle, battalions);
+      else this.drawUp(battle, side, battalions, retreating.includes(side));
     }
     // the defenders' riders pick the wing to go round by the attackers in sight of them, not by where they stood before
     const drawn = type !== "ambush" && !(type === "siege" && Movement.hasWalls(battle));
@@ -222,7 +223,7 @@ class GeneralModule {
       this.drawUp(
         battle,
         "defenders",
-        battle.blocks.filter(block => block.side === "defenders"),
+        battle.battalions.filter(battalion => battalion.side === "defenders"),
         retreating.includes("defenders")
       );
     for (const side of SIDES)
@@ -273,8 +274,7 @@ class GeneralModule {
       reach: 0,
       since: 0,
       fired: null,
-      order: null,
-      byHand: null,
+      byHand: { order: null, round: null, defiant: false, stands: false },
       opening: 0,
       gap: Infinity,
       apart: Infinity,
@@ -288,8 +288,6 @@ class GeneralModule {
       muster: null,
       hooks: [[], []],
       lure: null,
-      defiant: false,
-      stands: false,
       declined: false
     };
   }
@@ -355,16 +353,18 @@ class GeneralModule {
     // shooters stop where their shots reach the foe's front, in the dark at its torches. Standing off in the open, those
     // that would not reach him from their place step before the line so far that they do while it halts beyond its own
     // charge; who would have to go too far out stays where it is
-    const shooters = places.filter(place => place.block.range && (place.block.kind === "ranged" || field.open));
-    const depth = places[0].block.depth;
-    const reach = (block: Block): number => Sight.getReach(battle, block, true) * 0.9;
-    const aheads = new Map<Block, number>();
-    for (const { block, along } of shooters) {
-      const out = (CHARGE + CHARGE_CLEAR) * front + depth - reach(block);
-      if (this.isOpenFight(battle) && along < out && out <= AHEAD_MOST * front) aheads.set(block, out);
+    const shooters = places.filter(
+      place => place.battalion.stats.range && (place.battalion.kind === "ranged" || field.open)
+    );
+    const depth = places[0].battalion.depth;
+    const reach = (battalion: Battalion): number => Sight.getReach(battle, battalion, true) * 0.9;
+    const aheads = new Map<Battalion, number>();
+    for (const { battalion, along } of shooters) {
+      const out = (CHARGE + CHARGE_CLEAR) * front + depth - reach(battalion);
+      if (this.isOpenFight(battle) && along < out && out <= AHEAD_MOST * front) aheads.set(battalion, out);
     }
     const shot = shooters.length
-      ? Math.min(...shooters.map(({ block, along }) => reach(block) + (aheads.get(block) ?? along))) - depth
+      ? Math.min(...shooters.map(({ battalion, along }) => reach(battalion) + (aheads.get(battalion) ?? along))) - depth
       : 0;
     plan.halt = Math.max(shot, COUNTER * 2 * front);
     plan.reach = shot;
@@ -379,29 +379,29 @@ class GeneralModule {
         return wood || marsh;
       };
       const shift = front * STEP_IN;
-      const wing = place.block.kind === "mounted" && place.role !== "wedge";
+      const wing = place.battalion.kind === "mounted" && place.role !== "wedge";
       const post = place.across;
       for (let i = 0; i < 12 && wing && Math.abs(place.across) > shift && bad(); i++)
         place.across -= Math.sign(place.across) * shift;
       if (wing && bad()) place.across = post; // no open ground to the middle of the line: they keep their wing
-      const { block, role, mission, rank, across, along } = place;
+      const { battalion, role, mission, rank, across, along } = place;
       const frame = this.frameOf(plan, role);
       const [x, y] = this.onField(field, this.toField(frame, across, along));
       const facing = frame.heading + (place.facing ?? 0);
-      block.order = {
+      battalion.order = {
         role,
         mission,
         rank,
         across,
         along,
-        ahead: aheads.get(block) ?? null,
+        ahead: aheads.get(battalion) ?? null,
         x,
         y,
         facing,
         target: null,
         sent: false
       };
-      [block.x, block.y, block.facing] = [x, y, facing];
+      [battalion.x, battalion.y, battalion.facing] = [x, y, facing];
     }
   }
 
@@ -432,12 +432,12 @@ class GeneralModule {
   }
 
   /** The usual way: a tactic by the odds, a formation by the tactic, on the best ground in reach */
-  private drawUp(battle: Battle, side: Side, blocks: Block[], retreats = false): void {
+  private drawUp(battle: Battle, side: Side, battalions: Battalion[], retreats = false): void {
     const forward = side === "attackers" ? battle.axis : battle.axis + Math.PI;
     const crossing = side === "defenders" ? this.findCrossing(battle) : null;
-    const [chosen, strike] = this.chooseTactic(battle, side, blocks, crossing !== null);
+    const [chosen, strike] = this.chooseTactic(battle, side, battalions, crossing !== null);
     const tactic = retreats ? "strategicRetreat" : chosen;
-    const places = Formations.form(blocks, TACTICS[tactic], strike, this.getRoom(battle), battle.field.front);
+    const places = Formations.form(battalions, TACTICS[tactic], strike, this.getRoom(battle), battle.field.front);
     // defenders ready for a landing or a bombardment meet it at the water's edge, unless their general would rather wait inland
     const meets = BattleRules.isFromSea(battle.type) && side === "defenders" && !battle[side].waits;
     const shore = meets ? this.findShore(battle) : null;
@@ -456,24 +456,25 @@ class GeneralModule {
   private rateTactics(
     battle: Battle,
     side: Side,
-    blocks: Block[],
+    battalions: Battalion[],
     crossing: boolean
   ): [scores: [TacticName, number][], strike: number] {
     const own = this.survey(battle, side);
     const foe = this.survey(battle, BattleRules.enemyOf(side));
     const odds = own.power / (foe.power || 1e-9);
-    const count = (kind: Block["kind"]): number => blocks.filter(block => block.kind === kind).length;
+    const count = (kind: Battalion["kind"]): number => battalions.filter(battalion => battalion.kind === kind).length;
     const [line, shooters, riders] = [count("melee"), count("ranged"), count("mounted")];
     const riderOdds = foe.riders ? own.riders / foe.riders : own.riders ? 3 : 1;
     const fireShare = own.fire / (own.fire + foe.fire || 1);
     const gripShare = own.grip / (own.grip + foe.grip || 1);
-    const foeBlocks = battle.blocks.filter(block => block.side !== side);
+    const foeBattalions = battle.battalions.filter(battalion => battalion.side !== side);
     const { field } = battle;
-    const width = (all: Block[]): number =>
-      sum(all, block => (block.kind === "melee" ? block.width + GAP * field.front : 0));
-    const weight = (all: Block[]): number =>
-      sum(all, block => (block.kind === "melee" ? Battalions.getStrength(block) : 0));
-    const heavier = weight(blocks) / (width(blocks) || 1) > (weight(foeBlocks) / (width(foeBlocks) || 1)) * 1.15;
+    const width = (all: Battalion[]): number =>
+      sum(all, battalion => (battalion.kind === "melee" ? battalion.width + GAP * field.front : 0));
+    const weight = (all: Battalion[]): number =>
+      sum(all, battalion => (battalion.kind === "melee" ? Battalions.getStrength(battalion) : 0));
+    const heavier =
+      weight(battalions) / (width(battalions) || 1) > (weight(foeBattalions) / (width(foeBattalions) || 1)) * 1.15;
 
     // the wing to mass against: the foe's weaker one when it is in sight, else the right
     const frame = {
@@ -482,8 +483,10 @@ class GeneralModule {
       heading: side === "attackers" ? battle.axis : battle.axis + Math.PI
     };
     const wing = (sign: number): number =>
-      sum(foe.ready, block =>
-        block.x && this.toFrame(frame, block)[0] * sign > field.front * WING ? Battalions.getStrength(block) : 0
+      sum(foe.ready, battalion =>
+        battalion.x && this.toFrame(frame, battalion)[0] * sign > field.front * WING
+          ? Battalions.getStrength(battalion)
+          : 0
       );
     const strike = wing(-1) < wing(1) ? -1 : 1;
 
@@ -501,7 +504,10 @@ class GeneralModule {
           ["assault", 1 + (odds - 1) * 0.5],
           ["oblique", line >= 4 ? 1 + (1 - odds) * 0.8 + Math.abs(wing(1) - wing(-1)) / (foe.power || 1) + ends : 0],
           ["envelopment", riders >= 2 ? 0.6 + Math.min(riderOdds - 1, 1.5) * 0.5 + (odds - 1) * 0.3 + ends : 0],
-          ["wedge", line >= 5 ? 0.7 + (width(foeBlocks) / (width(blocks) || 1) - 1) * 0.8 + (heavier ? 0.25 : 0) : 0],
+          [
+            "wedge",
+            line >= 5 ? 0.7 + (width(foeBattalions) / (width(battalions) || 1) - 1) * 0.8 + (heavier ? 0.25 : 0) : 0
+          ],
           ["harass", shooters >= Math.max(line, 2) ? 0.5 + (fireShare - gripShare) * 3 + ring : 0],
           [
             "flyingWedge",
@@ -523,7 +529,7 @@ class GeneralModule {
           ["crossing", crossing ? 3 : 0],
           [
             "wagenburg",
-            !crossing && this.isOutridden(own, foe) && line + shooters >= 4 && this.isBare(battle, side, blocks)
+            !crossing && this.isOutridden(own, foe) && line + shooters >= 4 && this.isBare(battle, side, battalions)
               ? 2.5
               : 0
           ]
@@ -532,21 +538,21 @@ class GeneralModule {
   }
 
   /** The foe's riders outweigh the side's two to one and make two fifths of its power: a wagon ring is the answer */
-  private isOutridden(own: View, foe: View): boolean {
+  private isOutridden(own: SideView, foe: SideView): boolean {
     return foe.riders >= own.riders * 2 && foe.riders >= foe.power * 0.4;
   }
 
   /** The ground about the battle point covers neither end of a line: nothing for it to lean on, a Wagenburg stands anywhere */
-  private isBare(battle: Battle, side: Side, blocks: Block[]): boolean {
+  private isBare(battle: Battle, side: Side, battalions: Battalion[]): boolean {
     if (!Works.mayBuild(battle, side)) return false;
-    const places = Formations.form(blocks, TACTICS.defensiveLine, 1, this.getRoom(battle), battle.field.front);
+    const places = Formations.form(battalions, TACTICS.defensiveLine, 1, this.getRoom(battle), battle.field.front);
     const forward = side === "attackers" ? battle.axis : battle.axis + Math.PI;
     return this.findGround(battle, side, places, forward)[1] === 0;
   }
 
   /** The tactic of a side: the one given by hand, else the one its general settled on, else the best by the scores */
-  private chooseTactic(battle: Battle, side: Side, blocks: Block[], crossing: boolean): [TacticName, number] {
-    const [scores, strike] = this.rateTactics(battle, side, blocks, crossing);
+  private chooseTactic(battle: Battle, side: Side, battalions: Battalion[], crossing: boolean): [TacticName, number] {
+    const [scores, strike] = this.rateTactics(battle, side, battalions, crossing);
     const hand = this.getHandTactic(battle, side);
     if (hand && this.getDrawUpTactics(battle, side, crossing).includes(hand)) return [hand, strike];
     const settled = scores.find(([name]) => name === battle[side].tactic);
@@ -565,10 +571,10 @@ class GeneralModule {
   }
 
   /** Besiegers ring the burg in when they can, or when told to by hand; told to draw up in lines, they do */
-  private isRinging(battle: Battle, blocks: Block[]): boolean {
+  private isRinging(battle: Battle, battalions: Battalion[]): boolean {
     const hand = this.getHandTactic(battle, "attackers");
     if (!Movement.hasWalls(battle) || hand === "lines") return false;
-    return hand === "ring" || this.canRing(battle, blocks);
+    return hand === "ring" || this.canRing(battle, battalions);
   }
 
   /** The tactic a side was given by hand before the start: the last word stands, null gives it back to its general */
@@ -580,22 +586,22 @@ class GeneralModule {
   /** Every tactic the battle type lets a side be drawn up in, the likeliest first; none when there is no choice */
   getTactics(battle: Battle, side: Side): TacticName[] {
     const { type, field } = battle;
-    const blocks = battle.blocks.filter(block => block.side === side);
+    const battalions = battle.battalions.filter(battalion => battalion.side === side);
     if (type === "ambush") return side === "defenders" ? ["ambuscadeBothSides", "ambuscadeOneSide"] : [];
     if (type === "siege" && field.held !== null && side === "attackers") {
       if (!Movement.hasWalls(battle)) return [];
-      return this.canRing(battle, blocks) ? ["ring", "lines"] : ["lines", "ring"];
+      return this.canRing(battle, battalions) ? ["ring", "lines"] : ["lines", "ring"];
     }
     if (type === "siege" && Movement.hasWalls(battle)) return [];
     const crossing = side === "defenders" && this.findCrossing(battle) !== null;
     const retreats = battle[side].plan.tactic === "strategicRetreat" && !this.getHandTactic(battle, side);
-    const likely = this.rateTactics(battle, side, blocks, crossing)[0].map(([name]) => name);
+    const likely = this.rateTactics(battle, side, battalions, crossing)[0].map(([name]) => name);
     if (retreats) likely.unshift("strategicRetreat");
     const names = [...new Set([...likely, ...this.getDrawUpTactics(battle, side, crossing)])];
     return names.length > 1 ? names : [];
   }
 
-  private option(tactic: TacticName | null, waits = false, storms = false): Option {
+  private choice(tactic: TacticName | null, waits = false, storms = false): GeneralChoice {
     return { tactic, waits, storms };
   }
 
@@ -608,33 +614,34 @@ class GeneralModule {
    * In a landing and a bombardment: for ready defenders, to meet it at the shore or to wait inland.
    * In a siege: for besiegers a little short of the odds the walls ask for, to storm at once all the same or to keep to the rule.
    */
-  getOptions(battle: Battle, side: Side): Option[] {
+  getChoices(battle: Battle, side: Side): GeneralChoice[] {
     const { type, field } = battle;
     const byHand = this.getHandTactic(battle, side) !== null; // the general has nothing to settle
     if (battle[side].plan.tactic === "strategicRetreat") return []; // nor one who leaves the field
     if (type === "ambush") {
       if (side === "attackers" || byHand) return [];
-      const shooters = battle.blocks.some(block => block.side === side && block.kind === "ranged");
+      const shooters = battle.battalions.some(battalion => battalion.side === side && battalion.kind === "ranged");
       // where trees hide them on one side only, those across the road would be seen from it
       const [a, b] = this.findLairs(battle).lairs;
       const alike = a.hidden === b.hidden && a.fits === b.fits; // nor across water from it
       const tactics: TacticName[] = alike ? ["ambuscadeBothSides", "ambuscadeOneSide"] : ["ambuscadeOneSide"];
       return [
-        ...tactics.map(tactic => this.option(tactic)),
-        ...(shooters ? tactics.map(tactic => this.option(tactic, true)) : [])
+        ...tactics.map(tactic => this.choice(tactic)),
+        ...(shooters ? tactics.map(tactic => this.choice(tactic, true)) : [])
       ];
     }
     if (BattleRules.isFromSea(battle.type))
-      return side === "defenders" && this.findShore(battle) ? [this.option(null), this.option(null, true)] : [];
+      return side === "defenders" && this.findShore(battle) ? [this.choice(null), this.choice(null, true)] : [];
     if (type === "siege") {
       // a storm of many battalions is too slow to play through in the time there is
-      if (side === "defenders" || field.held === null || battle.blocks.length > 28) return [];
+      if (side === "defenders" || field.held === null || battle.battalions.length > 28) return [];
       const short = this.getOdds(battle, side) / this.getStormOdds(battle);
-      return short >= 2 / 3 && short < 1 ? [this.option(null), this.option(null, false, true)] : [];
+      return short >= 2 / 3 && short < 1 ? [this.choice(null), this.choice(null, false, true)] : [];
     }
 
     // wagons, or stakes before a foe with riders, make the going slow to reckon too
-    const riders = (of: Side): boolean => battle.blocks.some(block => block.side === of && Works.isRider(block));
+    const riders = (of: Side): boolean =>
+      battle.battalions.some(battalion => battalion.side === of && Works.isRider(battalion));
     const barring = field.works.some(
       work =>
         Battlefields.isStanding(work) &&
@@ -643,16 +650,16 @@ class GeneralModule {
     const ring = battle[BattleRules.enemyOf(side)].plan.tactic === "wagenburg"; // and a foe that rings its wagons
     const rough = Battlefields.isRoughField(field) || barring || ring;
     if ((rough && side === "defenders") || byHand) return [];
-    const blocks = battle.blocks.filter(block => block.side === side);
-    const names = this.rateTactics(battle, side, blocks, battle[side].plan.tactic === "crossing")[0].map(
+    const battalions = battle.battalions.filter(battalion => battalion.side === side);
+    const names = this.rateTactics(battle, side, battalions, battle[side].plan.tactic === "crossing")[0].map(
       ([name]) => name
     );
-    const options = (rough ? names.slice(0, 1) : names).map(name => this.option(name));
+    const choices = (rough ? names.slice(0, 1) : names).map(name => this.choice(name));
     // with engines before wagons: to batter them first, or to storm them at once
-    const engines = blocks.some(block => block.kind === "machinery");
-    if (engines && (barring || ring)) options.push(this.option(names[0], false, true));
+    const engines = battalions.some(battalion => battalion.kind === "machinery");
+    if (engines && (barring || ring)) choices.push(this.choice(names[0], false, true));
     // an attacker who is the weaker, or short of the odds strong ground asks for, may think better of it
-    const free = !battle[side].plan.order; // not ordered what to do by hand
+    const free = !battle[side].plan.byHand.order; // not ordered what to do by hand
     const [own, foe] = [this.survey(battle, side), this.survey(battle, BattleRules.enemyOf(side))];
     const strong = rough || this.getPurchase(battle, own, foe) < this.getPurchase(battle, foe, own); // the foe's ground
     const cautious =
@@ -660,8 +667,8 @@ class GeneralModule {
       free &&
       this.isAttacking(battle, side, false) &&
       own.power < foe.power * (strong ? WARY : 1);
-    if (cautious) options.push(this.option(null, true));
-    return options.length < 2 ? [] : options;
+    if (cautious) choices.push(this.choice(null, true));
+    return choices.length < 2 ? [] : choices;
   }
 
   /**
@@ -1026,16 +1033,16 @@ class GeneralModule {
    * The column on the march: riders ahead, engines last, in as many files as it takes to fit the road on the field;
    * its middle where the ambush is sprung (`at`, along the road), else at the middle of the field, as far as the road lets it
    */
-  private getColumn(battle: Battle, blocks: Block[], at?: number) {
+  private getColumn(battle: Battle, battalions: Battalion[], at?: number) {
     const order = ["mounted", "melee", "ranged", "machinery"];
     const { field } = battle;
     const route = this.getRoute(battle);
-    const column = [...blocks].sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind) || a.id - b.id);
-    const pitch = (blocks[0]?.depth ?? 0) + field.front * FILE;
+    const column = [...battalions].sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind) || a.id - b.id);
+    const pitch = (battalions[0]?.depth ?? 0) + field.front * FILE;
     const room = Math.max(route.room[1] - route.room[0], pitch);
     const files = Math.max(Math.ceil((column.length * pitch) / room), 1);
     const rows = Math.ceil(column.length / files);
-    const spacing = Math.max(...blocks.map(block => block.width), 0) + GAP * field.front;
+    const spacing = Math.max(...battalions.map(battalion => battalion.width), 0) + GAP * field.front;
     const length = (rows - 1) * pitch;
     const span = [route.room[0] + length / 2, Math.max(route.room[1] - length / 2, route.room[0] + length / 2)];
     const middle = this.clamp(at ?? route.middle, span[0], span[1]);
@@ -1043,30 +1050,30 @@ class GeneralModule {
   }
 
   /** An ambush: the attackers are caught on the march, in a column along the road */
-  private marchColumn(battle: Battle, blocks: Block[]): void {
+  private marchColumn(battle: Battle, battalions: Battalion[]): void {
     const { field } = battle;
     const { route, column, pitch, files, rows, middle, spacing } = this.getColumn(
       battle,
-      blocks,
+      battalions,
       this.findLairs(battle).middle
     );
     const frame = route.at(middle);
-    const spots = column.map((block, i) => {
+    const spots = column.map((battalion, i) => {
       const row = Math.floor(i / files);
       const across = ((i % files) - (files - 1) / 2) * spacing;
-      return { block, across, along: middle + ((rows - 1) / 2 - row) * pitch };
+      return { battalion, across, along: middle + ((rows - 1) / 2 - row) * pitch };
     });
-    const places = spots.map(({ block, across, along }): Place => {
-      const role = ROLES[block.kind];
-      return { block, role, mission: role === "wing" ? "guard" : role, rank: 0, across, along: along - middle };
+    const places = spots.map(({ battalion, across, along }): Place => {
+      const role = ROLES[battalion.kind];
+      return { battalion, role, mission: role === "wing" ? "guard" : role, rank: 0, across, along: along - middle };
     });
     this.seat(battle, "attackers", this.createPlan("column", frame, true), places);
     // each battalion on the road where it is, heading on along it
-    for (const { block, across, along } of spots) {
+    for (const { battalion, across, along } of spots) {
       const there = route.at(along);
-      [block.x, block.y] = this.onField(field, this.toField(there, across, 0));
-      block.facing = block.order.facing = there.heading;
-      this.takePlace(battle, block);
+      [battalion.x, battalion.y] = this.onField(field, this.toField(there, across, 0));
+      battalion.facing = battalion.order.facing = there.heading;
+      this.takePlace(battle, battalion);
     }
   }
 
@@ -1081,9 +1088,9 @@ class GeneralModule {
    * The ambushers lie by the road and fall on the column: on both sides of it, or all on one side, the better covered,
    * when their general thinks that ends better. One with shooters may have them shoot from cover first (`waits`)
    */
-  private layAmbush(battle: Battle, blocks: Block[]): void {
+  private layAmbush(battle: Battle, battalions: Battalion[]): void {
     const { field } = battle;
-    const sorted = [...blocks].sort((a, b) => a.kind.localeCompare(b.kind) || a.id - b.id);
+    const sorted = [...battalions].sort((a, b) => a.kind.localeCompare(b.kind) || a.id - b.id);
     const { road, lairs } = this.findLairs(battle);
     const chosen = this.getHandTactic(battle, "defenders") ?? battle.defenders.tactic;
     const tactic: TacticName = chosen === "ambuscadeOneSide" ? "ambuscadeOneSide" : "ambuscadeBothSides";
@@ -1115,10 +1122,11 @@ class GeneralModule {
   } {
     const { field } = battle;
     const { front, cell } = field;
-    const column = battle.blocks.filter(block => block.side === "attackers");
+    const column = battle.battalions.filter(battalion => battalion.side === "attackers");
     const { route, half, length, span, middle: centre } = this.getColumn(battle, column);
-    const liers = battle.blocks.filter(block => block.side === "defenders");
-    const line = liers.filter(block => block.kind === "melee" || block.kind === "ranged").length || liers.length;
+    const liers = battle.battalions.filter(battalion => battalion.side === "defenders");
+    const line =
+      liers.filter(battalion => battalion.kind === "melee" || battalion.kind === "ranged").length || liers.length;
     const reach = this.clamp((line * front * (1 + GAP)) / 4, front, LAIR * front); // half the line of one wing of two
     const margin = this.getMargin(field) + front;
     const onField = ([x, y]: Point): boolean =>
@@ -1203,13 +1211,13 @@ class GeneralModule {
   }
 
   /** The besiegers stand out of bowshot of the walls, their engines a row behind the first line, still in range */
-  private layLines(battle: Battle, blocks: Block[]): void {
+  private layLines(battle: Battle, battalions: Battalion[]): void {
     const { field } = battle;
     const { front } = field;
     const burg = field.burgs[field.held!];
-    const engines = blocks.filter(block => block.kind === "machinery");
+    const engines = battalions.filter(battalion => battalion.kind === "machinery");
     const places = Formations.form(
-      blocks.filter(block => block.kind !== "machinery"),
+      battalions.filter(battalion => battalion.kind !== "machinery"),
       TACTICS.lines,
       1,
       this.getRoom(battle),
@@ -1218,11 +1226,11 @@ class GeneralModule {
     const rowGap = ROW_GAP * front;
     if (engines.length) {
       for (const place of places) if (place.rank > 0) place.along -= rowGap;
-      let offset = -sum(engines, block => block.width + GAP * front) / 2;
-      for (const block of engines) {
-        const across = offset + block.width / 2;
-        places.push({ block, role: "battery", mission: "battery", rank: 1, across, along: -rowGap });
-        offset += block.width + GAP * front;
+      let offset = -sum(engines, battalion => battalion.width + GAP * front) / 2;
+      for (const battalion of engines) {
+        const across = offset + battalion.width / 2;
+        places.push({ battalion, role: "battery", mission: "battery", rank: 1, across, along: -rowGap });
+        offset += battalion.width + GAP * front;
       }
     }
     const away = battle.axis + Math.PI;
@@ -1233,7 +1241,7 @@ class GeneralModule {
       return x >= margin && y >= margin && x <= field.width - margin && y <= field.height - margin;
     };
     // the line comes nearer than the ring where the engines behind it would not reach the walls
-    const reach = Math.min(...engines.map(block => Sight.getReach(battle, block, true))) - rowGap - 14;
+    const reach = Math.min(...engines.map(battalion => Sight.getReach(battle, battalion, true))) - rowGap - 14;
     const edge = Battlefields.getEdge(burg, away); // the walls before the line, not the burg's far end
     let distance = edge + Math.min(this.getRingDistance(battle), Math.max(reach, 80));
     while (distance > edge + 80 && !inside(distance + depth)) distance -= 14;
@@ -1257,7 +1265,7 @@ class GeneralModule {
 
   private getRingDistance(battle: Battle): number {
     return this.getRing(
-      battle.blocks.map(block => (block.side === "defenders" ? Sight.getReach(battle, block, true) : 0))
+      battle.battalions.map(battalion => (battalion.side === "defenders" ? Sight.getReach(battle, battalion, true) : 0))
     );
   }
 
@@ -1268,17 +1276,19 @@ class GeneralModule {
   }
 
   /** Whether a besieger keeps the gate shut: near it, with the ring all but at the gate; neighbours a battalion along do too */
-  private watches(battle: Battle, block: Block, wall: FieldWall): boolean {
+  private watches(battle: Battle, battalion: Battalion, wall: FieldWall): boolean {
     return (
-      Math.hypot(block.x - (wall.a[0] + wall.b[0]) / 2, block.y - (wall.a[1] + wall.b[1]) / 2) <
+      Math.hypot(battalion.x - (wall.a[0] + wall.b[0]) / 2, battalion.y - (wall.a[1] + wall.b[1]) / 2) <
       this.getRingDistance(battle) + WATCH
     );
   }
 
   /** Besiegers three times as strong and many enough ring a walled burg in */
-  private canRing(battle: Battle, blocks: Block[]): boolean {
+  private canRing(battle: Battle, battalions: Battalion[]): boolean {
     return (
-      Movement.hasWalls(battle) && blocks.length >= RING_BATTALIONS && this.getOdds(battle, "attackers") >= RING_ODDS
+      Movement.hasWalls(battle) &&
+      battalions.length >= RING_BATTALIONS &&
+      this.getOdds(battle, "attackers") >= RING_ODDS
     );
   }
 
@@ -1286,7 +1296,7 @@ class GeneralModule {
    * The besiegers ring the burg in out of bowshot: the strongest battalions by its gates, the rest spread round between,
    * the engines behind them, ships off its quay and on the water about it
    */
-  private ringIn(battle: Battle, blocks: Block[]): void {
+  private ringIn(battle: Battle, battalions: Battalion[]): void {
     const { field } = battle;
     const held = field.held!;
     const burg = field.burgs[held];
@@ -1326,52 +1336,52 @@ class GeneralModule {
 
     const gates = Battlefields.getGates(field, held);
     const mid = (wall: FieldWall): Point => [(wall.a[0] + wall.b[0]) / 2, (wall.a[1] + wall.b[1]) / 2];
-    const byStrength = (a: Block, b: Block): number => Battalions.getStrength(b) - Battalions.getStrength(a);
-    const ships = blocks.filter(block => Movement.isMoored(battle, block)).sort(byStrength);
-    const troops = blocks.filter(block => !Movement.isMoored(battle, block));
-    const fighters = troops.filter(block => block.kind !== "machinery").sort(byStrength);
-    const engines = troops.filter(block => block.kind === "machinery");
-    const places = new Map<Block, Point>();
-    const put = (block: Block | undefined, near: Point | null): void => {
-      if (!block) return;
-      const spot = take(Movement.isMoored(battle, block), near);
+    const byStrength = (a: Battalion, b: Battalion): number => Battalions.getStrength(b) - Battalions.getStrength(a);
+    const ships = battalions.filter(battalion => Movement.isMoored(battle, battalion)).sort(byStrength);
+    const troops = battalions.filter(battalion => !Movement.isMoored(battle, battalion));
+    const fighters = troops.filter(battalion => battalion.kind !== "machinery").sort(byStrength);
+    const engines = troops.filter(battalion => battalion.kind === "machinery");
+    const places = new Map<Battalion, Point>();
+    const put = (battalion: Battalion | undefined, near: Point | null): void => {
+      if (!battalion) return;
+      const spot = take(Movement.isMoored(battle, battalion), near);
       // ships with no water round the walls put out off the quay; settle finds them the water
-      places.set(block, spot ?? near ?? [burg.x, burg.y]);
+      places.set(battalion, spot ?? near ?? [burg.x, burg.y]);
     };
     for (const gate of gates) put(gate.water === 1 ? ships.shift() : fighters.shift(), mid(gate));
-    for (const block of [...fighters, ...ships]) put(block, null);
+    for (const battalion of [...fighters, ...ships]) put(battalion, null);
 
     // the engines a row behind the ring, each behind a battalion and spread round, still in reach of the walls
-    const reach = Math.min(...engines.map(block => Sight.getReach(battle, block, true))) - 14;
+    const reach = Math.min(...engines.map(battalion => Sight.getReach(battle, battalion, true))) - 14;
     const back = around(Math.max(Math.min(distance + ROW_GAP * field.front, reach), distance));
     const guarded = [...places]
-      .filter(([block]) => !Movement.isMoored(battle, block))
+      .filter(([battalion]) => !Movement.isMoored(battle, battalion))
       .map(([, spot]) => spots.indexOf(spot))
       .filter(i => i >= 0 && !wet(back[i]));
     const dry = back.map((_, i) => i).filter(i => !wet(back[i]));
     const sited: Point[] = [];
-    for (const block of engines) {
+    for (const battalion of engines) {
       const free = (list: number[]): number[] => list.filter(i => !sited.includes(back[i]));
       const choice = [free(guarded), free(dry), dry].find(list => list.length);
       if (!choice) {
-        places.set(block, [burg.x, burg.y]);
+        places.set(battalion, [burg.x, burg.y]);
         continue;
       }
       const apart = (i: number): number =>
         Math.min(...sited.map(other => Math.hypot(other[0] - back[i][0], other[1] - back[i][1])), Infinity);
       const best = choice.reduce((a, b) => (apart(b) > apart(a) ? b : a));
       sited.push(back[best]);
-      places.set(block, back[best]);
+      places.set(battalion, back[best]);
     }
 
-    for (const [block, [x, y]] of places) {
-      const role = ROLES[block.kind];
+    for (const [battalion, [x, y]] of places) {
+      const role = ROLES[battalion.kind];
       const [across, along] = this.toFrame(frame, { x, y });
       const facing = Math.atan2(burg.y - y, burg.x - x);
       const mission = role === "wing" ? "guard" : role;
-      const rank = block.kind === "machinery" ? 1 : 0;
-      block.order = { role, mission, rank, across, along, ahead: null, x, y, facing, target: null, sent: false };
-      [block.x, block.y, block.facing] = [x, y, facing];
+      const rank = battalion.kind === "machinery" ? 1 : 0;
+      battalion.order = { role, mission, rank, across, along, ahead: null, x, y, facing, target: null, sent: false };
+      [battalion.x, battalion.y, battalion.facing] = [x, y, facing];
     }
   }
 
@@ -1379,24 +1389,24 @@ class GeneralModule {
   isCutOff(battle: Battle): boolean {
     const { field } = battle;
     if (battle.attackers.plan.tactic !== "ring" || battle.attackers.phase === "retreat") return false;
-    const watchers = battle.blocks.filter(block => block.side === "attackers" && this.isInOrder(block));
+    const watchers = battle.battalions.filter(battalion => battalion.side === "attackers" && this.isInOrder(battalion));
     return Battlefields.getGates(field, field.held).every(wall => {
-      return watchers.some(block => {
-        const fits = wall.water === 2 || (wall.water === 1) === Movement.isMoored(battle, block);
-        return fits && this.watches(battle, block, wall);
+      return watchers.some(battalion => {
+        const fits = wall.water === 2 || (wall.water === 1) === Movement.isMoored(battle, battalion);
+        return fits && this.watches(battle, battalion, wall);
       });
     });
   }
 
   /** The besieged man their walls: engines, shooters and some line troops on them where the foe stands, line troops in the gates, the rest in the middle */
-  private manWalls(battle: Battle, blocks: Block[]): void {
+  private manWalls(battle: Battle, battalions: Battalion[]): void {
     const burg = battle.field.burgs[battle.field.held!];
     battle.defenders.plan = this.createPlan("garrison", { x: burg.x, y: burg.y, heading: battle.axis + Math.PI }, true);
-    this.postWithin(battle, blocks, []);
+    this.postWithin(battle, battalions, []);
   }
 
   /** Stand the battalions within the walls, each where its kind serves best and apart from the spots taken */
-  private postWithin(battle: Battle, blocks: Block[], taken: Point[]): void {
+  private postWithin(battle: Battle, battalions: Battalion[], taken: Point[]): void {
     const { field } = battle;
     const held = field.held!;
     const burg = field.burgs[held];
@@ -1405,31 +1415,31 @@ class GeneralModule {
     const toFoe = ([x, y]: Point): number =>
       (x - burg.x) * Math.cos(frame.heading) + (y - burg.y) * Math.sin(frame.heading);
     const toMiddle = ([x, y]: Point): number => -Math.hypot(x - burg.x, y - burg.y);
-    const spots: Record<Block["kind"], (point: Point) => number> = {
+    const spots: Record<Battalion["kind"], (point: Point) => number> = {
       ranged: toFoe,
       melee: point => toMiddle(point) + toFoe(point) * 0.3, // the gates have their own
       machinery: point => toMiddle(point) + toFoe(point) * 0.5,
       mounted: toMiddle
     };
     const posts = Battlefields.getWallPosts(field, held);
-    /** The free post of the kind that scores best for the block: its front on the wall, facing out; none when all are taken */
+    /** The free post of the kind that scores best for the battalion: its front on the wall, facing out; none when all are taken */
     const manned: [Point, number][] = [];
-    const post = (block: Block, opening: boolean): [Point, number] | null => {
+    const post = (battalion: Battalion, opening: boolean): [Point, number] | null => {
       // a neighbour on the wall is a width away, and a depth more as far as the wall bends between them
       const clear = (at: Point, out: number): boolean =>
         manned.every(([other, turn]) => {
-          const apart = block.width * 1.05 + block.depth * Math.abs(Math.sin(out - turn));
+          const apart = battalion.width * 1.05 + battalion.depth * Math.abs(Math.sin(out - turn));
           return Math.hypot(other[0] - at[0], other[1] - at[1]) >= apart;
         });
       let best: [Point, number] | null = null;
       let most = -Infinity;
       for (const spot of posts) {
         if (spot.opening !== opening) continue;
-        const at = Battlefields.toPost(field, block, spot);
+        const at = Battlefields.toPost(field, battalion, spot);
         if (
           !at ||
           !clear(at, spot.out) ||
-          taken.some(other => Math.hypot(other[0] - at[0], other[1] - at[1]) < block.width)
+          taken.some(other => Math.hypot(other[0] - at[0], other[1] - at[1]) < battalion.width)
         )
           continue;
         if (toFoe(at) > most) [best, most] = [[at, spot.out], toFoe(at)];
@@ -1443,20 +1453,20 @@ class GeneralModule {
     let streets = 0; // line troops past the gates so far: every other one goes up on the walls
     // engines take the walls first, where the foe stands: from their height they reach the furthest; then shooters,
     // then line troops the gates and some the walls. Ships keep to the water
-    const engine = (block: Block): boolean => block.kind === "machinery" && block.type !== "naval";
-    const rank = (block: Block): number => (engine(block) ? 2 : block.kind === "ranged" ? 1 : 0);
-    const order = [...blocks].sort((a, b) => rank(b) - rank(a));
-    for (const block of order) {
-      let posted = engine(block) || block.kind === "ranged" ? post(block, false) : null;
-      if (block.kind === "melee") {
-        posted = post(block, true);
-        if (!posted && streets++ % Math.round(1 / ON_WALLS) === 0) posted = post(block, false);
+    const engine = (battalion: Battalion): boolean => battalion.kind === "machinery" && battalion.type !== "naval";
+    const rank = (battalion: Battalion): number => (engine(battalion) ? 2 : battalion.kind === "ranged" ? 1 : 0);
+    const order = [...battalions].sort((a, b) => rank(b) - rank(a));
+    for (const battalion of order) {
+      let posted = engine(battalion) || battalion.kind === "ranged" ? post(battalion, false) : null;
+      if (battalion.kind === "melee") {
+        posted = post(battalion, true);
+        if (!posted && streets++ % Math.round(1 / ON_WALLS) === 0) posted = post(battalion, false);
       }
-      const [[x, y], facing] = posted ?? [take(spots[block.kind]), frame.heading];
-      const role = block.kind === "mounted" ? "reserve" : ROLES[block.kind];
+      const [[x, y], facing] = posted ?? [take(spots[battalion.kind]), frame.heading];
+      const role = battalion.kind === "mounted" ? "reserve" : ROLES[battalion.kind];
       const mission = role === "wing" ? "reserve" : role;
       const [across, along] = this.toFrame(frame, { x, y });
-      block.order = {
+      battalion.order = {
         role,
         mission,
         rank: 0,
@@ -1469,7 +1479,7 @@ class GeneralModule {
         target: null,
         sent: false
       };
-      [block.x, block.y, block.facing] = [x, y, facing];
+      [battalion.x, battalion.y, battalion.facing] = [x, y, facing];
     }
   }
 
@@ -1500,7 +1510,7 @@ class GeneralModule {
    * when it ends; in a storm battalions from the streets and from posts nobody comes at go to those stormers come at.
    * A garrison battalion's across and along keep its post, its x and y where it stands now
    */
-  private holdWalls(battle: Battle, own: View, foe: View): void {
+  private holdWalls(battle: Battle, own: SideView, foe: SideView): void {
     const { field } = battle;
     const plan = battle.defenders.plan;
     const held = field.held!;
@@ -1508,29 +1518,33 @@ class GeneralModule {
     const reach = field.front;
     const near = (spot: WallPost, at: { x: number; y: number }): number =>
       Math.hypot(spot.at[0] - at.x, spot.at[1] - at.y);
-    const postOf = (block: Block): Point => this.toField(plan, block.order.across, block.order.along);
-    const isPosted = (block: Block): boolean => {
-      const [x, y] = postOf(block);
-      return posts.some(spot => near(spot, { x, y }) < block.depth + reach / 2);
+    const postOf = (battalion: Battalion): Point => this.toField(plan, battalion.order.across, battalion.order.along);
+    const isPosted = (battalion: Battalion): boolean => {
+      const [x, y] = postOf(battalion);
+      return posts.some(spot => near(spot, { x, y }) < battalion.depth + reach / 2);
     };
     // under bombardment those on the walls take cover in the streets, as far from the engines as they find room
     const bombarded = battle.attackers.phase === "bombardment";
     const posted = own.ready.filter(
-      block => !block.order.sent && !block.task && block.kind !== "machinery" && isPosted(block)
+      battalion =>
+        !battalion.order.sent && !battalion.byHand.task && battalion.kind !== "machinery" && isPosted(battalion)
     );
-    const engines = foe.ready.filter(block => block.kind === "machinery");
+    const engines = foe.ready.filter(battalion => battalion.kind === "machinery");
     const take = this.getStreetTaker(
       field,
-      own.ready.filter(block => !posted.includes(block)).map(block => [block.order.x, block.order.y])
+      own.ready
+        .filter(battalion => !posted.includes(battalion))
+        .map(battalion => [battalion.order.x, battalion.order.y])
     );
     const cover = ([x, y]: Point): number => Math.min(...engines.map(engine => Math.hypot(engine.x - x, engine.y - y)));
-    for (const block of posted)
-      [block.order.x, block.order.y] = bombarded && engines.length ? take(cover) : postOf(block);
+    for (const battalion of posted)
+      [battalion.order.x, battalion.order.y] = bombarded && engines.length ? take(cover) : postOf(battalion);
     if (!Movement.isStorming(battle)) return;
 
     // the posts stormers come at, the breaches and gates first; who stands in the streets or at a post nobody comes at
     // goes to those nobody holds
-    const within = (block: Block): boolean => Battlefields.terrainAt(field, block.x, block.y).walled === held + 1;
+    const within = (battalion: Battalion): boolean =>
+      Battlefields.terrainAt(field, battalion.x, battalion.y).walled === held + 1;
     const nearest = (at: { x: number; y: number }): WallPost =>
       posts.reduce((a, b) => (near(b, at) < near(a, at) ? b : a));
     const threats = new Set<WallPost>();
@@ -1539,25 +1553,25 @@ class GeneralModule {
       const spot = nearest(stormer);
       if (near(spot, stormer) <= AT_WALLS * reach) threats.add(spot);
     }
-    const covers = (block: Block, spot: WallPost, [x, y] = postOf(block)): boolean =>
-      near(spot, { x, y }) < block.width / 2 + block.depth; // its front runs over the post
-    const isThreatened = (block: Block): boolean => [...threats].some(spot => covers(block, spot));
+    const covers = (battalion: Battalion, spot: WallPost, [x, y] = postOf(battalion)): boolean =>
+      near(spot, { x, y }) < battalion.width / 2 + battalion.depth; // its front runs over the post
+    const isThreatened = (battalion: Battalion): boolean => [...threats].some(spot => covers(battalion, spot));
     const spare = own.ready.filter(
-      block =>
-        (block.kind === "melee" || block.kind === "mounted") &&
-        !block.order.sent &&
-        !block.task &&
-        block.morale >= SHAKEN &&
-        !(isPosted(block) && isThreatened(block))
+      battalion =>
+        (battalion.kind === "melee" || battalion.kind === "mounted") &&
+        !battalion.order.sent &&
+        !battalion.byHand.task &&
+        battalion.morale >= SHAKEN &&
+        !(isPosted(battalion) && isThreatened(battalion))
     );
     for (const spot of [...threats].sort((a, b) => Number(b.opening) - Number(a.opening))) {
       if (!spare.length) return;
-      if (own.ready.some(block => covers(block, spot, [block.order.x, block.order.y]))) continue; // held
-      const block = spare.reduce((a, b) => (near(spot, b) < near(spot, a) ? b : a));
-      const at = Battlefields.toPost(field, block, spot);
+      if (own.ready.some(battalion => covers(battalion, spot, [battalion.order.x, battalion.order.y]))) continue; // held
+      const battalion = spare.reduce((a, b) => (near(spot, b) < near(spot, a) ? b : a));
+      const at = Battlefields.toPost(field, battalion, spot);
       if (!at) continue;
-      spare.splice(spare.indexOf(block), 1);
-      const { order } = block;
+      spare.splice(spare.indexOf(battalion), 1);
+      const { order } = battalion;
       [order.x, order.y, order.facing] = [...at, spot.out];
       [order.across, order.along] = this.toFrame(plan, { x: at[0], y: at[1] });
       order.mission = "line";
@@ -1565,29 +1579,29 @@ class GeneralModule {
   }
 
   /**
-   * Nobody is drawn up in the water, a ford neither, nor a besieger within the walls: such a block steps to the nearest
+   * Nobody is drawn up in the water, a ford neither, nor a besieger within the walls: such a battalion steps to the nearest
    * ground, rather back than forward, and not on a battalion of its side standing there. Ships put out to the nearest
    * water they sail, however far
    */
-  settle(battle: Battle, blocks = battle.blocks): void {
+  settle(battle: Battle, battalions = battle.battalions): void {
     const { field } = battle;
-    const shunned = (block: Block, x: number, y: number): boolean =>
-      Movement.shuns(battle, block, x, y) ||
-      Movement.isWet(battle, block, x, y) ||
-      (block.side === "attackers" &&
+    const shunned = (battalion: Battalion, x: number, y: number): boolean =>
+      Movement.shuns(battle, battalion, x, y) ||
+      Movement.isWet(battle, battalion, x, y) ||
+      (battalion.side === "attackers" &&
         field.held !== null &&
         field.walled[Battlefields.nodeAt(field, x, y)] === field.held + 1); // besiegers stand outside the walls
-    const radius = (block: Block): number => Math.max(block.width, block.depth) / 2;
-    const unsettled = new Set(blocks.filter(block => shunned(block, block.x, block.y)));
-    const standing = battle.blocks.filter(
-      block => !unsettled.has(block) && (block.status === "ready" || block.status === "routed")
+    const radius = (battalion: Battalion): number => Math.max(battalion.width, battalion.depth) / 2;
+    const unsettled = new Set(battalions.filter(battalion => shunned(battalion, battalion.x, battalion.y)));
+    const standing = battle.battalions.filter(
+      battalion => !unsettled.has(battalion) && (battalion.status === "ready" || battalion.status === "routed")
     );
-    for (const block of unsettled) {
-      const own = standing.filter(other => other.side === block.side);
+    for (const battalion of unsettled) {
+      const own = standing.filter(other => other.side === battalion.side);
       const taken = (x: number, y: number): boolean =>
-        own.some(other => Math.hypot(other.x - x, other.y - y) < radius(block) + radius(other));
-      const forward = block.side === "attackers" ? battle.axis : battle.axis + Math.PI;
-      const node = Battlefields.nodeAt(field, block.x, block.y);
+        own.some(other => Math.hypot(other.x - x, other.y - y) < radius(battalion) + radius(other));
+      const forward = battalion.side === "attackers" ? battle.axis : battle.axis + Math.PI;
+      const node = Battlefields.nodeAt(field, battalion.x, battalion.y);
       const col = node % COLS;
       const row = (node - col) / COLS;
       const find = (span: number, spaced = true): Point | null => {
@@ -1596,55 +1610,55 @@ class GeneralModule {
         for (let y = Math.max(row - span, 0); y <= Math.min(row + span, ROWS - 1); y++) {
           for (let x = Math.max(col - span, 0); x <= Math.min(col + span, COLS - 1); x++) {
             const [nx, ny] = Battlefields.nodeCentre(field, y * COLS + x);
-            if (shunned(block, nx, ny) || (spaced && taken(nx, ny))) continue;
-            const ahead = (nx - block.x) * Math.cos(forward) + (ny - block.y) * Math.sin(forward) > 0;
-            const score = Math.hypot(nx - block.x, ny - block.y) + (ahead ? field.front * AHEAD : 0);
+            if (shunned(battalion, nx, ny) || (spaced && taken(nx, ny))) continue;
+            const ahead = (nx - battalion.x) * Math.cos(forward) + (ny - battalion.y) * Math.sin(forward) > 0;
+            const score = Math.hypot(nx - battalion.x, ny - battalion.y) + (ahead ? field.front * AHEAD : 0);
             if (score < least) [best, least] = [[nx, ny], score];
           }
         }
         return best;
       };
-      const nearest = Movement.isMoored(battle, block) ? find(COLS) : (find(8) ?? find(COLS)); // the nearest ground, however far
+      const nearest = Movement.isMoored(battle, battalion) ? find(COLS) : (find(8) ?? find(COLS)); // the nearest ground, however far
       const best = nearest ?? find(COLS, false); // no room clear of the others: on them rather than in the water
-      if (best) [block.x, block.y] = best;
-      standing.push(block);
-      this.takePlace(battle, block);
+      if (best) [battalion.x, battalion.y] = best;
+      standing.push(battalion);
+      this.takePlace(battle, battalion);
     }
   }
 
   /** A battalion moved by hand, or off the ground it could not stand on, keeps the place it is in now */
-  takePlace(battle: Battle, block: Block): void {
-    const plan = battle[block.side].plan;
-    [block.order.across, block.order.along] = this.toFrame(this.frameOf(plan, block.order.role), block);
-    [block.order.x, block.order.y] = [block.x, block.y];
+  takePlace(battle: Battle, battalion: Battalion): void {
+    const plan = battle[battalion.side].plan;
+    [battalion.order.across, battalion.order.along] = this.toFrame(this.frameOf(plan, battalion.order.role), battalion);
+    [battalion.order.x, battalion.order.y] = [battalion.x, battalion.y];
   }
 
   /** Latecomers form up behind their side and wait there */
-  enlist(battle: Battle, side: Side, blocks: Block[]): void {
+  enlist(battle: Battle, side: Side, battalions: Battalion[]): void {
     const plan = battle[side].plan;
-    const friends = battle.blocks.filter(
-      block => block.side === side && this.isInOrder(block) && !blocks.includes(block)
+    const friends = battle.battalions.filter(
+      battalion => battalion.side === side && this.isInOrder(battalion) && !battalions.includes(battalion)
     );
     const { field } = battle;
     if (plan.tactic === "garrison" && field.held !== null) {
       this.postWithin(
         battle,
-        blocks,
-        friends.map(block => [block.x, block.y])
+        battalions,
+        friends.map(battalion => [battalion.x, battalion.y])
       ); // within its walls
-      this.settle(battle, blocks);
+      this.settle(battle, battalions);
       return;
     }
-    const rear = Math.min(...friends.map(block => this.toFrame(plan, block)[1]), 0) - ROW_GAP * field.front;
-    const places = Formations.form(blocks, TACTICS.assault, 1, this.getRoom(battle), field.front);
+    const rear = Math.min(...friends.map(battalion => this.toFrame(plan, battalion)[1]), 0) - ROW_GAP * field.front;
+    const places = Formations.form(battalions, TACTICS.assault, 1, this.getRoom(battle), field.front);
     for (const place of places) place.along += rear;
     const frame = { x: plan.x, y: plan.y, heading: plan.heading };
     this.keepOnField(field, frame, places); // as a body: places clamped one by one end up on each other
-    for (const { block, role, rank, across, along } of places) {
+    for (const { battalion, role, rank, across, along } of places) {
       const [x, y] = this.onField(field, this.toField(frame, across, along));
       const mission = role === "line" ? "reserve" : role === "wing" || role === "wedge" ? "guard" : role;
       const [right, ahead] = this.toFrame(plan, { x, y });
-      block.order = {
+      battalion.order = {
         role: role === "line" ? "reserve" : role,
         mission,
         rank: rank + 1,
@@ -1657,9 +1671,9 @@ class GeneralModule {
         target: null,
         sent: false
       };
-      [block.x, block.y, block.facing] = [x, y, plan.heading];
+      [battalion.x, battalion.y, battalion.facing] = [x, y, plan.heading];
     }
-    this.settle(battle, blocks); // off the water behind the line
+    this.settle(battle, battalions); // off the water behind the line
   }
 
   /** A round begins: both generals read the field, set their phase and give their orders */
@@ -1692,23 +1706,23 @@ class GeneralModule {
   /** The order a side is under: the one given by hand while it stands, else what its phase comes to */
   getOrder(battle: Battle, side: Side): Command {
     const { phase, advancing, plan } = battle[side];
-    if (!plan.order && this.isShootingFirst(battle, side)) return "skirmish";
-    return plan.order ?? (plan.fortify ? "fortify" : BattleRules.getCommand(battle.type, phase, advancing));
+    if (!plan.byHand.order && this.isShootingFirst(battle, side)) return "skirmish";
+    return plan.byHand.order ?? (plan.fortify ? "fortify" : BattleRules.getCommand(battle.type, phase, advancing));
   }
 
   /**
    * Ticks till the foe is within a charge of the side, by how fast it closed last round; in the first round a foe that
    * advances comes at the pace of its first line. Infinity when it does not come, none when it is there
    */
-  private getArrival(battle: Battle, side: Side, foe: View, gap: number): number {
+  private getArrival(battle: Battle, side: Side, foe: SideView, gap: number): number {
     const { plan } = battle[side];
     const left = gap - CHARGE * battle.field.front;
     if (left <= 0) return 0;
     let rate = plan.gap - gap;
     if (!Number.isFinite(plan.gap)) {
-      const first = foe.ready.filter(block => block.order.rank === 0 && block.order.role !== "wing");
+      const first = foe.ready.filter(battalion => battalion.order.rank === 0 && battalion.order.role !== "wing");
       const advancing = battle[BattleRules.enemyOf(side)].advancing && first.length > 0;
-      rate = advancing ? Math.min(...first.map(block => Movement.getPace(battle, block))) * ROUND_TICKS : 0;
+      rate = advancing ? Math.min(...first.map(battalion => Movement.getPace(battle, battalion))) * ROUND_TICKS : 0;
     }
     return rate > PACE * CLOSING ? (left / rate) * ROUND_TICKS : Infinity;
   }
@@ -1725,10 +1739,10 @@ class GeneralModule {
     // told to fight on from a retreat, it does in any battle, and its general gives up the field no more
     const lifted = data.phase === POSTURES[battle.type][side].run && command !== "retreat" && command !== "surrender";
     if (lifted) {
-      data.plan.stands = true;
+      data.plan.byHand.stands = true;
       data.plan.declined = false;
       if (side === "attackers") battle.raised = false;
-    } else if (command === "retreat") data.plan.stands = false;
+    } else if (command === "retreat") data.plan.byHand.stands = false;
     if (
       lifted ||
       (!BattleRules.keepsPhase(battle.type, command) &&
@@ -1737,7 +1751,8 @@ class GeneralModule {
       if (data.phase === FEINT && phase === POSTURES[battle.type][side].close) this.turnAbout(battle, side);
       data.phase = phase;
     }
-    Object.assign(data.plan, { order: command, byHand: battle.round, since: battle.round });
+    Object.assign(data.plan.byHand, { order: command, round: battle.round });
+    data.plan.since = battle.round;
     // the order also says who comes to whom; in a siege the phase does. Told to go for the foe, a general who meant to wait attacks
     if (battle.type !== "siege" && command !== "retreat" && command !== "surrender") {
       data.advancing = command !== "hold" && command !== "defend" && command !== "fortify";
@@ -1756,11 +1771,11 @@ class GeneralModule {
   }
 
   /** Ambushers who shoot from cover fall on the column once it wavers, has come to grips with them, or the surprise is spent */
-  private spring(battle: Battle, own: View, foe: View): void {
+  private spring(battle: Battle, own: SideView, foe: SideView): void {
     const data = battle.defenders;
-    if (!this.isShootingFirst(battle, "defenders") || data.plan.order) return;
+    if (!this.isShootingFirst(battle, "defenders") || data.plan.byHand.order) return;
     const fought = battle.engaged === null ? 0 : battle.round - battle.engaged;
-    const upon = own.ready.some(block => block.action === "fight"); // they lie a javelin's throw off: nearness says nothing
+    const upon = own.ready.some(battalion => battalion.action === "fight"); // they lie a javelin's throw off: nearness says nothing
     if (own.fire && !upon && foe.morale >= WAVERING && fought < data.plan.opening) return;
     Object.assign(data, { waits: false, advancing: true });
   }
@@ -1768,8 +1783,8 @@ class GeneralModule {
   /** An order given by hand has stood its time: the general decides again */
   private release(battle: Battle, side: Side): void {
     const { plan } = battle[side];
-    if (plan.byHand === null || battle.round - plan.byHand < battle.settings.orderRounds) return;
-    Object.assign(plan, { order: null, byHand: null });
+    if (plan.byHand.round === null || battle.round - plan.byHand.round < battle.settings.orderRounds) return;
+    Object.assign(plan.byHand, { order: null, round: null });
     // in the open the general goes over to the attack as he would have, but does not call off one under way
     if (!this.isOpenFight(battle)) battle[side].advancing = this.isAttacking(battle, side, false);
     else if (!BattleRules.isBeaten(battle.type, side, battle[side].phase))
@@ -1777,44 +1792,45 @@ class GeneralModule {
   }
 
   /** The space between the nearest troops in order of the two sides, engines apart */
-  private getGap(own: Block[], foes: Block[]): number {
+  private getGap(own: Battalion[], foes: Battalion[]): number {
     // engines are no line, nor shooters who step before it to stand off
-    const lines = (blocks: Block[]): Block[] => {
-      const all = blocks.filter(block => block.kind !== "machinery");
-      const line = all.filter(block => block.order.ahead === null);
+    const lines = (battalions: Battalion[]): Battalion[] => {
+      const all = battalions.filter(battalion => battalion.kind !== "machinery");
+      const line = all.filter(battalion => battalion.order.ahead === null);
       return line.length ? line : all;
     };
     const theirs = lines(foes);
     let gap = Infinity;
-    for (const block of lines(own)) for (const foe of theirs) gap = Math.min(gap, this.far(block, foe) - block.depth);
+    for (const battalion of lines(own))
+      for (const foe of theirs) gap = Math.min(gap, this.far(battalion, foe) - battalion.depth);
     return gap;
   }
 
-  private choosePhase(battle: Battle, side: Side, own: View, foe: View, gap: number): string {
+  private choosePhase(battle: Battle, side: Side, own: SideView, foe: SideView, gap: number): Phase {
     const { phase, plan } = battle[side];
     if (phase === SURRENDER) return phase;
-    if (plan.order && !BattleRules.keepsPhase(battle.type, plan.order)) return phase; // the order is the phase
+    if (plan.byHand.order && !BattleRules.keepsPhase(battle.type, plan.byHand.order)) return phase; // the order is the phase
     const next = this.readPhase(battle, side, own, foe, gap);
     const { chase, run } = POSTURES[battle.type][side];
     // the fight takes its course, but the side neither runs nor gives chase against its order
-    if (plan.order && (next === chase || next === run)) return phase;
-    if (plan.stands && next === run) return phase;
+    if (plan.byHand.order && (next === chase || next === run)) return phase;
+    if (plan.byHand.stands && next === run) return phase;
     return next;
   }
 
   /** Attackers of a landing still on the water, ships apart: they keep to it */
   private isAfloat(battle: Battle): boolean {
-    return battle.blocks.some(
-      block =>
-        block.side === "attackers" &&
-        this.isInOrder(block) &&
-        !Movement.isMoored(battle, block) &&
-        Battlefields.terrainAt(battle.field, block.x, block.y).water === 1
+    return battle.battalions.some(
+      battalion =>
+        battalion.side === "attackers" &&
+        this.isInOrder(battalion) &&
+        !Movement.isMoored(battle, battalion) &&
+        Battlefields.terrainAt(battle.field, battalion.x, battalion.y).water === 1
     );
   }
 
   /** The phase a general puts his side in, by how the fight stands */
-  private readPhase(battle: Battle, side: Side, own: View, foe: View, gap: number): string {
+  private readPhase(battle: Battle, side: Side, own: SideView, foe: SideView, gap: number): Phase {
     const { phase, plan } = battle[side];
     const names = POSTURES[battle.type][side];
     if (battle.type === "siege" && battle.field.held !== null)
@@ -1825,7 +1841,7 @@ class GeneralModule {
     const fought = battle.engaged === null ? -1 : battle.round - battle.engaged;
     if (battle.type === "ambush" && fought < plan.opening && !this.isLost(battle, own, foe)) return names.apart; // surprise and shock
     // the surprise spent, ambushers much the weaker who shot from cover slip away unless the column wavers
-    const loose = !own.ready.some(block => block.action === "fight");
+    const loose = !own.ready.some(battalion => battalion.action === "fight");
     const slips =
       side === "defenders" && loose && fought >= plan.opening && own.power * KEEN < foe.power && foe.morale >= WAVERING;
     if (battle.type === "ambush" && slips) return names.run;
@@ -1834,11 +1850,11 @@ class GeneralModule {
       if (side === "attackers" && landing && this.isAfloat(battle) && !this.isLost(battle, own, foe)) return phase; // the fight for the shore
       if (side === "defenders") {
         if (battle.attackers.phase === "flee") {
-          const ashore = battle.blocks.some(
-            block =>
-              block.side === "attackers" &&
-              this.isOnField(block) &&
-              !Battlefields.terrainAt(battle.field, block.x, block.y).water
+          const ashore = battle.battalions.some(
+            battalion =>
+              battalion.side === "attackers" &&
+              this.isOnField(battalion) &&
+              !Battlefields.terrainAt(battle.field, battalion.x, battalion.y).water
           );
           return ashore ? "pursue" : "waiting";
         }
@@ -1848,12 +1864,12 @@ class GeneralModule {
     return this.engage(battle, side, own, foe, gap);
   }
 
-  private isOnField(block: Block): boolean {
-    return block.status === "ready" || block.status === "routed";
+  private isOnField(battalion: Battalion): boolean {
+    return battalion.status === "ready" || battalion.status === "routed";
   }
 
   /** The day is lost: too few are left in order to go on, as the blows would land on the ground both sides stand on */
-  private isLost(battle: Battle, own: View, foe: View): boolean {
+  private isLost(battle: Battle, own: SideView, foe: SideView): boolean {
     if (!own.ready.length) return true;
     const odds =
       (own.power * this.getPurchase(battle, own, foe)) / (foe.power * this.getPurchase(battle, foe, own) || 1e-9);
@@ -1866,12 +1882,12 @@ class GeneralModule {
    * A side told by hand to fight a day its general gave up before it began is not sent off by the odds he saw: by blood and
    * heart only
    */
-  private isDayLost(battle: Battle, side: Side, own: View, foe: View): boolean {
+  private isDayLost(battle: Battle, side: Side, own: SideView, foe: SideView): boolean {
     const lost =
       battle.type === "bombardment"
         ? this.isLost(battle, { ...own, power: own.fire }, { ...foe, power: foe.fire })
         : this.isLost(battle, own, foe);
-    return lost && (!battle[side].plan.defiant || own.losses >= 1 / 4 || own.morale < 25 || !own.ready.length);
+    return lost && (!battle[side].plan.byHand.defiant || own.losses >= 1 / 4 || own.morale < 25 || !own.ready.length);
   }
 
   /**
@@ -1888,7 +1904,7 @@ class GeneralModule {
       const own = this.survey(battle, side);
       if (!this.isDayLost(battle, side, own, this.survey(battle, BattleRules.enemyOf(side)))) return false;
       const hand = this.getHandTactic(battle, side);
-      battle[side].plan.defiant = hand !== null && hand !== "strategicRetreat";
+      battle[side].plan.byHand.defiant = hand !== null && hand !== "strategicRetreat";
       return hand === null;
     });
   }
@@ -1898,7 +1914,7 @@ class GeneralModule {
    * foe's own footing, and the foe's wagons between, as the blows reckon them. A uniform slope favours neither side.
    * Field battles only: a landing wades ashore by its plan, ships and fliers have no footing, a siege has its walls
    */
-  private getPurchase(battle: Battle, from: View, at: View): number {
+  private getPurchase(battle: Battle, from: SideView, at: SideView): number {
     const striker = from.ready[0];
     if (battle.type !== "field" || !striker || !at.ready.length) return 1;
     const { field } = battle;
@@ -1918,7 +1934,7 @@ class GeneralModule {
   }
 
   /** Two armies in the open: stand off and shoot, close, chase or run */
-  private engage(battle: Battle, side: Side, own: View, foe: View, gap: number): string {
+  private engage(battle: Battle, side: Side, own: SideView, foe: SideView, gap: number): Phase {
     const data = battle[side];
     const { phase, plan } = data;
     const names = POSTURES[battle.type][side];
@@ -1936,7 +1952,7 @@ class GeneralModule {
     // the attackers will not go in and nobody comes at them: who sought the battle leaves the field
     const standing = !data.advancing && !battle[BattleRules.enemyOf(side)].advancing && phase === names.apart;
     const idle =
-      standing && battle.round - plan.since >= DECLINED && !own.ready.some(block => block.action === "fight");
+      standing && battle.round - plan.since >= DECLINED && !own.ready.some(battalion => battalion.action === "fight");
     if (side === "attackers" && this.isOpenFight(battle) && idle) {
       plan.declined = true;
       return names.run;
@@ -1946,9 +1962,9 @@ class GeneralModule {
     if (!this.isOpenFight(battle)) return names.close;
 
     // standing off
-    const atGrips = own.ready.some(block => block.action === "fight");
+    const atGrips = own.ready.some(battalion => battalion.action === "fight");
     // the engines are at the wagons: the troops wait out of the fight unless the foe comes out of them, whoever skirmishes
-    const fort = data.advancing && !plan.order ? this.getFort(battle, side) : null;
+    const fort = data.advancing && !plan.byHand.order ? this.getFort(battle, side) : null;
     if (fort === "batter" && !battle[BattleRules.enemyOf(side)].advancing) return phase;
     if (atGrips || gap <= COUNTER * 1.5 * battle.field.front) return names.close; // the foe is upon us
     if (fort === "breached") return names.close; // in by the gaps
@@ -1962,7 +1978,7 @@ class GeneralModule {
     const fireShare = own.fire / (own.fire + foe.fire);
     const gripShare = own.grip / (own.grip + foe.grip);
     if (gripShare > fireShare + 0.05) return names.close;
-    if (own.ready.some(block => block.action === "shoot")) plan.fired ??= battle.round;
+    if (own.ready.some(battalion => battalion.action === "shoot")) plan.fired ??= battle.round;
     // made for shooting: it closes to its range and no nearer, unless its shots fall short of where it halts (big battalions)
     if (own.grip <= own.fire && (plan.fired !== null || plan.reach >= this.getHalt(battle, plan))) return phase;
     if (fireShare < 0.5) return names.close; // the worse fire: nothing to gain by trading shots
@@ -1977,30 +1993,31 @@ class GeneralModule {
    * Drawn up to feign flight, a field side at grips falls back as if broken, once in the battle: when its attack has stalled,
    * a while into the fight it has lost as many men as it took, while it is still fresh enough to turn
    */
-  private feints(battle: Battle, side: Side, own: View): boolean {
+  private feints(battle: Battle, side: Side, own: SideView): boolean {
     const { plan, phase } = battle[side];
     if (battle.type !== "field" || plan.tactic !== "feignedRetreat" || plan.lure) return false;
     if (phase !== POSTURES.field[side].close || battle.engaged === null) return false;
-    if (battle.round - battle.engaged < FEINT_AFTER || !own.ready.some(block => block.action === "fight")) return false;
+    if (battle.round - battle.engaged < FEINT_AFTER || !own.ready.some(battalion => battalion.action === "fight"))
+      return false;
     if (own.morale < WAVERING) return false; // too worn to turn again: it would run for good
     return this.getFallen(battle, side) >= this.getFallen(battle, BattleRules.enemyOf(side));
   }
 
   /** Men a side has lost so far */
   private getFallen(battle: Battle, side: Side): number {
-    return sum(battle.blocks, block => (block.side === side ? block.initial - block.troops : 0));
+    return sum(battle.battalions, battalion => (battalion.side === side ? battalion.initial - battalion.troops : 0));
   }
 
   /** The formation falls back behind where it stood; the general marks where the foe stands, to see him come out */
-  private fallBack(battle: Battle, side: Side, foe: View): string {
+  private fallBack(battle: Battle, side: Side, foe: SideView): Phase {
     const { plan } = battle[side];
     const { field } = battle;
     plan.lure = [foe.x, foe.y];
     plan.x -= Math.cos(plan.heading) * FEINT_BACK * field.front;
     plan.y -= Math.sin(plan.heading) * FEINT_BACK * field.front;
-    const places = battle.blocks
-      .filter(block => block.side === side && this.isInOrder(block))
-      .map(block => block.order);
+    const places = battle.battalions
+      .filter(battalion => battalion.side === side && this.isInOrder(battalion))
+      .map(battalion => battalion.order);
     this.keepOnField(field, plan, places);
     return FEINT;
   }
@@ -2009,7 +2026,7 @@ class GeneralModule {
    * A side feigning flight turns once the foe has come out after it, has stood his ground after all, or it is back at its
    * places, or has run its course; a side that loses heart on the way runs for good
    */
-  private feign(battle: Battle, side: Side, own: View, foe: View): string {
+  private feign(battle: Battle, side: Side, own: SideView, foe: SideView): Phase {
     const { plan } = battle[side];
     const names = POSTURES[battle.type][side];
     if (own.morale < SHAKEN || this.isDayLost(battle, side, own, foe)) return names.run;
@@ -2018,7 +2035,7 @@ class GeneralModule {
     const [x, y] = plan.lure!;
     const lured = Math.hypot(foe.x - x, foe.y - y) >= LURED * battle.field.front;
     const stood = rounds >= 2 && battle[BattleRules.enemyOf(side)].phase !== names.chase; // he saw the foe run a round ago
-    const back = own.ready.every(block => block.action === "hold");
+    const back = own.ready.every(battalion => battalion.action === "hold");
     return lured || stood || back || rounds >= FEINT_ROUNDS ? names.close : FEINT;
   }
 
@@ -2028,10 +2045,10 @@ class GeneralModule {
     battle.log.push({ tick: battle.tick, event: "turned", side });
     const enemy = BattleRules.enemyOf(side);
     if (battle[enemy].phase !== POSTURES[battle.type][enemy].chase) return;
-    for (const block of battle.blocks) {
-      const { role } = block.order;
-      if (block.side !== enemy || !this.isInOrder(block) || role === "support" || role === "battery") continue;
-      block.morale = Math.max(block.morale - DUPED / block.steadiness, 0);
+    for (const battalion of battle.battalions) {
+      const { role } = battalion.order;
+      if (battalion.side !== enemy || !this.isInOrder(battalion) || role === "support" || role === "battery") continue;
+      battalion.morale = Math.max(battalion.morale - DUPED / battalion.stats.steadiness, 0);
     }
   }
 
@@ -2052,27 +2069,27 @@ class GeneralModule {
   /** Besiegers in order on the walls of the burg, within them or at grips with those within */
   private isOnWalls(battle: Battle): boolean {
     const { held } = battle.field;
-    const within = (block: Block): boolean => {
-      const { walled, rampart } = Battlefields.terrainAt(battle.field, block.x, block.y);
+    const within = (battalion: Battalion): boolean => {
+      const { walled, rampart } = Battlefields.terrainAt(battle.field, battalion.x, battalion.y);
       return walled === held! + 1 || rampart > 0;
     };
-    return battle.blocks.some(block => {
-      if (block.side !== "attackers" || !this.isInOrder(block)) return false;
-      return within(block) || (block.action === "fight" && within(battle.blocks[block.target!]));
+    return battle.battalions.some(battalion => {
+      if (battalion.side !== "attackers" || !this.isInOrder(battalion)) return false;
+      return within(battalion) || (battalion.action === "fight" && within(battle.battalions[battalion.target!]));
     });
   }
 
   /** Battalions of the side in order within the walls of the burg */
   private isWithin(battle: Battle, side: Side): boolean {
-    return battle.blocks.some(
-      block =>
-        block.side === side &&
-        this.isInOrder(block) &&
-        Battlefields.terrainAt(battle.field, block.x, block.y).walled === battle.field.held! + 1
+    return battle.battalions.some(
+      battalion =>
+        battalion.side === side &&
+        this.isInOrder(battalion) &&
+        Battlefields.terrainAt(battle.field, battalion.x, battalion.y).walled === battle.field.held! + 1
     );
   }
 
-  private besiege(battle: Battle, own: View, foe: View): string {
+  private besiege(battle: Battle, own: SideView, foe: SideView): Phase {
     const { phase } = battle.attackers;
     if (phase === "retreat" || phase === "looting") return phase;
     if (battle.defenders.phase === SURRENDER || !foe.ready.length) return "looting";
@@ -2089,7 +2106,9 @@ class GeneralModule {
     const bold = battle.attackers.storms && !battle.round; // its general thought it through and storms at once
     // foot climbs the walls; riders get in by a breach only, engines not at all
     const breached = battle.field.breaches.some(breach => breach.burg === battle.field.held);
-    const stormers = own.ready.some(block => Movement.canClimb(block) || (block.kind === "mounted" && breached));
+    const stormers = own.ready.some(
+      battalion => Movement.canClimb(battalion) || (battalion.kind === "mounted" && breached)
+    );
     const storm =
       stormers && (phase === "storming" ? odds >= (need * 2) / 3 || this.isOnWalls(battle) : odds >= need || bold);
     if (storm) {
@@ -2104,11 +2123,11 @@ class GeneralModule {
     const { plan } = battle.attackers;
     const patience = battle.settings.lullRounds;
     // a blockade bled by the garrison's engines, which it cannot answer, is raised
-    const raise = (): string => {
+    const raise = (): Phase => {
       battle.raised = true;
       return "retreat";
     };
-    if (!own.ready.some(block => block.kind === "machinery"))
+    if (!own.ready.some(battalion => battalion.kind === "machinery"))
       return phase === "blockade" && plan.bled >= patience ? raise() : "blockade";
     // engines fire while that brings the walls down before the day is out, and a while longer, to break the garrison
     // or draw it out; then they hold their fire
@@ -2130,11 +2149,12 @@ class GeneralModule {
     const aim = enough < 0 ? STORM_ODDS.length - 1 : enough;
     if (aim <= breaches) return Infinity;
     // engines tire at their work: they are reckoned at the half strength they keep it up with
-    const blows = sum(Movement.getBatterers(battle), engine => engine.troops * engine.upkeep * engine.attack) / 2;
+    const blows =
+      sum(Movement.getBatterers(battle), engine => engine.troops * engine.stats.upkeep * engine.stats.attack) / 2;
     return (aim - breaches - battle.battered) / (blows * (KILL_RATE / BREACH_BLOWS));
   }
 
-  private withstand(battle: Battle, own: View, foe: View): string {
+  private withstand(battle: Battle, own: SideView, foe: SideView): Phase {
     const { phase, plan } = battle.defenders;
     const besiegers = battle.attackers.phase;
     if (besiegers === "retreat" || besiegers === SURRENDER) return "pursue";
@@ -2150,23 +2170,28 @@ class GeneralModule {
     // A garrison half as strong again as the besiegers comes out to drive them off, and stays out while it is the stronger;
     // under the fire of their engines, which it cannot answer from the walls, one that is the stronger at all.
     // A garrison cut off has less to lose: it goes out on a lower heart and stays out longer
-    const party = own.ready.filter(block => block.order.role === "reserve" || block.order.sent);
+    const party = own.ready.filter(battalion => battalion.order.role === "reserve" || battalion.order.sent);
     const prey = this.getSortiePrey(battle, own, foe);
     const strong = this.isStrongGarrison(own, foe) || (besiegers === "bombardment" && own.power >= foe.power);
     const heart = battle.cutOff ? SHAKEN : 40;
     if (phase === "sortie") {
-      const spent = sum(party, block => block.morale * block.troops) / (sum(party, block => block.troops) || 1) < heart;
+      const spent =
+        sum(party, battalion => battalion.morale * battalion.troops) /
+          (sum(party, battalion => battalion.troops) || 1) <
+        heart;
       const out = plan.muster ? (plan.muster.launched ?? battle.round) : plan.since; // the time it formed up is not counted
       if (strong ? !spent && own.power >= foe.power : prey && !spent && battle.round - out < SORTIE_ROUNDS)
         return phase;
     } else {
-      const sallies = own.ready.some(block => block.order.role === "reserve" || block.order.role === "line"); // shooters and engines stay on the walls
+      const sallies = own.ready.some(
+        battalion => battalion.order.role === "reserve" || battalion.order.role === "line"
+      ); // shooters and engines stay on the walls
       if (sallies && (prey || strong) && own.morale >= heart + 10 && battle.round - plan.since >= 3) return "sortie";
     }
-    return own.ready.some(block => block.kind === "machinery") ? "bombardment" : "sheltering";
+    return own.ready.some(battalion => battalion.kind === "machinery") ? "bombardment" : "sheltering";
   }
 
-  private isStrongGarrison(own: View, foe: View): boolean {
+  private isStrongGarrison(own: SideView, foe: SideView): boolean {
     return own.power >= foe.power * 1.5;
   }
 
@@ -2174,15 +2199,15 @@ class GeneralModule {
    * The party of a sortie forms up outside a gate in rows facing its prey, or the besiegers: by the gate nearest them
    * with a front of open ground between the rows and the foe. Null when it is too few or no gate has that room
    */
-  private musterSortie(battle: Battle, party: Block[], prey: Block | null, foe: View): Muster | null {
+  private musterSortie(battle: Battle, party: Battalion[], prey: Battalion | null, foe: SideView): Muster | null {
     const { field } = battle;
     const { front } = field;
     const burg = field.burgs[field.held!];
-    const ashore = foe.ready.filter(block => !Movement.isMoored(battle, block));
+    const ashore = foe.ready.filter(battalion => !Movement.isMoored(battle, battalion));
     if (party.length < 2 || !ashore.length) return null;
     const goal = prey ?? {
-      x: sum(ashore, block => block.x) / ashore.length,
-      y: sum(ashore, block => block.y) / ashore.length
+      x: sum(ashore, battalion => battalion.x) / ashore.length,
+      y: sum(ashore, battalion => battalion.y) / ashore.length
     };
 
     const abreast = Math.min(Math.max(Math.ceil(party.length / 2), 2), MUSTER_ROW);
@@ -2192,7 +2217,7 @@ class GeneralModule {
     const open = ([x, y]: Point): boolean =>
       !Battlefields.terrainAt(field, x, y).walled &&
       !Movement.shuns(battle, party[0], x, y) &&
-      ashore.every(block => this.far(block, this.toSpot([x, y])) >= clear);
+      ashore.every(battalion => this.far(battalion, this.toSpot([x, y])) >= clear);
     /**
      * The rows out of a gate, as near it as all of them stand out of the walls and the water and clear of the foe;
      * none on the far side of the burg from the goal
@@ -2229,11 +2254,11 @@ class GeneralModule {
     const homes: Muster["homes"] = {};
     [...party]
       .sort((a, b) => this.far(a, gate) - this.far(b, gate))
-      .forEach((block, i) => {
+      .forEach((battalion, i) => {
         const [x, y] = places[i];
-        homes[block.id] = [block.order.x, block.order.y, block.order.facing];
-        Object.assign(block.order, { mission: "flank", sent: true, target: null, x, y, facing: heading });
-        march = Math.max(march, this.far(block, { x, y }) / Movement.getPace(battle, block));
+        homes[battalion.id] = [battalion.order.x, battalion.order.y, battalion.order.facing];
+        Object.assign(battalion.order, { mission: "flank", sent: true, target: null, x, y, facing: heading });
+        march = Math.max(march, this.far(battalion, { x, y }) / Movement.getPace(battle, battalion));
       });
     const [least, most] = MUSTER_ROUNDS;
     const rounds = Math.min(Math.max(Math.ceil((march * MUSTER_SLACK) / ROUND_TICKS), least), most);
@@ -2245,44 +2270,45 @@ class GeneralModule {
   }
 
   /** A sortie formed up, kept waiting too long or met by the foe goes for its prey */
-  private launchSortie(battle: Battle, own: View, foe: View): void {
+  private launchSortie(battle: Battle, own: SideView, foe: SideView): void {
     const muster = battle.defenders.plan.muster!;
     if (muster.launched !== null) return;
     const { front } = battle.field;
-    const party = own.ready.filter(block => block.order.sent);
+    const party = own.ready.filter(battalion => battalion.order.sent);
     const formed =
-      party.filter(block => this.far(block, block.order) < MUSTERED * front).length >= (party.length * 2) / 3;
+      party.filter(battalion => this.far(battalion, battalion.order) < MUSTERED * front).length >=
+      (party.length * 2) / 3;
     const late = battle.round >= muster.until;
-    const met = foe.ready.some(block => party.some(own => this.far(block, own) < MUSTER_MET * front)); // it comes upon the rows
+    const met = foe.ready.some(battalion => party.some(own => this.far(battalion, own) < MUSTER_MET * front)); // it comes upon the rows
     if (!formed && !late && !met) return;
     muster.launched = battle.round;
     const prey = this.getSortiePrey(battle, own, foe);
-    for (const block of party) Object.assign(block.order, { mission: "hunt", target: prey?.id ?? null });
+    for (const battalion of party) Object.assign(battalion.order, { mission: "hunt", target: prey?.id ?? null });
   }
 
   /**
    * What a sortie may go for, the nearest first: an engine whose guards the party outweighs by half, and when the burg
    * is cut off, a battalion that keeps a gate shut whose guards it outweighs at all
    */
-  private getSortiePrey(battle: Battle, own: View, foe: View): Block | null {
+  private getSortiePrey(battle: Battle, own: SideView, foe: SideView): Battalion | null {
     const { field } = battle;
     const burg = field.burgs[field.held!];
-    const party = own.ready.filter(block => block.kind === "mounted" || block.kind === "melee");
+    const party = own.ready.filter(battalion => battalion.kind === "mounted" || battalion.kind === "melee");
     const might =
-      sum(party, block => Battalions.getStrength(block)) / 2 +
-      sum(party, block => (block.kind === "mounted" ? Battalions.getStrength(block) / 2 : 0));
+      sum(party, battalion => Battalions.getStrength(battalion)) / 2 +
+      sum(party, battalion => (battalion.kind === "mounted" ? Battalions.getStrength(battalion) / 2 : 0));
     const ashore = foe.ready.filter(
-      block => !Movement.isMoored(battle, block) && this.far(block, burg) < burg.radius + SORTIE
+      battalion => !Movement.isMoored(battle, battalion) && this.far(battalion, burg) < burg.radius + SORTIE
     );
     const gates = battle.cutOff ? Battlefields.getGates(field, field.held).filter(wall => wall.water !== 1) : [];
     const preys = ashore
-      .filter(block => block.kind === "machinery" || gates.some(wall => this.watches(battle, block, wall)))
+      .filter(battalion => battalion.kind === "machinery" || gates.some(wall => this.watches(battle, battalion, wall)))
       .sort((a, b) => this.far(a, burg) - this.far(b, burg));
     for (const prey of preys) {
       // the engines themselves are a quarter of their worth hand to hand
-      const guards = sum(foe.ready, block =>
-        this.far(block, prey) < CHARGE * field.front
-          ? Battalions.getStrength(block) * (block.kind === "machinery" ? 0.25 : 1)
+      const guards = sum(foe.ready, battalion =>
+        this.far(battalion, prey) < CHARGE * field.front
+          ? Battalions.getStrength(battalion) * (battalion.kind === "machinery" ? 0.25 : 1)
           : 0
       );
       if (might > guards * (prey.kind === "machinery" ? 1.5 : 1)) return prey;
@@ -2293,7 +2319,7 @@ class GeneralModule {
   // Orders
 
   /** Move the formation and tell every battalion in order what to do this round; off a round (an order by hand) only the orders */
-  private direct(battle: Battle, side: Side, own: View, foe: View, gap: number, round = true): void {
+  private direct(battle: Battle, side: Side, own: SideView, foe: SideView, gap: number, round = true): void {
     const data = battle[side];
     const { plan, phase } = data;
     const names = POSTURES[battle.type][side];
@@ -2318,7 +2344,8 @@ class GeneralModule {
       plan.idle = closing || gap < CHARGE * field.front ? 0 : plan.idle + 1;
       plan.gap = gap;
       const losses = this.getHarm(battle, side); // a trickle of shots tells every round, before a whole man falls
-      plan.bled = losses > plan.losses && !own.ready.some(block => block.action === "fight") ? plan.bled + 1 : 0;
+      plan.bled =
+        losses > plan.losses && !own.ready.some(battalion => battalion.action === "fight") ? plan.bled + 1 : 0;
       plan.losses = losses;
     }
     const holds = plan.tactic === "crossing"; // who holds a crossing stays behind it till the foe runs
@@ -2326,7 +2353,7 @@ class GeneralModule {
     if (siege) data.advancing = side === "attackers" || phase === "sortie" || phase === "pursue";
     else if (phase === names.chase && names.chase !== names.close)
       data.advancing = true; // not a bombardment's one phase
-    else if (!data.advancing && !plan.order && this.isOpenFight(battle) && phase !== names.run && !holds) {
+    else if (!data.advancing && !plan.byHand.order && this.isOpenFight(battle) && phase !== names.run && !holds) {
       const spent = phase === names.close && odds >= 1.5;
       // the foe does not come: a side no weaker goes for it, unless that is a march into fire it cannot answer
       const waited =
@@ -2340,25 +2367,26 @@ class GeneralModule {
     plan.fortify = this.fortifies(battle, side);
     // no lull while a side builds within sight of the foe
     if (
-      own.ready.some(block => block.action === "build") &&
-      foe.ready.some(block => this.far(block, own) < field.width)
+      own.ready.some(battalion => battalion.action === "build") &&
+      foe.ready.some(battalion => this.far(battalion, own) < field.width)
     )
       battle.lastLoss = battle.tick;
 
     // on broken ground a formation that went in and comes no nearer lets its battalions find their own ways to the foe
     if (round && field.cliffs.length && data.advancing && phase === names.close && plan.idle >= STALLED)
-      for (const block of own.ready) if (!block.order.sent) Object.assign(block.order, { mission: "hunt", sent: true });
+      for (const battalion of own.ready)
+        if (!battalion.order.sent) Object.assign(battalion.order, { mission: "hunt", sent: true });
 
     if (siege && side === "attackers" && !Movement.isStorming(battle))
       [plan.x, plan.y] = plan.camp; // back to the lines
     else if (round && !plan.fixed && phase !== FEINT && (data.advancing || !(plan.fortify || sheltered)))
       this.moveFrame(battle, side, own, foe, gap); // the formation stays with its works till it advances
-    const frameFoes = foe.ready.map(block => ({ block, at: this.toFrame(plan, block) }));
+    const frameFoes = foe.ready.map(battalion => ({ battalion, at: this.toFrame(plan, battalion) }));
     if (round && plan.wedge && stance !== "flee") this.moveWedge(battle, side, own, frameFoes, gap);
     const standing = data.advancing && phase === names.apart && this.isOpenFight(battle); // shooters stand before the line
 
-    for (const block of own.ready) {
-      const order = block.order;
+    for (const battalion of own.ready) {
+      const order = battalion.order;
       if (stance === "flee") {
         order.mission = phase === FEINT ? "feint" : "withdraw";
         [order.sent, order.target] = [false, null]; // or one sent off would keep running once the side turns about
@@ -2370,7 +2398,7 @@ class GeneralModule {
         continue;
       }
       if (order.sent) {
-        const target = order.target === null ? null : battle.blocks[order.target];
+        const target = order.target === null ? null : battle.battalions[order.target];
         const gone = target ? !this.isInOrder(target) : phase !== names.close;
         if (plan.tactic === "garrison" ? phase === "sortie" : !gone) continue;
         [order.sent, order.target] = [false, null]; // back to its place
@@ -2383,16 +2411,16 @@ class GeneralModule {
         [order.x, order.y] = this.onField(field, this.toField(frame, order.across, along));
         if (!plan.fixed) order.facing = frame.heading;
       }
-      order.mission = this.getMission(battle, side, block, own, frameFoes);
+      order.mission = this.getMission(battle, side, battalion, own, frameFoes);
       if (order.role === "wedge") order.target = plan.wedge?.target ?? null; // the foe it falls on
       if (siege && side === "attackers" && phase === "storming" && order.mission === "hunt") {
-        const entry = this.getEntry(battle, block);
+        const entry = this.getEntry(battle, battalion);
         if (entry) [order.mission, order.x, order.y] = ["flank", ...entry];
       } else if (order.mission === "flank" && order.role !== "wedge") {
         // round the end of the foe's line on its own wing, and a little beyond
         const sign = Math.sign(order.across) || plan.strike;
         const end = frameFoes
-          .filter(({ block }) => block.kind !== "mounted")
+          .filter(({ battalion }) => battalion.kind !== "mounted")
           .reduce<[number, number] | null>(
             (best, { at }) => (!best || at[0] * sign > best[0] * sign ? at : best),
             null
@@ -2407,8 +2435,8 @@ class GeneralModule {
 
     // the weak wing of an oblique attack holds back until the day is won
     if (tactic.massed && phase !== names.chase) {
-      for (const block of own.ready) {
-        const { order } = block;
+      for (const battalion of own.ready) {
+        const { order } = battalion;
         const refused = (plan.strike * plan.half - order.across * plan.strike) / (plan.half * 2) > 0.55;
         if (order.mission === "line" && order.rank === 0 && refused) order.mission = "guard";
       }
@@ -2420,15 +2448,15 @@ class GeneralModule {
   }
 
   /** The foe strikes a battalion in the flank or the rear */
-  private isOnFlank(battle: Battle, foe: Block): boolean {
-    const target = foe.action === "fight" && foe.target !== null ? battle.blocks[foe.target] : null;
+  private isOnFlank(battle: Battle, foe: Battalion): boolean {
+    const target = foe.action === "fight" && foe.target !== null ? battle.battalions[foe.target] : null;
     if (!target || target.side === foe.side) return false;
     const bearing = Math.atan2(foe.y - target.y, foe.x - target.x) - target.facing;
     return Math.abs(Math.atan2(Math.sin(bearing), Math.cos(bearing))) > FLANKED;
   }
 
-  private isHooked(battle: Battle, block: Block): boolean {
-    return battle[block.side].plan.hooks.some(hook => hook.includes(block.id));
+  private isHooked(battle: Battle, battalion: Battalion): boolean {
+    return battle[battalion.side].plan.hooks.some(hook => hook.includes(battalion.id));
   }
 
   /**
@@ -2436,7 +2464,7 @@ class GeneralModule {
    * and the lines behind as soon as the foe has riders on that wing, the first line from the end in once foes come
    * beyond it. As strong as those foes, the more threatened end first; an end with no foes at it lends its reserve
    */
-  private hookFlanks(battle: Battle, side: Side, own: View, foes: Seen): void {
+  private hookFlanks(battle: Battle, side: Side, own: SideView, foes: Seen): void {
     const { plan, advancing } = battle[side];
     const { field } = battle;
     const { front } = field;
@@ -2445,13 +2473,15 @@ class GeneralModule {
     plan.hooks = [[], []];
     if (advancing || plan.fixed || field.open || !ground) return;
 
-    const byId = new Map(own.ready.map(block => [block.id, block]));
-    const free = (block: Block): boolean =>
-      !block.order.sent && !block.task && block.morale >= SHAKEN && block.action !== "fight";
-    const wheels = (block: Block): boolean => block.order.rank === 0 && block.order.role === "line";
-    const first = own.ready.filter(block => wheels(block) && !block.order.sent && block.kind === "melee");
+    const byId = new Map(own.ready.map(battalion => [battalion.id, battalion]));
+    const free = (battalion: Battalion): boolean =>
+      !battalion.order.sent && !battalion.byHand.task && battalion.morale >= SHAKEN && battalion.action !== "fight";
+    const wheels = (battalion: Battalion): boolean => battalion.order.rank === 0 && battalion.order.role === "line";
+    const first = own.ready.filter(
+      battalion => wheels(battalion) && !battalion.order.sent && battalion.kind === "melee"
+    );
     // a battalion of the first line with no foe before it within a charge may wheel back
-    const idle = ({ order, width }: Block): boolean =>
+    const idle = ({ order, width }: Battalion): boolean =>
       !foes.some(
         ({ at }) =>
           Math.abs(at[0] - order.across) < width && at[1] > order.along && at[1] - order.along < CHARGE * front
@@ -2459,7 +2489,7 @@ class GeneralModule {
 
     const coming = battle[BattleRules.enemyOf(side)].advancing;
     const ends = [-1, 1].map(sign => {
-      const end = first.reduce<Block | null>(
+      const end = first.reduce<Battalion | null>(
         (a, b) => (a && a.order.across * sign >= b.order.across * sign ? a : b),
         null
       );
@@ -2470,19 +2500,19 @@ class GeneralModule {
       const out = (seen: Seen[number]): boolean => seen.at[0] * sign > edge;
       // foes beyond it, no further ahead than a charge and two rounds' march: the reserve needs time to turn out
       const beyond = sum(foes, seen => {
-        const near = seen.at[1] < along + CHARGE * front + Movement.getPace(battle, seen.block) * ROUND_TICKS * 2;
-        return out(seen) && near && off(seen) < THREAT * front ? Battalions.getStrength(seen.block) : 0;
+        const near = seen.at[1] < along + CHARGE * front + Movement.getPace(battle, seen.battalion) * ROUND_TICKS * 2;
+        return out(seen) && near && off(seen) < THREAT * front ? Battalions.getStrength(seen.battalion) : 0;
       });
       // foes of an advancing side coming round it, level with the line within a charge: the first line wheels back
       const round = sum(foes, seen =>
         coming && out(seen) && seen.at[1] < along + COUNTER * front && off(seen) < CHARGE * front
-          ? Battalions.getStrength(seen.block)
+          ? Battalions.getStrength(seen.battalion)
           : 0
       );
       // riders on that wing within reach of the end: far off, a shift of the foe's frame would swing them to the other end
       const riders = sum(foes, seen =>
-        seen.block.kind === "mounted" && seen.at[0] * sign > 0 && off(seen) < THREAT * front
-          ? Battalions.getStrength(seen.block)
+        seen.battalion.kind === "mounted" && seen.at[0] * sign > 0 && off(seen) < THREAT * front
+          ? Battalions.getStrength(seen.battalion)
           : 0
       );
       return { sign, end, beyond, round, riders };
@@ -2497,46 +2527,53 @@ class GeneralModule {
       const edge = across * sign + end.width / 2;
       const kept = old[(sign + 1) / 2]
         .map(id => byId.get(id))
-        .filter((block): block is Block => block !== undefined && !block.order.sent && (round > 0 || !wheels(block)));
+        .filter(
+          (battalion): battalion is Battalion =>
+            battalion !== undefined && !battalion.order.sent && (round > 0 || !wheels(battalion))
+        );
       const corner = this.onField(field, this.toField(plan, across, along - end.depth));
-      const near = (block: Block): number => Math.hypot(block.x - corner[0], block.y - corner[1]);
+      const near = (battalion: Battalion): number => Math.hypot(battalion.x - corner[0], battalion.y - corner[1]);
       const behind = own.ready
         .filter(
-          block =>
-            block.kind === "melee" &&
-            free(block) &&
-            (block.order.role === "reserve" || (block.order.role === "line" && block.order.rank > 0)) &&
-            (block.order.across * sign >= 0 || quiet(-sign)) // of its own wing, or of a quiet one
+          battalion =>
+            battalion.kind === "melee" &&
+            free(battalion) &&
+            (battalion.order.role === "reserve" || (battalion.order.role === "line" && battalion.order.rank > 0)) &&
+            (battalion.order.across * sign >= 0 || quiet(-sign)) // of its own wing, or of a quiet one
         )
         .sort((a, b) => near(a) - near(b));
       // the first line from the end in, as far as nobody stands before it, against foes coming round only
-      const wheel: Block[] = [];
-      for (const block of [...first].sort((a, b) => (b.order.across - a.order.across) * sign)) {
-        if (!round || hooked.has(block.id) || !free(block) || !idle(block)) break;
-        wheel.push(block);
+      const wheel: Battalion[] = [];
+      for (const battalion of [...first].sort((a, b) => (b.order.across - a.order.across) * sign)) {
+        if (!round || hooked.has(battalion.id) || !free(battalion) || !idle(battalion)) break;
+        wheel.push(battalion);
       }
-      const hook: Block[] = [];
-      for (const block of [...kept, ...behind, ...wheel]) {
-        const need = wheels(block) ? round : beyond + riders;
-        if (hooked.has(block.id) || hook.length >= HOOKS || sum(hook, block => Battalions.getStrength(block)) >= need)
+      const hook: Battalion[] = [];
+      for (const battalion of [...kept, ...behind, ...wheel]) {
+        const need = wheels(battalion) ? round : beyond + riders;
+        if (
+          hooked.has(battalion.id) ||
+          hook.length >= HOOKS ||
+          sum(hook, battalion => Battalions.getStrength(battalion)) >= need
+        )
           continue;
-        hook.push(block);
-        hooked.add(block.id);
+        hook.push(battalion);
+        hooked.add(battalion.id);
       }
       // a new hook: beyond the end, back from its rear corner, the first line nearest the end first, the others behind it;
       // those in a hook keep their places in it and newcomers fall in behind
-      const fresh = hook.slice(kept.filter(block => hook.includes(block)).length);
+      const fresh = hook.slice(kept.filter(battalion => hook.includes(battalion)).length);
       fresh.sort((a, b) => +wheels(b) - +wheels(a) || (b.order.across - a.order.across) * sign);
       hook.splice(hook.length - fresh.length, fresh.length, ...fresh);
       let back = along + end.depth / 2;
-      for (const block of hook) {
-        const place = this.toField(plan, (edge + block.depth / 2) * sign, back - block.width / 2); // clear of the rows behind
-        back -= block.width + GAP * 2 * front;
-        [block.order.x, block.order.y] = this.onField(field, place);
-        block.order.facing = plan.heading + (sign * Math.PI) / 2;
-        block.order.mission = "line";
+      for (const battalion of hook) {
+        const place = this.toField(plan, (edge + battalion.depth / 2) * sign, back - battalion.width / 2); // clear of the rows behind
+        back -= battalion.width + GAP * 2 * front;
+        [battalion.order.x, battalion.order.y] = this.onField(field, place);
+        battalion.order.facing = plan.heading + (sign * Math.PI) / 2;
+        battalion.order.mission = "line";
       }
-      plan.hooks[(sign + 1) / 2] = hook.map(block => block.id);
+      plan.hooks[(sign + 1) / 2] = hook.map(battalion => battalion.id);
     }
   }
 
@@ -2544,66 +2581,69 @@ class GeneralModule {
    * Where a stormer goes: the middle of the burg, by the cheapest way from where it stands: over the wall before it, or by
    * a breach when one is about as near: riders only so. So the walls are stormed on a broad front. None once it is within.
    */
-  private getEntry(battle: Battle, block: Block): Point | null {
+  private getEntry(battle: Battle, battalion: Battalion): Point | null {
     const { field } = battle;
     const burg = field.burgs[field.held!];
-    const terrain = Battlefields.terrainAt(field, block.x, block.y);
+    const terrain = Battlefields.terrainAt(field, battalion.x, battalion.y);
     return terrain.walled === field.held! + 1 && !terrain.rampart ? null : [burg.x, burg.y];
   }
 
   /** What a battalion is to do, by what it is in the formation and how the day goes */
-  private getMission(battle: Battle, side: Side, block: Block, own: View, foes: Seen): Order["mission"] {
+  private getMission(battle: Battle, side: Side, battalion: Battalion, own: SideView, foes: Seen): Order["mission"] {
     const { phase, plan, advancing } = battle[side];
     const names = POSTURES[battle.type][side];
-    const { role } = block.order;
+    const { role } = battalion.order;
     const siege = battle.type === "siege" && battle.field.held !== null;
     const free = phase === names.chase || phase === "looting" || (siege && phase === "storming");
     if (role === "support" || role === "battery") return role;
     const lying = plan.tactic === "ambuscadeBothSides" || plan.tactic === "ambuscadeOneSide";
     const off = this.keepsOff(battle, side);
     if (lying && advancing && !off) return "hunt"; // told to stand, ambushers keep where they lie
-    if (free) return role === "line" && !siege && phase === names.chase && block.kind !== "mounted" ? "line" : "hunt";
+    if (free)
+      return role === "line" && !siege && phase === names.chase && battalion.kind !== "mounted" ? "line" : "hunt";
     if (role === "wedge") return plan.wedge?.charging ? "hunt" : "flank"; // on its way, or charging
     if (role === "line") return "line";
     if (role === "reserve") return "reserve";
 
     // riders on a wing go round the foe's line when the lines close, unless the foe's riders there outweigh them
-    const sign = Math.sign(block.order.across) || 1;
+    const sign = Math.sign(battalion.order.across) || 1;
     const near = advancing && plan.gap < CHARGE * battle.field.front && this.getFort(battle, side) !== "batter";
     const launched = phase === names.close || near; // to fall on the foe as the lines meet
-    if (!launched || off || block.morale < SHAKEN || siege) return "guard";
-    const there = (all: Block[], at: (block: Block) => number): number =>
-      sum(all, block => (block.kind === "mounted" && at(block) * sign > 0 ? Battalions.getStrength(block) : 0));
+    if (!launched || off || battalion.morale < SHAKEN || siege) return "guard";
+    const there = (all: Battalion[], at: (battalion: Battalion) => number): number =>
+      sum(all, battalion =>
+        battalion.kind === "mounted" && at(battalion) * sign > 0 ? Battalions.getStrength(battalion) : 0
+      );
     const mine = there(own.ready, other => other.order.across);
-    const theirs = sum(foes, ({ block, at }) =>
-      block.kind === "mounted" && at[0] * sign > 0 ? Battalions.getStrength(block) : 0
+    const theirs = sum(foes, ({ battalion, at }) =>
+      battalion.kind === "mounted" && at[0] * sign > 0 ? Battalions.getStrength(battalion) : 0
     );
     if (theirs * 0.7 > mine) return "guard";
-    const [, along] = this.toFrame(plan, block);
+    const [, along] = this.toFrame(plan, battalion);
     const end = Math.min(...foes.filter(({ at }) => at[0] * sign > -plan.half).map(({ at }) => at[1]), Infinity);
     return along >= end - battle.field.front * LEVEL ? "hunt" : "flank"; // level with the foe's line: it is round
   }
 
   /** Send those kept behind where they are needed, the nearest first */
-  private sendReserve(battle: Battle, side: Side, own: View, foe: View, foes: Seen): void {
+  private sendReserve(battle: Battle, side: Side, own: SideView, foe: SideView, foes: Seen): void {
     const { plan, phase } = battle[side];
     const names = POSTURES[battle.type][side];
-    const spare = (): Block[] =>
+    const spare = (): Battalion[] =>
       own.ready.filter(
-        block =>
-          block.order.role === "reserve" &&
-          !block.order.sent &&
-          !block.task && // one under a task by hand is not the general's to send
-          block.morale >= SHAKEN &&
-          !this.isHooked(battle, block)
+        battalion =>
+          battalion.order.role === "reserve" &&
+          !battalion.order.sent &&
+          !battalion.byHand.task && // one under a task by hand is not the general's to send
+          battalion.morale >= SHAKEN &&
+          !this.isHooked(battle, battalion)
       );
-    const nearest = (among: Block[], to: { x: number; y: number }): Block | undefined =>
-      among.reduce<Block | undefined>(
-        (best, block) => (best && this.far(best, to) <= this.far(block, to) ? best : block),
+    const nearest = (among: Battalion[], to: { x: number; y: number }): Battalion | undefined =>
+      among.reduce<Battalion | undefined>(
+        (best, battalion) => (best && this.far(best, to) <= this.far(battalion, to) ? best : battalion),
         undefined
       );
-    const send = (block: Block | undefined, target: Block | null): void => {
-      if (block) Object.assign(block.order, { mission: "hunt", sent: true, target: target?.id ?? null });
+    const send = (battalion: Battalion | undefined, target: Battalion | null): void => {
+      if (battalion) Object.assign(battalion.order, { mission: "hunt", sent: true, target: target?.id ?? null });
     };
 
     const { front } = battle.field;
@@ -2616,9 +2656,9 @@ class GeneralModule {
       // the whole line when the garrison comes out to drive the besiegers off. They form up outside a gate first
       if (phase !== "sortie") {
         // the sortie is over: its party goes back to the places it left
-        for (const block of plan.muster ? own.ready : []) {
-          const home = plan.muster!.homes[block.id];
-          if (home) [block.order.x, block.order.y, block.order.facing] = home;
+        for (const battalion of plan.muster ? own.ready : []) {
+          const home = plan.muster!.homes[battalion.id];
+          if (home) [battalion.order.x, battalion.order.y, battalion.order.facing] = home;
         }
         plan.muster = null;
         this.holdWalls(battle, own, foe);
@@ -2628,29 +2668,29 @@ class GeneralModule {
         this.launchSortie(battle, own, foe);
         return;
       }
-      if (own.ready.some(block => block.order.sent)) return;
-      const line = own.ready.filter(block => block.order.role === "line" && block.morale >= SHAKEN);
+      if (own.ready.some(battalion => battalion.order.sent)) return;
+      const line = own.ready.filter(battalion => battalion.order.role === "line" && battalion.morale >= SHAKEN);
       const prey = this.getSortiePrey(battle, own, foe);
       const all = this.isStrongGarrison(own, foe);
       const party = [...spare(), ...line.filter((_, i) => all || i % 2 === 0)];
       plan.muster = this.musterSortie(battle, party, prey, foe);
-      if (!plan.muster) for (const block of party) send(block, prey);
+      if (!plan.muster) for (const battalion of party) send(battalion, prey);
       return;
     }
 
     // 1. a gap where a battalion of the first line broke with foes near: the one behind it steps in
-    for (const lost of battle.blocks) {
+    for (const lost of battle.battalions) {
       const { order } = lost;
       if (lost.side !== side || lost.status === "ready" || order.role !== "line" || order.rank !== 0) continue;
       order.rank = -1; // seen to
-      if (!foe.ready.some(block => this.far(block, order) < front * FOES_NEAR)) continue;
+      if (!foe.ready.some(battalion => this.far(battalion, order) < front * FOES_NEAR)) continue;
       const behind = own.ready.filter(
-        block =>
-          block.order.role === "line" &&
-          block.order.rank > 0 &&
-          !block.order.sent &&
-          !block.task &&
-          !this.isHooked(battle, block)
+        battalion =>
+          battalion.order.role === "line" &&
+          battalion.order.rank > 0 &&
+          !battalion.order.sent &&
+          !battalion.byHand.task &&
+          !this.isHooked(battle, battalion)
       );
       const heir = nearest([...behind, ...spare()], order);
       if (heir)
@@ -2659,37 +2699,41 @@ class GeneralModule {
 
     // 2. foes come round a flank or through the line, or at grips with a battalion's flank or rear: riders first, as
     // many sent at each as match it
-    const answered = new Set(own.ready.map(block => block.order.target));
+    const answered = new Set(own.ready.map(battalion => battalion.order.target));
     const going = new Map<number, number>();
-    for (const block of own.ready)
-      if (block.order.sent && block.order.target !== null)
-        going.set(block.order.target, (going.get(block.order.target) ?? 0) + Battalions.getStrength(block));
-    const urgent = ({ block, at }: Seen[number]): number => (block.kind === "mounted" ? -1000 : 0) + at[1]; // riders, then the deepest
-    for (const { block: threat, at } of [...foes].sort((a, b) => urgent(a) - urgent(b))) {
+    for (const battalion of own.ready)
+      if (battalion.order.sent && battalion.order.target !== null)
+        going.set(battalion.order.target, (going.get(battalion.order.target) ?? 0) + Battalions.getStrength(battalion));
+    const urgent = ({ battalion, at }: Seen[number]): number => (battalion.kind === "mounted" ? -1000 : 0) + at[1]; // riders, then the deepest
+    for (const { battalion: threat, at } of [...foes].sort((a, b) => urgent(a) - urgent(b))) {
       const flank = Math.abs(at[0]) > plan.half + front * ROUND_SIDE && at[1] < front * ROUND_AHEAD;
       const round = at[1] < (-ROW_GAP * front) / 2 || flank;
       if (!(round || this.isOnFlank(battle, threat)) || this.far(threat, plan) > front * THREAT) continue;
       while ((going.get(threat.id) ?? 0) < Battalions.getStrength(threat)) {
         const guards = own.ready.filter(
-          block => block.order.mission === "guard" && !block.order.sent && !block.task && block.kind === "mounted"
+          battalion =>
+            battalion.order.mission === "guard" &&
+            !battalion.order.sent &&
+            !battalion.byHand.task &&
+            battalion.kind === "mounted"
         );
-        const block = nearest([...spare(), ...guards], threat);
-        if (!block) break;
-        send(block, threat);
-        going.set(threat.id, (going.get(threat.id) ?? 0) + Battalions.getStrength(block));
+        const battalion = nearest([...spare(), ...guards], threat);
+        if (!battalion) break;
+        send(battalion, threat);
+        going.set(threat.id, (going.get(threat.id) ?? 0) + Battalions.getStrength(battalion));
       }
     }
 
     if (phase !== names.close || this.keepsOff(battle, side)) return;
     // 3. where a foe at grips wavers, to break it
-    const held = new Set(own.ready.map(block => (block.action === "fight" ? block.target : null)));
+    const held = new Set(own.ready.map(battalion => (battalion.action === "fight" ? battalion.target : null)));
     const wavering = foe.ready.filter(
-      block => block.morale < SHAKEN + 10 && held.has(block.id) && !answered.has(block.id)
+      battalion => battalion.morale < SHAKEN + 10 && held.has(battalion.id) && !answered.has(battalion.id)
     );
     if (wavering.length) send(nearest(spare(), wavering[0]), wavering[0]);
 
     // 4. everywhere, once the fight has stood long enough: a reserve never used is wasted
-    if (battle.round - plan.since >= 8) for (const block of spare()) send(block, null);
+    if (battle.round - plan.since >= 8) for (const battalion of spare()) send(battalion, null);
   }
 
   /**
@@ -2699,33 +2743,33 @@ class GeneralModule {
    */
   private guardWards(
     battle: Battle,
-    own: View,
-    foe: View,
+    own: SideView,
+    foe: SideView,
     ward: number,
-    spare: () => Block[],
-    nearest: (among: Block[], to: Block) => Block | undefined,
-    send: (block: Block | undefined, target: Block) => void
+    spare: () => Battalion[],
+    nearest: (among: Battalion[], to: Battalion) => Battalion | undefined,
+    send: (battalion: Battalion | undefined, target: Battalion) => void
   ): void {
     const wards = own.ready
-      .filter(block => block.kind === "ranged" || block.kind === "machinery")
+      .filter(battalion => battalion.kind === "ranged" || battalion.kind === "machinery")
       .sort((a, b) => +(b.kind === "machinery") - +(a.kind === "machinery"));
-    const answered = new Set(own.ready.map(block => (block.order.sent ? block.order.target : null)));
+    const answered = new Set(own.ready.map(battalion => (battalion.order.sent ? battalion.order.target : null)));
     for (const shot of wards) {
       for (const threat of foe.ready) {
-        if (threat.range || answered.has(threat.id) || threat.target !== shot.id || this.far(threat, shot) > ward)
+        if (threat.stats.range || answered.has(threat.id) || threat.target !== shot.id || this.far(threat, shot) > ward)
           continue;
         if (Battlefields.getWorksBetween(battle.field, [threat.x, threat.y], [shot.x, shot.y], shot.side).length)
           continue;
         const free = own.ready.filter(
-          block =>
-            (block.kind === "melee" || block.kind === "mounted") &&
-            block.order.role !== "wedge" &&
-            !block.order.sent &&
-            !block.task &&
-            !this.isHooked(battle, block) &&
-            block.action !== "fight" &&
-            block.morale >= SHAKEN &&
-            this.far(block, threat) < ward * 2
+          battalion =>
+            (battalion.kind === "melee" || battalion.kind === "mounted") &&
+            battalion.order.role !== "wedge" &&
+            !battalion.order.sent &&
+            !battalion.byHand.task &&
+            !this.isHooked(battle, battalion) &&
+            battalion.action !== "fight" &&
+            battalion.morale >= SHAKEN &&
+            this.far(battalion, threat) < ward * 2
         );
         const guard = nearest([...spare(), ...free], threat);
         if (!guard) continue;
@@ -2736,16 +2780,16 @@ class GeneralModule {
   }
 
   /** The formation goes for the foe at the pace of its slowest, along the way its troops would take, and no further ahead than they can keep */
-  private moveFrame(battle: Battle, side: Side, own: View, foe: View, gap: number): void {
+  private moveFrame(battle: Battle, side: Side, own: SideView, foe: SideView, gap: number): void {
     const data = battle[side];
     const { plan, phase } = data;
     const names = POSTURES[battle.type][side];
     const foremost = own.ready.filter(
-      block => block.order.rank === 0 && !block.order.sent && block.order.role !== "wedge"
+      battalion => battalion.order.rank === 0 && !battalion.order.sent && battalion.order.role !== "wedge"
     );
-    const line = foremost.filter(block => block.order.role !== "wing");
+    const line = foremost.filter(battalion => battalion.order.role !== "wing");
     const first = line.length ? line : foremost; // an army of riders alone leads with its wings
-    const lead = first.find(block => block.kind === "melee") ?? first[0];
+    const lead = first.find(battalion => battalion.kind === "melee") ?? first[0];
     if (!lead || !foe.ready.length) return;
 
     const there: Point = [foe.x, foe.y];
@@ -2761,26 +2805,27 @@ class GeneralModule {
 
     const apart = this.keepsOff(battle, side) || (phase === names.apart && this.isOpenFight(battle));
     // the engines come up with the line when they are to batter the foe's wagons, and it halts once they reach them
-    const guns = this.getFort(battle, side) === "batter" ? own.ready.filter(block => block.kind === "machinery") : [];
+    const guns =
+      this.getFort(battle, side) === "batter" ? own.ready.filter(battalion => battalion.kind === "machinery") : [];
     const wagons = field.works.filter(
       work => work.side !== side && work.kind === "wagons" && Battlefields.isStanding(work)
     );
-    const inRange = (gun: Block): boolean =>
+    const inRange = (gun: Battalion): boolean =>
       wagons.some(
         work => Battlefields.distanceToLine([gun.x, gun.y], [work.a, work.b]) < Sight.getReach(battle, gun) * 0.9
       );
     if (guns.length && guns.every(inRange)) return;
     const want = guns.length ? COUNTER * 2 * field.front : apart ? this.getHalt(battle, plan) : -Infinity;
     const pace = Math.min(
-      ...[...first, ...guns].map(block =>
-        Movement.getPace(battle, block, Battlefields.terrainAt(battle.field, block.x, block.y))
+      ...[...first, ...guns].map(battalion =>
+        Movement.getPace(battle, battalion, Battlefields.terrainAt(battle.field, battalion.x, battalion.y))
       )
     );
     // no further than its next turn: past the corner of a cliff the way would lead back
     const turnAt = straight || !field.cliffs.length ? Infinity : Math.hypot(tx - plan.x, ty - plan.y);
     const advance = Math.min(pace * ROUND_TICKS, gap - want, turnAt);
     const lags = first
-      .map(block => this.toFrame(plan, block.order)[1] - this.toFrame(plan, block)[1])
+      .map(battalion => this.toFrame(plan, battalion.order)[1] - this.toFrame(plan, battalion)[1])
       .sort((a, b) => a - b);
     if (advance <= 0 || lags[lags.length >> 1] > field.front * LEVEL) return; // most of the line is behind
     plan.x += Math.cos(bearing) * advance;
@@ -2788,7 +2833,9 @@ class GeneralModule {
     this.keepOnField(
       field,
       plan,
-      own.ready.filter(block => !block.order.sent && block.order.role !== "wedge").map(block => block.order)
+      own.ready
+        .filter(battalion => !battalion.order.sent && battalion.order.role !== "wedge")
+        .map(battalion => battalion.order)
     );
   }
 
@@ -2801,7 +2848,8 @@ class GeneralModule {
   private getWalkBetween(battle: Battle): number {
     const known = this.walks.get(battle);
     if (known?.tick === battle.tick) return known.walk;
-    const ready = (side: Side): Block[] => battle.blocks.filter(block => block.side === side && this.isInOrder(block));
+    const ready = (side: Side): Battalion[] =>
+      battle.battalions.filter(battalion => battalion.side === side && this.isInOrder(battalion));
     const walk = Movement.getWalkGap(battle, ready("attackers"), ready("defenders"));
     this.walks.set(battle, { tick: battle.tick, walk });
     return walk;
@@ -2823,7 +2871,7 @@ class GeneralModule {
 
   /** The end of the foe's line on a wing, foot before riders, as the formation sees it */
   private getEnd(foes: Seen, sign: number): Seen[number] | null {
-    const foot = foes.filter(({ block }) => block.kind !== "mounted");
+    const foot = foes.filter(({ battalion }) => battalion.kind !== "mounted");
     return (foot.length ? foot : foes).reduce<Seen[number] | null>(
       (best, seen) => (!best || seen.at[0] * sign > best.at[0] * sign ? seen : best),
       null
@@ -2844,7 +2892,7 @@ class GeneralModule {
         field,
         this.toField(frame, end.at[0] + sign * front * WIDE, end.at[1] + front * (LEVEL + shift))
       );
-      const worth = this.getLaneWorth(battle, via, [end.block.x, end.block.y]);
+      const worth = this.getLaneWorth(battle, via, [end.battalion.x, end.battalion.y]);
       if (worth > most) [best, most] = [via, worth];
     }
     return best!;
@@ -2868,7 +2916,7 @@ class GeneralModule {
   private chooseLane(battle: Battle, side: Side, frame: Frame, places: Place[]): number {
     const { front } = battle.field;
     const foe = this.survey(battle, BattleRules.enemyOf(side));
-    const foes: Seen = foe.ready.map(block => ({ block, at: this.toFrame(frame, block) }));
+    const foes: Seen = foe.ready.map(battalion => ({ battalion, at: this.toFrame(frame, battalion) }));
     const half = Math.max(
       ...places.filter(place => place.rank === 0 && place.role !== "wedge").map(place => Math.abs(place.across)),
       0
@@ -2878,10 +2926,12 @@ class GeneralModule {
       if (!end) return 0;
       const post = this.toField(frame, sign * (half + front * POST), -ROW_GAP * front);
       const via = this.getVia(battle, frame, end, sign);
-      const wing = sum(foes, ({ block, at }) => (at[0] * sign > front * WING ? Battalions.getStrength(block) : 0));
+      const wing = sum(foes, ({ battalion, at }) =>
+        at[0] * sign > front * WING ? Battalions.getStrength(battalion) : 0
+      );
       return (
         this.getLaneWorth(battle, post, via) +
-        this.getLaneWorth(battle, via, [end.block.x, end.block.y]) -
+        this.getLaneWorth(battle, via, [end.battalion.x, end.battalion.y]) -
         wing / (foe.power || 1)
       );
     };
@@ -2892,27 +2942,27 @@ class GeneralModule {
    * The wedge waits beside the line till the ride round the foe takes as long as the walk of the line to him, then
    * goes round the end of his line at the pace of its slowest and falls on his flank. Once it charges it is a wedge no more
    */
-  private moveWedge(battle: Battle, side: Side, own: View, foes: Seen, gap: number): void {
+  private moveWedge(battle: Battle, side: Side, own: SideView, foes: Seen, gap: number): void {
     const data = battle[side];
     const { plan } = data;
     const wedge = plan.wedge!;
-    const riders = own.ready.filter(block => block.order.role === "wedge" && !block.order.sent);
+    const riders = own.ready.filter(battalion => battalion.order.role === "wedge" && !battalion.order.sent);
     if (wedge.charging) {
-      if (wedge.target !== null && !this.isInOrder(battle.blocks[wedge.target])) wedge.target = null; // the riders hunt on
+      if (wedge.target !== null && !this.isInOrder(battle.battalions[wedge.target])) wedge.target = null; // the riders hunt on
       return;
     }
     const sign = plan.strike;
     const end = this.getEnd(foes, sign);
     if (!riders.length || !end) return;
     const { front } = battle.field;
-    const target = end.block;
+    const target = end.battalion;
     const via = this.getVia(battle, plan, end, sign);
     if (!wedge.launched) {
       Object.assign(wedge, this.getPost(battle, plan));
       this.keepOnField(
         battle.field,
         wedge,
-        riders.map(block => block.order)
+        riders.map(battalion => battalion.order)
       );
       if (!this.isWedgeDue(battle, side, wedge, riders, via, target, gap)) return;
       wedge.launched = true;
@@ -2923,20 +2973,22 @@ class GeneralModule {
     const outside = across * sign >= end.at[0] * sign + front && level;
     if (outside && Math.hypot(target.x - wedge.x, target.y - wedge.y) <= CHARGE * front) {
       // it falls on him once the line has him at grips, so he cannot turn to meet it, or the lines are at grips without him
-      const met = own.ready.some(block => block.order.role === "line" && !block.order.rank && block.action === "fight");
+      const met = own.ready.some(
+        battalion => battalion.order.role === "line" && !battalion.order.rank && battalion.action === "fight"
+      );
       if (target.action === "fight" || met || !data.advancing) [wedge.charging, wedge.target] = [true, target.id];
       return;
     }
     // it goes on as fast as its slowest, and waits for those left behind
-    const lags = riders.map(block => this.far(block, block.order)).sort((a, b) => a - b);
+    const lags = riders.map(battalion => this.far(battalion, battalion.order)).sort((a, b) => a - b);
     if (lags[lags.length >> 1] > front * LEVEL) {
       // held up by a fight before its time, it breaks up into it
-      if (riders.some(block => block.action === "fight")) [wedge.charging, wedge.target] = [true, target.id];
+      if (riders.some(battalion => battalion.action === "fight")) [wedge.charging, wedge.target] = [true, target.id];
       return;
     }
     const goal: Point = outside ? [target.x, target.y] : via;
     const bearing = Math.atan2(goal[1] - wedge.y, goal[0] - wedge.x);
-    const pace = Math.min(...riders.map(block => Movement.getPace(battle, block)));
+    const pace = Math.min(...riders.map(battalion => Movement.getPace(battle, battalion)));
     const advance = Math.min(pace * ROUND_TICKS, Math.hypot(goal[0] - wedge.x, goal[1] - wedge.y));
     wedge.heading = Movement.turn(wedge.heading, bearing, WEDGE_TURN);
     wedge.x += Math.cos(bearing) * advance;
@@ -2949,16 +3001,16 @@ class GeneralModule {
     battle: Battle,
     side: Side,
     wedge: Wedge,
-    riders: Block[],
+    riders: Battalion[],
     via: Point,
-    target: Block,
+    target: Battalion,
     gap: number
   ): boolean {
     const { phase, advancing } = battle[side];
     // a side that comes on times the ride by the walk of its line, even one that closes from the start
     if (phase === POSTURES[battle.type][side].close && (!advancing || !Number.isFinite(gap))) return true;
     if (!advancing || this.keepsOff(battle, side)) return false;
-    const pace = Math.min(...riders.map(block => Movement.getPace(battle, block)));
+    const pace = Math.min(...riders.map(battalion => Movement.getPace(battle, battalion)));
     const ride =
       (Math.hypot(via[0] - wedge.x, via[1] - wedge.y) + Math.hypot(target.x - via[0], target.y - via[1])) / pace;
     const walk = Math.max(gap - CHARGE * battle.field.front, 0) / PACE;
@@ -2976,7 +3028,7 @@ class GeneralModule {
     const { plan } = battle[side];
     if (!Works.mayBuild(battle, side) || !Works.isHolding(battle, side) || !Works.hasWorkLeft(battle, side))
       return false;
-    if (plan.order) return plan.order === "fortify";
+    if (plan.byHand.order) return plan.byHand.order === "fortify";
     if (plan.tactic === "wagenburg") return true;
     if (this.isFoeUpon(battle, side)) return false; // no battalion of the line could build: it fights
     if (plan.fortify) return true;
@@ -2988,15 +3040,16 @@ class GeneralModule {
   /** A foe in order could be upon a battalion of the side's line within a round: none of them would build */
   private isFoeUpon(battle: Battle, side: Side): boolean {
     const reach = CHARGE * battle.field.front;
-    const builders = battle.blocks.filter(
-      block => block.side === side && this.isInOrder(block) && Works.isBuilder(battle, block)
+    const builders = battle.battalions.filter(
+      battalion => battalion.side === side && this.isInOrder(battalion) && Works.isBuilder(battle, battalion)
     );
-    return battle.blocks.some(
+    return battle.battalions.some(
       foe =>
         foe.side !== side &&
         this.isInOrder(foe) &&
         builders.some(
-          block => Math.hypot(foe.x - block.x, foe.y - block.y) < Movement.getPace(battle, foe) * ROUND_TICKS + reach
+          battalion =>
+            Math.hypot(foe.x - battalion.x, foe.y - battalion.y) < Movement.getPace(battle, foe) * ROUND_TICKS + reach
         )
     );
   }
@@ -3007,12 +3060,14 @@ class GeneralModule {
    */
   private getFort(battle: Battle, side: Side): "batter" | "breached" | null {
     if (battle[side].storms || !this.isOpenFight(battle)) return null;
-    const engines = battle.blocks.filter(
-      block => block.side === side && this.isInOrder(block) && block.kind === "machinery"
+    const engines = battle.battalions.filter(
+      battalion => battalion.side === side && this.isInOrder(battalion) && battalion.kind === "machinery"
     );
     if (!engines.length) return null;
     // from their row behind a line halted out of the foe's reach, the engines must reach the wagons: big battalions go in
-    const reach = Math.max(...engines.map(block => Sight.getReach(battle, block) * 0.9 + block.order.along));
+    const reach = Math.max(
+      ...engines.map(battalion => Sight.getReach(battle, battalion) * 0.9 + battalion.order.along)
+    );
     if (reach < COUNTER * 2 * battle.field.front) return null;
     const wagons = battle.field.works.filter(work => work.side !== side && work.kind === "wagons" && work.up);
     if (!wagons.some(work => Battlefields.isStanding(work))) return null;

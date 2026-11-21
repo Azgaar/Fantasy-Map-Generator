@@ -44,6 +44,13 @@ class DatesModule {
     return this.isValid(parts) ? parts : null;
   }
 
+  /** The parts of a date; throws a readable error when the text is not one */
+  require(date: string): DateParts {
+    const parts = this.parse(date);
+    if (!parts) throw new Error(`"${date}" is not a date: write a year such as 120, or 120-03-14, or 120-03-14T10:00`);
+    return parts;
+  }
+
   /** The text of the parts, as exact as they are given: a day needs a month, a time a day */
   write(parts: DateParts): string {
     let text = String(Math.trunc(parts.year));
@@ -206,12 +213,6 @@ class DatesModule {
   private compareKeys(a: number[], b: number[]): number {
     for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i];
     return 0;
-  }
-
-  private require(date: string): DateParts {
-    const parts = this.parse(date);
-    if (!parts) throw new Error(`"${date}" is not a date: write a year such as 120, or 120-03-14, or 120-03-14T10:00`);
-    return parts;
   }
 }
 

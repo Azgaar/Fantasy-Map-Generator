@@ -108,12 +108,13 @@ class BattleReportExport {
 
     for (;;) {
       if (battle.tick % ROUND_TICKS === 0) {
-        for (const block of battle.blocks) trails.set(block.id, [...(trails.get(block.id) ?? []), [block.x, block.y]]);
+        for (const battalion of battle.battalions)
+          trails.set(battalion.id, [...(trails.get(battalion.id) ?? []), [battalion.x, battalion.y]]);
       }
       if (keys.has(battle.tick)) {
         const { field } = battle;
-        stage.placeBlocks(); // drawn anew, reinforcements too: those destroyed since the last keyframe are gone
-        const troops = BattleCamera.toCameraTroops(battle.blocks);
+        stage.placeBattalions(); // drawn anew, reinforcements too: those destroyed since the last keyframe are gone
+        const troops = BattleCamera.toCameraTroops(battle.battalions);
         const view =
           choice.camera === "field" ? BattleCamera.getSceneBox(field) : BattleCamera.frameTroops(field, troops);
         BattleSceneView.setView(stage.svg, field, view);
@@ -127,7 +128,7 @@ class BattleReportExport {
         const lines = battle.log.slice(logged);
         logged = battle.log.length;
         frames.push({ clock, svg, lines });
-        trails = new Map(battle.blocks.map(block => [block.id, [[block.x, block.y] as Point]]));
+        trails = new Map(battle.battalions.map(battalion => [battalion.id, [[battalion.x, battalion.y] as Point]]));
       }
       if (battle.result || battle.tick >= end) break;
       if (signal.aborted) return null;

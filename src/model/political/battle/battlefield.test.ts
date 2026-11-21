@@ -203,7 +203,7 @@ describe("wagon ring", () => {
       b.field.works = [];
       Works.layWorks(b, "defenders");
       const wagons = b.field.works.filter(work => work.side === "defenders");
-      const ring = b.blocks.filter(block => block.side === "defenders" && block.order.rank === 0);
+      const ring = b.battalions.filter(battalion => battalion.side === "defenders" && battalion.order.rank === 0);
       expect(ring.length).toBe(3);
       for (const wagon of wagons) expect(wagons.filter(other => other.a === wagon.b)).toHaveLength(1); // closed
       for (const { order, depth, width, key } of ring) {

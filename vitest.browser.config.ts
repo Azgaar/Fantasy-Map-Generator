@@ -2,7 +2,17 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import { playwright } from '@vitest/browser-playwright'
 
+// vite.config.ts builds this module from docs/updates. Without it the dependency scan fails, deps get found
+// mid-run and Vite reloads the test iframes, so files randomly never start
+const latestUpdateStub = {
+  name: 'latest-update-stub',
+  resolveId: (id: string) => (id === 'virtual:latest-update' ? '\0virtual:latest-update' : undefined),
+  load: (id: string) =>
+    id === '\0virtual:latest-update' ? 'export default { version: "0.0.0", title: "", image: "" }' : undefined
+}
+
 export default defineConfig({
+  plugins: [latestUpdateStub],
   // keep in sync with vite.config.ts/vitest.config.ts, or an `@/…` import resolves in the app
   // but not under this browser test run
   resolve: {

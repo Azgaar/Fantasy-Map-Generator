@@ -1,7 +1,7 @@
 // What battalions see: as far as the light and the sky let them, a foe in cover or lying in wait nearer, one with
 // torches lit in the dark further. The generals see all. See docs/domain/battles.md#sight
 
-import type { Battle, Block } from "./battle";
+import type { Battalion, Battle } from "./battle";
 import type { Side } from "./battle-rules";
 import { Battlefields } from "./battlefield";
 import { ROUND_TICKS } from "./movement";
@@ -39,7 +39,7 @@ class SightModule {
   }
 
   /** How far a foe is seen: nearer in woods or houses and lying in wait, further with its torches lit in the dark */
-  getSeenAt(battle: Battle, foe: Block): number {
+  getSeenAt(battle: Battle, foe: Battalion): number {
     if (!this.isLimited(battle)) return Infinity;
     const node = Battlefields.nodeAt(battle.field, foe.x, foe.y);
     const covered = battle.field.wood[node] || battle.field.burg[node] ? COVER : 1;
@@ -53,32 +53,37 @@ class SightModule {
   }
 
   /** A battalion sees a foe itself */
-  sees(battle: Battle, block: Block, foe: Block): boolean {
-    return Math.hypot(foe.x - block.x, foe.y - block.y) <= this.getSeenAt(battle, foe);
+  sees(battle: Battle, battalion: Battalion, foe: Battalion): boolean {
+    return Math.hypot(foe.x - battalion.x, foe.y - battalion.y) <= this.getSeenAt(battle, foe);
   }
 
   /** What a battalion knows of a foe: what it sees, what friends saw last round, and whom it is pointed at */
-  knows(battle: Battle, block: Block, foe: Block): boolean {
+  knows(battle: Battle, battalion: Battalion, foe: Battalion): boolean {
     if (!this.isLimited(battle)) return true;
-    if (block.order.target === foe.id || block.task?.target === foe.id) return true;
-    return this.getKnown(battle, block.side).has(foe.id) || this.sees(battle, block, foe);
+    if (battalion.order.target === foe.id || battalion.byHand.task?.target === foe.id) return true;
+    return this.getKnown(battle, battalion.side).has(foe.id) || this.sees(battle, battalion, foe);
   }
 
   /** How far a battalion's shots reach with the light and the sky shortening them: at a foe with torches lit, or without */
-  getReach(battle: Battle, block: Block, lit = false): number {
-    if (!this.isLimited(battle)) return block.range;
-    return Math.min(block.range, this.getSight(battle, lit));
+  getReach(battle: Battle, battalion: Battalion, lit = false): number {
+    if (!this.isLimited(battle)) return battalion.stats.range;
+    return Math.min(battalion.stats.range, this.getSight(battle, lit));
   }
 
   /** In the dark every battalion carries torches but those lying in wait and stormers stealing up to the walls */
-  isLit(battle: Battle, block: Block): boolean {
-    if (this.getDaylight(battle) >= 1 || this.isLying(battle, block)) return false;
-    return !(battle.type === "siege" && block.side === "attackers" && battle.attackers.phase === "storming");
+  isLit(battle: Battle, battalion: Battalion): boolean {
+    if (this.getDaylight(battle) >= 1 || this.isLying(battle, battalion)) return false;
+    return !(battle.type === "siege" && battalion.side === "attackers" && battle.attackers.phase === "storming");
   }
 
   /** Ambushers keep still and dark where they lie till the first blow is struck */
-  private isLying(battle: Battle, block: Block): boolean {
-    return battle.type === "ambush" && block.side === "defenders" && battle.engaged === null && block.action === "hold";
+  private isLying(battle: Battle, battalion: Battalion): boolean {
+    return (
+      battle.type === "ambush" &&
+      battalion.side === "defenders" &&
+      battle.engaged === null &&
+      battalion.action === "hold"
+    );
   }
 
   /** The foes a side's battalions in order saw at the start of the round, word of them passed along the line */
@@ -87,11 +92,13 @@ class SightModule {
     let known = this.known.get(battle);
     if (!known || known.round !== round) {
       const sides = { attackers: new Set<number>(), defenders: new Set<number>() };
-      const present = battle.blocks.filter(block => block.status === "ready" || block.status === "routed");
-      for (const block of present) {
-        if (block.status !== "ready") continue;
+      const present = battle.battalions.filter(
+        battalion => battalion.status === "ready" || battalion.status === "routed"
+      );
+      for (const battalion of present) {
+        if (battalion.status !== "ready") continue;
         for (const foe of present)
-          if (foe.side !== block.side && this.sees(battle, block, foe)) sides[block.side].add(foe.id);
+          if (foe.side !== battalion.side && this.sees(battle, battalion, foe)) sides[battalion.side].add(foe.id);
       }
       known = { round, sides };
       this.known.set(battle, known);

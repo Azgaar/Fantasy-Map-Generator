@@ -2,6 +2,31 @@ import { minmax } from "@/utils/number-utils";
 export type Side = "attackers" | "defenders";
 export type BattleType = "field" | "naval" | "siege" | "ambush" | "landing" | "bombardment" | "air";
 export type Stance = "hold" | "shoot" | "advance" | "flee";
+export type Phase =
+  | "skirmish"
+  | "melee"
+  | "pursue"
+  | "retreat"
+  | "feint"
+  | "surrendering"
+  | "shelling"
+  | "boarding"
+  | "chase"
+  | "withdrawal"
+  | "blockade"
+  | "bombardment"
+  | "storming"
+  | "looting"
+  | "sheltering"
+  | "sortie"
+  | "defense"
+  | "shock"
+  | "surprise"
+  | "landing"
+  | "flee"
+  | "waiting"
+  | "maneuvering"
+  | "dogfight";
 
 export const SIDES: Side[] = ["attackers", "defenders"];
 export const BATTLE_TYPES: BattleType[] = ["field", "naval", "siege", "ambush", "landing", "bombardment", "air"];
@@ -10,34 +35,34 @@ export const SURRENDER = "surrendering"; // the phase a side lays down its arms 
 export const FEINT = "feint"; // a field side that runs to draw the foe out, and turns on him
 
 /** Phases a side can be in, the first one is where it starts */
-export const PHASES: Record<BattleType, Record<Side, string[]>> = {
+export const PHASES: Record<BattleType, Record<Side, Phase[]>> = {
   field: {
-    attackers: ["skirmish", "melee", "pursue", "retreat", FEINT, "surrendering"],
-    defenders: ["skirmish", "melee", "pursue", "retreat", FEINT, "surrendering"]
+    attackers: ["skirmish", "melee", "pursue", "retreat", FEINT, SURRENDER],
+    defenders: ["skirmish", "melee", "pursue", "retreat", FEINT, SURRENDER]
   },
   naval: {
-    attackers: ["shelling", "boarding", "chase", "withdrawal", "surrendering"],
-    defenders: ["shelling", "boarding", "chase", "withdrawal", "surrendering"]
+    attackers: ["shelling", "boarding", "chase", "withdrawal", SURRENDER],
+    defenders: ["shelling", "boarding", "chase", "withdrawal", SURRENDER]
   },
   siege: {
-    attackers: ["blockade", "bombardment", "storming", "looting", "retreat", "surrendering"],
-    defenders: ["sheltering", "sortie", "bombardment", "defense", "surrendering", "pursue"]
+    attackers: ["blockade", "bombardment", "storming", "looting", "retreat", SURRENDER],
+    defenders: ["sheltering", "sortie", "bombardment", "defense", SURRENDER, "pursue"]
   },
   ambush: {
-    attackers: ["shock", "melee", "pursue", "retreat", "surrendering"],
-    defenders: ["surprise", "melee", "pursue", "retreat", "surrendering"]
+    attackers: ["shock", "melee", "pursue", "retreat", SURRENDER],
+    defenders: ["surprise", "melee", "pursue", "retreat", SURRENDER]
   },
   landing: {
-    attackers: ["landing", "melee", "pursue", "flee", "surrendering"],
-    defenders: ["defense", "melee", "waiting", "pursue", "retreat", "surrendering"]
+    attackers: ["landing", "melee", "pursue", "flee", SURRENDER],
+    defenders: ["defense", "melee", "waiting", "pursue", "retreat", SURRENDER]
   },
   bombardment: {
-    attackers: ["bombardment", "withdrawal", "surrendering"],
-    defenders: ["defense", "retreat", "surrendering"]
+    attackers: ["bombardment", "withdrawal", SURRENDER],
+    defenders: ["defense", "retreat", SURRENDER]
   },
   air: {
-    attackers: ["maneuvering", "dogfight", "pursue", "retreat", "surrendering"],
-    defenders: ["maneuvering", "dogfight", "pursue", "retreat", "surrendering"]
+    attackers: ["maneuvering", "dogfight", "pursue", "retreat", SURRENDER],
+    defenders: ["maneuvering", "dogfight", "pursue", "retreat", SURRENDER]
   }
 };
 
@@ -45,7 +70,7 @@ export const PHASES: Record<BattleType, Record<Side, string[]>> = {
 export type Command = "hold" | "fortify" | "skirmish" | "attack" | "defend" | "pursue" | "retreat" | "surrender";
 
 /** The order a phase carries out; any other phase is an attack */
-const PHASE_COMMAND: Record<string, Command> = {
+const PHASE_COMMAND: Partial<Record<Phase, Command>> = {
   blockade: "hold",
   sheltering: "hold",
   waiting: "hold",
@@ -62,7 +87,7 @@ const PHASE_COMMAND: Record<string, Command> = {
   withdrawal: "retreat",
   flee: "retreat",
   [FEINT]: "retreat", // to the foe and to the eye
-  surrendering: "surrender"
+  [SURRENDER]: "surrender"
 };
 
 /** What troops do on the battlefield under an order */
@@ -79,10 +104,10 @@ const COMMAND_STANCE: Record<Command, Stance> = {
 
 /** What the phases of a battle type are to a general: standing off, closing, chasing, running */
 export interface Postures {
-  apart: string;
-  close: string;
-  chase: string;
-  run: string;
+  apart: Phase;
+  close: Phase;
+  chase: Phase;
+  run: Phase;
 }
 
 const FIELD_POSTURES: Postures = { apart: "skirmish", close: "melee", chase: "pursue", run: "retreat" };
@@ -94,7 +119,7 @@ export const POSTURES: Record<BattleType, Record<Side, Postures>> = {
   naval: { attackers: NAVAL_POSTURES, defenders: NAVAL_POSTURES },
   siege: {
     attackers: { apart: "blockade", close: "storming", chase: "looting", run: "retreat" },
-    defenders: { apart: "sheltering", close: "defense", chase: "pursue", run: "surrendering" }
+    defenders: { apart: "sheltering", close: "defense", chase: "pursue", run: SURRENDER }
   },
   ambush: {
     attackers: { apart: "shock", close: "melee", chase: "pursue", run: "retreat" },
@@ -112,7 +137,7 @@ export const POSTURES: Record<BattleType, Record<Side, Postures>> = {
   air: { attackers: AIR_POSTURES, defenders: AIR_POSTURES }
 };
 
-type Commands = Partial<Record<Command, string>>;
+type Commands = Partial<Record<Command, Phase>>;
 
 // a side that may build works is told to in its holding phase
 const FIELD_COMMANDS: Commands = {
@@ -211,12 +236,12 @@ class BattleRulesModule {
     return side === "attackers" ? "defenders" : "attackers";
   }
 
-  getStance(phase: string): Stance {
+  getStance(phase: Phase): Stance {
     return COMMAND_STANCE[PHASE_COMMAND[phase] ?? "attack"];
   }
 
   /** A side that sits it out: a blockade, the shelter of the walls, a shore the foe has left. It holds its fire */
-  isIdle(phase: string): boolean {
+  isIdle(phase: Phase): boolean {
     return PHASE_COMMAND[phase] === "hold";
   }
 
@@ -234,7 +259,7 @@ class BattleRulesModule {
    * The order a side is under, by its phase: one that waits for the foe holds where it would skirmish and defends where
    * it would attack; in a siege the phase says it all
    */
-  getCommand(type: BattleType, phase: string, advancing: boolean): Command {
+  getCommand(type: BattleType, phase: Phase, advancing: boolean): Command {
     const command = PHASE_COMMAND[phase] ?? "attack";
     if (advancing || type === "siege") return command;
     return command === "skirmish" ? "hold" : command === "attack" ? "defend" : command;
@@ -252,7 +277,7 @@ class BattleRulesModule {
   }
 
   /** A side that turned to run or laid down its arms: it neither fights on nor holds the field */
-  isBeaten(type: BattleType, side: Side, phase: string): boolean {
+  isBeaten(type: BattleType, side: Side, phase: Phase): boolean {
     return phase === POSTURES[type][side].run || phase === SURRENDER;
   }
 

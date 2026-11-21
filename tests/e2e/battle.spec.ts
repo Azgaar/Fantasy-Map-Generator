@@ -53,7 +53,7 @@ test.describe("Battle simulator", () => {
     await startBattle(page);
     await expect(page.locator("#battleScreen")).toBeVisible();
     await expect(page.locator("#battleTerrain")).toHaveCount(1);
-    expect(await page.locator("#battleScene .battleBlock").count()).toBeGreaterThan(1);
+    expect(await page.locator("#battleScene .battleBattalion").count()).toBeGreaterThan(1);
 
     await pickType(page, "field");
     await expect(page.locator("#battleType")).toBeEnabled();
@@ -74,14 +74,14 @@ test.describe("Battle simulator", () => {
 
   test("lets troops be dragged before the battle", async ({ page }) => {
     await startBattle(page);
-    const block = page.locator("#battleScene .battleBlock").first();
-    const before = await block.getAttribute("transform");
-    const box = (await block.boundingBox())!;
+    const battalion = page.locator("#battleScene .battleBattalion").first();
+    const before = await battalion.getAttribute("transform");
+    const box = (await battalion.boundingBox())!;
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 + 40, { steps: 5 });
     await page.mouse.up();
-    expect(await block.getAttribute("transform")).not.toBe(before);
+    expect(await battalion.getAttribute("transform")).not.toBe(before);
   });
 
   test("picks troops by a box and commands them once the battle has started", async ({ page }) => {
@@ -108,10 +108,10 @@ test.describe("Battle simulator", () => {
 
   test("turns a battalion by 15 degrees on a double click and writes it to the log", async ({ page }) => {
     await startBattle(page);
-    const block = page.locator("#battleScene .battleBlock").first();
-    const rotation = async () => +(await block.getAttribute("transform"))!.match(/rotate\(([-\d.]+)\)/)![1];
+    const battalion = page.locator("#battleScene .battleBattalion").first();
+    const rotation = async () => +(await battalion.getAttribute("transform"))!.match(/rotate\(([-\d.]+)\)/)![1];
     const before = await rotation();
-    await block.dblclick();
+    await battalion.dblclick();
     expect((((await rotation()) - before) % 360 + 360) % 360).toBeCloseTo(15, 0);
 
     await openLog(page);
@@ -280,6 +280,7 @@ test.describe("Battle simulator", () => {
   });
 
   test("keeps a played battle through a save and a load, and its replay plays out as recorded", async ({ page }) => {
+    test.setTimeout(120000); // two battles and a map load
     await startBattle(page);
     await pickType(page, "field");
     await orderAttack(page);

@@ -24,7 +24,7 @@ export const THROWN = { reach: 25, strength: 0.5 }; // stones and spears from th
 
 // Reach
 
-export const CONTACT = 12; // gap at which blocks fight
+export const CONTACT = 12; // gap at which battalions fight
 // in battalion fronts
 export const CHARGE = 2.75; // how far from its place a battalion goes for a foe when its side closes
 export const COUNTER = 1; // and when it holds
@@ -32,7 +32,7 @@ export const CHARGE_HASTE = 3; // how much faster than its pace a battalion runs
 
 // Morale
 
-export const MORALE_LOSS = 300; // morale a block loses when all its troops fall
+export const MORALE_LOSS = 300; // morale a battalion loses when all its troops fall
 export const NERVE = 12; // morale a round the odds at hand give or take, at most half of it
 export const REST = 4; // morale a round a battalion left alone recovers
 export const SHAKEN = 30; // morale under which a battalion does not attack
@@ -63,7 +63,7 @@ export const FLIGHT = 1.2; // of its pace, how fast a broken battalion runs
 export const WADING = 0.12; // share of the pace kept in deep water
 export const FORDING = 0.4; // and in a ford
 export const RUBBLE = 0.5; // and over the rubble of a breach
-export const SLOPE_FOOTING = 0.5; // the least of its strength a block keeps on a steep slope
+export const SLOPE_FOOTING = 0.5; // the least of its strength a battalion keeps on a steep slope
 export const STORM_FOOTING = { wall: 0.25, gate: 0.5 }; // and a stormer on ladders and the wall top, or in a gate it forces
 
 // The generals' odds: own power to the foe's

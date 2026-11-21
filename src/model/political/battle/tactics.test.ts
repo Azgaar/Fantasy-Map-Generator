@@ -59,8 +59,10 @@ const setup = (
     defenders: [regiment(2, defenders)]
   });
 const mixed = { infantry: 2400, archers: 900, cavalry: 600 };
-const firstLine = (b: Battle, side: "attackers" | "defenders"): Battle["blocks"] =>
-  b.blocks.filter(block => block.side === side && block.order.rank === 0 && block.order.role === "line");
+const firstLine = (b: Battle, side: "attackers" | "defenders"): Battle["battalions"] =>
+  b.battalions.filter(
+    battalion => battalion.side === side && battalion.order.rank === 0 && battalion.order.role === "line"
+  );
 
 /** The sea on the attackers' side, its shore winding */
 const coast = (): Battlefield => {
@@ -83,10 +85,10 @@ describe("a landing met at the water's edge", () => {
     b.planned = true;
     const line = firstLine(b, "defenders");
     expect(line.length).toBeGreaterThan(3);
-    for (const block of line) {
-      const distance = fromWater(b.field, block.x, block.y);
-      expect(distance).toBeGreaterThan(block.depth * 0.4);
-      expect(distance).toBeLessThan(block.depth * 2.5);
+    for (const battalion of line) {
+      const distance = fromWater(b.field, battalion.x, battalion.y);
+      expect(distance).toBeGreaterThan(battalion.depth * 0.4);
+      expect(distance).toBeLessThan(battalion.depth * 2.5);
     }
   });
 
@@ -97,10 +99,10 @@ describe("a landing met at the water's edge", () => {
     let wading = 0;
     while (!b.result && b.tick < 600) {
       Battles.tick(b);
-      for (const block of b.blocks) {
-        if (block.side !== "attackers" || block.action !== "fight") continue;
-        expect(Movement.isAboard(b, block)).toBe(false);
-        if (Battlefields.terrainAt(b.field, block.x, block.y).shallow) wading++;
+      for (const battalion of b.battalions) {
+        if (battalion.side !== "attackers" || battalion.action !== "fight") continue;
+        expect(Movement.isAboard(b, battalion)).toBe(false);
+        if (Battlefields.terrainAt(b.field, battalion.x, battalion.y).shallow) wading++;
       }
     }
     expect(wading).toBeGreaterThan(10); // the shore is fought for in the shallows
@@ -109,7 +111,7 @@ describe("a landing met at the water's edge", () => {
   it("lets no blow pass between a boat and the shore, and leaves who wades half as strong", () => {
     const b = setup("landing", mixed, mixed, coast());
     b.planned = true;
-    const [boat] = b.blocks.filter(block => block.side === "attackers");
+    const [boat] = b.battalions.filter(battalion => battalion.side === "attackers");
     const [foe] = firstLine(b, "defenders");
     // wading right before the foe: at grips, at half the footing
     Object.assign(boat, { x: foe.x - foe.depth - 8, y: foe.y, facing: 0 });
@@ -143,14 +145,14 @@ describe("a line along the brow", () => {
     const b = setup("field", mixed, mixed, ridge());
     expect(["defensiveLine", "refusedFlanks"]).toContain(b.defenders.plan.tactic);
     const line = firstLine(b, "defenders");
-    const heights = line.map(block => Battlefields.getElevation(b.field, block.x, block.y));
+    const heights = line.map(battalion => Battlefields.getElevation(b.field, battalion.x, battalion.y));
     expect(Math.min(...heights)).toBeGreaterThan(b.field.relief * 0.8);
   });
 
   it("leaves a line on flat ground straight", () => {
     const b = setup("field", mixed, mixed, Battlefields.createEmpty());
     const line = firstLine(b, "defenders");
-    const along = line.map(block => block.order.along);
+    const along = line.map(battalion => battalion.order.along);
     const bow = b.defenders.plan.tactic === "defensiveLine";
     if (bow) expect(Math.max(...along) - Math.min(...along)).toBeLessThan(1);
   });
@@ -169,23 +171,23 @@ describe("a flying wedge", () => {
 
   it("is weighed by a general strong in riders", () => {
     const b = setup("field", riders, foes, Battlefields.createEmpty());
-    expect(Generals.getOptions(b, "attackers").map(option => option.tactic)).toContain("flyingWedge");
+    expect(Generals.getChoices(b, "attackers").map(choice => choice.tactic)).toContain("flyingWedge");
     const few = setup("field", { infantry: 3000, archers: 600, cavalry: 300 }, foes, Battlefields.createEmpty());
-    expect(Generals.getOptions(few, "attackers").map(option => option.tactic)).not.toContain("flyingWedge");
+    expect(Generals.getChoices(few, "attackers").map(choice => choice.tactic)).not.toContain("flyingWedge");
   });
 
   it("draws the riders up in a wedge apart from the line, its point ahead", () => {
     const b = wedge();
-    const wedged = b.blocks.filter(block => block.side === "attackers" && block.kind === "mounted");
+    const wedged = b.battalions.filter(battalion => battalion.side === "attackers" && battalion.kind === "mounted");
     expect(wedged.length).toBeGreaterThanOrEqual(3);
-    expect(wedged.every(block => block.order.role === "wedge")).toBe(true);
-    const point = wedged.find(block => block.order.along === 0 && block.order.across === 0)!;
+    expect(wedged.every(battalion => battalion.order.role === "wedge")).toBe(true);
+    const point = wedged.find(battalion => battalion.order.along === 0 && battalion.order.across === 0)!;
     expect(point).toBeDefined();
-    for (const block of wedged) if (block !== point) expect(block.order.along).toBeLessThan(0);
+    for (const battalion of wedged) if (battalion !== point) expect(battalion.order.along).toBeLessThan(0);
     // beyond the end of the line
     const line = firstLine(b, "attackers");
-    const ends = line.map(block => block.y);
-    const outside = wedged.every(block => block.y > Math.max(...ends) || block.y < Math.min(...ends));
+    const ends = line.map(battalion => battalion.y);
+    const outside = wedged.every(battalion => battalion.y > Math.max(...ends) || battalion.y < Math.min(...ends));
     expect(outside).toBe(true);
   });
 
@@ -204,7 +206,7 @@ describe("a flying wedge", () => {
         const { x, y, heading, half } = b.defenders.plan;
         const across = (point: { x: number; y: number }): number =>
           -Math.sin(heading) * (point.x - x) + Math.cos(heading) * (point.y - y);
-        const end = across(b.blocks[struck]);
+        const end = across(b.battalions[struck]);
         flank = Math.sign(across(plan.wedge)) === Math.sign(end) && Math.abs(across(plan.wedge)) > half;
       }
       expect(struck, `axis ${axis}`).not.toBeNull();
@@ -226,9 +228,9 @@ describe("a feigned retreat", () => {
 
   it("is weighed by a general strong in riders, in the field only", () => {
     const b = setup("field", riders, foes, Battlefields.createEmpty());
-    expect(Generals.getOptions(b, "attackers").map(option => option.tactic)).toContain("feignedRetreat");
+    expect(Generals.getChoices(b, "attackers").map(choice => choice.tactic)).toContain("feignedRetreat");
     const few = setup("field", { infantry: 3000, archers: 600, cavalry: 300 }, foes, Battlefields.createEmpty());
-    expect(Generals.getOptions(few, "attackers").map(option => option.tactic)).not.toContain("feignedRetreat");
+    expect(Generals.getChoices(few, "attackers").map(choice => choice.tactic)).not.toContain("feignedRetreat");
     const air = setup("air", riders, foes, Battlefields.createEmpty("sky"));
     expect(Generals.getTactics(air, "attackers")).not.toContain("feignedRetreat");
   });
@@ -243,7 +245,9 @@ describe("a feigned retreat", () => {
       if (b.attackers.phase === "feint") {
         chased ||= b.defenders.phase === "pursue";
         expect(Generals.getOrder(b, "attackers")).toBe("retreat"); // it looks like one
-        expect(b.blocks.some(block => block.side === "attackers" && block.status === "fled")).toBe(false); // on the field
+        expect(b.battalions.some(battalion => battalion.side === "attackers" && battalion.status === "fled")).toBe(
+          false
+        ); // on the field
       }
     }
     const events = b.log.filter(entry => ["feint", "turned", "broken"].includes(entry.event));
@@ -255,10 +259,10 @@ describe("a feigned retreat", () => {
     expect(b.attackers.phase).toBe("melee");
     const [x, y] = lure!;
     const out = (): number => {
-      const ready = b.blocks.filter(block => block.side === "defenders" && block.status === "ready");
-      const troops = ready.reduce((total, block) => total + block.troops, 0);
+      const ready = b.battalions.filter(battalion => battalion.side === "defenders" && battalion.status === "ready");
+      const troops = ready.reduce((total, battalion) => total + battalion.troops, 0);
       const middle = ready.reduce(
-        (at, block) => [at[0] + block.x * block.troops, at[1] + block.y * block.troops],
+        (at, battalion) => [at[0] + battalion.x * battalion.troops, at[1] + battalion.y * battalion.troops],
         [0, 0]
       );
       return Math.hypot(middle[0] / troops - x, middle[1] / troops - y);
@@ -302,7 +306,7 @@ describe("a strategic retreat", () => {
       expect(b.log.find(entry => entry.event === "tactic" && entry.side === side)?.params?.tactic).toBe(
         "strategicRetreat"
       );
-      expect(Generals.getOptions(b, side)).toEqual([]); // nothing to think through
+      expect(Generals.getChoices(b, side)).toEqual([]); // nothing to think through
       expect(Generals.getTactics(b, side)[0]).toBe("strategicRetreat");
       expect(firstOrder(b, side), side).toBe("retreat");
       expect(b.log.some(entry => entry.event === "broken")).toBe(false); // it leaves as it meant to
@@ -358,7 +362,7 @@ describe("a general's orders", () => {
     b.planned = true; // at odds of 0.85 its general attacks
     Battles.intervene(b, { tick: 0, kind: "order", side: "attackers", order: "hold" });
     while (b.round <= b.settings.orderRounds && !b.result) Battles.tick(b);
-    expect([b.attackers.plan.order, b.attackers.advancing]).toEqual([null, true]);
+    expect([b.attackers.plan.byHand.order, b.attackers.advancing]).toEqual([null, true]);
     Battles.replay(b, []);
     expect(b.result!.winner).not.toBeNull(); // fought out, not a standoff
   });
@@ -370,11 +374,11 @@ describe("a general's orders", () => {
     const before = { idle: plan.idle, x: plan.x, y: plan.y, heading: plan.heading };
     const order = () => Battles.intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "attack" });
     order();
-    const orders = JSON.stringify(b.blocks.map(block => block.order));
+    const orders = JSON.stringify(b.battalions.map(battalion => battalion.order));
     order();
     order();
     expect({ idle: plan.idle, x: plan.x, y: plan.y, heading: plan.heading }).toEqual(before);
-    expect(JSON.stringify(b.blocks.map(block => block.order))).toBe(orders);
+    expect(JSON.stringify(b.battalions.map(battalion => battalion.order))).toBe(orders);
   });
 
   it("has an attacker with the worse fire close at once rather than trade shots", () => {

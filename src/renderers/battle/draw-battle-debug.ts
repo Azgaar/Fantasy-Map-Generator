@@ -8,10 +8,9 @@ import { type Battlefield, Battlefields, type FieldWork } from "@/model/politica
 import { Movement } from "@/model/political/battle/movement";
 import { BattleTime } from "@/model/political/battle/time";
 import { Works } from "@/model/political/battle/works";
+import type { Positions } from "@/renderers/battle/draw-battle-scene";
 import { log } from "@/utils/logger";
 import { escapeHtml } from "@/utils/string-utils";
-
-type Places = Map<number, { x: number; y: number; facing: number }>;
 
 // works by what they do
 const WORKS: [name: string, color: string, is: (work: FieldWork) => boolean][] = [
@@ -48,10 +47,10 @@ class BattleDebugRenderer {
   }
 
   /**
-   * Draw or clear the diagnostics; called with the blocks, at the places they are drawn.
+   * Draw or clear the diagnostics; called with the battalions, at the places they are drawn.
    * `pt`: what a mark's point is in metres, as the scene sizes its marks
    */
-  update(svg: SVGSVGElement, battle: Battle, at: Places, pt: number): void {
+  update(svg: SVGSVGElement, battle: Battle, at: Positions, pt: number): void {
     const root = select(svg);
     if (!log.debug.battle) {
       if (!svg.querySelector(".battleDebug")) return;
@@ -190,51 +189,54 @@ class BattleDebugRenderer {
   }
 
   /** Where every battalion is going and what it is at, and the state of the battle */
-  private getDoings(battle: Battle, at: Places, pt: number): string {
+  private getDoings(battle: Battle, at: Positions, pt: number): string {
     const HALO = this.halo(pt);
     let html = this.getWorks(battle, pt);
-    const byId = new Map(battle.blocks.map(block => [block.id, block]));
+    const byId = new Map(battle.battalions.map(battalion => [battalion.id, battalion]));
 
-    for (const block of battle.blocks) {
-      if (block.status === "fled" || block.status === "destroyed") continue;
-      const { x, y, facing } = at.get(block.id) ?? block;
-      const target = block.target === null ? null : byId.get(block.target);
+    for (const battalion of battle.battalions) {
+      if (battalion.status === "fled" || battalion.status === "destroyed") continue;
+      const { x, y, facing } = at.get(battalion.id) ?? battalion;
+      const target = battalion.target === null ? null : byId.get(battalion.target);
       if (target) {
         const to = at.get(target.id) ?? target;
         // a blow or a shot the target's wagons weaken is drawn in their colour
-        const striking = block.action === "fight" || block.action === "shoot";
-        const sheltered = striking && Works.getShelter(battle, block, target) < 1;
+        const striking = battalion.action === "fight" || battalion.action === "shoot";
+        const sheltered = striking && Works.getShelter(battle, battalion, target) < 1;
         const works = sheltered
-          ? Battlefields.getWorksBetween(battle.field, [block.x, block.y], [target.x, target.y], target.side).filter(
-              work => work.kind === "wagons"
-            )
+          ? Battlefields.getWorksBetween(
+              battle.field,
+              [battalion.x, battalion.y],
+              [target.x, target.y],
+              target.side
+            ).filter(work => work.kind === "wagons")
           : [];
         const color = works.length ? this.getWorkColor(works[0]) : "#000";
         html += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}L${to.x.toFixed(1)} ${to.y.toFixed(1)}" stroke="${color}" stroke-width="${(works.length ? 1 : 0.5) * pt}" stroke-opacity="${works.length ? 0.9 : 0.45}" stroke-dasharray="${pt} ${3 * pt}"/>`;
       }
-      if (block.action === "build") {
-        const work = Works.findStretch(battle, block);
+      if (battalion.action === "build") {
+        const work = Works.findStretch(battle, battalion);
         if (work) {
           const [mx, my] = [(work.a[0] + work.b[0]) / 2, (work.a[1] + work.b[1]) / 2];
           html += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}L${mx.toFixed(1)} ${my.toFixed(1)}" stroke="${this.getWorkColor(work)}" stroke-width="${0.5 * pt}"/>`;
         }
       }
-      const way = Movement.getWay(battle, block);
+      const way = Movement.getWay(battle, battalion);
       if (way.length) {
         const points = [[x, y], ...way].map(point => point.map(v => v.toFixed(1)).join(" ")).join("L");
         html += `<path d="M${points}" fill="none" stroke="#c7128a" stroke-width="${1.1 * pt}"/>`;
         html += way.map(([wx, wy]) => `<circle cx="${wx}" cy="${wy}" r="${1.6 * pt}" fill="#c7128a"/>`).join("");
       }
       // its place in the formation, or the point the general sent it round by
-      if (block.status === "ready" && Math.hypot(block.order.x - x, block.order.y - y) > 6 * pt) {
-        html += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}L${block.order.x.toFixed(1)} ${block.order.y.toFixed(1)}" stroke="#1a9e3a" stroke-width="${0.6 * pt}" stroke-opacity="0.7"/>`;
-        html += `<circle cx="${block.order.x.toFixed(1)}" cy="${block.order.y.toFixed(1)}" r="${1.4 * pt}" fill="#1a9e3a"/>`;
+      if (battalion.status === "ready" && Math.hypot(battalion.order.x - x, battalion.order.y - y) > 6 * pt) {
+        html += `<path d="M${x.toFixed(1)} ${y.toFixed(1)}L${battalion.order.x.toFixed(1)} ${battalion.order.y.toFixed(1)}" stroke="#1a9e3a" stroke-width="${0.6 * pt}" stroke-opacity="0.7"/>`;
+        html += `<circle cx="${battalion.order.x.toFixed(1)}" cy="${battalion.order.y.toFixed(1)}" r="${1.4 * pt}" fill="#1a9e3a"/>`;
       }
-      const sent = block.order.sent ? "!" : "";
-      const mark = block.status === "routed" ? "routed" : `${block.order.mission}${sent} ${block.action}`;
-      // right over the block, whatever way it is turned
-      const top = (Math.abs(Math.sin(facing)) * block.depth + Math.abs(Math.cos(facing)) * block.width) / 2;
-      html += `<text x="${x.toFixed(1)}" y="${(y - top - 1.5 * pt).toFixed(1)}" font-size="${7.5 * pt}" text-anchor="middle" ${HALO}>${mark} ♥${Math.round(block.morale)}</text>`;
+      const sent = battalion.order.sent ? "!" : "";
+      const mark = battalion.status === "routed" ? "routed" : `${battalion.order.mission}${sent} ${battalion.action}`;
+      // right over the battalion, whatever way it is turned
+      const top = (Math.abs(Math.sin(facing)) * battalion.depth + Math.abs(Math.cos(facing)) * battalion.width) / 2;
+      html += `<text x="${x.toFixed(1)}" y="${(y - top - 1.5 * pt).toFixed(1)}" font-size="${7.5 * pt}" text-anchor="middle" ${HALO}>${mark} ♥${Math.round(battalion.morale)}</text>`;
     }
 
     const side = (name: "attackers" | "defenders"): string => {
@@ -262,7 +264,7 @@ class BattleDebugRenderer {
       `held ${held}`,
       `breaches ${battle.field.breaches.length}`,
       `works ${works.filter(work => Battlefields.isStanding(work)).length} standing, ${works.filter(work => !work.up).length} building, ${down} down`,
-      `blocks ${battle.blocks.length}`
+      `battalions ${battle.battalions.length}`
     ].join(" · ");
     const lines = [state, side("attackers"), side("defenders")];
     html += lines
