@@ -3,13 +3,13 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { States } from "@/model/political/states-generator";
 import { generateMap, living } from "@/model/real-map.testing";
 import { Dates } from "./dates";
-import { type Event, Events } from "./events";
+import { Events, type WarEvent } from "./events";
 
 beforeAll(() => vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {}, removeItem: () => {} }));
 
 const wars = () => Events.list({ type: "war" });
 const past = () => wars().filter(war => war.end !== undefined);
-const pairKey = (war: Event) => [war.attackers[0], war.defenders[0] ?? 0].sort((a, b) => a - b).join("-");
+const pairKey = (war: WarEvent) => [war.attackers[0], war.defenders[0] ?? 0].sort((a, b) => a - b).join("-");
 
 describe("Generated history", () => {
   it("keeps three past wars for five states, twenty at most", async () => {

@@ -1,13 +1,10 @@
 import { type D3DragEvent, drag, easeSinInOut, select, transition } from "d3";
 import { Controllers } from "@/controllers";
-import { getOutcomeLabel } from "@/data/id-labels";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import { BattleSite } from "@/model/political/battle/battle-site";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
-import { Dates } from "@/model/story/dates";
-import { Events } from "@/model/story/events";
 import { Tags } from "@/model/tags";
 import {
   drawRegiment,
@@ -26,7 +23,7 @@ import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
-import { capitalize, escapeHtml } from "@/utils/string-utils";
+import { capitalize } from "@/utils/string-utils";
 
 let selectedRegiment: SVGGElement | null = null;
 
@@ -97,7 +94,6 @@ function renderDialog(): void {
         />
       </div>
       <div id="regimentComposition" class="table"></div>
-      <div id="regimentBattles" class="table"></div>
     </div>
     <div id="regimentBottom">
       <button id="regimentAttack" data-tip="${t("Attack foreign regiment")}" class="icon-button-melee"></button>
@@ -172,27 +168,6 @@ function updateRegimentData(regiment: Regiment): void {
     el.addEventListener("change", changeUnit);
   });
   updateRegimentPower(regiment);
-  renderBattles(regiment);
-}
-
-/** The battles the regiment fought: a row opens the Chronicle on it */
-function renderBattles(regiment: Regiment): void {
-  const battles = Events.list({ type: "battle", regiment });
-  const list = ensureEl("regimentBattles");
-  list.innerHTML = battles.length
-    ? `<div class="label" style="margin-top: 0.3em">${t("Battles")}:</div>${battles
-        .map(battle => {
-          const side = battle.defenders.includes(regiment.state) && !battle.attackers.includes(regiment.state) ? 1 : 0;
-          return /* html */ `<div class="pointer" data-event="${battle.i}" data-tip="${t("Open in the Chronicle")}">
-            <span>${escapeHtml(battle.name)}</span>, ${escapeHtml(Dates.format(battle.start, "brief"))}: <i>${escapeHtml(getOutcomeLabel(battle.status[side]))}</i>
-          </div>`;
-        })
-        .join("")}`
-    : "";
-  list.onclick = event => {
-    const row = (event.target as HTMLElement).closest<HTMLElement>("[data-event]");
-    if (row) void Controllers.Chronicle.open(+row.dataset.event!);
-  };
 }
 
 function updateRegimentPower(regiment: Regiment): void {

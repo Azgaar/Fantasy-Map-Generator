@@ -32,7 +32,6 @@ For the user:
 - **The user writes history too.** In the Chronicle the user adds an event of their own, says in its record whether it is a war, a battle, an alliance, a vassalage or a plain event, and edits any event, generated ones included.
 - **Tags.** Any event can carry the user's own tags, as other things on the map do, and the Chronicle's search finds them. Tags are what the user sorts and searches by, and they are optional. The type of an event, which decides its fields, is set in its record.
 - **A small past to start from.** A new map gets a sample of history, not a full one: about fifteen past wars for 25 states, the wars going on and the vassalages. No battles are made up: a map's battles are those the user plays or writes. It is there so the Chronicle is not empty and shows what an event looks like; the rest is the user's to write.
-- **A regiment has a history.** The regiment editor lists the battles the regiment fought.
 - **Dates stay right.** Text about an event is written from the event when shown, so it follows the current year, the names and the language.
 - **Dates can be exact.** The generator dates an event by its year. The user can then give any event a day and a time, so a war can be shown to have lasted 40 days, and two wars can fall in one year.
 - **A battle can be watched again** and exported after it was applied, from its replay.
@@ -500,7 +499,7 @@ The order under the list is the one other overviews have: the filters, then the 
 - **Pages** count top-level rows; an opened event and its parts are never split over two pages.
 - **Filters and search** look at every event. One that matches is shown in its place: its parents are shown and opened even when they do not match themselves, and are then drawn muted.
 - **The line with the number shown** counts every matching event, parts included, and gives the current year beside it, for reference.
-- **Opened on an event** from elsewhere, such as a battle from the regiment editor, the list opens that event's parents and the event's record is opened for editing.
+- **Opened on an event** from elsewhere, the list opens that event's parents and the event's record is opened for editing.
 - Nesting is new to the shared editor table, which draws flat rows. The table keeps doing what it does for the top level (columns, sorting, pages); the Chronicle draws the parts of an opened event under its row.
 
 The buttons at the bottom:
@@ -558,8 +557,6 @@ Notes on the build:
 - Only the rows of the page shown are drawn, so the length of the list does not slow the dialog; filters and search run over all events.
 - It is opened from the tools menu, from the omnibar, and from the Diplomacy overview's history button.
 
-The regiment editor lists the regiment's battles: name, date and result. A row opens the Chronicle on that battle.
-
 ### Save, load and migration
 
 - `pack.events` is created empty with the pack, before states are generated. It is a new record at the end of the map file; a map without it loads with an empty list. The JSON export carries it.
@@ -588,7 +585,7 @@ Everything new, the pick of the wars and the ages of vassalages, is rolled from 
 - Provinces, states and burgs models: the four political acts write their events.
 - Zones, military and markers generators: read wars through `Events`.
 - Battle screen: apply, the replay written and read, the summary of a past battle, the watching mode.
-- Chronicle and Chronicle Record Editor controllers: new. Diplomacy overview: the Relations history dialog removed, its button opens the Chronicle. Battle site model: the name of a place moves there from the battle screen. Regiment editor: changed. Diplomacy editor: its apply hands the changed pairs to `Events`.
+- Chronicle and Chronicle Record Editor controllers: new. Diplomacy overview: the Relations history dialog removed, its button opens the Chronicle. Battle site model: the name of a place moves there from the battle screen. Diplomacy editor: its apply hands the changed pairs to `Events`.
 - Entity lookup, Notes Editor (events as a group of notes), map commands, scripting surface, assistant context.
 - Save, load, auto-update, map repair, map restoration, JSON export.
 - Docs: the data model, the glossary (Event, War, Alliance, Vassalage, Battle, Replay), the battles domain page, the wiki pages on military and the battle simulator, and a new one on the Chronicle.

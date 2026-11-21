@@ -277,7 +277,7 @@ class EventsModel {
         [event.suzerain, event.vassal] = [ids.get(event.suzerain) ?? 0, ids.get(event.vassal) ?? 0];
       } else if (event.states) {
         event.states = map(event.states);
-        if (event.auto && !event.states.length) gone.push(event);
+        if (!event.states.length) gone.push(event);
       }
     }
     this.removeUnless(gone);
@@ -411,7 +411,7 @@ class EventsModel {
   currentAct(key: string): CustomEvent | undefined {
     const present = this.present();
     return this.list({ type: "custom" }).findLast(
-      event => event.act === key && event.auto && event.start === present && event.end === present
+      event => event.act === key && event.start === present && event.end === present
     );
   }
 
