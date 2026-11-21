@@ -99,6 +99,7 @@ class ProvinceModule {
     const isProvinceCellLocked = (cell: number) => provinceIds[cell] && isProvinceLocked(provinces[provinceIds[cell]]);
 
     if (regenerate) {
+      Events.forgetActs(); // provinces are renumbered
       pack.provinces.forEach(province => {
         if (!province.i || province.removed || !isProvinceLocked(province)) return;
 

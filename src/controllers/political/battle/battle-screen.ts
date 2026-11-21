@@ -390,12 +390,17 @@ class BattleScreenController {
     this.player.speed = this.battleOptions().view.speed;
     this.cameraMode = this.battleOptions().view.camera;
 
-    this.renderDialog();
-    this.regiments = new Map([attacker, defender].map(regiment => [this.regimentKey(regiment), regiment]));
-    this.script = [];
-    this.selected = [];
-    this.setup([attacker], [defender]);
-    this.openScreen();
+    try {
+      this.renderDialog();
+      this.regiments = new Map([attacker, defender].map(regiment => [this.regimentKey(regiment), regiment]));
+      this.script = [];
+      this.selected = [];
+      this.setup([attacker], [defender]);
+      this.openScreen();
+    } catch (error) {
+      this.closeBattleScreen(); // not left in the battle mode, which blocks the map
+      throw error;
+    }
     tip(
       t("Drag a box to pick troops, drag them to move, turn them by the handle, then start the battle"),
       true,

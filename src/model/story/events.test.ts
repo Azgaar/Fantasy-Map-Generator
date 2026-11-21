@@ -365,6 +365,18 @@ describe("Events: political acts", () => {
     expect(pack.events.map(event => event.name)).toEqual(["The great move", "S1 moves its capital to C"]);
   });
 
+  it("corrects no act done before its subject's id named another, or one naming a state since removed", () => {
+    const act = (key: string, states: number[]) => Events.logAct(key, { name: key, states, tag: "capital" });
+    const renumbered = act("capital:2", [2]);
+    Events.remapStates(new Map([[2, 1]]));
+    expect(act("capital:2", [2])).not.toBe(renumbered);
+    const cession = act("cession:7", [1, 2]);
+    const other = act("capital:3", [3]);
+    Events.forgetActs(1);
+    expect(act("cession:7", [2, 3])).not.toBe(cession);
+    expect(act("capital:3", [3])).toBe(other);
+  });
+
   it("words an event from the present names", () => {
     const id = Events.add({ type: "war", name: "War", start: "100", end: "105", attackers: [1], defenders: [2, 9] });
     expect(Events.describe(Events.get(id)!)).toBe("S1 against S2, former state 9. 100 WE – 105 WE (5 years).");

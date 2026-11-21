@@ -9,6 +9,7 @@ import { Layers } from "@/renderers/layers";
 import { removeRelationsMark, showRelations } from "@/renderers/overlays/diplomacy";
 import { Csv } from "@/services/io/csv";
 import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
@@ -263,6 +264,7 @@ function regenerateRelations(): void {
       if (isEditing()) await Controllers.DiplomacyEditor.close();
       States.generateDiplomacy();
       refreshDiplomacyOverview();
+      refreshEditors(); // the Chronicle, whose wars and alliances changed
     }
   });
 }

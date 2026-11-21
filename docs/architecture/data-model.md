@@ -344,14 +344,14 @@ Markers data is stored as an unordered array of objects (so element id is _not_ 
 - `tags`: `string[]` - the user's labels; what the app makes comes tagged with its kind (`war`, `battle`…), a battle also with its type (`siege`…). Optional
 - `auto`: `true` - made by the app and not touched by the user since; the app removes only such events on its own. Optional
 
-A `war` has `attackers` and `defenders`: `number[]`, state ids, the first of each leading it; `defenders` is empty for a foe now gone. An `alliance` has `states`: `[number, number]`. A `vassalage` has `suzerain` and `vassal`: `number`. A `custom` event may have `states`: `number[]`, the states it concerns, and `act`: `string`, the political act and its subject that wrote it (`cession:12`), dropped once the user edits it. A `battle` has:
+A `war` has `attackers` and `defenders`: `number[]`, state ids, the first of each leading it; `defenders` is empty for a foe now gone. An `alliance` has `states`: `[number, number]`. A `vassalage` has `suzerain` and `vassal`: `number`. A `custom` event may have `states`: `number[]`, the states it concerns, and `act`: `string`, the political act and its subject that wrote it (`cession:12`), dropped once the user edits it or ids are renumbered. A `battle` has:
 
 - `cell`, `x`, `y`: `number` - its place
 - `attackers`, `defenders`: `number[]` - the states of each side, the first leading it
 - `winner`: `"attackers" | "defenders" | null`
 - `status`: `[string, string]` - the outcome as the attackers and the defenders see it, such as `attackers victory`
 - `regiments`: `{ state, i }[]` - the regiments that fought, the only record of a regiment's battles. Kept by `Events`: they follow a regiment to its new id when states merge or it is attached to another, and are dropped when it is disbanded or raised anew. Optional
-- `replay`: `BattleReplay` - for a battle that was played: the recipe it is played again from (`src/model/political/battle/replay.ts`): its type, seed, hour, approach, ground, settings and units, the regiments of both sides as they joined, every change made on the way with its tick, what the generals settled on and the tick it was applied at. The field is built anew from the map. Its state ids stay as fought: once states are renumbered (regenerated, or lost in a resample), `fought` maps them to the present ones, `0` for a state gone. Optional
+- `replay`: `BattleReplay` - for a battle that was played: the recipe it is played again from (`src/model/political/battle/replay.ts`): its type, seed, hour, approach, ground, settings and units, the regiments of both sides as they joined, every change made on the way with its tick, what the generals settled on and the tick it was applied at. The field is built anew from the map. Its state ids stay as fought: once states are renumbered (regenerated), `fought` maps them to the present ones, `0` for a state gone. Optional
 
 ## Labels
 

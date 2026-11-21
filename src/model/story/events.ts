@@ -280,6 +280,13 @@ class EventsModel {
       }
     }
     this.removeUnless(gone);
+    this.forgetActs(); // their subjects' ids now name others
+  }
+
+  /** Acts no longer corrected when done again: all of them, as when ids were renumbered, or those naming a state */
+  forgetActs(stateId?: number): void {
+    for (const event of this.list({ type: "custom" }))
+      if (event.act && (stateId === undefined || event.states?.includes(stateId))) delete event.act;
   }
 
   /** Regiments that took new ids, as when their state merged into another: their battles follow them */

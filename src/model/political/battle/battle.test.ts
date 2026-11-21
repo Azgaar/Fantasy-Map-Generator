@@ -203,6 +203,11 @@ describe("battle", () => {
     expect(second.blocks).toEqual(first.blocks);
   });
 
+  it("is lost at once by a side with none of its units in the roster", () => {
+    const b = run(battle([regiment(1, { ghosts: 500 })], [regiment(2, even)]));
+    expect(b.result?.winner).toBe("defenders");
+  });
+
   it("ends with losses on both sides", () => {
     const b = run(battle([regiment(1, even)], [regiment(2, even)]));
     expect(b.result).not.toBeNull();

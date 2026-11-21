@@ -567,7 +567,7 @@ The regiment editor lists the regiment's battles: name, date and result. A row o
 - The Relations history is converted in the block of stage 2, when the Chronicle is there to show it: all its entries become the note of one custom event named "Relations history", tagged `relations`, dated the present, each entry a paragraph with its title in bold. An empty history adds nothing. The text in the neutral state's `diplomacy`, its accessor, its dialog and the model operation that edits an entry (which the assistant and the scripting surface call today) are removed; the operations of `Events` take its place there.
 - Migrations convert data only. No generator is run on load.
 - Prose already appended to regiment notes and marker legends by earlier versions stays as it is.
-- Map restoration, which rebuilds the cells after a heightmap edit or a resample, carries events over as it carries markers: a battle's position is projected and its cell found again; a battle whose place falls off the new map is removed; state ids of states that did not survive are dropped as at a regeneration of states.
+- Map restoration, which rebuilds the cells after a heightmap edit or a resample, carries events over as it carries markers: a battle's position is projected and its cell found again; a battle whose place falls off the new map is removed; a state that did not survive is treated as removed: its wars, alliances and vassalages end, and the events keep its id.
 - The integrity check on load finds a battle's cell again from its position when the two disagree, and drops links that lead nowhere: a `parent` and a battle's link to a regiment that is gone.
 
 ### Reproducibility

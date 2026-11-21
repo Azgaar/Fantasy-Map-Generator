@@ -917,7 +917,7 @@ class MapRestorationModule {
     });
   }
 
-  /** a battle keeps its place or goes with it; the states that did not survive are dropped from the history */
+  /** a battle keeps its place or goes with it; a state that did not survive ends its relations, as one removed */
   private restoreEvents(parent: PackedGraph, projection: Projection) {
     pack.events = structuredClone(parent.events); // carried over as loaded; the model brings it in line
     Events.relocateBattles((px, py) => {
@@ -926,7 +926,11 @@ class MapRestorationModule {
     });
     Events.dropRegiments(ref => !pack.states[ref.state]?.military?.some(({ i }) => i === ref.i)); // left off the map
     const lost = (id: number) => pack.states[id]?.removed && !parent.states[id]?.removed;
-    Events.remapStates(new Map(pack.states.flatMap(({ i }) => (lost(i) ? [] : [[i, i] as [number, number]]))));
+    for (const { i } of pack.states) {
+      if (!lost(i)) continue;
+      Events.followState(i);
+      Events.forgetActs(i);
+    }
   }
 
   /** a cell is in a zone if the snapshot cell under it was */

@@ -203,6 +203,7 @@ function apply(): void {
 
   strokes = [];
   close();
+  refreshEditors(); // the Chronicle, whose wars and alliances changed
 }
 
 function undo(): void {

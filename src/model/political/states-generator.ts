@@ -1320,6 +1320,7 @@ class StatesModule {
     Events.dropRegiments(ref => ref.state === stateId);
     this.pruneTariffs({ states: [stateId] });
     Events.followState(stateId);
+    Events.forgetActs(stateId);
     this.collectStatistics();
   }
 

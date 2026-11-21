@@ -337,6 +337,7 @@ class GeneralModule {
 
   /** Give the battalions their places and stand them there */
   private seat(battle: Battle, side: Side, plan: Plan, places: Place[]): void {
+    if (!places.length) return; // a side with no troops, as of units its roster lacks
     const { field } = battle;
     const { front } = field;
     const line = places.filter(place => place.role !== "wedge");

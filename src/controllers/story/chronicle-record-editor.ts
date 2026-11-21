@@ -275,7 +275,10 @@ function onChange(event: Event): void {
 /** A battle takes its place from a click on the map, and is a battle once it has one */
 function changeType(type: EventType): void {
   if (type === "battle") pickPlace("chronicleRecordType", place => change({ type, ...place }));
-  else change({ type });
+  else {
+    Chronicle.stopPicking(); // a battle's place awaited for another type
+    change({ type });
+  }
 }
 
 /** A place picked on the map for the record shown now: one opened meanwhile takes none of it */
