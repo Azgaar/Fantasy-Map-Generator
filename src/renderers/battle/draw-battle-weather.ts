@@ -173,6 +173,7 @@ class BattleWeatherRenderer {
     const gl = canvas.getContext("webgl", { premultipliedAlpha: true, antialias: false });
     const program = gl && this.compile(gl);
     const layer = gl && program ? this.createLayer(gl, program) : null; // no WebGL: no weather to see
+    if (gl && !layer) gl.getExtension("WEBGL_lose_context")?.loseContext(); // not kept for nothing
     this.layers.set(canvas, layer);
     return layer;
   }

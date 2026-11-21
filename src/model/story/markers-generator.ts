@@ -48,7 +48,7 @@ import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Names } from "@/model/society/names-generator";
 import { Dates } from "@/model/story/dates";
-import { Events, type War } from "@/model/story/events";
+import { type Event, Events } from "@/model/story/events";
 import { Notes } from "@/model/story/notes";
 import { convertTemperature, getFriendlyHeight } from "@/model/units";
 import type { Good } from "@/types/economy";
@@ -1087,7 +1087,7 @@ class MarkersModule {
     const { cells, states } = pack;
 
     const present = options.map.lore.calendar.year;
-    const war: War | undefined = ra(Events.list({ type: "war", state: states[cells.state[cell]].i })); // the same rolls with a war or without
+    const war: Event | undefined = ra(Events.list({ type: "war", state: states[cells.state[cell]].i })); // the same rolls with a war or without
     const [from, to] = war ? Events.yearsOf(war) : [present - 100, present - 1];
     const month = rand(1, 12);
     const date = Dates.format(Dates.write({ year: rand(from, to), month, day: rand(1, 28) }), "long", "en");

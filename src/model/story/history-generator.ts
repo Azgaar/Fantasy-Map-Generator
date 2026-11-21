@@ -4,7 +4,7 @@ import Alea from "alea";
 import { shuffler } from "d3";
 import { gauss } from "@/utils/probability-utils";
 import { Dates } from "./dates";
-import { Events, type War } from "./events";
+import { type Event, Events } from "./events";
 
 /** A war a state rolled against a neighbour, or against a foe now gone (defender 0) */
 export interface RolledWar {
@@ -129,7 +129,7 @@ class HistoryGenerator {
   }
 
   /** The pairs a war sets against each other; a vanished foe counts as state 0 */
-  private warPairs(war: War): string[] {
+  private warPairs(war: Event): string[] {
     const defenders = war.defenders.length ? war.defenders : [0];
     return war.attackers.flatMap(a => defenders.map(d => (d ? this.pairKey(a, d) : `${a}-0`)));
   }

@@ -146,6 +146,26 @@ describe("Events: the list", () => {
     expect(pack.events.map(event => event.i)).toEqual([kept, kept + 1]);
   });
 
+  it("refuses an event without what its kind needs, and a change of what the user does not set", () => {
+    expect(() => Events.add({ type: "war", name: "W", start: "10", end: "20" } as NewEvent)).toThrow("attackers");
+    expect(() => Events.add({ ...war("10"), type: "battle", winner: null } as NewEvent)).toThrow("place");
+    expect(() => Events.add({ type: "alliance", name: "A", start: "10", end: "20", states: [1] } as never)).toThrow();
+    const id = Events.add(war("10"));
+    expect(() => Events.update(id, { i: 5 } as never)).toThrow("cannot be changed");
+    expect(pack.events).toHaveLength(1);
+  });
+
+  it("orders and indexes again a list written past the model", () => {
+    const [a, b] = [Events.add(war("10")), Events.add(war("20"))];
+    pack.events.splice(0, 1);
+    pack.events.push({ ...war("15"), i: 7 } as MapEvent, { ...war("5"), i: 8, parent: b } as MapEvent);
+    Events.reload();
+    expect(pack.events.map(event => event.i)).toEqual([8, 7, b]);
+    expect(Events.get(a)).toBeUndefined();
+    expect(Events.parts(b).map(event => event.i)).toEqual([8]);
+    expect(Events.add(war("30"))).toBe(9);
+  });
+
   it("makes an event the user's on any change; its tags are normalized and matched", () => {
     const id = Events.add({ ...war("100"), tags: ["war", "conquest"], auto: true });
     Events.update(id, { tags: "Conquest, Famous!" });

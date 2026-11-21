@@ -261,6 +261,24 @@ test.describe("Battle simulator", () => {
     await expect(page.locator("#battleSummary .battleSummarySide.defenders header b")).toHaveText(`former state ${defender[0]}`);
   });
 
+  test("stops a past battle applied before its end at that moment when it is watched", async ({ page }) => {
+    await startBattle(page);
+    await pickType(page, "field");
+    await expect(page.locator("#battleStep")).toBeEnabled();
+    for (let i = 0; i < 3; i++) await page.locator("#battleStep").click();
+    await page.locator("#battleApply").click();
+    await expect(page.locator("#battleScreen")).toHaveCount(0);
+
+    await page.evaluate(async () => {
+      const { FMG } = window as any;
+      (await FMG.Controllers.BattleScreen).watch(FMG.Events.list({ type: "battle" }).at(-1).i);
+    });
+    expect(await stepToEnd(page)).toBe(true);
+    await expect(page.locator("#battleSummary")).toBeVisible();
+    await expect(page.locator("#battleRun")).toBeHidden(); // nothing plays on past the record
+    await expect(page.locator("#battleResultRestart")).toBeVisible();
+  });
+
   test("keeps a played battle through a save and a load, and its replay plays out as recorded", async ({ page }) => {
     await startBattle(page);
     await pickType(page, "field");

@@ -73,7 +73,7 @@ async function context(chat: Chat): Promise<string> {
       : []
   );
   if (vassals.length) facts.push(`vassals: ${vassals.join("; ")}`);
-  const sides = (ids: number[]) => ids.map(id => `${pack.states[id]?.name} (state:${id})`).join(", "); // English, as the model reads it
+  const sides = (ids: number[]) => ids.map(id => `${pack.states[id]?.name ?? "former state"} (state:${id})`).join(", "); // English, as the model reads it
   const wars = Events.list({ type: "war", ongoing: true }).map(
     war => `${war.name} (event:${war.i}): ${sides(war.attackers)} against ${sides(war.defenders) || "a vanished foe"}`
   );

@@ -70,6 +70,7 @@ class BattleReportExport {
       const probe = source.start();
       Battles.replay(probe.battle, probe.script, probe.settled, probe.until);
       const ticks = Keyframes.select(probe.battle.log, text.kinds);
+      if (!probe.battle.result) ticks.push(probe.battle.tick); // a past battle applied before its end ends there
       const taken = await this.takeKeyframes(source, choice, new Set(ticks), signal, share => onProgress(share, ""));
       if (!taken) {
         onProgress(0, t("Cancelled"));

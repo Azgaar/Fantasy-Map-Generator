@@ -134,11 +134,11 @@ const RECORD_DIFFERS = () =>
 
 /** A past battle's summary in a window of its own */
 const RECORD_STYLE = /* css */ `
-  #battleSummary { --line: #ccc; --muted: #666; --loss: #c5221f; position: static; display: block; padding: 0; background: none; overflow: visible; animation: none; }
-  #battleSummary > div { width: auto; box-shadow: none; animation: none; }
-  #battleSummary .attackers { --side: var(--attackers); }
-  #battleSummary .defenders { --side: var(--defenders); }
-  .battleSummaryClose, #battleSummary footer { display: none !important; }
+  .battleRecord #battleSummary { --line: #ccc; --muted: #666; --loss: #c5221f; position: static; display: block; padding: 0; background: none; overflow: visible; animation: none; }
+  .battleRecord #battleSummary > div { width: auto; box-shadow: none; animation: none; }
+  .battleRecord #battleSummary .attackers { --side: var(--attackers); }
+  .battleRecord #battleSummary .defenders { --side: var(--defenders); }
+  .battleRecord :is(.battleSummaryClose, #battleSummary footer) { display: none !important; }
   .battleRecordDiffers { margin: 0 0 0.6em; color: #c5221f; }
 `;
 
@@ -445,10 +445,11 @@ class BattleScreenController {
       this.recording = false;
     });
     clearMainTip();
-    if (Events.get(eventId) !== event) return; // the map changed while it played out
+    if (options.app.mode || Events.get(eventId) !== event) return; // the map changed, or a battle opened, while it played out
     const content = document.createElement("div");
+    content.className = "battleRecord"; // its style is kept to it
     content.innerHTML = /* html */ `<style>${SUMMARY_STYLE} ${RECORD_STYLE}
-        #battleSummary { --attackers: ${SIDE_COLORS.attackers}; --defenders: ${SIDE_COLORS.defenders}; }</style>
+        .battleRecord #battleSummary { --attackers: ${SIDE_COLORS.attackers}; --defenders: ${SIDE_COLORS.defenders}; }</style>
       ${BattleReplays.matches(battle, event) ? "" : `<p class="battleRecordDiffers">${RECORD_DIFFERS()}</p>`}
       <div id="battleSummary">${this.getSummary(battle, false, event)}</div>`;
     Dialog.message({
@@ -1311,7 +1312,7 @@ class BattleScreenController {
 
   private play(): void {
     const b = this.battle!;
-    if (b.result || this.isPlanning()) return;
+    if (this.isOver(b) || this.isPlanning()) return;
     this.player.playing = true;
     this.player.tickStart = performance.now();
     this.resetTrails(); // the paused moment is the key moment the arrows start from
@@ -1494,7 +1495,7 @@ class BattleScreenController {
     balance.style.setProperty("--at", `clamp(4.2em, ${share}%, 100% - 4.2em)`);
 
     const started = b.tick > 0;
-    const over = Boolean(b.result);
+    const over = this.isOver(b);
     const watching = this.watching !== null; // a replay is watched as it was fought
     const type = ensureEl<HTMLButtonElement>("battleType");
     type.className = `icon-button-${b.type}`;
@@ -2323,7 +2324,13 @@ class BattleScreenController {
     }
 
     const shown = status[winner === "defenders" ? 1 : 0]; // as the side that holds the field sees it
-    tip(t("{{battle}} is over. {{result}}", { battle: b.name, result: getOutcomeLabel(shown) }), true, "success", 4000);
+    const by = winner ? `${this.stateName(b[winner].regiments[0].state)}: ` : ""; // whose it is
+    tip(
+      t("{{battle}} is over. {{result}}", { battle: b.name, result: by + getOutcomeLabel(shown) }),
+      true,
+      "success",
+      4000
+    );
     this.closeBattleScreen();
     refreshEditors(); // the battle is in the history and the regiments lost troops
   }

@@ -234,3 +234,32 @@ it("removes route links to missing cells when the route points are sound", () =>
   expect(pack.cells.routes).toEqual({ 0: { 1: 0 }, 1: { 0: 0 } });
   expect(repairs).toHaveLength(2);
 });
+
+it("takes markup out of a loaded map's texts, notes aside, and gives ids that are not whole numbers new ones", () => {
+  globalThis.pack = {
+    cells: { i: [0], state: [0], province: [0], culture: [0], religion: [0], burg: [0], r: [0], f: [0], routes: {} },
+    vertices: { p: [] },
+    features: [0],
+    states: [
+      { i: 0, name: "Neutrals" },
+      { i: "1 onmouseover=alert(1)", name: '<img src=x onerror="alert(1)">', formName: 'a"b' }
+    ],
+    provinces: [0],
+    cultures: [{ i: 0 }],
+    religions: [{ i: 0 }],
+    burgs: [{ i: 0 }],
+    rivers: [],
+    routes: [{ i: "x", points: [] }],
+    markers: [],
+    events: [],
+    journeys: [],
+    zones: [{ i: 0, name: "Zone", note: "<b>kept</b>" }]
+  } as unknown as typeof pack;
+
+  const repairs = MapRepair.repair();
+
+  expect(pack.states[1]).toMatchObject({ i: 1, name: "img src=x onerror=alert(1)", formName: "ab" });
+  expect(pack.routes).toEqual([]);
+  expect(pack.zones[0].note).toBe("<b>kept</b>");
+  expect(repairs).toContain('2 texts have markup characters (<, > or "). Removing the characters');
+});

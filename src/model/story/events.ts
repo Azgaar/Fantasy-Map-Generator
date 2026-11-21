@@ -1,5 +1,4 @@
 // `pack.events`: the map's dated history. The only writer of the list. See docs/prd/events.md
-
 import { Pack } from "@/model/graph/pack-generator";
 import { BattleRules, type Side } from "@/model/political/battle/battle-rules";
 import type { BattleReplay } from "@/model/political/battle/replay";
@@ -22,18 +21,18 @@ interface EventBase {
   auto?: true; // made by the app and not touched by the user since
 }
 
-export interface War extends EventBase {
+export interface WarEvent extends EventBase {
   type: "war";
   attackers: number[]; // state ids, the first led it
   defenders: number[]; // empty for a vanished foe
 }
 
-export interface Alliance extends EventBase {
+export interface AllianceEvent extends EventBase {
   type: "alliance";
   states: [number, number];
 }
 
-export interface Vassalage extends EventBase {
+export interface VassalageEvent extends EventBase {
   type: "vassalage";
   suzerain: number;
   vassal: number;
@@ -47,28 +46,27 @@ export interface BattleEvent extends EventBase {
   attackers: number[];
   defenders: number[];
   winner: Side | null;
-  status: [string, string]; // as the attackers and the defenders see it
+  status: [string, string];
   replay?: BattleReplay;
   fought?: Record<number, number>; // the replay's state ids, kept as fought, to the present ones, 0 for one gone
-  regiments?: RegimentRef[]; // the regiments that fought, as they are now: merged ones followed, disbanded ones dropped
+  regiments?: RegimentRef[];
 }
 
-/** A regiment by its state and its own id */
 export interface RegimentRef {
   state: number;
   i: number;
 }
 
-export interface CustomMapEvent extends EventBase {
+export interface CustomEvent extends EventBase {
   type: "custom";
-  states?: number[]; // the states it concerns
+  states?: number[];
   act?: string; // the political act that wrote it and its subject, such as "cession:12", while it is the app's
 }
 
-export type MapEvent = War | Alliance | Vassalage | BattleEvent | CustomMapEvent;
+export type MapEvent = WarEvent | AllianceEvent | VassalageEvent | BattleEvent | CustomEvent;
 export type EventType = "war" | "alliance" | "vassalage" | "battle" | "custom";
-type RelationEvent = War | Alliance | Vassalage;
-type Pair = [number, number];
+
+type RelationEvent = WarEvent | AllianceEvent | VassalageEvent;
 
 /** What `Events.list` finds: every condition given must hold */
 interface EventQuery {
@@ -105,6 +103,9 @@ export interface EventPatch {
 
 const EVENT_TYPES: EventType[] = ["custom", "war", "battle", "alliance", "vassalage"];
 
+const isStateId = (id: unknown): boolean => Number.isInteger(id) && (id as number) >= 0;
+const areStateIds = (ids: unknown): boolean => Array.isArray(ids) && ids.every(isStateId);
+
 const isRelation = (event: MapEvent): event is RelationEvent =>
   event.type === "war" || event.type === "alliance" || event.type === "vassalage";
 
@@ -117,13 +118,6 @@ interface EventIndex {
 
 class EventsModel {
   private readonly indexes = new WeakMap<MapEvent[], EventIndex>(); // by list: a map left behind takes its own with it
-
-  /** The present: the current year alone */
-  present(): string {
-    return Dates.ofYear(options.map.lore.calendar.year);
-  }
-
-  // reading
 
   get(id: number): MapEvent | undefined {
     return this.index().byId.get(id);
@@ -180,6 +174,10 @@ class EventsModel {
     return !event.auto || this.parts(event.i).some(part => !part.auto);
   }
 
+  present(): string {
+    return Dates.ofYear(options.map.lore.calendar.year);
+  }
+
   // writing
 
   /** Add an event, placed by its start after others of its date; returns its id */
@@ -202,6 +200,11 @@ class EventsModel {
   /** Change an event; it becomes the user's */
   update(id: number, patch: EventPatch): void {
     const event = this.require(id);
+    const PATCH_FIELDS = new Set(
+      "type name start end parent note tags attackers defenders states suzerain vassal winner cell x y".split(" ")
+    );
+    const unknown = Object.keys(patch).find(field => !PATCH_FIELDS.has(field));
+    if (unknown) throw new Error(`An event's ${unknown} cannot be changed`);
     const retyped = patch.type !== undefined && patch.type !== event.type;
     const next = (retyped ? this.retype(event, patch.type!) : { ...event }) as MapEvent & Record<string, unknown>;
     for (const [field, value] of Object.entries(patch)) {
@@ -226,8 +229,6 @@ class EventsModel {
     }
     delete next.auto;
     if (next.type === "custom") delete next.act; // the user's now: an act done again no longer rewrites it
-    if (next.type === "battle" && !Number.isInteger(next.cell))
-      throw new Error("A battle needs a place: give its cell, x and y");
     this.validate(next);
     this.replace(event, next);
   }
@@ -270,7 +271,7 @@ class EventsModel {
         if (event.type === "war" && !event.attackers.length && !event.defenders.length) gone.push(event);
       } else if (event.type === "alliance") {
         if (event.states.some(id => !ids.has(id))) gone.push(event);
-        event.states = event.states.map(id => ids.get(id) ?? 0) as Pair; // a state gone is unset, the other renumbered
+        event.states = event.states.map(id => ids.get(id) ?? 0) as [number, number]; // a state gone is unset, the other renumbered
       } else if (event.type === "vassalage") {
         if (!ids.has(event.suzerain) || !ids.has(event.vassal)) gone.push(event);
         [event.suzerain, event.vassal] = [ids.get(event.suzerain) ?? 0, ids.get(event.vassal) ?? 0];
@@ -368,7 +369,7 @@ class EventsModel {
   }
 
   /** Bring the wars, alliances and vassalages of the pairs in line with the relations the states hold now */
-  followRelations(pairs: Iterable<Pair>): void {
+  followRelations(pairs: Iterable<[number, number]>): void {
     const seen = new Set<string>();
     const ongoing = this.list().filter((event): event is RelationEvent => isRelation(event) && event.end === undefined);
     for (const [a, b] of pairs) {
@@ -382,7 +383,7 @@ class EventsModel {
   /** Every pair a state is in, for a state removed or merged: it holds no relation any more */
   followState(stateId: number): void {
     this.followRelations(
-      pack.states.filter(state => state.i && state.i !== stateId).map(({ i }): Pair => [stateId, i])
+      pack.states.filter(state => state.i && state.i !== stateId).map(({ i }): [number, number] => [stateId, i])
     );
   }
 
@@ -407,7 +408,7 @@ class EventsModel {
   }
 
   /** The event of an act done for the subject in this sitting, while the app's and dated the present */
-  currentAct(key: string): CustomMapEvent | undefined {
+  currentAct(key: string): CustomEvent | undefined {
     const present = this.present();
     return this.list({ type: "custom" }).findLast(
       event => event.act === key && event.auto && event.start === present && event.end === present
@@ -645,6 +646,26 @@ class EventsModel {
     }
     if (event.parent !== undefined && !this.index().byId.has(event.parent))
       throw new Error(`Event ${event.parent} does not exist`);
+    const sided = event.type === "war" || event.type === "battle";
+    if (sided && !(areStateIds(event.attackers) && areStateIds(event.defenders)))
+      throw new Error("A war or a battle needs its attackers and defenders: lists of state ids");
+    if (
+      event.type === "battle" &&
+      !(Number.isInteger(event.cell) && Number.isFinite(event.x) && Number.isFinite(event.y))
+    )
+      throw new Error("A battle needs a place: give its cell, x and y");
+    if (event.type === "alliance" && !(areStateIds(event.states) && event.states.length === 2))
+      throw new Error("An alliance needs its two states");
+    if (event.type === "vassalage" && !(isStateId(event.suzerain) && isStateId(event.vassal)))
+      throw new Error("A vassalage needs its suzerain and vassal");
+    if (event.type === "custom" && event.states !== undefined && !areStateIds(event.states))
+      throw new Error("An event's states are a list of state ids");
+  }
+
+  /** The list was written past the model, as by the assistant's proposals: put it in order of time and index it again */
+  reload(): void {
+    pack.events.sort((a, b) => Dates.compare(a.start, b.start)); // stable: events of one date keep their order
+    this.indexes.set(pack.events, this.build(pack.events));
   }
 
   private insert(event: MapEvent): void {

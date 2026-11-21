@@ -218,5 +218,9 @@ export const OPERATIONS = new Set(
 export function runOperation(op: string, args: unknown[]): unknown {
   const [name, method] = op.split(".");
   const model = MODELS[name as keyof Models] as unknown as Record<string, (...args: unknown[]) => unknown>;
+  if (op === "Events.add" && args[0] && typeof args[0] === "object") {
+    const { auto, act, ...event } = args[0] as Record<string, unknown>; // the app's marks: an event it adds is the user's
+    return model[method](event, ...args.slice(1));
+  }
   return model[method](...args);
 }

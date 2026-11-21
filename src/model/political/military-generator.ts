@@ -3,7 +3,7 @@ import { Accounts } from "@/model/economy/accounts";
 import { Goods } from "@/model/economy/goods-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
-import { Events, type War } from "@/model/story/events";
+import { type Event, Events } from "@/model/story/events";
 import type { MilitaryUnit } from "@/types/military";
 import { nth } from "@/utils/language-utils";
 import { rn, si } from "@/utils/number-utils";
@@ -776,7 +776,7 @@ class MilitaryModule {
       : "";
 
     const { year: present } = options.map.lore.calendar;
-    const war: War | undefined = ra(Events.list({ type: "war", state: s.i })); // the same rolls with a war or without
+    const war: Event | undefined = ra(Events.list({ type: "war", state: s.i })); // the same rolls with a war or without
     const year = rand(...(war ? Events.yearsOf(war) : [present - 100, present - 1]));
     const conflict = war ? ` during the ${war.name}` : "";
     r.note = `Regiment was formed in ${year} ${options.map.lore.calendar.era}${conflict}. ${station}${troops}`;

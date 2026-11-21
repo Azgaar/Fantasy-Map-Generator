@@ -274,7 +274,7 @@ class BattleAnimationExport {
 
     // a quick run to the end tells how long the battle is
     const probe = source.start();
-    Battles.replay(probe.battle, probe.script, probe.settled);
+    Battles.replay(probe.battle, probe.script, probe.settled, probe.until);
     const ticks = Math.max(probe.battle.tick, 1);
     const end = BattleTime.formatClock(probe.battle.hour, ticks);
 

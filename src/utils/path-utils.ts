@@ -620,6 +620,7 @@ export function wavyDash(x: number, y: number, length: number, halves: number, a
 
 /** Every `apart` along a line, from half a step in: the point, the unit way the line runs there and the step's number */
 export function walkLine(points: Point[], apart: number, visit: (at: Point, way: Point, step: number) => void): void {
+  if (!(apart > 0)) return;
   let [next, walked, step] = [apart / 2, 0, 0];
   for (let i = 1; i < points.length; i++) {
     const [a, b] = [points[i - 1], points[i]];
