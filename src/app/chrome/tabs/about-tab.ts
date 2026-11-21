@@ -105,7 +105,7 @@ const TEMPLATE = /* html */ `
   </div>
   <div style="text-align: left">
     <p>${t("Check out our other projects")}:</p>
-    <div>• <a href="https://azgaar.github.io/Armoria" target="_blank">Armoria</a>: ${t("a tool for creating coats of arms")}</div>
+    <div>• <a href="https://armoria.vercel.app/" target="_blank">Armoria</a>: ${t("a tool for creating coats of arms")}</div>
     <div>• <a href="https://deorum.vercel.app" target="_blank">Deorum</a>: ${t("gallery of fantasy characters")}</div>
   </div>
   <ul class="share-buttons">

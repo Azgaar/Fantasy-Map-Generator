@@ -6,6 +6,7 @@ const coa = { t1: "gules", charges: [{ charge: "lionRampant", t: "or", p: "e" }]
 
 describe("Armoria input", () => {
   it.each([
+    `https://armoria.vercel.app/?coa=${encodeURIComponent(JSON.stringify(coa))}`,
     `https://azgaar.github.io/Armoria/?coa=${encodeURIComponent(JSON.stringify(coa))}`,
     `https://armoria.vercel.app/api?size=500&format=png&coa=${encodeURIComponent(JSON.stringify(coa))}`,
     `https://armoria.herokuapp.com/?size=500&format=png&coa=${encodeURIComponent(JSON.stringify(coa))}`,
