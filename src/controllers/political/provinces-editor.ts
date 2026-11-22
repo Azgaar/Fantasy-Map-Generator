@@ -18,6 +18,7 @@ import { Stability } from "@/model/political/stability";
 import type { State } from "@/model/political/states-generator";
 import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
+import { Toponyms } from "@/model/society/toponyms";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
@@ -397,7 +398,7 @@ function regenerateProvinceNames(): void {
   for (const province of getProvincesData()) {
     if (province.lock) continue;
     const culture = pack.cells.culture[province.center];
-    Provinces.rename(province.i, Names.getState(Names.getCultureShort(culture), culture));
+    Provinces.rename(province.i, Toponyms.land(Names.getCultureShort(culture), culture));
   }
 
   provincesTable.refresh();
@@ -905,13 +906,13 @@ function closeProvinceNameEditor(): void {
 function regenerateShortNameCulture(): void {
   const province = +ensureEl("provinceNameEditor").dataset.province!;
   const culture = pack.cells.culture[pack.provinces[province].center];
-  const name = Names.getState(Names.getCultureShort(culture), culture);
+  const name = Toponyms.land(Names.getCultureShort(culture), culture);
   ensureEl<HTMLInputElement>("provinceNameEditorShort").value = name;
 }
 
 function regenerateShortNameRandom(): void {
   const base = Names.randomBase().id;
-  const name = Names.getState(Names.getBase(base), undefined as unknown as number, base);
+  const name = Toponyms.land(Names.getBase(base), base);
   ensureEl<HTMLInputElement>("provinceNameEditorShort").value = name;
 }
 

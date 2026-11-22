@@ -59,6 +59,7 @@ export const Controllers = createRegistry(
     MilitaryOverview: () => import("@/controllers/political/military/military-overview").then(m => m.MilitaryOverview),
     Minimap: () => import("@/controllers/minimap").then(m => m.Minimap),
     NamesbaseEditor: () => import("@/controllers/society/namesbase-editor").then(m => m.NamesbaseEditor),
+    NameTranslations: () => import("@/controllers/society/name-translations").then(m => m.NameTranslations),
     NotesEditor: () => import("@/controllers/story/notes-editor").then(m => m.NotesEditor),
     Omnibar: () => import("@/controllers/omnibar").then(m => m.Omnibar),
     PaintEditor: () => import("@/controllers/paint-editor").then(m => m.PaintEditor),

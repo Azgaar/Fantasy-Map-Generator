@@ -9,7 +9,9 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Stability } from "@/model/political/stability";
 import { STATE_FORMS, type State, States } from "@/model/political/states-generator";
 import { Development } from "@/model/society/development-generator";
+import { gloss, type Meaning, simplex } from "@/model/society/name-render";
 import { Names } from "@/model/society/names-generator";
+import { Toponyms } from "@/model/society/toponyms";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
@@ -777,8 +779,10 @@ function editStateName(state: number): void {
   }
 
   const s = pack.states[state];
+  let meaning = s.meaning; // what Apply stores with the name: a generated name brings its own
   ensureEl("stateNameEditor").dataset.state = String(state);
   ensureEl<HTMLInputElement>("stateNameEditorShort").value = s.name || "";
+  showMeaning();
   applyOption(stateNameEditorSelectForm, s.formName || "");
   ensureEl<HTMLInputElement>("stateNameEditorFull").value = s.fullName || "";
 
@@ -800,6 +804,7 @@ function editStateName(state: number): void {
 
   ensureEl("stateNameEditorShortCulture").addEventListener("click", regenerateShortNameCulture);
   ensureEl("stateNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
+  ensureEl("stateNameEditorTranslations").addEventListener("click", showTranslations);
   ensureEl("stateNameEditorShortSpeak").addEventListener("click", () =>
     speak(ensureEl<HTMLInputElement>("stateNameEditorShort").value)
   );
@@ -811,16 +816,36 @@ function editStateName(state: number): void {
   );
 
   function regenerateShortNameCulture() {
-    const state = +ensureEl("stateNameEditor").dataset.state!;
-    const culture = pack.states[state].culture;
-    const name = Names.getState(Names.getCultureShort(culture), culture);
-    ensureEl<HTMLInputElement>("stateNameEditorShort").value = name;
+    regenerateShortName();
   }
 
   function regenerateShortNameRandom() {
-    const base = Names.randomBase().id;
-    const name = Names.getState(Names.getBase(base), undefined as unknown as number, base);
-    ensureEl<HTMLInputElement>("stateNameEditorShort").value = name;
+    regenerateShortName(Names.randomBase().id);
+  }
+
+  /** Coin a new meaning for the state, named in its culture's base or the base given */
+  function regenerateShortName(baseId?: string) {
+    const named = Toponyms.state(pack.burgs[s.capital], s.culture, { baseId });
+    meaning = named.meaning;
+    ensureEl<HTMLInputElement>("stateNameEditorShort").value = named.name;
+    showMeaning();
+  }
+
+  /** The meaning the name carries; a name without one stands as a proper name of the culture's base */
+  function getMeaning(): Meaning {
+    const name = ensureEl<HTMLInputElement>("stateNameEditorShort").value;
+    return meaning ?? simplex(name, pack.cultures[s.culture].base);
+  }
+
+  function showMeaning() {
+    const shown = getMeaning();
+    ensureEl("stateNameEditorMeaning").textContent = shown.pattern === "simplex" ? t("proper name") : gloss(shown);
+  }
+
+  function showTranslations() {
+    void Controllers.NameTranslations.open(getMeaning(), name => {
+      ensureEl<HTMLInputElement>("stateNameEditorShort").value = name;
+    });
   }
 
   function addCustomForm() {
@@ -855,6 +880,7 @@ function editStateName(state: number): void {
     const changed = name !== s.name || formName !== (s.formName ?? "") || fullName !== oldFullName;
 
     if (name && name !== s.name) States.rename(s.i, name);
+    if (meaning !== s.meaning) States.setMeaning(s.i, meaning);
     if (formName !== (s.formName ?? "")) States.setForm(s.i, formName);
     if (fullName && fullName !== oldFullName) States.setFullName(s.i, fullName);
     if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) {
@@ -884,6 +910,11 @@ function renderNameEditor(): void {
           class="icon-book pointer"
         ></span>
         <span id="stateNameEditorShortRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
+      </div>
+      <div data-tip="${t("What the name says, apart from any language")}">
+        <div class="label">${t("Meaning")}:</div>
+        <i id="stateNameEditorMeaning" style="display: inline-block; width: 11em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom"></i>
+        <span id="stateNameEditorTranslations" data-tip="${t("See the name in other name bases")}" class="icon-exchange pointer"></span>
       </div>
       <div data-tip="${t("Select form name")}">
         <div data-tip="${t("Form name")}" class="label">${t("Form name")}:</div>

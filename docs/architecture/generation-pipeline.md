@@ -69,12 +69,12 @@ the pipeline, since it depends only on name bases and the seeded random source.
 | Climate art              | `ice`                                           | `pack.ice`                                                                      |
 | Goods catalogue          | `goods`                                         | `options.map.goods`, `cells.good`                                    |
 | Ranking & cultures       | `rankCells`, `cultures`, `culturesExpand`       | `cells.s`, `cells.pop`, `pack.cultures`, `cells.culture`                        |
-| Settlement & politics    | `burgs`, `states`, `routes`                     | `pack.burgs`, `pack.states`, `pack.routes`                                      |
+| Water names              | `riversSpecify`, `featureNames`                 | river and feature (island, ocean, lake) names, which burgs are named after      |
+| Settlement & politics    | `burgs`, `states`, `routes`                     | `pack.burgs`, `pack.states` with their names and meanings, `pack.routes`        |
 | Development              | `development`                                   | `cells.development` (see [development](../domain/development.md))               |
 | Religions                | `religions`                                     | `pack.religions`                                                                |
 | Specification            | `burgsSpecify`, `stateStatistics`, `stateForms` | burg types, state stats and forms (tribal titles read `cells.development`)      |
 | Provinces                | `provinces`, `provincePoles`                    | `pack.provinces`                                                                |
-| Naming polish            | `riversSpecify`, `featureNames`                 | river and feature (island, ocean, lake) names                                   |
 | Economy                  | `markets`, `production`, `taxes`                | `pack.markets`, `cells.market`, `pack.deals`, burg/state treasuries             |
 | Overlays                 | `military`, `markers`, `zones`, `addedLabels`   | regiments, markers, zones, labels                                               |
 | Finalise                 | `journeys`, `legends`                           | journeys, empty legend boxes                                                    |
@@ -114,19 +114,19 @@ flowchart TD
     goods["goods<br/><i>writes: cells.good</i>"]
     rank["rankCells<br/><i>writes: cells.s, cells.pop</i>"]
     cult["cultures + culturesExpand<br/><i>writes: pack.cultures, cells.culture</i>"]
+    names["riversSpecify + featureNames"]
     burgs["burgs<br/><i>writes: pack.burgs</i>"]
     states["states<br/><i>writes: pack.states</i>"]
     routes["routes<br/><i>writes: pack.routes</i>"]
     relig["religions<br/><i>writes: pack.religions</i>"]
     spec["burgsSpecify + stateStatistics + stateForms"]
     prov["provinces + provincePoles<br/><i>writes: pack.provinces</i>"]
-    names["riversSpecify + featureNames"]
     dev["development<br/><i>writes: cells.development</i>"]
     econ["markets + production + taxes<br/><i>writes: pack.markets, deals, cells.market</i>"]
     mil["military + markers + zones + addedLabels"]
     journeys["journeys + legends"]
 
-    gg --> hm --> mg --> lakes --> coord --> temp --> prec --> repack --> ruler --> rivers --> biomes --> fg --> ice --> goods --> rank --> cult --> burgs --> states --> routes --> dev --> relig --> spec --> prov --> names --> econ --> mil --> journeys
+    gg --> hm --> mg --> lakes --> coord --> temp --> prec --> repack --> ruler --> rivers --> biomes --> fg --> ice --> goods --> rank --> cult --> names --> burgs --> states --> routes --> dev --> relig --> spec --> prov --> econ --> mil --> journeys
 
     %% cross-step (non-adjacent) global dependencies
     hm -. "grid.cells.h" .-> temp

@@ -1,12 +1,29 @@
 import type { NameBase, SoundRule } from "@/data/name-bases";
-import { SHARED_RULES } from "@/data/name-rules";
+import { JOIN_RULES, SHARED_RULES } from "@/data/name-rules";
 import { log } from "@/utils/logger";
 
 const patterns = new Map<string, RegExp | null>();
 
-/** Rewrite a lowercase name by a base's rules, then by the shared ones; a rule that is no valid regex is skipped */
-export function applyRules(name: string, rules: SoundRule[] = []): string {
-  for (const { match, replace } of [...rules, ...SHARED_RULES]) {
+/** Rewrite a lowercase word by a base's rules, then by the shared ones; a rule that is no valid regex is skipped */
+export function applyRules(word: string, rules: SoundRule[] = []): string {
+  const own = rules.filter(rule => !rule.at);
+  return rewrite(rewrite(word, own), SHARED_RULES);
+}
+
+/** Join a lowercase name made of parts, `+` at each join: the base's join rules first, then the shared ones.
+ * The parts stay as they came: a form written for the base is not what its word rules are for */
+export function joinParts(name: string, rules: SoundRule[] = []): string {
+  const joins = rules.filter(rule => rule.at === "join");
+  return rewrite(rewrite(rewrite(name, joins), JOIN_RULES).replaceAll("+", ""), SHARED_RULES);
+}
+
+const WORD_START = /(?<=^|[ -])./gu;
+
+/** A lowercase name with each word capitalized */
+export const capitalizeWords = (name: string): string => name.replace(WORD_START, letter => letter.toUpperCase());
+
+function rewrite(name: string, rules: SoundRule[]): string {
+  for (const { match, replace } of rules) {
     const pattern = compile(match);
     if (pattern) name = name.replace(pattern, replace);
   }

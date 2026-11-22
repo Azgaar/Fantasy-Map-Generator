@@ -8,8 +8,10 @@ import { Goods } from "@/model/economy/goods-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Feature } from "@/model/physical/features-generator";
 import { Emblems } from "@/model/political/emblems-generator";
+import type { Meaning } from "@/model/society/name-render";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
+import { Toponyms } from "@/model/society/toponyms";
 import { Tags } from "@/model/tags";
 import type { Emblem } from "@/types/emblems";
 import { getMixedColor, getRandomColor, requireColor } from "@/utils/color-utils";
@@ -18,7 +20,7 @@ import { getAdjective, replaceWholeWord, trimVowels } from "@/utils/language-uti
 import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
 import { getPolesOfInaccessibility } from "@/utils/path-utils";
-import { each, gauss, generateSeed, P, ra, rand, rw } from "@/utils/probability-utils";
+import { gauss, generateSeed, P, ra, rand, rw } from "@/utils/probability-utils";
 import { escapeHtml } from "@/utils/string-utils";
 import { requireAdjustments, requireName, requireOneOf } from "@/utils/validation-utils";
 import { Burgs } from "./burgs-generator";
@@ -35,6 +37,7 @@ export type TariffRule = {
 export interface State {
   i: number;
   name: string;
+  meaning?: Meaning; // what the name says, kept apart from the name itself
   expansionism: number;
   capital: number;
   type: string;
@@ -342,10 +345,8 @@ class StatesModule {
       if (!capital) break;
 
       const culture = capital.culture ?? 0;
-      const capitalName = capital.name ?? "";
-      const basename =
-        capitalName.length < 9 && capital.cell % 5 === 0 ? capitalName : Names.getCulture(culture, 3, 6, "");
-      const name = Names.getState(basename, culture);
+      const taken = new Set(newStates.map(state => state.name));
+      const { name, meaning } = Toponyms.state(capital, culture, { taken });
       const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[capital.cell]);
       const type = nomadic
         ? "Nomadic"
@@ -358,6 +359,7 @@ class StatesModule {
       newStates.push({
         i: stateId,
         name,
+        meaning,
         type,
         capital: capital.i,
         center: capital.cell,
@@ -374,21 +376,22 @@ class StatesModule {
 
   private createStates() {
     const states: State[] = [{ i: 0, name: "Neutrals", economy: noFinance(), tags: [] } as unknown as State];
-    const each5th = each(5);
     const sizeVariety = options.generation.states.sizeVariety;
 
     pack.burgs.forEach(burg => {
       if (!burg.i || !burg.capital) return;
 
       const expansionism = rn(Math.random() * sizeVariety + 1, 1);
-      const basename = burg.name!.length < 9 && each5th(burg.cell) ? burg.name! : Names.getCultureShort(burg.culture!);
-      const name = Names.getState(basename, burg.culture!);
+      const taken = new Set(states.map(state => state.name));
+      const seed = `${options.map.seed}|state|${burg.i}`;
+      const { name, meaning } = Toponyms.state(burg, burg.culture!, { taken, seed });
       const type = pack.cultures[burg.culture!].type;
       const coa = Emblems.generate(null, null, null, type);
       coa.shield = Emblems.getShield(burg.culture!);
       states.push({
         i: burg.i,
         name,
+        meaning,
         expansionism,
         capital: burg.i,
         type: type!,
@@ -1177,6 +1180,11 @@ class StatesModule {
     if (state.label?.text) state.label.text = replaceWholeWord(state.label.text, old, state.name) ?? state.label.text;
   }
 
+  /** Set what a state's name says, or clear it; the name itself stays as it is */
+  setMeaning(stateId: number, meaning?: Meaning): void {
+    this.living(stateId).meaning = meaning;
+  }
+
   /** Set a state's color */
   recolor(stateId: number, color: string): void {
     this.living(stateId).color = requireColor(color);
@@ -1267,10 +1275,12 @@ class StatesModule {
     if (existing && burgs[existing].capital) throw new Error(`Burg ${existing} is already a capital`);
     const capital = existing || Burgs.add(x, y);
     const culture = cells.culture[center];
-    const basename = center % 5 === 0 ? burgs[capital].name! : Names.getCulture(culture);
+    const { name, meaning } = Toponyms.state(burgs[capital], culture);
     const coa = Emblems.generate(burgs[capital].coa, 0.4, null, cultures[culture].type);
     coa.shield = Emblems.getShield(culture, undefined);
-    return this.found(Names.getState(basename, culture), capital, coa, [center]);
+    const stateId = this.found(name, capital, coa, [center]);
+    pack.states[stateId].meaning = meaning;
+    return stateId;
   }
 
   /** A new state around a capital burg, taking the given cells from their state and provinces. Returns its id */
@@ -1683,7 +1693,7 @@ class StatesModule {
       const burg = burgId ? burgs[burgId] : null;
       const culture = cells.culture[center];
       const nameByBurg = burgCell && P(0.5);
-      const name = nameByBurg ? burg!.name! : old.name || Names.getState(Names.getCultureShort(culture), culture);
+      const name = nameByBurg ? burg!.name! : old.name || Toponyms.land(Names.getCultureShort(culture), culture);
       const formName = burgCell && old.formName ? old.formName : ra(["Zone", "Area", "Territory", "Province"]);
       const type = Burgs.getType(center, burg?.port);
       const coa = Emblems.generate(burg?.coa || states[stateId].coa, nameByBurg ? 0.8 : 0.4, burg ? null : 0.9, type);

@@ -816,7 +816,7 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
   }
 
   const cultureBurgs = pack.burgs.filter(b => b.culture === cultureId && !b.removed && !b.lock);
-  for (const burg of cultureBurgs) Burgs.rename(burg.i, Names.getCulture(cultureId));
+  for (const burg of cultureBurgs) Burgs.regenerateName(burg.i);
   Layers.draw("labels");
   tip(t("Burg names regenerated: {{burgs}}", { burgs: cultureBurgs.length }), false, "success");
 }

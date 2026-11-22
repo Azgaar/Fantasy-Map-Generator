@@ -6,25 +6,41 @@ import { isVowel } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { notify } from "@/utils/notices";
 import { P, ra, rand } from "@/utils/probability-utils";
-import { capitalize } from "@/utils/string-utils";
-import { applyRules, doublesRule } from "./sound-rules";
+import { applyRules, capitalizeWords, doublesRule } from "./sound-rules";
 
 // Markov chain lookup table: key is a letter (or empty string for word start), value is array of possible next syllables
 // Note: Uses array with string keys (sparse array) to match original JS behavior
 type MarkovChain = string[][] & Record<string, string[]>;
 
 const SYLLABIC = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
-const WORD_START = /(?<=^|[ -])./gu;
 const SHIPPED = getDefaultNameBases().map(base => base.id); // a shipped base's place in the default set
-const FANTASY = ["elven", "dark-elven", "dwarven", "goblin", "orc", "giant", "draconic", "arachnid", "serpents"];
+
+const formantSchema = z.object({
+  form: z.string().min(1),
+  weight: z.number().min(0).optional(),
+  position: z.enum(["first", "last", "word"]).optional(),
+  short: z.string().optional(),
+  link: z.string().optional()
+});
 
 /** A base as a namesbase file holds it */
 export const nameBaseSchema = z.object({
   id: z.string().regex(/^[\p{L}\p{N}-]+$/u),
   name: z.string().min(1),
   length: z.tuple([z.number(), z.number()]),
+  extends: z.string().optional(),
   places: z.object({ names: z.array(z.string()) }),
-  rules: z.array(z.object({ match: z.string(), replace: z.string() })).optional()
+  rules: z.array(z.object({ match: z.string(), replace: z.string(), at: z.literal("join").optional() })).optional(),
+  lexicon: z.record(z.string(), z.array(formantSchema)).optional(),
+  patterns: z
+    .record(
+      z.string(),
+      z.object({
+        weight: z.number().min(0).optional(),
+        templates: z.array(z.object({ parts: z.string(), weight: z.number().min(0).optional() })).optional()
+      })
+    )
+    .optional()
 });
 
 /** A base of the classic make: a length range, a corpus and the letters allowed to stand twice in a row */
@@ -55,45 +71,56 @@ class NamesGenerator {
   calculateChain(names: string[]): MarkovChain {
     const chain: MarkovChain = [] as unknown as MarkovChain;
 
-    for (const n of names) {
-      const name = n.trim().toLowerCase();
-      const basic = !/[^\x20-\x7e]/.test(name); // basic printable ASCII chars and English rules can be applied
-
-      // split word into pseudo-syllables
-      for (let i = -1, syllable = ""; i < name.length; i += syllable.length || 1, syllable = "") {
-        const prev = name[i] || ""; // pre-onset letter
-        let v = 0; // 0 if no vowels in syllable
-
-        for (let c = i + 1; name[c] && syllable.length < 5; c++) {
-          const that = name[c],
-            next = name[c + 1]; // next char
-          syllable += that;
-          if (syllable === " " || syllable === "-") break; // syllable starts with space or hyphen
-          if (!next || next === " " || next === "-") break; // no need to check
-          if (SYLLABIC.test(that) || SYLLABIC.test(next)) break; // CJK character is a syllable on its own
-
-          if (isVowel(that)) v = 1; // check if letter is vowel
-
-          // do not split some diphthongs
-          if (that === "y" && next === "e") continue; // 'ye'
-          if (basic) {
-            // English-like
-            if (that === "o" && next === "o") continue; // 'oo'
-            if (that === "e" && next === "e") continue; // 'ee'
-            if (that === "a" && next === "e") continue; // 'ae'
-            if (that === "c" && next === "h") continue; // 'ch'
-          }
-
-          if (isVowel(that) === (next as unknown as boolean)) break; // two same vowels in a row (original quirky behavior)
-          if (v && isVowel(name[c + 2])) break; // syllable has vowel and additional vowel is expected soon
-        }
-
+    for (const name of names) {
+      let prev = ""; // the letter a syllable follows; a word ends in an empty syllable
+      for (const syllable of [...this.syllables(name), ""]) {
         if (!chain[prev]) chain[prev] = [];
         chain[prev].push(syllable);
+        prev = syllable[syllable.length - 1];
       }
     }
 
     return chain;
+  }
+
+  /** Split a name into the pseudo-syllables the chain is made of */
+  syllables(rawName: string): string[] {
+    const name = rawName.trim().toLowerCase();
+    const basic = !/[^\x20-\x7e]/.test(name); // basic printable ASCII chars and English rules can be applied
+    const syllables: string[] = [];
+
+    for (let i = 0; i < name.length; i += syllables[syllables.length - 1].length) {
+      let syllable = "";
+      let v = 0; // 0 if no vowels in syllable
+
+      for (let c = i; name[c] && syllable.length < 5; c++) {
+        const that = name[c],
+          next = name[c + 1]; // next char
+        syllable += that;
+        if (syllable === " " || syllable === "-") break; // syllable starts with space or hyphen
+        if (!next || next === " " || next === "-") break; // no need to check
+        if (SYLLABIC.test(that) || SYLLABIC.test(next)) break; // CJK character is a syllable on its own
+
+        if (isVowel(that)) v = 1; // check if letter is vowel
+
+        // do not split some diphthongs
+        if (that === "y" && next === "e") continue; // 'ye'
+        if (basic) {
+          // English-like
+          if (that === "o" && next === "o") continue; // 'oo'
+          if (that === "e" && next === "e") continue; // 'ee'
+          if (that === "a" && next === "e") continue; // 'ae'
+          if (that === "c" && next === "h") continue; // 'ch'
+        }
+
+        if (isVowel(that) === (next as unknown as boolean)) break; // two same vowels in a row (original quirky behavior)
+        if (v && isVowel(name[c + 2])) break; // syllable has vowel and additional vowel is expected soon
+      }
+
+      syllables.push(syllable);
+    }
+
+    return syllables;
   }
 
   updateChain(id: string): MarkovChain | null {
@@ -177,7 +204,7 @@ class NamesGenerator {
     if (/['\- ]$/.test(w)) w = w.slice(0, -1); // a name ends in a letter
 
     const rules = dupl === "" ? [doublesRule(), ...(base.rules ?? [])] : base.rules;
-    let name = applyRules(w, rules).replace(WORD_START, letter => letter.toUpperCase());
+    let name = capitalizeWords(applyRules(w, rules));
 
     // join the word if any part has only 1 letter
     if (name.split(" ").some(part => part.length < 2))
@@ -235,64 +262,6 @@ class NamesGenerator {
     const suffix = P(0.8) ? "ia" : "land";
     if (suffix === "ia" && name.length > 6) name = name.slice(0, -(name.length - 3));
     else if (suffix === "land" && name.length > 6) name = name.slice(0, -(name.length - 5));
-    return this.validateSuffix(name, suffix);
-  }
-
-  // generate state name based on capital or random name and culture-specific suffix
-  getState(name: string, culture: number, base?: string): string {
-    if (name === undefined) {
-      log.error("Please define a base name");
-      return "ERROR";
-    }
-    if (culture === undefined && base === undefined) {
-      log.error("Please define a culture");
-      return "ERROR";
-    }
-    if (base === undefined) base = pack.cultures[culture].base;
-
-    // exclude endings inappropriate for states name
-    if (name.includes(" ")) name = capitalize(name.replace(/ /g, "").toLowerCase()); // don't allow multiword state names
-    if (name.length > 6 && name.slice(-4) === "berg") name = name.slice(0, -4); // remove -berg for any
-    if (name.length > 5 && name.slice(-3) === "ton") name = name.slice(0, -3); // remove -ton for any
-
-    if (base === "ruthenian" && ["sk", "ev", "ov"].includes(name.slice(-2))) name = name.slice(0, -2);
-    else if (base === "japanese")
-      return isVowel(name.slice(-1)) ? name : `${name}u`; // ends on any vowel or -u
-    else if (base === "arabic" && P(0.4))
-      name = isVowel(name.slice(0, 1).toLowerCase()) ? `Al${name.toLowerCase()}` : `Al ${name}`; // starts with Al
-
-    // no suffix for fantasy bases
-    if (FANTASY.includes(base)) return name;
-
-    // define if suffix should be used
-    if (name.length > 3 && isVowel(name.slice(-1))) {
-      if (isVowel(name.slice(-2, -1)) && P(0.85)) name = name.slice(0, -2);
-      // 85% for vv
-      else if (P(0.7)) name = name.slice(0, -1);
-      // ~60% for cv
-      else return name;
-    } else if (P(0.4)) return name; // 60% for cc and vc
-
-    // define suffix
-    let suffix = "ia"; // standard suffix
-
-    const rnd = Math.random(),
-      l = name.length;
-    if (["italian", "castillian", "portuguese"].includes(base) && rnd < 0.03 && l < 7) suffix = "terra";
-    else if (base === "french" && rnd < 0.03 && l < 7) suffix = "terre";
-    else if (base === "german" && rnd < 0.5 && l < 7) suffix = "land";
-    else if (base === "english" && rnd < 0.4 && l < 7) suffix = "land";
-    else if (base === "nordic" && rnd < 0.3 && l < 7) suffix = "land";
-    else if (base === "human-generic" && rnd < 0.1 && l < 7) suffix = "land";
-    else if (base === "greek" && rnd < 0.1) suffix = "eia";
-    else if (base === "finnic" && rnd < 0.35) suffix = "maa";
-    else if (base === "hungarian" && rnd < 0.4 && l < 6) suffix = "orszag";
-    else if (base === "turkish") suffix = rnd < 0.6 ? "yurt" : "eli";
-    else if (base === "korean") suffix = "guk";
-    else if (base === "chinese") suffix = " Guo";
-    else if (base === "nahuatl") suffix = rnd < 0.5 && l < 6 ? "tlan" : "co";
-    else if (["amazigh", "arabic"].includes(base) && rnd < 0.8) suffix = "a";
-
     return this.validateSuffix(name, suffix);
   }
 

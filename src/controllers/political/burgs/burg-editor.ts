@@ -4,6 +4,7 @@ import { Markets } from "@/model/economy/markets-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
+import { gloss, type Meaning, simplex } from "@/model/society/name-render";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/units";
@@ -80,6 +81,11 @@ function renderDialog(): void {
                 data-tip="${t("Generate random name")}"
                 class="icon-globe pointer"
               ></span>
+            </div>
+            <div data-tip="${t("What the name says, apart from any language")}">
+              <div class="label">${t("Meaning")}:</div>
+              <i id="burgMeaning" style="display: inline-block; width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom"></i>
+              <span id="burgTranslations" data-tip="${t("See the name in other name bases")}" class="icon-exchange pointer"></span>
             </div>
             <div data-tip="${t("Select burg group. Groups defines burg icon, label size and style")}">
               <div class="label">${t("Group")}:</div>
@@ -266,6 +272,7 @@ function renderDialog(): void {
   ensureEl("burgType").addEventListener("change", changeType);
   ensureEl("burgCulture").addEventListener("change", changeCulture);
   ensureEl("burgNameReCulture").addEventListener("click", generateNameCulture);
+  ensureEl("burgTranslations").addEventListener("click", showTranslations);
   ensureEl("burgPopulation").addEventListener("change", changePopulation);
   ensureEl("burgWealthEconomy").addEventListener("click", showBurgEconomy);
   ensureEl("burgTags").addEventListener("change", changeTags);
@@ -317,6 +324,7 @@ function updateBurgValues(): void {
   ensureEl("burgProvinceAndState").textContent = provinceName + stateName;
 
   ensureEl<HTMLInputElement>("burgName").value = b.name!;
+  ensureEl("burgMeaning").textContent = getMeaningGloss(b);
   ensureEl<HTMLSelectElement>("burgGroup").value = b.group!;
   ensureEl<HTMLSelectElement>("burgType").value = b.type || "Generic";
   ensureEl<HTMLInputElement>("burgPopulation").value = String(
@@ -369,8 +377,33 @@ function changeName(): void {
 }
 
 function generateNameRandom(): void {
-  ensureEl<HTMLInputElement>("burgName").value = Names.getBase(Names.randomBase().id);
-  changeName();
+  regenerateName(Names.randomBase().id);
+}
+
+/** Coin a new meaning for the burg, named in its culture's base or the base given */
+function regenerateName(baseId?: string): void {
+  const burg = pack.burgs[getSelectedId()];
+  Burgs.regenerateName(burg.i, baseId);
+  ensureEl<HTMLInputElement>("burgName").value = burg.name!;
+  ensureEl("burgMeaning").textContent = getMeaningGloss(burg);
+  Layers.draw("labels");
+}
+
+/** The meaning a burg's name carries; a name without one stands as a proper name of its culture's base */
+const getMeaning = (burg: Burg): Meaning =>
+  burg.meaning ?? simplex(burg.name!, pack.cultures[burg.culture ?? 0]?.base ?? Names.nameBases[0].id);
+
+function getMeaningGloss(burg: Burg): string {
+  const meaning = getMeaning(burg);
+  return meaning.pattern === "simplex" ? t("proper name") : gloss(meaning);
+}
+
+function showTranslations(): void {
+  const burg = pack.burgs[getSelectedId()];
+  void Controllers.NameTranslations.open(getMeaning(burg), name => {
+    ensureEl<HTMLInputElement>("burgName").value = name;
+    changeName();
+  });
 }
 
 function changeGroup(this: HTMLSelectElement): void {
@@ -390,10 +423,7 @@ function changeCulture(this: HTMLSelectElement): void {
 }
 
 function generateNameCulture(): void {
-  const id = getSelectedId();
-  const culture = pack.burgs[id].culture!;
-  ensureEl<HTMLInputElement>("burgName").value = Names.getCulture(culture);
-  changeName();
+  regenerateName();
 }
 
 function changePopulation(): void {

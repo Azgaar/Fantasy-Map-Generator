@@ -1,3 +1,4 @@
+import type { Concept } from "@/data/name-concepts";
 import { amazigh } from "./amazigh";
 import { arabic } from "./arabic";
 import { arachnid } from "./arachnid";
@@ -42,18 +43,49 @@ import { swahili } from "./swahili";
 import { turkish } from "./turkish";
 import { vietnamese } from "./vietnamese";
 
-/** A regex rewrite of a generated name: `match` is a regex source, `replace` may use `$1` groups */
+/** A regex rewrite: `match` is a regex source, `replace` may use `$1` groups. A rule shapes the words a base
+ * generates and the roots it borrows; one set `at` the join shapes a name made of parts, where `+` marks each join */
 export interface SoundRule {
   match: string;
   replace: string;
+  at?: "join";
+}
+
+/** The shape of a meaning: which slots a name has */
+export type Pattern =
+  | "simplex" // root
+  | "feature" // generic
+  | "modifier-generic"
+  | "owner-generic" // root, generic
+  | "generic-of" // generic, root
+  | "relative" // modifier, root
+  | "root-land" // root, generic
+  | "modifier-land"; // modifier, generic
+
+/** A base's fixed form of a concept inside a name */
+export interface Formant {
+  form: string;
+  weight?: number; // against the concept's other forms, 1 when absent
+  position?: "first" | "last" | "word"; // where in a word the form may stand; anywhere when absent
+  short?: string; // taken when the name runs too long
+  link?: string; // put between the form and the part after it
+}
+
+/** How a base lays a pattern out: slots in braces, such as "{root}s{generic}" or "{generic} {root}" */
+export interface Template {
+  parts: string;
+  weight?: number;
 }
 
 export interface NameBase {
   id: string; // stable slug, what a culture stores as its base
   name: string;
+  extends?: string; // the base whose lexicon and patterns stand in where this one has none
   length: [min: number, max: number]; // of a generated name
   places: { names: string[] }; // the place names a Markov chain is built from
   rules?: SoundRule[]; // applied in order, before the shared ones
+  lexicon?: Partial<Record<Concept, Formant[]>>;
+  patterns?: Partial<Record<Pattern, { weight?: number; templates?: Template[] }>>;
 }
 
 const NAME_BASES: NameBase[] = [

@@ -9,6 +9,7 @@ import type { Point } from "@/model/graph/voronoi";
 import { MapEntities } from "@/model/map-entities";
 import { Rivers } from "@/model/physical/river-generator";
 import { Names } from "@/model/society/names-generator";
+import { Toponyms } from "@/model/society/toponyms";
 import { createLabelArc } from "@/renderers/labels/label-arc";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
@@ -415,11 +416,11 @@ const nameGenerators: Record<LabelType, (label: LabelData) => string> = {
   burg: label => Names.getCulture(pack.burgs[label.entityId].culture ?? 0),
   state: label => {
     const culture = pack.states[label.entityId].culture;
-    return Names.getState(Names.getCulture(culture, 4, 7, ""), culture);
+    return Toponyms.land(Names.getCulture(culture, 4, 7, ""), culture);
   },
   province: label => {
     const province = pack.provinces[label.entityId];
-    return Names.getState(province.name, pack.cells.culture[province.center]);
+    return Toponyms.land(province.name, pack.cells.culture[province.center]);
   },
   added: label => {
     const cellId = Pack.findCell(...label.anchor);

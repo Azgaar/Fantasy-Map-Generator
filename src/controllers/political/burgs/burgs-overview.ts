@@ -4,7 +4,6 @@ import { Markets } from "@/model/economy/markets-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
-import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/units";
 import { removeEmblem } from "@/renderers/draw-emblems";
@@ -625,8 +624,7 @@ function triggerBurgRemove(this: HTMLElement): void {
 function regenerateNames(): void {
   // regenerate across the full filtered set (all pages), not just the visible page
   for (const b of getFilteredBurgs()) {
-    if (b.lock) continue;
-    b.name = Names.getCulture(b.culture!);
+    if (!b.lock) Burgs.regenerateName(b.i);
   }
 
   burgsTable.refresh();

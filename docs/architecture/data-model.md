@@ -155,6 +155,7 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `x`: `number` - x axis coordinate, rounded to two decimals
 - `y`: `number` - y axis coordinate, rounded to two decimals
 - `culture`: `number` - burg culture id
+- `meaning`: `object` - what the name says, apart from any language. Optional: a name without one is a proper name. See [Name meanings](#name-meanings)
 - `state`: `number` - burg state id
 - `feature`: `number` - burg feature id (id of a landmass)
 - `population`: `number` - burg population in population points
@@ -186,6 +187,7 @@ States (countries) data is stored as an array of objects with strict element ord
 
 - `i`: `number` - state id, always equal to the array index
 - `name`: `string` - short (proper) form of the state name
+- `meaning`: `object` - what the name says. Optional. See [Name meanings](#name-meanings)
 - `form`: `string` - state form type. Available types are `Monarchy`, `Republic`, `Theocracy`, `Union`, and `Anarchy`
 - `formName`: `string` - string form name, used to get state `fullName`
 - `fullName`: `string` - full state name. Combination of the proper name and state `formName`
@@ -597,6 +599,21 @@ Name generator consumes training sets of real-world town names (with the excepti
 - `name`: `string` - names base proper name
 - `length`: `[number, number]` - recommended minimal and maximal length of generated names. Generator adds syllables until the minimum is reached and stops at the maximum
 - `places`: `object` - the corpus of place names; `places.names` is the `string[]` a Markov chain is built from
-- `rules`: `object[]` - optional sound rules, applied in order to each generated name before the shared ones in `src/data/name-rules.ts`. A rule is `{ match, replace }`: `match` is a regex source run with the `gu` flags on the lowercase name, `replace` may use `$1` groups. The letters allowed to stand twice in a row are one such rule: `([^lt])\1+` to `$1` keeps only `l` and `t` doubled
+- `rules`: `object[]` - optional sound rules, applied in order to each generated name before the shared ones in `src/data/name-rules.ts`. A rule is `{ match, replace, at? }`: `match` is a regex source run with the `gu` flags on the lowercase name, `replace` may use `$1` groups. A rule shapes the words the base generates and the roots it borrows; one with `at: "join"` runs on a name made of parts instead, where `+` marks each join. The letters allowed to stand twice in a row are one such rule: `([^lt])\1+` to `$1` keeps only `l` and `t` doubled
+
+- `extends`: `string` - optional id of the base whose lexicon and patterns stand in where this one has none
+- `lexicon`: `object` - optional forms of concepts: a concept id from `src/data/name-concepts.ts` to a list of formants `{ form, weight?, position?, short?, link? }`. `position` is `first`, `last` or `word` and says where in a word the form may stand; `short` is taken when a name runs too long; `link` goes between the form and the part after it
+- `patterns`: `object` - optional settings per name pattern: `weight` says how often the base coins a name of that pattern, `templates` is a list of `{ parts, weight? }` layouts such as `{root}s{generic}` or `{generic} {root}`
+
+A base with no form for a concept falls back to the shared lexicon in `src/data/name-rules.ts`, then to forms made of its own corpus: its commonest endings for generics, words of its Markov chain for the rest.
 
 A `.map` file keeps the bases as a JSON array. A shipped base the user left as it is goes by `{ id }` alone and takes the shipped data on load, so it follows later updates; an edited or custom base is stored in full.
+
+## Name meanings
+
+A burg or state keeps what its name says in `meaning`, apart from the `name` itself. Both are editable and neither overwrites the other, so a name may differ from what its meaning renders to. `render(meaning, baseId)` in `src/model/society/name-render.ts` gives the name a meaning takes in a name base: the same meaning and base always give the same name. `src/model/society/toponyms.ts` picks a meaning that fits a burg's place.
+
+- `pattern`: `string` - the shape of the meaning, which sets its slots: `simplex` (root), `feature` (generic), `modifier-generic`, `owner-generic` (root, generic), `generic-of` (generic, root), `relative` (modifier, root), `root-land` (root, generic), `modifier-land` (modifier, generic)
+- `tokens`: `string[]` - the slots' values in the pattern's order. A concept id such as `town` or `black`, or a proper root marked with `~`, such as `~Eadric`
+- `origin`: `string` - id of the name base the meaning was coined in
+- `salt`: `number` - optional, re-rolls the choice between a concept's forms

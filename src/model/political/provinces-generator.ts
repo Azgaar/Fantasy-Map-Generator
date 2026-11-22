@@ -5,6 +5,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
+import { Toponyms } from "@/model/society/toponyms";
 import type { Emblem } from "@/types/emblems";
 import { getMixedColor, requireColor } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
@@ -138,7 +139,7 @@ class ProvinceModule {
         const burg = stateBurgs[i];
         const c = stateBurgs[i].culture!;
         const nameByBurg = P(0.5);
-        const name = nameByBurg ? stateBurgs[i].name! : Names.getState(Names.getCultureShort(c), c);
+        const name = nameByBurg ? stateBurgs[i].name! : Toponyms.land(Names.getCultureShort(c), c);
         const formName = rw(form);
         form[formName] += 10;
         const fullName = `${name} ${formName}`;
@@ -280,7 +281,7 @@ class ProvinceModule {
           const colonyName = colony && P(0.8) && getColonyName();
           if (colonyName) return colonyName;
           if (burgCell && P(0.5)) return burgs[burg].name;
-          return Names.getState(Names.getCultureShort(c), c);
+          return Toponyms.land(Names.getCultureShort(c), c);
         })();
 
         const formName = (() => {
@@ -418,7 +419,7 @@ class ProvinceModule {
     const old = provinces[cells.province[center]];
     const burg = cells.burg[center];
     const culture = cells.culture[center];
-    const name = burg ? burgs[burg].name! : Names.getState(Names.getCultureShort(culture), culture);
+    const name = burg ? burgs[burg].name! : Toponyms.land(Names.getCultureShort(culture), culture);
     const formName = old?.formName || "Province";
     const coa = Emblems.generate(
       burg ? burgs[burg].coa : states[state].coa,

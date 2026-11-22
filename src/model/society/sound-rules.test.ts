@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { NameBase } from "@/data/name-bases";
-import { applyRules, doublesRule, getDoubles, setDoubles } from "./sound-rules";
+import type { NameBase, SoundRule } from "@/data/name-bases";
+import { applyRules, doublesRule, getDoubles, joinParts, setDoubles } from "./sound-rules";
 
 const base = (rules?: NameBase["rules"]): NameBase => ({
   id: "x",
@@ -21,11 +21,33 @@ describe("applyRules", () => {
 
   it("runs a base's rules before the shared ones", () => {
     expect(applyRules("baae", [doublesRule()])).toBe("be");
-    expect(applyRules("boch+heim", [{ match: "\\+heim$", replace: "um" }])).toBe("bochum");
   });
 
   it("skips a rule that is no valid regex", () => {
     expect(applyRules("abba", [{ match: "(", replace: "" }, doublesRule()])).toBe("aba");
+  });
+});
+
+describe("a name made of parts", () => {
+  it("is joined by the shared rules, which no plain name meets", () => {
+    expect(joinParts("frank+land")).toBe("frankland");
+    expect(joinParts("friede+ia")).toBe("friedia"); // a short vowel ending takes the place of the last vowels
+    expect(joinParts("io+ia")).toBe("ioia"); // but never the whole part
+    expect(joinParts("free+island")).toBe("freeisland");
+    expect(joinParts("hal+land")).toBe("haland");
+  });
+
+  it("runs the rules a base set at the join, and leaves its word rules to words", () => {
+    const rules: SoundRule[] = [
+      doublesRule(),
+      { match: "([aeiou])\\+u$", replace: "$1", at: "join" },
+      { match: "\\+heim$", replace: "um", at: "join" }
+    ];
+    expect(joinParts("kyoto+u", rules)).toBe("kyoto");
+    expect(joinParts("kan+u", rules)).toBe("kanu");
+    expect(joinParts("boch+heim", rules)).toBe("bochum");
+    expect(joinParts("oak+wood", rules)).toBe("oakwood"); // a form written for the base keeps its doubled letters
+    expect(applyRules("wood", rules)).toBe("wod");
   });
 });
 

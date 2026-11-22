@@ -11,8 +11,9 @@ import { Rivers } from "@/model/physical/river-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import type { Province } from "@/model/political/provinces-generator";
 import { Development } from "@/model/society/development-generator";
-import { Names } from "@/model/society/names-generator";
+import type { Meaning } from "@/model/society/name-render";
 import { Population } from "@/model/society/population-generator";
+import { Toponyms } from "@/model/society/toponyms";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { BurgProduction } from "@/types/economy";
 import type { Emblem } from "@/types/emblems";
@@ -38,6 +39,7 @@ export interface Burg {
   state?: number;
   culture?: number;
   name?: string;
+  meaning?: Meaning; // what the name says, kept apart from the name itself
   feature?: number;
   capital?: number;
   lock?: boolean;
@@ -128,7 +130,6 @@ class BurgModule {
         burg.i = burgId;
         burg.state = burgId;
         burg.culture = cells.culture[burg.cell];
-        burg.name = Names.getCultureShort(burg.culture);
         burg.feature = cells.f[burg.cell];
         burg.capital = 1;
         burg.tags = [];
@@ -155,7 +156,6 @@ class BurgModule {
 
           const burgId = burgs.length;
           const culture = cells.culture[cell];
-          const name = Names.getCulture(culture);
           const feature = cells.f[cell];
           burgs.push({
             cell,
@@ -164,7 +164,6 @@ class BurgModule {
             i: burgId,
             state: 0,
             culture,
-            name,
             feature,
             capital: 0,
             tags: []
@@ -182,6 +181,7 @@ class BurgModule {
 
     pack.burgs = burgs;
     this.assignPorts();
+    Toponyms.nameBurgs(burgs);
 
     function getCapitalsNumber() {
       let number = options.generation.states.limit;
@@ -808,12 +808,12 @@ class BurgModule {
       i: burgId,
       state: cells.state[cellId],
       culture,
-      name: Names.getCulture(culture),
       feature: cells.f[cellId],
       capital: 0,
       port: 0,
       tags: []
     };
+    Object.assign(burg, Toponyms.burg(burg));
     this.definePopulation(burg);
     this.defineEmblem(burg);
     this.defineFeatures(burg);
@@ -899,8 +899,7 @@ class BurgModule {
       }
 
       const culture = cells.culture[cell];
-      const name = Names.getCulture(culture);
-      newBurgs.push({ cell, x, y, state: stateId, i: id, culture, name, capital, feature: cells.f[cell] });
+      newBurgs.push({ cell, x, y, state: stateId, i: id, culture, capital, feature: cells.f[cell] });
       burgsTree.add([x, y]);
       cells.burg[cell] = id;
       Development.settle(cell);
@@ -908,6 +907,7 @@ class BurgModule {
 
     pack.burgs = newBurgs;
     this.assignPorts();
+    Toponyms.nameBurgs(pack.burgs, String(Math.random())); // another roll than the map's own, or the names come back
 
     states
       .filter(state => state.i && !state.removed && !state.capital)
@@ -965,6 +965,19 @@ class BurgModule {
     if (!burg || burg.removed) throw new Error(`Burg ${burgId} does not exist`);
     burg.name = requireName(name);
     if (burg.label?.text !== undefined) burg.label.text = burg.name;
+  }
+
+  /** Set what a burg's name says, or clear it; the name itself stays as it is */
+  setMeaning(burgId: number, meaning?: Meaning): void {
+    this.living(burgId).meaning = meaning;
+  }
+
+  /** Give a burg a new meaning that fits its place and the name its culture's base, or the base given, renders it to */
+  regenerateName(burgId: number, baseId?: string): void {
+    const burg = this.living(burgId);
+    const { name, meaning } = Toponyms.burg(burg, { baseId });
+    burg.meaning = meaning;
+    this.rename(burgId, name);
   }
 
   /** Set a burg's population as shown in the Burg Editor, in people */

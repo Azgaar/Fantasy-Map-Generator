@@ -16,6 +16,8 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Goods Editor: control deposit by min/max population
 - Goods Editor: control deposit clustering
 - Namesbase Editor: download as JSON, upload JSON or the older TXT
+- Names: burgs and states are named for their place, such as a river mouth or a harbour
+- Burg Editor and State name editor: see what a name means and how other namesbases render it
 
 **[1.158.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.158.0) - 2026-11-12**:
 

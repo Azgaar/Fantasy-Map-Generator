@@ -19,6 +19,7 @@ vi.mock("@/renderers/overlays/fogging", () => ({ fog: vi.fn(), unfog: vi.fn() })
 vi.mock("@/ui/map/highlight", () => ({ highlightElement: vi.fn(), highlightOutline: vi.fn() }));
 
 import { Names } from "@/model/society/names-generator";
+import { Toponyms } from "@/model/society/toponyms";
 import { Layers } from "@/renderers/layers";
 import { Dialog } from "@/ui/dialog/dialog";
 import { DIALOGS_MARKUP } from "@/ui/dialog/dialog-testing";
@@ -63,7 +64,7 @@ afterEach(() => {
 describe("ProvincesEditor name regeneration", () => {
   beforeEach(() => {
     vi.spyOn(Names, "getCultureShort").mockImplementation(culture => `Culture${culture}`);
-    vi.spyOn(Names, "getState").mockImplementation(name => name);
+    vi.spyOn(Toponyms, "land").mockImplementation(name => name);
   });
 
   it("uses each province's local culture, including Wildlands, and updates names and labels", () => {

@@ -4,7 +4,7 @@ import { extent, min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
 import { isDrawable } from "@/controllers/political/emblems/drawability";
 import { DEFAULT_DEVELOPMENT } from "@/data/development";
-import { getDefaultNameBases } from "@/data/name-bases";
+import { getDefaultNameBases, type NameBase } from "@/data/name-bases";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
@@ -36,6 +36,7 @@ import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
 import { composeBase, uniqueBaseId } from "@/model/society/names-generator";
 import { Religions } from "@/model/society/religions-generator";
+import { setDoubles } from "@/model/society/sound-rules";
 import { getDefaultMarkerName, type Marker, Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
 import { Styles } from "@/model/styles/styles";
@@ -2350,7 +2351,9 @@ export function migrateLegacyNameBases(mapVersion: string, data: string[]): void
 
   const bases = stored.map(([name, min, max, doubled, , names = ""], index) => {
     if (!isCustom(names, index)) {
-      return composeBase(shipped[index].id, name, [+min, +max], shipped[index].places.names, doubled);
+      const base: NameBase = { ...shipped[index], name, length: [+min, +max] }; // the shipped base under the map's settings
+      setDoubles(base, doubled ?? "");
+      return base;
     }
     const id = uniqueBaseId(name, taken);
     taken.push(id);

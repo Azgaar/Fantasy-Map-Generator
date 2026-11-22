@@ -1,0 +1,141 @@
+import { afterEach, describe, expect, it } from "vitest";
+import type { NameBase } from "@/data/name-bases";
+import { compose, gloss, type Meaning, render, simplex, type Token } from "./name-render";
+import { composeBase, Names } from "./names-generator";
+
+afterEach(() => Names.restore());
+
+const meaning = (pattern: Meaning["pattern"], ...tokens: Token[]): Meaning => ({ pattern, tokens, origin: "english" });
+const withSalt = (base: Meaning, salt: number): Meaning => ({ ...base, salt });
+
+/** a base nobody wrote a lexicon for: 250 names on four endings */
+const custom = (extra: Partial<NameBase> = {}): NameBase => {
+  const stems = [..."kmtvsdnbgh"].flatMap(onset =>
+    [..."aeiou"].flatMap(vowel => [..."rlnst"].map(coda => onset + vowel + coda))
+  );
+  const names = stems.map((stem, index) => stem + ["bach", "dorf", "heim", "stadt"][index % 4]);
+  return { ...composeBase("custom", "Custom", [4, 12], names, "l"), ...extra };
+};
+
+describe("gloss", () => {
+  it("reads each pattern in English", () => {
+    expect(gloss(meaning("simplex", "~Aitern"))).toBe("Aitern");
+    expect(gloss(meaning("feature", "ford"))).toBe("The Ford");
+    expect(gloss(meaning("modifier-generic", "new", "town"))).toBe("New Town");
+    expect(gloss(meaning("owner-generic", "~Eadric", "farm"))).toBe("Eadric's Farm");
+    expect(gloss(meaning("owner-generic", "~Crys", "shore"))).toBe("Crys' Shore");
+    expect(gloss(meaning("generic-of", "mouth", "~Exe"))).toBe("Mouth of Exe");
+    expect(gloss(meaning("relative", "upper", "~Aitern"))).toBe("Upper Aitern");
+    expect(gloss(meaning("root-land", "~Frank", "land"))).toBe("Land of Frank");
+    expect(gloss(meaning("modifier-land", "east", "realm"))).toBe("East Realm");
+    expect(gloss(simplex("Aitern", "german"))).toBe("Aitern");
+  });
+});
+
+describe("render", () => {
+  it("gives the same name for the same meaning and base, whatever was rendered between", () => {
+    const meanings = [meaning("modifier-generic", "black", "ford"), meaning("owner-generic", "~Eadric", "farm")];
+    const first = Names.nameBases.map(base => meanings.map(item => render(item, base.id)));
+    Names.clearChains();
+    render(meaning("feature", "harbour"), "german");
+    expect(Names.nameBases.map(base => meanings.map(item => render(item, base.id)))).toEqual(first);
+  });
+
+  it("renders every pattern in every shipped base", () => {
+    const meanings = [
+      meaning("simplex", "~Aitern"),
+      meaning("feature", "harbour"),
+      meaning("modifier-generic", "new", "town"),
+      meaning("owner-generic", "~Eadric", "farm"),
+      meaning("generic-of", "mouth", "~Exe"),
+      meaning("relative", "upper", "~Aitern"),
+      meaning("root-land", "~Frank", "land"),
+      meaning("modifier-land", "east", "land")
+    ];
+    for (const base of Names.nameBases) {
+      for (const item of meanings) {
+        const name = render(item, base.id);
+        expect(name, `${base.id} ${gloss(item)}`).toMatch(/^\p{Lu}/u);
+        expect(name).not.toMatch(/[+{}]|ERROR/);
+      }
+    }
+  });
+
+  it("takes the plain English word where a base speaks plain English", () => {
+    expect(render(meaning("modifier-generic", "new", "town"), "human-generic")).toBe("Newtown");
+    expect(render(meaning("modifier-generic", "raven", "marsh"), "english")).toBe("Ravenmarsh"); // English extends it
+    expect(render(meaning("owner-generic", "~Eadric", "farm"), "human-generic")).toBe("Eadricfarm");
+    expect(render(meaning("feature", "bridge"), "human-generic")).toBe("Bridge");
+    expect(render(meaning("modifier-generic", "oak", "wood"), "english")).toBe("Oakwood"); // no rule for words undoes a form
+    expect(render(meaning("owner-generic", "~Watree", "mill"), "english")).toBe("Watremill"); // but a root is a word
+  });
+
+  it("names a land with the forms the base has for it", () => {
+    const frank = meaning("root-land", "~Frank", "land");
+    const names = (baseId: string) =>
+      new Set(Array.from({ length: 40 }, (_, salt) => render(withSalt(frank, salt), baseId)));
+    expect(names("german")).toEqual(new Set(["Frankland", "Frankia"]));
+    expect(names("korean")).toEqual(new Set(["Frankguk"]));
+    expect(names("chinese")).toEqual(new Set(["Frank Guo"]));
+    expect(names("arabic")).toEqual(new Set(["Franka", "Frankia", "Al Franka", "Al Frankia"]));
+    expect(names("elven")).toEqual(new Set(["Frankia"])); // the shared form: a base with no land of its own
+  });
+
+  it("applies a base's rules at the join", () => {
+    expect(render(meaning("root-land", "~Kyoto", "land"), "japanese")).toBe("Kyoto");
+    expect(render(meaning("root-land", "~Kan", "land"), "japanese")).toBe("Kanu");
+    const aswan = meaning("root-land", "~Aswan", "land");
+    const arabic = Array.from({ length: 40 }, (_, salt) => render(withSalt(aswan, salt), "arabic"));
+    expect(arabic).toContain("Alaswana"); // "al" joins a root that starts with a vowel
+  });
+
+  it("drops a root's last vowels before a short vowel ending", () => {
+    expect(render(meaning("root-land", "~Friede", "land"), "greek")).toMatch(/^Fried(e?ia)$/);
+    expect(render(meaning("modifier-generic", "free", "island"), "human-generic")).toBe("Freeisland");
+  });
+});
+
+describe("a base with no lexicon", () => {
+  it("ends its generics with the commonest endings of its corpus and coins the rest from its chain", () => {
+    Names.nameBases.push(custom());
+    const names = ["town", "village", "home", "farm"].map(generic =>
+      render(meaning("owner-generic", "~Mel", generic as Token), "custom")
+    );
+    expect(new Set(names)).toEqual(new Set(["Melbach", "Meldorf", "Melheim", "Melstadt"]));
+    expect(render(meaning("owner-generic", "~Mel", "quarry"), "custom")).toMatch(/^Mel\p{Ll}+$/u);
+  });
+
+  it("keeps one form for a concept across names", () => {
+    Names.nameBases.push(custom());
+    const [town, farm] = ["town", "farm"].map(generic =>
+      render(meaning("modifier-generic", "black", generic as Token), "custom")
+    );
+    const prefix = town.slice(
+      0,
+      [...town].findIndex((letter, index) => letter !== farm[index])
+    );
+    expect(prefix.length).toBeGreaterThanOrEqual(2);
+    expect(render(meaning("modifier-generic", "white", "town"), "custom")).not.toBe(town);
+  });
+
+  it("takes the lexicon and templates of the base it extends", () => {
+    Names.nameBases.push(custom({ extends: "chinese" }));
+    expect(render(meaning("root-land", "~Mel", "land"), "custom")).toBe("Mel Guo");
+  });
+});
+
+describe("a name too long for its base", () => {
+  it("clips its root at a syllable, then gives up its modifier", () => {
+    Names.nameBases.push(custom({ length: [4, 9] }));
+    const long = compose(meaning("owner-generic", "~Korbachmelheim", "town"), "custom");
+    expect(long).toEqual({ name: "Korbach", whole: true }); // the root kept as far as the ending leaves room
+    expect(render(meaning("simplex", "~Korbachmelheim"), "custom")).toBe("Korbachmelheim"); // a name of its own is left whole
+
+    Names.nameBases.push({ ...custom({ length: [4, 9] }), id: "plain", extends: "human-generic" });
+    expect(compose(meaning("modifier-generic", "shepherd", "harbour"), "plain")).toEqual({
+      name: "Harbour",
+      whole: false
+    });
+    expect(compose(meaning("modifier-generic", "new", "town"), "plain")).toEqual({ name: "Newtown", whole: true });
+  });
+});

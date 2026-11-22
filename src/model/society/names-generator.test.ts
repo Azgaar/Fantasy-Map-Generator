@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Pattern } from "@/data/name-bases";
+import { isConcept } from "@/data/name-concepts";
+import { DEFAULT_LEXICON, DEFAULT_TEMPLATES } from "@/data/name-rules";
+import { SLOTS } from "./name-render";
 import { composeBase, Names, nameBaseSchema, uniqueBaseId } from "./names-generator";
 import { applyRules } from "./sound-rules";
 
@@ -32,6 +36,26 @@ describe("shipped name bases", () => {
       expect(base.places.names.length).toBeGreaterThan(100);
       for (const { match } of base.rules ?? []) expect(() => new RegExp(match, "gu")).not.toThrow();
     }
+  });
+
+  it("write lexicons in the vocabulary, patterns that exist and bases they can extend", () => {
+    const bases = Names.getNameBases();
+    for (const base of bases) {
+      for (const concept of Object.keys(base.lexicon ?? {}))
+        expect(isConcept(concept), `${base.id}: ${concept}`).toBe(true);
+      for (const [pattern, { templates = [] }] of Object.entries(base.patterns ?? {})) {
+        expect(Object.keys(DEFAULT_TEMPLATES), base.id).toContain(pattern);
+        const slots = SLOTS[pattern as Pattern].map(slot => `{${slot}}`);
+        for (const { parts } of templates)
+          expect(slots, `${base.id}: ${parts}`).toEqual(expect.arrayContaining(parts.match(/\{\w+\}/g)!));
+      }
+      if (base.extends)
+        expect(
+          bases.some(({ id }) => id === base.extends),
+          base.id
+        ).toBe(true);
+    }
+    for (const concept of Object.keys(DEFAULT_LEXICON)) expect(isConcept(concept)).toBe(true);
   });
 });
 
