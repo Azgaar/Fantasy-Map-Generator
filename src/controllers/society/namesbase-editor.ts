@@ -1,8 +1,12 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
 import { z } from "zod";
-import type { NameBase } from "@/data/name-bases";
+import type { Corpus, NameBase, Pattern } from "@/data/name-bases";
+import { type Concept, conceptsOf } from "@/data/name-concepts";
+import { DEFAULT_TEMPLATES, DEFAULT_WEIGHTS } from "@/data/name-rules";
+import { fallbackForms, gloss, mineEndings } from "@/model/society/name-render";
 import { composeBase, Names, nameBaseSchema, uniqueBaseId } from "@/model/society/names-generator";
-import { getDoubles, setDoubles } from "@/model/society/sound-rules";
+import { applyRules, capitalizeWords, getDoubles, joinParts, setDoubles } from "@/model/society/sound-rules";
+import { Toponyms } from "@/model/society/toponyms";
 import { getFileName } from "@/services/io/file-name";
 import { speak } from "@/services/speech";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -12,11 +16,23 @@ import { openURL } from "@/utils/common-utils";
 import { createFileInput, downloadFile, uploadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
 import { log } from "@/utils/logger";
+import {
+  formatFormants,
+  formatRules,
+  formatTemplates,
+  parseFormants,
+  parseRules,
+  parseTemplates
+} from "@/utils/name-notation";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { escapeHtml, safeParseJSON } from "@/utils/string-utils";
 
+const TABS = ["places", "people", "lexicon", "patterns", "rules"] as const;
+type Tab = (typeof TABS)[number];
+
 let namesbaseInput: HTMLInputElement | null = null;
+let activeTab: Tab = "places"; // kept between openings: the tab the user works in
 
 function open(): void {
   if (options.app.mode) return;
@@ -37,50 +53,111 @@ function open(): void {
 
 function renderDialog(): void {
   Dialog.destroy("namesbaseEditor");
+  const tabLabels: Record<Tab, string> = {
+    places: t("Places"),
+    people: t("People"),
+    lexicon: t("Lexicon"),
+    patterns: t("Patterns"),
+    rules: t("Rules")
+  };
+  const tabs = TABS.map(tab => `<button data-tab="${tab}" style="flex: 1">${tabLabels[tab]}</button>`).join("");
+  const notation = (text: string) => `<code>${text}</code>`;
+
   const editorHtml = /* html */ `<div id="namesbaseEditor" class="dialog stable textual">
       <div id="namesbaseBasesTop">
         <span>${t("Select base")}: </span>
         <select id="namesbaseSelect" data-tip="${t("Select base to edit")}" style="width: 12em" value="0"></select>
-        <span style="margin-left: 2px">${t("Names data")}: </span>
-      </div>
-      <div id="namesbaseBody" style="margin-block: 2px; width: auto">
-        <textarea
-          id="namesbaseTextarea"
-          data-base="0"
-          rows="13"
-          data-tip="${t("Names data: a comma separated list of source names used for names generation")}"
-          placeholder="${t("Provide a names data: a comma separated list of source names")}"
+        <span>${t("Name")}: </span>
+        <input
+          id="namesbaseName"
+          data-tip="${t("Type to change a base name")}"
+          placeholder="${t("Base name")}"
           autocorrect="off"
           spellcheck="false"
-          style="resize: none"
-        ></textarea>
-        <div>
-          <span>${t("Name")}: </span>
-          <input
-            id="namesbaseName"
-            data-tip="${t("Type to change a base name")}"
-            placeholder="${t("Base name")}"
-            autocorrect="off"
-            spellcheck="false"
-            style="width: 12em"
-          />
-          <span>${t("Length")}: </span>
-          <input id="namesbaseMin" data-tip="${t("Recommended minimum name length")}" type="number" min="2" max="100" />
-          <input id="namesbaseMax" data-tip="${t("Recommended maximum name length")}" type="number" min="2" value="10" />
-          <span>${t("Doubled")}: </span>
-          <input
-            id="namesbaseDouble"
-            data-tip="${t("Populate with letters that can be used twice in a row (geminates)")}"
-            autocorrect="off"
-            spellcheck="false"
-            style="width: 10em"
-          />
-        </div>
-        <fieldset>
-          <legend>${t("Generated examples")}:</legend>
-          <div id="namesbaseExamples" data-tip="${t("Examples. Click to re-generate")}"></div>
-        </fieldset>
+          style="width: 10em"
+        />
+        <span>${t("Extends")}: </span>
+        <select
+          id="namesbaseExtends"
+          data-tip="${t("A base whose lexicon, patterns and people stand in where this base has none")}"
+          style="width: 10em"
+        ></select>
       </div>
+      <div id="namesbaseTabs" style="display: flex; gap: 2px; margin-block: 4px">${tabs}</div>
+      <div id="namesbaseBody" style="margin-block: 2px; width: auto; height: 16em; overflow-y: auto">
+        <div data-pane="places">
+          <textarea
+            id="namesbaseTextarea"
+            data-base="0"
+            rows="12"
+            data-tip="${t("Names data: a comma separated list of source names used for names generation")}"
+            placeholder="${t("Provide a names data: a comma separated list of source names")}"
+            autocorrect="off"
+            spellcheck="false"
+            style="resize: none"
+          ></textarea>
+          <div>
+            <span>${t("Length")}: </span>
+            <input id="namesbaseMin" data-tip="${t("Recommended minimum name length")}" type="number" min="2" max="100" />
+            <input id="namesbaseMax" data-tip="${t("Recommended maximum name length")}" type="number" min="2" value="10" />
+            <span>${t("Doubled")}: </span>
+            <input
+              id="namesbaseDouble"
+              data-tip="${t("Populate with letters that can be used twice in a row (geminates)")}"
+              autocorrect="off"
+              spellcheck="false"
+              style="width: 10em"
+            />
+          </div>
+        </div>
+        <div data-pane="people">
+          <div>${t("Male names")}:</div>
+          <textarea id="namesbaseMale" rows="5" autocorrect="off" spellcheck="false" style="resize: none"
+            data-tip="${t("Personal names, commas between: the founders places are named after")}"></textarea>
+          <div>${t("Female names")}:</div>
+          <textarea id="namesbaseFemale" rows="5" autocorrect="off" spellcheck="false" style="resize: none"
+            data-tip="${t("Personal names, commas between: the founders places are named after")}"></textarea>
+          <div>
+            <span>${t("Names are")}: </span>
+            <select id="namesbasePeopleMode" data-tip="${t("Generate new names like the ones listed, or pick the listed names as they are")}">
+              <option value="chain">${t("Generated")}</option>
+              <option value="pick">${t("Picked")}</option>
+            </select>
+          </div>
+        </div>
+        <div data-pane="lexicon">
+          <div data-tip="${t("How the base says each concept. A concept with no form gets a generated one, shown in grey")}">
+            <span id="namesbaseCoverage"></span>.
+            ${t("Forms are written as {{- notation}}, commas between", { notation: notation("form~short+link@position:weight") })}
+          </div>
+          <div id="namesbaseLexicon" style="display: grid; grid-template-columns: 7em 1fr; gap: 2px 6px; align-items: center"></div>
+        </div>
+        <div data-pane="patterns">
+          <div data-tip="${t("How often the base coins a name of each pattern, and how it lays the pattern out")}">
+            ${t("Templates are written as {{- notation}}, commas between", { notation: notation("{root}s{generic}:weight") })}
+          </div>
+          <div id="namesbasePatterns" style="display: grid; grid-template-columns: 10em 4em 1fr; gap: 2px 6px; align-items: center"></div>
+        </div>
+        <div data-pane="rules">
+          <div data-tip="${t("Regex rewrites of the base's names, a rule a line, applied in order")}">
+            ${t("Rules are written as {{- notation}}, with any of {{- flags}} after", {
+              notation: notation("match => replace"),
+              flags: notation("| join | long | foreign | 30%")
+            })}
+          </div>
+          <textarea id="namesbaseRules" rows="9" autocorrect="off" spellcheck="false" style="resize: none; font-family: var(--monospace)"></textarea>
+          <div>
+            <span>${t("Try a name")}: </span>
+            <input id="namesbaseRuleTest" autocorrect="off" spellcheck="false" style="width: 14em"
+              data-tip="${t("Type a name to see what the rules make of it. Put + where its parts join")}" placeholder="novo+gorod" />
+            <b id="namesbaseRuleResult"></b>
+          </div>
+        </div>
+      </div>
+      <fieldset>
+        <legend>${t("Generated examples")}:</legend>
+        <div id="namesbaseExamples" data-tip="${t("Examples. Click to re-generate")}"></div>
+      </fieldset>
       <div id="namesbaseBottom">
         <button
           id="namesbaseUpdateExamples"
@@ -120,15 +197,26 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
   ensureEl("namesbaseSelect").addEventListener("change", updateInputs);
+  ensureEl("namesbaseTabs").addEventListener("click", e => {
+    const tab = (e.target as HTMLElement).dataset.tab as Tab | undefined;
+    if (tab) showTab(tab);
+  });
   ensureEl("namesbaseTextarea").addEventListener("change", updateNamesData);
   ensureEl("namesbaseUpdateExamples").addEventListener("click", updateExamples);
   ensureEl("namesbaseExamples").addEventListener("click", updateExamples);
   ensureEl("namesbaseName").addEventListener("input", e => updateBaseName((e.target as HTMLInputElement).value));
+  ensureEl("namesbaseExtends").addEventListener("change", updateBaseExtends);
   ensureEl("namesbaseMin").addEventListener("input", e => updateBaseMin((e.target as HTMLInputElement).value));
   ensureEl("namesbaseMax").addEventListener("input", e => updateBaseMax((e.target as HTMLInputElement).value));
   ensureEl("namesbaseDouble").addEventListener("input", e =>
     updateBaseDuplication((e.target as HTMLInputElement).value)
   );
+  for (const id of ["namesbaseMale", "namesbaseFemale", "namesbasePeopleMode"])
+    ensureEl(id).addEventListener("change", updatePeople);
+  ensureEl("namesbaseLexicon").addEventListener("change", updateLexicon);
+  ensureEl("namesbasePatterns").addEventListener("change", updatePatterns);
+  ensureEl("namesbaseRules").addEventListener("change", updateRules);
+  ensureEl("namesbaseRuleTest").addEventListener("input", testRules);
   ensureEl("namesbaseAdd").addEventListener("click", namesbaseAdd);
   ensureEl("namesbaseAnalyze").addEventListener("click", analyzeNamesbase);
   ensureEl("namesbaseDefault").addEventListener("click", namesbaseRestoreDefault);
@@ -139,6 +227,19 @@ function renderDialog(): void {
     openURL("https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/namebases/")
   );
   ensureEl("namesbaseSpeak").addEventListener("click", () => speak(ensureEl("namesbaseExamples").textContent ?? ""));
+  showTab(activeTab);
+}
+
+function showTab(tab: Tab): void {
+  activeTab = tab;
+  const editor = ensureEl("namesbaseEditor");
+  for (const button of editor.querySelectorAll<HTMLElement>("[data-tab]")) {
+    const isActive = button.dataset.tab === tab;
+    button.style.background = isActive ? "var(--header)" : "";
+    button.style.color = isActive ? "white" : "";
+  }
+  for (const pane of editor.querySelectorAll<HTMLElement>("[data-pane]"))
+    pane.style.display = pane.dataset.pane === tab ? "" : "none";
 }
 
 function closeNamesbaseEditor(): void {
@@ -172,22 +273,69 @@ function showBase(base: NameBase): void {
   ensureEl<HTMLInputElement>("namesbaseMin").value = String(base.length[0]);
   ensureEl<HTMLInputElement>("namesbaseMax").value = String(base.length[1]);
   ensureEl<HTMLInputElement>("namesbaseDouble").value = getDoubles(base);
+
+  const parents = Names.nameBases.filter(other => other !== base).map(({ id, name }) => new Option(name, id));
+  ensureEl<HTMLSelectElement>("namesbaseExtends").replaceChildren(new Option(t("nothing"), ""), ...parents);
+  ensureEl<HTMLSelectElement>("namesbaseExtends").value = base.extends ?? "";
+
+  ensureEl<HTMLTextAreaElement>("namesbaseMale").value = base.people?.male?.names.join(",") ?? "";
+  ensureEl<HTMLTextAreaElement>("namesbaseFemale").value = base.people?.female?.names.join(",") ?? "";
+  const mode = (base.people?.male ?? base.people?.female)?.mode ?? "chain";
+  ensureEl<HTMLSelectElement>("namesbasePeopleMode").value = mode;
+
+  showLexicon(base);
+  showPatterns(base);
+  ensureEl<HTMLTextAreaElement>("namesbaseRules").value = formatRules(base.rules);
+  testRules();
+}
+
+function showLexicon(base: NameBase): void {
+  const kinds = [
+    ["generic", t("Settlements")],
+    ["modifier", t("Modifiers")],
+    ["land", t("Lands")]
+  ] as const;
+  const rows = kinds.flatMap(([kind, label]) => [
+    `<b style="grid-column: 1 / -1; margin-top: 4px">${label}</b>`,
+    ...conceptsOf(kind).map(concept => {
+      const { first, last } = fallbackForms(base, concept);
+      const value = escapeHtml(formatFormants(base.lexicon?.[concept]));
+      return `<span>${concept}</span>
+        <input data-concept="${concept}" value="${value}" placeholder="${first}-, -${last}" autocorrect="off" spellcheck="false" />`;
+    })
+  ]);
+  ensureEl("namesbaseLexicon").innerHTML = rows.join("");
+  showCoverage(base);
+}
+
+function showCoverage(base: NameBase): void {
+  const written = Object.values(base.lexicon ?? {}).filter(forms => forms?.length).length;
+  const all = (["generic", "modifier", "land"] as const).flatMap(conceptsOf).length;
+  ensureEl("namesbaseCoverage").textContent = t("Concepts written: {{written}} of {{all}}", { written, all });
+}
+
+function showPatterns(base: NameBase): void {
+  const rows = (Object.keys(DEFAULT_TEMPLATES) as Pattern[]).map(pattern => {
+    const { weight, templates } = base.patterns?.[pattern] ?? {};
+    return `<span>${pattern}</span>
+      <input data-pattern="${pattern}" data-field="weight" type="number" min="0" value="${weight ?? ""}"
+        placeholder="${DEFAULT_WEIGHTS[pattern]}" data-tip="${t("How often the base coins such a name, against the other patterns")}" />
+      <input data-pattern="${pattern}" data-field="templates" value="${escapeHtml(formatTemplates(templates))}"
+        placeholder="${DEFAULT_TEMPLATES[pattern]}" autocorrect="off" spellcheck="false" />`;
+  });
+  ensureEl("namesbasePatterns").innerHTML = rows.join("");
 }
 
 function updateExamples(): void {
   const base = selectedBase();
   if (!base) return;
-  let examples = "";
-  for (let i = 0; i < 7; i++) {
-    const example = Names.getBase(base.id);
-    if (example === undefined) {
-      examples = t("Cannot generate examples. Please verify the data");
-      break;
-    }
-    if (i) examples += ", ";
-    examples += example;
-  }
-  ensureEl("namesbaseExamples").innerHTML = examples;
+  const examples = Array.from({ length: 7 }, () => {
+    const { name, meaning } = Toponyms.sample(base);
+    return meaning.pattern === "simplex"
+      ? escapeHtml(name)
+      : `${escapeHtml(name)} <i>(${escapeHtml(gloss(meaning))})</i>`;
+  });
+  ensureEl("namesbaseExamples").innerHTML = examples.join(", ");
 }
 
 function updateNamesData(): void {
@@ -207,6 +355,15 @@ function updateBaseName(name: string): void {
   const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
   select.options[select.selectedIndex].text = name;
   base.name = name;
+}
+
+function updateBaseExtends(this: HTMLSelectElement): void {
+  const base = selectedBase();
+  if (!base) return;
+  if (this.value) base.extends = this.value;
+  else delete base.extends;
+  showLexicon(base);
+  updateExamples();
 }
 
 function updateBaseMin(value: string): void {
@@ -231,7 +388,100 @@ function updateBaseMax(value: string): void {
 
 function updateBaseDuplication(value: string): void {
   const base = selectedBase();
-  if (base) setDoubles(base, value);
+  if (!base) return;
+  setDoubles(base, value);
+  ensureEl<HTMLTextAreaElement>("namesbaseRules").value = formatRules(base.rules);
+}
+
+function updatePeople(): void {
+  const base = selectedBase();
+  if (!base) return;
+  const mode = ensureEl<HTMLSelectElement>("namesbasePeopleMode").value as Corpus["mode"];
+  const corpus = (id: string, old?: Corpus): Corpus | undefined => {
+    const names = ensureEl<HTMLTextAreaElement>(id)
+      .value.split(",")
+      .map(name => name.trim())
+      .filter(Boolean);
+    if (!names.length) return undefined;
+    return { ...old, names, mode };
+  };
+  const [male, female] = [corpus("namesbaseMale", base.people?.male), corpus("namesbaseFemale", base.people?.female)];
+  if (male || female) base.people = { ...(male && { male }), ...(female && { female }) };
+  else delete base.people;
+  updateExamples();
+}
+
+function updateLexicon(event: Event): void {
+  const base = selectedBase();
+  const input = event.target as HTMLInputElement;
+  const concept = input.dataset.concept as Concept | undefined;
+  if (!base || !concept) return;
+
+  const forms = parseFormants(input.value);
+  base.lexicon ??= {};
+  if (forms.length) base.lexicon[concept] = forms;
+  else delete base.lexicon[concept];
+  input.value = formatFormants(forms); // what was understood
+  showCoverage(base);
+  updateExamples();
+}
+
+function updatePatterns(event: Event): void {
+  const base = selectedBase();
+  const input = event.target as HTMLInputElement;
+  const pattern = input.dataset.pattern as Pattern | undefined;
+  if (!base || !pattern) return;
+
+  base.patterns ??= {};
+  const settings = { ...base.patterns[pattern] };
+  if (input.dataset.field === "weight") {
+    if (input.value === "") delete settings.weight;
+    else settings.weight = Math.max(+input.value, 0);
+  } else {
+    const templates = parseTemplates(input.value);
+    if (templates.length) settings.templates = templates;
+    else delete settings.templates;
+    input.value = formatTemplates(templates);
+  }
+  if (Object.keys(settings).length) base.patterns[pattern] = settings;
+  else delete base.patterns[pattern];
+  updateExamples();
+}
+
+function updateRules(): void {
+  const base = selectedBase();
+  if (!base) return;
+  const rules = parseRules(ensureEl<HTMLTextAreaElement>("namesbaseRules").value);
+  const broken = rules.filter(({ match }) => !isRegex(match)).map(({ match }) => match);
+  if (broken.length)
+    tip(t("Rules that are no valid regex are skipped: {{rules}}", { rules: broken.join(", ") }), false, "error");
+  base.rules = rules;
+  ensureEl<HTMLInputElement>("namesbaseDouble").value = getDoubles(base);
+  testRules();
+  updateExamples();
+}
+
+function isRegex(source: string): boolean {
+  try {
+    new RegExp(source, "gu");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Show what the base's rules make of the name typed: a word, or a name made of parts where it holds a + */
+function testRules(): void {
+  const base = selectedBase();
+  const name = ensureEl<HTMLInputElement>("namesbaseRuleTest").value.trim().toLowerCase();
+  if (!base || !name) {
+    ensureEl("namesbaseRuleResult").textContent = "";
+    return;
+  }
+  const fits = (joined: string) => joined.length <= base.length[1];
+  const rolls = (base.rules ?? []).map(() => 0); // every rule with a chance fires, to show what it does
+  const result = name.includes("+") ? joinParts(name, base.rules, { rolls, fits }) : applyRules(name, base.rules);
+  ensureEl("namesbaseRuleResult").textContent = capitalizeWords(result);
 }
 
 function analyzeNamesbase(): void {
@@ -267,6 +517,12 @@ function analyzeNamesbase(): void {
   const duplicates = unique(namesArray.filter((e, i, a) => a.indexOf(e) !== i)).join(", ") || "none";
   const multiwordRate = mean(namesArray.map(n => +n.includes(" "))) ?? 0;
 
+  const endings =
+    mineEndings(namesArray)
+      .slice(0, 10)
+      .map(ending => `-${escapeHtml(ending)}`)
+      .join(", ") || "none";
+
   const getLengthQuality = (): string => {
     if (length < 30)
       return `<span data-tip="${t("Namesbase contains < 30 names - not enough to generate reasonable data")}" style="color:red">[${t("not enough")}]</span>`;
@@ -298,6 +554,7 @@ function analyzeNamesbase(): void {
       <div data-tip="${t("Characters outside of Basic Latin have bad font support")}">${t("Non-basic chars")}: ${nonBasicLatinChars}</div>
       <div data-tip="${t("Characters that are frequently (more than 3 times) doubled")}">${t("Doubled chars")}: ${doubledStr}</div>
       <div data-tip="${t("Names used more than one time")}">${t("Duplicates")}: ${duplicates}</div>
+      <div data-tip="${t("Endings many names share: candidates for the forms of the Lexicon tab")}">${t("Common endings")}: ${endings}</div>
       <div data-tip="${t("Percentage of names containing space character")}">${t("Multi-word names")}: ${rn(multiwordRate * 100, 2)}%</div>
     </div>`,
     title: t("Data Analysis"),
@@ -318,6 +575,7 @@ function namesbaseAdd(): void {
   select.add(new Option(name, String(index)));
   select.value = String(index);
   showBase(base);
+  showTab("places");
   ensureEl("namesbaseExamples").innerHTML = t("Please provide names data");
 }
 

@@ -3,7 +3,9 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { fitsOf } from "@/data/name-concepts";
 import { Goods } from "@/model/economy/goods-generator";
 import { Burgs } from "@/model/political/burgs-generator";
+import { capitalize } from "@/utils/string-utils";
 import { generateMap, living } from "../real-map.testing";
+import { adopt } from "./name-adoption";
 import { fits, type Meaning, render } from "./name-render";
 import { Names } from "./names-generator";
 
@@ -61,11 +63,27 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     }
   });
 
-  it("names a burg after the river or lake it stands by", () => {
-    const waters = new Set([...pack.rivers.map(river => river.name), ...pack.features.map(feature => feature?.name)]);
+  it("names a burg after the river or lake it stands by, in its own base's spelling", () => {
+    const waters = [...pack.rivers.map(river => river.name), ...pack.features.map(feature => feature?.name)].filter(
+      Boolean
+    );
     const byWater = living(pack.burgs).filter(burg => burg.meaning!.pattern === "generic-of");
     expect(byWater.length).toBeGreaterThan(0);
-    for (const burg of byWater) expect(waters.has(burg.meaning!.tokens[1].slice(1)), burg.name).toBe(true);
+    for (const { meaning, name } of byWater) {
+      const base = Names.find(meaning!.origin)!;
+      const spellings = waters.flatMap(water => [water, capitalize(adopt(water.toLowerCase(), base))]);
+      expect(spellings, name).toContain(meaning!.tokens[1].slice(1));
+    }
+  });
+
+  it("names a founder with a personal name of the base's people", () => {
+    const founded = living(pack.burgs).filter(burg => burg.meaning!.pattern === "owner-generic");
+    expect(founded.length).toBeGreaterThan(0);
+    for (const { meaning, name } of founded) {
+      const { male, female } = Names.find(meaning!.origin)!.people!;
+      if (male!.mode === "pick")
+        expect([...male!.names, ...female!.names], name).toContain(meaning!.tokens[0].slice(1));
+    }
   });
 
   it("generates the same names for the same seed", async () => {
@@ -82,5 +100,25 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     expect([burg.name, burg.meaning]).not.toEqual(before);
     expect(burg.label!.text).toBe(burg.name);
     expect(render(burg.meaning!, burg.meaning!.origin)).toBe(burg.name);
+  });
+});
+
+describe("the share of meaningful names", () => {
+  const simplexShare = () => {
+    const burgs = living(pack.burgs);
+    return burgs.filter(burg => burg.meaning!.pattern === "simplex").length / burgs.length;
+  };
+
+  it("follows the option, from proper names only to as few as the places allow", async () => {
+    options.generation.cultures.set = "european";
+    options.generation.names.meaningful = 0;
+    await generateMap({ seed: "toponyms-share", points: 4000 });
+    expect(simplexShare()).toBe(1);
+    expect(living(pack.states).every(state => state.meaning!.pattern === "simplex")).toBe(true);
+
+    options.generation.names.meaningful = 100;
+    await generateMap({ seed: "toponyms-share", points: 4000 });
+    expect(simplexShare()).toBeLessThan(0.05);
+    options.generation.names.meaningful = 65;
   });
 });

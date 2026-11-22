@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getDefaultNameBases, type NameBase } from "@/data/name-bases";
+import { type Corpus, getDefaultNameBases, type NameBase } from "@/data/name-bases";
 import { last } from "@/utils/array-utils";
 import { sentences, t } from "@/utils/i18n";
 import { isVowel } from "@/utils/language-utils";
@@ -23,14 +23,31 @@ const formantSchema = z.object({
   link: z.string().optional()
 });
 
+const corpusSchema = z.object({
+  names: z.array(z.string()),
+  mode: z.enum(["chain", "pick"]).optional(),
+  length: z.tuple([z.number(), z.number()]).optional()
+});
+
 /** A base as a namesbase file holds it */
 export const nameBaseSchema = z.object({
   id: z.string().regex(/^[\p{L}\p{N}-]+$/u),
   name: z.string().min(1),
   length: z.tuple([z.number(), z.number()]),
   extends: z.string().optional(),
-  places: z.object({ names: z.array(z.string()) }),
-  rules: z.array(z.object({ match: z.string(), replace: z.string(), at: z.literal("join").optional() })).optional(),
+  places: corpusSchema,
+  people: z.object({ male: corpusSchema.optional(), female: corpusSchema.optional() }).optional(),
+  rules: z
+    .array(
+      z.object({
+        match: z.string(),
+        replace: z.string(),
+        at: z.literal("join").optional(),
+        when: z.enum(["long", "foreign"]).optional(),
+        chance: z.number().min(0).max(1).optional()
+      })
+    )
+    .optional(),
   lexicon: z.record(z.string(), z.array(formantSchema)).optional(),
   patterns: z
     .record(
@@ -148,6 +165,67 @@ class NamesGenerator {
     return this.nameBases[rand(this.nameBases.length - 1)];
   }
 
+  /** A base and the bases it extends, nearest first */
+  lineage(base: NameBase): NameBase[] {
+    const line = [base];
+    for (let parent = base.extends && this.find(base.extends); parent && !line.includes(parent); ) {
+      line.push(parent);
+      parent = parent.extends && this.find(parent.extends);
+    }
+    return line;
+  }
+
+  /** A personal name of a base: a new one off the chain of its people corpus, or one of the corpus as it is.
+   * The base sets which, unless the options do. A base with no people names a person like a place, only shorter */
+  getPerson(id: string): string {
+    const base = this.resolve(id) ?? this.nameBases[0];
+    const people =
+      base &&
+      this.lineage(base).find(({ people }) => people?.male?.names.length || people?.female?.names.length)?.people;
+    if (!people) return this.getBase(id, 3, 6, "");
+
+    const corpora = [people.male, people.female].filter((corpus): corpus is Corpus => Boolean(corpus?.names.length));
+    const roll = Math.random() * corpora.reduce((sum, { names }) => sum + names.length, 0);
+    const corpus = corpora[1] && roll >= corpora[0].names.length ? corpora[1] : corpora[0]; // by the lists' sizes
+
+    const { proper } = options.generation.names;
+    if ((proper === "base" ? (corpus.mode ?? "chain") : proper) === "pick") return ra(corpus.names);
+    if (!this.peopleChains.has(corpus.names)) this.peopleChains.set(corpus.names, this.calculateChain(corpus.names));
+    const [min, max] = corpus.length ?? [4, 8];
+    const name = capitalizeWords(applyRules(this.walk(this.peopleChains.get(corpus.names)!, min, max), base.rules));
+    return name.length < 2 ? ra(corpus.names) : name;
+  }
+
+  private peopleChains = new WeakMap<string[], MarkovChain>(); // by corpus, so an edited corpus is chained anew
+
+  /** Walk a chain from a word's start until the word ends between the lengths given, or grows too long */
+  private walk(chain: MarkovChain, min: number, max: number): string {
+    let v = chain[""],
+      cur = ra(v),
+      w = "";
+    for (let i = 0; i < 20; i++) {
+      if (cur === "") {
+        // end of word
+        if (w.length < min) {
+          cur = "";
+          w = "";
+          v = chain[""];
+        } else break;
+      } else {
+        if (w.length + cur.length > max) {
+          // word too long
+          if (w.length < min) w += cur;
+          break;
+        } else v = chain[last(cur.split("")) as string] || chain[""];
+      }
+
+      w += cur;
+      cur = ra(v);
+    }
+
+    return /['\- ]$/.test(w) ? w.slice(0, -1) : w; // a name ends in a letter
+  }
+
   /** Generate a name with the base's Markov chain; an empty `dupl` allows no doubled letters */
   getBase(id: string, min?: number, max?: number, dupl?: string): string {
     if (id === undefined) {
@@ -175,33 +253,8 @@ class NamesGenerator {
       return "ERROR";
     }
 
-    if (!min) min = base.length[0];
-    if (!max) max = base.length[1];
-
-    let v = data[""],
-      cur = ra(v),
-      w = "";
-    for (let i = 0; i < 20; i++) {
-      if (cur === "") {
-        // end of word
-        if (w.length < min) {
-          cur = "";
-          w = "";
-          v = data[""];
-        } else break;
-      } else {
-        if (w.length + cur.length > max) {
-          // word too long
-          if (w.length < min) w += cur;
-          break;
-        } else v = data[last(cur.split("")) as string] || data[""];
-      }
-
-      w += cur;
-      cur = ra(v);
-    }
-
-    if (/['\- ]$/.test(w)) w = w.slice(0, -1); // a name ends in a letter
+    const [shortest, longest] = base.places.length ?? base.length;
+    const w = this.walk(data, min || shortest, max || longest);
 
     const rules = dupl === "" ? [doublesRule(), ...(base.rules ?? [])] : base.rules;
     let name = capitalizeWords(applyRules(w, rules));
@@ -243,8 +296,9 @@ class NamesGenerator {
   // generate short name for base
   getBaseShort(id: string): string {
     const base = this.resolve(id);
-    const min = base ? base.length[0] - 1 : undefined;
-    const max = base && min ? Math.max(base.length[1] - 2, min) : undefined;
+    const [shortest, longest] = base?.places.length ?? base?.length ?? [];
+    const min = shortest ? shortest - 1 : undefined;
+    const max = longest && min ? Math.max(longest - 2, min) : undefined;
     return this.getBase(id, min, max, "");
   }
 
@@ -272,8 +326,9 @@ class NamesGenerator {
       notify(t("Namebase is not found"), "error");
       return "";
     }
-    const min = base.length[0] - 1;
-    const max = Math.max(base.length[1] - 3, min);
+    const [shortest, longest] = base.places.length ?? base.length;
+    const min = shortest - 1;
+    const max = Math.max(longest - 3, min);
     const baseName = this.getBase(base.id, min, max, "");
     const name = P(0.7) ? this.addSuffix(baseName) : baseName;
     return name;

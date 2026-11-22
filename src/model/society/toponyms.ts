@@ -2,10 +2,13 @@
 
 import type { NameBase, Pattern } from "@/data/name-bases";
 import { type Concept, conceptsOf, fitsOf, isConcept, type SiteTag } from "@/data/name-concepts";
+import { DEFAULT_WEIGHTS } from "@/data/name-rules";
 import { Goods } from "@/model/economy/goods-generator";
 import { MIN_NAVIGABLE_FLUX } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { P, ra } from "@/utils/probability-utils";
+import { capitalize } from "@/utils/string-utils";
+import { adopt } from "./name-adoption";
 import { authoredForms, compose, type Meaning, patternWeight, render, seeded, type Token } from "./name-render";
 import { Names } from "./names-generator";
 
@@ -75,7 +78,7 @@ class ToponymsGenerator {
     const patterns = BURG_PATTERNS.filter(supported);
 
     for (let attempt = 0; attempt < TRIES; attempt++) {
-      const pattern = this.pickWeighted(patterns, pattern => patternWeight(base, pattern));
+      const pattern = this.pickPattern(base, patterns);
       const tokens = this.fillBurg(pattern, burg, base, site, landmark, water, neighbor);
       const named = tokens && this.accept({ pattern, tokens, origin: base.id }, base, taken);
       if (named) return named;
@@ -99,7 +102,7 @@ class ToponymsGenerator {
     if (pattern === "simplex") return [`~${burg.capital ? Names.getBaseShort(base.id) : Names.getBase(base.id)}`];
     if (pattern === "feature") return [landmark!];
     if (pattern === "modifier-generic") return [modifier(), generic()];
-    if (pattern === "owner-generic") return [`~${Names.getBase(base.id, 3, 6, "")}`, generic()];
+    if (pattern === "owner-generic") return [`~${Names.getPerson(base.id)}`, generic()];
     if (pattern === "relative") return [neighbor!.modifier, neighbor!.root];
     const byWater = this.pickConcept(
       "generic",
@@ -118,9 +121,10 @@ class ToponymsGenerator {
     const lands = conceptsOf("land").filter(concept => authoredForms(base, concept)); // a fallback form would name a town
 
     for (let attempt = 0; attempt < TRIES; attempt++) {
-      const pattern = this.pickWeighted(STATE_PATTERNS, pattern => patternWeight(base, pattern));
+      const pattern = this.pickPattern(base, STATE_PATTERNS);
       const land = this.pickWeighted(lands, concept => (concept === "land" ? 6 : this.weigh(concept, site))); // mostly plain "land"
-      const root = this.getStateRoot(capital, base);
+      const root: Token =
+        pattern === "simplex" ? `~${Names.getBase(base.id, 3, 6, "")}` : this.getStateRoot(capital, base);
       const tokens: Token[] =
         pattern === "simplex"
           ? [root]
@@ -140,7 +144,7 @@ class ToponymsGenerator {
   land(root: string, cultureOrBase: number | string): string {
     const baseId = typeof cultureOrBase === "number" ? pack.cultures[cultureOrBase].base : cultureOrBase;
     const base = Names.resolve(baseId) ?? Names.nameBases[0];
-    const pattern = this.pickWeighted(["simplex", "root-land"] as Pattern[], pattern => patternWeight(base, pattern));
+    const pattern = this.pickPattern(base, ["simplex", "root-land"]);
     const land = this.pickWeighted(
       conceptsOf("land").filter(concept => authoredForms(base, concept)),
       () => 1
@@ -154,7 +158,7 @@ class ToponymsGenerator {
   // one time in five a state is named after its capital, when the capital's name is short enough to build on
   private getStateRoot(capital: Burg, base: NameBase): Token {
     const own = capital.meaning?.tokens.find(token => token.startsWith("~")) ?? `~${capital.name}`;
-    return own.length < 10 && P(0.2) ? (own as Token) : `~${Names.getBase(base.id, 3, 6, "")}`;
+    return own.length < 10 && P(0.2) ? (own as Token) : `~${Names.getPerson(base.id)}`; // else after a founder
   }
 
   /** Render a meaning and take the name when it is free, long enough and no longer than the base allows */
@@ -180,9 +184,17 @@ class ToponymsGenerator {
   private getWater(burg: Burg, site: Site): { root: Token; tags: SiteTag[] } | undefined {
     const { cells, rivers, features } = pack;
     const river = site.stream || site.river ? rivers.find(river => river.i === cells.r[burg.cell]) : undefined;
-    if (river?.name) return { root: `~${river.name}`, tags: WATER_TAGS };
+    if (river?.name) return { root: this.borrow(river.name, river.mouth, burg), tags: WATER_TAGS };
     const lake = site.lake ? features[cells.f[cells.haven[burg.cell]]] : undefined;
-    return lake?.name ? { root: `~${lake.name}`, tags: SHORE_TAGS } : undefined;
+    if (!lake?.name) return undefined;
+    return { root: this.borrow(lake.name, lake.shoreline?.[0] ?? lake.firstCell, burg), tags: SHORE_TAGS };
+  }
+
+  /** A name as a root for a burg's own: one the culture at a cell gave is adapted to the burg's base */
+  private borrow(name: string, namedAt: number, burg: Burg): Token {
+    const [theirs, own] = [pack.cultures[pack.cells.culture[namedAt]]?.base, pack.cultures[burg.culture!].base];
+    const base = Names.resolve(own);
+    return theirs === own || !base ? `~${name}` : `~${capitalize(adopt(name.toLowerCase(), base))}`;
   }
 
   /** The nearest named burg of the same culture close by, and how this burg stands to it */
@@ -278,6 +290,31 @@ class ToponymsGenerator {
     const tags = fitsOf(concept);
     const fit = tags ? Math.max(...tags.map(tag => site[tag] ?? 0)) : 1;
     return concept === site.good ? fit + 4 : fit;
+  }
+
+  /** Draw a pattern by the base's weights, the options setting the share of names that say something */
+  private pickPattern(base: NameBase, patterns: Pattern[]): Pattern {
+    const meaningful = options.generation.names.meaningful / 100;
+    const total = patterns.reduce((sum, pattern) => sum + DEFAULT_WEIGHTS[pattern], 0);
+    const plain = DEFAULT_WEIGHTS.simplex / total; // the share of proper names where nothing is set
+    const scale = (pattern: Pattern) => (pattern === "simplex" ? (1 - meaningful) / plain : meaningful / (1 - plain));
+    return this.pickWeighted(patterns, pattern => patternWeight(base, pattern) * scale(pattern));
+  }
+
+  /** A meaning no place stands behind and its name: what a base makes of names, for its editor to show */
+  sample(base: NameBase): Named {
+    const concept = (kind: "generic" | "modifier") => ra(conceptsOf(kind));
+    const pattern = this.pickPattern(base, ["simplex", "feature", "modifier-generic", "owner-generic"]);
+    const tokens: Token[] =
+      pattern === "simplex"
+        ? [`~${Names.getBase(base.id)}`]
+        : pattern === "feature"
+          ? [concept("generic")]
+          : pattern === "modifier-generic"
+            ? [concept("modifier"), concept("generic")]
+            : [`~${Names.getPerson(base.id)}`, concept("generic")];
+    const meaning: Meaning = { pattern, tokens, origin: base.id };
+    return { name: render(meaning, base.id), meaning };
   }
 
   private pickConcept(

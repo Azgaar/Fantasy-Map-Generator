@@ -17,6 +17,36 @@ export const SHARED_RULES: SoundRule[] = [
   { match: "(?<=[^ -])ae", replace: "e" } // "ae" reads as "e" inside a word
 ];
 
+/** What stands in for a letter a base never writes: the first stand-in the base does write */
+export const NEAREST_LETTERS: Record<string, string[]> = {
+  a: ["e", "o"],
+  b: ["p", "v"],
+  c: ["k", "s"],
+  d: ["t", "k"],
+  e: ["i", "a"],
+  f: ["p", "v", "h"],
+  g: ["k", "h"],
+  h: ["kh", ""],
+  i: ["e", "y"],
+  j: ["y", "zh", "i"],
+  k: ["c", "q", "g"],
+  l: ["r"],
+  m: ["n"],
+  n: ["m"],
+  o: ["u", "a"],
+  p: ["b", "f"],
+  q: ["k", "c"],
+  r: ["l"],
+  s: ["z", "sh", "k"],
+  t: ["d", "k"],
+  u: ["o", "w"],
+  v: ["w", "b", "f"],
+  w: ["v", "u"],
+  x: ["ks", "s", "k"],
+  y: ["i", "j"],
+  z: ["s", "j", "k"]
+};
+
 /** How a pattern is laid out where a base has no template of its own */
 export const DEFAULT_TEMPLATES: Record<Pattern, string> = {
   simplex: "{root}",

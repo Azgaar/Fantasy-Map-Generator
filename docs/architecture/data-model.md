@@ -598,12 +598,15 @@ Name generator consumes training sets of real-world town names (with the excepti
 - `id`: `string` - stable slug of the base, such as `german` or `dark-elven`. A culture stores it as its `base`
 - `name`: `string` - names base proper name
 - `length`: `[number, number]` - recommended minimal and maximal length of generated names. Generator adds syllables until the minimum is reached and stops at the maximum
-- `places`: `object` - the corpus of place names; `places.names` is the `string[]` a Markov chain is built from
-- `rules`: `object[]` - optional sound rules, applied in order to each generated name before the shared ones in `src/data/name-rules.ts`. A rule is `{ match, replace, at? }`: `match` is a regex source run with the `gu` flags on the lowercase name, `replace` may use `$1` groups. A rule shapes the words the base generates and the roots it borrows; one with `at: "join"` runs on a name made of parts instead, where `+` marks each join. The letters allowed to stand twice in a row are one such rule: `([^lt])\1+` to `$1` keeps only `l` and `t` doubled
+- `places`: `object` - the corpus of place names: `places.names` is the `string[]` a Markov chain is built from, and an optional `places.length` sets the length of generated names where it differs from the base's `length`
+- `people`: `object` - optional corpora of personal names, `people.male` and `people.female`, each `{ names, mode?, length? }`. `mode` is `chain` (generate new names like the listed ones, the default) or `pick` (draw a listed name as it is). They name the founders places are named after
+- `rules`: `object[]` - optional sound rules, applied in order to each generated name before the shared ones in `src/data/name-rules.ts`. A rule is `{ match, replace, at?, when?, chance? }`: `match` is a regex source run with the `gu` flags on the lowercase name, `replace` may use `$1` groups. A plain rule shapes the words the base generates and the roots it borrows. One with `at: "join"` runs on a name made of parts instead, where `+` marks each join; one with a `chance` (0 to 1) does the same for a share of names, the same ones every time. One with `when: "long"` runs on a finished name while it is longer than the base allows, and one with `when: "foreign"` adapts a root coined in another base. The letters allowed to stand twice in a row are one such rule: `([^lt])\1+` to `$1` keeps only `l` and `t` doubled
 
 - `extends`: `string` - optional id of the base whose lexicon and patterns stand in where this one has none
 - `lexicon`: `object` - optional forms of concepts: a concept id from `src/data/name-concepts.ts` to a list of formants `{ form, weight?, position?, short?, link? }`. `position` is `first`, `last` or `word` and says where in a word the form may stand; `short` is taken when a name runs too long; `link` goes between the form and the part after it
 - `patterns`: `object` - optional settings per name pattern: `weight` says how often the base coins a name of that pattern, `templates` is a list of `{ parts, weight? }` layouts such as `{root}s{generic}` or `{generic} {root}`
+
+A lexicon, a template list and a rule list each have a short written form, `src/utils/name-notation.ts`, which the shipped bases and the Namesbase Editor share: `ton@last:6, town` for forms, `{root}s{generic}:3` for templates, `gorod$ => grad | long` for a rule.
 
 A base with no form for a concept falls back to the shared lexicon in `src/data/name-rules.ts`, then to forms made of its own corpus: its commonest endings for generics, words of its Markov chain for the rest.
 
@@ -611,7 +614,7 @@ A `.map` file keeps the bases as a JSON array. A shipped base the user left as i
 
 ## Name meanings
 
-A burg or state keeps what its name says in `meaning`, apart from the `name` itself. Both are editable and neither overwrites the other, so a name may differ from what its meaning renders to. `render(meaning, baseId)` in `src/model/society/name-render.ts` gives the name a meaning takes in a name base: the same meaning and base always give the same name. `src/model/society/toponyms.ts` picks a meaning that fits a burg's place.
+A burg or state keeps what its name says in `meaning`, apart from the `name` itself. Both are editable and neither overwrites the other, so a name may differ from what its meaning renders to. `render(meaning, baseId)` in `src/model/society/name-render.ts` gives the name a meaning takes in a name base: the same meaning and base always give the same name. `src/model/society/toponyms.ts` picks a meaning that fits a burg's place. A root rendered in a base other than its `origin` is adapted to that base by `src/model/society/name-adoption.ts`: the base's `foreign` rules, its nearest letters, and open syllables where its own names have them.
 
 - `pattern`: `string` - the shape of the meaning, which sets its slots: `simplex` (root), `feature` (generic), `modifier-generic`, `owner-generic` (root, generic), `generic-of` (generic, root), `relative` (modifier, root), `root-land` (root, generic), `modifier-land` (modifier, generic)
 - `tokens`: `string[]` - the slots' values in the pattern's order. A concept id such as `town` or `black`, or a proper root marked with `~`, such as `~Eadric`

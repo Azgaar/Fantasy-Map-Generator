@@ -63,11 +63,10 @@ describe("render", () => {
 
   it("takes the plain English word where a base speaks plain English", () => {
     expect(render(meaning("modifier-generic", "new", "town"), "human-generic")).toBe("Newtown");
-    expect(render(meaning("modifier-generic", "raven", "marsh"), "english")).toBe("Ravenmarsh"); // English extends it
     expect(render(meaning("owner-generic", "~Eadric", "farm"), "human-generic")).toBe("Eadricfarm");
     expect(render(meaning("feature", "bridge"), "human-generic")).toBe("Bridge");
-    expect(render(meaning("modifier-generic", "oak", "wood"), "english")).toBe("Oakwood"); // no rule for words undoes a form
-    expect(render(meaning("owner-generic", "~Watree", "mill"), "english")).toBe("Watremill"); // but a root is a word
+    expect(render(meaning("modifier-generic", "oak", "wood"), "human-generic")).toBe("Oakwood");
+    expect(render(meaning("modifier-generic", "thorn", "mill"), "english")).toBe("Thornmill"); // a rule for words undoes no form
   });
 
   it("names a land with the forms the base has for it", () => {
@@ -75,7 +74,7 @@ describe("render", () => {
     const names = (baseId: string) =>
       new Set(Array.from({ length: 40 }, (_, salt) => render(withSalt(frank, salt), baseId)));
     expect(names("german")).toEqual(new Set(["Frankland", "Frankia"]));
-    expect(names("korean")).toEqual(new Set(["Frankguk"]));
+    expect(names("korean")).toEqual(new Set(["Prankguk"])); // Korean writes no f
     expect(names("chinese")).toEqual(new Set(["Frank Guo"]));
     expect(names("arabic")).toEqual(new Set(["Franka", "Frankia", "Al Franka", "Al Frankia"]));
     expect(names("elven")).toEqual(new Set(["Frankia"])); // the shared form: a base with no land of its own
@@ -120,7 +119,7 @@ describe("a base with no lexicon", () => {
 
   it("takes the lexicon and templates of the base it extends", () => {
     Names.nameBases.push(custom({ extends: "chinese" }));
-    expect(render(meaning("root-land", "~Mel", "land"), "custom")).toBe("Mel Guo");
+    expect(render({ ...meaning("root-land", "~Mel", "land"), origin: "custom" }, "custom")).toBe("Mel Guo");
   });
 });
 

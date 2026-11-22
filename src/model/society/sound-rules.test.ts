@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { NameBase, SoundRule } from "@/data/name-bases";
-import { applyRules, doublesRule, getDoubles, joinParts, setDoubles } from "./sound-rules";
+import { applyForeignRules, applyRules, doublesRule, getDoubles, joinParts, setDoubles } from "./sound-rules";
 
 const base = (rules?: NameBase["rules"]): NameBase => ({
   id: "x",
@@ -48,6 +48,36 @@ describe("a name made of parts", () => {
     expect(joinParts("boch+heim", rules)).toBe("bochum");
     expect(joinParts("oak+wood", rules)).toBe("oakwood"); // a form written for the base keeps its doubled letters
     expect(applyRules("wood", rules)).toBe("wod");
+  });
+});
+
+describe("rules of a kind", () => {
+  const rules: SoundRule[] = [
+    doublesRule(),
+    { match: "th", replace: "f", when: "foreign" },
+    { match: "o\\+(?=[^aeiou])", replace: "+", chance: 0.3 },
+    { match: "gorod$", replace: "grad", when: "long" },
+    { match: "grad$", replace: "", when: "long" }
+  ];
+
+  it("keeps the rules for foreign roots to foreign roots", () => {
+    expect(applyForeignRules("theodore", rules)).toBe("feodore");
+    expect(applyRules("theodore", rules)).toBe("theodore");
+    expect(joinParts("theo+dore", rules)).toBe("theodore");
+  });
+
+  it("fires a rule with a chance for the names whose roll comes under it", () => {
+    expect(joinParts("novo+gorod", rules, { rolls: [0.29] })).toBe("novgorod");
+    expect(joinParts("novo+gorod", rules, { rolls: [0.3] })).toBe("novogorod");
+    expect(joinParts("novo+gorod", rules)).toBe("novogorod"); // no roll, no chance
+  });
+
+  it("runs the rules for long names one at a time, until the name fits", () => {
+    const under = (max: number) => ({ fits: (name: string) => name.length <= max });
+    expect(joinParts("cherno+gorod", rules, under(11))).toBe("chernogorod");
+    expect(joinParts("cherno+gorod", rules, under(10))).toBe("chernograd");
+    expect(joinParts("cherno+gorod", rules, under(8))).toBe("cherno");
+    expect(joinParts("cherno+gorod", rules)).toBe("chernogorod"); // nothing says it is too long
   });
 });
 

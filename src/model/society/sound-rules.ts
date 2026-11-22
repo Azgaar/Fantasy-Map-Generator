@@ -4,17 +4,40 @@ import { log } from "@/utils/logger";
 
 const patterns = new Map<string, RegExp | null>();
 
+const isWordRule = (rule: SoundRule) => !rule.at && !rule.when && rule.chance === undefined;
+
 /** Rewrite a lowercase word by a base's rules, then by the shared ones; a rule that is no valid regex is skipped */
 export function applyRules(word: string, rules: SoundRule[] = []): string {
-  const own = rules.filter(rule => !rule.at);
-  return rewrite(rewrite(word, own), SHARED_RULES);
+  return rewrite(rewrite(word, rules.filter(isWordRule)), SHARED_RULES);
 }
 
-/** Join a lowercase name made of parts, `+` at each join: the base's join rules first, then the shared ones.
- * The parts stay as they came: a form written for the base is not what its word rules are for */
-export function joinParts(name: string, rules: SoundRule[] = []): string {
-  const joins = rules.filter(rule => rule.at === "join");
-  return rewrite(rewrite(rewrite(name, joins), JOIN_RULES).replaceAll("+", ""), SHARED_RULES);
+/** Adapt a lowercase root coined in another base by the rules a base keeps for foreign roots */
+export function applyForeignRules(root: string, rules: SoundRule[] = []): string {
+  return rewrite(
+    root,
+    rules.filter(rule => rule.when === "foreign")
+  );
+}
+
+interface JoinOptions {
+  rolls?: number[]; // one roll, 0 to 1, per rule with a chance, in the rules' order
+  fits?: (name: string) => boolean; // whether the name is short enough: the rules for long names run until it is
+}
+
+/** Join a lowercase name made of parts, `+` at each join: the base's join rules, the ones whose chance came up,
+ * the shared join rules, then the shared word rules. The parts stay as they came: a form written for the base
+ * is not what its word rules are for. A name still too long goes through the rules for long names, one at a time */
+export function joinParts(name: string, rules: SoundRule[] = [], { rolls = [], fits }: JoinOptions = {}): string {
+  const chances = rules.filter(rule => rule.chance !== undefined && rule.when !== "foreign");
+  const fired = chances.filter((rule, index) => (rolls[index] ?? 1) < rule.chance!);
+  const joins = rules.filter(rule => rule.at === "join" && !rule.when && rule.chance === undefined);
+  let joined = rewrite(rewrite(rewrite(name, [...joins, ...fired]), JOIN_RULES).replaceAll("+", ""), SHARED_RULES);
+
+  for (const rule of rules.filter(rule => rule.when === "long" && rule.chance === undefined)) {
+    if (!fits || fits(joined)) break;
+    joined = rewrite(joined, [rule]);
+  }
+  return joined;
 }
 
 const WORD_START = /(?<=^|[ -])./gu;

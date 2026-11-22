@@ -44,11 +44,22 @@ import { turkish } from "./turkish";
 import { vietnamese } from "./vietnamese";
 
 /** A regex rewrite: `match` is a regex source, `replace` may use `$1` groups. A rule shapes the words a base
- * generates and the roots it borrows; one set `at` the join shapes a name made of parts, where `+` marks each join */
+ * generates and the roots it borrows. One set `at` the join, or with a `chance`, shapes a name made of parts,
+ * where `+` marks each join; one for `long` names runs on the finished name while it is too long;
+ * one for `foreign` roots adapts a root coined in another base */
 export interface SoundRule {
   match: string;
   replace: string;
   at?: "join";
+  when?: "long" | "foreign";
+  chance?: number; // 0 to 1: the rule fires for a share of names, the same ones every time
+}
+
+/** A list of names a Markov chain is built from, or drawn from as they are */
+export interface Corpus {
+  names: string[];
+  mode?: "chain" | "pick"; // generate new names of the corpus, the default, or pick one of its own
+  length?: [min: number, max: number]; // of a generated name
 }
 
 /** The shape of a meaning: which slots a name has */
@@ -81,8 +92,9 @@ export interface NameBase {
   id: string; // stable slug, what a culture stores as its base
   name: string;
   extends?: string; // the base whose lexicon and patterns stand in where this one has none
-  length: [min: number, max: number]; // of a generated name
-  places: { names: string[] }; // the place names a Markov chain is built from
+  length: [min: number, max: number]; // of a name, generated or made of parts
+  places: Corpus; // the place names a Markov chain is built from; its own length, if any, is for generated names
+  people?: { male?: Corpus; female?: Corpus }; // personal names: the founders places are named after
   rules?: SoundRule[]; // applied in order, before the shared ones
   lexicon?: Partial<Record<Concept, Formant[]>>;
   patterns?: Partial<Record<Pattern, { weight?: number; templates?: Template[] }>>;

@@ -5,8 +5,9 @@ import type { Formant, NameBase, Pattern, Template } from "@/data/name-bases";
 import { type Concept, conceptsOf } from "@/data/name-concepts";
 import { DEFAULT_LEXICON, DEFAULT_TEMPLATES, DEFAULT_WEIGHTS } from "@/data/name-rules";
 import { capitalize } from "@/utils/string-utils";
+import { adopt } from "./name-adoption";
 import { Names } from "./names-generator";
-import { applyRules, capitalizeWords, joinParts } from "./sound-rules";
+import { capitalizeWords, joinParts } from "./sound-rules";
 
 /** A concept, or a proper root with no concept behind it, marked with `~` */
 export type Token = Concept | `~${string}`;
@@ -64,13 +65,16 @@ export function compose(meaning: Meaning, baseId: string): { name: string; whole
   const random = Alea(`${base.id}|${meaning.pattern}|${meaning.tokens}|${meaning.salt ?? 0}`);
   const template = pick(templatesOf(base, meaning.pattern), random).parts;
   const values = Object.fromEntries(SLOTS[meaning.pattern].map((slot, index) => [slot, meaning.tokens[index]]));
+  const rolls = (base.rules ?? []).filter(rule => rule.chance !== undefined).map(() => random());
   const forms = new Map<string, Formant>(); // the form drawn for each concept: one draw, whatever the effort
+  const isForeign = base.id !== meaning.origin; // a root coined elsewhere is adapted to this base
+  const fitsBase = (name: string) => fits(name, base);
 
   // a name too long is made again with more effort: shorter forms, then clipped roots, then no modifier
   let name = "";
   for (const effort of [0, 1, 2, 3]) {
     for (const kept of effort < 2 ? [Infinity] : effort === 2 ? [3, 2, 1] : [Infinity, 3, 2, 1]) {
-      name = capitalizeWords(joinParts(join(effort, kept), base.rules));
+      name = capitalizeWords(joinParts(join(effort, kept), base.rules, { rolls, fits: fitsBase }));
       if (fits(name, base)) return { name, whole: effort < 3 || !template.includes("{modifier}") };
     }
   }
@@ -86,8 +90,11 @@ export function compose(meaning: Meaning, baseId: string): { name: string; whole
           if (!slot) return item;
           const token = values[slot];
           if (!token) return [];
-          if (isRoot(token))
-            return clip(applyRules(token.slice(1).toLowerCase(), base.rules), items.length > 1 ? kept : Infinity);
+          if (isRoot(token)) {
+            const root = token.slice(1).toLowerCase();
+            const own = isForeign ? adopt(root, base, index === items.length - 1) : root; // its own root stands as coined
+            return clip(own, items.length > 1 ? kept : Infinity);
+          }
           const position: Position = items.length === 1 ? "word" : index ? "last" : "first";
           return morphs(token, position, effort, index < items.length - 1);
         });
@@ -127,36 +134,33 @@ function pick<T extends { weight?: number }>(items: T[], random: () => number): 
   return items[items.length - 1];
 }
 
-/** A base and the bases it extends, nearest first */
-function lineage(base: NameBase): NameBase[] {
-  const chain = [base];
-  for (let parent = base.extends && Names.find(base.extends); parent && !chain.includes(parent); ) {
-    chain.push(parent);
-    parent = parent.extends && Names.find(parent.extends);
-  }
-  return chain;
-}
-
 function templatesOf(base: NameBase, pattern: Pattern): Template[] {
-  const own = lineage(base).find(({ patterns }) => patterns?.[pattern]?.templates?.length);
+  const own = Names.lineage(base).find(({ patterns }) => patterns?.[pattern]?.templates?.length);
   return own?.patterns?.[pattern]?.templates ?? [{ parts: DEFAULT_TEMPLATES[pattern] }];
 }
 
 /** How often a base coins a name of a pattern */
 export function patternWeight(base: NameBase, pattern: Pattern): number {
-  const own = lineage(base).find(({ patterns }) => patterns?.[pattern]?.weight !== undefined);
+  const own = Names.lineage(base).find(({ patterns }) => patterns?.[pattern]?.weight !== undefined);
   return own?.patterns?.[pattern]?.weight ?? DEFAULT_WEIGHTS[pattern];
 }
 
 /** The forms a base, the bases it extends or the shared lexicon hold for a concept */
 export function authoredForms(base: NameBase, concept: Concept): Formant[] | undefined {
-  const own = lineage(base).find(({ lexicon }) => lexicon?.[concept]?.length);
+  const own = Names.lineage(base).find(({ lexicon }) => lexicon?.[concept]?.length);
   return own?.lexicon?.[concept] ?? DEFAULT_LEXICON[concept];
 }
 
 function formantsOf(base: NameBase, concept: Concept, position: Position): Formant[] {
-  return authoredForms(base, concept) ?? [{ form: fallbackOf(base).get(concept)![position], position }];
+  const authored = authoredForms(base, concept) ?? (isLand(concept) ? authoredForms(base, "land") : undefined);
+  return authored ?? [{ form: fallbackOf(base).get(concept)![position], position }]; // a land unwritten is plain "land"
 }
+
+const isLand = (concept: Concept) => conceptsOf("land").includes(concept);
+
+/** The forms a base makes for a concept nobody wrote a form for: at a word's start, at its end, on its own */
+export const fallbackForms = (base: NameBase, concept: Concept): Record<Position, string> =>
+  fallbackOf(base).get(concept)!;
 
 // The forms of a base nobody wrote a lexicon for, made of its own corpus and cached while the corpus stands
 
@@ -204,7 +208,7 @@ export function seeded<T>(seed: string, run: () => T): T {
 }
 
 /** The endings many names of a corpus share, the commonest first: -bach, -ingen, -ton */
-function mineEndings(names: string[]): string[] {
+export function mineEndings(names: string[]): string[] {
   const counts = new Map<string, number>();
   for (const name of names) {
     const word = name.trim().toLowerCase();
