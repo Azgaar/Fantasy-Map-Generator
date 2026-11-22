@@ -1,5 +1,8 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
-import { Names } from "@/model/society/names-generator";
+import { z } from "zod";
+import type { NameBase } from "@/data/name-bases";
+import { composeBase, Names, nameBaseSchema, uniqueBaseId } from "@/model/society/names-generator";
+import { getDoubles, setDoubles } from "@/model/society/sound-rules";
 import { getFileName } from "@/services/io/file-name";
 import { speak } from "@/services/speech";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -11,7 +14,7 @@ import { sentences, t } from "@/utils/i18n";
 import { log } from "@/utils/logger";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { escapeHtml } from "@/utils/string-utils";
+import { escapeHtml, safeParseJSON } from "@/utils/string-utils";
 
 let namesbaseInput: HTMLInputElement | null = null;
 
@@ -150,25 +153,33 @@ function createBasesList(): void {
   });
 }
 
+const selectedBase = (): NameBase | undefined => Names.nameBases[+ensureEl<HTMLSelectElement>("namesbaseSelect").value];
+
 function updateInputs(): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-  if (!Names.nameBases[base]) {
-    tip(t("Namesbase {{base}} is not defined", { base }), false, "error");
+  const base = selectedBase();
+  if (!base) {
+    const index = ensureEl<HTMLSelectElement>("namesbaseSelect").value;
+    tip(t("Namesbase {{base}} is not defined", { base: index }), false, "error");
     return;
   }
-  (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value = Names.nameBases[base].b;
-  (ensureEl("namesbaseName") as HTMLInputElement).value = Names.nameBases[base].name;
-  (ensureEl("namesbaseMin") as HTMLInputElement).value = String(Names.nameBases[base].min);
-  (ensureEl("namesbaseMax") as HTMLInputElement).value = String(Names.nameBases[base].max);
-  (ensureEl("namesbaseDouble") as HTMLInputElement).value = Names.nameBases[base].d;
+  showBase(base);
   updateExamples();
 }
 
+function showBase(base: NameBase): void {
+  ensureEl<HTMLTextAreaElement>("namesbaseTextarea").value = base.places.names.join(",");
+  ensureEl<HTMLInputElement>("namesbaseName").value = base.name;
+  ensureEl<HTMLInputElement>("namesbaseMin").value = String(base.length[0]);
+  ensureEl<HTMLInputElement>("namesbaseMax").value = String(base.length[1]);
+  ensureEl<HTMLInputElement>("namesbaseDouble").value = getDoubles(base);
+}
+
 function updateExamples(): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
+  const base = selectedBase();
+  if (!base) return;
   let examples = "";
   for (let i = 0; i < 7; i++) {
-    const example = Names.getBase(base);
+    const example = Names.getBase(base.id);
     if (example === undefined) {
       examples = t("Cannot generate examples. Please verify the data");
       break;
@@ -180,47 +191,47 @@ function updateExamples(): void {
 }
 
 function updateNamesData(): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-  const input = ensureEl<HTMLTextAreaElement>("namesbaseTextarea");
-  if (input.value.split(",").length < 3) {
+  const base = selectedBase();
+  const names = ensureEl<HTMLTextAreaElement>("namesbaseTextarea").value.split(",");
+  if (!base || names.length < 3) {
     tip(t("The names data provided is too short or incorrect"), false, "error");
     return;
   }
-  const securedNamesData = input.value.replace(/[/|]/g, "");
-  Names.nameBases[base].b = securedNamesData;
-  input.value = securedNamesData;
-  Names.updateChain(base);
+  base.places.names = names;
+  Names.updateChain(base.id);
 }
 
-function updateBaseName(rawName: string): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
+function updateBaseName(name: string): void {
+  const base = selectedBase();
+  if (!base) return;
   const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
-  const name = rawName.replace(/[/|]/g, "");
-  select.options[select.selectedIndex].innerHTML = name;
-  Names.nameBases[base].name = name;
+  select.options[select.selectedIndex].text = name;
+  base.name = name;
 }
 
 function updateBaseMin(value: string): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-  if (+value > Names.nameBases[base].max) {
+  const base = selectedBase();
+  if (!base) return;
+  if (+value > base.length[1]) {
     tip(t("Minimal length cannot be greater than maximal"), false, "error");
     return;
   }
-  Names.nameBases[base].min = +value;
+  base.length[0] = +value;
 }
 
 function updateBaseMax(value: string): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-  if (+value < Names.nameBases[base].min) {
+  const base = selectedBase();
+  if (!base) return;
+  if (+value < base.length[0]) {
     tip(t("Maximal length should be greater than minimal"), false, "error");
     return;
   }
-  Names.nameBases[base].max = +value;
+  base.length[1] = +value;
 }
 
 function updateBaseDuplication(value: string): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-  Names.nameBases[base].d = value;
+  const base = selectedBase();
+  if (base) setDoubles(base, value);
 }
 
 function analyzeNamesbase(): void {
@@ -232,7 +243,7 @@ function analyzeNamesbase(): void {
     return;
   }
 
-  const chain = Names.calculateChain(namesSourceString);
+  const chain = Names.calculateChain(namesSourceString.split(","));
   const chainValues = Object.values(chain) as string[][];
   const variety = rn(mean(chainValues.map(kv => kv.length)) ?? 0);
 
@@ -296,27 +307,21 @@ function analyzeNamesbase(): void {
 }
 
 function namesbaseAdd(): void {
-  const baseId = Names.nameBases.length;
-  const b =
+  const index = Names.nameBases.length;
+  const name = `Base${index}`;
+  const example =
     "This,is,an,example,of,name,base,showing,correct,format,It,should,have,at,least,one,hundred,names,separated,with,comma";
-  Names.nameBases.push({
-    name: `Base${baseId}`,
-    i: baseId,
-    min: 5,
-    max: 12,
-    d: "",
-    m: 0,
-    b
-  });
-  ensureEl<HTMLSelectElement>("namesbaseSelect").add(new Option(`Base${baseId}`, String(baseId)));
-  (ensureEl("namesbaseSelect") as HTMLSelectElement).value = String(baseId);
-  (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value = b;
-  (ensureEl("namesbaseName") as HTMLInputElement).value = `Base${baseId}`;
-  (ensureEl("namesbaseMin") as HTMLInputElement).value = "5";
-  (ensureEl("namesbaseMax") as HTMLInputElement).value = "12";
-  (ensureEl("namesbaseDouble") as HTMLInputElement).value = "";
+  const base = composeBase(uniqueBaseId(name, baseIds()), name, [5, 12], example.split(","));
+  Names.nameBases.push(base);
+
+  const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
+  select.add(new Option(name, String(index)));
+  select.value = String(index);
+  showBase(base);
   ensureEl("namesbaseExamples").innerHTML = t("Please provide names data");
 }
+
+const baseIds = (): string[] => Names.nameBases.map(base => base.id);
 
 function namesbaseRestoreDefault(): void {
   Dialog.confirm({
@@ -324,8 +329,7 @@ function namesbaseRestoreDefault(): void {
     message: t("Are you sure you want to restore default namesbase?"),
     confirm: t("Restore"),
     onConfirm: () => {
-      Names.clearChains();
-      Names.nameBases = Names.getNameBases();
+      Names.replace(Names.getNameBases());
       createBasesList();
       updateInputs();
     }
@@ -333,59 +337,76 @@ function namesbaseRestoreDefault(): void {
 }
 
 function namesbaseDownload(): void {
-  const data = Names.nameBases.map(b => `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${b.b}`).join("\r\n");
-  const name = `${getFileName("Namesbase")}.txt`;
-  downloadFile(data, name);
+  const data = `[\n${Names.nameBases.map(base => JSON.stringify(base)).join(",\n")}\n]`; // a base a line
+  downloadFile(data, `${getFileName("Namesbase")}.json`, "application/json");
 }
 
 /** Own the namesbase file input here so repeat opens cannot stack listeners on a shared element */
 function pickNamesbaseFile(extend: boolean): void {
-  namesbaseInput ??= createFileInput(".txt");
+  namesbaseInput ??= createFileInput(".json,.txt");
   namesbaseInput.onchange = () => uploadFile(namesbaseInput!, data => namesbaseUpload(data, extend));
   namesbaseInput.click();
 }
 
 function namesbaseUpload(dataLoaded: string, override = true): void {
-  const lines = dataLoaded
-    .replace(/\r\n|\r/g, "\n")
-    .split("\n")
-    .filter(Boolean);
-  if (!lines.length) {
-    tip(sentences(t("Cannot load a namesbase"), t("Please check the data format")), false, "error");
+  const taken = override ? [] : baseIds();
+  const errors: ParseError[] = [];
+  const bases = /^\s*[[{]/.test(dataLoaded)
+    ? parseBases(dataLoaded, taken)
+    : parseLegacyBases(dataLoaded, taken, errors);
+  if (errors.length > 0) showParseErrors(errors, bases?.length ?? 0);
+  if (!bases?.length) {
+    if (!errors.length) tip(sentences(t("Cannot load a namesbase"), t("Please check the data format")), false, "error");
     return;
   }
 
-  Names.clearChains();
-  if (override) Names.nameBases = [];
+  Names.replace(override ? bases : [...Names.nameBases, ...bases]);
+  createBasesList();
+  updateInputs();
+}
 
-  const errors: ParseError[] = [];
-  lines.forEach((line, index) => {
+/** The bases of a JSON namesbase file, one or a list; a base whose id is taken gets one of its own */
+function parseBases(data: string, taken: string[]): NameBase[] | null {
+  const parsed: unknown = safeParseJSON(data);
+  const { data: bases } = z.array(nameBaseSchema).safeParse(Array.isArray(parsed) ? parsed : [parsed]);
+  if (!bases?.length) return null;
+
+  return bases.map(base => {
+    const id = taken.includes(base.id) ? uniqueBaseId(base.name, taken) : base.id;
+    taken.push(id);
+    return { ...base, id };
+  });
+}
+
+/** The bases of an older namesbase file: a line of name|min|max|doubled|m|names each */
+function parseLegacyBases(data: string, taken: string[], errors: ParseError[]): NameBase[] | null {
+  const lines = data
+    .replace(/\r\n|\r/g, "\n")
+    .split("\n")
+    .filter(Boolean);
+  if (!lines.length) return null;
+
+  return lines.flatMap((line, index) => {
     try {
-      const [rawName, min, max, d, m, rawNames] = line.split("|");
-      const name = rawName?.replace(unsafe, "");
+      const [name, min, max, doubled, , names] = line.split("|");
       if (!name) throw new Error(t("Name is missing"));
-      const names = rawNames?.replace(unsafe, "");
       if (!names) throw new Error(t("Names are missing"));
-      Names.nameBases.push({
-        name,
-        i: Names.nameBases.length,
-        min: +min,
-        max: +max,
-        d,
-        m: +m,
-        b: names
-      });
+      const id = uniqueBaseId(name, taken);
+      taken.push(id);
+      return composeBase(id, name, [+min, +max], names.split(","), doubled);
     } catch (e) {
       errors.push({ id: index + 1, line, error: (e as Error).message });
       log.error(e);
+      return [];
     }
   });
+}
 
-  if (errors.length > 0) {
-    log.error("Namesbase upload errors", errors);
-    const errorItems = errors
-      .map(
-        ({ id, line, error }) => /* html */ `<li style="padding:0.6em 0;border-top:1px solid #ddd;">
+function showParseErrors(errors: ParseError[], added: number): void {
+  log.error("Namesbase upload errors", errors);
+  const errorItems = errors
+    .map(
+      ({ id, line, error }) => /* html */ `<li style="padding:0.6em 0;border-top:1px solid #ddd;">
             <div>
               ${t("Line {{number}}", { number: id })}:
               <span style="color:#8b0000">${escapeHtml(error)}.</span> ${t("Data")}:
@@ -394,15 +415,15 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
               ${escapeHtml(line) || `<i>${t("empty line")}</i>`}
             </div>
           </li>`
-      )
-      .join("");
+    )
+    .join("");
 
-    Dialog.message({
-      message: /* html */ `<div>
+  Dialog.message({
+    message: /* html */ `<div>
         <p style="margin:0.75em;">
           <strong>${t("File parsing error. Only {{added}} out of {{total}} namebases added.", {
-            added: lines.length - errors.length,
-            total: lines.length
+            added,
+            total: added + errors.length
           })}</strong>
           ${t("Each namebase should be on its own line and follow the format: name|min|max|duplication|m|names. Parameters should be separated with the | character, and this character should not be used within the parameters. Another prohibited character is /. The most common issue is names and other parameters being on two separate lines.")}
           <ul style="margin:0.5em;">
@@ -420,18 +441,12 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
           </ul>
         </div>
       </div>`,
-      title: t("Parsing error"),
-      width: "min(72vw, 68em)",
-      position: { my: "center center-4em", at: "center", of: "svg" },
-      buttons: [{ label: t("Continue") }]
-    });
-  }
-
-  createBasesList();
-  updateInputs();
+    title: t("Parsing error"),
+    width: "min(72vw, 68em)",
+    position: { my: "center center-4em", at: "center", of: "svg" },
+    buttons: [{ label: t("Continue") }]
+  });
 }
-
-const unsafe = /[|/]/g;
 
 interface ParseError {
   id: number;

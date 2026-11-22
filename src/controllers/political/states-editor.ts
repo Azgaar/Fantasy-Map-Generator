@@ -55,7 +55,6 @@ import { sentences, t } from "@/utils/i18n";
 import { getAdjective } from "@/utils/language-utils";
 import { applyOption, ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
-import { rand } from "@/utils/probability-utils";
 import { errorText, escapeHtml } from "@/utils/string-utils";
 
 const dialogId = "statesEditor" as const;
@@ -819,7 +818,7 @@ function editStateName(state: number): void {
   }
 
   function regenerateShortNameRandom() {
-    const base = rand(Names.nameBases.length - 1);
+    const base = Names.randomBase().id;
     const name = Names.getState(Names.getBase(base), undefined as unknown as number, base);
     ensureEl<HTMLInputElement>("stateNameEditorShort").value = name;
   }

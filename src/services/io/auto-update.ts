@@ -4,6 +4,7 @@ import { extent, min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
 import { isDrawable } from "@/controllers/political/emblems/drawability";
 import { DEFAULT_DEVELOPMENT } from "@/data/development";
+import { getDefaultNameBases } from "@/data/name-bases";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
@@ -33,6 +34,7 @@ import { noFinance, type State, type StateFinance, States } from "@/model/politi
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
+import { composeBase, uniqueBaseId } from "@/model/society/names-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { getDefaultMarkerName, type Marker, Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
@@ -2334,6 +2336,33 @@ function parseLegacySvg(markup: string): ShadowRoot {
   const root = host.attachShadow({ mode: "open" });
   root.innerHTML = markup;
   return root;
+}
+
+/** v1.159.0 keeps name bases as JSON under stable ids, and a culture names its base by that id */
+export function migrateLegacyNameBases(mapVersion: string, data: string[]): void {
+  if (!compareVersions(mapVersion, "1.159.0").isOlder) return;
+
+  // name|min|max|doubled|m|names per base; one saved without names holds the shipped names at its place
+  const shipped = getDefaultNameBases();
+  const stored = data[31] ? data[31].split("/").map(base => base.split("|")) : [];
+  const isCustom = (names = "", index: number) => names.split(",").length > 2 || !shipped[index];
+  const taken = stored.flatMap((base, index) => (isCustom(base[5], index) ? [] : shipped[index].id));
+
+  const bases = stored.map(([name, min, max, doubled, , names = ""], index) => {
+    if (!isCustom(names, index)) {
+      return composeBase(shipped[index].id, name, [+min, +max], shipped[index].places.names, doubled);
+    }
+    const id = uniqueBaseId(name, taken);
+    taken.push(id);
+    return composeBase(id, name, [+min, +max], names ? names.split(",") : [], doubled);
+  });
+  if (data[31]) data[31] = JSON.stringify(bases);
+
+  const ids = (data[31] ? bases : shipped).map(base => base.id);
+  const cultures: unknown = safeParseJSON(data[13] ?? "");
+  if (!Array.isArray(cultures)) return;
+  for (const culture of cultures) if (typeof culture?.base === "number") culture.base = ids[culture.base] ?? ids[0];
+  data[13] = JSON.stringify(cultures);
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {

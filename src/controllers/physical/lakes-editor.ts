@@ -14,7 +14,6 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { si } from "@/utils/number-utils";
-import { rand } from "@/utils/probability-utils";
 
 let selectedLake: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
@@ -176,7 +175,7 @@ function generateNameCulture(): void {
 
 function generateNameRandom(): void {
   const lake = getLake();
-  lake.name = ensureEl<HTMLInputElement>("lakeName").value = Names.getBase(rand(Names.nameBases.length - 1));
+  lake.name = ensureEl<HTMLInputElement>("lakeName").value = Names.getBase(Names.randomBase().id);
 }
 
 function changeLakeSubtype(this: HTMLSelectElement): void {

@@ -144,14 +144,7 @@ function prepareMapData(viewOnly = false): string {
   const labels = JSON.stringify(pack.addedLabels || []);
   const styleData = JSON.stringify(styles);
 
-  // store name array only if not the same as default
-  const defaultNameBases = Names.getNameBases();
-  const namesData = Names.nameBases
-    .map((b, i) => {
-      const names = defaultNameBases[i] && defaultNameBases[i].b === b.b ? "" : b.b;
-      return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
-    })
-    .join("/");
+  const namesData = Names.serialize();
 
   // round population to save space
   const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));

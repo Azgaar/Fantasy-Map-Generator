@@ -15,6 +15,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Goods Editor: deposit distribution function UX improvement
 - Goods Editor: control deposit by min/max population
 - Goods Editor: control deposit clustering
+- Namesbase Editor: download as JSON, upload JSON or the older TXT
 
 **[1.158.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.158.0) - 2026-11-12**:
 

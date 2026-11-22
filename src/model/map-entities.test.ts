@@ -397,7 +397,7 @@ describe("records", () => {
     globalThis.options = {
       map: { transports: [{ i: 2, name: "Galley", speed: 8, domain: "water" }], goods: [{ i: 0, name: "Salt" }] }
     } as typeof options;
-    Object.assign(Names, { nameBases: [{ i: 0, name: "German" }] });
+    Object.assign(Names, { nameBases: [{ id: "german", name: "German" }] });
   });
 
   it("resolves every record type by key", () => {

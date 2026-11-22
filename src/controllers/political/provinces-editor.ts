@@ -59,7 +59,6 @@ import { isLand } from "@/utils/height-utils";
 import { sentences, t } from "@/utils/i18n";
 import { applyOption, ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
-import { rand } from "@/utils/probability-utils";
 import { errorText } from "@/utils/string-utils";
 
 const dialogId = "provincesEditor" as const;
@@ -911,7 +910,7 @@ function regenerateShortNameCulture(): void {
 }
 
 function regenerateShortNameRandom(): void {
-  const base = rand(Names.nameBases.length - 1);
+  const base = Names.randomBase().id;
   const name = Names.getState(Names.getBase(base), undefined as unknown as number, base);
   ensureEl<HTMLInputElement>("provinceNameEditorShort").value = name;
 }

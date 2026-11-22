@@ -126,7 +126,7 @@ Secondary data available as a part of the `pack` object.
 Cultures (races, language zones) data is stored as an array of objects with strict element order. Element 0 is reserved by the _wildlands_ culture. If culture is removed, the element is not getting removed, but instead a `removed` attribute is added. Object structure:
 
 - `i`: `number` - culture id, always equal to the array index
-- `base`: `number` - _nameBase_ id, name base is used for names generation
+- `base`: `string` - _nameBase_ id, name base is used for names generation
 - `name`: `string` - culture name
 - `ancestry`: `string` - optional. Culture ancestry (race), e.g. "Elfish", "Dwarven", "Human"
 - `origins`: `number[]` - ids of origin cultures. Used to render cultures tree to show cultures evolution. The first array member is main link, other - supporting out-of-tree links
@@ -591,12 +591,12 @@ Development eras are configuration, not map state: they live in `options.map.era
 
 ## Name bases
 
-Name generator consumes training sets of real-world town names (with the exception of fantasy name bases) stored in `nameBases` array, that is available globally. Each array element represent a separate base. Base structure is:
+Name generator consumes training sets of real-world town names (with the exception of fantasy name bases) stored in the `Names.nameBases` array. The shipped bases live one per file in `src/data/name-bases/`. Base structure is:
 
-- `i`: `number` - base id, always equal to the array index
+- `id`: `string` - stable slug of the base, such as `german` or `dark-elven`. A culture stores it as its `base`
 - `name`: `string` - names base proper name
-- `b`: `string` - long string containing comma-separated list of names
-- `min`: `number` - recommended minimal length of generated names. Generator will adding new syllables until min length is reached
-- `max`: `number` - recommended maximal length of generated names. If max length is reached, generator will stop adding new syllables
-- `d`: `string` - letters that are allowed to be duplicated in generated names
-- `m`: `number` - if multi-word name is generated, how many of this cases should be transformed into a single word. `0` means multi-word names are not allowed, `1` - all generated multi-word names will stay as they are
+- `length`: `[number, number]` - recommended minimal and maximal length of generated names. Generator adds syllables until the minimum is reached and stops at the maximum
+- `places`: `object` - the corpus of place names; `places.names` is the `string[]` a Markov chain is built from
+- `rules`: `object[]` - optional sound rules, applied in order to each generated name before the shared ones in `src/data/name-rules.ts`. A rule is `{ match, replace }`: `match` is a regex source run with the `gu` flags on the lowercase name, `replace` may use `$1` groups. The letters allowed to stand twice in a row are one such rule: `([^lt])\1+` to `$1` keeps only `l` and `t` doubled
+
+A `.map` file keeps the bases as a JSON array. A shipped base the user left as it is goes by `{ id }` alone and takes the shipped data on load, so it follows later updates; an edited or custom base is stored in full.

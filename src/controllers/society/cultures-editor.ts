@@ -121,7 +121,7 @@ const columns: EditorColumn<Culture>[] = [
     label: t("Namesbase"),
     width: "9em",
     mobileHidden: true,
-    sortBy: culture => culture.base
+    sortBy: culture => Names.nameBases.findIndex(base => base.id === culture.base)
   },
   {
     key: "cells",
@@ -560,12 +560,12 @@ function getTypeOptions(type: string): string {
   return options;
 }
 
-function getBaseOptions(base: number): string {
+function getBaseOptions(base: string): string {
   let options = "";
-  Names.nameBases.forEach((n, i) => {
-    options += `<option ${base === i ? "selected" : ""} value="${i}">${n.name}</option>`;
-  });
-  if (!Names.nameBases[base]) options += `<option selected value="${base}">${t("removed")}</option>`; // in case namesbase was removed
+  for (const { id, name } of Names.nameBases) {
+    options += `<option ${base === id ? "selected" : ""} value="${id}">${name}</option>`;
+  }
+  if (!Names.find(base)) options += `<option selected value="${base}">${t("removed")}</option>`; // in case namesbase was removed
   return options;
 }
 
@@ -683,8 +683,7 @@ function cultureChangeTags(this: HTMLInputElement): void {
 
 function cultureRegenerateName(this: HTMLElement): void {
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  const base = pack.cultures[cultureId].base;
-  if (!Names.nameBases[base]) {
+  if (!Names.find(pack.cultures[cultureId].base)) {
     tip(t("Namesbase is not defined, please select a valid namesbase"), false, "error", 5000);
     return;
   }
@@ -721,9 +720,8 @@ function cultureChangeType(this: HTMLSelectElement): void {
 function cultureChangeBase(this: HTMLSelectElement): void {
   const row = this.closest(".states") as HTMLElement;
   const culture = +row.dataset.id!;
-  const v = +this.value;
-  Cultures.setBase(culture, v);
-  row.dataset.base = String(v);
+  Cultures.setBase(culture, this.value);
+  row.dataset.base = this.value;
 }
 
 function cultureChangeEmblemsShape(this: HTMLSelectElement): void {
@@ -812,8 +810,7 @@ function changePopulation(this: HTMLElement): void {
 
 function cultureRegenerateBurgs(this: HTMLElement): void {
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  const base = pack.cultures[cultureId].base;
-  if (!Names.nameBases[base]) {
+  if (!Names.find(pack.cultures[cultureId].base)) {
     tip(t("Namesbase is not defined, please select a valid namesbase"), false, "error", 5000);
     return;
   }
@@ -1073,7 +1070,7 @@ function downloadCulturesCsv(): void {
       (c.rural ?? 0) * options.map.units.population.scale +
         (c.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
-    const namesbase = Names.nameBases[c.base].name;
+    const namesbase = Names.find(c.base)?.name ?? "";
     const originList = (c.origins ?? [])
       .filter((origin): origin is number => Boolean(origin))
       .map(origin => pack.cultures[origin].name);
@@ -1134,8 +1131,8 @@ async function uploadCulturesCsv(text: string): Promise<void> {
       row.apply("Type", type => Cultures.setType(id, type), culture.type);
       row.apply(
         "Namesbase",
-        name => Cultures.setBase(id, Names.nameBases.indexOf(Csv.byName(Names.nameBases, name))),
-        Names.nameBases[culture.base]?.name
+        name => Cultures.setBase(id, Csv.byName(Names.nameBases, name).id),
+        Names.find(culture.base)?.name
       );
       row.apply("Emblems Shape", shape => Cultures.setEmblemShape(id, shape), culture.shield);
       row.assign(

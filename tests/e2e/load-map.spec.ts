@@ -627,13 +627,13 @@ test.describe("Map loading", () => {
     expect(criticalErrors).toEqual([]);
   });
 
-  // a .map stores no names for a base equal to the default at its index, so a session's own bases must not fill them
+  // a .map stores a shipped base by its id alone, so a session's own base of that id must not stand in for it
   test("loading a map should restore default namebases over the session's ones", async ({ page }) => {
     await waitForMap(page);
     await page.evaluate(() => {
       const Names = (window as any).FMG.Names;
-      Names.nameBases = [{ name: "Custom", i: 0, min: 4, max: 8, d: "", m: 0, b: "Aaa,Bbb,Ccc" }];
-      Names.getBase(0); // caches the custom chain
+      Names.nameBases = [{ id: "german", name: "Custom", length: [4, 8], places: { names: ["Aaa", "Bbb", "Ccc"] } }];
+      Names.getBase("german"); // caches the custom chain
     });
 
     const maps = await countMaps(page);
@@ -645,11 +645,11 @@ test.describe("Map loading", () => {
       const defaults = Names.getNameBases();
       return {
         count: Names.nameBases.length,
-        matchDefaults: Names.nameBases.every((base: any, i: number) => base.b === defaults[i].b),
+        matchDefaults: JSON.stringify(Names.nameBases) === JSON.stringify(defaults),
         chainFromDefault:
-          !Names.chains[0] ||
-          JSON.stringify(Object.entries(Names.chains[0])) ===
-            JSON.stringify(Object.entries(Names.calculateChain(defaults[0].b)))
+          !Names.chains.get("german") ||
+          JSON.stringify(Object.entries(Names.chains.get("german"))) ===
+            JSON.stringify(Object.entries(Names.calculateChain(defaults[0].places.names)))
       };
     });
 

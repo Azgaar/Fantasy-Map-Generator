@@ -24,7 +24,6 @@ import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/pan-zoom-utils";
-import { rand } from "@/utils/probability-utils";
 import { errorText } from "@/utils/string-utils";
 
 let selected: Selection<SVGElement, unknown, HTMLElement, unknown> | null = null;
@@ -370,8 +369,7 @@ function changeName(): void {
 }
 
 function generateNameRandom(): void {
-  const base = rand(Names.nameBases.length - 1);
-  ensureEl<HTMLInputElement>("burgName").value = Names.getBase(base);
+  ensureEl<HTMLInputElement>("burgName").value = Names.getBase(Names.randomBase().id);
   changeName();
 }
 

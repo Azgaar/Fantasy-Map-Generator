@@ -12,12 +12,13 @@ import { Pack } from "@/model/graph/pack-generator";
 import { Options } from "@/model/options/options-model";
 import { Military } from "@/model/political/military-generator";
 import { Names } from "@/model/society/names-generator";
+import { getDoubles } from "@/model/society/sound-rules";
 import { Styles } from "@/model/styles/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
 import { Dialog } from "@/ui/dialog/dialog";
 import { safeParseJSON } from "@/utils/string-utils";
-import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
+import { migrateLegacyNameBases, migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 import { Csv } from "./csv";
 
 /** the record an old map keeps its svg in: the migrations read it, never the live map */
@@ -1396,5 +1397,82 @@ describe("v1.157.0 deposit counts", () => {
     expect(options.map.goods[3].deposits).toBeUndefined();
     expect(options.map.goods[4].deposits).toEqual([1, 2]);
     expect(options.map.goods.some(good => "chance" in good)).toBe(false);
+  });
+});
+
+describe("v1.159 name bases migration", () => {
+  const shipped = Names.getNameBases();
+  /** the record older maps keep: a base a slash, names left out where they are the default ones */
+  const legacyRecord = (edit: (fields: (string | number)[], index: number) => (string | number)[] = fields => fields) =>
+    shipped.map((base, index) => edit([base.name, ...base.length, getDoubles(base), 0, ""], index).join("|")).join("/");
+  const cultures = (...bases: number[]) => JSON.stringify(bases.map((base, i) => ({ i, base })));
+
+  it("turns untouched bases into the shipped ones and culture bases into ids", () => {
+    const data: string[] = [];
+    data[13] = cultures(1, 5, 42, 99);
+    data[31] = legacyRecord();
+    migrateLegacyNameBases("1.158.0", data);
+    Names.restore(data[31]);
+
+    expect(Names.nameBases).toEqual(shipped);
+    expect(JSON.parse(Names.serialize())).toEqual(shipped.map(({ id }) => ({ id })));
+    const bases = JSON.parse(data[13]).map((culture: { base: string }) => culture.base);
+    expect(bases).toEqual(["english", "ruthenian", "levantine", "german"]); // a base out of range was the first one
+  });
+
+  it("keeps an edited base under its shipped id and gives a custom one an id of its own", () => {
+    const data: string[] = [];
+    data[13] = cultures(0, 1, 2);
+    data[31] = legacyRecord((fields, index) => {
+      if (index === 0) return ["German", 4, 12, "lt", 0, ""]; // shipped names, another length
+      if (index === 1) return ["German", 5, 9, "", 0, "Aaa,Bbb,Ccc"]; // a custom base named as a shipped one
+      if (index === 2) return ["My Base", 5, 9, "ab", 0, "Xaa,Xbb,Xcc"];
+      return fields;
+    });
+    migrateLegacyNameBases("1.158.0", data);
+    Names.restore(data[31]);
+
+    const [german, custom, own] = Names.nameBases;
+    expect(german).toEqual({ ...shipped[0], length: [4, 12] });
+    expect(custom).toMatchObject({ id: "german-2", name: "German", places: { names: ["Aaa", "Bbb", "Ccc"] } });
+    expect(own).toMatchObject({ id: "my-base", length: [5, 9] });
+    expect(getDoubles(own)).toBe("ab");
+    expect(JSON.parse(data[13]).map((culture: { base: string }) => culture.base)).toEqual([
+      "german",
+      "german-2",
+      "my-base"
+    ]);
+    expect(JSON.parse(Names.serialize()).slice(0, 4)).toEqual([german, custom, own, { id: "italian" }]);
+  });
+
+  it("gives cultures the shipped ids when a map holds no bases", () => {
+    const data: string[] = [];
+    data[13] = cultures(2);
+    migrateLegacyNameBases("1.0.0", data);
+    expect(data[31]).toBeUndefined();
+    expect(JSON.parse(data[13])[0].base).toBe("french");
+  });
+
+  it("leaves a current map alone", () => {
+    const data: string[] = [];
+    data[13] = JSON.stringify([{ i: 0, base: "english" }]);
+    data[31] = JSON.stringify([{ id: "english" }]);
+    const before = [...data];
+    migrateLegacyNameBases(VERSION, data);
+    expect(data).toEqual(before);
+  });
+
+  it.each(["1.112.1", "1.139.4", "1.143.1", "1.154.0"])("migrates the %s fixture", version => {
+    const data = readFileSync(`tests/fixtures/${version}.map`, "utf8").split("\r\n");
+    const indexes: number[] = JSON.parse(data[13]).map((culture: { base: number }) => culture.base);
+    const legacyNames = data[31].split("/").map(base => base.split("|")[0]);
+
+    migrateLegacyNameBases(version, data);
+    Names.restore(data[31]);
+
+    expect(Names.nameBases.map(base => base.name)).toEqual(legacyNames);
+    const bases: string[] = JSON.parse(data[13]).map((culture: { base: string }) => culture.base);
+    expect(bases.map(id => Names.find(id)?.name)).toEqual(indexes.map(index => legacyNames[index]));
+    Names.restore();
   });
 });

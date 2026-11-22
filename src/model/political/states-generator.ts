@@ -949,6 +949,9 @@ class StatesModule {
       else if (isAnarchy) s.form = "Anarchy";
       else s.form = s.type === "Naval" ? rw(naval) : rw(generic);
 
+      // biome-ignore format: a list reads as one line
+      const european = ["german", "english", "french", "italian", "castillian", "nordic", "roman", "finnic", "portuguese", "hungarian", "basque"];
+
       const selectForm = (s: State, tier: number) => {
         const base = pack.cultures[s.culture].base;
 
@@ -963,21 +966,21 @@ class StatesModule {
               s.diplomacy.includes("Vassal")
             )
               return "Marches"; // some vassal duchies on borderland
-            if (base === 1 && P(0.3) && s.diplomacy.includes("Vassal")) return "Dominion"; // English vassals
+            if (base === "english" && P(0.3) && s.diplomacy.includes("Vassal")) return "Dominion";
             if (P(0.3) && s.diplomacy.includes("Vassal")) return "Protectorate"; // some vassals
           }
 
-          if (base === 31 && (form === "Empire" || form === "Kingdom")) return "Khanate"; // Mongolian
-          if (base === 16 && form === "Principality") return "Beylik"; // Turkic
-          if (base === 5 && (form === "Empire" || form === "Kingdom")) return "Tsardom"; // Ruthenian
-          if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Turkic
-          if (base === 12 && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate"; // Japanese
-          if ([18, 17].includes(base) && form === "Empire") return "Caliphate"; // Arabic, Amazigh
-          if (base === 18 && (form === "Grand Duchy" || form === "Duchy")) return "Emirate"; // Arabic
-          if (base === 7 && (form === "Grand Duchy" || form === "Duchy")) return "Despotate"; // Greek
-          if (base === 31 && (form === "Grand Duchy" || form === "Duchy")) return "Ulus"; // Mongolian
-          if (base === 16 && (form === "Grand Duchy" || form === "Duchy")) return "Horde"; // Turkic
-          if (base === 24 && (form === "Grand Duchy" || form === "Duchy")) return "Satrapy"; // Iranian
+          if (base === "mongolian" && (form === "Empire" || form === "Kingdom")) return "Khanate";
+          if (base === "turkish" && form === "Principality") return "Beylik";
+          if (base === "ruthenian" && (form === "Empire" || form === "Kingdom")) return "Tsardom";
+          if (base === "turkish" && (form === "Empire" || form === "Kingdom")) return "Khaganate";
+          if (base === "japanese" && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate";
+          if (["arabic", "amazigh"].includes(base) && form === "Empire") return "Caliphate";
+          if (base === "arabic" && (form === "Grand Duchy" || form === "Duchy")) return "Emirate";
+          if (base === "greek" && (form === "Grand Duchy" || form === "Duchy")) return "Despotate";
+          if (base === "mongolian" && (form === "Grand Duchy" || form === "Duchy")) return "Ulus";
+          if (base === "turkish" && (form === "Grand Duchy" || form === "Duchy")) return "Horde";
+          if (base === "iranian" && (form === "Grand Duchy" || form === "Duchy")) return "Satrapy";
           return form;
         }
 
@@ -997,20 +1000,18 @@ class StatesModule {
         if (s.form === "Anarchy") return rw(anarchy);
 
         if (s.form === "Theocracy") {
-          // European
-          if ([0, 1, 2, 3, 4, 6, 8, 9, 13, 15, 20].includes(base)) {
+          if (european.includes(base)) {
             if (P(0.1)) return `Divine ${monarchy[tier]}`;
             if (tier < 2 && P(0.5)) return "Diocese";
             if (tier < 2 && P(0.5)) return "Bishopric";
           }
-          if (P(0.9) && [7, 5].includes(base)) {
-            // Greek, Ruthenian
+          if (P(0.9) && ["greek", "ruthenian"].includes(base)) {
             if (tier < 2) return "Eparchy";
             if (tier === 2) return "Exarchate";
             if (tier > 2) return "Patriarchate";
           }
-          if (P(0.9) && [21, 16].includes(base)) return "Imamah"; // Nigerian, Turkish
-          if (tier > 2 && P(0.8) && [18, 17, 28].includes(base)) return "Caliphate"; // Arabic, Amazigh, Swahili
+          if (P(0.9) && ["nigerian", "turkish"].includes(base)) return "Imamah";
+          if (tier > 2 && P(0.8) && ["arabic", "amazigh", "swahili"].includes(base)) return "Caliphate";
           return rw(theocracy);
         }
       };

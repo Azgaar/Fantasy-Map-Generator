@@ -59,7 +59,7 @@ Tags are separated by `;`. Colors are HEX like `#a1b2c3`; a hatched fill is kept
 | What | Where | Format |
 | --- | --- | --- |
 | Notes (legends) | _Tools_ → _Notes_ → _Upload notes from PC_ | `.csv` with a `type,id,note` header, as downloaded by _Download notes to PC_. Each row sets the note of an object on the map; rows for objects that are not on the map are skipped |
-| Namesbases | _Tools_ → _Namesbase_ → upload, either extending or replacing the current set | `.txt`, one namesbase per line: `name\|min length\|max length\|doubled letters\|multi-word rate\|names separated by commas`, as downloaded by the editor |
+| Namesbases | _Tools_ → _Namesbase_ → upload, either extending or replacing the current set | `.json`, a list of namesbases as downloaded by the editor. The older `.txt` still loads: one namesbase per line, `name\|min length\|max length\|doubled letters\|multi-word rate\|names separated by commas` |
 | Heightmap templates | _Tools_ → _Heightmap_ → _Erase_ → _Template editor_ → upload | `.txt`, one step per line with 5 values separated by spaces, e.g. `Hill 1 90-99 44-56 40-60`. See the [Heightmap template editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-template-editor) |
 | Style presets | _Style_ → the plus button next to the style preset → _Style Saver_ → _Open previously downloaded style file_ | `.json` saved by the same dialog |
 

@@ -572,9 +572,9 @@ class EntityLookup {
       icon: "icon-book",
       scale: 1,
       layers: [],
-      entity: id => this.byId(Names.nameBases, id),
-      name: id => this.byId(Names.nameBases, id)?.name || "",
-      refs: () => this.refsOf("nameBase", Names.nameBases),
+      entity: id => Names.nameBases[id] && { i: id, name: Names.nameBases[id].name }, // a record id is the base's place in the list
+      name: id => Names.nameBases[id]?.name || "",
+      refs: () => Names.nameBases.map((_, id) => ({ type: "nameBase", id })),
       editor: "NamesbaseEditor"
     }
   };

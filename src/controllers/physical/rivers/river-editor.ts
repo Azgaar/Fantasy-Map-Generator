@@ -16,7 +16,6 @@ import { getSegmentId } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { rand } from "@/utils/probability-utils";
 
 let selectedRiver: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
@@ -345,7 +344,7 @@ function generateNameCulture(): void {
 }
 
 function generateNameRandom(): void {
-  const name = Names.getBase(rand(Names.nameBases.length - 1));
+  const name = Names.getBase(Names.randomBase().id);
   ensureEl<HTMLInputElement>("riverName").value = name;
   Rivers.rename(getRiver().i, name);
   Layers.draw("labels");
