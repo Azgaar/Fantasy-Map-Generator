@@ -257,7 +257,10 @@ export const optionsSchema = z.strictObject({
     mode: z.enum(EDIT_MODES).nullable(), // this session only: never stored
     notesPinned: z.boolean(),
     emblems: z.strictObject({ showAll: z.boolean(), shape: z.string().min(1) }),
-    labels: z.strictObject({ showAll: z.boolean() }),
+    labels: z.strictObject({
+      showAll: z.boolean(),
+      names: z.string().min(1) // what labels show: "native" names, their "gloss", or their meaning in a name base, by its id
+    }),
     heightmapEditor: z.strictObject({ renderOcean: z.boolean(), showDrainage: z.boolean(), allowErosion: z.boolean() }),
     performance: z.strictObject({
       shapeRendering: z.enum(["geometricPrecision", "auto", "optimizeSpeed", "crispEdges"]),

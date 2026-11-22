@@ -3,10 +3,11 @@ import { z } from "zod";
 import type { Corpus, NameBase, Pattern } from "@/data/name-bases";
 import { type Concept, conceptsOf } from "@/data/name-concepts";
 import { DEFAULT_TEMPLATES, DEFAULT_WEIGHTS } from "@/data/name-rules";
-import { fallbackForms, gloss, mineEndings } from "@/model/society/name-render";
+import { fallbackForms, mineEndings } from "@/model/society/name-render";
 import { composeBase, Names, nameBaseSchema, uniqueBaseId } from "@/model/society/names-generator";
 import { applyRules, capitalizeWords, getDoubles, joinParts, setDoubles } from "@/model/society/sound-rules";
 import { Toponyms } from "@/model/society/toponyms";
+import { localGloss } from "@/renderers/labels/name-display";
 import { getFileName } from "@/services/io/file-name";
 import { speak } from "@/services/speech";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -333,7 +334,7 @@ function updateExamples(): void {
     const { name, meaning } = Toponyms.sample(base);
     return meaning.pattern === "simplex"
       ? escapeHtml(name)
-      : `${escapeHtml(name)} <i>(${escapeHtml(gloss(meaning))})</i>`;
+      : `${escapeHtml(name)} <i>(${escapeHtml(localGloss(meaning))})</i>`;
   });
   ensureEl("namesbaseExamples").innerHTML = examples.join(", ");
 }

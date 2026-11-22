@@ -4,6 +4,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import type { River } from "@/model/physical/river-generator";
 import { Rivers } from "@/model/physical/river-generator";
+import { simplex } from "@/model/society/name-render";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { redrawRiver as redrawRiverShape, setEditedRiver } from "@/renderers/draw-rivers";
@@ -73,6 +74,7 @@ function renderDialog(): void {
         <span id="riverNameRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
         <input id="riverName" data-tip="${t("Type to rename")}" autocorrect="off" spellcheck="false" />
         <span id="riverNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
+        <span id="riverTranslations" data-tip="${t("See the name in other name bases")}" class="icon-exchange pointer"></span>
       </div>
       <div data-tip="${t("Type to change river type (e.g. fork, creek, river, brook, stream)")}">
         <div class="label">${t("Type")}:</div>
@@ -147,6 +149,7 @@ function renderDialog(): void {
   ensureEl("riverTags").addEventListener("change", changeTags);
   ensureEl("riverNameCulture").addEventListener("click", generateNameCulture);
   ensureEl("riverNameRandom").addEventListener("click", generateNameRandom);
+  ensureEl("riverTranslations").addEventListener("click", showTranslations);
   ensureEl("riverMainstem").addEventListener("change", changeParent);
   ensureEl("riverSourceWidth").addEventListener("input", changeSourceWidth);
   ensureEl("riverWidthFactor").addEventListener("input", changeWidthFactor);
@@ -336,18 +339,28 @@ function changeTags(this: HTMLInputElement): void {
 }
 
 function generateNameCulture(): void {
-  const river = getRiver();
-  const name = Rivers.getName(river.mouth);
-  ensureEl<HTMLInputElement>("riverName").value = name;
-  Rivers.rename(river.i, name);
-  Layers.draw("labels");
+  regenerateName();
 }
 
 function generateNameRandom(): void {
-  const name = Names.getBase(Names.randomBase().id);
-  ensureEl<HTMLInputElement>("riverName").value = name;
-  Rivers.rename(getRiver().i, name);
+  regenerateName(Names.randomBase().id);
+}
+
+function regenerateName(baseId?: string): void {
+  const river = getRiver();
+  Rivers.regenerateName(river.i, baseId);
+  ensureEl<HTMLInputElement>("riverName").value = river.name;
   Layers.draw("labels");
+}
+
+function showTranslations(): void {
+  const river = getRiver();
+  const origin = pack.cultures[pack.cells.culture[river.mouth]]?.base ?? Names.nameBases[0].id;
+  void Controllers.NameTranslations.open(river.meaning ?? simplex(river.name, origin), name => {
+    ensureEl<HTMLInputElement>("riverName").value = name;
+    Rivers.rename(river.i, name);
+    Layers.draw("labels");
+  });
 }
 
 function changeParent(this: HTMLInputElement): void {

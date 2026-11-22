@@ -9,6 +9,7 @@ import { Emblems } from "@/model/political/emblems-generator";
 import { type Culture, Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names-generator";
+import { Toponyms } from "@/model/society/toponyms";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
@@ -720,8 +721,33 @@ function cultureChangeType(this: HTMLSelectElement): void {
 function cultureChangeBase(this: HTMLSelectElement): void {
   const row = this.closest(".states") as HTMLElement;
   const culture = +row.dataset.id!;
+  const origin = row.dataset.base!;
   Cultures.setBase(culture, this.value);
   row.dataset.base = this.value;
+
+  // names keep their meanings: the new base may say them another way
+  const taken = new Set(pack.burgs.map(burg => burg.name));
+  const renames: [burgId: number, name: string][] = [];
+  for (const burg of pack.burgs) {
+    if (!burg.i || burg.removed || burg.lock || burg.culture !== culture) continue;
+    const name = Toponyms.nameIn(burg, culture, origin);
+    if (!name || taken.has(name)) continue;
+    taken.add(name);
+    renames.push([burg.i, name]);
+  }
+  if (!renames.length) return;
+
+  Dialog.confirm({
+    title: t("Rename burgs"),
+    message: t("The new name base would name {{count}} burgs of the culture another way. Rename them?", {
+      count: renames.length
+    }),
+    confirm: t("Rename"),
+    onConfirm: () => {
+      for (const [burgId, name] of renames) Burgs.rename(burgId, name);
+      Layers.draw("labels");
+    }
+  });
 }
 
 function cultureChangeEmblemsShape(this: HTMLSelectElement): void {

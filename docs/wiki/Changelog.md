@@ -22,6 +22,10 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Names: places are named after founders with personal names of their culture
 - Namesbase Editor: tabs for personal names, the lexicon, name patterns and sound rules
 - Options: share of meaningful names, and whether personal names are generated or picked
+- Names: rivers, lakes and provinces are named for what they are, such as Blackwater or Kenelm's Pool
+- Options: show labels as named, by what the names mean, or as any one namesbase would say them
+- Burg, State and Cultures editors: a change of culture or namesbase offers the names the new one gives
+- River, Lake and Province editors: see how other namesbases render the name
 
 **[1.158.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.158.0) - 2026-11-12**:
 

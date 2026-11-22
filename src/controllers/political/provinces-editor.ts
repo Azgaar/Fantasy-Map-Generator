@@ -17,6 +17,7 @@ import { Provinces } from "@/model/political/provinces-generator";
 import { Stability } from "@/model/political/stability";
 import type { State } from "@/model/political/states-generator";
 import { Development } from "@/model/society/development-generator";
+import { simplex } from "@/model/society/name-render";
 import { Names } from "@/model/society/names-generator";
 import { Toponyms } from "@/model/society/toponyms";
 import { Tags } from "@/model/tags";
@@ -398,7 +399,9 @@ function regenerateProvinceNames(): void {
   for (const province of getProvincesData()) {
     if (province.lock) continue;
     const culture = pack.cells.culture[province.center];
-    Provinces.rename(province.i, Toponyms.land(Names.getCultureShort(culture), culture));
+    const { name, meaning } = Toponyms.landOf(Names.getCultureShort(culture), culture);
+    Provinces.rename(province.i, name);
+    Provinces.setMeaning(province.i, meaning);
   }
 
   provincesTable.refresh();
@@ -757,6 +760,7 @@ function removeProvince(p: number): void {
 
 function editProvinceName(province: number): void {
   renderNameEditor();
+  coined = undefined;
   const p = pack.provinces[province];
   ensureEl("provinceNameEditor").dataset.province = String(province);
   ensureEl<HTMLInputElement>("provinceNameEditorShort").value = p.name;
@@ -807,6 +811,7 @@ function renderNameEditor(): void {
           class="icon-book pointer"
         ></span>
         <span id="provinceNameEditorShortRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
+        <span id="provinceNameEditorTranslations" data-tip="${t("See the name in other name bases")}" class="icon-exchange pointer"></span>
       </div>
       <div data-tip="${t("Select form name")}">
         <div data-tip="${t("Form name")}" class="label">${t("Form name")}:</div>
@@ -889,6 +894,7 @@ function renderNameEditor(): void {
 
   ensureEl("provinceNameEditorShortCulture").addEventListener("click", regenerateShortNameCulture);
   ensureEl("provinceNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
+  ensureEl("provinceNameEditorTranslations").addEventListener("click", showTranslations);
   ensureEl("provinceNameEditorShortSpeak").addEventListener("click", () =>
     speak(ensureEl<HTMLInputElement>("provinceNameEditorShort").value)
   );
@@ -903,17 +909,29 @@ function closeProvinceNameEditor(): void {
   Dialog.destroy("provinceNameEditor");
 }
 
+let coined: ReturnType<typeof Toponyms.landOf> | undefined; // the name last generated here, kept with its meaning
+
 function regenerateShortNameCulture(): void {
   const province = +ensureEl("provinceNameEditor").dataset.province!;
   const culture = pack.cells.culture[pack.provinces[province].center];
-  const name = Toponyms.land(Names.getCultureShort(culture), culture);
-  ensureEl<HTMLInputElement>("provinceNameEditorShort").value = name;
+  coined = Toponyms.landOf(Names.getCultureShort(culture), culture);
+  ensureEl<HTMLInputElement>("provinceNameEditorShort").value = coined.name;
 }
 
 function regenerateShortNameRandom(): void {
   const base = Names.randomBase().id;
-  const name = Toponyms.land(Names.getBase(base), base);
-  ensureEl<HTMLInputElement>("provinceNameEditorShort").value = name;
+  coined = Toponyms.landOf(Names.getBase(base), base);
+  ensureEl<HTMLInputElement>("provinceNameEditorShort").value = coined.name;
+}
+
+function showTranslations(): void {
+  const province = pack.provinces[+ensureEl("provinceNameEditor").dataset.province!];
+  const input = ensureEl<HTMLInputElement>("provinceNameEditorShort");
+  const origin = pack.cultures[pack.cells.culture[province.center]]?.base ?? Names.nameBases[0].id;
+  const meaning = coined?.name === input.value ? coined.meaning : province.meaning;
+  void Controllers.NameTranslations.open(meaning ?? simplex(input.value || province.name, origin), name => {
+    input.value = name;
+  });
 }
 
 function addCustomForm(): void {
@@ -943,6 +961,7 @@ function applyNameChange(p: Province): void {
   const fullName = ensureEl<HTMLInputElement>("provinceNameEditorFull").value.trim();
   const oldFullName = p.fullName;
   if (name && name !== p.name) Provinces.rename(p.i, name);
+  if (coined?.name === name) Provinces.setMeaning(p.i, coined.meaning);
   if (formName !== (p.formName ?? "")) Provinces.setForm(p.i, formName);
   if (fullName && fullName !== oldFullName) Provinces.setFullName(p.i, fullName);
   Layers.draw("provinces");

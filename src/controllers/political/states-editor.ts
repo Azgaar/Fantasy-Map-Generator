@@ -9,13 +9,14 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Stability } from "@/model/political/stability";
 import { STATE_FORMS, type State, States } from "@/model/political/states-generator";
 import { Development } from "@/model/society/development-generator";
-import { gloss, type Meaning, simplex } from "@/model/society/name-render";
+import { type Meaning, simplex } from "@/model/society/name-render";
 import { Names } from "@/model/society/names-generator";
 import { Toponyms } from "@/model/society/toponyms";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
+import { localGloss } from "@/renderers/labels/name-display";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { fog, unfog } from "@/renderers/overlays/fogging";
@@ -839,7 +840,7 @@ function editStateName(state: number): void {
 
   function showMeaning() {
     const shown = getMeaning();
-    ensureEl("stateNameEditorMeaning").textContent = shown.pattern === "simplex" ? t("proper name") : gloss(shown);
+    ensureEl("stateNameEditorMeaning").textContent = shown.pattern === "simplex" ? t("proper name") : localGloss(shown);
   }
 
   function showTranslations() {
@@ -1036,8 +1037,24 @@ function stateCapitalZoomIn(state: number): void {
 }
 
 function stateChangeCulture(state: number, line: HTMLElement, value: string): void {
+  const s = pack.states[state];
+  const origin = s.meaning?.origin ?? pack.cultures[s.culture].base;
   States.setCulture(state, +value);
   line.dataset.base = String(+value);
+
+  // the name keeps its meaning: the new culture may say it another way
+  const name = Toponyms.nameIn(s, +value, origin);
+  if (!name) return;
+  Dialog.confirm({
+    title: t("Rename state"),
+    message: t("The new culture would call {{state}} “{{name}}”. Rename the state?", { state: s.name, name }),
+    confirm: t("Rename"),
+    onConfirm: () => {
+      States.rename(state, name);
+      refreshStatesEditor();
+      Layers.draw("labels");
+    }
+  });
 }
 
 function stateChangeType(state: number, line: HTMLElement, value: string): void {

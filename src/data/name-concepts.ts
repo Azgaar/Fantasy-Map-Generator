@@ -77,6 +77,9 @@ export const CONCEPTS = {
   mine: generic("ore"),
   quarry: generic("ore", "mountain"),
   temple: generic("capital", "big"),
+  river: generic("river"),
+  brook: generic("stream"),
+  water: generic("river", "stream", "lake"),
 
   new: modifier(),
   old: modifier(),

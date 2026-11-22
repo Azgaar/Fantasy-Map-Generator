@@ -78,6 +78,7 @@ Features represent separate locked areas like islands, lakes and oceans.
 - - `vertices`: `number[]` - indexes of vertices around the feature (perimetric vertices)
 - - `name`: `string` - generated for every feature. Islands use the culture of their first land cell and lakes use a shore cell, with a one-in-ten chance of an English adjective instead. Oceans use an English adjective or the map side they lie on (_Azure_, _Northern_); the subtype noun is shown separately. Any feature can be renamed in the Features Overview. Empty shows as _Unnamed_
 - - `note`: `string` - optional. The user's note (legend) about the feature, as html. Removed with it
+- - `meaning`: `object` - what a lake's name says. Optional. See [Name meanings](#name-meanings)
 - - `coastline`: `object` - optional. The feature's own coastline settings (same shape as `options.map.coastline`), set in the Coastline Editor; the map-level settings no longer apply to it. Islands and lakes only
 
 ## Specific cells data
@@ -263,6 +264,7 @@ Provinces data is stored as an array of objects with strict element order. Eleme
 - `lock`: `boolean` - `true` if province is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if province is removed
 - `note`: `string` - optional. The user's note (legend) about the province, as html. Removed with it
+- `meaning`: `object` - what the name says. Optional. See [Name meanings](#name-meanings)
 
 ## Religions
 
@@ -307,6 +309,7 @@ Rivers data is stored as an unordered array of objects (so element id is _not_ t
 - `width`: `number` - river mouth width in km
 - `sourceWidth`: `number` - additional width added to river source on rendering. Used to make lake outlets start with some width depending on flux. Can be also used to manually create channels
 - `note`: `string` - optional. The user's note (legend) about the river, as html. Removed with it
+- `meaning`: `object` - what the name says. Optional. See [Name meanings](#name-meanings)
 - `lock`: `boolean` - `true` if river is locked: regeneration (Regenerate rivers, a World Configurator change, a
   Risk heightmap edit with erosion) keeps its course and data and generates the other rivers around it. Optional
 
@@ -614,9 +617,11 @@ A `.map` file keeps the bases as a JSON array. A shipped base the user left as i
 
 ## Name meanings
 
-A burg or state keeps what its name says in `meaning`, apart from the `name` itself. Both are editable and neither overwrites the other, so a name may differ from what its meaning renders to. `render(meaning, baseId)` in `src/model/society/name-render.ts` gives the name a meaning takes in a name base: the same meaning and base always give the same name. `src/model/society/toponyms.ts` picks a meaning that fits a burg's place. A root rendered in a base other than its `origin` is adapted to that base by `src/model/society/name-adoption.ts`: the base's `foreign` rules, its nearest letters, and open syllables where its own names have them.
+A burg, state, province, river or lake keeps what its name says in `meaning`, apart from the `name` itself. Both are editable and neither overwrites the other, so a name may differ from what its meaning renders to. `render(meaning, baseId)` in `src/model/society/name-render.ts` gives the name a meaning takes in a name base: the same meaning and base always give the same name. `src/model/society/toponyms.ts` picks a meaning that fits the place. A root rendered in a base other than its `origin` is adapted to that base by `src/model/society/name-adoption.ts`: the base's `foreign` rules, its nearest letters, and open syllables where its own names have them.
 
 - `pattern`: `string` - the shape of the meaning, which sets its slots: `simplex` (root), `feature` (generic), `modifier-generic`, `owner-generic` (root, generic), `generic-of` (generic, root), `relative` (modifier, root), `root-land` (root, generic), `modifier-land` (modifier, generic)
 - `tokens`: `string[]` - the slots' values in the pattern's order. A concept id such as `town` or `black`, or a proper root marked with `~`, such as `~Eadric`
 - `origin`: `string` - id of the name base the meaning was coined in
 - `salt`: `number` - optional, re-rolls the choice between a concept's forms
+
+Labels show the name by default. `options.app.labels.names`, a per-browser preference, makes them show the meaning instead: `gloss` reads it in the interface language, a name base id renders it in that base. `src/renderers/labels/name-display.ts` resolves it at draw time and the map is not changed.

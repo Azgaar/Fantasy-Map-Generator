@@ -3,6 +3,7 @@
 import { regeneratePrompt } from "@/app/lifecycle";
 import { SAMPLING_LABELS } from "@/data/id-labels";
 import { DEFAULT_JITTER, MAX_JITTER, SAMPLINGS, type Sampling } from "@/model/graph/lattice";
+import { Names } from "@/model/society/names-generator";
 import { Dialog } from "@/ui/dialog/dialog";
 import { t } from "@/utils/i18n";
 import { DEBUG_MODES, type DebugMode } from "@/utils/logger";
@@ -133,6 +134,17 @@ const mapRows = () =>
 
 const interfaceRows = () =>
   [
+    row({
+      label: t("Names on labels"),
+      tip: t(
+        "Show names as they are, as what they mean, or as another name base would say them. Only the labels change, not the names"
+      ),
+      control: `<select id="labelNames" data-option="labelNames">${[
+        option("native", t("As named")),
+        option("gloss", t("Meaning")),
+        ...Names.nameBases.map(({ id, name }) => option(id, name))
+      ].join("")}</select>`
+    }),
     row({
       label: t("Autosave interval"),
       tip: t("Set autosave interval in minutes. Set 0 to disable autosave. Map is saved to browser memory"),

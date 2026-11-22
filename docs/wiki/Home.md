@@ -61,6 +61,7 @@ To report a problem or propose a feature, see [Reporting bugs and suggesting ide
 [Working offline](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Working-offline) ·
 [URL parameters](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/URL-parameters) ·
 [Data import](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import) ·
+[Name bases](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Name-bases) ·
 [GIS data export](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export) ·
 [Ollama text generation](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Ollama-text-generation) ·
 [Dependencies](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Dependencies) ·

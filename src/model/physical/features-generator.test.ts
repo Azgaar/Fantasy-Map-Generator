@@ -1,5 +1,6 @@
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Names } from "@/model/society/names-generator";
+import { Toponyms } from "@/model/society/toponyms";
 import type { Feature } from "./features-generator";
 import { Features } from "./features-generator";
 
@@ -54,9 +55,15 @@ describe("feature naming", () => {
     }
   });
 
-  it("names only the features without a name", () => {
+  it("names only the features without a name, a lake by what it is", () => {
+    const lake = {
+      name: "Mere",
+      meaning: { pattern: "feature" as const, tokens: ["lake" as const], origin: "english" }
+    };
+    vi.spyOn(Toponyms, "lake").mockReturnValue(lake);
     Features.defineNames();
     expect(pack.features[1].name).toBe("name-of-1");
+    expect(pack.features[2]).toMatchObject(lake);
     expect(pack.features[3].name).toBeTruthy();
     expect(pack.features[3].name).not.toMatch(/^name-of-/);
     expect(pack.features[4].name).toBe("Kept Sea");

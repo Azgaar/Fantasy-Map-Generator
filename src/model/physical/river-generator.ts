@@ -3,7 +3,9 @@ import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
 import type { Label } from "@/model/annotations/labels-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
+import type { Meaning } from "@/model/society/name-render";
 import { Names } from "@/model/society/names-generator";
+import { Toponyms } from "@/model/society/toponyms";
 import { replaceWholeWord } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { rn } from "@/utils/number-utils";
@@ -30,6 +32,7 @@ export interface River {
   widthFactor: number; // width scaling factor
   sourceWidth: number; // source width in km
   name: string; // river name
+  meaning?: Meaning; // what the name says, kept apart from the name itself
   type: string; // river type
   group: string; // rendering group, a key of styles.rivers.groups
   cells: number[]; // cells forming the river path
@@ -190,9 +193,8 @@ class RiverModule {
       Object.assign(river, { source, length, discharge, width, cells: riverCells, group, points });
     } else {
       const basin = this.getBasin(parent);
-      const name = this.getName(mouth);
       const type = this.getType({ i: riverId, length, parent } as River);
-      rivers.push({
+      const river: River = {
         i: riverId,
         source,
         mouth,
@@ -204,11 +206,12 @@ class RiverModule {
         parent,
         cells: riverCells,
         basin,
-        name,
+        name: "",
         type,
         group: this.pickGroup(riverCells),
         tags: []
-      });
+      };
+      rivers.push(Object.assign(river, Toponyms.river(river)));
     }
     const tributaries = rivers.filter(candidate => candidate.parent === riverId && candidate.i !== riverId);
     this.unifyGroups([...tributaries, rivers.find(candidate => candidate.i === riverId)!]);
@@ -732,10 +735,9 @@ class RiverModule {
     for (const river of rivers) {
       river.parent = this.getParent(river.i);
       river.basin = this.getBasin(river.i);
-      if (river.lock) continue; // a locked river keeps its name and type
-      river.name = this.getName(river.mouth);
-      river.type = this.getType(river);
+      if (!river.lock) river.type = this.getType(river); // a locked river keeps its name and type
     }
+    Toponyms.nameRivers(rivers);
   }
 
   getName(cell: number) {
@@ -799,6 +801,15 @@ class RiverModule {
     const old = river.name;
     river.name = requireName(name);
     if (river.label?.text) river.label.text = replaceWholeWord(river.label.text, old, river.name) ?? river.label.text;
+  }
+
+  /** Coin a new meaning for a river, named in the base of the culture at its mouth or in the base given */
+  regenerateName(riverId: number, baseId?: string): void {
+    const river = pack.rivers.find(r => r.i === riverId);
+    if (!river) throw new Error(`River ${riverId} does not exist`);
+    const { name, meaning } = Toponyms.river(river, { baseId });
+    river.meaning = meaning;
+    this.rename(riverId, name);
   }
 
   /** Lock a river so regeneration keeps its course and data, or unlock it */
@@ -879,13 +890,13 @@ class RiverModule {
       parent,
       cells: cellIds,
       basin: this.getBasin(parent),
-      name: this.getName(mouth),
+      name: "",
       type: "River",
       group: this.pickGroup(cellIds),
       tags: []
     } as River;
     this.updateWidth(river);
-    rivers.push(river);
+    rivers.push(Object.assign(river, Toponyms.river(river)));
     this.unifyGroups([river]);
     return riverId;
   }

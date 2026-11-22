@@ -3,6 +3,7 @@ import { max } from "d3";
 import type { Label } from "@/model/annotations/labels-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Emblems } from "@/model/political/emblems-generator";
+import type { Meaning } from "@/model/society/name-render";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { Toponyms } from "@/model/society/toponyms";
@@ -24,6 +25,7 @@ export interface Province {
   center: number;
   burg: number;
   name: string;
+  meaning?: Meaning; // what the name says, kept apart from the name itself
   formName: string;
   fullName: string;
   color: string;
@@ -139,7 +141,8 @@ class ProvinceModule {
         const burg = stateBurgs[i];
         const c = stateBurgs[i].culture!;
         const nameByBurg = P(0.5);
-        const name = nameByBurg ? stateBurgs[i].name! : Toponyms.land(Names.getCultureShort(c), c);
+        const named = nameByBurg ? burg : Toponyms.landOf(Names.getCultureShort(c), c); // after its burg, or a land's name
+        const name = named.name!;
         const formName = rw(form);
         form[formName] += 10;
         const fullName = `${name} ${formName}`;
@@ -156,6 +159,7 @@ class ProvinceModule {
           center,
           burg: burg.i!,
           name,
+          meaning: named.meaning,
           formName,
           fullName,
           color,
@@ -277,11 +281,11 @@ class ProvinceModule {
         const isleSubtype = !singleIsle && !provCells.find(i => pack.features[cells.f[i]].subtype !== "isle");
         const colony = !singleIsle && !isleSubtype && P(0.5) && !isPassable(s.center, center);
 
-        const name = (() => {
+        const { name, meaning } = ((): { name?: string; meaning?: Meaning } => {
           const colonyName = colony && P(0.8) && getColonyName();
-          if (colonyName) return colonyName;
-          if (burgCell && P(0.5)) return burgs[burg].name;
-          return Toponyms.land(Names.getCultureShort(c), c);
+          if (colonyName) return { name: colonyName };
+          if (burgCell && P(0.5)) return burgs[burg];
+          return Toponyms.landOf(Names.getCultureShort(c), c);
         })();
 
         const formName = (() => {
@@ -305,6 +309,7 @@ class ProvinceModule {
           center,
           burg,
           name: name!,
+          meaning,
           formName,
           fullName,
           color,
@@ -338,6 +343,11 @@ class ProvinceModule {
 
     cells.province = provinceIds;
     pack.provinces = provinces;
+  }
+
+  /** Set what a province's name says, or clear it; the name itself stays as it is */
+  setMeaning(provinceId: number, meaning?: Meaning): void {
+    this.living(provinceId).meaning = meaning;
   }
 
   /** Rename a province; a custom full name or label keeps its pattern when the old name stands in it as a whole word */
@@ -419,7 +429,7 @@ class ProvinceModule {
     const old = provinces[cells.province[center]];
     const burg = cells.burg[center];
     const culture = cells.culture[center];
-    const name = burg ? burgs[burg].name! : Toponyms.land(Names.getCultureShort(culture), culture);
+    const { name = "", meaning } = burg ? burgs[burg] : Toponyms.landOf(Names.getCultureShort(culture), culture);
     const formName = old?.formName || "Province";
     const coa = Emblems.generate(
       burg ? burgs[burg].coa : states[state].coa,
@@ -429,7 +439,8 @@ class ProvinceModule {
     );
     coa.shield = Emblems.getShield(culture, state);
     const color = getMixedColor(states[state].color!, 0.2, 0);
-    provinces.push({ i, state, center, burg, name, formName, fullName: `${name} ${formName}`, color, coa, tags: [] });
+    const fullName = `${name} ${formName}`;
+    provinces.push({ i, state, center, burg, name, meaning, formName, fullName, color, coa, tags: [] });
     states[state].provinces = [...(states[state].provinces ?? []), i];
 
     cells.province[center] = i;

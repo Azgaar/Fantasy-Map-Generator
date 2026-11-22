@@ -1693,7 +1693,8 @@ class StatesModule {
       const burg = burgId ? burgs[burgId] : null;
       const culture = cells.culture[center];
       const nameByBurg = burgCell && P(0.5);
-      const name = nameByBurg ? burg!.name! : old.name || Toponyms.land(Names.getCultureShort(culture), culture);
+      const named = nameByBurg ? burg! : old.name ? old : Toponyms.landOf(Names.getCultureShort(culture), culture);
+      const name = named.name!;
       const formName = burgCell && old.formName ? old.formName : ra(["Zone", "Area", "Territory", "Province"]);
       const type = Burgs.getType(center, burg?.port);
       const coa = Emblems.generate(burg?.coa || states[stateId].coa, nameByBurg ? 0.8 : 0.4, burg ? null : 0.9, type);
@@ -1704,6 +1705,7 @@ class StatesModule {
         center,
         burg: burgId,
         name,
+        meaning: named.meaning,
         formName,
         fullName: `${name} ${formName}`,
         color: getMixedColor(states[stateId].color!),

@@ -2,18 +2,22 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { fitsOf } from "@/data/name-concepts";
 import { Goods } from "@/model/economy/goods-generator";
+import { Rivers } from "@/model/physical/river-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { capitalize } from "@/utils/string-utils";
 import { generateMap, living } from "../real-map.testing";
 import { adopt } from "./name-adoption";
 import { fits, type Meaning, render } from "./name-render";
 import { Names } from "./names-generator";
+import { Toponyms } from "./toponyms";
 
 beforeAll(() => vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {}, removeItem: () => {} }));
 
 const concepts = ({ tokens }: Meaning) => tokens.filter(token => !token.startsWith("~"));
 const names = () => ({
   burgs: living(pack.burgs).map(burg => [burg.name, burg.meaning]),
+  rivers: pack.rivers.map(river => [river.name, river.meaning]),
+  lakes: pack.features.filter(feature => feature?.type === "lake").map(lake => [lake.name, lake.meaning]),
   states: living(pack.states).map(state => [state.name, state.meaning])
 });
 
@@ -86,10 +90,43 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     }
   });
 
+  it("gives rivers, lakes and provinces meanings their names are rendered from", () => {
+    const lakes = pack.features.filter(feature => feature?.type === "lake");
+    const provinces = living(pack.provinces);
+    expect(pack.rivers.length * lakes.length * provinces.length).toBeGreaterThan(0);
+    for (const { name, meaning } of [...pack.rivers, ...lakes, ...provinces]) {
+      expect(meaning, name).toBeDefined();
+      expect(render(meaning!, meaning!.origin)).toBe(name);
+    }
+    const waters = [...pack.rivers, ...lakes].filter(({ meaning }) => meaning!.pattern !== "simplex");
+    expect(waters.length).toBeGreaterThan(0);
+    for (const { meaning } of waters) expect(["river", "brook", "water", "lake", "pool"]).toContain(meaning!.tokens[1]);
+  });
+
+  it("repeats no river name", () => {
+    const all = pack.rivers.map(({ name }) => name);
+    expect(all.length - new Set(all).size).toBe(0);
+  });
+
+  it("says what a name would be in another culture's base, and nothing when it stays", () => {
+    const burg = living(pack.burgs).find(({ meaning }) => meaning!.pattern === "modifier-generic")!;
+    const other = living(pack.cultures).find(culture => culture.base !== burg.meaning!.origin)!;
+    expect(Toponyms.nameIn(burg, other.i, burg.meaning!.origin)).toBe(render(burg.meaning!, other.base));
+    expect(Toponyms.nameIn(burg, burg.culture!, burg.meaning!.origin)).toBeUndefined();
+  });
+
   it("generates the same names for the same seed", async () => {
     const before = names();
     await generateMap({ seed: `toponyms-${set}`, points: 5000 });
     expect(names()).toEqual(before);
+  });
+
+  it("gives a river another meaning and name on request", () => {
+    const river = pack.rivers[0];
+    const before = [river.name, river.meaning];
+    Rivers.regenerateName(river.i);
+    expect([river.name, river.meaning]).not.toEqual(before);
+    expect(render(river.meaning!, river.meaning!.origin)).toBe(river.name);
   });
 
   it("gives a burg another meaning and name on request, its label with it", () => {

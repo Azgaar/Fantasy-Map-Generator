@@ -1,5 +1,6 @@
-import { gloss, type Meaning, render } from "@/model/society/name-render";
+import { type Meaning, render } from "@/model/society/name-render";
 import { Names } from "@/model/society/names-generator";
+import { localGloss } from "@/renderers/labels/name-display";
 import { Dialog } from "@/ui/dialog/dialog";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
@@ -18,7 +19,7 @@ function open(meaning: Meaning, apply: (name: string) => void): void {
 
   const dialogHtml = /* html */ `<div id="nameTranslations" class="dialog stable">
       <div data-tip="${sentences(t("What the name says, apart from any language"), t("The same meaning gives the same name in a name base"))}" style="margin-bottom: 0.5em">
-        <b>${escapeHtml(gloss(meaning))}</b> <i>(${escapeHtml(origin)})</i>
+        <b>${escapeHtml(localGloss(meaning))}</b> <i>(${escapeHtml(origin)})</i>
       </div>
       <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 0.25em 1.5em; max-height: 60vh; overflow-y: auto; padding-right: 0.5em">
         ${rows.join("")}

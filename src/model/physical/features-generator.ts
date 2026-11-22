@@ -1,6 +1,8 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
+import type { Meaning } from "@/model/society/name-render";
 import { Names } from "@/model/society/names-generator";
+import { Toponyms } from "@/model/society/toponyms";
 import { TYPED_ARRAY_MAX } from "@/utils/array-utils";
 import { clipPoly } from "@/utils/common-utils";
 import { isLand, isWater } from "@/utils/height-utils";
@@ -32,6 +34,7 @@ export interface Feature {
   flux: number;
   evaporation: number;
   name: string;
+  meaning?: Meaning; // what a lake's name says, kept apart from the name itself
 
   // River related
   inlets?: number[];
@@ -434,7 +437,9 @@ class FeatureModule {
   defineNames() {
     Math.random = Alea(options.map.seed); // the names roll the PRNG, the steps after stay put
     for (const feature of pack.features) {
-      if (feature && !feature.name) feature.name = this.getName(feature);
+      if (!feature || feature.name) continue;
+      if (feature.type === "lake") Object.assign(feature, Toponyms.lake(feature));
+      else feature.name = this.getName(feature);
     }
   }
 

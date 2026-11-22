@@ -60,6 +60,9 @@ export const english: NameBase = {
     mine: "mine:2, pit:2, delph@last",
     quarry: "quarry:2, delph",
     temple: "minster@last:3, church:2, kirk:2, stow@last, temple",
+    river: "water@last:3, bourne@last:2, ea@last",
+    brook: "brook:3, beck:2, burn:2",
+    water: "water:3, wash, lode@last",
 
     new: "new",
     old: "old:2, ald@first:2",

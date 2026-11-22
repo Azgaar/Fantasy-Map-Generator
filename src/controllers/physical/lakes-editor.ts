@@ -2,7 +2,9 @@ import { mean, min, polygonLength, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import { type Feature, Features, LAKE_SUBTYPES } from "@/model/physical/features-generator";
+import { simplex } from "@/model/society/name-render";
 import { Names } from "@/model/society/names-generator";
+import { Toponyms } from "@/model/society/toponyms";
 import { Styles } from "@/model/styles/styles";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit, getHeight } from "@/model/units";
@@ -46,6 +48,7 @@ function renderDialog(): void {
         <span id="lakeNameRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
         <input id="lakeName" data-tip="${t("Type to rename")}" autocorrect="off" spellcheck="false" />
         <span id="lakeNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
+        <span id="lakeTranslations" data-tip="${t("See the name in other name bases")}" class="icon-exchange pointer"></span>
       </div>
       <div data-tip="${t("Lake subtype. Generators read it: burgs cannot port on dry, frozen or lava lakes")}">
         <div class="label" style="width: 7em">${t("Subtype")}:</div>
@@ -118,6 +121,7 @@ function renderDialog(): void {
   ensureEl("lakeNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("lakeName").value));
   ensureEl("lakeNameCulture").addEventListener("click", generateNameCulture);
   ensureEl("lakeNameRandom").addEventListener("click", generateNameRandom);
+  ensureEl("lakeTranslations").addEventListener("click", showTranslations);
   ensureEl("lakeSubtype").addEventListener("change", changeLakeSubtype);
   ensureEl("lakeGroup").addEventListener("change", changeLakeGroup);
   ensureEl("lakeGroupAdd").addEventListener("click", toggleNewGroupInput);
@@ -169,13 +173,24 @@ function changeName(this: HTMLInputElement): void {
 }
 
 function generateNameCulture(): void {
-  const lake = getLake();
-  lake.name = ensureEl<HTMLInputElement>("lakeName").value = Features.getName(lake);
+  regenerateName();
 }
 
 function generateNameRandom(): void {
+  regenerateName(Names.randomBase().id);
+}
+
+function regenerateName(baseId?: string): void {
+  const lake = Object.assign(getLake(), Toponyms.lake(getLake(), { baseId }));
+  ensureEl<HTMLInputElement>("lakeName").value = lake.name;
+}
+
+function showTranslations(): void {
   const lake = getLake();
-  lake.name = ensureEl<HTMLInputElement>("lakeName").value = Names.getBase(Names.randomBase().id);
+  const origin = pack.cultures[pack.cells.culture[lake.shoreline?.[0] || lake.firstCell]]?.base;
+  void Controllers.NameTranslations.open(lake.meaning ?? simplex(lake.name, origin ?? Names.nameBases[0].id), name => {
+    lake.name = ensureEl<HTMLInputElement>("lakeName").value = name;
+  });
 }
 
 function changeLakeSubtype(this: HTMLSelectElement): void {

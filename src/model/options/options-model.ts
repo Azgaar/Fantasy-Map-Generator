@@ -111,7 +111,7 @@ class OptionsModel {
         mode: null,
         notesPinned: false,
         emblems: { showAll: false, shape: "culture" },
-        labels: { showAll: false },
+        labels: { showAll: false, names: "native" },
         heightmapEditor: { renderOcean: false, showDrainage: false, allowErosion: true },
         performance: { shapeRendering: "optimizeSpeed", stateHalos: false, viewportRedraw: "continuous" }, // "balance"
         onLoad: "random",

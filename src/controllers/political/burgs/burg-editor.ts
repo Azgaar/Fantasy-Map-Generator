@@ -4,12 +4,14 @@ import { Markets } from "@/model/economy/markets-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
-import { gloss, type Meaning, simplex } from "@/model/society/name-render";
+import { type Meaning, simplex } from "@/model/society/name-render";
 import { Names } from "@/model/society/names-generator";
+import { Toponyms } from "@/model/society/toponyms";
 import { Tags } from "@/model/tags";
 import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/units";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
+import { localGloss } from "@/renderers/labels/name-display";
 import { Layers } from "@/renderers/layers";
 import { speak } from "@/services/speech";
 import type { Market } from "@/types/economy";
@@ -395,7 +397,7 @@ const getMeaning = (burg: Burg): Meaning =>
 
 function getMeaningGloss(burg: Burg): string {
   const meaning = getMeaning(burg);
-  return meaning.pattern === "simplex" ? t("proper name") : gloss(meaning);
+  return meaning.pattern === "simplex" ? t("proper name") : localGloss(meaning);
 }
 
 function showTranslations(): void {
@@ -419,7 +421,23 @@ function changeType(this: HTMLSelectElement): void {
 }
 
 function changeCulture(this: HTMLSelectElement): void {
-  Burgs.setCulture(getSelectedId(), +this.value);
+  const burg = pack.burgs[getSelectedId()];
+  const origin = getMeaning(burg).origin;
+  Burgs.setCulture(burg.i, +this.value);
+
+  // the name keeps its meaning: the new culture may say it another way
+  const name = Toponyms.nameIn(burg, +this.value, origin);
+  if (!name) return;
+  Dialog.confirm({
+    title: t("Rename burg"),
+    message: t("The new culture would call {{burg}} “{{name}}”. Rename the burg?", { burg: burg.name!, name }),
+    confirm: t("Rename"),
+    onConfirm: () => {
+      Burgs.rename(burg.i, name);
+      ensureEl<HTMLInputElement>("burgName").value = name;
+      Layers.draw("labels");
+    }
+  });
 }
 
 function generateNameCulture(): void {

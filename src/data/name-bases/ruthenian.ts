@@ -65,6 +65,9 @@ export const ruthenian: NameBase = {
     mine: "rudnik:2, ruda:2, kopi@word",
     quarry: "lom:2, kamenolom@word",
     temple: "hram:2, sobor:2, pogost:2, tserkov",
+    river: "rechye@last:3, reka:2, rechka@word",
+    brook: "ruchey:2, potok:2",
+    water: "voda:2, vody@word",
 
     new: "novo@first, novyi@word",
     old: "staro@first, staryi@word",
