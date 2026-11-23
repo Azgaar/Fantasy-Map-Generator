@@ -1,7 +1,6 @@
-import { lexiconOf, parseTemplates } from "@/utils/name-notation";
-import type { NameBase } from ".";
+import type { WrittenNameBase } from "@/types/names";
 
-export const english: NameBase = {
+export const english: WrittenNameBase = {
   id: "english",
   name: "English",
   length: [6, 12],
@@ -28,7 +27,7 @@ export const english: NameBase = {
     { match: "sch", replace: "sh", when: "foreign" }
   ],
   grammar: { classes: { pl: "[^s]s$", sg: "" } }, // a noun in -s is plural already: Seven Falls
-  lexicon: lexiconOf({
+  lexicon: {
     city: "chester@last:3, bury@last:3, borough~burgh@last:2, ham@last:2, wich@last:2, caster@last, cester@last, minster@last, hampton@last, ingham@last, port@last, stow@last",
     town: "ton@last:5, ham@last:3, ington@last:2, bury@last, hampton@last, ingham@last, stow@last, stock@last, stead@last, wick@last, worth@last, town@last:0.5",
     village:
@@ -461,18 +460,18 @@ export const english: NameBase = {
     folk: "folk",
     coast: "coast:2, shore",
     isles: "isles"
-  }),
+  },
   patterns: {
     "owner-generic": {
       weight: 26,
-      templates: parseTemplates("{root}{generic}:6, {root}s{generic}:3, {root}ing{generic}, {root}'s {generic}:3")
+      templates: "{root}{generic}:6, {root}s{generic}:3, {root}ing{generic}, {root}'s {generic}:3"
     },
-    "modifier-generic": { templates: parseTemplates("{modifier}{generic}:5, {modifier} {generic}:3") },
+    "modifier-generic": { templates: "{modifier}{generic}:5, {modifier} {generic}:3" },
     compound: {
       weight: 26,
-      templates: parseTemplates("{modifier}{generic}:6, {modifier} {generic}:3, {modifier}{generic} {settlement}:2")
+      templates: "{modifier}{generic}:6, {modifier} {generic}:3, {modifier}{generic} {settlement}:2"
     },
-    "generic-of": { templates: parseTemplates("{root}{generic}:5, {root} {generic}:2") },
-    relative: { templates: parseTemplates("{modifier} {root}") }
+    "generic-of": { templates: "{root}{generic}:5, {root} {generic}:2" },
+    relative: { templates: "{modifier} {root}" }
   }
 };

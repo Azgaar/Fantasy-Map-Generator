@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { adopt } from "./name-adoption";
-import { composeBase, Names } from "./names-generator";
+import { Appropriation } from "./appropriation";
+import { Names } from "./names-generator";
 
-const into = (id: string) => (root: string) => adopt(root, Names.find(id)!);
+const into = (id: string) => (root: string) => Appropriation.adapt(root, Names.find(id)!);
 
-describe("adopt", () => {
+describe("Appropriation.adapt", () => {
   it("respells letters a base never writes with the nearest it does", () => {
     expect(into("ruthenian")("william")).toBe("viliam"); // no w, and no doubled letters
     expect(into("korean")("frank")).toBe("prank");
@@ -29,12 +29,12 @@ describe("adopt", () => {
 
   it("ends a root in a vowel only where it ends the word and the base's names end in vowels", () => {
     expect(into("italian")("frank")).toBe("franco");
-    expect(adopt("frank", Names.find("italian")!, false)).toBe("franc");
+    expect(Appropriation.adapt("frank", Names.find("italian")!, false)).toBe("franc");
     expect(into("german")("yaroslav")).toBe("yaroslav");
     expect(into("english")("eadric")).toBe("eadric");
   });
 
   it("leaves a root alone in a base with no names to measure it by", () => {
-    expect(adopt("frank", composeBase("empty", "Empty", [3, 9], []))).toBe("frank");
+    expect(Appropriation.adapt("frank", Names.composeBase("empty", "Empty", [3, 9], []))).toBe("frank");
   });
 });

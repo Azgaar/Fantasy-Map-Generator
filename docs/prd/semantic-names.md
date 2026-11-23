@@ -404,7 +404,7 @@ interface NameBase {
 | `src/data/name-bases/<id>.ts` | one name base per file, loaded on demand |
 | `src/data/name-concepts.ts` | the concept vocabulary with kinds and tags |
 | `src/data/name-rules.ts` | shared default rules and the nearest-letter table |
-| `src/model/society/names/` | `chain.ts` (today's Markov code), `meanings.ts`, `render.ts`, `sound-rules.ts`, and the `Names` facade |
+| `src/model/society/names/` | `names-generator.ts` (the bases and their Markov chains), `toponyms-generator.ts` (meanings for places), `meanings.ts` (rendering and gloss), `lexicon.ts` (forms and templates of a base), `appropriation.ts`, `sound-rules.ts` and `notation.ts` |
 
 One file per base makes a lexicon a per-language contribution, like a locale file. Today the 86 KB corpus file loads whole; per-base files let a map load only the bases its cultures use.
 

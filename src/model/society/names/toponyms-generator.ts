@@ -1,6 +1,5 @@
 // Gives burgs and states a meaning that fits their place: the "semantic" half of semantic names
 
-import type { NameBase, Pattern } from "@/data/name-bases";
 import {
   type Concept,
   conceptsOf,
@@ -14,19 +13,12 @@ import { Goods } from "@/model/economy/goods-generator";
 import type { Feature } from "@/model/physical/features-generator";
 import type { River } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
-import { P, ra } from "@/utils/probability-utils";
+import type { Meaning, NameBase, Pattern, Token } from "@/types/names";
+import { P, ra, seeded } from "@/utils/probability-utils";
 import { capitalize } from "@/utils/string-utils";
-import { adopt } from "./name-adoption";
-import {
-  authoredForms,
-  compose,
-  type Meaning,
-  patternWeight,
-  render,
-  seeded,
-  simplex,
-  type Token
-} from "./name-render";
+import { Appropriation } from "./appropriation";
+import { Lexicon } from "./lexicon";
+import { Meanings } from "./meanings";
 import { Names } from "./names-generator";
 
 /** How strongly a place offers each thing a concept may ask for */
@@ -194,7 +186,7 @@ class ToponymsGenerator {
     if (!burg.meaning || !old || !now || old === now || !burg.meaning.tokens.includes(old)) return undefined;
     const tokens = burg.meaning.tokens.map(token => (token === old ? now : token));
     const meaning: Meaning = { ...burg.meaning, tokens };
-    const name = render(meaning, meaning.origin);
+    const name = Meanings.render(meaning, meaning.origin);
     return name === burg.name || this.burgNames(pack.burgs).has(name) ? undefined : { name, meaning };
   }
 
@@ -211,7 +203,7 @@ class ToponymsGenerator {
     if (seed) return seeded(seed, () => this.state(capital, cultureId, { taken, baseId }));
     const base = Names.resolve(baseId ?? pack.cultures[cultureId].base) ?? Names.nameBases[0];
     const site = this.getSite(capital);
-    const lands = conceptsOf("land").filter(concept => authoredForms(base, concept)); // a fallback form would name a town
+    const lands = conceptsOf("land").filter(concept => Lexicon.authoredForms(base, concept)); // a fallback form would name a town
 
     for (let attempt = 0; attempt < TRIES; attempt++) {
       const pattern = this.pickPattern(base, STATE_PATTERNS);
@@ -237,7 +229,7 @@ class ToponymsGenerator {
   nameIn(named: { name?: string; meaning?: Meaning }, cultureId: number, origin: string): string | undefined {
     const base = pack.cultures[cultureId]?.base;
     if (!base || !named.name) return undefined;
-    const name = render(named.meaning ?? simplex(named.name, origin), base);
+    const name = Meanings.render(named.meaning ?? Meanings.simplex(named.name, origin), base);
     return name === named.name ? undefined : name;
   }
 
@@ -251,11 +243,11 @@ class ToponymsGenerator {
     const baseId = typeof cultureOrBase === "number" ? pack.cultures[cultureOrBase].base : cultureOrBase;
     const base = Names.resolve(baseId) ?? Names.nameBases[0];
     const pattern = this.pickPattern(base, ["simplex", "root-land"]);
-    const lands = conceptsOf("land").filter(concept => authoredForms(base, concept));
+    const lands = conceptsOf("land").filter(concept => Lexicon.authoredForms(base, concept));
     const land = this.pickWeighted(lands, concept => (concept === "land" ? 6 : 1));
     const tokens: Token[] = pattern === "simplex" ? [`~${root}`] : [`~${root}`, land];
     const meaning: Meaning = { pattern, tokens, origin: base.id };
-    return { name: render(meaning, base.id), meaning };
+    return { name: Meanings.render(meaning, base.id), meaning };
   }
 
   /** Name the rivers that are not locked, each on a random sequence of its own */
@@ -342,7 +334,7 @@ class ToponymsGenerator {
     // a name taken is drawn again with other forms of the same meaning
     for (const salt of [0, 1, 2]) {
       const salted = salt ? { ...meaning, salt } : meaning;
-      const { name, whole } = compose(salted, base.id);
+      const { name, whole } = Meanings.compose(salted, base.id);
       if (whole && name.length >= min && !taken.has(name)) return { name, meaning: salted };
     }
     return undefined;
@@ -371,7 +363,7 @@ class ToponymsGenerator {
   private borrow(name: string, namedAt: number, burg: Burg): Token {
     const [theirs, own] = [pack.cultures[pack.cells.culture[namedAt]]?.base, pack.cultures[burg.culture!].base];
     const base = Names.resolve(own);
-    return theirs === own || !base ? `~${name}` : `~${capitalize(adopt(name.toLowerCase(), base))}`;
+    return theirs === own || !base ? `~${name}` : `~${capitalize(Appropriation.adapt(name.toLowerCase(), base))}`;
   }
 
   /** The nearest named burg of the same culture close by, and how this burg stands to it */
@@ -472,7 +464,7 @@ class ToponymsGenerator {
   /** Draw a pattern by the base's weights; with a share, proper names take what the share leaves */
   private pickPattern(base: NameBase, patterns: Pattern[], share?: number): Pattern {
     if (share !== undefined) return P(share) ? this.pickPattern(base, without(patterns, "simplex")) : "simplex";
-    return this.pickWeighted(patterns, pattern => patternWeight(base, pattern));
+    return this.pickWeighted(patterns, pattern => Lexicon.patternWeight(base, pattern));
   }
 
   private settledShare(base: NameBase): number {
@@ -491,7 +483,7 @@ class ToponymsGenerator {
           ? [concept("modifier"), generic]
           : [`~${Names.getPerson(base.id)}`, generic];
     const meaning: Meaning = { pattern, tokens, origin: base.id };
-    return { name: render(meaning, base.id), meaning };
+    return { name: Meanings.render(meaning, base.id), meaning };
   }
 
   private pickConcept(

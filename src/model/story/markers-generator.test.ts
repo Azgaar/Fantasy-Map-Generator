@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Goods } from "@/model/economy/goods-generator";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import type { Marker } from "./markers-generator";
 import { Markers } from "./markers-generator";
 

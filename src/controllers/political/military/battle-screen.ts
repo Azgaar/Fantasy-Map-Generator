@@ -4,7 +4,7 @@ import { Icons } from "@/model/icons";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
 import { Stability } from "@/model/political/stability";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import type { Marker } from "@/model/story/markers-generator";
 import { moveRegiment } from "@/renderers/draw-military";
 import { Layers } from "@/renderers/layers";

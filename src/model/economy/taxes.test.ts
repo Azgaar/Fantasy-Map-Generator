@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { Markets } from "@/model/economy/markets-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { noFinance, States } from "@/model/political/states-generator";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import { DEAL_KINDS } from "./deals";
 import { Taxes } from "./taxes";
 

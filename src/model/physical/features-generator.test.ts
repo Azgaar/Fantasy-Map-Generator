@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { Names } from "@/model/society/names-generator";
-import { Toponyms } from "@/model/society/toponyms";
+import { Names } from "@/model/society/names/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import type { Feature } from "./features-generator";
 import { Features } from "./features-generator";
 

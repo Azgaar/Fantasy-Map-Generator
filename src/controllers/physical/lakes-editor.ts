@@ -2,9 +2,9 @@ import { mean, min, polygonLength, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import { type Feature, Features, LAKE_SUBTYPES } from "@/model/physical/features-generator";
-import { simplex } from "@/model/society/name-render";
-import { Names } from "@/model/society/names-generator";
-import { Toponyms } from "@/model/society/toponyms";
+import { Meanings } from "@/model/society/names/meanings";
+import { Names } from "@/model/society/names/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Styles } from "@/model/styles/styles";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit, getHeight } from "@/model/units";
@@ -188,9 +188,12 @@ function regenerateName(baseId?: string): void {
 function showTranslations(): void {
   const lake = getLake();
   const origin = pack.cultures[pack.cells.culture[lake.shoreline?.[0] || lake.firstCell]]?.base;
-  void Controllers.NameTranslations.open(lake.meaning ?? simplex(lake.name, origin ?? Names.nameBases[0].id), name => {
-    lake.name = ensureEl<HTMLInputElement>("lakeName").value = name;
-  });
+  void Controllers.NameTranslations.open(
+    lake.meaning ?? Meanings.simplex(lake.name, origin ?? Names.nameBases[0].id),
+    name => {
+      lake.name = ensureEl<HTMLInputElement>("lakeName").value = name;
+    }
+  );
 }
 
 function changeLakeSubtype(this: HTMLSelectElement): void {

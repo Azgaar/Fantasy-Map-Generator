@@ -1,3 +1,4 @@
+import Alea from "alea";
 import { randomNormal } from "d3";
 import { minmax, rn } from "./number-utils";
 
@@ -128,3 +129,14 @@ export const getNumberInRange = (r: string): number => {
 export const generateSeed = (): string => {
   return String(Math.floor(Math.random() * 1e9));
 };
+
+/** Run a function on a random sequence of its own, leaving the ambient sequence where it was */
+export function seeded<T>(seed: string, run: () => T): T {
+  const ambient = Math.random;
+  Math.random = Alea(seed);
+  try {
+    return run();
+  } finally {
+    Math.random = ambient;
+  }
+}

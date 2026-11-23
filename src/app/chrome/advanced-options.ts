@@ -3,7 +3,7 @@
 import { regeneratePrompt } from "@/app/lifecycle";
 import { SAMPLING_LABELS } from "@/data/id-labels";
 import { DEFAULT_JITTER, MAX_JITTER, SAMPLINGS, type Sampling } from "@/model/graph/lattice";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import { Dialog } from "@/ui/dialog/dialog";
 import { t } from "@/utils/i18n";
 import { DEBUG_MODES, type DebugMode } from "@/utils/logger";

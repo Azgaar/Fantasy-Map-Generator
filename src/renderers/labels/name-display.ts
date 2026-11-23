@@ -2,14 +2,15 @@
 
 import { CONCEPT_LABELS } from "@/data/id-labels";
 import type { Concept } from "@/data/name-concepts";
-import { gloss, type Meaning, render } from "@/model/society/name-render";
-import { Names } from "@/model/society/names-generator";
+import { Meanings } from "@/model/society/names/meanings";
+import { Names } from "@/model/society/names/names-generator";
+import type { Meaning } from "@/types/names";
 import { Catalog, t } from "@/utils/i18n";
 import { capitalize } from "@/utils/string-utils";
 
-/** A meaning read in the interface language; English reads as the map itself stores a gloss */
+/** A meaning read in the interface language; English reads as the map itself stores a Meanings.gloss */
 export function localGloss(meaning: Meaning): string {
-  if (Catalog.language === "en") return gloss(meaning);
+  if (Catalog.language === "en") return Meanings.gloss(meaning);
 
   const word = (token: string) =>
     token.startsWith("~") ? token.slice(1) : capitalize(CONCEPT_LABELS[token as Concept] ?? token);
@@ -33,7 +34,7 @@ export function displayName({ name = "", meaning }: { name?: string; meaning?: M
   const mode = options.app.labels.names;
   if (mode === "native" || !meaning) return name;
   if (mode === "gloss") return meaning.pattern === "simplex" ? name : localGloss(meaning);
-  return Names.find(mode) && mode !== meaning.origin ? render(meaning, mode) : name;
+  return Names.find(mode) && mode !== meaning.origin ? Meanings.render(meaning, mode) : name;
 }
 
 /** A text that holds a name, with the name as the labels show it: a full name or a label's own text */

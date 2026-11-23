@@ -4,7 +4,7 @@
 
 import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import { Lore } from "@/model/story/lore";
 import { Dialog } from "@/ui/dialog/dialog";
 

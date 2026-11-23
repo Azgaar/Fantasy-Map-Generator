@@ -4,12 +4,14 @@ import { conceptsOf, fitsOf, settlementOf } from "@/data/name-concepts";
 import { Goods } from "@/model/economy/goods-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { type Burg, Burgs } from "@/model/political/burgs-generator";
+import type { Meaning } from "@/types/names";
+import { seeded } from "@/utils/probability-utils";
 import { capitalize } from "@/utils/string-utils";
-import { generateMap, living } from "../real-map.testing";
-import { adopt } from "./name-adoption";
-import { fits, gloss, type Meaning, render, seeded } from "./name-render";
+import { generateMap, living } from "../../real-map.testing";
+import { Appropriation } from "./appropriation";
+import { Meanings } from "./meanings";
 import { Names } from "./names-generator";
-import { Toponyms } from "./toponyms";
+import { Toponyms } from "./toponyms-generator";
 
 beforeAll(() => vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {}, removeItem: () => {} }));
 
@@ -30,7 +32,7 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
   it("gives every burg and state a meaning its name is rendered from", () => {
     for (const { name, meaning } of [...living(pack.burgs), ...living(pack.states)]) {
       expect(meaning, name).toBeDefined();
-      expect(render(meaning!, meaning!.origin)).toBe(name);
+      expect(Meanings.render(meaning!, meaning!.origin)).toBe(name);
     }
   });
 
@@ -43,7 +45,7 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
 
   it("keeps names within what their base allows", () => {
     for (const { name, meaning } of living(pack.burgs)) {
-      if (meaning!.pattern !== "simplex") expect(fits(name!, Names.find(meaning!.origin)!), name).toBe(true);
+      if (meaning!.pattern !== "simplex") expect(Meanings.fits(name!, Names.find(meaning!.origin)!), name).toBe(true);
     }
   });
 
@@ -75,7 +77,7 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     expect(byWater.length).toBeGreaterThan(0);
     for (const { meaning, name } of byWater) {
       const base = Names.find(meaning!.origin)!;
-      const spellings = waters.flatMap(water => [water, capitalize(adopt(water.toLowerCase(), base))]);
+      const spellings = waters.flatMap(water => [water, capitalize(Appropriation.adapt(water.toLowerCase(), base))]);
       expect(spellings, name).toContain(meaning!.tokens[1].slice(1));
     }
   });
@@ -96,7 +98,7 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     expect(pack.rivers.length * lakes.length * provinces.length).toBeGreaterThan(0);
     for (const { name, meaning } of [...pack.rivers, ...lakes, ...provinces]) {
       expect(meaning, name).toBeDefined();
-      expect(render(meaning!, meaning!.origin)).toBe(name);
+      expect(Meanings.render(meaning!, meaning!.origin)).toBe(name);
     }
     const waters = [...pack.rivers, ...lakes].filter(({ meaning }) => meaning!.pattern !== "simplex");
     expect(waters.length).toBeGreaterThan(0);
@@ -112,7 +114,7 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
   it("says what a name would be in another culture's base, and nothing when it stays", () => {
     const burg = living(pack.burgs).find(({ meaning }) => meaning!.pattern === "modifier-generic")!;
     const other = living(pack.cultures).find(culture => culture.base !== burg.meaning!.origin)!;
-    expect(Toponyms.nameIn(burg, other.i, burg.meaning!.origin)).toBe(render(burg.meaning!, other.base));
+    expect(Toponyms.nameIn(burg, other.i, burg.meaning!.origin)).toBe(Meanings.render(burg.meaning!, other.base));
     expect(Toponyms.nameIn(burg, burg.culture!, burg.meaning!.origin)).toBeUndefined();
   });
 
@@ -127,7 +129,7 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     const before = [river.name, river.meaning];
     Rivers.regenerateName(river.i);
     expect([river.name, river.meaning]).not.toEqual(before);
-    expect(render(river.meaning!, river.meaning!.origin)).toBe(river.name);
+    expect(Meanings.render(river.meaning!, river.meaning!.origin)).toBe(river.name);
   });
 
   it("gives a burg another meaning and name on request, its label with it", () => {
@@ -137,7 +139,7 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     Burgs.regenerateName(burg.i);
     expect([burg.name, burg.meaning]).not.toEqual(before);
     expect(burg.label!.text).toBe(burg.name);
-    expect(render(burg.meaning!, burg.meaning!.origin)).toBe(burg.name);
+    expect(Meanings.render(burg.meaning!, burg.meaning!.origin)).toBe(burg.name);
   });
 });
 
@@ -210,17 +212,17 @@ describe("burg names of an authored base", () => {
       expect(meaning!.tokens[2], name).toBe(settlementOfBurg(pack.burgs.find(burg => burg.name === name)!));
     }
     const krasnogorsk: Meaning = { pattern: "compound", tokens: ["red", "hill", "city"], origin: "ruthenian" };
-    expect(render(krasnogorsk, "ruthenian")).toMatch(/^Krasnogor(ov)?sk$/);
-    expect(render(krasnogorsk, "english")).toMatch(/^R[ae]d/);
+    expect(Meanings.render(krasnogorsk, "ruthenian")).toMatch(/^Krasnogor(ov)?sk$/);
+    expect(Meanings.render(krasnogorsk, "english")).toMatch(/^R[ae]d/);
   });
 
-  it("count what stands at a place now and then, in a form that fits the number", () => {
+  it("count what stands at a place now and then, in a form that Meanings.fits the number", () => {
     const isNumeral = (token: string) => (conceptsOf("numeral") as string[]).includes(token);
     const counted = living(pack.burgs).filter(burg => isNumeral(burg.meaning!.tokens[0]));
     expect(counted.length).toBeGreaterThan(0);
     expect(counted.length / living(pack.burgs).length).toBeLessThan(0.05);
     for (const { name, meaning } of counted.filter(burg => burg.meaning!.origin === "english"))
-      expect(name, gloss(meaning!)).toMatch(/^(Tw\p{Ll}+|\p{Lu}\p{Ll}+ \p{Lu}\p{Ll}+s)$/u);
+      expect(name, Meanings.gloss(meaning!)).toMatch(/^(Tw\p{Ll}+|\p{Lu}\p{Ll}+ \p{Lu}\p{Ll}+s)$/u);
   });
 
   it("say what a burg would be called in another group", () => {
@@ -230,7 +232,7 @@ describe("burg names of an authored base", () => {
     const village = Toponyms.regrouped({ ...town, group: "village" }, "town")!;
     expect(village.meaning.tokens).toContain("village");
     expect(village.name).not.toBe(town.name);
-    expect(render(village.meaning, "ruthenian")).toBe(village.name);
+    expect(Meanings.render(village.meaning, "ruthenian")).toBe(village.name);
     expect(Toponyms.regrouped(town, "town")).toBeUndefined();
   });
 

@@ -24,7 +24,7 @@ import { Relief } from "@/model/physical/relief-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { getDefaultMilitaryUnits } from "@/model/political/military-units";
 import { Development } from "@/model/society/development-generator";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
 import { LocalDB } from "@/services/local-db";
 import { t } from "@/utils/i18n";

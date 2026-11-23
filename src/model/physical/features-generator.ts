@@ -1,8 +1,8 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
-import type { Meaning } from "@/model/society/name-render";
-import { Names } from "@/model/society/names-generator";
-import { Toponyms } from "@/model/society/toponyms";
+import { Names } from "@/model/society/names/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
+import type { Meaning } from "@/types/names";
 import { TYPED_ARRAY_MAX } from "@/utils/array-utils";
 import { clipPoly } from "@/utils/common-utils";
 import { isLand, isWater } from "@/utils/height-utils";

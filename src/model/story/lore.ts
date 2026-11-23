@@ -1,5 +1,5 @@
 // The map's lore in `options.map.lore`: its name, calendar and the author's description. See docs/architecture/configuration.md
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import { requireName } from "@/utils/validation-utils";
 
 class LoreModel {

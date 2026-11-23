@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it } from "vitest";
-import type { Meaning } from "@/model/society/name-render";
-import { render } from "@/model/society/name-render";
+import { Meanings } from "@/model/society/names/meanings";
+import type { Meaning } from "@/types/names";
 import { Catalog } from "@/utils/i18n";
 import { getLabelsIndex } from "./label-data";
 import { displayIn, displayName, localGloss } from "./name-display";
 
 const newTown: Meaning = { pattern: "modifier-generic", tokens: ["new", "town"], origin: "english" };
 const proper: Meaning = { pattern: "simplex", tokens: ["~Aitern"], origin: "english" };
-const burg = { name: render(newTown, "english"), meaning: newTown };
+const burg = { name: Meanings.render(newTown, "english"), meaning: newTown };
 const show = (names: string) => {
   options.app.labels.names = names;
 };
@@ -28,7 +28,7 @@ describe("displayName", () => {
 
   it("shows the name another base gives the meaning", () => {
     show("ruthenian");
-    expect(displayName(burg)).toBe(render(newTown, "ruthenian"));
+    expect(displayName(burg)).toBe(Meanings.render(newTown, "ruthenian"));
     expect(displayName(burg)).not.toBe(burg.name);
   });
 
@@ -66,7 +66,9 @@ describe("labels", () => {
       addedLabels: [],
       burgs: [{ i: 0 }, { i: 1, x: 1, y: 1, ...burg }],
       routes: [],
-      rivers: [{ i: 1, name: render(river, "english"), meaning: river, type: "River", cells: [0], points: [] }],
+      rivers: [
+        { i: 1, name: Meanings.render(river, "english"), meaning: river, type: "River", cells: [0], points: [] }
+      ],
       cells: { p: [[0, 0]] }
     } as unknown as typeof pack;
 
@@ -78,7 +80,7 @@ describe("labels", () => {
 
   it("name a land under its form by the root alone", () => {
     const meaning: Meaning = { pattern: "root-land", tokens: ["~Aric", "land"], origin: "english" };
-    const name = render(meaning, "english");
+    const name = Meanings.render(meaning, "english");
     const state = { i: 1, name, meaning, formName: "Duchy", fullName: `Duchy of ${name}`, cells: 1, center: 0 };
     globalThis.pack = {
       states: [{ i: 0 }, { ...state, label: { pathPoints: [] } }],

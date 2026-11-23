@@ -4,7 +4,7 @@ import { DEAL_KINDS } from "@/model/economy/deals";
 import { Goods } from "@/model/economy/goods-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { Stability, type StabilityPart } from "@/model/political/stability";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { requireColor } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";

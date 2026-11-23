@@ -1,5 +1,5 @@
 import { mapHistory } from "@/model/map-history";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import { getFileName } from "@/services/io/file-name";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";

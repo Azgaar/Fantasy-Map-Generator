@@ -2,7 +2,7 @@
 
 import { GraphOverride } from "@/model/graph/graph-override";
 import { mapHistory } from "@/model/map-history";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import { Notes } from "@/model/story/notes";
 import { Layers } from "@/renderers/layers";
 import { restoreOceanVectors } from "@/renderers/ocean-cache";

@@ -1,15 +1,16 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
 import { z } from "zod";
-import type { Corpus, NameBase, Pattern } from "@/data/name-bases";
 import { type Concept, conceptsOf } from "@/data/name-concepts";
 import { DEFAULT_TEMPLATES, DEFAULT_WEIGHTS } from "@/data/name-rules";
-import { fallbackForms, mineEndings } from "@/model/society/name-render";
-import { composeBase, Names, nameBaseSchema, uniqueBaseId } from "@/model/society/names-generator";
-import { applyRules, capitalizeWords, getDoubles, joinParts, setDoubles } from "@/model/society/sound-rules";
-import { Toponyms } from "@/model/society/toponyms";
+import { Lexicon } from "@/model/society/names/lexicon";
+import { Names } from "@/model/society/names/names-generator";
+import { NameNotation } from "@/model/society/names/notation";
+import { SoundRules } from "@/model/society/names/sound-rules";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { localGloss } from "@/renderers/labels/name-display";
 import { getFileName } from "@/services/io/file-name";
 import { speak } from "@/services/speech";
+import type { Corpus, NameBase, Pattern } from "@/types/names";
 import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { unique } from "@/utils/array-utils";
@@ -17,16 +18,6 @@ import { openURL } from "@/utils/common-utils";
 import { createFileInput, downloadFile, uploadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
 import { log } from "@/utils/logger";
-import {
-  formatFormants,
-  formatGrammar,
-  formatRules,
-  formatTemplates,
-  parseFormants,
-  parseGrammar,
-  parseRules,
-  parseTemplates
-} from "@/utils/name-notation";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { escapeHtml, safeParseJSON } from "@/utils/string-utils";
@@ -296,7 +287,7 @@ function showBase(base: NameBase): void {
   ensureEl<HTMLInputElement>("namesbaseName").value = base.name;
   ensureEl<HTMLInputElement>("namesbaseMin").value = String(base.length[0]);
   ensureEl<HTMLInputElement>("namesbaseMax").value = String(base.length[1]);
-  ensureEl<HTMLInputElement>("namesbaseDouble").value = getDoubles(base);
+  ensureEl<HTMLInputElement>("namesbaseDouble").value = SoundRules.getDoubles(base);
 
   const parents = Names.nameBases.filter(other => other !== base).map(({ id, name }) => new Option(name, id));
   ensureEl<HTMLSelectElement>("namesbaseExtends").replaceChildren(new Option(t("nothing"), ""), ...parents);
@@ -309,8 +300,8 @@ function showBase(base: NameBase): void {
 
   showLexicon(base);
   showPatterns(base);
-  ensureEl<HTMLTextAreaElement>("namesbaseRules").value = formatRules(base.rules);
-  ensureEl<HTMLTextAreaElement>("namesbaseGrammar").value = formatGrammar(base.grammar);
+  ensureEl<HTMLTextAreaElement>("namesbaseRules").value = NameNotation.formatRules(base.rules);
+  ensureEl<HTMLTextAreaElement>("namesbaseGrammar").value = NameNotation.formatGrammar(base.grammar);
   testRules();
 }
 
@@ -325,8 +316,8 @@ function showLexicon(base: NameBase): void {
   const rows = kinds.flatMap(([kind, label]) => [
     `<b style="grid-column: 1 / -1; margin-top: 4px">${label}</b>`,
     ...conceptsOf(kind).map(concept => {
-      const { first, last } = fallbackForms(base, concept);
-      const value = escapeHtml(formatFormants(base.lexicon?.[concept]));
+      const { first, last } = Lexicon.fallbackForms(base, concept);
+      const value = escapeHtml(NameNotation.formatFormants(base.lexicon?.[concept]));
       return `<span>${concept}</span>
         <input data-concept="${concept}" value="${value}" placeholder="${first}-, -${last}" autocorrect="off" spellcheck="false" />`;
     })
@@ -347,8 +338,8 @@ function showPatterns(base: NameBase): void {
     return `<span>${pattern}</span>
       <input data-pattern="${pattern}" data-field="weight" type="number" min="0" value="${weight ?? ""}"
         placeholder="${DEFAULT_WEIGHTS[pattern]}" data-tip="${t("How often the base coins such a name, against the other patterns")}" />
-      <input data-pattern="${pattern}" data-field="templates" value="${escapeHtml(formatTemplates(templates))}"
-        placeholder="${formatTemplates(DEFAULT_TEMPLATES[pattern])}" autocorrect="off" spellcheck="false" />`;
+      <input data-pattern="${pattern}" data-field="templates" value="${escapeHtml(NameNotation.formatTemplates(templates))}"
+        placeholder="${DEFAULT_TEMPLATES[pattern]}" autocorrect="off" spellcheck="false" />`;
   });
   ensureEl("namesbasePatterns").innerHTML = rows.join("");
   ensureEl<HTMLInputElement>("namesbaseSettled").value = base.settled === undefined ? "" : String(base.settled * 100);
@@ -417,8 +408,8 @@ function updateBaseMax(value: string): void {
 function updateBaseDuplication(value: string): void {
   const base = selectedBase();
   if (!base) return;
-  setDoubles(base, value);
-  ensureEl<HTMLTextAreaElement>("namesbaseRules").value = formatRules(base.rules);
+  SoundRules.setDoubles(base, value);
+  ensureEl<HTMLTextAreaElement>("namesbaseRules").value = NameNotation.formatRules(base.rules);
 }
 
 function updatePeople(): void {
@@ -445,11 +436,11 @@ function updateLexicon(event: Event): void {
   const concept = input.dataset.concept as Concept | undefined;
   if (!base || !concept) return;
 
-  const forms = parseFormants(input.value);
+  const forms = NameNotation.parseFormants(input.value);
   base.lexicon ??= {};
   if (forms.length) base.lexicon[concept] = forms;
   else delete base.lexicon[concept];
-  input.value = formatFormants(forms); // what was understood
+  input.value = NameNotation.formatFormants(forms); // what was understood
   showCoverage(base);
   updateExamples();
 }
@@ -474,10 +465,10 @@ function updatePatterns(event: Event): void {
     if (input.value === "") delete settings.weight;
     else settings.weight = Math.max(+input.value, 0);
   } else {
-    const templates = parseTemplates(input.value);
+    const templates = NameNotation.parseTemplates(input.value);
     if (templates.length) settings.templates = templates;
     else delete settings.templates;
-    input.value = formatTemplates(templates);
+    input.value = NameNotation.formatTemplates(templates);
   }
   if (Object.keys(settings).length) base.patterns[pattern] = settings;
   else delete base.patterns[pattern];
@@ -487,12 +478,12 @@ function updatePatterns(event: Event): void {
 function updateRules(): void {
   const base = selectedBase();
   if (!base) return;
-  const rules = parseRules(ensureEl<HTMLTextAreaElement>("namesbaseRules").value);
+  const rules = NameNotation.parseRules(ensureEl<HTMLTextAreaElement>("namesbaseRules").value);
   const broken = rules.filter(({ match }) => !isRegex(match)).map(({ match }) => match);
   if (broken.length)
     tip(t("Rules that are no valid regex are skipped: {{rules}}", { rules: broken.join(", ") }), false, "error");
   base.rules = rules;
-  ensureEl<HTMLInputElement>("namesbaseDouble").value = getDoubles(base);
+  ensureEl<HTMLInputElement>("namesbaseDouble").value = SoundRules.getDoubles(base);
   testRules();
   updateExamples();
 }
@@ -500,7 +491,7 @@ function updateRules(): void {
 function updateGrammar(): void {
   const base = selectedBase();
   if (!base) return;
-  base.grammar = parseGrammar(ensureEl<HTMLTextAreaElement>("namesbaseGrammar").value);
+  base.grammar = NameNotation.parseGrammar(ensureEl<HTMLTextAreaElement>("namesbaseGrammar").value);
   if (!base.grammar) delete base.grammar;
   updateExamples();
 }
@@ -524,8 +515,10 @@ function testRules(): void {
   }
   const fits = (joined: string) => joined.length <= base.length[1];
   const rolls = (base.rules ?? []).map(() => 0); // every rule with a chance fires, to show what it does
-  const result = name.includes("+") ? joinParts(name, base.rules, { rolls, fits }) : applyRules(name, base.rules);
-  ensureEl("namesbaseRuleResult").textContent = capitalizeWords(result);
+  const result = name.includes("+")
+    ? SoundRules.join(name, base.rules, { rolls, fits })
+    : SoundRules.apply(name, base.rules);
+  ensureEl("namesbaseRuleResult").textContent = SoundRules.capitalize(result);
 }
 
 function analyzeNamesbase(): void {
@@ -562,7 +555,7 @@ function analyzeNamesbase(): void {
   const multiwordRate = mean(namesArray.map(n => +n.includes(" "))) ?? 0;
 
   const endings =
-    mineEndings(namesArray)
+    Lexicon.mineEndings(namesArray)
       .slice(0, 10)
       .map(ending => `-${escapeHtml(ending)}`)
       .join(", ") || "none";
@@ -612,7 +605,7 @@ function namesbaseAdd(): void {
   const name = `Base${index}`;
   const example =
     "This,is,an,example,of,name,base,showing,correct,format,It,should,have,at,least,one,hundred,names,separated,with,comma";
-  const base = composeBase(uniqueBaseId(name, baseIds()), name, [5, 12], example.split(","));
+  const base = Names.composeBase(Names.uniqueId(name, baseIds()), name, [5, 12], example.split(","));
   Names.nameBases.push(base);
 
   const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
@@ -670,11 +663,11 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
 /** The bases of a JSON namesbase file, one or a list; a base whose id is taken gets one of its own */
 function parseBases(data: string, taken: string[]): NameBase[] | null {
   const parsed: unknown = safeParseJSON(data);
-  const { data: bases } = z.array(nameBaseSchema).safeParse(Array.isArray(parsed) ? parsed : [parsed]);
+  const { data: bases } = z.array(Names.schema).safeParse(Array.isArray(parsed) ? parsed : [parsed]);
   if (!bases?.length) return null;
 
   return bases.map(base => {
-    const id = taken.includes(base.id) ? uniqueBaseId(base.name, taken) : base.id;
+    const id = taken.includes(base.id) ? Names.uniqueId(base.name, taken) : base.id;
     taken.push(id);
     return { ...base, id };
   });
@@ -693,9 +686,9 @@ function parseLegacyBases(data: string, taken: string[], errors: ParseError[]): 
       const [name, min, max, doubled, , names] = line.split("|");
       if (!name) throw new Error(t("Name is missing"));
       if (!names) throw new Error(t("Names are missing"));
-      const id = uniqueBaseId(name, taken);
+      const id = Names.uniqueId(name, taken);
       taken.push(id);
-      return composeBase(id, name, [+min, +max], names.split(","), doubled);
+      return Names.composeBase(id, name, [+min, +max], names.split(","), doubled);
     } catch (e) {
       errors.push({ id: index + 1, line, error: (e as Error).message });
       log.error(e);

@@ -16,7 +16,7 @@ import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
 import { biased, P, rand, rw } from "@/utils/probability-utils";
 import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validation-utils";
-import { Names } from "./names-generator";
+import { Names } from "./names/names-generator";
 import { Population } from "./population-generator";
 
 export interface Culture {

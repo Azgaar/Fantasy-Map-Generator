@@ -4,8 +4,8 @@ import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import type { River } from "@/model/physical/river-generator";
 import { Rivers } from "@/model/physical/river-generator";
-import { simplex } from "@/model/society/name-render";
-import { Names } from "@/model/society/names-generator";
+import { Meanings } from "@/model/society/names/meanings";
+import { Names } from "@/model/society/names/names-generator";
 import { Tags } from "@/model/tags";
 import { redrawRiver as redrawRiverShape, setEditedRiver } from "@/renderers/draw-rivers";
 import { Layers } from "@/renderers/layers";
@@ -356,7 +356,7 @@ function regenerateName(baseId?: string): void {
 function showTranslations(): void {
   const river = getRiver();
   const origin = pack.cultures[pack.cells.culture[river.mouth]]?.base ?? Names.nameBases[0].id;
-  void Controllers.NameTranslations.open(river.meaning ?? simplex(river.name, origin), name => {
+  void Controllers.NameTranslations.open(river.meaning ?? Meanings.simplex(river.name, origin), name => {
     ensureEl<HTMLInputElement>("riverName").value = name;
     Rivers.rename(river.i, name);
     Layers.draw("labels");

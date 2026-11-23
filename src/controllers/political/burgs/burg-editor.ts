@@ -4,9 +4,9 @@ import { Markets } from "@/model/economy/markets-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
-import { type Meaning, simplex } from "@/model/society/name-render";
-import { Names } from "@/model/society/names-generator";
-import { Toponyms } from "@/model/society/toponyms";
+import { Meanings } from "@/model/society/names/meanings";
+import { Names } from "@/model/society/names/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
 import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/units";
 import { removeEmblem } from "@/renderers/draw-emblems";
@@ -15,6 +15,7 @@ import { localGloss } from "@/renderers/labels/name-display";
 import { Layers } from "@/renderers/layers";
 import { speak } from "@/services/speech";
 import type { Market } from "@/types/economy";
+import type { Meaning } from "@/types/names";
 import { renderDevelopment } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import { closeEntityDialogs, noteButton } from "@/ui/dialog/dialog-helpers";
@@ -393,7 +394,7 @@ function regenerateName(baseId?: string): void {
 
 /** The meaning a burg's name carries; a name without one stands as a proper name of its culture's base */
 const getMeaning = (burg: Burg): Meaning =>
-  burg.meaning ?? simplex(burg.name!, pack.cultures[burg.culture ?? 0]?.base ?? Names.nameBases[0].id);
+  burg.meaning ?? Meanings.simplex(burg.name!, pack.cultures[burg.culture ?? 0]?.base ?? Names.nameBases[0].id);
 
 function getMeaningGloss(burg: Burg): string {
   const meaning = getMeaning(burg);

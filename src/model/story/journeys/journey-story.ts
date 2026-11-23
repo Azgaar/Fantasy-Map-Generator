@@ -19,7 +19,7 @@ import {
   UPLAND_TERMS
 } from "@/data/journey-lore";
 import type { Burg } from "@/model/political/burgs-generator";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import type { Transport, TransportDomain } from "@/model/story/journeys/transports-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/journey";

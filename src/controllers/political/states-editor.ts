@@ -9,9 +9,9 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Stability } from "@/model/political/stability";
 import { STATE_FORMS, type State, States } from "@/model/political/states-generator";
 import { Development } from "@/model/society/development-generator";
-import { type Meaning, simplex } from "@/model/society/name-render";
-import { Names } from "@/model/society/names-generator";
-import { Toponyms } from "@/model/society/toponyms";
+import { Meanings } from "@/model/society/names/meanings";
+import { Names } from "@/model/society/names/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
@@ -23,6 +23,7 @@ import { fog, unfog } from "@/renderers/overlays/fogging";
 import { Csv } from "@/services/io/csv";
 import { speak } from "@/services/speech";
 import type { LegendItem } from "@/types/legend";
+import type { Meaning } from "@/types/names";
 import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import { closeEntityDialogs, noteIcon } from "@/ui/dialog/dialog-helpers";
@@ -835,7 +836,7 @@ function editStateName(state: number): void {
   /** The meaning the name carries; a name without one stands as a proper name of the culture's base */
   function getMeaning(): Meaning {
     const name = ensureEl<HTMLInputElement>("stateNameEditorShort").value;
-    return meaning ?? simplex(name, pack.cultures[s.culture].base);
+    return meaning ?? Meanings.simplex(name, pack.cultures[s.culture].base);
   }
 
   function showMeaning() {

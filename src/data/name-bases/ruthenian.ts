@@ -1,7 +1,6 @@
-import { lexiconOf, parseGrammar, parseRules, parseTemplates } from "@/utils/name-notation";
-import type { NameBase } from ".";
+import type { WrittenNameBase } from "@/types/names";
 
-export const ruthenian: NameBase = {
+export const ruthenian: WrittenNameBase = {
   id: "ruthenian",
   name: "Ruthenian",
   length: [5, 14],
@@ -11,7 +10,7 @@ export const ruthenian: NameBase = {
   people: { male: { mode: "pick", names: ["Vladimir", "Yaroslav", "Svyatoslav", "Mstislav", "Izyaslav", "Vsevolod", "Rostislav", "Yaropolk", "Svyatopolk", "Bryachislav", "Vseslav", "Igor", "Oleg", "Rurik", "Gleb", "Boris", "Roman", "David", "Vasilko", "Volodar", "Rogvolod", "Davyd", "Vyacheslav", "Stanislav", "Ratibor", "Dobrynya", "Putyata", "Vyshata", "Miroslav", "Radim", "Zhiroslav", "Tverdislav", "Gostomysl", "Vadim", "Budimir", "Lyubomir", "Dragomir", "Kazimir", "Borislav", "Bogdan", "Bogumil", "Milosh", "Radovan", "Stoyan", "Zhdan", "Nezhdan", "Mal", "Tur", "Sveneld", "Askold", "Dir", "Ivan", "Vasiliy", "Dmitriy", "Mihail", "Fedor", "Andrey", "Yuriy", "Daniil", "Aleksandr", "Konstantin", "Semen", "Petr", "Pavel", "Nikita", "Ilya", "Luka", "Foma", "Matvey", "Kuzma", "Timofey", "Trofim", "Ostap", "Taras", "Nestor", "Kirill", "Mefodiy"] }, female: { mode: "pick", names: ["Olga", "Predslava", "Rogneda", "Malusha", "Dobroneg", "Verhuslava", "Zvenislava", "Gorislava", "Miroslava", "Yaroslava", "Svyatoslava", "Vseslava", "Lyubava", "Milava", "Zlata", "Vesna", "Lada", "Bogdana", "Radmila", "Lyudmila", "Dobrava", "Zabava", "Darina", "Bazhena", "Vlasta", "Snezhana", "Anna", "Mariya", "Elena", "Evdokiya", "Evpraksiya", "Efrosinya", "Anastasiya", "Agafya", "Marfa", "Irina", "Sofiya", "Feodosiya", "Ksenya", "Vasilisa", "Ulyana", "Varvara", "Nadezhda", "Vera", "Lyubov"] } },
   rules: [
     { match: "(.)\\1+", replace: "$1" },
-    ...parseRules(String.raw`
+    String.raw`
 (?<=[^aeiou])y?a\+ov => +in | join
 (?<=[aeiou])y\+ov => yev | join
 (?:iy|i)\+ov => +ev | join
@@ -69,15 +68,15 @@ th => f | foreign
 qu => kv | foreign
 c(?=[eiy]) => ts | foreign
 c(?!h) => k | foreign
-(?<=[ae])u(?=[^aeiou]) => v | foreign`)
+(?<=[ae])u(?=[^aeiou]) => v | foreign`
   ],
   // a noun's gender or number shows in its ending; a describing word takes the ending that goes with it
-  grammar: parseGrammar(`
+  grammar: `
 f: a$ => aya
 n: [oe]$ => oye
 pl: (?<![aeiouy])[iy]$ => ye
-m: => yi`),
-  lexicon: lexiconOf({
+m: => yi`,
+  lexicon: {
     city: "-sk:6, -ovsk:2, grad@last:1.5, gorod@last, gorod@word:0.4, grad@word:0.2",
     town: "-ov:8, -ets, gorod@last:0.5, _/m@word:2, gorodok@word:0.5, gorod@word:0.3, posad@word:0.3",
     village: "-ovo:6, -ovka:4, -ichi:2, -ovichi, _/n@word:2, selo@word:0.6, sloboda@word:0.3, derevnya@word:0.2",
@@ -500,15 +499,15 @@ m: => yi`),
     thousand: "tysyache@first, tysyacha/many@word",
 
     land: "ia@last:5, schina@last:2, zemye@last"
-  }),
+  },
   patterns: {
-    "modifier-generic": { templates: parseTemplates("{modifier}{generic}:4, {modifier} {generic}:5") },
+    "modifier-generic": { templates: "{modifier}{generic}:4, {modifier} {generic}:5" },
     "owner-generic": {
       weight: 28,
-      templates: parseTemplates("{root}{generic}:6, {root}ov* {generic}:2, {root}-{generic}")
+      templates: "{root}{generic}:6, {root}ov* {generic}:2, {root}-{generic}"
     },
-    "generic-of": { templates: parseTemplates("{root}{generic}:5, {root}sk* {generic}:4, {generic}{root}:3") },
-    compound: { weight: 24, templates: parseTemplates("{modifier}{generic}{settlement}") },
-    relative: { templates: parseTemplates("{modifier} {root}:5, {modifier}{root}") }
+    "generic-of": { templates: "{root}{generic}:5, {root}sk* {generic}:4, {generic}{root}:3" },
+    compound: { weight: 24, templates: "{modifier}{generic}{settlement}" },
+    relative: { templates: "{modifier} {root}:5, {modifier}{root}" }
   }
 };

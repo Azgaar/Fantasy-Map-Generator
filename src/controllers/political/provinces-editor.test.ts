@@ -18,9 +18,9 @@ vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: { trigger: vi.f
 vi.mock("@/renderers/overlays/fogging", () => ({ fog: vi.fn(), unfog: vi.fn() }));
 vi.mock("@/ui/map/highlight", () => ({ highlightElement: vi.fn(), highlightOutline: vi.fn() }));
 
-import { simplex } from "@/model/society/name-render";
-import { Names } from "@/model/society/names-generator";
-import { Toponyms } from "@/model/society/toponyms";
+import { Meanings } from "@/model/society/names/meanings";
+import { Names } from "@/model/society/names/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Layers } from "@/renderers/layers";
 import { Dialog } from "@/ui/dialog/dialog";
 import { DIALOGS_MARKUP } from "@/ui/dialog/dialog-testing";
@@ -65,7 +65,7 @@ afterEach(() => {
 describe("ProvincesEditor name regeneration", () => {
   beforeEach(() => {
     vi.spyOn(Names, "getCultureShort").mockImplementation(culture => `Culture${culture}`);
-    vi.spyOn(Toponyms, "landOf").mockImplementation(name => ({ name, meaning: simplex(name, "english") }));
+    vi.spyOn(Toponyms, "landOf").mockImplementation(name => ({ name, meaning: Meanings.simplex(name, "english") }));
   });
 
   it("uses each province's local culture, including Wildlands, and updates names and labels", () => {
@@ -79,7 +79,7 @@ describe("ProvincesEditor name regeneration", () => {
       label: { text: "Culture2|County", dx: 5 }
     });
     expect(pack.provinces[2].name).toBe("Culture0");
-    expect(pack.provinces[2].meaning).toEqual(simplex("Culture0", "english"));
+    expect(pack.provinces[2].meaning).toEqual(Meanings.simplex("Culture0", "english"));
     expect(document.querySelector<HTMLInputElement>('[data-id="1"] .name')!.value).toBe("Culture2");
     expect(Layers.draw).toHaveBeenCalledExactlyOnceWith("labels");
   });

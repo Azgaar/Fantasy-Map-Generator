@@ -11,8 +11,8 @@ import { DEAL_KINDS } from "@/model/economy/deals";
 import { Pack } from "@/model/graph/pack-generator";
 import { Options } from "@/model/options/options-model";
 import { Military } from "@/model/political/military-generator";
-import { Names } from "@/model/society/names-generator";
-import { getDoubles } from "@/model/society/sound-rules";
+import { Names } from "@/model/society/names/names-generator";
+import { SoundRules } from "@/model/society/names/sound-rules";
 import { Styles } from "@/model/styles/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
@@ -1404,7 +1404,9 @@ describe("v1.159 name bases migration", () => {
   const shipped = Names.getNameBases();
   /** the record older maps keep: a base a slash, names left out where they are the default ones */
   const legacyRecord = (edit: (fields: (string | number)[], index: number) => (string | number)[] = fields => fields) =>
-    shipped.map((base, index) => edit([base.name, ...base.length, getDoubles(base), 0, ""], index).join("|")).join("/");
+    shipped
+      .map((base, index) => edit([base.name, ...base.length, SoundRules.getDoubles(base), 0, ""], index).join("|"))
+      .join("/");
   const cultures = (...bases: number[]) => JSON.stringify(bases.map((base, i) => ({ i, base })));
 
   it("turns untouched bases into the shipped ones and culture bases into ids", () => {
@@ -1436,7 +1438,7 @@ describe("v1.159 name bases migration", () => {
     expect(german).toEqual({ ...shipped[0], length: [4, 12] });
     expect(custom).toMatchObject({ id: "german-2", name: "German", places: { names: ["Aaa", "Bbb", "Ccc"] } });
     expect(own).toMatchObject({ id: "my-base", length: [5, 9] });
-    expect(getDoubles(own)).toBe("ab");
+    expect(SoundRules.getDoubles(own)).toBe("ab");
     expect(JSON.parse(data[13]).map((culture: { base: string }) => culture.base)).toEqual([
       "german",
       "german-2",

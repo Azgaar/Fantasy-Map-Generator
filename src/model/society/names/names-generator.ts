@@ -1,19 +1,20 @@
 import { z } from "zod";
-import { type Corpus, getDefaultNameBases, type NameBase } from "@/data/name-bases";
+import { NAME_BASES } from "@/data/name-bases";
+import type { Corpus, NameBase } from "@/types/names";
 import { last } from "@/utils/array-utils";
 import { sentences, t } from "@/utils/i18n";
 import { isVowel } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { notify } from "@/utils/notices";
 import { P, ra, rand } from "@/utils/probability-utils";
-import { applyRules, capitalizeWords, doublesRule } from "./sound-rules";
+import { NameNotation } from "./notation";
+import { SoundRules } from "./sound-rules";
 
 // Markov chain lookup table: key is a letter (or empty string for word start), value is array of possible next syllables
 // Note: Uses array with string keys (sparse array) to match original JS behavior
 type MarkovChain = string[][] & Record<string, string[]>;
 
 const SYLLABIC = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
-const SHIPPED = getDefaultNameBases().map(base => base.id); // a shipped base's place in the default set
 
 const formantSchema = z.object({
   form: z.string().min(1),
@@ -31,7 +32,7 @@ const corpusSchema = z.object({
 });
 
 /** A base as a namesbase file holds it */
-export const nameBaseSchema = z.object({
+const NAME_BASE_SCHEMA = z.object({
   id: z.string().regex(/^[\p{L}\p{N}-]+$/u),
   name: z.string().min(1),
   length: z.tuple([z.number(), z.number()]),
@@ -69,30 +70,30 @@ export const nameBaseSchema = z.object({
     .optional()
 });
 
-/** A base of the classic make: a length range, a corpus and the letters allowed to stand twice in a row */
-export const composeBase = (
-  id: string,
-  name: string,
-  length: [number, number],
-  names: string[],
-  doubled = ""
-): NameBase => ({ id, name, length, places: { names }, rules: [doublesRule(doubled)] });
-
-/** An id made of a base's name, numbered when another base has taken it */
-export function uniqueBaseId(name: string, taken: string[]): string {
-  const slug =
-    name
-      .toLowerCase()
-      .replace(/[^\p{L}\p{N}]+/gu, "-")
-      .replace(/^-|-$/g, "") || "base";
-  let id = slug;
-  for (let n = 2; taken.includes(id); n++) id = `${slug}-${n}`;
-  return id;
-}
-
 class NamesGenerator {
+  readonly schema = NAME_BASE_SCHEMA;
+  private readonly defaults = NAME_BASES.map(base => NameNotation.read(base));
+  private readonly shipped = this.defaults.map(base => base.id); // a shipped base's place in the default set
   nameBases: NameBase[] = this.getNameBases();
-  chains = new Map<string, MarkovChain | null>(); // Markov chains by base id
+  private readonly chains = new Map<string, MarkovChain | null>(); // Markov chains by base id
+  private readonly peopleChains = new WeakMap<string[], MarkovChain>(); // by corpus, so an edited corpus is chained anew
+
+  /** A base of the classic make: a length range, a corpus and the letters allowed to stand twice in a row */
+  composeBase(id: string, name: string, length: [number, number], names: string[], doubled = ""): NameBase {
+    return { id, name, length, places: { names }, rules: [SoundRules.doublesRule(doubled)] };
+  }
+
+  /** An id made of a base's name, numbered when another base has taken it */
+  uniqueId(name: string, taken: string[]): string {
+    const slug =
+      name
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}]+/gu, "-")
+        .replace(/^-|-$/g, "") || "base";
+    let id = slug;
+    for (let n = 2; taken.includes(id); n++) id = `${slug}-${n}`;
+    return id;
+  }
 
   calculateChain(names: string[]): MarkovChain {
     const chain: MarkovChain = [] as unknown as MarkovChain;
@@ -166,7 +167,7 @@ class NamesGenerator {
 
   /** A base by id; a shipped one the map has dropped gives the base standing in its place */
   resolve(id: string): NameBase | undefined {
-    return this.find(id) ?? this.nameBases[SHIPPED.indexOf(id) % this.nameBases.length];
+    return this.find(id) ?? this.nameBases[this.shipped.indexOf(id) % this.nameBases.length];
   }
 
   /** Any of the map's bases */
@@ -201,11 +202,11 @@ class NamesGenerator {
     if ((proper === "base" ? (corpus.mode ?? "chain") : proper) === "pick") return ra(corpus.names);
     if (!this.peopleChains.has(corpus.names)) this.peopleChains.set(corpus.names, this.calculateChain(corpus.names));
     const [min, max] = corpus.length ?? [4, 8];
-    const name = capitalizeWords(applyRules(this.walk(this.peopleChains.get(corpus.names)!, min, max), base.rules));
+    const name = SoundRules.capitalize(
+      SoundRules.apply(this.walk(this.peopleChains.get(corpus.names)!, min, max), base.rules)
+    );
     return name.length < 2 ? ra(corpus.names) : name;
   }
-
-  private peopleChains = new WeakMap<string[], MarkovChain>(); // by corpus, so an edited corpus is chained anew
 
   /** Walk a chain from a word's start until the word ends between the lengths given, or grows too long */
   private walk(chain: MarkovChain, min: number, max: number): string {
@@ -265,8 +266,8 @@ class NamesGenerator {
     const [shortest, longest] = base.places.length ?? base.length;
     const w = this.walk(data, min || shortest, max || longest);
 
-    const rules = dupl === "" ? [doublesRule(), ...(base.rules ?? [])] : base.rules;
-    let name = capitalizeWords(applyRules(w, rules));
+    const rules = dupl === "" ? [SoundRules.doublesRule(), ...(base.rules ?? [])] : base.rules;
+    let name = SoundRules.capitalize(SoundRules.apply(w, rules));
 
     // join the word if any part has only 1 letter
     if (name.split(" ").some(part => part.length < 2))
@@ -343,20 +344,21 @@ class NamesGenerator {
     return name;
   }
 
+  /** A fresh copy of the shipped bases */
   getNameBases(): NameBase[] {
-    return getDefaultNameBases();
+    return structuredClone(this.defaults);
   }
 
   /** The bases as a .map record: a shipped base left as it is goes by its id alone, so it follows later updates */
   serialize(): string {
-    const shipped = new Map(getDefaultNameBases().map(base => [base.id, JSON.stringify(base)]));
+    const shipped = new Map(this.defaults.map(base => [base.id, JSON.stringify(base)]));
     const isShipped = (base: NameBase) => shipped.get(base.id) === JSON.stringify(base);
     return JSON.stringify(this.nameBases.map(base => (isShipped(base) ? { id: base.id } : base)));
   }
 
   /** Take the bases of a .map record, or the shipped ones when it holds none */
   restore(record?: string): void {
-    const shipped = getDefaultNameBases();
+    const shipped = this.getNameBases();
     const stored: (NameBase | { id: string })[] | null = record ? JSON.parse(record) : null;
     const byId = (id: string) => shipped.find(base => base.id === id) ?? [];
     this.nameBases = stored ? stored.flatMap(base => ("places" in base ? base : byId(base.id))) : shipped;

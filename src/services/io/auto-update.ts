@@ -4,7 +4,6 @@ import { extent, min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
 import { isDrawable } from "@/controllers/political/emblems/drawability";
 import { DEFAULT_DEVELOPMENT } from "@/data/development";
-import { getDefaultNameBases, type NameBase } from "@/data/name-bases";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
@@ -34,9 +33,9 @@ import { noFinance, type State, type StateFinance, States } from "@/model/politi
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
-import { composeBase, uniqueBaseId } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
+import { SoundRules } from "@/model/society/names/sound-rules";
 import { Religions } from "@/model/society/religions-generator";
-import { setDoubles } from "@/model/society/sound-rules";
 import { getDefaultMarkerName, type Marker, Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
 import { Styles } from "@/model/styles/styles";
@@ -62,6 +61,7 @@ import { StylePresetsService } from "@/services/style-presets";
 import { compareVersions } from "@/services/versioning";
 import type { Deal, Good } from "@/types/economy";
 import type { LegendItem } from "@/types/legend";
+import type { NameBase } from "@/types/names";
 import type { StylesData } from "@/types/styles";
 import { Dialog } from "@/ui/dialog/dialog";
 import { unique } from "@/utils/array-utils";
@@ -2344,7 +2344,7 @@ export function migrateLegacyNameBases(mapVersion: string, data: string[]): void
   if (!compareVersions(mapVersion, "1.159.0").isOlder) return;
 
   // name|min|max|doubled|m|names per base; one saved without names holds the shipped names at its place
-  const shipped = getDefaultNameBases();
+  const shipped = Names.getNameBases();
   const stored = data[31] ? data[31].split("/").map(base => base.split("|")) : [];
   const isCustom = (names = "", index: number) => names.split(",").length > 2 || !shipped[index];
   const taken = stored.flatMap((base, index) => (isCustom(base[5], index) ? [] : shipped[index].id));
@@ -2352,12 +2352,12 @@ export function migrateLegacyNameBases(mapVersion: string, data: string[]): void
   const bases = stored.map(([name, min, max, doubled, , names = ""], index) => {
     if (!isCustom(names, index)) {
       const base: NameBase = { ...shipped[index], name, length: [+min, +max] }; // the shipped base under the map's settings
-      setDoubles(base, doubled ?? "");
+      SoundRules.setDoubles(base, doubled ?? "");
       return base;
     }
-    const id = uniqueBaseId(name, taken);
+    const id = Names.uniqueId(name, taken);
     taken.push(id);
-    return composeBase(id, name, [+min, +max], names ? names.split(",") : [], doubled);
+    return Names.composeBase(id, name, [+min, +max], names ? names.split(",") : [], doubled);
   });
   if (data[31]) data[31] = JSON.stringify(bases);
 

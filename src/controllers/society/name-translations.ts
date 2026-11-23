@@ -1,6 +1,7 @@
-import { type Meaning, render } from "@/model/society/name-render";
-import { Names } from "@/model/society/names-generator";
+import { Meanings } from "@/model/society/names/meanings";
+import { Names } from "@/model/society/names/names-generator";
 import { localGloss } from "@/renderers/labels/name-display";
+import type { Meaning } from "@/types/names";
 import { Dialog } from "@/ui/dialog/dialog";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
@@ -11,7 +12,7 @@ function open(meaning: Meaning, apply: (name: string) => void): void {
   Dialog.destroy("nameTranslations");
   const origin = Names.find(meaning.origin)?.name ?? meaning.origin;
   const rows = Names.nameBases.map(base => {
-    const name = escapeHtml(render(meaning, base.id));
+    const name = escapeHtml(Meanings.render(meaning, base.id));
     return /* html */ `<div style="${base.id === meaning.origin ? "font-weight: bold" : ""}">${escapeHtml(base.name)}</div>
       <div>${name}</div>
       <span data-name="${name}" data-tip="${t("Use this name")}" class="icon-check pointer"></span>`;

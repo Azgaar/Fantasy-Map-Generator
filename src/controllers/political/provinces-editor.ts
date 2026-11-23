@@ -17,9 +17,9 @@ import { Provinces } from "@/model/political/provinces-generator";
 import { Stability } from "@/model/political/stability";
 import type { State } from "@/model/political/states-generator";
 import { Development } from "@/model/society/development-generator";
-import { simplex } from "@/model/society/name-render";
-import { Names } from "@/model/society/names-generator";
-import { Toponyms } from "@/model/society/toponyms";
+import { Meanings } from "@/model/society/names/meanings";
+import { Names } from "@/model/society/names/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
@@ -929,7 +929,7 @@ function showTranslations(): void {
   const input = ensureEl<HTMLInputElement>("provinceNameEditorShort");
   const origin = pack.cultures[pack.cells.culture[province.center]]?.base ?? Names.nameBases[0].id;
   const meaning = coined?.name === input.value ? coined.meaning : province.meaning;
-  void Controllers.NameTranslations.open(meaning ?? simplex(input.value || province.name, origin), name => {
+  void Controllers.NameTranslations.open(meaning ?? Meanings.simplex(input.value || province.name, origin), name => {
     input.value = name;
   });
 }

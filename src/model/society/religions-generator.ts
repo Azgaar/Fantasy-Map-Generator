@@ -9,9 +9,9 @@ import { abbreviate, getAdjective, trimVowels } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { each, gauss, ra, rand, rw } from "@/utils/probability-utils";
 import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validation-utils";
-import { Names } from "./names-generator";
+import { Names } from "./names/names-generator";
+import { Toponyms } from "./names/toponyms-generator";
 import { Population } from "./population-generator";
-import { Toponyms } from "./toponyms";
 
 export interface Religion extends NamedReligion {
   i: number;

@@ -1,13 +1,12 @@
 import { CONCEPTS, type Concept, conceptsOf } from "@/data/name-concepts";
-import { parseTemplates } from "@/utils/name-notation";
-import type { Formant, NameBase } from ".";
+import type { Formant, WrittenNameBase } from "@/types/names";
 
 // the base speaks plain English: a concept goes by its own word, a settlement by its English ending
 const english = [...conceptsOf("settlement"), ...conceptsOf("numeral")] as string[];
 const plain = Object.keys(CONCEPTS).filter(concept => !english.includes(concept));
 const words = Object.fromEntries(plain.map(concept => [concept, [{ form: concept }]]));
 
-export const humanGeneric: NameBase = {
+export const humanGeneric: WrittenNameBase = {
   id: "human-generic",
   name: "Human Generic",
   extends: "english",
@@ -25,8 +24,8 @@ export const humanGeneric: NameBase = {
     ]
   },
   patterns: {
-    "modifier-generic": { templates: parseTemplates("{modifier}{generic}:4, {modifier} {generic}") },
-    "owner-generic": { templates: parseTemplates("{root}{generic}:4, {root} {generic}") },
-    "generic-of": { templates: parseTemplates("{root}{generic}:4, {root} {generic}") }
+    "modifier-generic": { templates: "{modifier}{generic}:4, {modifier} {generic}" },
+    "owner-generic": { templates: "{root}{generic}:4, {root} {generic}" },
+    "generic-of": { templates: "{root}{generic}:4, {root} {generic}" }
   }
 };

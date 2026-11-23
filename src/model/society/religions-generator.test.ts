@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Pack } from "@/model/graph/pack-generator";
-import { Names } from "./names-generator";
+import { Names } from "./names/names-generator";
 import type { Religion } from "./religions-generator";
 import { Religions as ReligionsModule } from "./religions-generator";
 

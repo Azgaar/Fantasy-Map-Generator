@@ -1,6 +1,6 @@
-import type { NameBase } from ".";
+import type { WrittenNameBase } from "@/types/names";
 
-export const german: NameBase = {
+export const german: WrittenNameBase = {
   id: "german",
   name: "German",
   length: [5, 12],
