@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { NameNotation } from "./notation";
 
 it("reads and writes the forms of a concept", () => {
-  const text = "-gorod~grad 4, kings- 3, King, ton";
+  const text = "+gorod~grad 4, kings+ 3, King, ton";
   const formants = NameNotation.parseFormants(text);
   expect(formants).toEqual([
     { form: "gorod", weight: 4, position: "last", short: "grad" },
@@ -11,13 +11,13 @@ it("reads and writes the forms of a concept", () => {
     { form: "ton" }
   ]);
   expect(NameNotation.formatFormants(formants)).toBe(text);
-  expect(NameNotation.parseFormants("ton, , two words, ton 1.5, -bad-, Bad-, =Bad, bad@place")).toEqual([
-    { form: "ton" }
-  ]);
+  expect(
+    NameNotation.parseFormants("ton, , two words, ton 1.5, +bad+, Bad+, ^Bad, !bad+, --bad, _, bad@place")
+  ).toEqual([{ form: "ton" }]);
 });
 
 it("reads and writes a lexicon, a concept a line", () => {
-  const text = "# settlements\ntown: -ton\n\nland: -ia 6, land 4";
+  const text = "# settlements\ntown: +ton\n\nland: +ia 6, land 4";
   const lexicon = NameNotation.parseLexicon(text);
   expect(lexicon).toEqual({
     town: [{ form: "ton", position: "last" }],
@@ -26,8 +26,8 @@ it("reads and writes a lexicon, a concept a line", () => {
       { form: "land", weight: 4 }
     ]
   });
-  expect(NameNotation.formatLexicon(lexicon)).toBe("town: -ton\nland: -ia 6, land 4");
-  expect(NameNotation.parseLexicon({ town: "-ton" })).toEqual({ town: [{ form: "ton", position: "last" }] });
+  expect(NameNotation.formatLexicon(lexicon)).toBe("town: +ton\nland: +ia 6, land 4");
+  expect(NameNotation.parseLexicon({ town: "+ton" })).toEqual({ town: [{ form: "ton", position: "last" }] });
 });
 
 it("reads and writes templates", () => {
@@ -64,7 +64,7 @@ it("reads and writes rules, a rule a line", () => {
 });
 
 it("reads and writes suffixes, stems, agreeing words and noun classes", () => {
-  const text = "=sk 6, berez=, nov*, verhn*soft, Pristan/f, Verhnyaya/f, _/n 2, ust--, -Gorodok 2";
+  const text = "^sk 6, berez^, nov*, verhn*soft, Pristan/f, Verhnyaya/f, /n 2, ust-+, -Gorodok 2";
   const formants = NameNotation.parseFormants(text);
   expect(formants).toEqual([
     { form: "-sk", weight: 6 },
@@ -78,6 +78,17 @@ it("reads and writes suffixes, stems, agreeing words and noun classes", () => {
     { form: "gorodok", weight: 2, position: "word", hyphen: true }
   ]);
   expect(NameNotation.formatFormants(formants)).toBe(text);
+});
+
+it("reads a whole word in a script with no capitals by its mark", () => {
+  const formants = NameNotation.parseFormants("!город 2, -городок, город+");
+  expect(formants).toEqual([
+    { form: "город", weight: 2, position: "word" },
+    { form: "городок", position: "word", hyphen: true },
+    { form: "город", position: "first" }
+  ]);
+  expect(NameNotation.formatFormants(formants)).toBe("Город 2, -Городок, город+");
+  expect(NameNotation.formatFormants([{ form: "مدينة", position: "word" }])).toBe("!مدينة");
 });
 
 it("reads and writes a grammar: noun classes, sets of endings and the rules that make forms", () => {

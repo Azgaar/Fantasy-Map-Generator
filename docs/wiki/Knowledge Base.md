@@ -398,7 +398,7 @@ Burgs, states, provinces, rivers and lakes are named in two steps. The generator
 
 ### Can I see a name in another language?
 
-Yes. In a burg, state, province, river or lake editor, press the two-arrows button next to the Meaning (See the name in other name bases): it lists the name in every namesbase, and a click takes one. To show the whole map in one language, or as what the names mean, set Options -> Advanced -> Names on labels; only the labels change, not the names
+Yes. In a burg, state, province, river or lake editor, press the two-arrows button next to the Meaning (See the name in other name bases): it lists the name in every namesbase, and a click takes one
 
 ### Why don't German, French and other names mean what the Meaning says?
 

@@ -1,9 +1,6 @@
-// What a name shows as: itself, its meaning in the interface language, or its meaning in another name base
-
 import { CONCEPT_LABELS } from "@/data/id-labels";
 import type { Concept } from "@/data/name-concepts";
 import { Meanings } from "@/model/society/names/meanings";
-import { Names } from "@/model/society/names/names-generator";
 import type { Meaning } from "@/types/names";
 import { Catalog, t } from "@/utils/i18n";
 import { capitalize } from "@/utils/string-utils";
@@ -26,19 +23,4 @@ export function localGloss(meaning: Meaning): string {
   if (pattern === "root-land")
     return t("{{- generic}} of {{- root}}", { generic: second, root: first, context: "toponym" });
   return `${first} ${second}`;
-}
-
-/** The name the labels show for a named thing, by the option: the name itself, what it means, or what a chosen
- * name base makes of its meaning. A name with no meaning, or one that is a proper name, shows as it is */
-export function displayName({ name = "", meaning }: { name?: string; meaning?: Meaning }): string {
-  const mode = options.app.labels.names;
-  if (mode === "native" || !meaning) return name;
-  if (mode === "gloss") return meaning.pattern === "simplex" ? name : localGloss(meaning);
-  return Names.find(mode) && mode !== meaning.origin ? Meanings.render(meaning, mode) : name;
-}
-
-/** A text that holds a name, with the name as the labels show it: a full name or a label's own text */
-export function displayIn(text: string, named: { name?: string; meaning?: Meaning }): string {
-  const shown = displayName(named);
-  return named.name && shown !== named.name ? text.replaceAll(named.name, shown) : text;
 }

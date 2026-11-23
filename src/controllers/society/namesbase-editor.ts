@@ -127,21 +127,21 @@ function renderDialog(): void {
             <span id="namesbaseCoverage"></span>.
             ${t("Forms are written as {{- notation}}, commas between", { notation: notation("form~short/class weight") })}
           </div>
-          <div data-tip="${t("How a form is written says where it may stand in a name. A form written plain stands anywhere. A word written -Gorodok may also follow a name after a dash")}">
+          <div data-tip="${t("How a form is written says where it may stand in a name. A form written plain stands anywhere. A capital first letter or a leading ! makes a whole word. A word written -Gorodok may also follow a name after a dash")}">
             ${t("{{- word}} stands on its own, {{- first}} starts a word, {{- last}} ends one", {
               word: notation("Gorod"),
-              first: notation("novo-"),
-              last: notation("-grad")
+              first: notation("novo+"),
+              last: notation("+grad")
             })}
           </div>
-          <div data-tip="${t("A suffix ends a word after a stem or a proper name. A word with * takes the ending of the noun beside it. _ leaves the noun unsaid")}">
+          <div data-tip="${t("A suffix ends a word after a stem or a proper name. A word with * takes the ending of the noun beside it. A noun class alone, such as /n, leaves the noun unsaid")}">
             ${t(
               "{{- suffix}} is a suffix, {{- stem}} takes one, {{- agreeing}} agrees with its noun, {{- silent}} is a noun left unsaid",
               {
-                suffix: notation("=sk"),
-                stem: notation("berez="),
+                suffix: notation("^sk"),
+                stem: notation("berez^"),
                 agreeing: notation("nov*"),
-                silent: notation("_/n")
+                silent: notation("/n")
               }
             )}
           </div>

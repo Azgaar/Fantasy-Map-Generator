@@ -22,7 +22,6 @@ import { isAutoBurgLimit } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
-import { Layers } from "@/renderers/layers";
 import {
   applyPerformancePreset,
   applyPerformanceSettings,
@@ -160,12 +159,6 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     read: o => o.generation.names.proper,
     write: (o, value) => (o.generation.names.proper = value),
     parse: value => value as OptionsData["generation"]["names"]["proper"]
-  }),
-  labelNames: option({
-    read: o => o.app.labels.names,
-    write: (o, value) => (o.app.labels.names = value),
-    parse: String,
-    effect: () => Layers.draw("labels")
   }),
   uiSize: option({
     read: o => o.app.ui.size,

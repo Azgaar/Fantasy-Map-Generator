@@ -159,13 +159,13 @@ describe("a base with a grammar", () => {
 (?<=\+ov)\+aya => +a | join
 (?<=\+ov)\+oye => +o | join`),
     lexicon: NameNotation.parseLexicon({
-      town: "=ov 5, -gorod, -Gorod",
-      village: "Selo, _/n",
-      hill: "Gora, gor=",
+      town: "^ov 5, +gorod, -Gorod",
+      village: "Selo, /n",
+      hill: "Gora, gor^",
       harbour: "Pristan/f",
-      mouth: "ust--, Ustye",
-      birch: "berez=, berezo-, berezov*",
-      new: "novo-, nov*",
+      mouth: "ust-+, Ustye",
+      birch: "berez^, berezo+, berezov*",
+      new: "novo+, nov*",
       upper: "Verhniy/m, Verhnyaya/f"
     }),
     patterns: {
@@ -217,7 +217,7 @@ describe("a base with a grammar", () => {
     base.grammar!.derive = NameNotation.parseGrammar("stem: [aoe]?$ =>\nfirst: \\*$ => o\nfirst: [aoe]?$ => o")!.derive;
     Object.assign(
       base.lexicon!,
-      NameNotation.parseLexicon({ black: "chern* 2", field: "Pole", wolf: "volk= 3, volch*" })
+      NameNotation.parseLexicon({ black: "chern* 2", field: "Pole", wolf: "volk^ 3, volch*" })
     );
     Names.nameBases.push(base);
     const derived = (concept: Concept) => Lexicon.derivedForms(base, concept, base.lexicon![concept]!);

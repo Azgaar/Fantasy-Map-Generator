@@ -5,11 +5,10 @@ import type { River } from "@/model/physical/river-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Province } from "@/model/political/provinces-generator";
-import { type State, States } from "@/model/political/states-generator";
+import type { State } from "@/model/political/states-generator";
 import type { LabelData } from "@/renderers/labels/labels";
 import type { Point } from "@/types/global";
 import { fitStateLabel } from "./fit-state-label";
-import { displayIn, displayName } from "./name-display";
 
 /** A label without its geometry: what search and lists need, and all that is cheap to build */
 export type LabelIndexEntry = Pick<LabelData, "id" | "entityId" | "type" | "group" | "text" | "anchor" | "dx" | "dy">;
@@ -55,7 +54,7 @@ function buildBurgLabel(burg: Burg): LabelData | undefined {
     ...burg.label,
     id: `burgLabel${burg.i}`,
     entityId: burg.i,
-    text: displayIn(burg.label?.text ?? burg.name ?? "", burg),
+    text: burg.label?.text ?? burg.name ?? "",
     type: "burg",
     group: burg.label?.group || burg.group || "burg",
     anchor: [burg.x, burg.y],
@@ -69,7 +68,7 @@ function buildProvinceLabel(province: Province): LabelData | undefined {
     ...province.label,
     id: `provinceLabel${province.i}`,
     entityId: province.i,
-    text: displayIn(province.label?.text ?? province.name, province),
+    text: province.label?.text ?? province.name,
     type: "province",
     group: province.label?.group || "province",
     anchor: province.pole || pack.cells.p[province.center],
@@ -85,10 +84,9 @@ function buildStateLabel(state: State, geometry: boolean): LabelData | undefined
   // the one reason a state has no label, shared by the index and the full build: no cells to fit it into
   const fits = !customPath && !isPlainText(state.label);
   if (fits && !state.cells) return undefined;
-  const shown = getShownState(state); // the state under the name the labels show
-  const fitted = fits && geometry ? fitStateLabel(shown, group) : null;
+  const fitted = fits && geometry ? fitStateLabel(state, group) : null;
 
-  const text = shown.label?.text ?? fitted?.text ?? getStateName(shown, group);
+  const text = state.label?.text ?? fitted?.text ?? getStateName(state, group);
   if (!text) return undefined;
 
   return {
@@ -118,18 +116,16 @@ function buildRiverLabel(river: River, geometry: boolean): LabelData | undefined
     id: `riverLabel${river.i}`,
     entityId: river.i,
     type: "river",
-    text: river.label?.text ? displayIn(river.label.text, river) : getRiverName(river),
+    text: river.label?.text ?? getRiverName(river),
     group: river.label?.group || "river",
     anchor,
     pathPoints: customPath ?? defaultPath
   };
 }
 
-// a meaning that names its water already reads without the river's type
-function getRiverName(river: River): string {
-  const name = displayName(river);
-  const saysWater = options.app.labels.names === "gloss" && name !== river.name;
-  return saysWater || name.toLowerCase().endsWith(river.type.toLowerCase()) ? name : `${name} ${river.type}`;
+// a name that ends in its type already reads without it
+function getRiverName({ name, type }: River): string {
+  return name.toLowerCase().endsWith(type.toLowerCase()) ? name : `${name} ${type}`;
 }
 
 function buildRouteLabel(route: Route, geometry: boolean): LabelData | undefined {
@@ -169,20 +165,6 @@ function getCustomPath(label?: Label): Point[] | undefined {
 /** Label is explicitly stripped of its path, so it should not fall back to the default geometry */
 function isPlainText(label?: Label): boolean {
   return label?.pathPoints?.length === 0;
-}
-
-/** A state as the labels name it: its short name, full name and own label text follow the name display option */
-function getShownState(state: State): State {
-  const name = displayName(state);
-  if (name === state.name) return state;
-  // under a form a land reads by its root alone, the form says what land it is: Duchy of Aric, not of Land of Aric
-  const isLand = options.app.labels.names === "gloss" && state.formName && state.meaning?.pattern === "root-land";
-  const inFull = isLand ? state.meaning!.tokens[0].slice(1) : name;
-  const fullName = state.fullName?.replaceAll(state.name, inFull);
-  const label = state.label?.text ? { ...state.label, text: displayIn(state.label.text, state) } : state.label;
-  // a full name built on the adjective holds no name to swap: it is built again on the name shown
-  const rebuilt = fullName === state.fullName ? States.getFullName({ ...state, name: inFull }) : fullName;
-  return { ...state, name, fullName: rebuilt, label };
 }
 
 // name mode is resolved by group name, the same way fitStateLabel resolves it

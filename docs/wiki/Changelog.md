@@ -23,7 +23,6 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Namesbase Editor: tabs for personal names, the lexicon, name patterns and sound rules
 - Options: whether personal names are generated or picked
 - Names: rivers, lakes and provinces are named for what they are, such as Blackwater or Kenelm's Pool
-- Options: show labels as named, by what the names mean, or as any one namesbase would say them
 - Burg, State and Cultures editors: a change of culture or namesbase offers the names the new one gives
 - River, Lake and Province editors: see how other namesbases render the name
 - Names: every burg name says something, and most end in what the burg is by its group, such as -sk for a Ruthenian city, -ov for a town and -ovo for a village

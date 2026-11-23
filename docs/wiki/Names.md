@@ -49,7 +49,6 @@ A number may stand where a describing word does: Three Towers, Tri Vezhi.
 - **Burg, state, province, river and lake editors** show the meaning under the name. _See the name in other name bases_, the button next to it, lists the name in every base: click one to take it. _Generate culture-specific name_ coins a new meaning and its name in the culture's base; _Generate random name_ does the same in a random base.
 - **A name you type is kept.** The name and the meaning are stored apart and neither overwrites the other, so a name may say something other than its meaning. Nothing renames a place behind your back: changing a burg's or state's culture, a culture's name base or a burg's group offers the new name and waits for a yes.
 - **Cultures editor**: the _Namesbase_ column sets the base of each culture. The arrows beside it re-generate the names of the culture's burgs. _Edit a database used for names generation_, at the bottom, opens the Namesbase Editor.
-- **Options** → **Advanced** → **Names on labels**: show names _As named_, as their _Meaning_, or as any name base would say them. Only the labels change, not the names.
 - **Options** → **Advanced** → **Personal names**: founders that places are named after are _Generated_ anew, _Picked_ from the base's lists as they are, or _As the name base sets_.
 
 ## Name bases
@@ -98,10 +97,10 @@ A meaning is made of **concepts**: a fixed vocabulary such as `town`, `ford`, `n
 Each line of the Lexicon tab gives one concept its forms, commas between:
 
 ```
-town:   -ton 6, -ham 3, town
-fort:   -bury 4, -borough~burgh 2, -chester 2, Keep
-old:    old 2, ald-
-king:   kings- 4, King, King's 3
+town:   +ton 6, +ham 3, town
+fort:   +bury 4, +borough~burgh 2, +chester 2, Keep
+old:    old 2, ald+
+king:   kings+ 4, King, King's 3
 ```
 
 A form is a piece that names are built of, spelled as it is inside a name. Marks around it say what kind of piece it is and how often it is taken.
@@ -113,19 +112,22 @@ A name is one word or a few, and each word is either one form standing alone or 
 - **Compound**: a start and an end that are both real word parts: Ald + bury, Novo + grad.
 - **Suffix**: a stem and a suffix: Berez + ov, Ivan + sk. A suffix is no word on its own, and a stem is the shape a word takes before one.
 
-The mark says which piece a form is. A dash or an equals sign stands on the side where the other piece joins, a dash for a compound and `=` for a suffix. A capital first letter makes a whole word:
+The mark stands on the side where the other piece joins: `+` for a compound, `^` for a suffix. A whole word has a capital first letter, or `!` before it in a script with no capitals, such as Arabic or Chinese. A dash is no mark: it is spelled in the name.
 
-| Written    | Piece                               | Joins                    | Example             |
-| ---------- | ----------------------------------- | ------------------------ | ------------------- |
-| `Keep`     | a whole word                        | nothing, stands apart    | Deepwood Keep       |
-| `-Gorodok` | a whole word that may follow a dash | apart, or a name and `-` | David-Gorodok       |
-| `ald-`     | the start of a compound             | an end                   | Ald + bury: Aldbury |
-| `-ton`     | the end of a compound               | a start                  | New + ton: Newton   |
-| `berez=`   | a stem                              | a suffix                 | Berez + ov: Berezov |
-| `=sk`      | a suffix                            | a stem or a proper name  | Ivan + sk: Ivansk   |
-| `wood`     | any of whole word, start or end     | as the template needs    | Deepwood, Deep Wood |
+| Written           | Piece                                  | Joins                    | Example               |
+| ----------------- | -------------------------------------- | ------------------------ | --------------------- |
+| `Keep` or `!keep` | a whole word                           | nothing, stands apart    | Deepwood Keep         |
+| `-Gorodok`        | a whole word that may follow a dash    | apart, or a name and `-` | David-Gorodok         |
+| `ald+`            | the start of a compound                | an end                   | Ald + bury: Aldbury   |
+| `+ton`            | the end of a compound                  | a start                  | New + ton: Newton     |
+| `ust-+`           | the start of a compound, with its dash | an end or a name         | Ust- + Ekse: Ust-Ekse |
+| `berez^`          | a stem                                 | a suffix                 | Berez + ov: Berezov   |
+| `^sk`             | a suffix                               | a stem or a proper name  | Ivan + sk: Ivansk     |
+| `wood`            | any of whole word, start or end        | as the template needs    | Deepwood, Deep Wood   |
 
-The pieces must match: a stem needs a suffix after it and a suffix a stem before it; a start needs an end and an end a start. So `berez=` + `-grad` and `ald-` + `=sk` never happen. A form with marks on both sides, such as `-ton-`, is not read.
+The pieces must match: a stem needs a suffix after it and a suffix a stem before it; a start needs an end and an end a start. So `berez^` + `+grad` and `ald+` + `^sk` never happen. A form with marks on both sides, such as `+ton+`, is not read.
+
+`-Gorodok` is a word, not the end of a compound: it stands apart, and only a template with a dash, `{root}-{generic}`, puts it after a name. An end would join any start, Novo + gorodok, which is why there is no `+-gorodok`.
 
 A proper name, such as a founder's or a river's, joins like a stem: Ivansk, Davidov. Where the concept has suffixes, the name takes only those, and its whole words stand apart: Ivan-Gorod. Where the concept has none, the name joins its ends: Eadric + ton is Eadricton.
 
@@ -134,7 +136,7 @@ The template decides how many words a name has: `{modifier}{generic}` asks for o
 A whole line read through:
 
 ```
-city:  =sk 4, =ovsk, -grad 2, -Gorod
+city:  ^sk 4, ^ovsk, +grad 2, -Gorod
 ```
 
 A city is mostly a suffix, `-sk`, now and then `-ovsk`: Ivansk, Berezovsk. It is also the end of a compound, Novograd, and a whole word that may follow a dash: Novyi Gorod, Ivan-Gorod.
@@ -143,11 +145,11 @@ A city is mostly a suffix, `-sk`, now and then `-ovsk`: Ivansk, Berezovsk. It is
 
 Three things may follow a form, all optional and in this order:
 
-- `~burgh`: a shorter spelling, taken when the name runs too long. `-borough~burgh` is spelled -burgh in a name that would run too long.
+- `~burgh`: a shorter spelling, taken when the name runs too long. `+borough~burgh` is spelled -burgh in a name that would run too long.
 - `/f`: the noun class, for languages whose words agree; see [Grammar](#grammar).
-- ` 6`: the weight, a whole number after a space: how often the form is taken against the others of the concept, 1 when left out. `-ton 6, -ham 3` makes -ton twice as common as -ham.
+- `6`: the weight, a whole number after a space: how often the form is taken against the others of the concept, 1 when left out. `+ton 6, +ham 3` makes -ton twice as common as -ham.
 
-A form may hold an apostrophe: `King's` gives King's Landing. `*` and `_` belong to the grammar: `nov*` is a word that agrees with its noun, `_` a noun left unsaid.
+A form may hold an apostrophe, `King's` for King's Landing, and a dash anywhere but first, `ust-+`. It may not hold `+ ^ ! _ / ~ @ :` or a comma. `*` and a bare `/n` belong to the grammar: `nov*` is a word that agrees with its noun, `/n` a noun left unsaid.
 
 Use the forms real place names of the language are built of, in the spelling they have inside a name, not dictionary words: English towns end in -ton far more often than in -town.
 
@@ -156,13 +158,13 @@ Use the forms real place names of the language are built of, in the spelling the
 The first four concepts, `city`, `town`, `village` and `hamlet`, are the most important. Every burg belongs to a group, and most burg names are one stem with the ending of the burg's group: a founder, a tree or a river, plus what the burg is. So these four set the sound of the whole map. Forts, monasteries, trading posts and caravanserais take `fort`, `abbey`, `market` and `camp`.
 
 ```
-city:     =sk 6, =ovsk 2, -grad 2, Gorod
-town:     =ov 8, -Gorodok
-village:  =ovo 6, =ovka 4, =ichi 2, Selo
-hamlet:   =ka 5, =ki 4, Hutor
+city:     ^sk 6, ^ovsk 2, +grad 2, Gorod
+town:     ^ov 8, -Gorodok
+village:  ^ovo 6, ^ovka 4, ^ichi 2, Selo
+hamlet:   ^ka 5, ^ki 4, Hutor
 ```
 
-Every concept a burg may be named for needs a stem, such as `berez=` for `birch`, or it never takes the suffixes; a grammar can make the stems (see below). A founder needs none: Davidov, Davidovsk and Davidovo are the rule, David-Gorodok and Davidov Gorodok the exception.
+Every concept a burg may be named for needs a stem, such as `berez^` for `birch`, or it never takes the suffixes; a grammar can make the stems (see below). A founder needs none: Davidov, Davidovsk and Davidovo are the rule, David-Gorodok and Davidov Gorodok the exception.
 
 Keep the suffixes heavy and the full words light, or every other town is a Gorodok. A wider set of endings keeps a large map from repeating itself.
 
@@ -170,7 +172,11 @@ On the Patterns tab, **Names ending in the burg's group** sets how many burg nam
 
 ### Grammar
 
-Languages where words agree and change need a grammar, on the Rules tab, a line each. First the classes of their nouns, `class: pattern`:
+Languages where words agree and change need a grammar, on the Rules tab, a line each.
+
+#### Noun classes
+
+First the classes of their nouns, `class: pattern`:
 
 ```
 f: a$
@@ -179,20 +185,40 @@ pl: [iy]$
 m:
 ```
 
-A noun falls into the first class whose pattern it matches; the last line, with no pattern, takes the rest. Proper names are classed the same way. A noun the pattern gets wrong is told its class: `Pristan/f`.
+A noun falls into the first class whose pattern it matches; the last line, with no pattern, takes the rest. Proper names are classed the same way. A noun the patterns get wrong is told its class after a `/`, and only such a noun:
 
-Then the endings a describing word takes beside a noun of each class, `*: class ending, …`:
+```
+hand:  Desnitsa, Ruka, Dlan/f
+```
+
+All three are feminine. Desnitsa and Ruka end in -a, so `f: a$` finds them; Dlan ends in a consonant and would fall to `m`, so it is marked. A class written on every noun hides the few that need it.
+
+#### Describing words
+
+Then the endings a describing word takes beside a noun of each class, `*: class ending, …`. Where the language has several kinds of describing word, each kind gets a set of its own, `*name: …`, under a name of your choosing. Ruthenian has five, after the kinds of the Russian adjective:
+
+| Set      | For                                        | m, f, n, pl            | Example                     |
+| -------- | ------------------------------------------ | ---------------------- | --------------------------- |
+| `*`      | most words                                 | -yi, -aya, -oye, -ye   | Novyi Gorod, Novaya Sloboda |
+| `*soft`  | a soft stem, mostly in -n                  | -iy, -yaya, -eye, -iye | Verhniy Brod, Sinyaya Gora  |
+| `*hush`  | a stem in zh, ch, sh or sch                | -iy, -aya, -eye, -iye  | Plakuchiy, Plakuchaya       |
+| `*firm`  | a word stressed on its ending              | -oy, -aya, -oye, -ye   | Krivoy, Krutaya, Pustoye    |
+| `*owner` | a possessive of a stem in no hushing sound | -iy, -ya, -ye, -yi     | Lisiy, Lisya, Lisye         |
 
 ```
 *: m yi, f aya, n oye, pl ye
 *soft: m iy, f yaya, n eye, pl iye
 ```
 
+A named set is spelled as it stands; the default endings go through the join rules, so `velik+yi` can become Velikiy. That is why Ruthenian needs `*hush`: after zh, ch and sh its join rules turn the default endings into the possessive ones, `volch*` into Volchiy, Volchya, Volchye, and a word such as `plakuch*hush` is no possessive.
+
 - `nov*` is a describing word: `*` becomes the ending of the noun beside it. Novyi Gorod, Novaya Sloboda, Novoye Selo.
-- `verhn*soft` takes its endings from the set named `soft`: Verhniy Brod, Verhnyaya Gora. A named set is spelled as it stands; the default endings go through the join rules, so `velik+yi` can become Velikiy.
+- `verhn*soft` takes its endings from the set named `soft`: Verhniy Brod, Verhnyaya Gora.
 - `Verhniy/m, Verhnyaya/f` spells a word out for each class instead, where no set fits.
-- `_/n` is a noun left unsaid: the describing word stands alone and still agrees with it, as in Krasnoye for a village.
-- `*` works in a template as well: `{root}ov* {generic}` gives Borisov Brod and Olgina Gora.
+- `/n`, a class with no form before it, is a noun left unsaid. It stands in for the noun of its concept, and the describing word beside it becomes the whole name, with the ending of that class: with `village: …, /n` and `red: krasn*`, a red village is Krasnoye, "the red [village]"; with `river: …, /f`, a red river is Krasnaya. It is taken only beside a describing word, so a name never comes out empty.
+- `*` works in a template as well: `{root}ov* {generic}` gives Borisov Brod and Olgina Gora. `ov` is the possessive suffix most names take; after a name in -a, the join rule `(?<=[^aeiou])y?a\+ov => +in` makes it -in, and `*` takes the ending of Gora: Olga + ov + aya is Olgina.
+
+#### Stems and combining forms
 
 Last, the rules that make a concept's other forms of the ones written, `stem: match => replace` and `first: match => replace`. The first rule of its kind that matches makes the form:
 
@@ -203,16 +229,16 @@ first: \*$ => o
 first: (?:ey|ye|ya|[aoeyi])?$ => o
 ```
 
-- A place and a modifier get a stem of each of their words: `Most` makes `most=`, `Zaimka` makes `zaimk=`.
-- A modifier gets a combining form of each of its stems, or of its words where it has none: `volk=` makes `volko-`, `nov*` makes `novo-`, `verhn*soft` makes `verhne-`.
-- A rule sees the form as written, `*` and all. What still holds a `*` is no stem or combining form, so a describing word gets a stem only from a rule that says so.
-- A form written for the concept takes the place of the grammar's: `kone-` beside `kon=` keeps the rules from making Kono-. Write the forms the rules get wrong, and the variants they cannot know, such as both `ryb=` and `ryba=`.
+- A place and a modifier get a stem of each of their words: `Most` makes `most^`, `Zaimka` makes `zaimk^`.
+- A modifier gets a combining form of each of its stems, or of its words where it has none: `volk^` makes `volko+`, `nov*` makes `novo+`, `verhn*soft` makes `verhne+`.
+- A rule sees the form without the marks of where it stands, but with its `*`. What still holds a `*` is no stem or combining form, so a describing word gets a stem only from a rule that says so.
+- A form written for the concept takes the place of the grammar's: `kone+` beside `kon^` keeps the rules from making Kono-. Write the forms the rules get wrong, and the variants they cannot know, such as both `ryb^` and `ryba^`.
 
 The lexicon tab shows what the grammar makes of each concept when you point at its field.
 
-A stem written with its final `a`, such as `ryba=`, joins as a name ending in -a does: Rybin, Rybino, Rybinsk. A mark of your own inside a form, such as the `'` in `chert'ov*`, is there for a rule to find: the Ruthenian rules turn it into the short possessive endings of Chertov Most and Chertova Gora.
+A stem written with its final `a`, such as `ryba^`, joins as a name ending in -a does: Rybin, Rybino, Rybinsk. A mark of your own inside a form, such as the `'` in `chert'ov*`, is there for a rule to find: the Ruthenian rules turn it into the short possessive endings of Chertov Most and Chertova Gora.
 
-Spelling that depends on the letters at the join belongs to the rules, not here: write the regular ending and let a `join` rule turn `k+yi` into `kiy`.
+Spelling that depends on the letters at the join belongs to the rules, not here: write the regular ending and let a `join` rule turn `k+yi` into `kiy`. In the rules `+` marks every join, of a compound and of a suffix alike.
 
 ### Numbers
 
@@ -227,7 +253,7 @@ $ => s | as pl
 
 A noun already of the class stands as it is, so name the class in the grammar: `pl: [^s]s$` lets Seven Falls be. An irregular noun gets a rule of its own before the others: `tooth$ => teeth | as pl`.
 
-A language may have several such classes. Ruthenian has one for a few, in two genders, and one for many: `Tri/few` gives Tri Ozera, `Dve/fewf` gives Dve Gory, `Sem/many` gives Sem Holmov. A numeral with a combining form joins the name instead and needs no rule: `pyati-` gives Pyatigorsk, `semi-` gives Semiluki.
+A language may have several such classes. Ruthenian has one for a few, in two genders, and one for many: `Tri/few` gives Tri Ozera, `Dve/fewf` gives Dve Gory, `Sem/many` gives Sem Holmov. A numeral with a combining form joins the name instead and needs no rule: `pyati+` gives Pyatigorsk, `semi+` gives Semiluki.
 
 ### Patterns and templates
 
@@ -272,4 +298,4 @@ The **Try a name** box on the tab shows what the rules make of a name.
 
 ### Checking the result
 
-The sample names under the tabs are regenerated on a click. The Lexicon tab counts the concepts written. To see whole names, open a burg or state and press _See the name in other name bases_ next to its meaning: it lists the name in every base. To read a whole map in the base, set _Options_ → _Advanced_ → _Names on labels_ to it.
+The sample names under the tabs are regenerated on a click. The Lexicon tab counts the concepts written. To see whole names, open a burg or state and press _See the name in other name bases_ next to its meaning: it lists the name in every base.

@@ -62,7 +62,6 @@ These apply immediately and are kept in the browser:
 
 - **Autosave interval**: how often, in minutes, the map is saved to browser storage. 0 turns autosave off. The five latest autosaves are kept, and the last autosave of a previous map is the last to go.
 - **On load**: generate a new map or open the most recent browser save when the page opens.
-- **Names on labels**: what the labels of burgs, states, provinces and rivers show. _As named_ shows the names. _Meaning_ shows what each name says, such as New Town, in the interface language. A namesbase shows every name as that namesbase would say it, so the whole map reads in one language. Names that are plain proper names stay as they are, respelled for the chosen namesbase. Nothing in the map changes.
 - **Speaker voice**: the voice used by the speaker buttons next to names. The speaker icon plays a test phrase.
 - **Emblem shape**: the default coat of arms shield shape. Single emblems can still be changed in the Emblem Editor.
 

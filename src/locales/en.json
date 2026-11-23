@@ -14,7 +14,6 @@
   "A sample of the relief the pool places, at the map's sizes and spacing": "A sample of the relief the pool places, at the map's sizes and spacing",
   "A save-location picker is unavailable here; your browser's download settings control the location.": "A save-location picker is unavailable here; your browser's download settings control the location.",
   "A stay covers no ground, so it has no speed": "A stay covers no ground, so it has no speed",
-  "A suffix ends a word after a stem or a proper name. A word with * takes the ending of the noun beside it. _ leaves the noun unsaid": "A suffix ends a word after a stem or a proper name. A word with * takes the ending of the noun beside it. _ leaves the noun unsaid",
   "A transport type with that name already exists": "A transport type with that name already exists",
   "AI Text Generator": "AI Text Generator",
   "AND": "AND",
@@ -215,7 +214,6 @@
   "Arts & leisure": "Arts & leisure",
   "As is": "As is",
   "As its market's center, it also takes the market margin": "As its market's center, it also takes the market margin",
-  "As named": "As named",
   "As the name base sets": "As the name base sets",
   "Ask a question…": "Ask a question…",
   "Assign": "Assign",
@@ -1435,7 +1433,6 @@
   "Hours of travel a day sustains: a caravan walks ~8 h/day, a ship sails 24": "Hours of travel a day sustains: a caravan walks ~8 h/day, a ship sails 24",
   "Hours spent moving or waiting: {{hours}}h, the sum of the segment times. Rest between travel days is not counted.": "Hours spent moving or waiting: {{hours}}h, the sum of the segment times. Rest between travel days is not counted.",
   "Hover Tooltips": "Hover Tooltips",
-  "How a form is written says where it may stand in a name. A form written plain stands anywhere. A word written -Gorodok may also follow a name after a dash": "How a form is written says where it may stand in a name. A form written plain stands anywhere. A word written -Gorodok may also follow a name after a dash",
   "How closely embellishments are spaced, relative to the default": "How closely embellishments are spaced, relative to the default",
   "How closely ripple rows are spaced": "How closely ripple rows are spaced",
   "How closely the strokes are packed, relative to the default. Steep ground packs them tighter": "How closely the strokes are packed, relative to the default. Steep ground packs them tighter",
@@ -1943,7 +1940,6 @@
   "Names data should not be empty": "Names data should not be empty",
   "Names data: a comma separated list of source names used for names generation": "Names data: a comma separated list of source names used for names generation",
   "settled": "settled",
-  "Names on labels": "Names on labels",
   "Names used more than one time": "Names used more than one time",
   "Namesbase": "Namesbase",
   "Namesbase Editor": "Namesbase Editor",
@@ -3022,7 +3018,6 @@
   "Show labels of this group in Labels Overview": "Show labels of this group in Labels Overview",
   "Show markers within a radius of this one": "Show markers within a radius of this one",
   "Show names": "Show names",
-  "Show names as they are, as what they mean, or as another name base would say them. Only the labels change, not the names": "Show names as they are, as what they mean, or as another name base would say them. Only the labels change, not the names",
   "Show on map": "Show on map",
   "Show only labels containing the entered text": "Show only labels containing the entered text",
   "Show only labels of the selected group": "Show only labels of the selected group",
@@ -4363,5 +4358,7 @@
   "{{unit}} units number": "{{unit}} units number",
   "{{wants}} more as wants": "{{wants}} more as wants",
   "Сhase phase. Naval units pursue and rarely shell enemy fleet": "Сhase phase. Naval units pursue and rarely shell enemy fleet",
-  "“{{transport}}” is used by existing segments. Reassign them first.": "“{{transport}}” is used by existing segments. Reassign them first."
+  "“{{transport}}” is used by existing segments. Reassign them first.": "“{{transport}}” is used by existing segments. Reassign them first.",
+  "How a form is written says where it may stand in a name. A form written plain stands anywhere. A capital first letter or a leading ! makes a whole word. A word written -Gorodok may also follow a name after a dash": "How a form is written says where it may stand in a name. A form written plain stands anywhere. A capital first letter or a leading ! makes a whole word. A word written -Gorodok may also follow a name after a dash",
+  "A suffix ends a word after a stem or a proper name. A word with * takes the ending of the noun beside it. A noun class alone, such as /n, leaves the noun unsaid": "A suffix ends a word after a stem or a proper name. A word with * takes the ending of the noun beside it. A noun class alone, such as /n, leaves the noun unsaid"
 }

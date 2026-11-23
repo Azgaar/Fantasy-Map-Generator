@@ -26,7 +26,7 @@ flowchart LR
 | Pattern     | The shape of a meaning: which slots it has                                         | `owner-generic`                     |
 | Meaning     | A pattern with its slots filled, and the base it was coined in                     | `owner-generic: ~Eadric, farm`      |
 | Gloss       | A meaning read in plain English                                                    | Eadric's Farm                       |
-| Form        | How a name base writes a concept inside a name. Not a dictionary word              | `-ton`, `=sk`, `novo-`              |
+| Form        | How a name base writes a concept inside a name. Not a dictionary word              | `+ton`, `^sk`, `novo+`              |
 | Template    | How a name base lays a pattern out                                                 | `{root}s{generic}`                  |
 | Sound rule  | A regex rewrite a base applies where parts meet                                    | `ts+sk` becomes `tsk`               |
 | Rendering   | Meaning plus name base gives a name                                                | `new, town` in English gives Newton |
@@ -55,7 +55,7 @@ Concepts come in five kinds:
 | Foreign roots                       | `Appropriation` ([appropriation.ts](../../src/model/society/names/appropriation.ts))            | nothing                            |
 | The written form of base data       | `NameNotation` ([notation.ts](../../src/model/society/names/notation.ts))                       | nothing                            |
 | Markov names and personal names     | `Names` ([names-generator.ts](../../src/model/society/names/names-generator.ts))                | nothing                            |
-| Names on labels                     | `displayName`, `localGloss` ([name-display.ts](../../src/renderers/labels/name-display.ts))     | `options.app.labels.names`         |
+| Gloss in the interface language     | `localGloss` ([name-display.ts](../../src/renderers/labels/name-display.ts))                    | nothing                            |
 | Name in other bases                 | `NameTranslations` ([name-translations.ts](../../src/controllers/society/name-translations.ts)) | nothing                            |
 | Types                               | [types/names.ts](../../src/types/names.ts)                                                      |                                    |
 
@@ -130,7 +130,7 @@ A base can render any concept. `Lexicon.formsOf` takes the first source that has
 
 1. The base's own lexicon.
 2. The lexicon of the base it `extends`.
-3. The shared lexicon, which holds only `land: -ia`.
+3. The shared lexicon, which holds only `land: +ia`.
 4. Forms coined from the base's place names: its commonest endings for settlements and places, and words off its Markov chain for the rest.
 
 English and Ruthenian are written in full. Human Generic uses plain English words. Other bases write at most their words for a land and coin everything else, so their names sound native but mean nothing a speaker would know: `new, town` in German is Zadetal. A coined form is stable: the same concept always gets the same form in a base.
@@ -153,7 +153,6 @@ A name with no meaning, from an old map or typed by hand, is treated as a proper
 
 - **Burg, state, province, river and lake editors**: the gloss under the name, and a button that lists the name in every name base, with one click to take any of them.
 - **Regenerate name** in those editors coins a new meaning, not just a new name.
-- **Options → Names on labels**: as named, as what they mean, or as one name base would say them. A browser preference (`options.app.labels.names`); the map is not changed.
 - **Options → Personal names**: founders are generated, picked from the base's list as they are, or as each base sets.
 - **Tools → Namesbase**: tabs for Places (with the names of rivers and lakes), People, Lexicon, Patterns and Rules, with sample names and a box to try the rules on a name.
 
@@ -166,7 +165,6 @@ Meanings.gloss(meaning); // "Birch Town"
 localGloss(meaning); // the gloss in the interface language
 Meanings.simplex(burg.name, baseId); // a meaning for a name that has none
 Toponyms.nameIn(burg, cultureId, origin); // its name in a culture's base; undefined when it would not change
-displayName(burg); // what a label shows, by the user's option
 ```
 
 | To                                   | Do                                                                                                                                                                                                                                                                                                                                    |
@@ -177,7 +175,7 @@ displayName(burg); // what a label shows, by the user's option
 | Change how often a pattern is coined | `DEFAULT_WEIGHTS` in `name-rules.ts` for all bases, or `patterns.<pattern>.weight` in one base. 0 turns it off                                                                                                                                                                                                                        |
 | Teach a base real words              | Follow [Preparing a name base](#preparing-a-name-base); the notation is on the [wiki page](../wiki/Names.md#teaching-a-base-its-words)                                                                                                                                                                                                |
 | Add a pattern                        | `Pattern` type, `SLOTS` in `meanings.ts`, `DEFAULT_TEMPLATES` and `DEFAULT_WEIGHTS` in `name-rules.ts`, `Meanings.gloss` and `localGloss`, and a branch in `Toponyms` that fills it                                                                                                                                                   |
-| Give another entity a meaning        | Add `meaning?: Meaning` to it, name it through `Toponyms`, draw its label through `displayName`, and show the gloss and `NameTranslations.open` in its editor                                                                                                                                                                         |
+| Give another entity a meaning        | Add `meaning?: Meaning` to it, name it through `Toponyms`, and show the gloss and `NameTranslations.open` in its editor                                                                                                                                                                                                               |
 
 ## Preparing a name base
 
@@ -207,20 +205,20 @@ The nine patterns are fixed, so a model becomes a pattern, a template and the fo
 
 | Model in the statistics            | Example            | Pattern            | Written as                                            |
 | ---------------------------------- | ------------------ | ------------------ | ----------------------------------------------------- |
-| Possessive suffix on a person      | Kiev, Yaroslavl    | `owner-generic`    | `{root}{generic}`, settlement forms `=ov`, `=j`       |
-| A founder's kin                    | Miloslavichi       | `owner-generic`    | `{root}{generic}`, village forms `=ichi`, `=ovichi`   |
+| Possessive suffix on a person      | Kiev, Yaroslavl    | `owner-generic`    | `{root}{generic}`, settlement forms `^ov`, `^j`       |
+| A founder's kin                    | Miloslavichi       | `owner-generic`    | `{root}{generic}`, village forms `^ichi`, `^ovichi`   |
 | Suffix on a river's name           | Polotsk, Pinsk     | `generic-of`       | `{root}sk`                                            |
 | A river's name as it is            | Moskva, Voronezh   | `generic-of`       | `{root}`                                              |
 | A common word, also in the plural  | Brod, Luki         | `feature`          | words under the concept: `ford: Brod`, `meadow: Luki` |
 | Prefix and suffix on a common word | Zalesye, Podgorye  | `feature`          | words under the concept: `wood: Zalesye`              |
-| Describing word and noun in one    | Novgorod, Belgorod | `modifier-generic` | `{modifier}{generic}`, forms `nov*`, `-gorod`         |
+| Describing word and noun in one    | Novgorod, Belgorod | `modifier-generic` | `{modifier}{generic}`, forms `nov*`, `+gorod`         |
 | The same with a suffix of its own  | Beloberezhye       | `compound`         | `{modifier}{generic}'ye`, a rule for the join         |
 | Two words                          | Novyi Torg         | `modifier-generic` | `{modifier} {generic}`                                |
 | Told apart from a namesake         | Nizhniy Novgorod   | `relative`         | `{modifier} {root}`, `{root} {modifier}`              |
 
 A model that cannot be written is first a question to the engine: can a template or a form be allowed more, for every base? A river's name as it is and a template's own suffix came this way. A model that still cannot be said is left out and noted, never forced into a pattern it does not fit. Ruthenian leaves out verb and noun names and names of a people in -ane.
 
-Before writing a model as whole words, render a few meanings and see what the generator builds unaided. It puts a landscape word before a settlement ending by itself, `heath, town`, so English Morton, Clifton and Marston need only the combining forms `mor-`, `clif-` and `mars-` on the concept's line.
+Before writing a model as whole words, render a few meanings and see what the generator builds unaided. It puts a landscape word before a settlement ending by itself, `heath, town`, so English Morton, Clifton and Marston need only the combining forms `mor+`, `clif+` and `mars+` on the concept's line.
 
 ### 3. Fill the lists
 
