@@ -41,7 +41,6 @@ export const ruthenian: WrittenNameBase = {
       "Devyagoresk",
       "Dichin",
       "Dmitrov",
-      "Dorogobuch",
       "Dorogobuzh",
       "Drestvin",
       "Drokov",
@@ -69,7 +68,6 @@ export const ruthenian: WrittenNameBase = {
       "Hotin",
       "Hotmyzhsk",
       "Ilovech",
-      "Ivan",
       "Izborsk",
       "Izheslavl",
       "Kamenets",
@@ -82,7 +80,7 @@ export const ruthenian: WrittenNameBase = {
       "Kolomyya",
       "Kolyvan",
       "Kopyl",
-      "Korec",
+      "Korets",
       "Kornik",
       "Korochunov",
       "Korshev",
@@ -91,13 +89,11 @@ export const ruthenian: WrittenNameBase = {
       "Kotelno",
       "Kovyla",
       "Kozelsk",
-      "Kozelsk",
       "Kremenets",
       "Krichev",
       "Krylatsk",
       "Ksniatin",
       "Kulatsk",
-      "Kursk",
       "Kursk",
       "Lebedev",
       "Lida",
@@ -120,7 +116,7 @@ export const ruthenian: WrittenNameBase = {
       "Melecha",
       "Merech",
       "Meretsk",
-      "Mescherskoe",
+      "Mescherskoye",
       "Meshkovsk",
       "Metlitsk",
       "Mezetsk",
@@ -145,7 +141,6 @@ export const ruthenian: WrittenNameBase = {
       "Novgorod",
       "Novogorodok",
       "Obolichi",
-      "Obolensk",
       "Obolensk",
       "Oleshsk",
       "Olgov",
@@ -189,7 +184,6 @@ export const ruthenian: WrittenNameBase = {
       "Rzhischev",
       "Sambor",
       "Serensk",
-      "Serensk",
       "Serpeysk",
       "Shilov",
       "Shuya",
@@ -203,10 +197,9 @@ export const ruthenian: WrittenNameBase = {
       "Snitin",
       "Snovsk",
       "Sochevo",
-      "Sokolec",
-      "Starica",
+      "Sokolets",
+      "Staritsa",
       "Starodub",
-      "Stepan",
       "Sterzh",
       "Streshin",
       "Sutesk",
@@ -250,9 +243,8 @@ export const ruthenian: WrittenNameBase = {
       "Vselug",
       "Vyatichsk",
       "Vyatka",
-      "Vyshegorod",
       "Vyshgorod",
-      "Vysokoe",
+      "Vysokoye",
       "Yagniatin",
       "Yaropolch",
       "Yasenets",
@@ -265,6 +257,124 @@ export const ruthenian: WrittenNameBase = {
       "Zubkov",
       "Zudechev",
       "Zvenigorod"
+    ]
+  },
+  waters: {
+    mode: "pick",
+    names: [
+      "Dvina",
+      "Desna",
+      "Pripyat",
+      "Berezina",
+      "Nemiga",
+      "Svisloch",
+      "Ptich",
+      "Sluch",
+      "Goryn",
+      "Teterev",
+      "Sula",
+      "Psel",
+      "Vorskla",
+      "Seym",
+      "Ugra",
+      "Moskva",
+      "Klyazma",
+      "Protva",
+      "Nara",
+      "Volga",
+      "Tvertsa",
+      "Mologa",
+      "Volhov",
+      "Lovat",
+      "Msta",
+      "Pola",
+      "Shelon",
+      "Luga",
+      "Neva",
+      "Sura",
+      "Tsna",
+      "Voronezh",
+      "Sosna",
+      "Donets",
+      "Oskol",
+      "Dnepr",
+      "Dnestr",
+      "Prut",
+      "Seret",
+      "Pina",
+      "Irpen",
+      "Stugna",
+      "Trubezh",
+      "Horol",
+      "Orel",
+      "Zbruch",
+      "Smotrich",
+      "Ushitsa",
+      "Zhizdra",
+      "Zusha",
+      "Nerl",
+      "Tesha",
+      "Pronya",
+      "Osetr",
+      "Lama",
+      "Ruza",
+      "Istra",
+      "Dubna",
+      "Sestra",
+      "Mezha",
+      "Kasplya",
+      "Disna",
+      "Polota",
+      "Obol",
+      "Luchesa",
+      "Drut",
+      "Usha",
+      "Stohod",
+      "Turya",
+      "Lipa",
+      "Tisa",
+      "Pskova",
+      "Sorot",
+      "Kunya",
+      "Polist",
+      "Redya",
+      "Toropa",
+      "Vazuza",
+      "Gzhat",
+      "Vorya",
+      "Bolva",
+      "Snezhet",
+      "Navlya",
+      "Svapa",
+      "Mecha",
+      "Ranova",
+      "Para",
+      "Vysha",
+      "Pyana",
+      "Sozh",
+      "Styr",
+      "Uzh",
+      "Oka",
+      "Don",
+      "Bug",
+      "San",
+      "Ros",
+      "Upa",
+      "Snov",
+      "Oster",
+      "Sudost",
+      "Iput",
+      "Besed",
+      "Vihra",
+      "Irsha",
+      "Lybed",
+      "Rosava",
+      "Vyazma",
+      "Vorona",
+      "Ubed",
+      "Zdvizh",
+      "Pochayna",
+      "Lugan"
     ]
   },
   people: {
@@ -319,9 +429,6 @@ export const ruthenian: WrittenNameBase = {
         "Nezhdan",
         "Mal",
         "Tur",
-        "Sveneld",
-        "Askold",
-        "Dir",
         "Ivan",
         "Vasiliy",
         "Dmitriy",
@@ -347,7 +454,65 @@ export const ruthenian: WrittenNameBase = {
         "Taras",
         "Nestor",
         "Kirill",
-        "Mefodiy"
+        "Mefodiy",
+        "Vladislav",
+        "Boleslav",
+        "Dobroslav",
+        "Sudislav",
+        "Vysheslav",
+        "Yaromir",
+        "Ostromir",
+        "Tvorimir",
+        "Gostomir",
+        "Stanimir",
+        "Radomir",
+        "Velimir",
+        "Dobromir",
+        "Ratmir",
+        "Putislav",
+        "Zhiromir",
+        "Mechislav",
+        "Sbyslav",
+        "Beloslav",
+        "Budislav",
+        "Vratislav",
+        "Tihomir",
+        "Hotimir",
+        "Bratislav",
+        "Svetozar",
+        "Dalibor",
+        "Borivoy",
+        "Zavid",
+        "Domaslav",
+        "Lyubomysl",
+        "Ratislav",
+        "Svyatogor",
+        "Radogost",
+        "Dobrogost",
+        "Milorad",
+        "Zvenimir",
+        "Zdeslav",
+        "Sobeslav",
+        "Velislav",
+        "Radoslav",
+        "Vitoslav",
+        "Pereyaslav",
+        "Peremysl",
+        "Yaromysl",
+        "Dobromysl",
+        "Putimir",
+        "Sudimir",
+        "Tvorislav",
+        "Gostislav",
+        "Svyatobor",
+        "Uleb",
+        "Kosnyata",
+        "Zhiryata",
+        "Gyuryata",
+        "Mikula",
+        "Stavr",
+        "Lyut",
+        "Blud"
       ]
     },
     female: {
@@ -357,7 +522,7 @@ export const ruthenian: WrittenNameBase = {
         "Predslava",
         "Rogneda",
         "Malusha",
-        "Dobroneg",
+        "Dobronega",
         "Verhuslava",
         "Zvenislava",
         "Gorislava",
@@ -404,18 +569,36 @@ export const ruthenian: WrittenNameBase = {
   rules: [
     { match: "(.)\\1+", replace: "$1" },
     String.raw`
+\bpavel\+(?=sk) => pavlov+ | join
+\bpavel\+ => pavl+ | join
+(?<=[aeiuy][vbm]|o[bm])\+j => l | join
+mysl\+j => myshl | join
+gost\+j => gosch | join
+olod\+j => olozh | join
+(?<=[aeiouy]l?)k\+j => ch | join
+(?<=mir|bor|dar|gor|zar)\+j =>  | join
+\+j => +ov | join
+k\+'ye => chye | join
+g\+'ye => zhye | join
+(?<![csz])h\+'ye => shye | join
+ts\+'ye => chye | join
+[aoy]?\+'ye => ye | join
+(?<=[^aeiou])y?a\+ovichi => +ichi | join
 (?<=[^aeiou])y?a\+ov => +in | join
 (?<=[aeiou])y\+ov => yev | join
 (?:iy|i)\+ov => +ev | join
 (ov|ev|yn)\+(?:ov|ev) => $1+ | join
+(?<=[aeiou])y\+sk => yevsk | join
+(?<=[^aeiou])ka\+sk => sk | join
+itsa\+sk => itsk | join
 spas\+sk => spassk | join
 ts\+sk => tsk | join
 (?<=[^aeiou])([gk])a\+sk => $1insk | join
-(?<=[aeiouy][nrlmv])(?:y?a|o)\+sk => sk | join
+(?<=[aeiouy][nrlmvt])(?:y?a|o)\+sk => sk | join
 (?<=[^aeiou])y?a\+sk => insk | join
 sk\+sk => sk | join
 (?<![aeiouy][nrlmyvt]{0,2})\+sk => +ovsk | join
-k\+ki\b => ki | join
+k\+k(?=[ai]\b) => k | join
 (?<=[^aeiouy+][^aeiouy+])\+k(?=[ai]\b) => +ovk | join
 (?<=[^aeiou])[aoey]\+(?=k[ai]\b) => + | join
 (?<=[^aeiouy])[aoe]\+(?=[aeiou]) => + | join
@@ -429,15 +612,16 @@ k\+ki\b => ki | join
 '(ov|ev|in)\+ye => $1y | join
 (?<=zh|ch|sh)\+yi => +iy | join
 (?<=zh|ch|sh)\+aya => +ya | join
-(?<=zh|ch|sh)\+oye => +ye | join
 (?<=zh|ch|sh)\+ye => +i | join
+(?<=zh|ch|sh)\+oye => +ye | join
 (?<=[gkh])\+yi => +iy | join
-(?<=[gkh])\+ye => +iye | join
-(?<=[aeiouy][^aeiouy])o\+(?=gorod|grad) => + | 30%
+(?<=[gk]|(?<![czs])h)\+ye => +iye | join
+(?<=[aeiouy][vlrnm])o\+(?=gorod|grad) => + | 30%
 (?<=[gkh]|zh|ch|sh)a$ => i | as fewf
 ya$ => i | as fewf
 a$ => y | as fewf
 o$ => a | as few
+ye$ => ya | as few
 e$ => ya | as few
 en$ => nya | as few
 ets$ => tsa | as few
@@ -451,11 +635,12 @@ ya$ =>  | as many
 ye$ => iy | as many
 en$ => ney | as many
 ets$ => tsev | as many
+ok$ => kov | as many
 il$ => iley | as many
 (?<=zh|ch|sh)$ => ey | as many
 (?<=[^aeiouy])$ => ov | as many
 gorod$ => grad | long
-ovka$ => ka | long
+k?ovka$ => ka | long
 th => f | foreign
 ^h(?=[aeiou]) => g | foreign
 qu => kv | foreign
@@ -463,444 +648,466 @@ c(?=[eiy]) => ts | foreign
 c(?!h) => k | foreign
 (?<=[ae])u(?=[^aeiou]) => v | foreign`
   ],
-  // a noun's gender or number shows in its ending; a describing word takes the ending that goes with it
-  grammar: `
-f: a$ => aya
-n: [oe]$ => oye
-pl: (?<![aeiouy])[iy]$ => ye
-m: => yi`,
-  lexicon: {
-    city: "-sk:6, -ovsk:2, grad@last:1.5, gorod@last, gorod@word:0.4, grad@word:0.2",
-    town: "-ov:8, -ets, gorod@last:0.5, _/m@word:2, gorodok@word:0.5, gorod@word:0.3, posad@word:0.3",
-    village: "-ovo:6, -ovka:4, -ichi:2, -ovichi, _/n@word:2, selo@word:0.6, sloboda@word:0.3, derevnya@word:0.2",
-    hamlet: "-ka:5, -ki:4, -ovka:2, -y:2, -tsy, _/f@word, _/pl@word, hutor@word:0.5, vyselki@word:0.3, dvory@word:0.2",
+  // a noun's gender or number shows in its ending, and a describing word takes the ending that goes with it;
+  // a place and a modifier take a stem of their words, a modifier a combining form of its stems too
+  grammar: String.raw`
+f: a$
+n: [oe]$
+pl: (?<![aeiouy])[iy]$
+m:
 
-    home: "dvor@word:3, stan@word:2, dvor@stem",
-    farm: "hutor@word:2, pochinok@word, zaimka@word, hutor@stem",
-    hall: "terem@word:3, horomy@word, palaty@word, terem@stem",
-    field: "polye@word:3, pole@word:2, niva@word, niv@stem",
-    wood: "les@word:3, bor@word:3, les@stem:2, bor@stem:3",
-    hill: "gora@word:4, holm@word:2, gorka@word:2, gory@word, gor@stem:3, holm@stem:2, gora@stem",
-    ford: "brod@word:4, perevoz@word, brod@stem:3, brody@word",
-    fort: "-ets:3, ostrog@word:2, gorodets@word, detinets@word:0.5, kreml@word:0.5, gorodok@word:0.5, ostrog@stem",
-    bridge: "most@word:4, mosty@word, most@stem:3",
-    harbour: "pristan/f@word:3, gavan/f@word:2, pristan@stem, gavan@stem",
-    valley: "dol@word:3, log@word:2, yar@word:3, dolina@word, yar@stem:2, dolin@stem:2, log@stem",
-    market: "torg@word:3, torzhok@word:2, posad@word:2, yarmarka@word, torg@stem:2, posad@stem",
-    castle: "zamok@word:3, kreml@word:2, zamk@stem",
-    mouth: "ust-@first:5, ustye@word:3, ust@stem",
-    mount: "gora@word:3, kamen@word, verh@word, gor@stem:2",
-    shore: "bereg@word:3, bereg@stem:2",
-    island: "ostrov@word:4, ostrov@stem:2",
-    lake: "ozero@word:4, ozer@stem:4, ozerk@stem",
-    haven: "zaton@word:2, gavan/f@word:2, zaton@stem:2",
-    marsh: "boloto@word:3, bolotye@last, bolot@stem:3",
-    spring: "klyuch@word:3, klyuchi@word:2, rodnik@word:2, krinitsa@word, klyuch@stem:2, rodnik@stem:2, rodniki@word",
-    meadow: "lug@word:3, luki@word:2, polyana@word:2, lug@stem:2, polyan@stem:2",
-    grove: "roscha@word:3, dubrava@word:2, gai@word, dubrav@stem:2, roscha@stem:2",
-    bank: "bereg@word:2, yar@word:2, kosa@word, krucha@word, bereg@stem, yar@stem",
-    mill: "mlyn@word:3, melnitsa@word, mlyn@stem:3",
-    bay: "guba@word:2, zaliv@word:2, zatoka@word, zaliv@stem:2, gub@stem, guba@stem:2",
-    cape: "mys@word:3, nos@word:2, mys@stem:2",
-    cliff: "skala@word:3, utes@word:2, skal@stem:2, skala@stem",
-    tower: "vezha@word:3, bashnya@word, stolp@word, vezh@stem, stolp@stem",
-    ridge: "gryada@word:2, kryazh@word:2, hrebet@word, gryad@stem, kryazh@stem",
-    pass: "volok@word:3, pereval@word:2, vorota/pl@word, volok@stem:3",
-    heath: "step/f@word:2, pustosh/f@word:2, pustosh@stem:2, step@stem",
-    pool: "prud@word:3, prudy@word:2, stav@word:2, omut@word, prud@stem:3",
-    well: "kolodez@word:3, krinitsa@word:2, kolodez@stem:2",
-    camp: "stan@word:3, yam@word:2, dvor@word:2, tabor@word, stan@stem:2, yam@stem:2",
-    mine: "rudnik@word:2, kopi@word:2, ruda@word, rud@stem:3, rudnik@stem:2, ruda@stem:2",
-    quarry: "lom@word:2, lom@stem:2",
-    temple: "hram@word:2, sobor@word:2, pogost@word:2, tserkov/f@word:2, pogost@stem:2, hram@stem",
-    abbey: "monastyr@word:3, pustyn/f@word:2, skit@word:2, obitel/f@word, lavra@word, monastyr@stem, skit@stem",
-    river: "reka@word:3, rechka@word:2",
-    brook: "ruchey@word:3, potok@word:2",
-    water: "voda@word:3, vody@word:2",
-    keep: "tverdynya@word:2, detinets@word:2, tverd@stem",
-    hold: "zastava@word:3, oplot@word:2, zastav@stem:2",
-    watch: "dozor@word:2, storozha@word:2, karaul@word, dozor@stem, storozh@stem:2",
-    rest: "priyut@word:3, otdyh@word, priyut@stem:2",
-    end: "konets@word:2, kray@word:2, kray@stem",
-    landing: "prichal@word:3, prichal@stem",
-    gate: "vorota/pl@word:3, vrata/pl@word, vorot@stem:2",
-    wall: "val@word:3, stena@word:3, val@stem:2, sten@stem",
-    rock: "kamen@word:3, skala@word:2, utes@word, kamen@stem:2",
-    crag: "krucha@word:2, skala@word, kruch@stem:2",
-    fell: "nagorye@word:2, verhovye@word, nagor@stem:2",
-    run: "protok@word:2, bystrina@word:2, protok@stem",
-    falls: "vodopad@word:3, porogi@word:2, porog@word:2, porog@stem:2",
-    garden: "sad@word:3, sady@word:2, sad@stem:3",
-    hedge: "tyn@word:3, pleten@word, tyn@stem:2",
-    den: "logovo@word:3, berloga@word:2, nora@word, logov@stem",
-    nest: "gnezdo@word:3, gnezd@stem:2",
-    roost: "gnezdovye@word:2, nasest@word",
-    hearth: "ochag@word:3, ochag@stem:2",
-    court: "dvor@word:3, podvorye@word:2, dvor@stem:2",
-    seat: "prestol@word:2, stol@word:2, stol@stem",
-    tooth: "zub@word:3, klyk@word:2, zub@stem:2",
-    horn: "rog@word:3, rog@stem:3",
-    spear: "kopye@word:3",
-    shield: "schit@word:3, schit@stem:2",
-    heart: "serdtse@word:3",
-    eye: "oko@word:3, glaz@word",
-    hand: "desnitsa@word:2, ruka@word:2, dlan/f@word",
-    finger: "perst@word:2, palets@word:2, persty@word",
-    claw: "kogot@word:3, lapa@word",
-    head: "golova@word:3, glava@word:2, golov@stem",
-    point: "mys@word:3, kosa@word:2, strelka@word:2",
-    reef: "rif@word:2, kamni@word:2, mel/f@word:2",
-    sands: "peski@word:3, pesok@word, pesk@stem:2",
-    dune: "barhan@word:3, dyuna@word:2, barhan@stem",
-    waste: "pustosh/f@word:3, pustynya@word:2",
-    fen: "top/f@word:2, tryasina@word:2, boloto@word",
-    glade: "polyana@word:3, progalina@word, polyan@stem:2",
-    glen: "balka@word:3, loschina@word:2, balk@stem:2",
-    hollow: "loschina@word:3, yama@word:2, kotlovina@word, yam@stem:2",
-    gorge: "uschelye@word:3, tesnina@word:2",
-    peak: "vershina@word:3, pik@word:2, shpil/m@word, vershin@stem",
-    spire: "shpil/m@word:3, igla@word:2",
-    cave: "peschera@word:3, peschery@word:2, pescher@stem:2",
-    forge: "kuznya@word:3, kuznitsa@word:2, gorn@word",
-    barrow: "kurgan@word:3, mogila@word:2, kurgan@stem:3",
-    grave: "mogila@word:3, pogost@word:2, mogil@stem:2",
-    shrine: "chasovnya@word:3, svyatynya@word:2, kapische@word:2",
-    hermitage: "skit@word:3, pustyn/f@word:3, kelya@word, skit@stem",
-    crossing: "perevoz@word:3, pereprava@word:2, perevoz@stem:2",
-    ferry: "parom@word:3, perevoz@word:2, parom@stem:2",
-    fork: "strelka@word:3, razvilka@word:2",
-    bend: "luka@word:3, izluchina@word:2, koleno@word, luk@stem:2",
-    beacon: "mayak@word:3, mayak@stem:3",
-    square: "maydan@word:3, ploschad/f@word:2, maydan@stem:2",
-    inn: "korchma@word:3, traktir@word:2",
-    barn: "ambar@word:3, gumno@word:2, riga@word, ambar@stem:2",
-    vineyard: "vinogradnik@word:2, vinograd@word:2, vinograd@stem:3",
-    pasture: "vygon@word:3, pastbische@word:2, vygon@stem:2",
-    lodge: "zaimka@word:3, zimovye@word:2, storozhka@word:2",
-    table: "stol@word:3",
-    tarn: "ozerko@word:3, ozertso@word:2",
-    tree: "derevo@word:3, drevo@word:2",
-    way: "shlyah@word:3, put/m@word:2, doroga@word:2, trakt@word, shlyah@stem",
-    dike: "gat/f@word:3, damba@word:2, nasyp/f@word, gat@stem:2",
-    song: "pesn/f@word:3, pesnya@word:2",
-    hope: "nadezhda@word:3, nadezhd@stem:2",
-    guard: "strazha@word:3, zastava@word:2, strazh@stem:2",
-    stair: "lestnitsa@word:3, stupeni/pl@word:2",
+*: m yi, f aya, n oye, pl ye
+*soft: m iy, f yaya, n eye, pl iye
+*hush: m iy, f aya, n eye, pl iye
+*firm: m oy, f aya, n oye, pl ye
+*owner: m iy, f ya, n ye, pl yi
 
-    new: "novo@first, nov*",
-    old: "staro@first, star*",
-    great: "veliko@first, velik*",
-    little: "malo@first, mal*",
-    long: "dolgo@first, dolg*",
-    broad: "shiroko@first, shirok*",
-    deep: "gluboko@first, glubok*",
-    high: "vysoko@first:2, vyshe~vysh@first, vysok*",
-    low: "nizko@first:2, nizo@first, nizk*",
-    upper: "verhne@first:3, verh@first, verhniy/m@word, verhnyaya/f@word, verhneye/n@word, verhniye/pl@word",
-    lower: "nizhne@first, nizhniy/m@word, nizhnyaya/f@word, nizhneye/n@word, nizhniye/pl@word",
-    middle: "sredne@first:3, mezh@first, sredniy/m@word, srednyaya/f@word, sredneye/n@word, sredniye/pl@word",
-    north: "severo@first, severn*",
-    south: "yuzhno@first, yuzhn*",
-    east: "vostochno~vosto@first, vostochn*",
-    west: "zapadno~zapad@first, zapadn*",
-    black: "cherno@first, chern*:2, chern@stem",
-    white: "belo@first:2, bel*:2, bel@stem",
-    red: "krasno@first:2, chervono@first, krasn*:3, krasn@stem",
-    green: "zeleno@first, zelen*:2",
-    golden: "zlato@first, zolot*:2",
-    grey: "sero@first, sedo@first, ser*:2, ser@stem",
-    blue: "sine@first, siniy/m@word, sinyaya/f@word, sineye/n@word, siniye/pl@word",
-    dark: "temno@first, temn*",
-    bright: "svetlo@first:2, yasno@first, svetl*:2, yasn*",
-    oak: "dubo@first, dub@stem:5, dubov*",
-    pine: "sosno@first, sosnov@stem:3, bor@stem:3, sosnov*, borov*, sosna@stem:2",
-    birch: "berezo@first, berez@stem:5, berezov*, bereza@stem:2",
-    ash: "yaseno@first, yasen@stem:4, yasenev*",
-    elm: "vyazo@first, vyaz@stem:4, vyazov*",
-    willow: "ivo@first, verb@stem:3, rakit@stem:3, ivov*, verbn*, iva@stem:2, verba@stem:2",
-    thorn: "terno@first, tern@stem:4, ternov*",
-    reed: "kamysho@first, kamysh@stem:4, kamyshov*",
-    rose: "rozo@first, roz@stem:3, rozov*, roza@stem",
-    apple: "yablono@first, yablon@stem:4, yablonev*",
-    wolf: "volko@first, volk@stem:5, volch*",
-    bear: "medvezhe~medve@first, medved@stem:5, medvezh*",
-    eagle: "orlo@first, orl@stem:5, orlin*",
-    deer: "oleno@first, olen@stem:3, los@stem:3, losin*, olen*",
-    horse: "kone@first, kon@stem:4, konsk*",
-    ox: "turo@first, byko@first, tur@stem:3, byk@stem:3, vol@stem, bych*",
-    sheep: "ovche@first, ovts@stem:3, ovech*",
-    goat: "kozlo@first, kozl@stem:3, kozel@stem:2, koz*, koza@stem:3",
-    fox: "liso@first, lis@stem:5, lisiy/m@word, lisya/f@word, lisye/n@word, lisyi/pl@word, lisa@stem:3",
-    boar: "vepre@first, kabano@first, vepr@stem:2, kaban@stem:4, kaban*",
-    raven: "vorono@first, voron@stem:5, voron*, vorona@stem:3",
-    hawk: "sokolo@first, yastrebo@first, sokol@stem:4, yastreb@stem:2, sokolin*",
-    swan: "lebede@first, lebed@stem:4, lebedin*, lebyazh*",
-    crane: "zhuravle~zhurav@first, zhuravl@stem:4, zhuravlin*",
-    gull: "chaiko@first, chaik@stem:4, chaich*, chaika@stem:2",
-    seal: "nerpo@first, tyuleno@first, tyulen@stem:3, nerp@stem:2, tyulen*",
-    fish: "rybo@first, ryb@stem:3, rybn*:2, ryba@stem:3",
-    otter: "vydro@first, vydr@stem:4, vydrin*, vydra@stem:2",
-    stone: "kameno@first, kamen@stem:5, kamenn*:2",
-    iron: "zhelezno~zhelez@first, zhelez@stem:2, zhelezn*:2",
-    copper: "medno@first, med@stem:2, medn*:2",
-    silver: "srebro@first, serebr@stem:2, serebryan*:2",
-    gold: "zoloto@first:2, zlato@first, zolot@stem:3, zolot*:2",
-    salt: "soli@first:3, sol@stem:3, solyan*, solen*",
-    sand: "pesko@first, pesk@stem:3, peschan*:2",
-    clay: "glino@first, glin@stem:4, glinyan*",
-    chalk: "melo@first, mel@stem:3, melov*",
-    cold: "holodno@first, studeno@first, studen@stem:2, holodn*:2, studen*",
-    warm: "teplo@first, tepl*",
-    dry: "suho@first, suh*",
-    wet: "mokro@first, mokr*",
-    wind: "vetro@first, vetr@stem:3, vetren*:2",
-    mist: "tumano@first, mglo@first, tuman@stem:3, tumann*:2",
-    snow: "snezhno@first:2, snego@first, sneg@stem:2, snezhn*:3",
-    storm: "burno@first, grozo@first, groz@stem:2, grozn*:2, burn*, groza@stem:2",
-    quiet: "tiho@first, tih@stem, tih*:3",
-    wild: "diko@first, dik*",
-    fair: "dobro@first:2, ladno@first, dobr@stem, dobr*:3",
-    holy: "svyato@first:3, spaso@first, spas@stem:3, svyat*:3",
-    free: "volno@first, slobodo@first, slobod@stem:2, voln*:3",
-    king: "knyazhe~knyazh@first:2, tsare@first, knyazh@stem:2, tsar@stem:3, knyazh*:2, tsarsk*:2, tsar'ev*:3",
-    queen: "knyagin@first, knyaginya@stem:3, tsaritsyn@stem:3, tsaritsyn@word, knyagin@word",
-    lord: "boyaro@first, boyar@stem:4, pan@stem:2, boyarsk*, pansk*",
-    priest: "popo@first, pop@stem:5, vladychn*, pop'ov*:3",
-    merchant: "gosti@first:2, kuptse@first, kupts@stem:3, gost@stem:2, gostin*",
-    hunter: "ohotno@first, lovche@first, ohotnik@stem:3, lovch*, ohotnich*",
-    fisher: "rybatsko@first, rybak@stem:4, rybach*:2, rybatsk*",
-    smith: "koval@first, koval@stem:3, kuznets@stem:4, kuznechn*, kuznetsk*:3",
-    shepherd: "pastushe@first, pastuh@stem:4, chaban@stem:2, pastush*",
-    winter: "zimne@first, zim@stem:2, zimniy/m@word:3, zimnyaya/f@word:3, zimneye/n@word:3, zimniye/pl@word:3",
-    summer: "letne@first, let@stem, letniy/m@word:3, letnyaya/f@word:3, letneye/n@word:3, letniye/pl@word:3",
-    autumn: "osenne@first, osenniy/m@word:3, osennyaya/f@word:3, osenneye/n@word:3, osenniye/pl@word:3",
-    dusk: "vecherne@first, zakat@stem:2, vecherniy/m@word:3, vechernyaya/f@word:3, vecherneye/n@word:3, vecherniye/pl@word:3",
-    dawn: "zare@first, zor@stem:2, rassvet@stem:2, rassvetn*:3",
-    night: "nochno@first, nochn*:3",
-    sun: "solnechno@first, solnts@stem:3, solnechn*:3",
-    moon: "lunno@first, lun@stem:2, lunn*:3",
-    star: "zvezdo@first, zvezd@stem:2, zvezdn*:3",
-    sky: "nebesno@first, nebesn*:3",
-    cloud: "oblachno@first, tuch@stem:2, oblachn*:3",
-    rain: "dozhde@first, dozhdliv*:3",
-    frost: "morozo@first, moroz@stem:4, morozn*:3",
-    ice: "ledo@first, ledov@stem:2, ledyan*:3",
-    thunder: "gromo@first, grom@stem:3, gromov*:2",
-    shadow: "tene@first, tenist*:3",
-    fire: "ogne@first:2, ognev@stem:2, zhar@stem, ognenn*:3",
-    ember: "iskro@first, iskr@stem:3, iskrist*:2",
-    cinder: "zolo@first, zol@stem:2, pepel@stem:2, pepeln*:2",
-    smoke: "dymo@first, dym@stem:3, dymn*:3",
-    blood: "krovavo@first, krovav*:3",
-    bone: "kosto@first, kost@stem:3, kostyan*:2",
-    dust: "pyle@first, pyln*:3",
-    mud: "gryaze@first, gryaz@stem:3, gryazn*:3",
-    moss: "mohovo@first, moh@stem:3, mohov*:3",
-    amber: "yantarno@first, yantar@stem:2, yantarn*:3",
-    pearl: "zhemchuzhno@first, zhemchug@stem:2, zhemchuzhn*:3",
-    glass: "steklo@first, stekl@stem, steklyann*:2",
-    crystal: "hrustalno@first, hrustal@stem:2, hrustaln*:3",
-    tin: "olovyanno@first, olovyann*:3",
-    bronze: "bronzo@first, bronzov*:3",
-    steel: "stale@first, stal@stem:2, staln*:3",
-    coal: "ugle@first:2, ugol@stem:2, ugoln*:3",
-    flint: "kremne@first, kremen@stem:3, kremnev*:2",
-    marble: "mramorno@first, mramor@stem:2, mramorn*:3",
-    slate: "slantse@first, slants@stem:2, slantsev*:2",
-    honey: "medo@first:2, medov@stem:2, medov*:3",
-    milk: "molochno@first, molok@stem:2, molochn*:3",
-    wine: "vino@first, vinn*:3",
-    wheat: "zhito@first, zhit@stem:3, pshenichn*:3",
-    barley: "yachmenno@first, yachmen@stem:2, yachmenn*:2",
-    rye: "rzhano@first, rzhan*:3",
-    hay: "seno@first, sen@stem:3, senn*:3",
-    flax: "lno@first, lnyan*:3",
-    wool: "shersto@first, sherstyan*:2",
-    hop: "hmele@first, hmel@stem:3, hmelev*:2",
-    pea: "goroho@first, goroh@stem:3, gorohov*:2",
-    dun: "buro@first, bur@stem, bur*:3",
-    pale: "bledno@first, bledn*:3",
-    crimson: "bagryano@first, alo@first, bagryan*:3, al*:2",
-    yellow: "zhelto@first, zhelt@stem, zhelt*:3",
-    last: "posledne@first, posledniy/m@word:3, poslednyaya/f@word:3, posledneye/n@word:3, posledniye/pl@word:3",
-    far: "dalne@first:2, dalniy/m@word:3, dalnyaya/f@word:3, dalneye/n@word:3, dalniye/pl@word:3",
-    lone: "odinoko@first, odinok*:3",
-    lost: "zabyto@first, zabyt*:3",
-    hidden: "tayno@first, tayn*:3",
-    broken: "lomano@first, loman*:2, razbit*:2",
-    burnt: "gorelo@first, gorel@stem:3, pal@stem:2, gorel*:3, palen*:2",
-    drowned: "topko@first, zatoplenn*:3, topk*:2",
-    bitter: "gorko@first, gork*:3",
-    sweet: "sladko@first, sladk@stem, sladk*:3",
-    hard: "tverdo@first, tverd*:3",
-    strong: "krepko@first, silno@first, siln*:3, krepk*:2",
-    sharp: "ostro@first:2, ostr*:3",
-    dread: "strashno@first, strashn*:3, zhutk*",
-    grim: "ugryumo@first, ugryum@stem:2, ugryum*:3, mrachn*:2",
-    merry: "veselo@first, vesel@stem:2, vesel*:3",
-    weeping: "plach@stem:2, plakuchiy/m@word:3, plakuchaya/f@word:3, plakucheye/n@word:3, plakuchiye/pl@word:3",
-    whispering:
-      "shepot@stem:2, shepchuschiy/m@word:2, shepchuschaya/f@word:2, shepchuscheye/n@word:2, shepchuschiye/pl@word:2",
-    haunted: "nechisto@first, nechist*:3, zakoldovann*",
-    sleeping: "sonno@first, sonn*:3",
-    wandering: "kochev*:2, brodyachiy/m@word:3, brodyachaya/f@word:3, brodyacheye/n@word:3, brodyachiye/pl@word:3",
-    singing: "zvonko@first, zvonk*:3, pevchiy/m@word:2, pevchaya/f@word:2, pevcheye/n@word:2, pevchiye/pl@word:2",
-    crooked: "krivo@first:2, kriv@stem:3, krivoy/m@word:3, krivaya/f@word:3, krivoye/n@word:3, krivye/pl@word:3",
-    barren: "golo@first, gol*:3, pustoy/m@word:2, pustaya/f@word:2, pustoye/n@word:2, pustye/pl@word:2",
-    bleak: "hmuro@first, unyl*:2, hmur*:3",
-    proud: "gordo@first, gord@stem, gord*:3",
-    rich: "bogato@first, bogat@stem:2, bogat*:3",
-    poor: "bedno@first, bedn*:3, ubog*:2",
-    cursed: "proklyato@first, proklyat*:3",
-    blessed: "blago@first:3, blagodatn*:3",
-    narrow: "uzko@first, uzk*:3",
-    steep: "kruto@first:2, krut@stem:2, krutoy/m@word:3, krutaya/f@word:3, krutoye/n@word:3, krutye/pl@word:3",
-    flat: "rovno@first, rovn*:3, plosk*:2",
-    round: "kruglo@first:2, krugl*:3",
-    swift: "bystro@first:2, bystr@stem, bystr*:3",
-    clear: "chisto@first:3, chist*:3",
-    true: "verno@first, pravd@stem:2, vern*:3",
-    dead: "mertvo@first, mertv*:3",
-    lucky: "schastlivo@first, schastliv*:3, udachn*:3",
-    dragon: "zmeino@first:2, zmeye@first, zmey@stem:4, drakon@stem, zmein*:3",
-    griffin: "grifo@first, grif@stem:3, grifon@stem, grifov*:2",
-    serpent: "uzh@first:2, uzh@stem:2, gadyuk@stem:2, gadyuch*:3",
-    kraken: "spruto@first, sprut@stem:3, sprutov*:2",
-    lion: "lvo@first, lvov@stem:4, lvin*:3",
-    ram: "barano@first, baran@stem:3, baraniy/m@word:2, baranya/f@word:2, baranye/n@word:2, baranyi/pl@word:2",
-    hound: "pso@first, psar@stem:2, sobaka@stem:3, sobach*:3",
-    cat: "koto@first, kot@stem:3, koshka@stem:2, koshach*:2",
-    hare: "zaytse@first, zayts@stem:3, zayach*:3",
-    badger: "barsuko@first, barsuk@stem:3, barsuch*:3",
-    beaver: "bobro@first, bobr@stem:4, bobrov*:3",
-    rat: "kryso@first, krys@stem:2, krysin*:2",
-    bat: "netopyre@first, netopyr@stem:3",
-    owl: "sovo@first, sova@stem:3, filin@stem:2, sovin*:3",
-    crow: "grache@first, grach@stem:3, galka@stem:3, voroniy/m@word:3, voronya/f@word:3, voronye/n@word:3, voronyi/pl@word:3",
-    heron: "tsaple@first, tsaplya@stem:3, tsaplin*:2",
-    goose: "gusino@first, guse@first, gus@stem:3, gusin*:3",
-    duck: "utko@first, utka@stem:3, utin*:2",
-    dove: "golube@first, golub@stem:3, golubin*:3",
-    lark: "zhavoronko@first, zhavoronk@stem:3",
-    nightingale: "solovye@first, solovy@stem:3, solov@stem:2, solovin*:3",
-    stork: "aisto@first, aist@stem:3, busl@stem:2, aistin*:2",
-    pike: "schuche@first, schuka@stem:3, schuch*:3",
-    salmon: "losose@first, losos@stem:3, lososev*:2",
-    eel: "ugre@first, ugor@stem:3",
-    crab: "krabo@first, krab@stem:3, krabov*:2",
-    whale: "kito@first, kit@stem:3, kitov*:3",
-    toad: "zhabo@first, zhaba@stem:3, zhabiy/m@word:2, zhabya/f@word:2, zhabye/n@word:2, zhabyi/pl@word:2",
-    lizard: "yaschero@first, yascher@stem:3, yascherin*",
-    spider: "pauko@first, pauk@stem:3, pauch*:2",
-    bee: "pchelo@first, pchela@stem:3, bort@stem:2, pchelin*:3",
-    bison: "zubro@first, zubr@stem:4, zubrov*:2",
-    lynx: "ryse@first, rys@stem:3, rysiy/m@word:2, rysya/f@word:2, rysye/n@word:2, rysyi/pl@word:2",
-    sable: "sobole@first, sobol@stem:4, sobolin*:3",
-    camel: "verblyuzhe@first, verblyud@stem:3, verblyuzh*:3",
-    rooster: "kuro@first, petuh@stem:3, petush@stem:3, kur@stem:3, petush*:2",
-    holly: "padubo@first, padub@stem:3, padubov*",
-    ivy: "plyusche@first, plyusch@stem:3, plyuschev*",
-    yew: "tiso@first, tis@stem:3, tisov*:2",
-    alder: "olho@first, olh@stem:4, olhov*:3",
-    hazel: "orehovo@first, oreh@stem:4, leschin@stem:2, orehov*:3",
-    rowan: "ryabino@first, ryabin@stem:3, ryabina@stem:2, ryabinov*:3",
-    linden: "lipo@first:2, lip@stem:5, lipa@stem:2, lipov*:3",
-    beech: "buko@first, buk@stem:4, bukov*:3",
-    maple: "kleno@first, klen@stem:4, klenov*:3",
-    aspen: "osino@first, osin@stem:4, osinov*:3",
-    poplar: "topole@first, topol@stem:4, topolev*:3",
-    spruce: "elo@first, elov@stem:4, elnik@stem:2, elov*:3",
-    cedar: "kedro@first, kedr@stem:4, kedrov*:3",
-    heather: "veresko@first, veresk@stem:4, vereskov*:3",
-    nettle: "krapivo@first, krapiv@stem:2, krapiva@stem:3, krapivn*:3",
-    poppy: "mako@first, mak@stem:4, makov*:3",
-    cherry: "vishne@first, vishnev@stem:4, vishnev*:4",
-    pear: "grushe@first, grush@stem:3, grusha@stem:2, grushev*:3",
-    berry: "yagodo@first, yagoda@stem:3, yagodn*:4",
-    mushroom: "gribo@first, grib@stem:4, gribn*:3",
-    flower: "tsveto@first, tsvet@stem:3, tsvetk@stem:2, tsvetn*:3",
-    leaf: "listo@first, listvyan@stem:3, listvenn*:2",
-    acorn: "zhelude@first, zhelud@stem:4, zheludev*:2",
-    grass: "travo@first, trav@stem:3, travyan*:3",
-    lady: "pani@first, barynya@stem:3, boyarynya@stem:2",
-    maiden: "deviche@first, deva@stem:3, devich*:4",
-    widow: "vdovo@first, vdova@stem:4, vdoviy/m@word:2, vdovya/f@word:2, vdovye/n@word:2, vdovyi/pl@word:2",
-    knight: "vityaze@first, vityaz@stem:3, bogatyr@stem:3, bogatyrsk*:2",
-    monk: "monashe@first, monah@stem:3, chernets@stem:2, monash*:3",
-    hermit: "otshelniche@first, otshelnik@stem:3, pustynnik@stem:2, otshelnich*:2",
-    witch: "vedmo@first, vedma@stem:4, koldun@stem:3, vedm'in*:3",
-    giant: "voloto@first, volot@stem:3, velikan@stem:3, ispolin@stem, ispolinsk*:2",
-    ghost: "navye@first, mara@stem:3, prizrak@stem:2, prizrachn*:3",
-    god: "bogo@first:3, bog@stem:2, bozh*:4",
-    devil: "cherto@first, chert@stem:4, bes@stem:2, chert'ov*:4, bes'ov*:2",
-    thief: "voro@first, vor@stem:3, tat@stem:2, vorovsk*:3",
-    robber: "razboyniche@first, razboynik@stem:3, razboy@stem:2, razboynich*:4",
-    beggar: "nische@first, nisch@stem:3, nischiy/m@word:3, nischaya/f@word:3, nischeye/n@word:3, nischiye/pl@word:3",
-    pilgrim: "stranniche@first, strannik@stem:3, palomnik@stem:2, kalika@stem:2, strannich*:3",
-    sailor: "more@first, moryak@stem:3, morehod@stem:2, morsk*:4",
-    raider: "varyago@first, varyag@stem:3, ushkuynik@stem:2, ushkuy@stem:2, varyazhsk*:3",
-    miller: "melniche@first, melnik@stem:4, melnich*:3",
-    weaver: "tkache@first, tkach@stem:4, tkatsk*:3",
-    potter: "goncharo@first, gonchar@stem:4, goncharn*:3",
-    tanner: "kozhe@first, kozhevnik@stem:3, kozhemyaka@stem:3, kozhevenn*:2",
-    carpenter: "plotniche@first, plotnik@stem:4, plotnitsk*:3",
-    cooper: "bondare@first, bondar@stem:4, bochar@stem:3, bondarn*:2",
-    archer: "streletsko@first, strelts@stem:4, luchnik@stem:3, streletsk*:4",
-    warden: "storozhe@first, storozh@stem:4, storozhev*:3, dozorn*:3",
-    warrior: "voino@first, voin@stem:4, ratnik@stem:2, druzhina@stem:3, ratn*:3, voinsk*:2",
-    elder: "dedo@first, ded@stem:4, starosta@stem:3, starts@stem:3, ded'ov*:3",
-    orphan: "siroto@first, sirota@stem:4, sirotsk*:4",
-    fool: "durako@first, durak@stem:4, shut@stem:3, yurod@stem, duratsk*:2, shutovsk*:2",
-    crone: "babye@first, baba@stem:5, staruha@stem:2, babiy/m@word:4, babya/f@word:4, babye/n@word:4, babyi/pl@word:4",
-    brother: "brato@first, brat@stem:4, bratsk*:4",
-    sister: "sestro@first:2, sestra@stem:4, sestr'in*:3",
-    friend: "druzhno@first, drug@stem:2, druzhk@stem:2, druzhba@stem:2, druzhn*:4",
-    sword: "meche@first, mech@stem:4, mechev*:2",
-    axe: "toporo@first, topor@stem:4, sekira@stem:2, toporn*:2",
-    hammer: "moloto@first, molot@stem:4",
-    arrow: "strelo@first, strel@stem:3, strela@stem:3, strelchat*",
-    bell: "kolokolo@first, kolokol@stem:4, zvon@stem:3, zvonar@stem:2, kolokoln*:3",
-    harp: "guslo@first, gusl@stem:3, guslyar@stem:3",
-    cup: "chasho@first, chasha@stem:3, chashnik@stem:3",
-    wheel: "koleso@first, koles@stem:4, kolesnik@stem:3, kolesn*:2",
-    anchor: "yakore@first, yakor@stem:4, yakorn*:4",
-    sail: "paruso@first, parus@stem:3, parusn*:4",
-    boat: "lodeyno@first, chelno@first, cheln@stem:4, lodka@stem:3, lodeyn*:4",
-    ship: "korable@first, korabl@stem:3, korabeln*:4",
-    candle: "svecho@first, svecha@stem:4, svechn*:3",
-    ring: "koltso@first, kolts@stem:4, koltsev*:3",
-    feast: "piro@first, pir@stem:4, prazdnichn*:3",
-    cross: "kresto@first:2, krest@stem:4, krestov*:3",
-    treasure: "klado@first, klad@stem:4, kazna@stem:2, kladov*:2",
-    skull: "cherepo@first, cherep@stem:4, cherepov@stem:2",
-    feather: "pero@first, per@stem:4, perist*:2",
-    wing: "krylo@first, kryl@stem:4, krylat*:4, krylatsk*:2",
-    gallows: "viselno@first, glagol@stem:3, viselitsa@stem:2, viseln*:3",
-    peace: "mir@first:2, mirno@first, mir@stem:3, mirn*:5",
-    glory: "slav@first:2, slavo@first, slav@stem:3, slavyan@stem:2, slavn*:4",
-    love: "lyubo@first:2, lyubim@stem:4, lyub@stem:2, lyubim*:3",
-    victory: "pobedo@first, pobeda@stem:4, pobedn*:4",
-    wonder: "chudo@first:2, chud@stem:4, chudn@stem:2, chudn*:4, chudesn*:2",
+stem: (?:ey|ye|ya|[aoeyi])?$ =>
+first: \*soft$ => e
+first: \*(?:firm|owner)?$ => o
+first: (?:ey|ye|ya|[aoeyi])?$ => o`,
+  lexicon: `
+# settlements
+city: =j 12, =sk 4, =ovsk, -grad 2, -gorod 2, Grad, -Gorod
+town: =j 16, =ov 4, =sk 2, =ets, -gorod 3, _/m, Posad, -Gorodok
+village: =ovo 16, =ichi 13, =ovichi 4, =ovka 10, =ovtsy 3, -selye 2, _/n 3, Selo 2, Sloboda
+hamlet: =ka 25, =ki 20, =ovka 10, =y 10, =tsy 5, _/f 5, _/pl 5, Hutor, Vyselki, Dvory
 
-    two: "dvu@first:2, dva/few@word:2, dve/fewf@word:2",
-    three: "treh@first:2, tri/few@word:3, tri/fewf@word:3",
-    five: "pyati@first:2, pyat/many@word:2",
-    seven: "semi@first:3, sem/many@word:2",
-    nine: "devyati@first, devyat/many@word",
-    ten: "desyati@first, desyat/many@word",
-    hundred: "sto@first:2, sto/many@word",
-    thousand: "tysyache@first, tysyacha/many@word",
+# places
+home: Dvor 2, Stan 2, Dvorische, Selische, dvor=
+farm: Hutor 2, Zaimka, hutor=
+hall: Palaty, Horomy, Terem
+field: Polye 3, Pole 2, Niva, Zapolye 3, Opolye 2, pol= 3, niv=
+wood: Les 2, Bor 2, Borok, Zalesye 4, Podlesye 2, Polesye 3, Zaborye 2, Podborye 2, les= 3, bor= 2
+hill: Gora 3, Holm 2, Gorka 2, Gory 2, Zagorye 4, Podgorye 4, Prigorye 2, Zaholmye 2, gor= 3, holm= 2, gora=
+ford: Brod 3, Brody 2, Perevoz, Zabrodye 2, Podbrodye, brod= 3
+fort: =ets 6, Ostrog 3, Gorodets 2, Gorodische 3, Detinets, Kreml, Zagorodye 3, Podgorodye 2, Prigorod 2, ostrog= 2
+bridge: Most 2, Mosty 2, Zamostye 4, most= 3
+harbour: Prichal 2, Pristan/f, Gavan/f
+valley: Dol 3, Log 2, Yar 3, Dolina, Podol 2, Podolye 2, Razdolye, dol= 2, yar= 2, dolin=, log=
+market: Torg 3, Torzhok 2, Torzhische, Posad 2, torg= 2, posad=
+castle: Zamok 3, Kreml, Podzamchye 2, zamk=
+mouth: ust-- 5, Ustye 3
+mount: Gora 3, Kamen, Verh, Zagorye 2, Podgorye 2, Mezhgorye 2, gor= 2
+shore: Yar 2, Bereg 2, Breg, Poberezhye 2, Pomorye 2, Primorye 2, bereg= 2, yar=
+island: Ostrov 3, Ostrovok, Ostrovets, Zaostrovye, ostrov= 2
+lake: Ozero 3, Zaozerye 4, Priozerye 3, Mezhozerye 2, ozer= 4, ozerk=
+haven: Zaton 2, Gavan/f 2, zaton= 2
+marsh: Boloto 3, Zabolotye 3, Podbolotye, bolot= 2
+spring: Klyuch 2, Klyuchi 3, Rodnik 2, Krinitsa, Rodniki, Zaklyuchye 3, Podklyuchye 2, klyuch= 2, rodnik= 2
+meadow: Lug 2, Luki 3, Polyana 2, Luzhok, Zaluzhye 2, Priluki 2, lug= 2, polyan= 2
+grove: Roscha 3, Dubrava 2, Gai, Zaroschye 3, Poddubye 2, dubrav= 2, roscha= 2
+bank: Bereg 2, Yar 2, Kosa, Krucha, Zarechye 5, Porechye 3, bereg=, yar=
+mill: Mlyn 3, Melnitsa, Zamlynye 3, Podmlynye, mlyn= 3
+bay: Guba 2, Zaliv 2, Zatoka, Lukomorye, zaliv= 2, gub=, guba= 2
+cape: Mys 3, Nos 2, mys= 2
+cliff: Skala 3, Utes 2, Podskalye 3, Zaskalye, skal= 2, skala=
+tower: Vezha 3, Bashnya, Stolp, vezh=, stolp=
+ridge: Gryada 2, Kryazh 2, Hrebet, Mezhgorye 2, Zakryazhye 2, Zagryadye, gryad=, kryazh=
+pass: Volok 3, Pereval 2, Vorota/pl, Perevolok 2, Zavolochye 3, Perevolochye 2, volok= 3
+heath: Step/f 2, Pustosh/f 2, Zastepye 3, step= 2, pustosh=
+pool: Prud 3, Prudy 2, Stav 2, Omut, Zaprudye 2, prud= 3
+well: Kolodez 3, Krinitsa 2, Zakolodezye 2, kolodez= 2
+camp: Stan 3, Yam 2, Dvor 2, Tabor, Stanovische, stan= 2, yam= 2
+mine: Rudnik 2, Kopi 2, Ruda, Zarudye 3, rud= 3, rudnik= 2, ruda= 2
+quarry: Lom
+temple: Hram 2, Sobor 2, Pogost 2, Tserkov/f 2, pogost= 2, hram=
+abbey: Monastyr 3, Pustyn/f 2, Skit 2, Obitel/f, Lavra, monastyr=, skit=
+river: =ka 5, =itsa 4, =na 2, _/f 3, Reka, Rechka
+brook: =ka 4, =ets 3, =itsa 2, Ruchey 2, Potok
+water: =ka 2, =itsa 2, _/f 2, Voda 2, Vody
+keep: Tverdynya 2, Detinets 2, tverd=
+hold: Zastava 3, Oplot 2, zastav= 2
+watch: Dozor 2, Storozha 2, Karaul, dozor=, storozh= 2
+rest: Priyut 3, Otdyh, priyut= 2
+end: Konets 2, Kray 2, kray=
+landing: Prichal
+gate: Vorota/pl 3, Vrata/pl, vorot= 2
+wall: Val 3, Stena 3
+rock: Kamen 3, Skala 2, Utes, Podkamen 2, Zakamenye 2, kamen= 2
+crag: Krucha 2, Skala, kruch= 2
+fell: Nagorye 2, Verhovye, nagor= 2
+run: =itsa 2, =ka 2, _/f, Protok, Bystrina, protok=
+falls: Vodopad, Porogi 3, Porog 2, Zaporozhye 4, porog= 2
+garden: Sad 3, Sady 2
+hedge: Tyn 3, Pleten, tyn= 2
+den: Logovo 2, Berloga 2, Nora, logov=
+nest: Gnezdo
+roost: Gnezdovye 2, Nasest
+hearth: Ochag
+court: Dvor 3, Podvorye 2, dvor= 2
+seat: Prestol 2, Stol 2, stol=
+tooth: Zub 3, Klyk 2, zub= 2
+horn: Rog
+spear: Kopye
+shield: Schit
+heart: Serdtse
+eye: Oko 3, Glaz
+hand: Desnitsa, Ruka, Dlan/f
+finger: Perst 2, Palets 2, Persty
+claw: Kogot 3, Lapa
+head: Golova 3, Glava 2, golov=
+point: Mys 3, Kosa 2, Strelka 2
+reef: Rif 2, Kamni 2, Mel/f 2
+sands: Peski 3, Pesok, pesk= 2
+dune: Barhan 3, Dyuna 2, barhan=
+waste: Pustosh/f 3, Pustynya 2
+fen: Top/f 2, Tryasina 2, Boloto, Zabolotye 3, Zatopye, bolot= 2, top=
+glade: Polyana 3, Progalina, Zapolyanye 3, polyan= 2
+glen: Balka 3, Loschina 2, Zabalka 3, balk= 2
+hollow: Loschina 3, Yama 2, Kotlovina, Zayamye 3, yam= 2
+gorge: Uschelye 3, Tesnina 2, Zauschelye 2, uschel= 2, tesnin=
+peak: Vershina 3, Pik 2, Shpil/m, vershin=
+spire: Shpil/m 3, Igla 2
+cave: Peschera 2, Peschery 3, Zapescherye 2, pescher= 2
+forge: Kuznya 3, Kuznitsa 2, Gorn
+barrow: Kurgan 3, Mogila 2, Zakurganye 3, Mezhkurganye, kurgan= 3
+grave: Mogila 3, Pogost 2, mogil= 2
+shrine: Chasovnya 3, Svyatynya 2, Kapische 2
+hermitage: Skit 3, Pustyn/f 3, Kelya, skit=
+crossing: Perevoz 3, Pereprava 2, perevoz= 2
+ferry: Parom 3, Perevoz 2, parom= 2
+fork: Strelka 3, Razvilka 2, Mezhdurechye 4, strelk= 2
+bend: Luka 3, Izluchina 2, Koleno, Zaluchye 3, Priluki 2, luk= 2
+beacon: Mayak
+square: Maydan 3, Ploschad/f 2, maydan= 2
+inn: Korchma 3, Traktir 2
+barn: Ambar 3, Gumno 2, Riga, ambar= 2
+vineyard: Vinogradnik 2, Vinograd 2, vinograd= 3
+pasture: Vygon 3, Pastbische 2, vygon= 2
+lodge: Zaimka 3, Zimovye 2, Storozhka 2
+table: Stol
+tarn: Ozerko 3, Ozertso 2
+tree: Derevo 3, Drevo 2
+way: Shlyah 3, Put/m 2, Doroga 2, Trakt, shlyah=
+dike: Gat/f 3, Damba 2, Nasyp/f, Zagatye 3, gat= 2
+song: Pesn/f 3, Pesnya 2
+hope: Nadezhda
+guard: Strazha 3, Zastava 2, strazh= 2
+stair: Lestnitsa 3, Stupeni/pl 2
 
-    land: "ia@last:5, schina@last:2, zemye@last"
-  },
+# modifiers
+new: nov*
+old: star*
+great: velik*
+little: mal*
+long: dolg*
+broad: shirok*
+deep: glubok*
+high: vysoko- 2, vyshe~vysh-, vysok*
+low: nizko- 2, nizo-, nizk*
+upper: verhne- 3, verh-, verhn*soft
+lower: nizhn*soft
+middle: sredne- 3, mezh-, sredn*soft
+north: severo-, severn*
+south: yuzhn*
+east: vostochn*
+west: zapadn*
+black: chern* 2, chern=
+white: bel* 2, bel=
+red: krasno- 2, chervono-, krasn* 3, krasn=
+green: zelen*
+golden: zlato-, zolot* 2
+grey: sero-, sedo-, ser* 2, ser=
+blue: sin*soft
+dark: temn*
+bright: svetl* 2, yasn*
+oak: dub= 5, dubov*
+pine: sosno-, sosnov= 3, bor= 3, sosnov*, borov*, sosna= 2
+birch: berez= 5, berezov*, bereza= 2
+ash: yasen= 4, yasenev*
+elm: vyaz= 4, vyazov*
+willow: ivo-, verb= 3, rakit= 3, ivov*, verbn*, iva= 2, verba= 2
+thorn: tern= 4, ternov*
+reed: kamysh= 4, kamyshov*
+rose: roz= 3, rozov*, roza=
+apple: yablon= 4, yablonev*
+wolf: volk= 5, volch*
+bear: medvezhe~medve-, medved= 5, medvezh*
+eagle: orl= 5, orlin*
+deer: oleno-, olen= 3, los= 3, losin*, olen*
+horse: kone-, kon= 4, konsk*
+ox: turo-, byko-, tur= 3, byk= 3, vol=, bych*
+sheep: ovche-, ovts= 3, ovech*
+goat: kozlo-, kozl= 3, kozel= 2, koz*, koza= 3
+fox: lis= 5, lis*owner, lisa= 3
+boar: vepre-, kabano-, vepr= 2, kaban= 4, kaban*
+raven: voron= 5, voron*, vorona= 3
+hawk: sokol= 4, yastreb= 2, sokolin*
+swan: lebede-, lebed= 4, lebedin*, lebyazh*
+crane: zhuravle~zhurav-, zhuravl= 4, zhuravlin*
+gull: chaik= 4, chaich*, chaika= 2
+seal: tyulen= 3, nerp= 2, tyulen*
+fish: ryb= 3, rybn* 2, ryba= 3
+otter: vydr= 4, vydrin*, vydra= 2
+stone: kamen= 5, kamenn* 2
+iron: zhelezno~zhelez-, zhelez= 2, zhelezn* 2
+copper: medno-, med= 2, medn* 2
+silver: srebro-, serebr= 2, serebryan* 2
+gold: zoloto- 2, zlato-, zolot= 3, zolot* 2
+salt: soli- 3, sol= 3, solyan*, solen*
+sand: pesk= 3, peschan* 2
+clay: glin= 4, glinyan*
+chalk: mel= 3, melov*
+cold: holodno-, studeno-, studen= 2, holodn* 2, studen*
+warm: tepl*
+dry: suh*
+wet: mokr*
+wind: vetr= 3, vetren* 2
+mist: tumano-, mglo-, tuman= 3, tumann* 2
+snow: snezhno- 2, snego-, sneg= 2, snezhn* 3
+storm: burno-, grozo-, groz= 2, grozn* 2, burn*, groza= 2
+quiet: tih=, tih* 3
+wild: dik*
+fair: dobro- 2, ladno-, dobr=, dobr* 3
+holy: svyato- 3, spaso-, spas= 3, svyat* 3
+free: volno-, slobodo-, slobod= 2, voln* 3
+king: knyazhe~knyazh- 2, tsare-, knyazh= 2, tsar= 3, knyazh* 2, tsarsk* 2, tsar'ev* 3
+queen: knyagin-, tsaritsyn, Knyaginin, knyaginya=
+lord: boyaro-, boyar= 4, pan= 2, boyarsk*, pansk*
+priest: pop= 5, volhov*, pop'ov* 3
+merchant: gosti- 2, kuptse-, kupts= 3, gost= 2, gostin*
+hunter: ohotno-, lovche-, ohotnik= 3, lovch*, ohotnich*
+fisher: rybatsko-, rybak= 4, rybach* 2, rybatsk*
+smith: koval-, koval= 3, kuznets= 4, kuznechn*, kuznetsk* 3
+shepherd: pastushe-, pastuh= 4, chaban= 2, pastush*
+winter: zimne-, zim= 2, zimn*soft 3
+summer: letne-, let=, letn*soft 3
+autumn: osenn*soft
+dusk: vecherne-, zakat= 2, vechern*soft 3
+dawn: zare-, zor= 2, rassvet= 2, rassvetn* 3
+night: nochn*
+sun: solnechno-, solnts= 3, solnechn* 3
+moon: lunno-, lun= 2, lunn* 3
+star: zvezd= 2, zvezdn* 3
+sky: nebesn*
+cloud: oblachno-, tuch= 2, oblachn* 3
+rain: dozhde-, dozhdliv* 3
+frost: moroz= 4, morozn* 3
+ice: ledo-, ledov= 2, ledyan* 3
+thunder: grom= 3, gromov* 2
+shadow: tene-, tenist* 3
+fire: ogne- 2, ognev= 2, zhar=, ognenn* 3
+ember: iskr= 3, iskrist* 2
+cinder: zolo-, zol= 2, pepel= 2, pepeln* 2
+smoke: dym= 3, dymn* 3
+blood: krovav*
+bone: kost= 3, kostyan* 2
+dust: pyle-, pyln* 3
+mud: gryaze-, gryaz= 3, gryazn* 3
+moss: mohovo-, moh= 3, mohov* 3
+amber: yantarno-, yantar= 2, yantarn* 3
+pearl: zhemchuzhno-, zhemchug= 2, zhemchuzhn* 3
+glass: stekl=, steklyann* 2
+crystal: hrustalno-, hrustal= 2, hrustaln* 3
+tin: olovyann*
+bronze: bronzo-, bronzov* 3
+steel: stale-, stal= 2, staln* 3
+coal: ugle- 2, ugol= 2, ugoln* 3
+flint: kremne-, kremen= 3, kremnev* 2
+marble: mramorno-, mramor= 2, mramorn* 3
+slate: slantse-, slants= 2, slantsev* 2
+honey: medo- 2, medov= 2, medov* 3
+milk: molochno-, molok= 2, molochn* 3
+wine: vino-, vinn* 3
+wheat: zhit= 3, pshenichn* 3
+barley: yachmenno-, yachmen= 2, yachmenn* 2
+rye: rzhan*
+hay: sen= 3, senn* 3
+flax: lno-, lnyan* 3
+wool: shersto-, sherstyan* 2
+hop: hmele-, hmel= 3, hmelev* 2
+pea: goroh= 3, gorohov* 2
+dun: bur=, bur* 3
+pale: bledn*
+crimson: bagryan* 3, al* 2
+yellow: zhelt=, zhelt* 3
+last: posledn*soft
+far: daln*soft
+lone: odinok*
+lost: zabyt*
+hidden: tayn*
+broken: lomano-, loman* 2, razbit* 2
+burnt: gorelo-, gorel= 3, pal= 2, gorel* 3, palen* 2
+drowned: topko-, zatoplenn* 3, topk* 2
+bitter: gork*
+sweet: sladk=, sladk* 3
+hard: tverd*
+strong: siln* 3, krepk* 2
+sharp: ostr*
+dread: strashno-, strashn* 3, zhutk*
+grim: ugryum= 2, ugryum* 3, mrachn* 2
+merry: vesel= 2, vesel* 3
+weeping: plach= 2, plakuch*hush 3
+whispering: shepot= 2, shepchusch*hush 2
+haunted: nechisto-, nechist* 3, zakoldovann*
+sleeping: sonn*
+wandering: kochev* 2, brodyach*hush 3
+singing: zvonk* 3, pevch*hush 2
+crooked: kriv= 3, kriv*firm 3
+barren: golo-, gol* 3, pust*firm 2
+bleak: hmuro-, unyl* 2, hmur* 3
+proud: gord=, gord* 3
+rich: bogat= 2, bogat* 3
+poor: bedno-, bedn* 3, ubog* 2
+cursed: proklyat*
+blessed: blago- 3, blagodatn* 3
+narrow: uzk*
+steep: krut= 2, krut*firm 3
+flat: rovno-, rovn* 3, plosk* 2
+round: krugl*
+swift: bystr=, bystr* 3
+clear: chist*
+true: verno-, pravd= 2, vern* 3
+dead: mertv*
+lucky: schastlivo-, schastliv* 3, udachn* 3
+dragon: zmeino- 2, zmeye-, zmey= 4, drakon=, zmein* 3
+griffin: grifo-, grif= 3, grifon=, grifov* 2
+serpent: uzh- 2, uzh= 2, gadyuk= 2, gadyuch* 3
+kraken: sprut= 3, sprutov* 2
+lion: lvo-, lvov= 4, lvin* 3
+ram: baran= 3, baran*owner 2
+hound: pso-, psar= 2, sobaka= 3, sobach* 3
+cat: koto-, kot= 3, koshka= 2, koshach* 2
+hare: zaytse-, zayts= 3, zayach* 3
+badger: barsuk= 3, barsuch* 3
+beaver: bobr= 4, bobrov* 3
+rat: krys= 2, krysin* 2
+bat: netopyre-, netopyr= 3
+owl: sovo-, sova= 3, filin= 2, sovin* 3
+crow: grache-, grach= 3, galka= 3, voron*owner 3
+heron: tsaple-, tsaplya= 3, tsaplin* 2
+goose: gusino-, guse-, gus= 3, gusin* 3
+duck: utka= 3, utin* 2
+dove: golube-, golub= 3, golubin* 3
+lark: zhavoronk=
+nightingale: solovye-, solovy= 3, solov= 2, solovin* 3
+stork: aisto-, aist= 3, busl= 2, aistin* 2
+pike: schuche-, schuka= 3, schuch* 3
+salmon: losose-, losos= 3, lososev* 2
+eel: ugre-, ugor= 3
+crab: krab= 3, krabov* 2
+whale: kit= 3, kitov* 3
+toad: zhaba= 3, zhab*owner 2
+lizard: yascher= 3, yascherin*
+spider: pauk= 3, pauch* 2
+bee: pchelo-, pchela= 3, bort= 2, pchelin* 3
+bison: zubr= 4, zubrov* 2
+lynx: ryse-, rys= 3, rys*owner 2
+sable: sobole-, sobol= 4, sobolin* 3
+camel: verblyuzhe-, verblyud= 3, verblyuzh* 3
+rooster: kuro-, petuh= 3, petush= 3, kur= 3, petush* 2
+holly: padub= 3, padubov*
+ivy: plyusche-, plyusch= 3, plyuschev*
+yew: tis= 3, tisov* 2
+alder: olh= 4, olhov* 3
+hazel: orehovo-, oreh= 4, leschin= 2, orehov* 3
+rowan: ryabin= 3, ryabina= 2, ryabinov* 3
+linden: lip= 5, lipa= 2, lipov* 3
+beech: buk= 4, bukov* 3
+maple: klen= 4, klenov* 3
+aspen: osin= 4, osinov* 3
+poplar: topole-, topol= 4, topolev* 3
+spruce: elo-, elov= 4, elnik= 2, elov* 3
+cedar: kedr= 4, kedrov* 3
+heather: veresk= 4, vereskov* 3
+nettle: krapiv= 2, krapiva= 3, krapivn* 3
+poppy: mak= 4, makov* 3
+cherry: vishne-, vishnev= 4, vishnev* 4
+pear: grushe-, grush= 3, grusha= 2, grushev* 3
+berry: yagoda= 3, yagodn* 4
+mushroom: grib= 4, gribn* 3
+flower: tsveto-, tsvet= 3, tsvetk= 2, tsvetn* 3
+leaf: listo-, listvyan= 3, listvenn* 2
+acorn: zhelude-, zhelud= 4, zheludev* 2
+grass: trav= 3, travyan* 3
+lady: pani-, barynya= 3, boyarynya= 2
+maiden: deviche-, deva= 3, devich* 4
+widow: vdova= 4, vdov*owner 2
+knight: vityaze-, vityaz= 3, bogatyr= 3, bogatyrsk* 2
+monk: monashe-, monah= 3, chernets= 2, monash* 3
+hermit: otshelniche-, otshelnik= 3, pustynnik= 2, otshelnich* 2
+witch: vedmo-, vedma= 4, koldun= 3, vedm'in* 3
+giant: voloto-, volot= 3, velikan= 3, ispolin=, ispolinsk* 2
+ghost: navye-, mara= 3, prizrak= 2, prizrachn* 3
+god: bog= 2, bozh* 4
+devil: cherto-, chert= 4, bes= 2, chert'ov* 4, bes'ov* 2
+thief: voro-, vor= 3, tat= 2, vorovsk* 3
+robber: razboyniche-, razboynik= 3, razboy= 2, razboynich* 4
+beggar: nische-, nisch= 3, nisch*hush 3
+pilgrim: stranniche-, strannik= 3, palomnik= 2, kalika= 2, strannich* 3
+sailor: more-, moryak= 3, morehod= 2, morsk* 4
+raider: varyago-, varyag= 3, ushkuynik= 2, ushkuy= 2, varyazhsk* 3
+miller: melniche-, melnik= 4, melnich* 3
+weaver: tkache-, tkach= 4, tkatsk* 3
+potter: gonchar= 4, goncharn* 3
+tanner: kozhe-, kozhevnik= 3, kozhemyaka= 3, kozhevenn* 2
+carpenter: plotniche-, plotnik= 4, plotnitsk* 3
+cooper: bondare-, bondar= 4, bochar= 3, bondarn* 2
+archer: streletsko-, strelts= 4, luchnik= 3, streletsk* 4
+warden: storozhe-, storozh= 4, storozhev* 3, dozorn* 3
+warrior: voino-, voin= 4, ratnik= 2, druzhina= 3, ratn* 3, voinsk* 2
+elder: dedo-, ded= 4, starosta= 3, starts= 3, ded'ov* 3
+orphan: sirota= 4, sirotsk* 4
+fool: durako-, durak= 4, shut= 3, yurod=, duratsk* 2, shutovsk* 2
+crone: babye-, baba= 5, staruha= 2, bab*owner 4
+brother: brat= 4, bratsk* 4
+sister: sestra= 4, sestr'in* 3
+friend: druzhno-, drug= 2, druzhk= 2, druzhba= 2, druzhn* 4
+sword: meche-, mech= 4, mechev* 2
+axe: toporo-, topor= 4, sekira= 2, toporn* 2
+hammer: molot=
+arrow: strel= 3, strela= 3, strelchat*
+bell: kolokolo-, kolokol= 4, zvon= 3, zvonar= 2, kolokoln* 3
+harp: guslo-, gusl= 3, guslyar= 3
+cup: chasho-, chasha= 3, chashnik= 3
+wheel: koleso-, koles= 4, kolesnik= 3, kolesn* 2
+anchor: yakore-, yakor= 4, yakorn* 4
+sail: parus= 3, parusn* 4
+boat: lodeyno-, chelno-, cheln= 4, lodka= 3, lodeyn* 4
+ship: korable-, korabl= 3, korabeln* 4
+candle: svecha= 4, svechn* 3
+ring: kolts= 4, koltsev* 3
+feast: pir= 4, prazdnichn* 3
+cross: krest= 4, krestov* 3
+treasure: klado-, klad= 4, kazna= 2, kladov* 2
+skull: cherepo-, cherep= 4, cherepov= 2
+feather: per= 4, perist* 2
+wing: kryl= 4, krylat* 4, krylatsk* 2
+gallows: viselno-, glagol= 3, viselitsa= 2, viseln* 3
+peace: mir- 2, mirno-, mir= 3, mirn* 5
+glory: slav- 2, slavo-, slav= 3, slavyan= 2, slavn* 4
+love: lyubo- 2, lyubim= 4, lyub= 2, lyubim* 3
+victory: pobeda= 4, pobedn* 4
+wonder: chudo- 2, chud= 4, chudn= 2, chudn* 4, chudesn* 2
+
+# numerals
+two: dvu- 2, Dva/few 2, Dve/fewf 2
+three: treh- 2, Tri/few 3, Tri/fewf 3
+five: pyati- 2, Pyat/many 2
+seven: semi- 3, Sem/many 2
+nine: devyati-, Devyat/many
+ten: desyati-, Desyat/many
+hundred: sto- 2, Sto/many
+thousand: tysyache-, Tysyacha/many
+
+# lands
+land: -ia 8, -schina 2, -zemye
+`,
+  settled: 0.98,
   patterns: {
-    "modifier-generic": { templates: "{modifier}{generic}:4, {modifier} {generic}:5" },
+    feature: { weight: 45 },
+    "modifier-generic": { weight: 20, templates: "{modifier}{generic} 25, {modifier} {generic}" },
     "owner-generic": {
-      weight: 28,
-      templates: "{root}{generic}:6, {root}ov* {generic}:2, {root}-{generic}"
+      weight: 42,
+      female: 0.15,
+      templates: "{root}{generic} 60, {root}ov* {generic}, {root}-{generic}"
     },
-    "generic-of": { templates: "{root}{generic}:5, {root}sk* {generic}:4, {generic}{root}:3" },
-    compound: { weight: 24, templates: "{modifier}{generic}{settlement}" },
-    relative: { templates: "{modifier} {root}:5, {modifier}{root}" }
+    "generic-of": {
+      weight: 30,
+      templates: "{root}sk 8, {root} 7, {root}{generic} 2, {root}sk* {generic}, {generic}{root} 2"
+    },
+    compound: { weight: 3, templates: "{modifier}{generic}'ye 3, {modifier}{generic}{settlement} 2" },
+    relative: { weight: 3, templates: "{modifier} {root} 8, {root} {modifier} 2, {modifier}{root}" }
   }
 };

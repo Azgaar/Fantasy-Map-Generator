@@ -8,7 +8,7 @@ import { clipPoly } from "@/utils/common-utils";
 import { isLand, isWater } from "@/utils/height-utils";
 import { distanceSquared, rn } from "@/utils/number-utils";
 import { connectVertices } from "@/utils/path-utils";
-import { P, ra } from "@/utils/probability-utils";
+import { P, ra, seeded } from "@/utils/probability-utils";
 import { requireName, requireOneOf } from "@/utils/validation-utils";
 import { Coastline, type CoastlineSettings } from "./coastline-generator";
 import { Lakes } from "./lakes";
@@ -438,7 +438,12 @@ class FeatureModule {
     Math.random = Alea(options.map.seed); // the names roll the PRNG, the steps after stay put
     for (const feature of pack.features) {
       if (!feature || feature.name) continue;
-      if (feature.type === "lake") Object.assign(feature, Toponyms.lake(feature));
+      // a lake's name comes off a sequence of its own: how it is coined moves nothing else
+      if (feature.type === "lake")
+        Object.assign(
+          feature,
+          seeded(`${options.map.seed}|lake|${feature.i}`, () => Toponyms.lake(feature))
+        );
       else feature.name = this.getName(feature);
     }
   }

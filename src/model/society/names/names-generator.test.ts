@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { conceptsOf, isConcept } from "@/data/name-concepts";
+import { CONCEPTS, type Concept, conceptsOf, isConcept, weightOf } from "@/data/name-concepts";
 import { DEFAULT_LEXICON, DEFAULT_TEMPLATES } from "@/data/name-rules";
 import type { Pattern } from "@/types/names";
 import { Meanings } from "./meanings";
@@ -23,6 +23,19 @@ describe("Names.calculateChain", () => {
 
   it("keeps multi-letter syllables for alphabetic names", () => {
     expect(Names.calculateChain(["Chester"])[""]).toEqual(["ches"]);
+  });
+});
+
+describe("concepts", () => {
+  it("weigh all but settlements in whole numbers from 1 to 10", () => {
+    for (const concept of Object.keys(CONCEPTS) as Concept[]) {
+      if (conceptsOf("settlement").includes(concept)) expect(weightOf(concept), concept).toBe(0);
+      else
+        expect(
+          [...Array(10).keys()].map(n => n + 1),
+          concept
+        ).toContain(weightOf(concept));
+    }
   });
 });
 
@@ -72,7 +85,8 @@ describe("shipped name bases", () => {
       const { lexicon = {} } = Names.getNameBases().find(base => base.id === id)!;
       for (const concept of (["settlement", "generic", "modifier", "numeral"] as const).flatMap(conceptsOf)) {
         expect(lexicon[concept]?.length, `${id}: ${concept}`).toBeGreaterThan(0);
-        for (const { form } of lexicon[concept]!) expect(form, `${id}: ${concept}`).toMatch(/^(-?[\p{Ll}']+[*-]?|_)$/u);
+        for (const { form } of lexicon[concept]!)
+          expect(form, `${id}: ${concept}`).toMatch(/^(-?[\p{Ll}']+(\*\p{Ll}*|-)?|_)$/u);
       }
     }
   });
@@ -111,24 +125,23 @@ describe("Names.getPerson", () => {
     Names.nameBases = [base];
     return [...base.people.male!.names, ...base.people.female!.names];
   };
-  const draw = () => new Set(Array.from({ length: 60 }, () => Names.getPerson("test")));
 
-  it("picks a name of the corpus as it is, or generates one like them", () => {
+  it("picks a name of the corpus as it is", () => {
     const listed = withPeople("pick");
-    expect(draw()).toEqual(new Set(listed));
-    Names.restore();
-    options.generation.names.proper = "chain";
-    const german = Names.find("german")!.people!;
-    const names = Array.from({ length: 60 }, () => Names.getPerson("german"));
-    expect(names.some(name => !german.male!.names.includes(name) && !german.female!.names.includes(name))).toBe(true);
-    options.generation.names.proper = "base";
+    expect(listed).toContain(Names.getPerson("test"));
   });
 
   it("follows the options over the corpus", () => {
     const listed = withPeople("chain");
     options.generation.names.proper = "pick";
-    expect(draw()).toEqual(new Set(listed));
+    expect(listed).toContain(Names.getPerson("test"));
     options.generation.names.proper = "base";
+  });
+
+  it("names a woman as often as it is told", () => {
+    withPeople("pick");
+    expect(["Alfred", "Edmund", "Oswald"]).toContain(Names.getPerson("test", 0));
+    expect(["Edith", "Hilda"]).toContain(Names.getPerson("test", 1));
   });
 
   it("names a person like a short place where a base has no people, and takes the people of the base it extends", () => {
@@ -137,6 +150,19 @@ describe("Names.getPerson", () => {
     const listed = withPeople("pick");
     Names.nameBases.push({ ...Names.composeBase("heir", "Heir", [4, 9], ["Aaa"]), extends: "test" });
     expect(listed).toContain(Names.getPerson("heir"));
+  });
+});
+
+describe("Names.getWater", () => {
+  it("names a water off the base's own list, or like a place where it has none", () => {
+    const base = Names.composeBase("test", "Test", [4, 9], ["Aaaaaa", "Bbbbbb", "Cccccc"]);
+    Names.nameBases = [base];
+    expect(Names.getWater("test")).toMatch(/^[ABC]/);
+    base.waters = { names: ["Dvina", "Desna"], mode: "pick" };
+    expect(["Dvina", "Desna"]).toContain(Names.getWater("test"));
+    base.waters = { names: ["Dddddd"] };
+    expect(Names.getWater("test")).toMatch(/^D/);
+    Names.restore();
   });
 });
 

@@ -208,7 +208,7 @@ class MilitaryModule {
     this.raise(states);
   }
 
-  /** Raise the named units anew, and the levies their equipment leaves, in the states named or in all. Regiments keep all else: a platoon joins the nearest regiment of its landmass, those with none form new ones */
+  /** Raise the named units anew, and the levies their equipment leaves, in the states named or in all. Regiments keep all else: platoons gather as when regiments form and join the regiment nearest to that place on their landmass, those with none form new ones */
   raiseUnits(names: string[], stateIds?: number[]): void {
     const { cells } = pack;
     const roster = options.map.military.units;
@@ -225,12 +225,17 @@ class MilitaryModule {
         const held = new Map(military.map(regiment => [regiment, new Set(Object.keys(regiment.u))]));
         for (const regiment of military) for (const name of raised) delete regiment.u[name];
         const troops = (regiment: Regiment) => sum(Object.values(regiment.u));
-        const platoons = drafts.get(state.i)!.filter(platoon => raised.has(platoon.u));
+        const draft = drafts.get(state.i)!;
+        const place = new Map<Platoon, Platoon>(); // where each platoon gathers: its regiment's base, with no change since
+        for (const root of this.gather(draft))
+          for (const platoon of [root, ...(root.children ?? [])]) place.set(platoon, root);
+        const platoons = draft.filter(platoon => raised.has(platoon.u));
         const stray: Platoon[] = [];
         // separate units first, to their own regiments
         for (const platoon of platoons.sort((a, b) => b.s - a.s)) {
           const feature = featureOf(platoon.cell, platoon.n);
-          const distance = (regiment: Regiment) => (regiment.bx - platoon.x) ** 2 + (regiment.by - platoon.y) ** 2;
+          const { x, y } = place.get(platoon)!;
+          const distance = (regiment: Regiment) => (regiment.bx - x) ** 2 + (regiment.by - y) ** 2;
           // on its landmass, or across the water as near as platoons merge
           const fits = (regiment: Regiment) =>
             regiment.n === platoon.n &&
@@ -244,7 +249,7 @@ class MilitaryModule {
             (a, b) => distance(a) - distance(b) || troops(a) - troops(b)
           );
           if (home) home.u[platoon.u] = rn((home.u[platoon.u] || 0) + platoon.a, 3);
-          else stray.push(platoon);
+          else stray.push({ ...platoon, t: platoon.a, children: undefined });
         }
         military.push(...this.form(stray, state, military));
       });
@@ -476,86 +481,81 @@ class MilitaryModule {
 
   /** Merges a state's platoons into regiments, numbered and named after the `existing` ones */
   private form(platoons: Platoon[], s: State, existing: Regiment[] = []): Regiment[] {
-    const expected = 3; // expected regiment size
     const first = Math.max(-1, ...existing.map(({ i }) => i)) + 1;
-    const mergeable = (n0: { s: number; u: string }, n1: { s: number; u: string }) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
-    const createRegiments = (nodes: Platoon[]): Regiment[] => {
-      if (!nodes.length) return [];
-      nodes.sort((a, b) => a.a - b.a); // form regiments starting from cells with fewest troops
-      const tree = quadtree(
-        nodes,
-        d => d.x,
-        d => d.y
-      );
-
-      // add n0 to n1's ultimate parent
-      const merge = (n0: Platoon, n1: Platoon) => {
-        if (!n1.children) n1.children = [n0];
-        else n1.children.push(n0);
-        if (n0.children)
-          n0.children.forEach(n => {
-            n1.children!.push(n);
-          });
-        n1.t = rn(n1.t + n0.t, 3);
-        n0.t = 0;
+    const regiments: Omit<Regiment, "s" | "t" | "type">[] = this.gather(platoons).map((r, i) => {
+      const u: Record<string, number> = {};
+      u[r.u] = r.a;
+      (r.children ?? []).forEach(n => {
+        u[n.u] = rn((u[n.u] ?? 0) + n.a, 3);
+      });
+      return {
+        i: first + i,
+        a: r.t,
+        cell: r.cell,
+        x: r.x,
+        y: r.y,
+        bx: r.x,
+        by: r.y,
+        u,
+        n: r.n,
+        name: "",
+        icon: "",
+        state: s.i,
+        tags: []
       };
+    });
 
-      nodes.forEach(node => {
-        tree.remove(node);
-        const overlap = tree.find(node.x, node.y, 20);
-        if (overlap?.t && mergeable(node, overlap)) {
-          merge(node, overlap);
-          return;
-        }
-        if (node.t > expected) return;
-        const r = (expected - node.t) * (node.s ? 25 : 50); // search radius
-        const candidates = findAllInQuadtree(node.x, node.y, r, tree);
-        for (const c of candidates) {
-          if (c.t < expected && mergeable(node, c)) {
-            merge(node, c);
-            break;
-          }
-        }
-      });
+    regiments.forEach((r: Omit<Regiment, "s" | "t" | "type">) => {
+      r.name = this.getName(r as Regiment, [...existing, ...(regiments as Regiment[])]);
+      r.icon = this.getEmblem(r as Regiment);
+      this.generateNote(r as Regiment, s);
+    });
 
-      // parse regiments data
-      const regiments: Omit<Regiment, "s" | "t" | "type">[] = nodes
-        .filter(n => n.t)
-        .sort((a, b) => b.t - a.t)
-        .map((r, i) => {
-          const u: Record<string, number> = {};
-          u[r.u] = r.a;
-          (r.children ?? []).forEach(n => {
-            u[n.u] = rn((u[n.u] ?? 0) + n.a, 3);
-          });
-          return {
-            i: first + i,
-            a: r.t,
-            cell: r.cell,
-            x: r.x,
-            y: r.y,
-            bx: r.x,
-            by: r.y,
-            u,
-            n: r.n,
-            name: "",
-            icon: "",
-            state: s.i,
-            tags: []
-          };
+    return regiments as Regiment[];
+  }
+
+  /** Gathers platoons standing close to one of them, a regiment's worth each: returns those they gather at, largest first, the rest as their children */
+  private gather(nodes: Platoon[]): Platoon[] {
+    const expected = 3; // expected regiment size
+    const mergeable = (n0: { s: number; u: string }, n1: { s: number; u: string }) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
+    nodes.sort((a, b) => a.a - b.a); // form regiments starting from cells with fewest troops
+    const tree = quadtree(
+      nodes,
+      d => d.x,
+      d => d.y
+    );
+
+    // add n0 to n1's ultimate parent
+    const merge = (n0: Platoon, n1: Platoon) => {
+      if (!n1.children) n1.children = [n0];
+      else n1.children.push(n0);
+      if (n0.children)
+        n0.children.forEach(n => {
+          n1.children!.push(n);
         });
-
-      // generate name for regiments
-      regiments.forEach((r: Omit<Regiment, "s" | "t" | "type">) => {
-        r.name = this.getName(r as Regiment, [...existing, ...(regiments as Regiment[])]);
-        r.icon = this.getEmblem(r as Regiment);
-        this.generateNote(r as Regiment, s);
-      });
-
-      return regiments as Regiment[];
+      n1.t = rn(n1.t + n0.t, 3);
+      n0.t = 0;
     };
 
-    return createRegiments(platoons);
+    nodes.forEach(node => {
+      tree.remove(node);
+      const overlap = tree.find(node.x, node.y, 20);
+      if (overlap?.t && mergeable(node, overlap)) {
+        merge(node, overlap);
+        return;
+      }
+      if (node.t > expected) return;
+      const r = (expected - node.t) * (node.s ? 25 : 50); // search radius
+      const candidates = findAllInQuadtree(node.x, node.y, r, tree);
+      for (const c of candidates) {
+        if (c.t < expected && mergeable(node, c)) {
+          merge(node, c);
+          break;
+        }
+      }
+    });
+
+    return nodes.filter(n => n.t).sort((a, b) => b.t - a.t);
   }
 
   /** Runs a change of a state's regiments' troops: those on their default emblem follow it, those it empties are disbanded */

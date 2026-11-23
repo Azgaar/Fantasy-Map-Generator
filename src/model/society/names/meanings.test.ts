@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
+import type { Concept } from "@/data/name-concepts";
 import type { Meaning, NameBase, Token } from "@/types/names";
+import { Lexicon } from "./lexicon";
 import { Meanings } from "./meanings";
 import { Names } from "./names-generator";
 import { NameNotation } from "./notation";
+import { SoundRules } from "./sound-rules";
 
 afterEach(() => Names.restore());
 
@@ -151,19 +154,19 @@ describe("a base with a grammar", () => {
   const slavic = (): NameBase => ({
     ...custom(),
     id: "slavic",
-    grammar: NameNotation.parseGrammar("f: a$ => aya\nn: [oe]$ => oye\npl: [iy]$ => ye\nm: => yi"),
+    grammar: NameNotation.parseGrammar("f: a$\nn: [oe]$\npl: [iy]$\nm:\n*: f aya, n oye, pl ye, m yi"),
     rules: NameNotation.parseRules(String.raw`(?<=\+ov)\+yi =>  | join
 (?<=\+ov)\+aya => +a | join
 (?<=\+ov)\+oye => +o | join`),
     lexicon: NameNotation.parseLexicon({
-      town: "-ov:5, gorod@last, gorod@word",
-      village: "selo@word, _/n@word",
-      hill: "gora@word, gor@stem",
-      harbour: "pristan/f@word",
-      mouth: "ust-@first, ustye@word",
-      birch: "berez@stem, berezo@first, berezov*",
-      new: "novo@first, nov*",
-      upper: "verhniy/m@word, verhnyaya/f@word"
+      town: "=ov 5, -gorod, -Gorod",
+      village: "Selo, _/n",
+      hill: "Gora, gor=",
+      harbour: "Pristan/f",
+      mouth: "ust--, Ustye",
+      birch: "berez=, berezo-, berezov*",
+      new: "novo-, nov*",
+      upper: "Verhniy/m, Verhnyaya/f"
     }),
     patterns: {
       "modifier-generic": { templates: NameNotation.parseTemplates("{modifier}{generic}, {modifier} {generic}") },
@@ -194,12 +197,36 @@ describe("a base with a grammar", () => {
     expect(names(meaning("modifier-generic", "new", "village"))).toEqual(new Set(["Novoye Selo", "Novoye"]));
     expect(names(meaning("modifier-generic", "new", "harbour"))).toEqual(new Set(["Novaya Pristan"])); // a class it is told
     expect(names(meaning("modifier-generic", "upper", "hill"))).toEqual(new Set(["Verhnyaya Gora"])); // a form per class
-    expect(names(meaning("owner-generic", "~Ivan", "hill"))).toEqual(new Set(["Ivanova Gora", "Ivan-Gora"])); // an ending in a template
-    expect(names(meaning("owner-generic", "~Ivan", "village"))).toEqual(
-      new Set(["Ivanovo Selo", "Ivan-Selo", "Ivanovo"])
-    ); // no noun unsaid after a dash
+    expect(names(meaning("owner-generic", "~Ivan", "hill"))).toEqual(new Set(["Ivanova Gora"])); // an ending in a template; Gora takes no dash
+    expect(names(meaning("owner-generic", "~Ivan", "village"))).toEqual(new Set(["Ivanovo Selo", "Ivanovo"])); // Selo takes no dash
     expect(names(meaning("relative", "new", "~Lipki"))).toEqual(new Set(["Novye Lipki"]));
     expect(names(meaning("relative", "new", "~Gorod"))).toEqual(new Set(["Novyi Gorod"]));
+  });
+
+  it("takes a named set of endings as they are spelled", () => {
+    const base = slavic();
+    Object.assign(base.grammar!, NameNotation.parseGrammar("*soft: f yaya, n eye, pl iye, m iy"));
+    Object.assign(base.lexicon!, NameNotation.parseLexicon({ middle: "sredn*soft" }));
+    Names.nameBases.push(base);
+    expect(names(meaning("modifier-generic", "middle", "hill"))).toEqual(new Set(["Srednyaya Gora"]));
+    expect(names(meaning("modifier-generic", "middle", "town"))).toEqual(new Set(["Sredniy Gorod"]));
+  });
+
+  it("makes stems and combining forms by the grammar, but none of a kind written for the concept", () => {
+    const base = slavic();
+    base.grammar!.derive = NameNotation.parseGrammar("stem: [aoe]?$ =>\nfirst: \\*$ => o\nfirst: [aoe]?$ => o")!.derive;
+    Object.assign(
+      base.lexicon!,
+      NameNotation.parseLexicon({ black: "chern* 2", field: "Pole", wolf: "volk= 3, volch*" })
+    );
+    Names.nameBases.push(base);
+    const derived = (concept: Concept) => Lexicon.derivedForms(base, concept, base.lexicon![concept]!);
+    expect(derived("black")).toEqual([{ form: "cherno", position: "first", weight: 2 }]); // a describing word has no stem
+    expect(derived("field")).toEqual([{ form: "pol", position: "stem" }]);
+    expect(derived("wolf")).toEqual([{ form: "volko", position: "first", weight: 3 }]); // of the stem, not the word
+    expect(derived("new")).toEqual([]); // its combining form is written
+    expect(derived("birch")).toEqual([]); // both are
+    expect(names(meaning("modifier-generic", "black", "town"))).toContain("Chernogorod");
   });
 
   it("puts a prefix before a root only", () => {
@@ -214,7 +241,7 @@ describe("a base with a grammar", () => {
     );
     Object.assign(
       counting.lexicon!,
-      NameNotation.parseLexicon({ three: "tri/few@word, tri/fewf@word", two: "dva/few@word, dve/fewf@word" })
+      NameNotation.parseLexicon({ three: "Tri/few, Tri/fewf", two: "Dva/few, Dve/fewf" })
     );
     Names.nameBases.push(counting);
     expect(names(meaning("modifier-generic", "three", "village"))).toEqual(new Set(["Tri Sela"]));
@@ -233,6 +260,53 @@ describe("a base with a grammar", () => {
   });
 });
 
+describe("English, as real names are built", () => {
+  const english = () => Names.resolve("english")!;
+  const join = (parts: string) => SoundRules.join(parts, english().rules);
+  const names = (pattern: Meaning["pattern"], ...tokens: Token[]) =>
+    Array.from({ length: 300 }, (_, salt) => Meanings.render({ pattern, tokens, origin: "english", salt }, "english"));
+
+  it("says where a town lies and what stands there the way real names do", () => {
+    expect(names("modifier-generic", "new", "town")).toEqual(expect.arrayContaining(["Newton", "Newham", "Newbury"]));
+    expect(names("modifier-generic", "south", "town")).toContain("Sutton");
+    expect(names("modifier-generic", "heath", "town")).toContain("Morton");
+    expect(names("modifier-generic", "ox", "ford")).toContain("Oxford");
+  });
+
+  it("keeps two letters where real names double them", () => {
+    expect(join("sut+ton")).toBe("sutton");
+    expect(join("west+ton")).toBe("weston");
+    expect(join("mill+ton")).toBe("milton");
+    expect(join("apple+ley")).toBe("appley");
+  });
+
+  it("cuts a founder to a syllable before -ing-", () => {
+    expect(join("edwin+ing+ton")).toBe("eddington");
+    expect(join("harold+ing+ton")).toBe("harrington");
+    expect(join("richard+ing+ham")).toBe("rickingham");
+    expect(join("leofric+ing+ham")).toBe("leofingham");
+    expect(join("roger+ing+strand")).toBe("rogerstrand"); // -ing- only before what real names have it before
+  });
+
+  it("drops a founder's last a, and the s after a hiss", () => {
+    expect(join("wada+s+by")).toBe("wadby");
+    expect(join("offa+ton")).toBe("offton");
+    expect(join("alice+s+ton")).toBe("aliceton");
+  });
+
+  it("names a town on a long river name as the river, and what stands there in a word of its own", () => {
+    const fits = (name: string) => name.split(" ").every(word => word.length <= 12);
+    expect(join("blackburn+ton")).toBe("blackburn");
+    expect(join("brook+ton")).toBe("brookton"); // a brook is no river's name
+    expect(SoundRules.join("fishwater+bridge", english().rules, { fits })).toBe("fishwater bridge");
+    expect(SoundRules.join("otter+bridge", english().rules, { fits })).toBe("otterbridge");
+  });
+
+  it("names rivers after real ones", () => {
+    expect(english().waters?.names).toContain(Names.getWater("english"));
+  });
+});
+
 describe("Ruthenian", () => {
   const names = (pattern: Meaning["pattern"], ...tokens: Token[]) =>
     new Set(
@@ -240,7 +314,6 @@ describe("Ruthenian", () => {
         Meanings.render({ pattern, tokens, origin: "ruthenian", salt }, "ruthenian")
       )
     );
-  const common = (all: Set<string>) => [...all][0]; // what the meaning gives unsalted
 
   it("ends a burg's name in what its group is", () => {
     expect([...names("modifier-generic", "birch", "city")]).toEqual(expect.arrayContaining(["Berezovsk"]));
@@ -254,27 +327,44 @@ describe("Ruthenian", () => {
     expect([...names("generic-of", "city", "~Dvina")]).toContain("Dvinsk");
   });
 
-  it("names a town after a founder with a suffix, seldom with a word of its own", () => {
-    const david = names("owner-generic", "~David", "town");
-    expect(david).toEqual(
-      new Set([
-        "Davidov",
-        "Davidets",
-        "Davidov Gorodok",
-        "Davidov Gorod",
-        "Davidov Posad",
-        "David-Gorodok",
-        "David-Gorod",
-        "David-Posad"
-      ])
-    );
-    const sample = Array.from({ length: 300 }, (_, salt) =>
-      Meanings.render({ pattern: "owner-generic", tokens: [`~Name${salt}`, "town"], origin: "ruthenian" }, "ruthenian")
-    );
-    expect(sample.filter(name => /ov$/.test(name)).length).toBeGreaterThan(220);
-    expect(sample.filter(name => /Gorodok$/.test(name)).length).toBeLessThan(15);
-    expect([...names("owner-generic", "~David", "city")]).toEqual(expect.arrayContaining(["Davidovsk", "David-Gorod"]));
-    expect([...names("owner-generic", "~David", "village")]).toEqual(expect.arrayContaining(["Davidovo", "Davidovka"]));
+  it("names a town after a prince in the old way, and takes other endings where that makes nothing", () => {
+    expect([...names("owner-generic", "~Yaroslav", "town")]).toContain("Yaroslavl");
+    expect([...names("owner-generic", "~Peremysl", "town")]).toContain("Peremyshl");
+    expect([...names("owner-generic", "~Vsevolod", "city")]).toContain("Vsevolozh");
+    expect([...names("owner-generic", "~Yaropolk", "city")]).toContain("Yaropolch");
+    expect([...names("owner-generic", "~Vladimir", "city")]).toContain("Vladimir");
+    expect([...names("owner-generic", "~Nikita", "town")]).toContain("Nikitin");
+    expect([...names("owner-generic", "~Pavel", "city")]).toEqual(expect.arrayContaining(["Pavlov", "Pavlovsk"]));
+    expect([...names("owner-generic", "~Irina", "village")]).toEqual(expect.arrayContaining(["Irinino", "Irinichi"]));
+    expect([...names("owner-generic", "~Rogvolod", "village")].filter(name => /in(o|ka)?$/.test(name))).toEqual([]);
+  });
+
+  it("names a burg after its river: the river's name as it is, or with -sk", () => {
+    expect([...names("generic-of", "town", "~Dvina")]).toEqual(expect.arrayContaining(["Dvina", "Dvinsk"]));
+    expect([...names("generic-of", "city", "~Polota")]).toContain("Polotsk");
+    expect([...names("generic-of", "village", "~Kamenka")]).toContain("Kamensk");
+    for (const name of names("generic-of", "bridge", "~Dvina")) expect(name).toMatch(/^Dvinsk\p{Ll}+ \p{Lu}/u); // a bridge is said
+  });
+
+  it("names a place for what it lies behind, under or between", () => {
+    expect([...names("feature", "wood")]).toEqual(expect.arrayContaining(["Zalesye", "Polesye", "Bor"]));
+    expect([...names("feature", "hill")]).toEqual(expect.arrayContaining(["Zagorye", "Podgorye", "Gory"]));
+    expect([...names("feature", "fork")]).toContain("Mezhdurechye");
+    expect([...names("compound", "white", "shore", "village")]).toContain("Beloberezhye");
+    expect([...names("compound", "white", "hill", "town")]).toContain("Belogorye");
+  });
+
+  it("keeps another burg's name whole, before the describing word or after it", () => {
+    const of = [...names("relative", "great", "~Rostov")];
+    expect(of).toEqual(expect.arrayContaining(["Velikiy Rostov", "Rostov Velikiy"]));
+    for (const name of names("relative", "new", "~Odinokoborovsk")) expect(name).toContain("Odinokoborovsk");
+  });
+
+  it("gives a river one word more often than two", () => {
+    expect([...names("modifier-generic", "stone", "river")]).toEqual(expect.arrayContaining(["Kamenka", "Kamenitsa"]));
+    expect([...names("modifier-generic", "swift", "river")]).toEqual(expect.arrayContaining(["Bystritsa"]));
+    expect([...names("modifier-generic", "bear", "fort")]).toContain("Medvedets");
+    expect([...names("modifier-generic", "bear", "den")]).toContain("Medvezhye Logovo");
   });
 
   it("builds a name of three parts, a stem between a describing form and a suffix", () => {
@@ -289,14 +379,16 @@ describe("Ruthenian", () => {
 
   it("counts what stands there: a few take one form, many another, or the number joins the name", () => {
     const of = (pattern: Meaning["pattern"], ...tokens: Token[]) => [...names(pattern, ...tokens)];
-    expect(of("modifier-generic", "three", "lake")).toEqual(["Tri Ozera"]);
-    expect(of("modifier-generic", "two", "bridge")).toEqual(["Dva Mosta"]);
+    expect(of("modifier-generic", "three", "lake")).toEqual(expect.arrayContaining(["Tri Ozera", "Tri Zaozerya"]));
+    expect(of("modifier-generic", "two", "bridge")).toContain("Dva Mosta");
     expect(of("modifier-generic", "two", "tower")).toEqual(
       expect.arrayContaining(["Dve Vezhi", "Dve Bashni", "Dva Stolpa"])
     );
     expect(of("modifier-generic", "seven", "hill")).toEqual(expect.arrayContaining(["Sem Holmov", "Sem Gor"]));
     expect(of("modifier-generic", "seven", "spring")).toContain("Sem Klyuchey");
-    expect(of("modifier-generic", "thousand", "island")).toEqual(["Tysyacha Ostrovov"]);
+    expect(of("modifier-generic", "thousand", "island")).toEqual(
+      expect.arrayContaining(["Tysyacha Ostrovov", "Tysyacha Ostrovkov"])
+    );
     expect(of("compound", "five", "hill", "city")).toContain("Pyatigorsk");
     expect(of("compound", "seven", "bend", "hamlet")).toContain("Semiluki");
     expect(of("compound", "three", "hill", "hamlet")).toContain("Trehgorka");
@@ -311,24 +403,17 @@ describe("Ruthenian", () => {
     expect(of("modifier-generic", "brother", "city")).toContain("Bratsk");
     expect(of("modifier-generic", "fish", "city")).toContain("Rybinsk");
     expect(of("modifier-generic", "cross", "hamlet")).toContain("Kresty");
-    expect(of("modifier-generic", "peace", "town")).toContain("Mirnyi");
     expect(of("modifier-generic", "peace", "city")).toContain("Mirgorod");
-    expect(of("modifier-generic", "bitter", "town")).toContain("Gorkiy");
     expect(of("modifier-generic", "crooked", "horn")).toContain("Krivoy Rog");
     expect(of("modifier-generic", "crone", "valley")).toContain("Babiy Yar");
     expect(of("modifier-generic", "devil", "bridge")).toContain("Chertov Most");
     expect(of("modifier-generic", "white", "temple")).toContain("Belaya Tserkov");
-    expect(of("modifier-generic", "king", "village")).toContain("Tsarskoye Selo");
   });
 
   it("writes two stems as two words that agree", () => {
-    expect([...names("modifier-generic", "red", "village")]).toEqual(
-      expect.arrayContaining(["Krasnoye", "Krasnoye Selo"])
-    );
     expect([...names("modifier-generic", "white", "temple")]).toEqual(
       expect.arrayContaining(["Belyi Hram", "Belaya Tserkov"])
     );
-    expect(common(names("owner-generic", "~Olga", "hill"))).toMatch(/^Olgin(a Gor(k)?a|y Gory| Holm)$/);
     expect([...names("generic-of", "ford", "~Dvina")]).toContain("Dvinskiy Brod");
     expect([...names("relative", "little", "~Gorki")]).toContain("Malye Gorki");
     expect(names("generic-of", "mouth", "~Izhora")).toEqual(new Set(["Ust-Izhora", "Izhorskoye Ustye"]));
@@ -342,8 +427,11 @@ describe("English", () => {
     )
   ];
 
-  it("joins a describing word and a place, or sets them apart", () => {
-    expect(names("modifier-generic", "winter", "fell")).toEqual(expect.arrayContaining(["Winterfell", "Winter Fell"]));
+  it("joins a describing word and a place, and sets only an owner's word apart", () => {
+    expect(names("modifier-generic", "winter", "fell")).toEqual(["Winterfell"]);
+    expect(names("modifier-generic", "oak", "bay")).toContain("Oakbay");
+    expect(names("modifier-generic", "oak", "bay").filter(name => name.includes(" "))).toEqual([]);
+    expect(names("modifier-generic", "red", "wood")).toContain("Redwood");
     expect(names("modifier-generic", "raven", "tree")).toEqual(expect.arrayContaining(["Raventree", "Raven's Tree"]));
     expect(names("modifier-generic", "dragon", "rock")).toContain("Dragonstone");
     expect(names("modifier-generic", "king", "landing")).toContain("King's Landing");

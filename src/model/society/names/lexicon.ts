@@ -1,14 +1,21 @@
 // What a base holds for its concepts and patterns: forms and templates written for it, for a base it extends or
 // for all bases, and forms coined from its corpus where nobody wrote any
 
-import { type Concept, conceptsOf, kindOf, settles } from "@/data/name-concepts";
+import { type Concept, conceptsOf, type Kind, kindOf, settles } from "@/data/name-concepts";
 import { DEFAULT_LEXICON, DEFAULT_TEMPLATES, DEFAULT_WEIGHTS } from "@/data/name-rules";
-import type { Formant, NameBase, Pattern, Template } from "@/types/names";
+import type { Derivation, Formant, Grammar, NameBase, Pattern, Template } from "@/types/names";
 import { seeded } from "@/utils/probability-utils";
 import { Names } from "./names-generator";
 import { NameNotation } from "./notation";
 
 const SETTLEMENT_ENDINGS = 3;
+const STAR = /\*\p{L}*/u;
+
+// what a kind of concept takes of the grammar: a place a stem for its suffixes, a modifier a combining form too
+const DERIVED: Partial<Record<Kind, Derivation[]>> = {
+  generic: ["stem"],
+  modifier: ["first", "stem"]
+};
 
 type Fallback = Record<"first" | "last" | "word", string> & { more?: string[] }; // a settlement has endings to spare
 
@@ -17,12 +24,14 @@ class LexiconModule {
     Object.entries(DEFAULT_TEMPLATES).map(([pattern, text]) => [pattern, NameNotation.parseTemplates(text)])
   ) as Record<Pattern, Template[]>;
   private readonly fallbacks = new WeakMap<string[], Map<Concept, Fallback>>(); // by corpus
+  private readonly derivations = new WeakMap<Formant[], { derive: Grammar["derive"]; forms: Formant[] }>(); // by written forms
+  private readonly patterns = new Map<string, RegExp | null>();
 
   /** The forms of a concept in a base: written for it, for a base it extends or for all bases, else coined */
   formsOf(base: NameBase, concept: Concept): Formant[] {
     const authored =
       this.authoredForms(base, concept) ?? (isLand(concept) ? this.authoredForms(base, "land") : undefined);
-    if (authored) return authored; // a land unwritten is plain "land"
+    if (authored) return this.withDerived(base, concept, authored); // a land unwritten is plain "land"
 
     // a settlement is an ending; what stands at a place is more often a word of its own
     const { first, last, word, more = [] } = this.fallbackForms(base, concept);
@@ -35,10 +44,35 @@ class LexiconModule {
         { form: word, position: "word" }
       ];
     return [
-      { form: word, position: "word", weight: settles(concept) ? 0.5 : 2 }, // a fort ends a name as a town does
-      { form: last, position: "last" },
-      { form: first, position: "first" }
+      { form: word, position: "word", weight: settles(concept) ? 1 : 4 }, // a fort ends a name as a town does
+      { form: last, position: "last", weight: 2 },
+      { form: first, position: "first", weight: 2 }
     ];
+  }
+
+  /** The forms a base's grammar makes of what is written for a concept: a stem of its words, a combining form of its
+   * stems or, where it has none, of its words. The first of the grammar's rules of a kind that matches the form as
+   * written, `*` and all, makes one, as heavy as the form it is made of; one still holding a `*` is none.
+   * A kind written for the concept is made of nothing */
+  derivedForms(base: NameBase, concept: Concept, written: Formant[]): Formant[] {
+    const derive = Names.lineage(base).find(({ grammar }) => grammar)?.grammar?.derive;
+    const kinds = DERIVED[kindOf(concept)];
+    if (!derive || !kinds) return [];
+
+    const words = written.filter(({ form, position }) => (!position || position === "word") && /^\p{L}/u.test(form));
+    const stems = written.filter(({ position }) => position === "stem");
+    const made: Formant[] = [];
+    for (const kind of kinds) {
+      if (written.some(({ position }) => position === kind)) continue;
+      for (const { form, weight } of kind === "first" && stems.length ? stems : words) {
+        const rule = derive[kind]?.find(({ match }) => this.regex(match)?.test(form));
+        const derived = rule && form.replace(this.regex(rule.match)!, rule.replace);
+        if (!derived || STAR.test(derived)) continue;
+        if ([...written, ...made].some(other => other.form === derived && other.position === kind)) continue;
+        made.push({ form: derived, position: kind, ...(weight !== undefined && { weight }) });
+      }
+    }
+    return made;
   }
 
   /** The forms a base, the bases it extends or the shared lexicon hold for a concept */
@@ -64,6 +98,12 @@ class LexiconModule {
     return own?.patterns?.[pattern]?.weight ?? DEFAULT_WEIGHTS[pattern];
   }
 
+  /** The share of a base's founders that are women, where it sets one */
+  femaleFounders(base: NameBase): number | undefined {
+    const own = Names.lineage(base).find(({ patterns }) => patterns?.["owner-generic"]?.female !== undefined);
+    return own?.patterns?.["owner-generic"]?.female;
+  }
+
   /** The endings many names of a corpus share, the commonest first: -bach, -ingen, -ton */
   mineEndings(names: string[]): string[] {
     const counts = new Map<string, number>();
@@ -87,6 +127,28 @@ class LexiconModule {
       .filter(entry => !eclipsed(entry))
       .sort((a, b) => b[1] - a[1])
       .map(([ending]) => ending);
+  }
+
+  // the written forms and what the grammar makes of them, cached while both stand
+  private withDerived(base: NameBase, concept: Concept, written: Formant[]): Formant[] {
+    const derive = Names.lineage(base).find(({ grammar }) => grammar)?.grammar?.derive;
+    if (!derive) return written;
+    const cached = this.derivations.get(written);
+    if (cached?.derive === derive) return cached.forms;
+    const forms = [...written, ...this.derivedForms(base, concept, written)];
+    this.derivations.set(written, { derive, forms });
+    return forms;
+  }
+
+  private regex(pattern: string): RegExp | null {
+    if (!this.patterns.has(pattern)) {
+      try {
+        this.patterns.set(pattern, new RegExp(pattern, "u"));
+      } catch {
+        this.patterns.set(pattern, null);
+      }
+    }
+    return this.patterns.get(pattern)!;
   }
 
   // the forms of a base nobody wrote a lexicon for, made of its own corpus and cached while the corpus stands

@@ -33,22 +33,28 @@ export type Pattern =
   | "modifier-land"; // modifier, generic
 
 /** A base's fixed form of a concept inside a name. A form written `-sk` is a suffix: it ends a word and stands
- * only after a stem or a root. One with `*` takes an ending that agrees with the noun beside it. `_` says nothing:
- * the noun is left out and the word beside it still agrees with it */
+ * only after a stem or a root. One with `*` takes an ending that agrees with the noun beside it, from the default
+ * set of endings or from a named one, as in `verhn*soft`. `_` says nothing: the noun is left out and the word beside
+ * it still agrees with it */
 export interface Formant {
   form: string;
-  weight?: number; // against the concept's other forms, 1 when absent
+  weight?: number; // a whole number, against the concept's other forms, 1 when absent
   position?: "first" | "last" | "word" | "stem"; // where in a word the form may stand, a stem only before a suffix; anywhere when absent
   short?: string; // taken when the name runs too long
-  link?: string; // put between the form and the part after it
   class?: string; // the noun class of a noun; on a word that describes one, the class of nouns it stands beside
+  hyphen?: boolean; // a word that may also follow a name after a dash: David-Gorodok
 }
 
-/** What a base's words do beside each other: the classes its nouns fall into, such as genders and the plural,
- * and the ending a describing word takes beside a noun of each */
+/** What the grammar makes of a concept's words: a stem, and a combining form that starts a word */
+export type Derivation = "stem" | "first";
+
+/** What a base's words do beside each other and how they change: the classes its nouns fall into, such as genders
+ * and the plural, the endings a describing word takes beside a noun of each, and the rules that make a concept's
+ * other forms of the words written for it */
 export interface Grammar {
   classes?: Record<string, string>; // class to a regex its nouns match, tried in order: the last may be empty and take the rest
-  agreement?: Record<string, string>; // class to the ending that stands in for `*`
+  endings?: Record<string, Record<string, string>>; // a set of endings, "" the default, to the ending of each class that stands in for `*`
+  derive?: Partial<Record<Derivation, { match: string; replace: string }[]>>; // the first rule that matches a word makes the form
 }
 
 /** How a base lays a pattern out: slots in braces, such as "{root}s{generic}" or "{generic} {root}" */
@@ -63,12 +69,20 @@ export interface NameBase {
   extends?: string; // the base whose lexicon and patterns stand in where this one has none
   length: [min: number, max: number]; // of a name, generated or made of parts
   places: Corpus; // the place names a Markov chain is built from; its own length, if any, is for generated names
+  waters?: Corpus; // river and lake names, a chain of their own; place names stand in when absent
   people?: { male?: Corpus; female?: Corpus }; // personal names: the founders places are named after
   rules?: SoundRule[]; // applied in order, before the shared ones
   grammar?: Grammar;
   lexicon?: Partial<Record<Concept, Formant[]>>;
-  patterns?: Partial<Record<Pattern, { weight?: number; templates?: Template[] }>>;
+  patterns?: Partial<Record<Pattern, PatternLayout>>;
   settled?: number; // 0 to 1: the share of burg names that end in what the burg is by its group, 0.85 when absent
+}
+
+/** How a base coins names of a pattern */
+export interface PatternLayout {
+  weight?: number; // how often, against the other patterns
+  templates?: Template[];
+  female?: number; // of owner-generic, 0 to 1: the share of founders that are women; by the sizes of the people lists when absent
 }
 
 /** A base as the shipped data holds it: rules, grammar, forms and templates may be in their written form,
@@ -76,8 +90,8 @@ export interface NameBase {
 export interface WrittenNameBase extends Omit<NameBase, "rules" | "grammar" | "lexicon" | "patterns"> {
   rules?: (SoundRule | string)[]; // a string holds rules a line each
   grammar?: Grammar | string;
-  lexicon?: Partial<Record<Concept, Formant[] | string>>;
-  patterns?: Partial<Record<Pattern, { weight?: number; templates?: Template[] | string }>>;
+  lexicon?: Partial<Record<Concept, Formant[] | string>> | string; // a string holds a concept a line
+  patterns?: Partial<Record<Pattern, Omit<PatternLayout, "templates"> & { templates?: Template[] | string }>>;
 }
 
 /** A concept, or a proper root with no concept behind it, marked with `~` */

@@ -340,8 +340,8 @@ export const humanGeneric: WrittenNameBase = {
     ]
   },
   patterns: {
-    "modifier-generic": { templates: "{modifier}{generic}:4, {modifier} {generic}" },
-    "owner-generic": { templates: "{root}{generic}:4, {root} {generic}" },
-    "generic-of": { templates: "{root}{generic}:4, {root} {generic}" }
+    "modifier-generic": { templates: "{modifier}{generic} 4, {modifier} {generic}" },
+    "owner-generic": { templates: "{root}{generic} 4, {root} {generic}" },
+    "generic-of": { templates: "{root}{generic} 4, {root} {generic}" }
   }
 };

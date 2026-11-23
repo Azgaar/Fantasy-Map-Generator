@@ -231,11 +231,11 @@ class ProvinceModule {
       const coreProvinceNames = s.provinces.map(p => provinces[p]?.name);
       const colonyNamePool = [s.name, ...coreProvinceNames].filter(name => name && !/new/i.test(name));
       const getColonyName = () => {
-        if (colonyNamePool.length < 1) return null;
+        if (colonyNamePool.length < 1) return undefined;
 
         const index = rand(colonyNamePool.length - 1);
         const spliced = colonyNamePool.splice(index, 1);
-        return spliced[0] ? `New ${spliced[0]}` : null;
+        return spliced[0] ? Toponyms.colonyOf(spliced[0], s.culture) : undefined;
       };
 
       let stateNoProvince = noProvince.filter(i => cells.state[i] === s.i && !provinceIds[i]);
@@ -282,8 +282,8 @@ class ProvinceModule {
         const colony = !singleIsle && !isleSubtype && P(0.5) && !isPassable(s.center, center);
 
         const { name, meaning } = ((): { name?: string; meaning?: Meaning } => {
-          const colonyName = colony && P(0.8) && getColonyName();
-          if (colonyName) return { name: colonyName };
+          const colonyNamed = colony && P(0.8) && getColonyName();
+          if (colonyNamed) return colonyNamed;
           if (burgCell && P(0.5)) return burgs[burg];
           return Toponyms.landOf(Names.getCultureShort(c), c);
         })();

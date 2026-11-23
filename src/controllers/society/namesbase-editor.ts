@@ -83,13 +83,16 @@ function renderDialog(): void {
           <textarea
             id="namesbaseTextarea"
             data-base="0"
-            rows="12"
+            rows="7"
             data-tip="${t("Names data: a comma separated list of source names used for names generation")}"
             placeholder="${t("Provide a names data: a comma separated list of source names")}"
             autocorrect="off"
             spellcheck="false"
             style="resize: none"
           ></textarea>
+          <div>${t("Rivers and lakes")}:</div>
+          <textarea id="namesbaseWaters" rows="2" autocorrect="off" spellcheck="false" style="resize: none"
+            data-tip="${t("River and lake names, commas between. Place names stand in when the list is empty")}"></textarea>
           <div>
             <span>${t("Length")}: </span>
             <input id="namesbaseMin" data-tip="${t("Recommended minimum name length")}" type="number" min="2" max="100" />
@@ -122,14 +125,21 @@ function renderDialog(): void {
         <div data-pane="lexicon">
           <div data-tip="${t("How the base says each concept. A concept with no form gets a generated one, shown in grey")}">
             <span id="namesbaseCoverage"></span>.
-            ${t("Forms are written as {{- notation}}, commas between", { notation: notation("form~short+link/class@position:weight") })}
+            ${t("Forms are written as {{- notation}}, commas between", { notation: notation("form~short/class weight") })}
+          </div>
+          <div data-tip="${t("How a form is written says where it may stand in a name. A form written plain stands anywhere. A word written -Gorodok may also follow a name after a dash")}">
+            ${t("{{- word}} stands on its own, {{- first}} starts a word, {{- last}} ends one", {
+              word: notation("Gorod"),
+              first: notation("novo-"),
+              last: notation("-grad")
+            })}
           </div>
           <div data-tip="${t("A suffix ends a word after a stem or a proper name. A word with * takes the ending of the noun beside it. _ leaves the noun unsaid")}">
             ${t(
               "{{- suffix}} is a suffix, {{- stem}} takes one, {{- agreeing}} agrees with its noun, {{- silent}} is a noun left unsaid",
               {
-                suffix: notation("-sk"),
-                stem: notation("berez@stem"),
+                suffix: notation("=sk"),
+                stem: notation("berez="),
                 agreeing: notation("nov*"),
                 silent: notation("_/n")
               }
@@ -139,12 +149,16 @@ function renderDialog(): void {
         </div>
         <div data-pane="patterns">
           <div data-tip="${t("How often the base coins a name of each pattern, and how it lays the pattern out")}">
-            ${t("Templates are written as {{- notation}}, commas between", { notation: notation("{root}s{generic}:weight") })}
+            ${t("Templates are written as {{- notation}}, commas between", { notation: notation("{root}s{generic} weight") })}
           </div>
           <div id="namesbasePatterns" style="display: grid; grid-template-columns: 10em 4em 1fr; gap: 2px 6px; align-items: center"></div>
           <div style="margin-top: 4px" data-tip="${t("Share of burg names that end in what the burg is by its group: a city, a town, a village. The rest are named for what stands at the place")}">
-            <span>${t("Names ending in the burg's group")}: </span>
-            <input id="namesbaseSettled" type="number" min="0" max="100" step="5" placeholder="85" style="width: 4em" /> %
+            <span>${t("settled")}: </span>
+            <input id="namesbaseSettled" type="number" min="0" max="100" step="1" placeholder="85" style="width: 4em" /> %
+          </div>
+          <div data-tip="${t("Share of founders that are women, in names of the owner-generic pattern. Empty: as the lists of male and female names stand to each other")}">
+            <span>${t("women")}: </span>
+            <input id="namesbaseFemaleFounders" type="number" min="0" max="100" step="1" style="width: 4em" /> %
           </div>
         </div>
         <div data-pane="rules">
@@ -155,10 +169,14 @@ function renderDialog(): void {
             })}
           </div>
           <textarea id="namesbaseRules" rows="7" autocorrect="off" spellcheck="false" style="resize: none; font-family: var(--monospace)"></textarea>
-          <div data-tip="${t("Noun classes such as genders and the plural: the nouns of a class match its pattern, and a word written with * takes its ending beside one")}">
-            ${t("Grammar is written as {{- notation}}, a noun class a line", { notation: notation("class: pattern => ending") })}
+          <div data-tip="${t("Noun classes such as genders and the plural: the nouns of a class match its pattern, and a word written with * takes its ending beside one. The stem and first rules make those forms of the lexicon's words where none is written")}">
+            ${t("Grammar is written a line each: {{- classes}}, {{- endings}}, {{- rules}}", {
+              classes: notation("class: pattern"),
+              endings: notation("*set: class ending, …"),
+              rules: notation("stem: match => replace")
+            })}
           </div>
-          <textarea id="namesbaseGrammar" rows="4" autocorrect="off" spellcheck="false" style="resize: none; font-family: var(--monospace)"></textarea>
+          <textarea id="namesbaseGrammar" rows="8" autocorrect="off" spellcheck="false" style="resize: none; font-family: var(--monospace)"></textarea>
           <div>
             <span>${t("Try a name")}: </span>
             <input id="namesbaseRuleTest" autocorrect="off" spellcheck="false" style="width: 14em"
@@ -215,6 +233,7 @@ function renderDialog(): void {
     if (tab) showTab(tab);
   });
   ensureEl("namesbaseTextarea").addEventListener("change", updateNamesData);
+  ensureEl("namesbaseWaters").addEventListener("change", updateWaters);
   ensureEl("namesbaseUpdateExamples").addEventListener("click", updateExamples);
   ensureEl("namesbaseExamples").addEventListener("click", updateExamples);
   ensureEl("namesbaseName").addEventListener("input", e => updateBaseName((e.target as HTMLInputElement).value));
@@ -229,6 +248,7 @@ function renderDialog(): void {
   ensureEl("namesbaseLexicon").addEventListener("change", updateLexicon);
   ensureEl("namesbasePatterns").addEventListener("change", updatePatterns);
   ensureEl("namesbaseSettled").addEventListener("change", updateSettled);
+  ensureEl("namesbaseFemaleFounders").addEventListener("change", updateFemaleFounders);
   ensureEl("namesbaseRules").addEventListener("change", updateRules);
   ensureEl("namesbaseGrammar").addEventListener("change", updateGrammar);
   ensureEl("namesbaseRuleTest").addEventListener("input", testRules);
@@ -284,6 +304,7 @@ function updateInputs(): void {
 
 function showBase(base: NameBase): void {
   ensureEl<HTMLTextAreaElement>("namesbaseTextarea").value = base.places.names.join(",");
+  ensureEl<HTMLTextAreaElement>("namesbaseWaters").value = base.waters?.names.join(",") ?? "";
   ensureEl<HTMLInputElement>("namesbaseName").value = base.name;
   ensureEl<HTMLInputElement>("namesbaseMin").value = String(base.length[0]);
   ensureEl<HTMLInputElement>("namesbaseMax").value = String(base.length[1]);
@@ -319,11 +340,18 @@ function showLexicon(base: NameBase): void {
       const { first, last } = Lexicon.fallbackForms(base, concept);
       const value = escapeHtml(NameNotation.formatFormants(base.lexicon?.[concept]));
       return `<span>${concept}</span>
-        <input data-concept="${concept}" value="${value}" placeholder="${first}-, -${last}" autocorrect="off" spellcheck="false" />`;
+        <input data-concept="${concept}" value="${value}" placeholder="${first}-, -${last}" autocorrect="off" spellcheck="false"
+          data-tip="${escapeHtml(derivedTip(base, concept))}" />`;
     })
   ]);
   ensureEl("namesbaseLexicon").innerHTML = rows.join("");
   showCoverage(base);
+}
+
+// what the grammar makes of a concept's forms, shown on its field
+function derivedTip(base: NameBase, concept: Concept): string {
+  const derived = Lexicon.derivedForms(base, concept, base.lexicon?.[concept] ?? []);
+  return derived.length ? t("Made by the grammar: {{- forms}}", { forms: NameNotation.formatFormants(derived) }) : "";
 }
 
 function showCoverage(base: NameBase): void {
@@ -343,6 +371,9 @@ function showPatterns(base: NameBase): void {
   });
   ensureEl("namesbasePatterns").innerHTML = rows.join("");
   ensureEl<HTMLInputElement>("namesbaseSettled").value = base.settled === undefined ? "" : String(base.settled * 100);
+  const female = base.patterns?.["owner-generic"]?.female;
+  ensureEl<HTMLInputElement>("namesbaseFemaleFounders").value =
+    female === undefined ? "" : String(Math.round(female * 100));
 }
 
 function updateExamples(): void {
@@ -366,6 +397,14 @@ function updateNamesData(): void {
   }
   base.places.names = names;
   Names.updateChain(base.id);
+}
+
+function updateWaters(): void {
+  const base = selectedBase();
+  if (!base) return;
+  const names = listOf("namesbaseWaters");
+  if (names.length) base.waters = { ...base.waters, names };
+  else delete base.waters;
 }
 
 function updateBaseName(name: string): void {
@@ -417,12 +456,8 @@ function updatePeople(): void {
   if (!base) return;
   const mode = ensureEl<HTMLSelectElement>("namesbasePeopleMode").value as Corpus["mode"];
   const corpus = (id: string, old?: Corpus): Corpus | undefined => {
-    const names = ensureEl<HTMLTextAreaElement>(id)
-      .value.split(",")
-      .map(name => name.trim())
-      .filter(Boolean);
-    if (!names.length) return undefined;
-    return { ...old, names, mode };
+    const names = listOf(id);
+    return names.length ? { ...old, names, mode } : undefined;
   };
   const [male, female] = [corpus("namesbaseMale", base.people?.male), corpus("namesbaseFemale", base.people?.female)];
   if (male || female) base.people = { ...(male && { male }), ...(female && { female }) };
@@ -441,6 +476,7 @@ function updateLexicon(event: Event): void {
   if (forms.length) base.lexicon[concept] = forms;
   else delete base.lexicon[concept];
   input.value = NameNotation.formatFormants(forms); // what was understood
+  input.dataset.tip = derivedTip(base, concept);
   showCoverage(base);
   updateExamples();
 }
@@ -450,6 +486,18 @@ function updateSettled(this: HTMLInputElement): void {
   if (!base) return;
   if (this.value === "") delete base.settled;
   else base.settled = Math.min(Math.max(+this.value, 0), 100) / 100;
+  updateExamples();
+}
+
+function updateFemaleFounders(this: HTMLInputElement): void {
+  const base = selectedBase();
+  if (!base) return;
+  const settings = { ...base.patterns?.["owner-generic"] };
+  if (this.value === "") delete settings.female;
+  else settings.female = Math.min(Math.max(+this.value, 0), 100) / 100;
+  base.patterns ??= {};
+  if (Object.keys(settings).length) base.patterns["owner-generic"] = settings;
+  else delete base.patterns["owner-generic"];
   updateExamples();
 }
 
@@ -493,6 +541,8 @@ function updateGrammar(): void {
   if (!base) return;
   base.grammar = NameNotation.parseGrammar(ensureEl<HTMLTextAreaElement>("namesbaseGrammar").value);
   if (!base.grammar) delete base.grammar;
+  for (const input of document.querySelectorAll<HTMLInputElement>("#namesbaseLexicon input[data-concept]"))
+    input.dataset.tip = derivedTip(base, input.dataset.concept as Concept);
   updateExamples();
 }
 
@@ -748,5 +798,12 @@ interface ParseError {
   line: string;
   error: string;
 }
+
+// the names of a comma separated field
+const listOf = (id: string) =>
+  ensureEl<HTMLTextAreaElement>(id)
+    .value.split(",")
+    .map(name => name.trim())
+    .filter(Boolean);
 
 export const NamesbaseEditor = { open };

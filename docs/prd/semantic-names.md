@@ -8,7 +8,7 @@ Names today are Markov output from a corpus of real town names: they sound right
 
 Three symptoms in the code show the limit:
 
-- `Names.getState` hardcodes the idea of "land" per base index (`land`, `ia`, `maa`, `orszag`, `guk`, `  Guo `). It breaks when name bases are reordered or replaced.
+- `Names.getState` hardcodes the idea of "land" per base index (`land`, `ia`, `maa`, `orszag`, `guk`, ` Guo`). It breaks when name bases are reordered or replaced.
 - Burgs are named in `Burgs.generate`, before ports, citadels, burg type, river names and feature names exist, so a name cannot reflect any of them.
 - The name base format (`name|min|max|d|m|names`) has no room for anything but a corpus, and `m` is already unused.
 
@@ -42,18 +42,18 @@ Generation reads the map and the culture's name base once and stores a meaning o
 
 ## Terms
 
-| Term | What it is | Example |
-| --- | --- | --- |
-| Concept | An entry in a closed vocabulary, identified by an English word | `town`, `black`, `ford` |
-| Proper root | An opaque name with no concept behind it: a person, people, river or older place | `~Eadric` |
-| Pattern | The shape of a meaning: which slots it has | `owner-generic` |
-| Meaning | A pattern with its slots filled, plus the base it was coined in and an optional salt | `owner-generic: ~Eadric, farm` |
-| Gloss | The English reading of a meaning, shown to the user | "Eadric's Farm" |
-| Formant | A name base's fixed toponymic form of a concept, not a dictionary word | `neu`, `stadt`, `gorod` |
-| Template | How a name base lays out a pattern | `{owner}s{generic}` |
-| Sound rule | A regex rewrite a name base applies to a joined name | `ee` at a boundary becomes `e` |
-| Rendering | Meaning plus name base gives a name; the "translation" | `new town` in German gives Neustadt |
-| Appropriation | Adapting a proper root coined in one base to the sounds of another | Eadric in Roman gives Eadricus |
+| Term          | What it is                                                                           | Example                             |
+| ------------- | ------------------------------------------------------------------------------------ | ----------------------------------- |
+| Concept       | An entry in a closed vocabulary, identified by an English word                       | `town`, `black`, `ford`             |
+| Proper root   | An opaque name with no concept behind it: a person, people, river or older place     | `~Eadric`                           |
+| Pattern       | The shape of a meaning: which slots it has                                           | `owner-generic`                     |
+| Meaning       | A pattern with its slots filled, plus the base it was coined in and an optional salt | `owner-generic: ~Eadric, farm`      |
+| Gloss         | The English reading of a meaning, shown to the user                                  | "Eadric's Farm"                     |
+| Formant       | A name base's fixed toponymic form of a concept, not a dictionary word               | `neu`, `stadt`, `gorod`             |
+| Template      | How a name base lays out a pattern                                                   | `{owner}s{generic}`                 |
+| Sound rule    | A regex rewrite a name base applies to a joined name                                 | `ee` at a boundary becomes `e`      |
+| Rendering     | Meaning plus name base gives a name; the "translation"                               | `new town` in German gives Neustadt |
+| Appropriation | Adapting a proper root coined in one base to the sounds of another                   | Eadric in Roman gives Eadricus      |
 
 ## Meanings
 
@@ -63,11 +63,11 @@ A meaning is built from a small set of patterns filled with concepts and proper 
 
 The vocabulary is closed, so the data each name base needs is finite. The English word is both the id and the gloss. Launch targets:
 
-| Group | Target count | Examples |
-| --- | --- | --- |
-| Settlement generics | 40 | town, village, farm, fort, market, harbour, ford, bridge, mouth, spring, hill, pass, valley, field, wood, marsh, island, mine, mill, temple |
-| Modifiers | 80 | new, old, great, little, long, high, upper, lower, north, black, white, red, oak, pine, wolf, bear, stone, iron, salt, king, holy, free |
-| Land generics | 10 | land, realm, march, coast, isles, people |
+| Group               | Target count | Examples                                                                                                                                    |
+| ------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Settlement generics | 40           | town, village, farm, fort, market, harbour, ford, bridge, mouth, spring, hill, pass, valley, field, wood, marsh, island, mine, mill, temple |
+| Modifiers           | 80           | new, old, great, little, long, high, upper, lower, north, black, white, red, oak, pine, wolf, bear, stone, iron, salt, king, holy, free     |
+| Land generics       | 10           | land, realm, march, coast, isles, people                                                                                                    |
 
 Each concept carries tags that say when it fits (`coast`, `river`, `highland`, `forest`, `capital`), used when picking a meaning.
 
@@ -75,16 +75,16 @@ Each concept carries tags that say when it fits (`coast`, `river`, `highland`, `
 
 The pattern set is small and fixed, because every name base must be able to render every pattern.
 
-| Pattern | Slots | Gloss | Used for |
-| --- | --- | --- | --- |
-| `simplex` | root | Aitern | burg, state |
-| `feature` | generic | The Ford | burg |
-| `modifier-generic` | modifier, generic | New Town | burg |
-| `owner-generic` | person root, generic | Eadric's Farm | burg |
-| `generic-of` | generic, river or lake root | Mouth of the Exe | burg |
-| `relative` | modifier, burg root | New Aitern, Upper Aitern | burg |
-| `root-land` | people, capital, founder or river root, land generic | Land of the Franks | state |
-| `modifier-land` | modifier, land generic | East Realm | state |
+| Pattern            | Slots                                                | Gloss                    | Used for    |
+| ------------------ | ---------------------------------------------------- | ------------------------ | ----------- |
+| `simplex`          | root                                                 | Aitern                   | burg, state |
+| `feature`          | generic                                              | The Ford                 | burg        |
+| `modifier-generic` | modifier, generic                                    | New Town                 | burg        |
+| `owner-generic`    | person root, generic                                 | Eadric's Farm            | burg        |
+| `generic-of`       | generic, river or lake root                          | Mouth of the Exe         | burg        |
+| `relative`         | modifier, burg root                                  | New Aitern, Upper Aitern | burg        |
+| `root-land`        | people, capital, founder or river root, land generic | Land of the Franks       | state       |
+| `modifier-land`    | modifier, land generic                               | East Realm               | state       |
 
 `simplex` is the opaque name the generator makes today. Its weight sets how many names on the map carry no readable meaning.
 
@@ -92,17 +92,17 @@ The pattern set is small and fixed, because every name base must be able to rend
 
 The pattern is drawn by weight: the name base's affinity for each pattern times how well the place supports it. Slots are then filled from concepts whose tags match the place.
 
-| Signal | Source | Makes likely |
-| --- | --- | --- |
-| Sea or lake port | `burg.port`, `cells.haven` | harbour, shore, island, `generic-of` a lake |
-| River, its size, mouth or confluence | `cells.r`, `cells.fl`, `pack.rivers` | ford, bridge, mouth, `generic-of` the river |
-| Height and relief | `cells.h` | hill, pass, valley, high, upper, lower |
-| Biome | `cells.biome` | wood, marsh, field, oak, pine, sand |
-| Deposit in the cell | `cells.good` | mine, salt, iron, stone |
-| Culture type | `culture.type` | shifts all weights: Naval to coast concepts, Highland to relief, Nomadic to spring |
-| Capital | `burg.capital` | king, great |
-| Placement score | `cells.s` | town for high scores, village or farm for low |
-| Older burg nearby or across the sea | burgs already named | `relative` |
+| Signal                               | Source                               | Makes likely                                                                       |
+| ------------------------------------ | ------------------------------------ | ---------------------------------------------------------------------------------- |
+| Sea or lake port                     | `burg.port`, `cells.haven`           | harbour, shore, island, `generic-of` a lake                                        |
+| River, its size, mouth or confluence | `cells.r`, `cells.fl`, `pack.rivers` | ford, bridge, mouth, `generic-of` the river                                        |
+| Height and relief                    | `cells.h`                            | hill, pass, valley, high, upper, lower                                             |
+| Biome                                | `cells.biome`                        | wood, marsh, field, oak, pine, sand                                                |
+| Deposit in the cell                  | `cells.good`                         | mine, salt, iron, stone                                                            |
+| Culture type                         | `culture.type`                       | shifts all weights: Naval to coast concepts, Highland to relief, Nomadic to spring |
+| Capital                              | `burg.capital`                       | king, great                                                                        |
+| Placement score                      | `cells.s`                            | town for high scores, village or farm for low                                      |
+| Older burg nearby or across the sea  | burgs already named                  | `relative`                                                                         |
 
 A meaning records why the name was given. It is not re-checked when the map changes: a town keeps "harbour" in its name after the user removes its port.
 
@@ -149,13 +149,13 @@ Every language reshapes foreign names to its own sounds, so a proper root is nev
 
 Appropriation is a pure function of the root and the target base. Illustrative results for `~Eadric`, which depend on the rules each base ships:
 
-| Target base | Rendered root | What changed |
-| --- | --- | --- |
-| English (origin) | Eadric | nothing |
-| Roman | Eadricus | `-us` added after a final consonant |
-| Ruthenian | Edrik | `ea` reduced, `c` to `k` |
-| Japanese | Edoriku | vowels inserted after consonants |
-| Hawaiian | Ekeliki | `d` and `c` to `k`, `r` to `l`, open syllables |
+| Target base      | Rendered root | What changed                                   |
+| ---------------- | ------------- | ---------------------------------------------- |
+| English (origin) | Eadric        | nothing                                        |
+| Roman            | Eadricus      | `-us` added after a final consonant            |
+| Ruthenian        | Edrik         | `ea` reduced, `c` to `k`                       |
+| Japanese         | Edoriku       | vowels inserted after consonants               |
+| Hawaiian         | Ekeliki       | `d` and `c` to `k`, `r` to `l`, open syllables |
 
 The same step runs at generation when a place is named after something another culture named: a town on a river named by its neighbours stores the river's root already appropriated to the town's own base.
 
@@ -174,16 +174,16 @@ The same step runs at generation when a place is named after something another c
 
 A template is a string with slots named by role: `{modifier}`, `{generic}`, `{root}`. Literal text and spaces are allowed, and a slot may be left out when a suffix carries it. Two meanings can then render alike, and the used-names set separates them.
 
-| Pattern | Built-in default | Examples a base can define |
-| --- | --- | --- |
-| `simplex` | `{root}` |  |
-| `feature` | `{generic}` | `al-{generic}` |
-| `modifier-generic` | `{modifier}{generic}` | `{generic} {modifier}` |
-| `owner-generic` | `{root}{generic}` | `{root}s{generic}`, `{root}ingen`, `{root}ov` |
-| `generic-of` | `{root}{generic}` | `{generic}{root}`, `{generic} {root}` |
-| `relative` | `{modifier} {root}` | `{modifier}{root}` |
-| `root-land` | `{root}{generic}` | `{root}ia`, `{root} {generic}` |
-| `modifier-land` | `{modifier}{generic}` |  |
+| Pattern            | Built-in default      | Examples a base can define                    |
+| ------------------ | --------------------- | --------------------------------------------- |
+| `simplex`          | `{root}`              |                                               |
+| `feature`          | `{generic}`           | `al-{generic}`                                |
+| `modifier-generic` | `{modifier}{generic}` | `{generic} {modifier}`                        |
+| `owner-generic`    | `{root}{generic}`     | `{root}s{generic}`, `{root}ingen`, `{root}ov` |
+| `generic-of`       | `{root}{generic}`     | `{generic}{root}`, `{generic} {root}`         |
+| `relative`         | `{modifier} {root}`   | `{modifier}{root}`                            |
+| `root-land`        | `{root}{generic}`     | `{root}ia`, `{root} {generic}`                |
+| `modifier-land`    | `{modifier}{generic}` |                                               |
 
 A base sets two things per pattern: a `weight` that says how often it coins names of that pattern, and its list of templates. Weight matters only at generation. Templates matter for every rendering, including translations of meanings the base would never coin itself.
 
@@ -202,13 +202,13 @@ A concept is resolved through four sources in order, so every base can render ev
 
 Sources 3 and 4 need no authored data, which is what makes community and custom bases work. A prototype over the shipped corpora gave these results:
 
-| Meaning | Authored lexicon | Seeded morpheme | Mined ending |
-| --- | --- | --- | --- |
-| German: new town | Neustadt | Bollsmahl | Bollsach |
-| German: new fort | Neuburg | Bollslauf | Bollsgen |
-| Ruthenian: black ford | Chernobrod | Gorodros | Gorodtsk |
-| Nahuatl: white hill | not authored | Tezotlanc | Tezotepec |
-| Elven: black hill | not authored | Hinorm | Hinora |
+| Meaning               | Authored lexicon | Seeded morpheme | Mined ending |
+| --------------------- | ---------------- | --------------- | ------------ |
+| German: new town      | Neustadt         | Bollsmahl       | Bollsach     |
+| German: new fort      | Neuburg          | Bollslauf       | Bollsgen     |
+| Ruthenian: black ford | Chernobrod       | Gorodros        | Gorodtsk     |
+| Nahuatl: white hill   | not authored     | Tezotlanc       | Tezotepec    |
+| Elven: black hill     | not authored     | Hinorm          | Hinora       |
 
 The fallbacks are consistent and sound native, but on a real-world base they are not true: the seeded morpheme for "black" in Ruthenian came out as "Gorod", which is the real word for town. They are right for fantasy bases and a stopgap for real ones. Mined endings cover 50 to 67% of names in the German, English, Chinese, Korean and Nahuatl corpora and under 10% in Amazigh, Nigerian, Levantine, Draconic and Arachnid, where source 4 does the work.
 
@@ -220,12 +220,12 @@ Each name base carries one ordered list of regex rules that does three jobs: cle
 
 Rules run on the joined string while morpheme boundaries are still marked: `eadric+s+ham`, with a space between words. A rule can therefore target a join or a word end instead of guessing from spelling, which is where most natural change happens.
 
-| Field | Meaning |
-| --- | --- |
-| `match` | Regex source. `+` stands for a morpheme boundary |
-| `replace` | Replacement, with `$1` groups |
-| `when` | Absent: always applied. `long`: only while the name exceeds the base's maximum length. `foreign`: only on proper roots coined in another base |
-| `chance` | 0 to 1. The rule fires on a seeded roll, so a worn name stays worn on every render |
+| Field     | Meaning                                                                                                                                       |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `match`   | Regex source. `+` stands for a morpheme boundary                                                                                              |
+| `replace` | Replacement, with `$1` groups                                                                                                                 |
+| `when`    | Absent: always applied. `long`: only while the name exceeds the base's maximum length. `foreign`: only on proper roots coined in another base |
+| `chance`  | 0 to 1. The rule fires on a seeded roll, so a worn name stays worn on every render                                                            |
 
 ### Order of application
 
@@ -247,16 +247,16 @@ At generation a name that still does not fit is simply re-drawn. The ladder matt
 
 ### Illustrative rules
 
-| Base | Rule | Kind | Effect |
-| --- | --- | --- | --- |
-| Shared defaults | `(.)\1\1` to `$1$1` | always | no triple letters |
-| Shared defaults | `([aeiou])\+\1` to `$1` | always | one vowel across a join |
-| German | `([^lt])\1` to `$1` | always | replaces today's `d: "lt"` |
-| German | `heim$` to `um` | chance 0.1 | Bochheim becomes Bochum |
-| German | `ingen$` to `ing` | long |  |
-| English | `chester$` to `ster` | long | Eadricchester becomes Eadricster |
-| Roman | `([^aeiou])$` to `$1us` | foreign | Eadric becomes Eadricus |
-| Castillian | `^s([^aeiou])` to `es$1` | foreign | Stefan becomes Estefan |
+| Base            | Rule                     | Kind       | Effect                           |
+| --------------- | ------------------------ | ---------- | -------------------------------- |
+| Shared defaults | `(.)\1\1` to `$1$1`      | always     | no triple letters                |
+| Shared defaults | `([aeiou])\+\1` to `$1`  | always     | one vowel across a join          |
+| German          | `([^lt])\1` to `$1`      | always     | replaces today's `d: "lt"`       |
+| German          | `heim$` to `um`          | chance 0.1 | Bochheim becomes Bochum          |
+| German          | `ingen$` to `ing`        | long       |                                  |
+| English         | `chester$` to `ster`     | long       | Eadricchester becomes Eadricster |
+| Roman           | `([^aeiou])$` to `$1us`  | foreign    | Eadric becomes Eadricus          |
+| Castillian      | `^s([^aeiou])` to `es$1` | foreign    | Stefan becomes Estefan           |
 
 ### What this replaces
 
@@ -276,44 +276,44 @@ The formants and rules below are illustrative. Rows marked "fallback" are real p
 
 ### `modifier-generic: new, fort`, coined in German
 
-| Base | Template | Joined | Name |
-| --- | --- | --- | --- |
-| German | `{modifier}{generic}` | `neu+burg` | Neuburg |
-| Ruthenian | `{modifier}{generic}` | `novo+grad` | Novograd |
-| Japanese | `{modifier}{generic}` | `shin+jo` | Shinjo |
-| Celtic | `{generic} {modifier}` | `caer newydd` | Caer Newydd |
-| Nahuatl (fallback) | default | `izta+pan` | Iztapan |
-| Orc (fallback) | default | `brog+ekh` | Brogekh |
+| Base               | Template               | Joined        | Name        |
+| ------------------ | ---------------------- | ------------- | ----------- |
+| German             | `{modifier}{generic}`  | `neu+burg`    | Neuburg     |
+| Ruthenian          | `{modifier}{generic}`  | `novo+grad`   | Novograd    |
+| Japanese           | `{modifier}{generic}`  | `shin+jo`     | Shinjo      |
+| Celtic             | `{generic} {modifier}` | `caer newydd` | Caer Newydd |
+| Nahuatl (fallback) | default                | `izta+pan`    | Iztapan     |
+| Orc (fallback)     | default                | `brog+ekh`    | Brogekh     |
 
 ### `owner-generic: ~Eadric, farm`, coined in English
 
-| Base | Root after appropriation | Template | Joined | After rules | Name |
-| --- | --- | --- | --- | --- | --- |
-| English, salt 0 | Eadric | `{root}{generic}` | `eadric+ham` | `eadricham` | Eadricham |
-| English, salt 1 | Eadric | `{root}{generic}` | `eadric+ton` | `eadricton` | Eadricton |
-| German | Eadrik | `{root}ingen` | `eadrik+ingen` | `eadriking`, by the `long` rule | Eadriking |
-| Ruthenian | Edrik | `{root}ov` | `edrik+ov` | `edrikov` | Edrikov |
-| Roman | Eadricus | `{generic} {root}` | `villa eadricus` | `villa eadricus` | Villa Eadricus |
+| Base            | Root after appropriation | Template           | Joined           | After rules                     | Name           |
+| --------------- | ------------------------ | ------------------ | ---------------- | ------------------------------- | -------------- |
+| English, salt 0 | Eadric                   | `{root}{generic}`  | `eadric+ham`     | `eadricham`                     | Eadricham      |
+| English, salt 1 | Eadric                   | `{root}{generic}`  | `eadric+ton`     | `eadricton`                     | Eadricton      |
+| German          | Eadrik                   | `{root}ingen`      | `eadrik+ingen`   | `eadriking`, by the `long` rule | Eadriking      |
+| Ruthenian       | Edrik                    | `{root}ov`         | `edrik+ov`       | `edrikov`                       | Edrikov        |
+| Roman           | Eadricus                 | `{generic} {root}` | `villa eadricus` | `villa eadricus`                | Villa Eadricus |
 
 The Roman row shows the non-goal: a grammar engine would give the genitive, Villa Eadrici. A `foreign` or template-level rule can approximate it; full case agreement is out of scope.
 
 ### `generic-of: mouth, ~Exe`, coined in English
 
-| Base | Template | Joined | Name |
-| --- | --- | --- | --- |
+| Base    | Template          | Joined      | Name                                                |
+| ------- | ----------------- | ----------- | --------------------------------------------------- |
 | English | `{root}{generic}` | `exe+mouth` | Exmouth, by a rule that drops a final e at the join |
-| Celtic | `{generic}{root}` | `aber+exe` | Aberexe |
-| German | `{root}{generic}` | `exe+munde` | Exemunde |
+| Celtic  | `{generic}{root}` | `aber+exe`  | Aberexe                                             |
+| German  | `{root}{generic}` | `exe+munde` | Exemunde                                            |
 
 ### `root-land: ~Frank, land`, a state coined in German
 
-| Base | Joined | Name |
-| --- | --- | --- |
-| German | `frank+en+land` | Frankenland |
-| Finnic | `frank+maa` | Frankmaa |
-| Hungarian | `frank+orszag` | Frankorszag |
-| Chinese | `fulan guo` | Fulan Guo |
-| Roman | `franc+ia` | Francia |
+| Base      | Joined          | Name        |
+| --------- | --------------- | ----------- |
+| German    | `frank+en+land` | Frankenland |
+| Finnic    | `frank+maa`     | Frankmaa    |
+| Hungarian | `frank+orszag`  | Frankorszag |
+| Chinese   | `fulan guo`     | Fulan Guo   |
+| Roman     | `franc+ia`      | Francia     |
 
 ## Data model
 
@@ -321,8 +321,14 @@ One structure describes a name base in `src` and in saved maps. Field names are 
 
 ```ts
 type Pattern =
-  | "simplex" | "feature" | "modifier-generic" | "owner-generic"
-  | "generic-of" | "relative" | "root-land" | "modifier-land";
+  | "simplex"
+  | "feature"
+  | "modifier-generic"
+  | "owner-generic"
+  | "generic-of"
+  | "relative"
+  | "root-land"
+  | "modifier-land";
 
 type Token = Concept | `~${string}`; // ~ marks a proper root
 
@@ -372,39 +378,41 @@ interface NameBase {
   places: Corpus;
   people?: People;
   lexicon?: Partial<Record<Concept, Formant[]>>;
-  patterns?: Partial<Record<Pattern, { weight?: number; templates?: Template[] }>>;
+  patterns?: Partial<
+    Record<Pattern, { weight?: number; templates?: Template[] }>
+  >;
   rules?: SoundRule[];
 }
 ```
 
 ### Changes to existing entities
 
-| Entity | Change |
-| --- | --- |
-| `Burg` | adds `meaning?: Meaning`; `name` stays the displayed value |
-| `State` | adds `meaning?: Meaning` |
-| `Culture` | `base` changes from an array index to a name base id |
+| Entity    | Change                                                     |
+| --------- | ---------------------------------------------------------- |
+| `Burg`    | adds `meaning?: Meaning`; `name` stays the displayed value |
+| `State`   | adds `meaning?: Meaning`                                   |
+| `Culture` | `base` changes from an array index to a name base id       |
 
 `name` and `meaning` are independent fields, and both are editable. Each is stored exactly as the user typed it: editing the name does not touch the meaning, and editing the meaning does not change the name until the user asks to re-render. A name can therefore differ from what its meaning would render to.
 
 ### Names API
 
-| Call | Returns |
-| --- | --- |
-| `Names.proper(baseId, kind)` | a place root, or a male or female personal name, from the base's corpora |
-| `Names.burgMeaning(burg)`, `Names.stateMeaning(state)` | a meaning picked from map context |
-| `Names.render(meaning, baseId)` | the name in that base |
-| `Names.gloss(meaning)` | the English reading |
-| `Names.getBase`, `getCulture`, `getCultureShort` | unchanged behaviour, addressed by id; still used by about 80 call sites |
+| Call                                                   | Returns                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `Names.proper(baseId, kind)`                           | a place root, or a male or female personal name, from the base's corpora |
+| `Names.burgMeaning(burg)`, `Names.stateMeaning(state)` | a meaning picked from map context                                        |
+| `Names.render(meaning, baseId)`                        | the name in that base                                                    |
+| `Names.gloss(meaning)`                                 | the English reading                                                      |
+| `Names.getBase`, `getCulture`, `getCultureShort`       | unchanged behaviour, addressed by id; still used by about 80 call sites  |
 
 ### Source layout
 
-| Path | Holds |
-| --- | --- |
-| `src/data/name-bases/<id>.ts` | one name base per file, loaded on demand |
-| `src/data/name-concepts.ts` | the concept vocabulary with kinds and tags |
-| `src/data/name-rules.ts` | shared default rules and the nearest-letter table |
-| `src/model/society/names/` | `names-generator.ts` (the bases and their Markov chains), `toponyms-generator.ts` (meanings for places), `meanings.ts` (rendering and gloss), `lexicon.ts` (forms and templates of a base), `appropriation.ts`, `sound-rules.ts` and `notation.ts` |
+| Path                          | Holds                                                                                                                                                                                                                                              |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/data/name-bases/<id>.ts` | one name base per file, loaded on demand                                                                                                                                                                                                           |
+| `src/data/name-concepts.ts`   | the concept vocabulary with kinds and tags                                                                                                                                                                                                         |
+| `src/data/name-rules.ts`      | shared default rules and the nearest-letter table                                                                                                                                                                                                  |
+| `src/model/society/names/`    | `names-generator.ts` (the bases and their Markov chains), `toponyms-generator.ts` (meanings for places), `meanings.ts` (rendering and gloss), `lexicon.ts` (forms and templates of a base), `appropriation.ts`, `sound-rules.ts` and `notation.ts` |
 
 One file per base makes a lexicon a per-language contribution, like a locale file. Today the 86 KB corpus file loads whole; per-base files let a map load only the bases its cultures use.
 
@@ -436,13 +444,13 @@ A name without a meaning, from an old map or typed by hand, is treated as `simpl
 
 These move to ids in the same change:
 
-| Place | Today |
-| --- | --- |
-| `Names.getState` | suffix per `base === n`, fantasy range `base > 32 && base < 42` |
-| `States.defineStateForms` | form names per base index, such as `base === 24` for Satrapy |
-| `Names.getMapName`, `Names.getEra` | `rand(0, 31)`, base `1` |
-| `src/data/culture-sets.ts` | numeric `base` per predefined culture |
-| Cultures editor, namesbase editor, assistant context | base select values and lookups |
+| Place                                                | Today                                                           |
+| ---------------------------------------------------- | --------------------------------------------------------------- |
+| `Names.getState`                                     | suffix per `base === n`, fantasy range `base > 32 && base < 42` |
+| `States.defineStateForms`                            | form names per base index, such as `base === 24` for Satrapy    |
+| `Names.getMapName`, `Names.getEra`                   | `rand(0, 31)`, base `1`                                         |
+| `src/data/culture-sets.ts`                           | numeric `base` per predefined culture                           |
+| Cultures editor, namesbase editor, assistant context | base select values and lookups                                  |
 
 ### Namesbase files
 
@@ -505,22 +513,22 @@ An optional Meaning column with the gloss, included in search and CSV export.
 
 ### Namesbase editor
 
-| Tab | Content |
-| --- | --- |
-| Places | today's names textarea, mode, length |
-| People | the male and female name lists and their mode |
-| Lexicon | concept by concept: variants with form, weight, position, short form, link; a coverage figure for the base |
-| Patterns | weight per pattern and its templates |
-| Rules | the ordered rule list with a test field that shows a sample name before and after each rule |
+| Tab      | Content                                                                                                    |
+| -------- | ---------------------------------------------------------------------------------------------------------- |
+| Places   | today's names textarea, mode, length                                                                       |
+| People   | the male and female name lists and their mode                                                              |
+| Lexicon  | concept by concept: variants with form, weight, position, short form, link; a coverage figure for the base |
+| Patterns | weight per pattern and its templates                                                                       |
+| Rules    | the ordered rule list with a test field that shows a sample name before and after each rule                |
 
 The examples panel shows meanings with their gloss and rendered name instead of bare Markov samples. The existing Analyze action also proposes the base's most frequent endings as formant candidates. A base can name a parent in an `extends` select.
 
 ### Options
 
-| Option | Values | Effect |
-| --- | --- | --- |
-| Meaningful names | 0 to 100% | scales the weight of `simplex` against the other patterns |
-| Proper names | by base, generate, pick | overrides each corpus `mode` |
+| Option           | Values                  | Effect                                                    |
+| ---------------- | ----------------------- | --------------------------------------------------------- |
+| Meaningful names | 0 to 100%               | scales the weight of `simplex` against the other patterns |
+| Proper names     | by base, generate, pick | overrides each corpus `mode`                              |
 
 ### Later
 
@@ -534,13 +542,13 @@ The code is the smaller part of this feature. The data is about 6,400 formants a
 
 ### What one base needs
 
-| Data | Size | Needed for |
-| --- | --- | --- |
-| `people` corpus | about 150 names in male and female lists | proper roots that sound like people |
-| Generic and land formants | 50 concepts, about 75 variants | the load-bearing half of most names |
-| Modifier formants | 80 concepts, about 120 variants | true meanings instead of seeded morphemes |
-| Pattern weights and templates | 8 patterns | native word order and joins |
-| Sound rules | 5 to 15 rules | doubles, joins, erosion, foreign roots |
+| Data                          | Size                                     | Needed for                                |
+| ----------------------------- | ---------------------------------------- | ----------------------------------------- |
+| `people` corpus               | about 150 names in male and female lists | proper roots that sound like people       |
+| Generic and land formants     | 50 concepts, about 75 variants           | the load-bearing half of most names       |
+| Modifier formants             | 80 concepts, about 120 variants          | true meanings instead of seeded morphemes |
+| Pattern weights and templates | 8 patterns                               | native word order and joins               |
+| Sound rules                   | 5 to 15 rules                            | doubles, joins, erosion, foreign roots    |
 
 There are 43 shipped bases: 33 real-world, the generic human base, and 9 fantasy. Fantasy bases have no true lexicon, so the fallbacks are acceptable for them permanently; they only need a `people` corpus and rules.
 
@@ -565,12 +573,12 @@ One base is one file, so a language is a self-contained pull request, the way a 
 
 Four phases, each shippable on its own. The first changes no names.
 
-| Phase | Ships | User-visible result |
-| --- | --- | --- |
-| 1. Foundation | New `NameBase` structure and per-base files; base ids in place of indexes; JSON save record and migration; sound rules replacing `d` and the hardcoded clean-up; JSON namesbase export, legacy import | None intended. Old maps load, names generate as before |
-| 2. Meanings | Concept vocabulary and patterns; meaning generation for burgs and states; `render` with fallbacks; pipeline reorder and the naming generator's own seed; gloss and Translations view in the burg and state editors | Names that fit their place; any name viewable in any base. Renderings are fallbacks on most bases |
-| 3. Authored data | `people` corpora; full lexicons, templates and rules for English and Ruthenian; appropriation with `foreign` rules; namesbase editor tabs; the two options | True meanings in English and Ruthenian; founders with personal names; users can author bases |
-| 4. Reach | Remaining bases by contribution; label display mode; re-render on culture change; localised gloss; meanings for rivers, lakes and provinces | The whole map readable in one language or in English |
+| Phase            | Ships                                                                                                                                                                                                              | User-visible result                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| 1. Foundation    | New `NameBase` structure and per-base files; base ids in place of indexes; JSON save record and migration; sound rules replacing `d` and the hardcoded clean-up; JSON namesbase export, legacy import              | None intended. Old maps load, names generate as before                                            |
+| 2. Meanings      | Concept vocabulary and patterns; meaning generation for burgs and states; `render` with fallbacks; pipeline reorder and the naming generator's own seed; gloss and Translations view in the burg and state editors | Names that fit their place; any name viewable in any base. Renderings are fallbacks on most bases |
+| 3. Authored data | `people` corpora; full lexicons, templates and rules for English and Ruthenian; appropriation with `foreign` rules; namesbase editor tabs; the two options                                                         | True meanings in English and Ruthenian; founders with personal names; users can author bases      |
+| 4. Reach         | Remaining bases by contribution; label display mode; re-render on culture change; localised gloss; meanings for rivers, lakes and provinces                                                                        | The whole map readable in one language or in English                                              |
 
 Phase 1 is the riskiest for existing users and the least visible, so it goes alone, covered by the map restoration tests.
 
@@ -612,40 +620,40 @@ Playwright suites are not run during development; Vitest runs with at most three
 
 The largest risk is data volume and quality, not code.
 
-| Risk | Mitigation |
-| --- | --- |
-| Authoring thousands of formants and names takes long | Fallbacks make every base work from day one; data ships in waves; one file per base invites contributions |
-| A native speaker finds a rendering wrong | The bar is "sounds right"; coverage is shown per base; snapshot tests make corrections easy to review |
-| Names become more repetitive than Markov output | `simplex` weight, person roots, weighted variants and the salt; the Meaningful names option |
-| Fallback morphemes look like real words with another meaning | Authored generics first on real-world bases; fallback renderings marked in the Translations view |
-| A rule in an imported base is invalid or slow | Rules compile inside a guard and are skipped on error; rule count and pattern length are capped; names are short |
-| Old seeds give different maps | One-time, stated in the release notes |
-| Moving from indexes to ids breaks a reader | Phase 1 ships alone with no intended behaviour change, under the map restoration tests |
-| Scope grows toward a language generator | Non-goals above; formants and regex only |
+| Risk                                                         | Mitigation                                                                                                       |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Authoring thousands of formants and names takes long         | Fallbacks make every base work from day one; data ships in waves; one file per base invites contributions        |
+| A native speaker finds a rendering wrong                     | The bar is "sounds right"; coverage is shown per base; snapshot tests make corrections easy to review            |
+| Names become more repetitive than Markov output              | `simplex` weight, person roots, weighted variants and the salt; the Meaningful names option                      |
+| Fallback morphemes look like real words with another meaning | Authored generics first on real-world bases; fallback renderings marked in the Translations view                 |
+| A rule in an imported base is invalid or slow                | Rules compile inside a guard and are skipped on error; rule count and pattern length are capped; names are short |
+| Old seeds give different maps                                | One-time, stated in the release notes                                                                            |
+| Moving from indexes to ids breaks a reader                   | Phase 1 ships alone with no intended behaviour change, under the map restoration tests                           |
+| Scope grows toward a language generator                      | Non-goals above; formants and regex only                                                                         |
 
 ### Decisions
 
-| Question | Decision |
-| --- | --- |
-| A name typed by hand | Name and meaning are both editable and kept exactly as typed; neither overwrites the other |
-| Template order against formant `position` | The template sets the order; `position` only filters variants |
-| A saved reference to a shipped base | Follows later data updates |
-| First authored bases | English and Ruthenian |
-| Shared founders in `pick` mode | Allowed |
-| Gloss language | English only at launch |
-| `people` corpus | Split by gender |
-| A template that drops the generic slot | Allowed; two meanings may render alike |
+| Question                                  | Decision                                                                                   |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------ |
+| A name typed by hand                      | Name and meaning are both editable and kept exactly as typed; neither overwrites the other |
+| Template order against formant `position` | The template sets the order; `position` only filters variants                              |
+| A saved reference to a shipped base       | Follows later data updates                                                                 |
+| First authored bases                      | English and Ruthenian                                                                      |
+| Shared founders in `pick` mode            | Allowed                                                                                    |
+| Gloss language                            | English only at launch                                                                     |
+| `people` corpus                           | Split by gender                                                                            |
+| A template that drops the generic slot    | Allowed; two meanings may render alike                                                     |
 
 ## Implementation status
 
 All four phases are done, with the differences listed below. The sections after the phases record what changed once the names were tested; where they differ from the text above, they are what the code does.
 
-| Phase | State | Where it differs from the text above |
-| --- | --- | --- |
-| 1. Foundation | Done | Name bases are imported eagerly, not on demand: `Names.getBase` is synchronous at about 80 call sites |
-| 2. Meanings | Done | See the list below |
-| 3. Authored data | Done |  |
-| 4. Reach | Done | See the list below |
+| Phase            | State | Where it differs from the text above                                                                  |
+| ---------------- | ----- | ----------------------------------------------------------------------------------------------------- |
+| 1. Foundation    | Done  | Name bases are imported eagerly, not on demand: `Names.getBase` is synchronous at about 80 call sites |
+| 2. Meanings      | Done  | See the list below                                                                                    |
+| 3. Authored data | Done  |                                                                                                       |
+| 4. Reach         | Done  | See the list below                                                                                    |
 
 ### Phase 2 differences
 
@@ -672,7 +680,7 @@ All four phases are done, with the differences listed below. The sections after 
 
 ### Phase 4 differences
 
-- **Remaining bases:** no further lexicon was written. English and Ruthenian are authored; the other 41 bases still render with forms found in their corpora. A contributor guide, `docs/wiki/Name-bases.md`, explains how to write one.
+- **Remaining bases:** no further lexicon was written. English and Ruthenian are authored; the other 41 bases still render with forms found in their corpora. A contributor guide, `docs/wiki/Names.md`, explains how to write one.
 - **Localised gloss:** concept words and gloss templates are interface strings, so a translator can supply them, but no locale has them yet and they show in English. Words are joined as written, with no grammatical agreement, so a gendered language needs care in how it words its modifiers.
 - **Label display mode:** the option **Names on labels** is a browser preference, `options.app.labels.names`, not saved with the map. It shows the names, their meaning, or their rendering in one name base. Under a form name a land reads by its root alone: "Duchy of Aric", not "Duchy of Land of Aric".
 - **Re-render on culture change is an offer, not automatic.** Changing a burg's or a state's culture asks whether to take the name the new base gives. Changing a culture's name base asks the same for all its unlocked burgs at once. States, rivers and provinces are not swept on a base change.
@@ -699,7 +707,7 @@ Not done in this rework: English got settlement endings by group but no grammar;
 ### Second round of feedback
 
 - **Suffixes over settlement words.** A settlement concept is a suffix nearly always. Its full words, such as Gorodok, Posad and Selo, are kept rare by their weights.
-- **A proper name takes only suffixes.** Where a concept has suffixes, a proper name joins nothing else. A full word stands apart from the name: after a dash (David-Gorodok, from the template `{root}-{generic}`) or as a possessive phrase (Davidov Gorodok). Davidov, Davidovsk and Davidovo remain the rule.
+- **A proper name takes only suffixes.** Where a concept has suffixes, a proper name joins nothing else. A full word stands apart from the name: after a dash (David-Gorodok, from the template `{root}-{generic}`, for the few words written `-Gorodok`) or as a possessive phrase (Davidov Gorodok). Davidov, Davidovsk and Davidovo remain the rule.
 - **English endings vary more:** twelve or so per burg group instead of four to six.
 - **A base sets its own share** of burg names that end in the burg's group (`settled`, 0.85 by default). English sets 0.65, since an English name is as often what stands at the place.
 
@@ -722,3 +730,14 @@ Not done: numerals (Three Towers, Pyatigorsk), since they need plural nouns; the
 - **Joined numerals** need no rule: Pyatigorsk, Semiluki, Trehgorka.
 
 Not done: the other 41 bases have no counting rules, so their numerals stand beside a plain noun.
+
+### Notation and derived forms
+
+The written form changed after the numerals; the examples above keep the old one.
+
+- **Position by spelling.** `Gorod` stands as a word, `novo-` starts one, `-grad` ends one, `berez=` is a stem and `=sk` a suffix; `@first`, `@last`, `@word` and `@stem` are gone. Weights are whole numbers after a space (`-ton 6`, `{root}{generic} 20`), and a lexicon may be written a concept a line.
+- **No links.** `king+s` is written as the forms it stood for, `kings-, King`.
+- **Sets of endings.** A grammar names sets of endings beside the default one, `*soft: m iy, f yaya, n eye, pl iye`, and `verhn*soft` takes them: one form where four class-bound words stood.
+- **Forms by the grammar.** A grammar's `stem:` and `first:` rules make a place's and a modifier's stems of their words, and a modifier's combining forms of its stems or words; a form written of that kind takes their place. Ruthenian writes about a tenth fewer forms and its places gain the stems they lacked. Describing words are not made of nouns: Ruthenian's are too irregular for a rule.
+- **Templates are drawn first.** A template is drawn by its own weight, then the forms that fit it by theirs; how many forms fit no longer favours a template.
+- **Concept weights.** Every concept but the settlements is written out with a whole-number weight from 1 to 10, how common it is in real names: `new` 10, `ford` 9, `oak` 7, `wolf` 5, `kraken` 1. `rare` is gone. A concept that fits anywhere fits at 1, no longer 0.6, so the commonest words reach the names; thresholds for landmarks and terrain test the fit alone, and plain `land` leads the states' land words by its weight.

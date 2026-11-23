@@ -18,12 +18,13 @@ const SYLLABIC = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script
 
 const formantSchema = z.object({
   form: z.string().min(1),
-  weight: z.number().min(0).optional(),
+  weight: z.number().int().min(0).optional(),
   position: z.enum(["first", "last", "word", "stem"]).optional(),
   short: z.string().optional(),
-  link: z.string().optional(),
   class: z.string().optional()
 });
+
+const rewritesSchema = z.array(z.object({ match: z.string(), replace: z.string() })).optional();
 
 const corpusSchema = z.object({
   names: z.array(z.string()),
@@ -38,6 +39,7 @@ const NAME_BASE_SCHEMA = z.object({
   length: z.tuple([z.number(), z.number()]),
   extends: z.string().optional(),
   places: corpusSchema,
+  waters: corpusSchema.optional(),
   people: z.object({ male: corpusSchema.optional(), female: corpusSchema.optional() }).optional(),
   rules: z
     .array(
@@ -54,7 +56,8 @@ const NAME_BASE_SCHEMA = z.object({
   grammar: z
     .object({
       classes: z.record(z.string(), z.string()).optional(),
-      agreement: z.record(z.string(), z.string()).optional()
+      endings: z.record(z.string(), z.record(z.string(), z.string())).optional(),
+      derive: z.object({ stem: rewritesSchema, first: rewritesSchema }).optional()
     })
     .optional(),
   settled: z.number().min(0).max(1).optional(),
@@ -63,8 +66,9 @@ const NAME_BASE_SCHEMA = z.object({
     .record(
       z.string(),
       z.object({
-        weight: z.number().min(0).optional(),
-        templates: z.array(z.object({ parts: z.string(), weight: z.number().min(0).optional() })).optional()
+        weight: z.number().int().min(0).optional(),
+        female: z.number().min(0).max(1).optional(),
+        templates: z.array(z.object({ parts: z.string(), weight: z.number().int().min(0).optional() })).optional()
       })
     )
     .optional()
@@ -76,7 +80,7 @@ class NamesGenerator {
   private readonly shipped = this.defaults.map(base => base.id); // a shipped base's place in the default set
   nameBases: NameBase[] = this.getNameBases();
   private readonly chains = new Map<string, MarkovChain | null>(); // Markov chains by base id
-  private readonly peopleChains = new WeakMap<string[], MarkovChain>(); // by corpus, so an edited corpus is chained anew
+  private readonly corpusChains = new WeakMap<string[], MarkovChain>(); // of people and waters, by corpus: an edited one is chained anew
 
   /** A base of the classic make: a length range, a corpus and the letters allowed to stand twice in a row */
   composeBase(id: string, name: string, length: [number, number], names: string[], doubled = ""): NameBase {
@@ -186,8 +190,9 @@ class NamesGenerator {
   }
 
   /** A personal name of a base: a new one off the chain of its people corpus, or one of the corpus as it is.
-   * The base sets which, unless the options do. A base with no people names a person like a place, only shorter */
-  getPerson(id: string): string {
+   * The base sets which, unless the options do. A base with no people names a person like a place, only shorter.
+   * Women are named as often as `female` says, 0 to 1, or by the sizes of the two lists */
+  getPerson(id: string, female?: number): string {
     const base = this.resolve(id) ?? this.nameBases[0];
     const people =
       base &&
@@ -195,16 +200,30 @@ class NamesGenerator {
     if (!people) return this.getBase(id, 3, 6, "");
 
     const corpora = [people.male, people.female].filter((corpus): corpus is Corpus => Boolean(corpus?.names.length));
-    const roll = Math.random() * corpora.reduce((sum, { names }) => sum + names.length, 0);
-    const corpus = corpora[1] && roll >= corpora[0].names.length ? corpora[1] : corpora[0]; // by the lists' sizes
+    const total = corpora.reduce((sum, { names }) => sum + names.length, 0);
+    const men = female === undefined ? corpora[0].names.length / total : 1 - female;
+    const corpus = corpora[1] && Math.random() >= men ? corpora[1] : corpora[0];
 
     const { proper } = options.generation.names;
     if ((proper === "base" ? (corpus.mode ?? "chain") : proper) === "pick") return ra(corpus.names);
-    if (!this.peopleChains.has(corpus.names)) this.peopleChains.set(corpus.names, this.calculateChain(corpus.names));
-    const [min, max] = corpus.length ?? [4, 8];
-    const name = SoundRules.capitalize(
-      SoundRules.apply(this.walk(this.peopleChains.get(corpus.names)!, min, max), base.rules)
-    );
+    return this.coin(corpus, base, corpus.length ?? [4, 8]);
+  }
+
+  /** A proper name of a river or a lake: off the chain of the base's waters or one of them as it is, as the list
+   * says; a place name where the base lists none */
+  getWater(id: string): string {
+    const base = this.resolve(id) ?? this.nameBases[0];
+    const waters = base && this.lineage(base).find(({ waters }) => waters?.names.length)?.waters;
+    if (!waters) return this.getBase(id);
+    if (waters.mode === "pick") return ra(waters.names);
+    return this.coin(waters, base, waters.length ?? base.places.length ?? base.length);
+  }
+
+  // a new name off a corpus's chain, by the base's rules
+  private coin(corpus: Corpus, base: NameBase, [min, max]: [number, number]): string {
+    if (!this.corpusChains.has(corpus.names)) this.corpusChains.set(corpus.names, this.calculateChain(corpus.names));
+    const walked = this.walk(this.corpusChains.get(corpus.names)!, min, max);
+    const name = SoundRules.capitalize(SoundRules.apply(walked, base.rules));
     return name.length < 2 ? ra(corpus.names) : name;
   }
 

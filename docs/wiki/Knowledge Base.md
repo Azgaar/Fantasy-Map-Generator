@@ -390,7 +390,23 @@ The Ice layer is generated from temperature with a fixed threshold, so the start
 
 ### How can I regenerate name of a particular state?
 
-Go to Tools -> edit States. Click the State name, you'll see 2 buttons, a refresh icon and a book icon, click the book icon to re-roll the name using the namesbase of its culture: click the refresh icon if you just want a random name
+Go to Tools -> edit States and click the state's name. In the name editor, the book button (Generate culture-specific name) coins a new name in the namesbase of the state's culture, and the globe button (Generate random name) does the same in a random namesbase
+
+### What does the Meaning line under a name mean?
+
+Burgs, states, provinces, rivers and lakes are named in two steps. The generator first decides what the name means from what is at the place, such as Birch Town for a town by a birch forest or Eadric's Farm for a farm founded by Eadric. Then the namesbase of the culture says it in its language: Birkton in English, Berezin in Ruthenian. The editor shows that meaning under the name. The name and the meaning are stored apart, so a name you type is never overwritten and may say something other than its meaning. Islands, seas, routes, markers and religions have no meanings. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
+
+### Can I see a name in another language?
+
+Yes. In a burg, state, province, river or lake editor, press the two-arrows button next to the Meaning (See the name in other name bases): it lists the name in every namesbase, and a click takes one. To show the whole map in one language, or as what the names mean, set Options -> Advanced -> Names on labels; only the labels change, not the names
+
+### Why don't German, French and other names mean what the Meaning says?
+
+Only the English and Ruthenian namesbases have their words written, and the Human Generic base uses plain English words. The other bases say a meaning with endings and words found in their own lists of place names, so the names sound right but mean nothing to a speaker: New Town in German is Zadetal. The meaning is still kept, and a base gets real words once someone writes its Lexicon tab in Tools -> Namesbase. How to write one: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
+
+### How do I create my own namesbase?
+
+Open Tools -> Namesbase and press Add. Name the base and replace the example on the Places tab with a few hundred real place names, commas between; set Length to the range of those names and add personal names on the People tab. Press Analyze to check the list. Then in Tools -> Cultures pick the base for a culture and click the arrows next to it to rename its burgs. The names will sound like the language; writing the Lexicon tab makes them mean something too. Namesbases are saved with the map, so download the base to use it in other maps. Guide: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
 
 ### How to create landmass on an already generated map?
 
