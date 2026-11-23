@@ -3,7 +3,8 @@ import { parseTemplates } from "@/utils/name-notation";
 import type { Formant, NameBase } from ".";
 
 // the base speaks plain English: a concept goes by its own word, a settlement by its English ending
-const plain = Object.keys(CONCEPTS).filter(concept => !conceptsOf("settlement").includes(concept as Concept));
+const english = [...conceptsOf("settlement"), ...conceptsOf("numeral")] as string[];
+const plain = Object.keys(CONCEPTS).filter(concept => !english.includes(concept));
 const words = Object.fromEntries(plain.map(concept => [concept, [{ form: concept }]]));
 
 export const humanGeneric: NameBase = {

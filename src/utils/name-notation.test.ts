@@ -93,3 +93,14 @@ it("reads and writes a grammar", () => {
   });
   expect(parseGrammar("no classes here")).toBeUndefined();
 });
+
+it("reads and writes a rule that makes a noun of a class", () => {
+  const text = "(?<=[sxz])$ => es | as pl\n$ => s | as pl\na$ =>  | as many";
+  const rules = parseRules(text);
+  expect(rules).toEqual([
+    { match: "(?<=[sxz])$", replace: "es", as: "pl" },
+    { match: "$", replace: "s", as: "pl" },
+    { match: "a$", replace: "", as: "many" }
+  ]);
+  expect(parseRules(formatRules(rules))).toEqual(rules);
+});

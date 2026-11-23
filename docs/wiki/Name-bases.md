@@ -73,6 +73,21 @@ A stem written with its final `a`, such as `ryba@stem`, joins as a name ending i
 
 Spelling that depends on the letters at the join belongs to the rules, not here: write the regular ending and let a `join` rule turn `k+yi` into `kiy`.
 
+## Numbers
+
+The numerals, `two` to `thousand`, stand where a describing word does: Three Towers, Seven Falls. A language that changes a noun beside a number needs a rule for it. Give the numeral a noun class and write rules that make a noun of that class, the first that matches:
+
+```
+three:  three/pl@word
+
+(?<=[sxz]|ch|sh)$ => es | as pl
+$ => s | as pl
+```
+
+A noun already of the class stands as it is, so name the class in the grammar: `pl: [^s]s$` lets Seven Falls be. An irregular noun gets a rule of its own before the others: `tooth$ => teeth | as pl`.
+
+A language may have several such classes. Ruthenian has one for a few, in two genders, and one for many: `tri/few@word` gives Tri Ozera, `dve/fewf@word` gives Dve Gory, `sem/many@word` gives Sem Holmov. A numeral with a combining form joins the name instead and needs no rule: `pyati@first` gives Pyatigorsk, `semi@first` gives Semiluki.
+
 ## Patterns and templates
 
 A template lays a pattern out. Slots are `{root}`, `{generic}` and `{modifier}`; anything else is kept as written:

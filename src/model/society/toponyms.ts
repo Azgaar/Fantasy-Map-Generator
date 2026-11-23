@@ -69,6 +69,12 @@ const TERRAIN: Concept[] = [
   ...["grove", "bank", "bay", "cape", "cliff", "ridge", "pass", "heath", "pool", "rock", "crag", "fell", "falls"],
   ...["glade", "glen", "hollow", "gorge", "peak", "cave", "sands", "dune", "waste", "fen", "barrow", "bend"]
 ] as Concept[];
+// what there may be several of in one place
+const COUNTABLE: Concept[] = [
+  ...["hill", "mount", "peak", "rock", "tower", "bridge", "ford", "well", "spring", "pool", "lake", "mill", "tree"],
+  ...["cave", "barrow", "island", "cliff", "crag", "tooth", "horn", "finger", "fork", "grove", "spire", "falls"]
+] as Concept[];
+const NUMBERED = 0.12; // the share of such names that count them
 const WATERS: Concept[] = ["river", "brook", "water", "run", "tarn", "eye"]; // what a water is, not what a burg stands by
 const isBuilt = (weight: number, _: unknown, concept: Concept) =>
   weight > 0 && concept !== "abbey" && !WATERS.includes(concept);
@@ -159,10 +165,17 @@ class ToponymsGenerator {
     if (pattern === "feature") return [by.landmark!];
     if (pattern === "owner-generic") return [`~${Names.getPerson(base.id)}`, generic()];
     if (pattern === "relative") return [by.neighbor!.modifier, by.neighbor!.root];
-    if (pattern === "compound") return [this.pickConcept("modifier", site)!, by.terrain!, by.settlement!];
+    const numbered = (counted: Concept) => COUNTABLE.includes(counted) && P(NUMBERED);
+    const numeral = () => this.pickWeighted(conceptsOf("numeral"), weightOf);
+    if (pattern === "compound") {
+      const first = numbered(by.terrain!) ? numeral() : this.pickConcept("modifier", site)!;
+      return [first, by.terrain!, by.settlement!];
+    }
     if (pattern === "modifier-generic") {
+      const place = generic();
+      if (!by.settled && numbered(place)) return [numeral(), place]; // Three Towers
       const named = by.settled && by.landmark && P(LANDMARK) ? by.landmark : this.pickConcept("modifier", site)!;
-      return [named, generic()];
+      return [named, place];
     }
     const byWater =
       by.settled ??

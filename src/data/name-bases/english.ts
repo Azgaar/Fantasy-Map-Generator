@@ -19,10 +19,15 @@ export const english: NameBase = {
     { match: "s?chester$", replace: "ster", when: "long" },
     { match: "borough$", replace: "bury", when: "long" },
     { match: "ing(ton|ham)$", replace: "$1", when: "long" },
+    { match: "tooth$", replace: "teeth", as: "pl" }, // what a noun is beside a number: Three Towers
+    { match: "(?<=[sxz]|ch|sh)$", replace: "es", as: "pl" },
+    { match: "(?<=[^aeiou])y$", replace: "ies", as: "pl" },
+    { match: "$", replace: "s", as: "pl" },
     { match: "kh", replace: "k", when: "foreign" },
     { match: "zh", replace: "j", when: "foreign" },
     { match: "sch", replace: "sh", when: "foreign" }
   ],
+  grammar: { classes: { pl: "[^s]s$", sg: "" } }, // a noun in -s is plural already: Seven Falls
   lexicon: lexiconOf({
     city: "chester@last:3, bury@last:3, borough~burgh@last:2, ham@last:2, wich@last:2, caster@last, cester@last, minster@last, hampton@last, ingham@last, port@last, stow@last",
     town: "ton@last:5, ham@last:3, ington@last:2, bury@last, hampton@last, ingham@last, stow@last, stock@last, stead@last, wick@last, worth@last, town@last:0.5",
@@ -436,6 +441,15 @@ export const english: NameBase = {
     love: "love:3",
     victory: "victory:3, sig@first:2",
     wonder: "wonder:3",
+
+    two: "twin/pl@word:3, two/pl@word, twi@first:0.5",
+    three: "three/pl@word",
+    five: "five/pl@word",
+    seven: "seven/pl@word",
+    nine: "nine/pl@word",
+    ten: "ten/pl@word",
+    hundred: "hundred/pl@word",
+    thousand: "thousand/pl@word",
 
     land: "land@last:4, ia@last:6",
     realm: "realm:2, ric@last",

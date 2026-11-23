@@ -4,7 +4,7 @@ import { log } from "@/utils/logger";
 
 const patterns = new Map<string, RegExp | null>();
 
-const isWordRule = (rule: SoundRule) => !rule.at && !rule.when && rule.chance === undefined;
+const isWordRule = (rule: SoundRule) => !rule.at && !rule.when && !rule.as && rule.chance === undefined;
 
 /** Rewrite a lowercase word by a base's rules, then by the shared ones; a rule that is no valid regex is skipped */
 export function applyRules(word: string, rules: SoundRule[] = []): string {

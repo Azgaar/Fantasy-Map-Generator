@@ -45,7 +45,8 @@ export const nameBaseSchema = z.object({
         replace: z.string(),
         at: z.literal("join").optional(),
         when: z.enum(["long", "foreign"]).optional(),
-        chance: z.number().min(0).max(1).optional()
+        chance: z.number().min(0).max(1).optional(),
+        as: z.string().optional()
       })
     )
     .optional(),

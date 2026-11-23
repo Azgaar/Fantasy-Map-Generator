@@ -85,7 +85,8 @@ export function formatTemplates(templates: Template[] = []): string {
   return templates.map(({ parts, weight }) => (weight === undefined ? parts : `${parts}:${weight}`)).join(", ");
 }
 
-/** Rules from text, a rule a line: `match => replace`, then ` | ` and any of `join`, `long`, `foreign`, `30%` */
+/** Rules from text, a rule a line: `match => replace`, then ` | ` and any of `join`, `long`, `foreign`, `30%`,
+ * or `as` and a noun class for a rule that makes a noun of that class */
 export function parseRules(text: string): SoundRule[] {
   return text.split("\n").flatMap(line => {
     const arrow = line.indexOf(" =>");
@@ -95,6 +96,7 @@ export function parseRules(text: string): SoundRule[] {
     for (const flag of flags.map(flag => flag.trim())) {
       if (flag === "join") rule.at = "join";
       else if (flag === "long" || flag === "foreign") rule.when = flag;
+      else if (flag.startsWith("as ")) rule.as = flag.slice(3).trim();
       else if (/^\d*\.?\d+%$/.test(flag)) rule.chance = Number.parseFloat(flag) / 100;
     }
     return rule;
@@ -103,8 +105,10 @@ export function parseRules(text: string): SoundRule[] {
 
 export function formatRules(rules: SoundRule[] = []): string {
   return rules
-    .map(({ match, replace, at, when, chance }) => {
-      const flags = [at, when, chance !== undefined && `${Math.round(chance * 1000) / 10}%`].filter(Boolean);
+    .map(({ match, replace, at, when, chance, as }) => {
+      const flags = [at, when, as && `as ${as}`, chance !== undefined && `${Math.round(chance * 1000) / 10}%`].filter(
+        Boolean
+      );
       return [`${match} => ${replace}`, ...flags].join(" | ");
     })
     .join("\n");

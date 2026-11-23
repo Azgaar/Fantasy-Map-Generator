@@ -38,7 +38,9 @@ const isRoot = (token: Token): token is `~${string}` => token.startsWith("~");
 
 /** The English reading of a meaning */
 export function gloss({ pattern, tokens }: Meaning): string {
-  const [first, second, third] = tokens.map(token => (isRoot(token) ? token.slice(1) : capitalize(token)));
+  const words = tokens.map(token => (isRoot(token) ? token.slice(1) : capitalize(token)));
+  const counts = !isRoot(tokens[0]) && kindOf(tokens[0]) === "numeral";
+  const [first, second, third] = counts ? [words[0], plural(words[1]), words[2]] : words;
   if (pattern === "simplex") return first;
   if (pattern === "compound") return `${first} ${second} ${third}`;
   if (pattern === "feature") return `The ${first}`;
@@ -47,6 +49,9 @@ export function gloss({ pattern, tokens }: Meaning): string {
   if (pattern === "root-land") return `${second} of ${first}`;
   return `${first} ${second}`;
 }
+
+const plural = (noun: string) =>
+  noun.endsWith("s") ? noun : /(x|z|ch|sh)$/.test(noun) ? `${noun}es` : `${noun.replace(/(?<=[^aeiou])y$/, "ie")}s`;
 
 /** The meaning of a name that has none: the whole name as one root */
 export const simplex = (name: string, origin: string): Meaning => ({
@@ -76,6 +81,8 @@ export function compose(meaning: Meaning, baseId: string): { name: string; whole
   const random = Alea(`${base.id}|${meaning.pattern}|${meaning.tokens}|${meaning.salt ?? 0}`);
   const values = Object.fromEntries(SLOTS[meaning.pattern].map((slot, index) => [slot, meaning.tokens[index]]));
   const grammar = Names.lineage(base).find(({ grammar }) => grammar)?.grammar;
+  const declines = Object.keys(grammar?.agreement ?? {}).length > 0; // describing words take endings here
+  const counting = Names.lineage(base).flatMap(({ rules = [] }) => rules.filter(rule => rule.as)); // what makes a noun plural
   const isForeign = base.id !== meaning.origin; // a root coined elsewhere is adapted to this base
   const rootOf = (token: Token, endsWord: boolean) => {
     const root = token.slice(1).toLowerCase();
@@ -174,9 +181,13 @@ export function compose(meaning: Meaning, baseId: string): { name: string; whole
       if (joined && "slot" in joined && !isConceptAt(joined.slot) && ownSuffix && !isSuffix(form)) return false;
       if (site.slot !== "modifier" || site.items.length > 1) return true;
       // a word that describes the noun beside it: of the noun's class, and no noun itself where words agree
-      const isNoun = kindOf(values.modifier as Concept) !== "modifier" && !form.form.includes("*");
-      if (isNoun && grammar?.agreement) return false;
-      return !form.class || isNoun || form.class === head;
+      const kind = kindOf(values.modifier as Concept);
+      const isNoun = (kind === "generic" || kind === "settlement") && !form.form.includes("*");
+      if (isNoun && declines) return false;
+      if (!form.class || isNoun) return true;
+      // a counting word makes its noun take its class: "three" stands beside "towers", made of "tower" if need be
+      const noun = forms[sites.findIndex(other => other.slot === "generic")];
+      return counts(form.class) ? Boolean(noun && counted(noun, form.class)) : form.class === head;
     });
   }
 
@@ -185,6 +196,18 @@ export function compose(meaning: Meaning, baseId: string): { name: string; whole
     const generic = forms[sites.findIndex(site => site.slot === "generic")];
     if (generic) return generic.class ?? classOf(generic.form.replace(/[-*_]/g, ""));
     return values.root && isRoot(values.root) ? classOf(rootOf(values.root, true)) : classOf("");
+  }
+
+  function counts(nounClass?: string): nounClass is string {
+    return counting.some(rule => rule.as === nounClass);
+  }
+
+  // a noun as it stands beside a counting word of a class: as it is where it is of the class, else as the rules make it
+  function counted(noun: Formant, nounClass: string): string | undefined {
+    const bare = noun.form.replace(/[-*_]/g, "");
+    if ((noun.class ?? classOf(bare)) === nounClass) return bare;
+    const rule = counting.find(rule => rule.as === nounClass && test(rule.match, bare));
+    return rule && bare.replace(regex(rule.match)!, rule.replace);
   }
 
   function classOf(noun: string): string | undefined {
@@ -199,6 +222,8 @@ export function compose(meaning: Meaning, baseId: string): { name: string; whole
     const sites = words.flatMap(items => items.filter(item => "slot" in item && isConceptAt(item.slot)));
     const ending = `+${grammar?.agreement?.[headClass(sites as { slot: Slot }[], forms) ?? ""] ?? ""}`;
     const drawn = new Map(sites.map((site, order) => [site, forms[order]]));
+    const describing = forms[(sites as { slot: Slot }[]).findIndex(site => site.slot === "modifier")];
+    const count = counts(describing?.class) ? describing.class : undefined;
 
     return words
       .map(items =>
@@ -212,7 +237,8 @@ export function compose(meaning: Meaning, baseId: string): { name: string; whole
               return items.length > 1 && kept !== Infinity ? Names.syllables(root).slice(0, kept).join("") : root;
             }
             const form = drawn.get(item)!;
-            const text = (effort ? (form.short ?? form.form) : form.form).replace(/^-|_/g, "").replace("*", ending);
+            const plain = (effort ? (form.short ?? form.form) : form.form).replace(/^-|_/g, "").replace("*", ending);
+            const text = (count && item.slot === "generic" && counted(form, count)) || plain;
             const next = items[index + 1];
             const beforeSuffix = next && "slot" in next && drawn.get(next) && isSuffix(drawn.get(next)!);
             return next && form.link && !beforeSuffix ? [text, form.link] : text || [];
@@ -233,7 +259,7 @@ const isSuffix = ({ form }: Formant) => form.startsWith("-");
 
 const classPatterns = new Map<string, RegExp | null>();
 
-function test(pattern: string, text: string): boolean {
+function regex(pattern: string): RegExp | null {
   if (!classPatterns.has(pattern)) {
     try {
       classPatterns.set(pattern, new RegExp(pattern, "u"));
@@ -241,8 +267,10 @@ function test(pattern: string, text: string): boolean {
       classPatterns.set(pattern, null);
     }
   }
-  return classPatterns.get(pattern)?.test(text) ?? false;
+  return classPatterns.get(pattern)!;
 }
+
+const test = (pattern: string, text: string): boolean => regex(pattern)?.test(text) ?? false;
 
 /** Whether a name is no longer than its base lets a name be; a name of several words may run to twice that */
 export function fits(name: string, base: NameBase): boolean {
@@ -285,7 +313,7 @@ function formantsOf(base: NameBase, concept: Concept): Formant[] {
   const kind = kindOf(concept);
   if (kind === "settlement")
     return [last, ...more].map((form, index, all) => ({ form, position: "last", weight: all.length - index }));
-  if (kind === "modifier")
+  if (kind === "modifier" || kind === "numeral")
     return [
       { form: first, position: "first" },
       { form: word, position: "word" }
@@ -331,7 +359,8 @@ function fallbackOf(base: NameBase): Map<Concept, Fallback> {
 
   const lexicon = new Map<Concept, Fallback>();
   const everyNth = (items: string[], start: number) => items.filter((_, index) => index % settlements.length === start);
-  for (const concept of [...settlements, ...generics, ...conceptsOf("modifier"), ...conceptsOf("land")]) {
+  const describing = [...conceptsOf("modifier"), ...conceptsOf("numeral")];
+  for (const concept of [...settlements, ...generics, ...describing, ...conceptsOf("land")]) {
     const first = coin(`${concept}|first`, 3, 5);
     const order = settlements.indexOf(concept);
     const mined = order < 0 ? [endings[spare + generics.indexOf(concept)]] : everyNth(endings.slice(0, spare), order);

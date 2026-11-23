@@ -160,7 +160,7 @@ function renderDialog(): void {
           <div data-tip="${t("Regex rewrites of the base's names, a rule a line, applied in order")}">
             ${t("Rules are written as {{- notation}}, with any of {{- flags}} after", {
               notation: notation("match => replace"),
-              flags: notation("| join | long | foreign | 30%")
+              flags: notation("| join | long | foreign | 30% | as class")
             })}
           </div>
           <textarea id="namesbaseRules" rows="7" autocorrect="off" spellcheck="false" style="resize: none; font-family: var(--monospace)"></textarea>
@@ -319,6 +319,7 @@ function showLexicon(base: NameBase): void {
     ["settlement", t("Settlements")],
     ["generic", t("Places")],
     ["modifier", t("Modifiers")],
+    ["numeral", t("Numerals")],
     ["land", t("Lands")]
   ] as const;
   const rows = kinds.flatMap(([kind, label]) => [
@@ -336,7 +337,7 @@ function showLexicon(base: NameBase): void {
 
 function showCoverage(base: NameBase): void {
   const written = Object.values(base.lexicon ?? {}).filter(forms => forms?.length).length;
-  const all = (["settlement", "generic", "modifier", "land"] as const).flatMap(conceptsOf).length;
+  const all = (["settlement", "generic", "modifier", "numeral", "land"] as const).flatMap(conceptsOf).length;
   ensureEl("namesbaseCoverage").textContent = t("Concepts written: {{written}} of {{all}}", { written, all });
 }
 

@@ -26,7 +26,7 @@ export type SiteTag =
   | "west";
 
 interface ConceptData {
-  kind: "settlement" | "generic" | "modifier" | "land"; // how big a burg is, what stands there, what tells it apart, what a state is
+  kind: "settlement" | "generic" | "modifier" | "numeral" | "land"; // how big a burg is, what stands there, what tells it apart, how many there are, what a state is
   fits?: SiteTag[];
   weight?: number; // how readily a name takes the concept, 1 when absent
 }
@@ -34,6 +34,7 @@ interface ConceptData {
 const settlement = (): ConceptData => ({ kind: "settlement" });
 const generic = (...fits: SiteTag[]): ConceptData => ({ kind: "generic", fits: fits.length ? fits : undefined });
 const modifier = (...fits: SiteTag[]): ConceptData => ({ kind: "modifier", fits: fits.length ? fits : undefined });
+const numeral = (weight: number): ConceptData => ({ kind: "numeral", weight });
 const rare = (concept: ConceptData): ConceptData => ({ ...concept, weight: 0.4 }); // a word for the odd name
 const land = (...fits: SiteTag[]): ConceptData => ({ kind: "land", fits: fits.length ? fits : undefined });
 
@@ -450,6 +451,15 @@ export const CONCEPTS = {
   love: rare(modifier()),
   victory: rare(modifier()),
   wonder: rare(modifier()),
+
+  two: numeral(2),
+  three: numeral(3),
+  five: numeral(2),
+  seven: numeral(3),
+  nine: numeral(1),
+  ten: numeral(1),
+  hundred: numeral(0.6),
+  thousand: numeral(0.4),
 
   land: land(),
   realm: land(),

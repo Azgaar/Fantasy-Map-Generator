@@ -1,13 +1,13 @@
 // Semantic names on real generated maps
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { fitsOf, settlementOf } from "@/data/name-concepts";
+import { conceptsOf, fitsOf, settlementOf } from "@/data/name-concepts";
 import { Goods } from "@/model/economy/goods-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { type Burg, Burgs } from "@/model/political/burgs-generator";
 import { capitalize } from "@/utils/string-utils";
 import { generateMap, living } from "../real-map.testing";
 import { adopt } from "./name-adoption";
-import { fits, type Meaning, render, seeded } from "./name-render";
+import { fits, gloss, type Meaning, render, seeded } from "./name-render";
 import { Names } from "./names-generator";
 import { Toponyms } from "./toponyms";
 
@@ -212,6 +212,15 @@ describe("burg names of an authored base", () => {
     const krasnogorsk: Meaning = { pattern: "compound", tokens: ["red", "hill", "city"], origin: "ruthenian" };
     expect(render(krasnogorsk, "ruthenian")).toMatch(/^Krasnogor(ov)?sk$/);
     expect(render(krasnogorsk, "english")).toMatch(/^R[ae]d/);
+  });
+
+  it("count what stands at a place now and then, in a form that fits the number", () => {
+    const isNumeral = (token: string) => (conceptsOf("numeral") as string[]).includes(token);
+    const counted = living(pack.burgs).filter(burg => isNumeral(burg.meaning!.tokens[0]));
+    expect(counted.length).toBeGreaterThan(0);
+    expect(counted.length / living(pack.burgs).length).toBeLessThan(0.05);
+    for (const { name, meaning } of counted.filter(burg => burg.meaning!.origin === "english"))
+      expect(name, gloss(meaning!)).toMatch(/^(Tw\p{Ll}+|\p{Lu}\p{Ll}+ \p{Lu}\p{Ll}+s)$/u);
   });
 
   it("say what a burg would be called in another group", () => {

@@ -28,6 +28,9 @@ describe("gloss", () => {
     expect(gloss(meaning("generic-of", "mouth", "~Exe"))).toBe("Mouth of Exe");
     expect(gloss(meaning("relative", "upper", "~Aitern"))).toBe("Upper Aitern");
     expect(gloss(meaning("compound", "red", "hill", "city"))).toBe("Red Hill City");
+    expect(gloss(meaning("modifier-generic", "three", "tower"))).toBe("Three Towers");
+    expect(gloss(meaning("modifier-generic", "seven", "falls"))).toBe("Seven Falls");
+    expect(gloss(meaning("compound", "five", "hill", "city"))).toBe("Five Hills City");
     expect(gloss(meaning("root-land", "~Frank", "land"))).toBe("Land of Frank");
     expect(gloss(meaning("modifier-land", "east", "realm"))).toBe("East Realm");
     expect(gloss(simplex("Aitern", "german"))).toBe("Aitern");
@@ -198,6 +201,19 @@ describe("a base with a grammar", () => {
     expect(names(meaning("generic-of", "mouth", "~Luga"))).toEqual(new Set(["Ust-Luga"]));
   });
 
+  it("puts a noun in the class a counting word calls for, by the base's rules", () => {
+    const counting = slavic();
+    counting.rules!.push(...parseRules("o$ => a | as few\n(?<=[^aeiou])$ => a | as few\na$ => y | as fewf"));
+    Object.assign(
+      counting.lexicon!,
+      lexiconOf({ three: "tri/few@word, tri/fewf@word", two: "dva/few@word, dve/fewf@word" })
+    );
+    Names.nameBases.push(counting);
+    expect(names(meaning("modifier-generic", "three", "village"))).toEqual(new Set(["Tri Sela"]));
+    expect(names(meaning("modifier-generic", "two", "hill"))).toEqual(new Set(["Dve Gory"])); // the form its class allows
+    expect(names(meaning("modifier-generic", "new", "village"))).toEqual(new Set(["Novoye Selo", "Novoye"])); // no number, no change
+  });
+
   it("makes do where no forms fit, and says the name is not whole", () => {
     Names.nameBases.push(slavic());
     expect(compose({ ...meaning("modifier-generic", "harbour", "town"), origin: "slavic" }, "slavic")).toEqual({
@@ -259,6 +275,22 @@ describe("Ruthenian", () => {
     expect(three("white", "hill", "hamlet")).toContain("Belogorka");
   });
 
+  it("counts what stands there: a few take one form, many another, or the number joins the name", () => {
+    const of = (pattern: Meaning["pattern"], ...tokens: Token[]) => [...names(pattern, ...tokens)];
+    expect(of("modifier-generic", "three", "lake")).toEqual(["Tri Ozera"]);
+    expect(of("modifier-generic", "two", "bridge")).toEqual(["Dva Mosta"]);
+    expect(of("modifier-generic", "two", "tower")).toEqual(
+      expect.arrayContaining(["Dve Vezhi", "Dve Bashni", "Dva Stolpa"])
+    );
+    expect(of("modifier-generic", "seven", "hill")).toEqual(expect.arrayContaining(["Sem Holmov", "Sem Gor"]));
+    expect(of("modifier-generic", "seven", "spring")).toContain("Sem Klyuchey");
+    expect(of("modifier-generic", "thousand", "island")).toEqual(["Tysyacha Ostrovov"]);
+    expect(of("compound", "five", "hill", "city")).toContain("Pyatigorsk");
+    expect(of("compound", "seven", "bend", "hamlet")).toContain("Semiluki");
+    expect(of("compound", "three", "hill", "hamlet")).toContain("Trehgorka");
+    expect(of("modifier-generic", "great", "meadow")).toContain("Velikiye Luki"); // a plural of its own needs no number
+  });
+
   it("has names of old for the new words", () => {
     const of = (pattern: Meaning["pattern"], ...tokens: Token[]) => [...names(pattern, ...tokens)];
     expect(of("modifier-generic", "beaver", "town")).toContain("Bobrov");
@@ -305,6 +337,16 @@ describe("English", () => {
     expect(names("modifier-generic", "king", "landing")).toContain("King's Landing");
     expect(names("modifier-generic", "crow", "nest")).toContain("Crow's Nest");
     expect(names("modifier-generic", "high", "garden")).toContain("Highgarden");
+  });
+
+  it("counts what stands there, in the plural", () => {
+    expect(names("modifier-generic", "three", "tower")).toEqual(["Three Towers"]);
+    expect(names("modifier-generic", "seven", "falls")).toEqual(expect.arrayContaining(["Seven Falls"]));
+    expect(names("modifier-generic", "two", "peak")).toEqual(expect.arrayContaining(["Twin Peaks", "Two Pikes"]));
+    expect(names("modifier-generic", "nine", "pass")).toEqual(expect.arrayContaining(["Nine Passes", "Nine Gaps"]));
+    expect(names("modifier-generic", "three", "tooth")).toEqual(expect.arrayContaining(["Three Teeth"]));
+    expect(names("modifier-generic", "new", "tower")).not.toContain("New Towers");
+    expect(names("compound", "five", "hill", "city")).toEqual(["Five Hills"]);
   });
 
   it("names a place after its lord", () => {

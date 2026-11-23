@@ -42,6 +42,26 @@ k\+ki\b => ki | join
 (?<=[gkh])\+yi => +iy | join
 (?<=[gkh])\+ye => +iye | join
 (?<=[aeiouy][^aeiouy])o\+(?=gorod|grad) => + | 30%
+(?<=[gkh]|zh|ch|sh)a$ => i | as fewf
+ya$ => i | as fewf
+a$ => y | as fewf
+o$ => a | as few
+e$ => ya | as few
+en$ => nya | as few
+ets$ => tsa | as few
+ok$ => ka | as few
+(?<=[^aeiouy])$ => a | as few
+(?<=[^aeiou])ka$ => ok | as many
+(?<=[^aeiou])la$ => ol | as many
+nya$ => en | as many
+ya$ =>  | as many
+[ao]$ =>  | as many
+ye$ => iy | as many
+en$ => ney | as many
+ets$ => tsev | as many
+il$ => iley | as many
+(?<=zh|ch|sh)$ => ey | as many
+(?<=[^aeiouy])$ => ov | as many
 gorod$ => grad | long
 ovka$ => ka | long
 th => f | foreign
@@ -469,6 +489,15 @@ m: => yi`),
     love: "lyubo@first:2, lyubim@stem:4, lyub@stem:2, lyubim*:3",
     victory: "pobedo@first, pobeda@stem:4, pobedn*:4",
     wonder: "chudo@first:2, chud@stem:4, chudn@stem:2, chudn*:4, chudesn*:2",
+
+    two: "dvu@first:2, dva/few@word:2, dve/fewf@word:2",
+    three: "treh@first:2, tri/few@word:3, tri/fewf@word:3",
+    five: "pyati@first:2, pyat/many@word:2",
+    seven: "semi@first:3, sem/many@word:2",
+    nine: "devyati@first, devyat/many@word",
+    ten: "desyati@first, desyat/many@word",
+    hundred: "sto@first:2, sto/many@word",
+    thousand: "tysyache@first, tysyacha/many@word",
 
     land: "ia@last:5, schina@last:2, zemye@last"
   }),

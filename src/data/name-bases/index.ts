@@ -53,6 +53,7 @@ export interface SoundRule {
   at?: "join";
   when?: "long" | "foreign";
   chance?: number; // 0 to 1: the rule fires for a share of names, the same ones every time
+  as?: string; // the rule makes a noun of this class of a plain one, beside a counting word of the class: "tower" to "towers"
 }
 
 /** A list of names a Markov chain is built from, or drawn from as they are */
