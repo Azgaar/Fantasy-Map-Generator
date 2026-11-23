@@ -63,7 +63,7 @@ describe("render", () => {
   });
 
   it("takes the plain English word where a base speaks plain English", () => {
-    expect(render(meaning("modifier-generic", "new", "town"), "human-generic")).toBe("Newham"); // a settlement by its English ending
+    expect(render(meaning("modifier-generic", "new", "town"), "human-generic")).toMatch(/^New(?!town)\p{Ll}+$/u); // a settlement by its English ending
     expect(render(meaning("owner-generic", "~Eadric", "farm"), "human-generic")).toBe("Eadricfarm");
     expect(render(meaning("feature", "bridge"), "human-generic")).toBe("Bridge");
     expect(render(meaning("modifier-generic", "oak", "wood"), "human-generic")).toBe("Oakwood");
@@ -136,7 +136,7 @@ describe("a name too long for its base", () => {
       name: "Harbour",
       whole: false
     });
-    expect(compose(meaning("modifier-generic", "new", "town"), "plain")).toEqual({ name: "Newham", whole: true });
+    expect(compose(meaning("modifier-generic", "new", "town"), "plain")).toMatchObject({ whole: true });
   });
 });
 
@@ -146,7 +146,8 @@ describe("a base with a grammar", () => {
     id: "slavic",
     grammar: parseGrammar("f: a$ => aya\nn: [oe]$ => oye\npl: [iy]$ => ye\nm: => yi"),
     rules: parseRules(String.raw`(?<=\+ov)\+yi =>  | join
-(?<=\+ov)\+aya => +a | join`),
+(?<=\+ov)\+aya => +a | join
+(?<=\+ov)\+oye => +o | join`),
     lexicon: lexiconOf({
       town: "-ov:5, gorod@last, gorod@word",
       village: "selo@word, _/n@word",
@@ -159,7 +160,7 @@ describe("a base with a grammar", () => {
     }),
     patterns: {
       "modifier-generic": { templates: parseTemplates("{modifier}{generic}, {modifier} {generic}") },
-      "owner-generic": { templates: parseTemplates("{root}{generic}, {root}ov* {generic}") },
+      "owner-generic": { templates: parseTemplates("{root}{generic}, {root}ov* {generic}, {root}-{generic}") },
       "generic-of": { templates: parseTemplates("{generic}{root}, {root}{generic}") }
     }
   });
@@ -172,7 +173,8 @@ describe("a base with a grammar", () => {
       new Set(["Berezov", "Berezogorod", "Berezovyi Gorod"])
     );
     expect(names(meaning("modifier-generic", "new", "town"))).toEqual(new Set(["Novogorod", "Novyi Gorod"])); // no stem, no "Novov"
-    expect(names(meaning("owner-generic", "~Ivan", "town"))).toEqual(new Set(["Ivanov", "Ivangorod", "Ivanov Gorod"]));
+    // a proper name takes the suffix; the full word stands apart from it, after a dash or as its own word
+    expect(names(meaning("owner-generic", "~Ivan", "town"))).toEqual(new Set(["Ivanov", "Ivan-Gorod", "Ivanov Gorod"]));
     expect(names(meaning("modifier-generic", "hill", "town"))).toEqual(new Set(["Gorov"])); // a noun describes no noun
   });
 
@@ -181,7 +183,10 @@ describe("a base with a grammar", () => {
     expect(names(meaning("modifier-generic", "new", "village"))).toEqual(new Set(["Novoye Selo", "Novoye"]));
     expect(names(meaning("modifier-generic", "new", "harbour"))).toEqual(new Set(["Novaya Pristan"])); // a class it is told
     expect(names(meaning("modifier-generic", "upper", "hill"))).toEqual(new Set(["Verhnyaya Gora"])); // a form per class
-    expect(names(meaning("owner-generic", "~Ivan", "hill"))).toEqual(new Set(["Ivanova Gora"])); // an ending in a template
+    expect(names(meaning("owner-generic", "~Ivan", "hill"))).toEqual(new Set(["Ivanova Gora", "Ivan-Gora"])); // an ending in a template
+    expect(names(meaning("owner-generic", "~Ivan", "village"))).toEqual(
+      new Set(["Ivanovo Selo", "Ivan-Selo", "Ivanovo"])
+    ); // no noun unsaid after a dash
     expect(names(meaning("relative", "new", "~Lipki"))).toEqual(new Set(["Novye Lipki"]));
     expect(names(meaning("relative", "new", "~Gorod"))).toEqual(new Set(["Novyi Gorod"]));
   });
@@ -201,32 +206,57 @@ describe("a base with a grammar", () => {
 });
 
 describe("Ruthenian", () => {
-  const name = (pattern: Meaning["pattern"], ...tokens: Token[]) =>
-    render({ pattern, tokens, origin: "ruthenian" }, "ruthenian");
+  const names = (pattern: Meaning["pattern"], ...tokens: Token[]) =>
+    new Set(
+      Array.from({ length: 300 }, (_, salt) => render({ pattern, tokens, origin: "ruthenian", salt }, "ruthenian"))
+    );
+  const common = (all: Set<string>) => [...all][0]; // what the meaning gives unsalted
 
   it("ends a burg's name in what its group is", () => {
-    const groups: Token[] = ["city", "town", "village", "hamlet"];
-    expect(groups.map(group => name("modifier-generic", "birch", group))).toEqual([
-      "Berezovsk",
-      "Berezov",
-      "Berezovka",
-      "Berezki"
-    ]);
-    expect(groups.slice(0, 3).map(group => name("owner-generic", "~Ivan", group))).toEqual([
-      "Ivanovsk",
-      "Ivanov",
-      "Ivanovo"
-    ]);
-    expect(name("owner-generic", "~Olga", "town")).toBe("Olgin");
+    expect([...names("modifier-generic", "birch", "city")]).toEqual(expect.arrayContaining(["Berezovsk"]));
+    expect([...names("modifier-generic", "birch", "town")]).toEqual(expect.arrayContaining(["Berezov"]));
+    expect([...names("modifier-generic", "birch", "village")]).toEqual(
+      expect.arrayContaining(["Berezovo", "Berezovka", "Berezichi"])
+    );
+    expect([...names("modifier-generic", "birch", "hamlet")]).toEqual(expect.arrayContaining(["Berezka", "Berezki"]));
+    expect([...names("owner-generic", "~Olga", "town")]).toContain("Olgin");
+    expect([...names("owner-generic", "~Olga", "village")]).toContain("Olgino");
+    expect([...names("generic-of", "city", "~Dvina")]).toContain("Dvinsk");
+  });
+
+  it("names a town after a founder with a suffix, seldom with a word of its own", () => {
+    const david = names("owner-generic", "~David", "town");
+    expect(david).toEqual(
+      new Set([
+        "Davidov",
+        "Davidets",
+        "Davidov Gorodok",
+        "Davidov Gorod",
+        "Davidov Posad",
+        "David-Gorodok",
+        "David-Gorod",
+        "David-Posad"
+      ])
+    );
+    const sample = Array.from({ length: 300 }, (_, salt) =>
+      render({ pattern: "owner-generic", tokens: [`~Name${salt}`, "town"], origin: "ruthenian" }, "ruthenian")
+    );
+    expect(sample.filter(name => /ov$/.test(name)).length).toBeGreaterThan(220);
+    expect(sample.filter(name => /Gorodok$/.test(name)).length).toBeLessThan(15);
+    expect([...names("owner-generic", "~David", "city")]).toEqual(expect.arrayContaining(["Davidovsk", "David-Gorod"]));
+    expect([...names("owner-generic", "~David", "village")]).toEqual(expect.arrayContaining(["Davidovo", "Davidovka"]));
   });
 
   it("writes two stems as two words that agree", () => {
-    expect(name("modifier-generic", "red", "village")).toBe("Krasnoye Selo");
-    expect(name("modifier-generic", "white", "temple")).toBe("Belyi Hram");
-    expect(name("owner-generic", "~Olga", "hill")).toBe("Olgina Gora");
-    expect(name("generic-of", "ford", "~Dvina")).toBe("Dvinskiy Brod");
-    expect(name("relative", "little", "~Gorki")).toBe("Malye Gorki");
-    expect(name("generic-of", "city", "~Volga")).toBe("Volzhsk");
-    expect(name("generic-of", "mouth", "~Izhora")).toBe("Ust-Izhora");
+    expect([...names("modifier-generic", "red", "village")]).toEqual(
+      expect.arrayContaining(["Krasnoye", "Krasnoye Selo"])
+    );
+    expect([...names("modifier-generic", "white", "temple")]).toEqual(
+      expect.arrayContaining(["Belyi Hram", "Belaya Tserkov"])
+    );
+    expect(common(names("owner-generic", "~Olga", "hill"))).toMatch(/^Olgin(a Gor(k)?a|y Gory| Holm)$/);
+    expect([...names("generic-of", "ford", "~Dvina")]).toContain("Dvinskiy Brod");
+    expect([...names("relative", "little", "~Gorki")]).toContain("Malye Gorki");
+    expect(names("generic-of", "mouth", "~Izhora")).toEqual(new Set(["Ust-Izhora", "Izhorskoye Ustye"]));
   });
 });

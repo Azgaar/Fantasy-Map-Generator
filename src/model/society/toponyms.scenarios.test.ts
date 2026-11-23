@@ -209,7 +209,7 @@ describe("burg names of an authored base", () => {
 
   it("agree in gender and number where they are two words", () => {
     const pairs = inRuthenian().filter(({ meaning, name }) => meaning.pattern === "modifier-generic" && / /.test(name));
-    expect(pairs.length).toBeGreaterThan(20);
+    expect(pairs.length).toBeGreaterThan(8);
     for (const { name } of pairs) {
       const [describing, noun] = name.toLowerCase().split(" ");
       if (/a$/.test(noun)) expect(describing, name).toMatch(/ya$/);

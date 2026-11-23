@@ -15,20 +15,20 @@ export const ruthenian: NameBase = {
 (?<=[^aeiou])y?a\+ov => +in | join
 (?<=[aeiou])y\+ov => yev | join
 (?:iy|i)\+ov => +ev | join
-(ov|ev|in|yn)\+(?:ov|ev) => $1+ | join
+(ov|ev|yn)\+(?:ov|ev) => $1+ | join
 spas\+sk => spassk | join
 ts\+sk => tsk | join
-(?<=[^aeiou])ga\+sk => zhsk | join
+(?<=[^aeiou])([gk])a\+sk => $1insk | join
 (?<=[^aeiou])(?:y?a|o)\+sk => sk | join
 sk\+sk => sk | join
 (?<![aeiouy][nrlmyv]{0,2})\+sk => +ovsk | join
 (?<=[^aeiouy+][^aeiouy+])\+k(?=[ai]\b) => +ovk | join
 (?<=[^aeiou])[aoey]\+(?=k[ai]\b) => + | join
 (?<=[^aeiouy])[aoe]\+(?=[aeiou]) => + | join
-(?<=\+(?:ov|ev|in)|yev|(?:ov|ev|in|yn)\+)\+yi =>  | join
-(?<=\+(?:ov|ev|in)|yev|(?:ov|ev|in|yn)\+)\+aya => +a | join
-(?<=\+(?:ov|ev|in)|yev|(?:ov|ev|in|yn)\+)\+oye => +o | join
-(?<=\+(?:ov|ev|in)|yev|(?:ov|ev|in|yn)\+)\+ye => +y | join
+(?<=\+(?:ov|ev|in)|yev|(?:ov|ev|yn)\+)\+yi =>  | join
+(?<=\+(?:ov|ev|in)|yev|(?:ov|ev|yn)\+)\+aya => +a | join
+(?<=\+(?:ov|ev|in)|yev|(?:ov|ev|yn)\+)\+oye => +o | join
+(?<=\+(?:ov|ev|in)|yev|(?:ov|ev|yn)\+)\+ye => +y | join
 (?<=zh|ch|sh)\+yi => +iy | join
 (?<=zh|ch|sh)\+aya => +ya | join
 (?<=zh|ch|sh)\+oye => +ye | join
@@ -52,11 +52,10 @@ n: [oe]$ => oye
 pl: (?<![aeiouy])[iy]$ => ye
 m: => yi`),
   lexicon: lexiconOf({
-    city: "-sk:6, -ovsk:2, grad@last:2, gorod@last, gorod@word, grad@word:0.5",
-    town: "-ov:8, gorodok@word, gorod@word:0.5, posad@word:0.5, gorodok@last, _/m@word:0.5",
-    village: "-ovo:6, -ovka:4, -ichi:2, -ovichi, selo@word:1.5, sloboda@word:0.5, derevnya@word:0.5, _/n@word",
-    hamlet:
-      "-ka:5, -ki:4, -ovka:2, -y:2, -tsy, hutor@word, vyselki@word:0.5, dvory@word:0.5, _/f@word:0.5, _/pl@word:0.5",
+    city: "-sk:6, -ovsk:2, grad@last:1.5, gorod@last, gorod@word:0.4, grad@word:0.2",
+    town: "-ov:8, -ets, gorod@last:0.5, _/m@word:2, gorodok@word:0.5, gorod@word:0.3, posad@word:0.3",
+    village: "-ovo:6, -ovka:4, -ichi:2, -ovichi, _/n@word:2, selo@word:0.6, sloboda@word:0.3, derevnya@word:0.2",
+    hamlet: "-ka:5, -ki:4, -ovka:2, -y:2, -tsy, _/f@word, _/pl@word, hutor@word:0.5, vyselki@word:0.3, dvory@word:0.2",
 
     home: "dvor@word:3, stan@word:2, dvor@stem",
     farm: "hutor@word:2, pochinok@word, zaimka@word, hutor@stem",
@@ -65,7 +64,7 @@ m: => yi`),
     wood: "les@word:3, bor@word:3, les@stem:2, bor@stem:3",
     hill: "gora@word:4, holm@word:2, gorka@word:2, gory@word, gor@stem:3, holm@stem:2",
     ford: "brod@word:4, perevoz@word, brod@stem:3",
-    fort: "ostrog@word:3, gorodok@word:2, gorodets@word, kreml@word, -ets:2, grad@last, ostrog@stem",
+    fort: "-ets:3, ostrog@word:2, gorodets@word, detinets@word:0.5, kreml@word:0.5, gorodok@word:0.5, ostrog@stem",
     bridge: "most@word:4, mosty@word, most@stem:3",
     harbour: "pristan/f@word:3, gavan/f@word:2, pristan@stem, gavan@stem",
     valley: "dol@word:3, log@word:2, yar@word:3, dolina@word, yar@stem:2, dolin@stem:2, log@stem",
@@ -190,7 +189,7 @@ m: => yi`),
   }),
   patterns: {
     "modifier-generic": { templates: parseTemplates("{modifier}{generic}:4, {modifier} {generic}:5") },
-    "owner-generic": { templates: parseTemplates("{root}{generic}:5, {root}ov* {generic}:3") },
+    "owner-generic": { templates: parseTemplates("{root}{generic}:6, {root}ov* {generic}:2, {root}-{generic}") },
     "generic-of": { templates: parseTemplates("{root}{generic}:5, {root}sk* {generic}:4, {generic}{root}:3") },
     relative: { templates: parseTemplates("{modifier} {root}:5, {modifier}{root}") }
   }

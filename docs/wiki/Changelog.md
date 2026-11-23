@@ -30,6 +30,8 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Names: a name of two stems is two words that agree in gender and number, such as Krasnoye Selo or Olgina Gora
 - Namesbase Editor: suffixes, stems, noun classes and agreement endings
 - Burg Editor: a change of group offers the name the new group gives
+- Names: a founder's name takes a suffix, such as Davidov or Davidovo, and seldom a word of its own, as in David-Gorodok
+- Names: English endings vary more, and a namesbase sets how many burg names end in the burg's group
 
 **[1.158.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.158.0) - 2026-11-12**:
 

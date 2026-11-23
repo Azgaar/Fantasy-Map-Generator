@@ -55,6 +55,7 @@ export const nameBaseSchema = z.object({
       agreement: z.record(z.string(), z.string()).optional()
     })
     .optional(),
+  settled: z.number().min(0).max(1).optional(),
   lexicon: z.record(z.string(), z.array(formantSchema)).optional(),
   patterns: z
     .record(

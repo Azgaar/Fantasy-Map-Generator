@@ -50,7 +50,7 @@ const WATER_TAGS: SiteTag[] = ["stream", "river", "mouth"];
 const SHORE_TAGS: SiteTag[] = ["lake", "port", "coast"];
 const FOREST_BIOMES = [5, 6, 7, 8, 9];
 const BIG_RIVER_FLUX = 100; // from where a river carries boats
-const SETTLED = 0.85; // the share of burg names that end in what the burg is: a town, a village
+const SETTLED = 0.85; // the share of burg names that end in what the burg is, where a base sets none
 const LANDMARK = 0.3; // of those, the share named for what stands there, not for what it is like
 const WATER_SHARE = 0.35; // waters keep old names: this many of them say something
 const TRIES = 12;
@@ -115,7 +115,7 @@ class ToponymsGenerator {
 
     for (let attempt = 0; attempt < TRIES; attempt++) {
       const pattern = this.pickPattern(base, patterns);
-      const settled = P(SETTLED) ? settlement : undefined; // most names end in what the burg is
+      const settled = P(this.settledShare(base)) ? settlement : undefined; // most names end in what the burg is
       const tokens = this.fillBurg(pattern, base, site, { settled, landmark, water, neighbor });
       const named = tokens && this.accept({ pattern, tokens, origin: base.id }, base, taken);
       if (named) return named;
@@ -441,11 +441,15 @@ class ToponymsGenerator {
     return this.pickWeighted(patterns, pattern => patternWeight(base, pattern));
   }
 
+  private settledShare(base: NameBase): number {
+    return Names.lineage(base).find(({ settled }) => settled !== undefined)?.settled ?? SETTLED;
+  }
+
   /** A meaning no place stands behind and its name: what a base makes of names, for its editor to show */
   sample(base: NameBase): Named {
     const concept = (kind: "settlement" | "generic" | "modifier") => ra(conceptsOf(kind));
     const pattern = this.pickPattern(base, ["feature", "modifier-generic", "owner-generic"]);
-    const generic = concept(P(SETTLED) ? "settlement" : "generic");
+    const generic = concept(P(this.settledShare(base)) ? "settlement" : "generic");
     const tokens: Token[] =
       pattern === "feature"
         ? [concept("generic")]

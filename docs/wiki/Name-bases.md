@@ -44,6 +44,11 @@ hamlet:   -ka:5, -ki:4, hutor@word
 - `-sk` is a suffix. It ends a word and stands only after a stem or a proper name: Ivanovsk, Berezovsk.
 - `berez@stem` is a stem: the form a word takes before a suffix. Write one for every concept a burg may be named for, or the concept gets no suffix.
 - A form with no hyphen, such as `grad@last`, is a full word part and joins a combining form instead: Novograd.
+- A proper name takes only the suffixes. The full words stand apart from it: Davidov, Davidovsk and Davidovo are the rule, David-Gorodok and Davidov Gorodok the exception.
+
+Keep the suffixes heavy and the full words light, or every other town is a Gorodok. A wider set of endings keeps a large map from repeating itself.
+
+On the Patterns tab, **Names ending in the burg's group** sets how many burg names are built this way. The rest are named for what stands at the place: a ford, a hill, a wood.
 
 ## Grammar
 
@@ -71,8 +76,10 @@ A template lays a pattern out. Slots are `{root}`, `{generic}` and `{modifier}`;
 
 ```
 modifier-generic:  {modifier}{generic}:4, {modifier} {generic}:5
-owner-generic:     {root}{generic}:5, {root}ov* {generic}:3
+owner-generic:     {root}{generic}:6, {root}ov* {generic}:2, {root}-{generic}
 ```
+
+A dash or a space in a template starts a new word, so `{root}-{generic}` gives David-Gorodok.
 
 A name is one word or two by which forms the base has. A suffix can only join, so `birch` + `town` is Berezov. A form marked `@word` can only stand apart, so `red` + `village` is Krasnoye Selo. Where both are possible, the weights of the templates and of the forms decide together.
 

@@ -109,6 +109,7 @@ export interface NameBase {
   grammar?: Grammar;
   lexicon?: Partial<Record<Concept, Formant[]>>;
   patterns?: Partial<Record<Pattern, { weight?: number; templates?: Template[] }>>;
+  settled?: number; // 0 to 1: the share of burg names that end in what the burg is by its group, 0.85 when absent
 }
 
 const NAME_BASES: NameBase[] = [

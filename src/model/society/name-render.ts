@@ -124,7 +124,7 @@ export function compose(meaning: Meaning, baseId: string): { name: string; whole
       );
     }
 
-    const agreeing = strictness === ANY ? filled : filled.filter(forms => agrees(sites, forms));
+    const agreeing = strictness === ANY ? filled : filled.filter(forms => agrees(sites, forms, parts.includes("*")));
     return agreeing.map(forms => ({
       words,
       forms,
@@ -156,14 +156,20 @@ export function compose(meaning: Meaning, baseId: string): { name: string; whole
   }
 
   // a suffix needs a stem before it and a stem a suffix after it; a describing word of one class needs its noun
-  function agrees(sites: { items: Item[]; index: number; slot: Slot }[], forms: Formant[]): boolean {
+  function agrees(sites: { items: Item[]; index: number; slot: Slot }[], forms: Formant[], inflects: boolean): boolean {
     const head = headClass(sites, forms);
+    const described = inflects || forms.some(({ form }) => form.includes("*"));
     return sites.every((site, order) => {
       const [form, before] = [forms[order], sites[order - 1]];
       const follows = before?.items === site.items && before.index === site.index - 1;
       const onStem = forms[order - 1]?.position === "stem" || forms[order - 1]?.position === "word";
       if (follows && isSuffix(form) !== onStem) return false;
-      if (!follows && site.index && isSuffix(form) && "text" in site.items[site.index - 1]) return false;
+      if (form.form === SILENT && !described) return false; // a noun goes unsaid only where a word still shows it
+      const joined = site.items[site.index - 1];
+      if (!follows && joined && "text" in joined && isSuffix(form)) return false;
+      // a proper name takes a suffix where the concept has one: its full forms stand apart from the name
+      const ownSuffix = formantsOf(base, values[site.slot] as Concept).some(isSuffix);
+      if (joined && "slot" in joined && !isConceptAt(joined.slot) && ownSuffix && !isSuffix(form)) return false;
       if (site.slot !== "modifier" || site.items.length > 1) return true;
       // a word that describes the noun beside it: of the noun's class, and no noun itself where words agree
       const isNoun = kindOf(values.modifier as Concept) !== "modifier" && !form.form.includes("*");

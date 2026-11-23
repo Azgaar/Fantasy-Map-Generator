@@ -151,6 +151,10 @@ function renderDialog(): void {
             ${t("Templates are written as {{- notation}}, commas between", { notation: notation("{root}s{generic}:weight") })}
           </div>
           <div id="namesbasePatterns" style="display: grid; grid-template-columns: 10em 4em 1fr; gap: 2px 6px; align-items: center"></div>
+          <div style="margin-top: 4px" data-tip="${t("Share of burg names that end in what the burg is by its group: a city, a town, a village. The rest are named for what stands at the place")}">
+            <span>${t("Names ending in the burg's group")}: </span>
+            <input id="namesbaseSettled" type="number" min="0" max="100" step="5" placeholder="85" style="width: 4em" /> %
+          </div>
         </div>
         <div data-pane="rules">
           <div data-tip="${t("Regex rewrites of the base's names, a rule a line, applied in order")}">
@@ -233,6 +237,7 @@ function renderDialog(): void {
     ensureEl(id).addEventListener("change", updatePeople);
   ensureEl("namesbaseLexicon").addEventListener("change", updateLexicon);
   ensureEl("namesbasePatterns").addEventListener("change", updatePatterns);
+  ensureEl("namesbaseSettled").addEventListener("change", updateSettled);
   ensureEl("namesbaseRules").addEventListener("change", updateRules);
   ensureEl("namesbaseGrammar").addEventListener("change", updateGrammar);
   ensureEl("namesbaseRuleTest").addEventListener("input", testRules);
@@ -345,6 +350,7 @@ function showPatterns(base: NameBase): void {
         placeholder="${formatTemplates(DEFAULT_TEMPLATES[pattern])}" autocorrect="off" spellcheck="false" />`;
   });
   ensureEl("namesbasePatterns").innerHTML = rows.join("");
+  ensureEl<HTMLInputElement>("namesbaseSettled").value = base.settled === undefined ? "" : String(base.settled * 100);
 }
 
 function updateExamples(): void {
@@ -444,6 +450,14 @@ function updateLexicon(event: Event): void {
   else delete base.lexicon[concept];
   input.value = formatFormants(forms); // what was understood
   showCoverage(base);
+  updateExamples();
+}
+
+function updateSettled(this: HTMLInputElement): void {
+  const base = selectedBase();
+  if (!base) return;
+  if (this.value === "") delete base.settled;
+  else base.settled = Math.min(Math.max(+this.value, 0), 100) / 100;
   updateExamples();
 }
 

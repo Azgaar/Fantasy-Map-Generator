@@ -4,7 +4,8 @@ import type { NameBase } from ".";
 export const english: NameBase = {
   id: "english",
   name: "English",
-  length: [6, 11],
+  length: [6, 12],
+  settled: 0.65, // an English name is as often what stands at the place: a ford, a hill, a wood
   // biome-ignore format: a corpus reads as one line
   places: { names: ["Abingdon", "Albrighton", "Alcester", "Almondbury", "Altrincham", "Amersham", "Andover", "Appleby", "Ashboume", "Atherstone", "Aveton", "Axbridge", "Aylesbury", "Baldock", "Bamburgh", "Barton", "Basingstoke", "Berden", "Bere", "Berkeley", "Berwick", "Betley", "Bideford", "Bingley", "Birmingham", "Blandford", "Blechingley", "Bodmin", "Bolton", "Bootham", "Boroughbridge", "Boscastle", "Bossinney", "Bramber", "Brampton", "Brasted", "Bretford", "Bridgetown", "Bridlington", "Bromyard", "Bruton", "Buckingham", "Bungay", "Burton", "Calne", "Cambridge", "Canterbury", "Carlisle", "Castleton", "Caus", "Charmouth", "Chawleigh", "Chichester", "Chillington", "Chinnor", "Chipping", "Chisbury", "Cleobury", "Clifford", "Clifton", "Clitheroe", "Cockermouth", "Coleshill", "Combe", "Congleton", "Crafthole", "Crediton", "Cuddenbeck", "Dalton", "Darlington", "Dodbrooke", "Drax", "Dudley", "Dunstable", "Dunster", "Dunwich", "Durham", "Dymock", "Exeter", "Exning", "Faringdon", "Felton", "Fenny", "Finedon", "Flookburgh", "Fowey", "Frampton", "Gateshead", "Gatton", "Godmanchester", "Grampound", "Grantham", "Guildford", "Halesowen", "Halton", "Harbottle", "Harlow", "Hatfield", "Hatherleigh", "Haydon", "Helston", "Henley", "Hertford", "Heytesbury", "Hinckley", "Hitchin", "Holme", "Hornby", "Horsham", "Kendal", "Kenilworth", "Kilkhampton", "Kineton", "Kington", "Kinver", "Kirby", "Knaresborough", "Knutsford", "Launceston", "Leighton", "Lewes", "Linton", "Louth", "Luton", "Lyme", "Lympstone", "Macclesfield", "Madeley", "Malborough", "Maldon", "Manchester", "Manningtree", "Marazion", "Marlborough", "Marshfield", "Mere", "Merryfield", "Middlewich", "Midhurst", "Milborne", "Mitford", "Modbury", "Montacute", "Mousehole", "Newbiggin", "Newborough", "Newbury", "Newenden", "Newent", "Norham", "Northleach", "Noss", "Oakham", "Olney", "Orford", "Ormskirk", "Oswestry", "Padstow", "Paignton", "Penkneth", "Penrith", "Penzance", "Pershore", "Petersfield", "Pevensey", "Pickering", "Pilton", "Pontefract", "Portsmouth", "Preston", "Quatford", "Reading", "Redcliff", "Retford", "Rockingham", "Romney", "Rothbury", "Rothwell", "Salisbury", "Saltash", "Seaford", "Seasalter", "Sherston", "Shifnal", "Shoreham", "Sidmouth", "Skipsea", "Skipton", "Solihull", "Somerton", "Southam", "Southwark", "Standon", "Stansted", "Stapleton", "Stottesdon", "Sudbury", "Swavesey", "Tamerton", "Tarporley", "Tetbury", "Thatcham", "Thaxted", "Thetford", "Thornbury", "Tintagel", "Tiverton", "Torksey", "Totnes", "Towcester", "Tregoney", "Trematon", "Tutbury", "Uxbridge", "Wallingford", "Wareham", "Warenmouth", "Wargrave", "Warton", "Watchet", "Watford", "Wendover", "Westbury", "Westcheap", "Weymouth", "Whitford", "Wickwar", "Wigan", "Wigmore", "Winchelsea", "Winkleigh", "Wiscombe", "Witham", "Witheridge", "Wiveliscombe", "Woodbury", "Yeovil"] },
   // biome-ignore format: a corpus reads as one line
@@ -13,6 +14,8 @@ export const english: NameBase = {
     { match: "(.)\\1+", replace: "$1" },
     { match: "(?<=[^aeiou])e\\+(?=[^aeiou+])", replace: "+", chance: 0.5 }, // a silent e goes at the join: Stonham, Whitby
     { match: "e\\+ing", replace: "+ing", at: "join" },
+    { match: "ing\\+ing", replace: "ing+", at: "join" }, // Eadrington, not Eadricingington
+    { match: "s\\+s(?=t)", replace: "+s", at: "join" },
     { match: "s?chester$", replace: "ster", when: "long" },
     { match: "borough$", replace: "bury", when: "long" },
     { match: "ing(ton|ham)$", replace: "$1", when: "long" },
@@ -21,10 +24,12 @@ export const english: NameBase = {
     { match: "sch", replace: "sh", when: "foreign" }
   ],
   lexicon: lexiconOf({
-    city: "chester@last:3, bury@last:3, borough~burgh@last:2, caster@last, minster@last, city@word",
-    town: "ton@last:6, ham@last:3, town",
-    village: "by@last:3, thorpe~thorp:3, wick@last:2, worth@last:2, stead@last, stoke@word",
-    hamlet: "cote~cot@last:3, toft@last:2, thwaite@last, ley@last:2, cot@word",
+    city: "chester@last:3, bury@last:3, borough~burgh@last:2, ham@last:2, wich@last:2, caster@last, cester@last, minster@last, hampton@last, ingham@last, port@last, stow@last, city@word:0.3",
+    town: "ton@last:5, ham@last:3, ington@last:2, bury@last, hampton@last, ingham@last, stow@last, stock@last, stead@last, wick@last, worth@last, town:0.5",
+    village:
+      "by@last:3, thorpe~thorp:3, wick@last:2, worth@last:2, ton@last:2, ham@last, stead@last, stoke@last, cott@last, thwaite@last, ing@last, stoke@word:0.3",
+    hamlet:
+      "cote~cot@last:3, toft@last:2, thwaite@last:2, ley@last:2, croft@last, garth@last, booth@last, stead@last, wick@last, den@last, cot@word:0.3",
 
     home: "ham@last:5, stead",
     farm: "worth@last:3, worthy@last, barton@word, grange",
