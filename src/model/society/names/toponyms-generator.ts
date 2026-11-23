@@ -330,10 +330,10 @@ class ToponymsGenerator {
     return new Set(pack.features.map(feature => feature?.name));
   }
 
-  // one time in five a state is named after its capital, when the capital's name is short enough to build on
+  // one time in five a state is named after its capital, when the capital's name is one short word to build on
   private getStateRoot(capital: Burg, base: NameBase): Token {
     const own = capital.meaning?.tokens.find(token => token.startsWith("~")) ?? `~${capital.name}`;
-    return own.length < 10 && P(0.2) ? (own as Token) : `~${this.founder(base)}`; // else after a founder
+    return own.length < 10 && P(0.2) && !own.includes(" ") ? (own as Token) : `~${this.founder(base)}`; // else after a founder
   }
 
   /** Render a meaning and take the name when it is free, long enough and no longer than the base allows */

@@ -402,7 +402,7 @@ Yes. In a burg, state, province, river or lake editor, press the two-arrows butt
 
 ### Why don't German, French and other names mean what the Meaning says?
 
-Only the English and Ruthenian namesbases have their words written, and the Human Generic base uses plain English words. The other bases say a meaning with endings and words found in their own lists of place names, so the names sound right but mean nothing to a speaker: New Town in German is Zadetal. The meaning is still kept, and a base gets real words once someone writes its Lexicon tab in Tools -> Namesbase. How to write one: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
+Only the English and Ruthenian namesbases have their words written; Human Generic builds on English with high-fantasy words, such as Black Keep, Aldric's Watch and Greyhaven. The other bases say a meaning with endings and words found in their own lists of place names, so the names sound right but mean nothing to a speaker: New Town in German is Zadetal. The meaning is still kept, and a base gets real words once someone writes its Lexicon tab in Tools -> Namesbase. How to write one: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
 
 ### How do I create my own namesbase?
 

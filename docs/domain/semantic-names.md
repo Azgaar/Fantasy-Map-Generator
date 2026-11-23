@@ -116,7 +116,7 @@ The burg group maps to a settlement concept by name: `capital` and `city` to `ci
 
 1. **Adapt foreign roots.** A root coined in another base is brought to this base's sounds: `~Eadric` is Eadrik in Ruthenian and Eadarica in Japanese. A base's own roots stand as coined.
 2. **Draw a template** for the pattern by its weight: `{modifier}{generic}` or `{modifier} {generic}`. A template may leave out what the burg is by its group, as `{root}` does for a town named after its river; it never leaves out a name or what stands at the place.
-3. **Draw a form for each concept** by weight, from the forms that may stand where the template puts them. A suffix needs a stem or a proper name before it, a describing word takes the gender of its noun.
+3. **Draw a form for each concept** by weight, from the forms that may stand where the template puts them. A suffix needs a stem or a proper name before it, a describing word takes the gender of its noun, and a place word that describes another joins it: Fordhall, never Ford Hall.
 4. **Join the parts** with `+` between and run the sound rules: `exe+mouth` becomes Exmouth.
 5. **Shorten a name that is too long**: shorter forms, then roots clipped at a syllable, then no modifier. Another place's name, as in New Barton, is never clipped. Each word may be as long as the base allows, the whole name twice that.
 
@@ -133,7 +133,7 @@ A base can render any concept. `Lexicon.formsOf` takes the first source that has
 3. The shared lexicon, which holds only `land: +ia`.
 4. Forms coined from the base's place names: its commonest endings for settlements and places, and words off its Markov chain for the rest.
 
-English and Ruthenian are written in full. Human Generic uses plain English words. Other bases write at most their words for a land and coin everything else, so their names sound native but mean nothing a speaker would know: `new, town` in German is Zadetal. A coined form is stable: the same concept always gets the same form in a base.
+English and Ruthenian are written in full. Human Generic extends English and rewrites what makes it high fantasy, see [below](#human-generic). Other bases write at most their words for a land and coin everything else, so their names sound native but mean nothing a speaker would know: `new, town` in German is Zadetal. A coined form is stable: the same concept always gets the same form in a base.
 
 ## Name and meaning are independent
 
@@ -292,6 +292,22 @@ English, by choice with far fewer names in -ton and more fantasy endings (-haven
 | A woman's, of those        | 5%             | 5%        |
 | A river's name in the name | 2%             | 2%        |
 | Fantasy ending or owner    | none           | 19%       |
+
+#### Human Generic
+
+Human Generic ([human-generic.ts](../../src/data/name-bases/human-generic.ts)) is English as high fantasy tells it, after the naming of Tolkien's Men and Martin's Westeros, with no statistics behind it. It extends English, so animals, trees, trades and numerals keep English's forms, and writes its own:
+
+- **Describing words that stand apart or join**: `black`, `grey`, `iron`, so Black Keep and Greyhaven both happen. English writes them `black+`, start only.
+- **Seats and fantasy endings**: cities in -haven, -gate, -hold, -fall and Landing; towns in Watch, Rest, Hold and Hall; forts in Keep, Hold, Castle; vales, hollows and dells.
+- **Possessives**: `{root}'s {generic}` for founders, and words such as Storm's and Winter's.
+- **Lands, not founders**: `modifier-land` outweighs `root-land` (Westlands, Iron Marches, Stormshire).
+- **People and rivers picked as they are**, from its own lists.
+
+| Share of names | Generated |
+| -------------- | --------- |
+| Two words      | 47%       |
+| Possessive     | 17%       |
+| -ton, -ham     | 5%        |
 
 A gap the base cannot close is a question to the generator. Fords and fields were ten times too rare, and New, North and Old drowned among 300 rarer words, until the generator counted commonness squared, read low woodland as fields too, and let a ford stand on a large river.
 

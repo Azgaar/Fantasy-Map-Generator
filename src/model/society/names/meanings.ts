@@ -74,7 +74,6 @@ class MeaningsModule {
     const random = Alea(`${base.id}|${meaning.pattern}|${meaning.tokens}|${meaning.salt ?? 0}`);
     const values = Object.fromEntries(SLOTS[meaning.pattern].map((slot, index) => [slot, meaning.tokens[index]]));
     const grammar = Names.lineage(base).find(({ grammar }) => grammar)?.grammar;
-    const declines = Object.values(grammar?.endings ?? {}).some(set => Object.keys(set).length); // describing words take endings here
     const counting = Names.lineage(base).flatMap(({ rules = [] }) => rules.filter(rule => rule.as)); // what makes a noun plural
     const formsOf = (concept: Concept) => Lexicon.formsOf(base, concept);
     const regex = (pattern: string) => this.regex(pattern);
@@ -191,11 +190,10 @@ class MeaningsModule {
         const ownSuffix = formsOf(values[site.slot] as Concept).some(isSuffix);
         if (joined && "slot" in joined && !isConceptAt(joined.slot) && ownSuffix && !isSuffix(form)) return false;
         if (site.slot !== "modifier" || site.items.length > 1) return true;
-        // a word that describes the noun beside it: of the noun's class, and no noun itself where words agree
+        // a word that describes the noun beside it: of the noun's class, and no noun itself, which joins it: Fordhall
         const kind = kindOf(values.modifier as Concept);
-        const isNoun = (kind === "generic" || kind === "settlement") && !form.form.includes("*");
-        if (isNoun && declines) return false;
-        if (!form.class || isNoun) return true;
+        if ((kind === "generic" || kind === "settlement") && !form.form.includes("*")) return false;
+        if (!form.class) return true;
         // a counting word makes its noun take its class: "three" stands beside "towers", made of "tower" if need be
         const noun = forms[sites.findIndex(other => other.slot === "generic")];
         return counts(form.class) ? Boolean(noun && counted(noun, form.class)) : form.class === head;

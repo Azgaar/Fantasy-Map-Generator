@@ -70,14 +70,25 @@ describe("render", () => {
     }
   });
 
-  it("takes the plain English word where a base speaks plain English", () => {
-    expect(Meanings.render(meaning("modifier-generic", "new", "town"), "human-generic")).toMatch(
-      /^New(?!town)\p{Ll}+$/u
-    ); // a settlement by its English ending
-    expect(Meanings.render(meaning("owner-generic", "~Eadric", "farm"), "human-generic")).toBe("Eadricfarm");
-    expect(Meanings.render(meaning("feature", "bridge"), "human-generic")).toBe("Bridge");
-    expect(Meanings.render(meaning("modifier-generic", "oak", "wood"), "human-generic")).toBe("Oakwood");
+  it("tells English as high fantasy in Human Generic", () => {
+    const salted = (item: Meaning) =>
+      Array.from({ length: 20 }, (_, salt) => Meanings.render(withSalt(item, salt), "human-generic"));
+    expect(Meanings.render(meaning("owner-generic", "~Aldric", "keep"), "human-generic")).toBe("Aldric's Keep");
+    expect(Meanings.render(meaning("modifier-generic", "black", "keep"), "human-generic")).toBe("Black Keep");
+    expect(Meanings.render(meaning("generic-of", "bridge", "~Blackwater"), "human-generic")).toBe("Blackwater Bridge");
+    for (const name of salted(meaning("generic-of", "town", "~Blackwater")))
+      expect(name).toMatch(/^Blackwater( \p{Lu}\p{Ll}+)?$/u); // a town on the Blackwater is Blackwater
+    for (const name of salted(meaning("modifier-generic", "winter", "rest")))
+      expect(name).toMatch(/^Winter(rest|'s Rest)$/);
+    for (const name of salted(meaning("compound", "green", "hollow", "village")))
+      expect(name).not.toMatch(/(hollow|green)\b.* \1$/i); // no word twice: Greenhollow, not Greenhollow Hollow
     expect(Meanings.render(meaning("modifier-generic", "thorn", "mill"), "english")).toBe("Thornmill"); // a rule for words undoes no form
+  });
+
+  it("joins a place word that describes another", () => {
+    for (const baseId of ["english", "human-generic"])
+      for (let salt = 0; salt < 20; salt++)
+        expect(Meanings.render(withSalt(meaning("modifier-generic", "ford", "town"), salt), baseId)).not.toMatch(/ /);
   });
 
   it("names a land with the forms the base has for it", () => {
@@ -101,7 +112,12 @@ describe("render", () => {
 
   it("drops a root's last vowels before a short vowel ending", () => {
     expect(Meanings.render(meaning("root-land", "~Friede", "land"), "greek")).toMatch(/^Fried(e?ia)$/);
-    expect(Meanings.render(meaning("modifier-generic", "free", "island"), "human-generic")).toBe("Freeisland");
+    const lexicon = {
+      free: [{ form: "free", position: "first" as const }],
+      island: [{ form: "island", position: "last" as const }]
+    };
+    Names.nameBases.push(custom({ lexicon }));
+    expect(Meanings.render(meaning("modifier-generic", "free", "island"), "custom")).toBe("Freeisland");
   });
 });
 
@@ -142,10 +158,9 @@ describe("a name too long for its base", () => {
     expect(Meanings.render(meaning("simplex", "~Korbachmelheim"), "custom")).toBe("Korbachmelheim"); // a name of its own is left whole
 
     Names.nameBases.push({ ...custom({ length: [4, 9] }), id: "plain", extends: "human-generic" });
-    expect(Meanings.compose(meaning("modifier-generic", "shepherd", "harbour"), "plain")).toEqual({
-      name: "Harbour",
-      whole: false
-    });
+    const harbour = Meanings.compose(meaning("modifier-generic", "shepherd", "harbour"), "plain");
+    expect(harbour).toMatchObject({ whole: false });
+    expect(harbour.name).not.toMatch(/sh[ei]p/i);
     expect(Meanings.compose(meaning("modifier-generic", "new", "town"), "plain")).toMatchObject({ whole: true });
   });
 });
