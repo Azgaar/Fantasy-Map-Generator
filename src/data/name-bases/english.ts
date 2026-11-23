@@ -12,7 +12,8 @@ export const english: NameBase = {
   rules: [
     { match: "(.)\\1+", replace: "$1" },
     { match: "(?<=[^aeiou])e\\+(?=[^aeiou+])", replace: "+", chance: 0.5 }, // a silent e goes at the join: Stonham, Whitby
-    { match: "chester$", replace: "ster", when: "long" },
+    { match: "e\\+ing", replace: "+ing", at: "join" },
+    { match: "s?chester$", replace: "ster", when: "long" },
     { match: "borough$", replace: "bury", when: "long" },
     { match: "ing(ton|ham)$", replace: "$1", when: "long" },
     { match: "kh", replace: "k", when: "foreign" },
@@ -20,8 +21,11 @@ export const english: NameBase = {
     { match: "sch", replace: "sh", when: "foreign" }
   ],
   lexicon: lexiconOf({
-    town: "ton@last:6, town",
-    village: "thorpe~thorp:2, by@last:2, wick@last:2, cote~cot@last",
+    city: "chester@last:3, bury@last:3, borough~burgh@last:2, caster@last, minster@last, city@word",
+    town: "ton@last:6, ham@last:3, town",
+    village: "by@last:3, thorpe~thorp:3, wick@last:2, worth@last:2, stead@last, stoke@word",
+    hamlet: "cote~cot@last:3, toft@last:2, thwaite@last, ley@last:2, cot@word",
+
     home: "ham@last:5, stead",
     farm: "worth@last:3, worthy@last, barton@word, grange",
     hall: "hall",
@@ -60,6 +64,7 @@ export const english: NameBase = {
     mine: "mine:2, pit:2, delph@last",
     quarry: "quarry:2, delph",
     temple: "minster@last:3, church:2, kirk:2, stow@last, temple",
+    abbey: "abbey:3, minster@last:2, priory@word",
     river: "water@last:3, bourne@last:2, ea@last",
     brook: "brook:3, beck:2, burn:2",
     water: "water:3, wash, lode@last",
@@ -162,6 +167,8 @@ export const english: NameBase = {
   }),
   patterns: {
     "owner-generic": { templates: parseTemplates("{root}{generic}:6, {root}s{generic}:3, {root}ing{generic}") },
+    "modifier-generic": { templates: parseTemplates("{modifier}{generic}:5, {modifier} {generic}") },
+    "generic-of": { templates: parseTemplates("{root}{generic}:5, {root} {generic}:2") },
     relative: { templates: parseTemplates("{modifier} {root}") }
   }
 };

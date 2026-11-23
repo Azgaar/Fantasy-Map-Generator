@@ -1,10 +1,12 @@
 import { expect, it } from "vitest";
 import {
   formatFormants,
+  formatGrammar,
   formatRules,
   formatTemplates,
   lexiconOf,
   parseFormants,
+  parseGrammar,
   parseRules,
   parseTemplates
 } from "./name-notation";
@@ -60,4 +62,34 @@ it("reads and writes rules, a rule a line", () => {
   ]);
   expect(formatRules(rules)).toBe(text);
   expect(parseRules("no arrow here\n\n=> nothing")).toEqual([]);
+});
+
+it("reads and writes suffixes, stems, agreeing words and noun classes", () => {
+  const text = "-sk:6, berez@stem, nov*, pristan/f@word, verhnyaya/f@word, _/n@word:0.5, ust-@first";
+  const formants = parseFormants(text);
+  expect(formants).toEqual([
+    { form: "-sk", weight: 6 },
+    { form: "berez", position: "stem" },
+    { form: "nov*" },
+    { form: "pristan", class: "f", position: "word" },
+    { form: "verhnyaya", class: "f", position: "word" },
+    { form: "_", class: "n", position: "word", weight: 0.5 },
+    { form: "ust-", position: "first" }
+  ]);
+  expect(formatFormants(formants)).toBe(text);
+});
+
+it("reads and writes a grammar", () => {
+  const text = "f: a$ => aya\nn: [oe]$ => oye\nm: => yi";
+  const grammar = parseGrammar(text);
+  expect(grammar).toEqual({
+    classes: { f: "a$", n: "[oe]$", m: "" },
+    agreement: { f: "aya", n: "oye", m: "yi" }
+  });
+  expect(formatGrammar(grammar)).toBe(text);
+  expect(parseGrammar("common: [^s]$\nplural: s$")).toEqual({
+    classes: { common: "[^s]$", plural: "s$" },
+    agreement: {}
+  });
+  expect(parseGrammar("no classes here")).toBeUndefined();
 });

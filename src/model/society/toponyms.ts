@@ -1,8 +1,7 @@
 // Gives burgs and states a meaning that fits their place: the "semantic" half of semantic names
 
 import type { NameBase, Pattern } from "@/data/name-bases";
-import { type Concept, conceptsOf, fitsOf, isConcept, type SiteTag } from "@/data/name-concepts";
-import { DEFAULT_WEIGHTS } from "@/data/name-rules";
+import { type Concept, conceptsOf, fitsOf, isConcept, type SiteTag, settlementOf } from "@/data/name-concepts";
 import { Goods } from "@/model/economy/goods-generator";
 import type { Feature } from "@/model/physical/features-generator";
 import type { River } from "@/model/physical/river-generator";
@@ -45,14 +44,19 @@ interface StateOptions {
   seed?: string;
 }
 
-const BURG_PATTERNS: Pattern[] = ["simplex", "feature", "modifier-generic", "owner-generic", "generic-of", "relative"];
+const BURG_PATTERNS: Pattern[] = ["feature", "modifier-generic", "owner-generic", "generic-of", "relative"];
 const STATE_PATTERNS: Pattern[] = ["simplex", "root-land", "modifier-land"];
 const WATER_TAGS: SiteTag[] = ["stream", "river", "mouth"];
 const SHORE_TAGS: SiteTag[] = ["lake", "port", "coast"];
 const FOREST_BIOMES = [5, 6, 7, 8, 9];
 const BIG_RIVER_FLUX = 100; // from where a river carries boats
-const WATER_SHARE = 0.5; // waters keep old names: half as many of them say something as burgs do
+const SETTLED = 0.85; // the share of burg names that end in what the burg is: a town, a village
+const LANDMARK = 0.3; // of those, the share named for what stands there, not for what it is like
+const WATER_SHARE = 0.35; // waters keep old names: this many of them say something
 const TRIES = 12;
+const WATERS: Concept[] = ["river", "brook", "water"]; // what a water is, not what a burg stands by
+const isBuilt = (weight: number, _: unknown, concept: Concept) =>
+  weight > 0 && concept !== "abbey" && !WATERS.includes(concept);
 
 // what each culture type makes more of when it names a place
 const LEANINGS: Record<string, SiteTag[]> = {
@@ -65,11 +69,12 @@ const LEANINGS: Record<string, SiteTag[]> = {
 };
 
 class ToponymsGenerator {
-  /** Name the burgs that have no name yet, each on a random sequence of its own: one name does not move another */
-  nameBurgs(burgs: Burg[], roll = ""): void {
+  /** Name the burgs that have no name yet, each on a random sequence of its own: one name does not move another.
+   * With `only`, name just the burgs it takes */
+  nameBurgs(burgs: Burg[], roll = "", only: (burg: Burg) => boolean = () => true): void {
     const taken = this.burgNames(burgs);
     for (const burg of burgs) {
-      if (!burg.i || burg.name) continue;
+      if (!burg.i || burg.name || burg.removed || !only(burg)) continue;
       Object.assign(
         burg,
         seeded(`${options.map.seed}|burg|${burg.i}|${roll}`, () => this.burg(burg, { burgs, taken }))
@@ -78,13 +83,29 @@ class ToponymsGenerator {
     }
   }
 
-  /** A meaning that fits a burg's place and its name in the culture's base, or in the base given */
+  /** The name of a burg, given now if it has none: for what is named after a burg before all burgs are */
+  nameOf(burg: Burg): string {
+    if (!burg.name)
+      Object.assign(
+        burg,
+        seeded(`${options.map.seed}|burg|${burg.i}|`, () => this.burg(burg))
+      );
+    return burg.name!;
+  }
+
+  /** A meaning that fits a burg's place and group, and its name in the culture's base or in the base given.
+   * A burg with no group yet takes a name that says nothing of its size */
   burg(burg: Burg, { burgs = pack.burgs, taken = this.burgNames(burgs), baseId }: BurgOptions = {}): Named {
     const base = Names.resolve(baseId ?? pack.cultures[burg.culture!].base) ?? Names.nameBases[0];
     const site = this.getSite(burg);
-    const landmark = this.pickConcept("generic", site, weight => weight >= 3); // a generic the place stands out for
+    const landmark = this.pickConcept(
+      "generic",
+      site,
+      (weight, _, concept) => weight >= 3 && !WATERS.includes(concept)
+    ); // what the place stands out for
     const water = this.getWater(burg, site);
     const neighbor = this.getNeighbor(burg, burgs);
+    const settlement = this.getSettlement(burg);
 
     const supported = (pattern: Pattern) =>
       (pattern !== "feature" || landmark) &&
@@ -94,7 +115,8 @@ class ToponymsGenerator {
 
     for (let attempt = 0; attempt < TRIES; attempt++) {
       const pattern = this.pickPattern(base, patterns);
-      const tokens = this.fillBurg(pattern, burg, base, site, landmark, water, neighbor);
+      const settled = P(SETTLED) ? settlement : undefined; // most names end in what the burg is
+      const tokens = this.fillBurg(pattern, base, site, { settled, landmark, water, neighbor });
       const named = tokens && this.accept({ pattern, tokens, origin: base.id }, base, taken);
       if (named) return named;
     }
@@ -105,26 +127,49 @@ class ToponymsGenerator {
 
   private fillBurg(
     pattern: Pattern,
-    burg: Burg,
     base: NameBase,
     site: Site,
-    landmark?: Concept,
-    water?: { root: Token; tags: SiteTag[] },
-    neighbor?: { root: Token; modifier: Concept }
+    by: {
+      settled?: Concept;
+      landmark?: Concept;
+      water?: { root: Token; tags: SiteTag[] };
+      neighbor?: { root: Token; modifier: Concept };
+    }
   ): Token[] | undefined {
-    const generic = () => this.pickConcept("generic", site)!;
-    const modifier = () => this.pickConcept("modifier", site)!;
-    if (pattern === "simplex") return [`~${burg.capital ? Names.getBaseShort(base.id) : Names.getBase(base.id)}`];
-    if (pattern === "feature") return [landmark!];
-    if (pattern === "modifier-generic") return [modifier(), generic()];
+    const generic = () => by.settled ?? this.pickConcept("generic", site, isBuilt)!;
+    if (pattern === "feature") return [by.landmark!];
     if (pattern === "owner-generic") return [`~${Names.getPerson(base.id)}`, generic()];
-    if (pattern === "relative") return [neighbor!.modifier, neighbor!.root];
-    const byWater = this.pickConcept(
-      "generic",
-      site,
-      (weight, tags) => weight > 0 && water!.tags.some(tag => tags?.includes(tag))
-    );
-    return byWater && [byWater, water!.root];
+    if (pattern === "relative") return [by.neighbor!.modifier, by.neighbor!.root];
+    if (pattern === "modifier-generic") {
+      const named = by.settled && by.landmark && P(LANDMARK) ? by.landmark : this.pickConcept("modifier", site)!;
+      return [named, generic()];
+    }
+    const byWater =
+      by.settled ??
+      this.pickConcept(
+        "generic",
+        site,
+        (weight, tags, concept) => isBuilt(weight, tags, concept) && by.water!.tags.some(tag => tags?.includes(tag))
+      );
+    return byWater && [byWater, by.water!.root];
+  }
+
+  /** The name a burg would take now that its group is no longer `was`: the same meaning, ending in what the burg
+   * has become. Nothing when its name says nothing of its group, or would stay as it is */
+  regrouped(burg: Burg, was?: string): Named | undefined {
+    const [old, now] = [this.getSettlement({ ...burg, group: was }), this.getSettlement(burg)];
+    if (!burg.meaning || !old || !now || old === now || !burg.meaning.tokens.includes(old)) return undefined;
+    const tokens = burg.meaning.tokens.map(token => (token === old ? now : token));
+    const meaning: Meaning = { ...burg.meaning, tokens };
+    const name = render(meaning, meaning.origin);
+    return name === burg.name || this.burgNames(pack.burgs).has(name) ? undefined : { name, meaning };
+  }
+
+  // what a burg is by its group; a capital is a city whatever its group, a burg with no group yet is nothing
+  private getSettlement(burg: Burg): Concept | undefined {
+    if (burg.capital) return "city";
+    const group = burg.group && options.map.burgs.groups.find(({ name }) => name === burg.group);
+    return group ? settlementOf(group) : undefined;
   }
 
   /** A meaning for a state and its name in its culture's base, or in the base given.
@@ -260,8 +305,13 @@ class ToponymsGenerator {
     taken: Set<string | undefined>,
     min = base.length[0]
   ): Named | undefined {
-    const { name, whole } = compose(meaning, base.id);
-    return whole && name.length >= min && !taken.has(name) ? { name, meaning } : undefined;
+    // a name taken is drawn again with other forms of the same meaning
+    for (const salt of [0, 1, 2]) {
+      const salted = salt ? { ...meaning, salt } : meaning;
+      const { name, whole } = compose(salted, base.id);
+      if (whole && name.length >= min && !taken.has(name)) return { name, meaning: salted };
+    }
+    return undefined;
   }
 
   private stateNames(): Set<string | undefined> {
@@ -276,9 +326,10 @@ class ToponymsGenerator {
   private getWater(burg: Burg, site: Site): { root: Token; tags: SiteTag[] } | undefined {
     const { cells, rivers, features } = pack;
     const river = site.stream || site.river ? rivers.find(river => river.i === cells.r[burg.cell]) : undefined;
-    if (river?.name) return { root: this.borrow(river.name, river.mouth, burg), tags: WATER_TAGS };
+    if (river?.name && !river.name.includes(" "))
+      return { root: this.borrow(river.name, river.mouth, burg), tags: WATER_TAGS };
     const lake = site.lake ? features[cells.f[cells.haven[burg.cell]]] : undefined;
-    if (!lake?.name) return undefined;
+    if (!lake?.name || lake.name.includes(" ")) return undefined; // a name of two words is no root
     return { root: this.borrow(lake.name, lake.shoreline?.[0] ?? lake.firstCell, burg), tags: SHORE_TAGS };
   }
 
@@ -384,27 +435,23 @@ class ToponymsGenerator {
     return concept === site.good ? fit + 4 : fit;
   }
 
-  /** Draw a pattern by the base's weights, the options setting the share of names that say something */
-  private pickPattern(base: NameBase, patterns: Pattern[], share = 1): Pattern {
-    const meaningful = (options.generation.names.meaningful / 100) * share;
-    const total = patterns.reduce((sum, pattern) => sum + DEFAULT_WEIGHTS[pattern], 0);
-    const plain = DEFAULT_WEIGHTS.simplex / total; // the share of proper names where nothing is set
-    const scale = (pattern: Pattern) => (pattern === "simplex" ? (1 - meaningful) / plain : meaningful / (1 - plain));
-    return this.pickWeighted(patterns, pattern => patternWeight(base, pattern) * scale(pattern));
+  /** Draw a pattern by the base's weights; with a share, proper names take what the share leaves */
+  private pickPattern(base: NameBase, patterns: Pattern[], share?: number): Pattern {
+    if (share !== undefined) return P(share) ? this.pickPattern(base, without(patterns, "simplex")) : "simplex";
+    return this.pickWeighted(patterns, pattern => patternWeight(base, pattern));
   }
 
   /** A meaning no place stands behind and its name: what a base makes of names, for its editor to show */
   sample(base: NameBase): Named {
-    const concept = (kind: "generic" | "modifier") => ra(conceptsOf(kind));
-    const pattern = this.pickPattern(base, ["simplex", "feature", "modifier-generic", "owner-generic"]);
+    const concept = (kind: "settlement" | "generic" | "modifier") => ra(conceptsOf(kind));
+    const pattern = this.pickPattern(base, ["feature", "modifier-generic", "owner-generic"]);
+    const generic = concept(P(SETTLED) ? "settlement" : "generic");
     const tokens: Token[] =
-      pattern === "simplex"
-        ? [`~${Names.getBase(base.id)}`]
-        : pattern === "feature"
-          ? [concept("generic")]
-          : pattern === "modifier-generic"
-            ? [concept("modifier"), concept("generic")]
-            : [`~${Names.getPerson(base.id)}`, concept("generic")];
+      pattern === "feature"
+        ? [concept("generic")]
+        : pattern === "modifier-generic"
+          ? [concept("modifier"), generic]
+          : [`~${Names.getPerson(base.id)}`, generic];
     const meaning: Meaning = { pattern, tokens, origin: base.id };
     return { name: render(meaning, base.id), meaning };
   }
@@ -412,9 +459,9 @@ class ToponymsGenerator {
   private pickConcept(
     kind: "generic" | "modifier",
     site: Site,
-    allow: (weight: number, tags?: SiteTag[]) => boolean = weight => weight > 0
+    allow: (weight: number, tags: SiteTag[] | undefined, concept: Concept) => boolean = weight => weight > 0
   ): Concept | undefined {
-    const concepts = conceptsOf(kind).filter(concept => allow(this.weigh(concept, site), fitsOf(concept)));
+    const concepts = conceptsOf(kind).filter(concept => allow(this.weigh(concept, site), fitsOf(concept), concept));
     return concepts.length ? this.pickWeighted(concepts, concept => this.weigh(concept, site)) : undefined;
   }
 
@@ -428,5 +475,7 @@ class ToponymsGenerator {
     return items[items.length - 1];
   }
 }
+
+const without = <T>(items: T[], item: T) => items.filter(other => other !== item);
 
 export const Toponyms = new ToponymsGenerator();

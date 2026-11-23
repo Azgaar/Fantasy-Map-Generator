@@ -224,6 +224,12 @@ class RoutesModule {
   regenerate(): void {
     const lockedRoutes = pack.routes.filter(route => route.lock).map((route, index) => ({ ...route, i: index }));
     this.generate(lockedRoutes, Math.random());
+    this.defineNames();
+  }
+
+  /** Name the routes that have no name: after the burgs they are named for have theirs */
+  defineNames(): void {
+    for (const route of pack.routes) route.name ??= this.generateName(route);
   }
 
   generate(lockedRoutes: Route[] = [], randomSeed?: number) {
@@ -703,22 +709,19 @@ class RoutesModule {
     for (const { feature, cells, merged } of this.mergeRoutes(mainRoads)) {
       if (merged) continue;
       const points = this.getPoints("roads", cells!, pointsArray);
-      const name = this.generateName({ group: "roads", points });
-      routes.push({ i: routes.length, group: "roads", name, feature, points, tags: [] });
+      routes.push({ i: routes.length, group: "roads", feature, points, tags: [] });
     }
 
     for (const { feature, cells, merged } of this.mergeRoutes(trails)) {
       if (merged) continue;
       const points = this.getPoints("trails", cells!, pointsArray);
-      const name = this.generateName({ group: "trails", points });
-      routes.push({ i: routes.length, group: "trails", name, feature, points, tags: [] });
+      routes.push({ i: routes.length, group: "trails", feature, points, tags: [] });
     }
 
     for (const { feature, cells, merged } of this.mergeRoutes(seaRoutes)) {
       if (merged) continue;
       const points = this.getPoints("searoutes", cells!, pointsArray);
-      const name = this.generateName({ group: "searoutes", points });
-      routes.push({ i: routes.length, group: "searoutes", name, feature, points, tags: [] });
+      routes.push({ i: routes.length, group: "searoutes", feature, points, tags: [] });
     }
 
     return routes;

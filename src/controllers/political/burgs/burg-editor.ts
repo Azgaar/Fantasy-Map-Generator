@@ -411,8 +411,28 @@ function showTranslations(): void {
 function changeGroup(this: HTMLSelectElement): void {
   const id = getSelectedId();
   const burg = pack.burgs[id];
+  const was = burg.group;
   Burgs.changeGroup(burg, this.value);
   Layers.draw("burgIcons", "labels");
+
+  // a name ends in what the burg is: in another group it may end another way
+  const named = Toponyms.regrouped(burg, was);
+  if (!named) return;
+  Dialog.confirm({
+    title: t("Rename burg"),
+    message: t("In its new group {{burg}} would be called “{{name}}”. Rename the burg?", {
+      burg: burg.name!,
+      name: named.name
+    }),
+    confirm: t("Rename"),
+    onConfirm: () => {
+      Burgs.setMeaning(burg.i, named.meaning);
+      Burgs.rename(burg.i, named.name);
+      ensureEl<HTMLInputElement>("burgName").value = named.name;
+      ensureEl("burgMeaning").textContent = getMeaningGloss(burg);
+      Layers.draw("labels");
+    }
+  });
 }
 
 function changeType(this: HTMLSelectElement): void {

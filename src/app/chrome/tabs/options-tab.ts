@@ -156,11 +156,6 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     parse: Number,
     pin: "growthRate"
   }),
-  meaningfulNames: option({
-    read: o => o.generation.names.meaningful,
-    write: (o, value) => (o.generation.names.meaningful = value),
-    parse: Number
-  }),
   properNames: option({
     read: o => o.generation.names.proper,
     write: (o, value) => (o.generation.names.proper = value),

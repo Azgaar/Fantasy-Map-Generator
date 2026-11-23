@@ -11,6 +11,7 @@ import { each, gauss, ra, rand, rw } from "@/utils/probability-utils";
 import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validation-utils";
 import { Names } from "./names-generator";
 import { Population } from "./population-generator";
+import { Toponyms } from "./toponyms";
 
 export interface Religion extends NamedReligion {
   i: number;
@@ -1490,7 +1491,7 @@ class ReligionsModule {
       const burgId = cells.burg[center];
       const stateId = cells.state[center];
 
-      const base = burgId ? burgs[burgId].name! : states[stateId].name;
+      const base = burgId ? Toponyms.nameOf(burgs[burgId]) : states[stateId].name; // most burgs have no name yet
       const name = trimVowels(base.split(/[ ,]+/)[0]);
       return adj ? getAdjective(name) : name;
     };

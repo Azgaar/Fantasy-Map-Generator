@@ -21,11 +21,15 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Names: English and Ruthenian names are built of real place-name parts, such as -ton, -ford, Novo- and -gorod
 - Names: places are named after founders with personal names of their culture
 - Namesbase Editor: tabs for personal names, the lexicon, name patterns and sound rules
-- Options: share of meaningful names, and whether personal names are generated or picked
+- Options: whether personal names are generated or picked
 - Names: rivers, lakes and provinces are named for what they are, such as Blackwater or Kenelm's Pool
 - Options: show labels as named, by what the names mean, or as any one namesbase would say them
 - Burg, State and Cultures editors: a change of culture or namesbase offers the names the new one gives
 - River, Lake and Province editors: see how other namesbases render the name
+- Names: every burg name says something, and most end in what the burg is by its group, such as -sk for a Ruthenian city, -ov for a town and -ovo for a village
+- Names: a name of two stems is two words that agree in gender and number, such as Krasnoye Selo or Olgina Gora
+- Namesbase Editor: suffixes, stems, noun classes and agreement endings
+- Burg Editor: a change of group offers the name the new group gives
 
 **[1.158.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.158.0) - 2026-11-12**:
 

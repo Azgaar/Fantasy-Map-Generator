@@ -1,5 +1,6 @@
-import type { Formant, Pattern, SoundRule } from "@/data/name-bases";
+import type { Formant, Pattern, SoundRule, Template } from "@/data/name-bases";
 import type { Concept } from "@/data/name-concepts";
+import { parseTemplates } from "@/utils/name-notation";
 
 const VOWELS = "aeiouyàèìòùáéíóúýâêîôûäëïöüÿãõāēīōūăĕĭŏŭąęįǫų";
 const [VOWEL, CONSONANT] = [`[${VOWELS}]`, `[^${VOWELS} +-]`];
@@ -47,26 +48,27 @@ export const NEAREST_LETTERS: Record<string, string[]> = {
   z: ["s", "j", "k"]
 };
 
-/** How a pattern is laid out where a base has no template of its own */
-export const DEFAULT_TEMPLATES: Record<Pattern, string> = {
-  simplex: "{root}",
-  feature: "{generic}",
-  "modifier-generic": "{modifier}{generic}",
-  "owner-generic": "{root}{generic}",
-  "generic-of": "{root}{generic}",
-  relative: "{modifier}{root}",
-  "root-land": "{root}{generic}",
-  "modifier-land": "{modifier}{generic}"
+/** How a pattern is laid out where a base has no template of its own: a settlement's ending joins what it is
+ * named for, two words of their own stand apart */
+export const DEFAULT_TEMPLATES: Record<Pattern, Template[]> = {
+  simplex: parseTemplates("{root}"),
+  feature: parseTemplates("{generic}"),
+  "modifier-generic": parseTemplates("{modifier}{generic}, {modifier} {generic}"),
+  "owner-generic": parseTemplates("{root}{generic}, {root} {generic}"),
+  "generic-of": parseTemplates("{root}{generic}, {generic} {root}"),
+  relative: parseTemplates("{modifier} {root}"),
+  "root-land": parseTemplates("{root}{generic}"),
+  "modifier-land": parseTemplates("{modifier}{generic}")
 };
 
 /** How often a base coins a name of each pattern where it sets no weight of its own */
 export const DEFAULT_WEIGHTS: Record<Pattern, number> = {
   simplex: 35,
-  feature: 4,
-  "modifier-generic": 18,
-  "owner-generic": 26,
-  "generic-of": 12,
-  relative: 3,
+  feature: 3,
+  "modifier-generic": 40,
+  "owner-generic": 35,
+  "generic-of": 10,
+  relative: 5,
   "root-land": 57,
   "modifier-land": 8
 };

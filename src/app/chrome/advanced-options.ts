@@ -113,13 +113,6 @@ const mapRows = () =>
       control: slider("growthRate", `min=".1" max="2" step=".1"`)
     }),
     row({
-      label: t("Meaningful names"),
-      tip: t(
-        "Share of burg and state names that say something about the place. The rest are proper names with no meaning"
-      ),
-      control: slider("meaningfulNames", `min="0" max="100" step="5"`)
-    }),
-    row({
       label: t("Personal names"),
       tip: t(
         "Founders that places are named after: generated anew, picked from the name base as they are, or as each name base sets"

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { NameBase } from "@/data/name-bases";
+import { lexiconOf, parseGrammar, parseRules, parseTemplates } from "@/utils/name-notation";
 import { compose, gloss, type Meaning, render, simplex, type Token } from "./name-render";
 import { composeBase, Names } from "./names-generator";
 
@@ -62,7 +63,7 @@ describe("render", () => {
   });
 
   it("takes the plain English word where a base speaks plain English", () => {
-    expect(render(meaning("modifier-generic", "new", "town"), "human-generic")).toBe("Newtown");
+    expect(render(meaning("modifier-generic", "new", "town"), "human-generic")).toBe("Newham"); // a settlement by its English ending
     expect(render(meaning("owner-generic", "~Eadric", "farm"), "human-generic")).toBe("Eadricfarm");
     expect(render(meaning("feature", "bridge"), "human-generic")).toBe("Bridge");
     expect(render(meaning("modifier-generic", "oak", "wood"), "human-generic")).toBe("Oakwood");
@@ -97,11 +98,11 @@ describe("render", () => {
 describe("a base with no lexicon", () => {
   it("ends its generics with the commonest endings of its corpus and coins the rest from its chain", () => {
     Names.nameBases.push(custom());
-    const names = ["town", "village", "home", "farm"].map(generic =>
+    const names = ["city", "town", "village", "hamlet"].map(generic =>
       render(meaning("owner-generic", "~Mel", generic as Token), "custom")
     );
-    expect(new Set(names)).toEqual(new Set(["Melbach", "Meldorf", "Melheim", "Melstadt"]));
-    expect(render(meaning("owner-generic", "~Mel", "quarry"), "custom")).toMatch(/^Mel\p{Ll}+$/u);
+    expect(names).toEqual(["Melbach", "Meldorf", "Melheim", "Melstadt"]); // a settlement is an ending
+    expect(render(meaning("owner-generic", "~Mel", "quarry"), "custom")).toMatch(/^Mel ?\p{L}+$/u); // a place may be a word
   });
 
   it("keeps one form for a concept across names", () => {
@@ -127,7 +128,7 @@ describe("a name too long for its base", () => {
   it("clips its root at a syllable, then gives up its modifier", () => {
     Names.nameBases.push(custom({ length: [4, 9] }));
     const long = compose(meaning("owner-generic", "~Korbachmelheim", "town"), "custom");
-    expect(long).toEqual({ name: "Korbach", whole: true }); // the root kept as far as the ending leaves room
+    expect(long).toEqual({ name: "Kordorf", whole: true }); // the root kept as far as the ending leaves room
     expect(render(meaning("simplex", "~Korbachmelheim"), "custom")).toBe("Korbachmelheim"); // a name of its own is left whole
 
     Names.nameBases.push({ ...custom({ length: [4, 9] }), id: "plain", extends: "human-generic" });
@@ -135,6 +136,97 @@ describe("a name too long for its base", () => {
       name: "Harbour",
       whole: false
     });
-    expect(compose(meaning("modifier-generic", "new", "town"), "plain")).toEqual({ name: "Newtown", whole: true });
+    expect(compose(meaning("modifier-generic", "new", "town"), "plain")).toEqual({ name: "Newham", whole: true });
+  });
+});
+
+describe("a base with a grammar", () => {
+  const slavic = (): NameBase => ({
+    ...custom(),
+    id: "slavic",
+    grammar: parseGrammar("f: a$ => aya\nn: [oe]$ => oye\npl: [iy]$ => ye\nm: => yi"),
+    rules: parseRules(String.raw`(?<=\+ov)\+yi =>  | join
+(?<=\+ov)\+aya => +a | join`),
+    lexicon: lexiconOf({
+      town: "-ov:5, gorod@last, gorod@word",
+      village: "selo@word, _/n@word",
+      hill: "gora@word, gor@stem",
+      harbour: "pristan/f@word",
+      mouth: "ust-@first, ustye@word",
+      birch: "berez@stem, berezo@first, berezov*",
+      new: "novo@first, nov*",
+      upper: "verhniy/m@word, verhnyaya/f@word"
+    }),
+    patterns: {
+      "modifier-generic": { templates: parseTemplates("{modifier}{generic}, {modifier} {generic}") },
+      "owner-generic": { templates: parseTemplates("{root}{generic}, {root}ov* {generic}") },
+      "generic-of": { templates: parseTemplates("{generic}{root}, {root}{generic}") }
+    }
+  });
+  const names = (item: Meaning) =>
+    new Set(Array.from({ length: 40 }, (_, salt) => render({ ...withSalt(item, salt), origin: "slavic" }, "slavic")));
+
+  it("ends a stem or a proper name with a suffix, and nothing else", () => {
+    Names.nameBases.push(slavic());
+    expect(names(meaning("modifier-generic", "birch", "town"))).toEqual(
+      new Set(["Berezov", "Berezogorod", "Berezovyi Gorod"])
+    );
+    expect(names(meaning("modifier-generic", "new", "town"))).toEqual(new Set(["Novogorod", "Novyi Gorod"])); // no stem, no "Novov"
+    expect(names(meaning("owner-generic", "~Ivan", "town"))).toEqual(new Set(["Ivanov", "Ivangorod", "Ivanov Gorod"]));
+    expect(names(meaning("modifier-generic", "hill", "town"))).toEqual(new Set(["Gorov"])); // a noun describes no noun
+  });
+
+  it("gives a describing word the ending of its noun, said or unsaid, and of a root where there is no noun", () => {
+    Names.nameBases.push(slavic());
+    expect(names(meaning("modifier-generic", "new", "village"))).toEqual(new Set(["Novoye Selo", "Novoye"]));
+    expect(names(meaning("modifier-generic", "new", "harbour"))).toEqual(new Set(["Novaya Pristan"])); // a class it is told
+    expect(names(meaning("modifier-generic", "upper", "hill"))).toEqual(new Set(["Verhnyaya Gora"])); // a form per class
+    expect(names(meaning("owner-generic", "~Ivan", "hill"))).toEqual(new Set(["Ivanova Gora"])); // an ending in a template
+    expect(names(meaning("relative", "new", "~Lipki"))).toEqual(new Set(["Novye Lipki"]));
+    expect(names(meaning("relative", "new", "~Gorod"))).toEqual(new Set(["Novyi Gorod"]));
+  });
+
+  it("puts a prefix before a root only", () => {
+    Names.nameBases.push(slavic());
+    expect(names(meaning("generic-of", "mouth", "~Luga"))).toEqual(new Set(["Ust-Luga"]));
+  });
+
+  it("makes do where no forms fit, and says the name is not whole", () => {
+    Names.nameBases.push(slavic());
+    expect(compose({ ...meaning("modifier-generic", "harbour", "town"), origin: "slavic" }, "slavic")).toEqual({
+      name: "Pristanov", // a noun for a stem
+      whole: false
+    });
+  });
+});
+
+describe("Ruthenian", () => {
+  const name = (pattern: Meaning["pattern"], ...tokens: Token[]) =>
+    render({ pattern, tokens, origin: "ruthenian" }, "ruthenian");
+
+  it("ends a burg's name in what its group is", () => {
+    const groups: Token[] = ["city", "town", "village", "hamlet"];
+    expect(groups.map(group => name("modifier-generic", "birch", group))).toEqual([
+      "Berezovsk",
+      "Berezov",
+      "Berezovka",
+      "Berezki"
+    ]);
+    expect(groups.slice(0, 3).map(group => name("owner-generic", "~Ivan", group))).toEqual([
+      "Ivanovsk",
+      "Ivanov",
+      "Ivanovo"
+    ]);
+    expect(name("owner-generic", "~Olga", "town")).toBe("Olgin");
+  });
+
+  it("writes two stems as two words that agree", () => {
+    expect(name("modifier-generic", "red", "village")).toBe("Krasnoye Selo");
+    expect(name("modifier-generic", "white", "temple")).toBe("Belyi Hram");
+    expect(name("owner-generic", "~Olga", "hill")).toBe("Olgina Gora");
+    expect(name("generic-of", "ford", "~Dvina")).toBe("Dvinskiy Brod");
+    expect(name("relative", "little", "~Gorki")).toBe("Malye Gorki");
+    expect(name("generic-of", "city", "~Volga")).toBe("Volzhsk");
+    expect(name("generic-of", "mouth", "~Izhora")).toBe("Ust-Izhora");
   });
 });

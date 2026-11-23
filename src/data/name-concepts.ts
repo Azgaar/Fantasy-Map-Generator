@@ -26,10 +26,11 @@ export type SiteTag =
   | "west";
 
 interface ConceptData {
-  kind: "generic" | "modifier" | "land"; // what a settlement is, what tells it apart, what a state is
+  kind: "settlement" | "generic" | "modifier" | "land"; // how big a burg is, what stands there, what tells it apart, what a state is
   fits?: SiteTag[];
 }
 
+const settlement = (): ConceptData => ({ kind: "settlement" });
 const generic = (...fits: SiteTag[]): ConceptData => ({ kind: "generic", fits: fits.length ? fits : undefined });
 const modifier = (...fits: SiteTag[]): ConceptData => ({ kind: "modifier", fits: fits.length ? fits : undefined });
 const land = (...fits: SiteTag[]): ConceptData => ({ kind: "land", fits: fits.length ? fits : undefined });
@@ -37,8 +38,11 @@ const land = (...fits: SiteTag[]): ConceptData => ({ kind: "land", fits: fits.le
 /** The closed vocabulary names are made of: the English word is the id and the gloss.
  * A name base gives its generics their endings in this order, so the common ones come first */
 export const CONCEPTS = {
-  town: generic("big"),
-  village: generic("small"),
+  city: settlement(),
+  town: settlement(),
+  village: settlement(),
+  hamlet: settlement(),
+
   home: generic(),
   farm: generic("small", "plain"),
   hall: generic(),
@@ -77,6 +81,7 @@ export const CONCEPTS = {
   mine: generic("ore"),
   quarry: generic("ore", "mountain"),
   temple: generic("capital", "big"),
+  abbey: generic(),
   river: generic("river"),
   brook: generic("stream"),
   water: generic("river", "stream", "lake"),
@@ -182,8 +187,35 @@ export type Concept = keyof typeof CONCEPTS;
 
 export const isConcept = (word: string): word is Concept => Object.hasOwn(CONCEPTS, word);
 
+export const kindOf = (concept: Concept): ConceptData["kind"] => CONCEPTS[concept].kind;
+
 export const conceptsOf = (kind: ConceptData["kind"]): Concept[] =>
   (Object.keys(CONCEPTS) as Concept[]).filter(concept => CONCEPTS[concept].kind === kind);
+
+/** The settlement a burg group's burgs are named as; a group of another name goes by the size it takes */
+const GROUP_SETTLEMENTS: Record<string, Concept> = {
+  capital: "city",
+  city: "city",
+  town: "town",
+  village: "village",
+  hamlet: "hamlet",
+  fort: "fort",
+  monastery: "abbey",
+  caravanserai: "camp",
+  trading_post: "market"
+};
+
+/** Whether a concept is what a burg may be by its group */
+export const settles = (concept: Concept): boolean => Object.values(GROUP_SETTLEMENTS).includes(concept);
+
+export function settlementOf(group?: { name: string; min?: number; max?: number; percentile?: number }): Concept {
+  if (!group) return "town";
+  const named = GROUP_SETTLEMENTS[group.name];
+  if (named) return named;
+  if (group.percentile !== undefined && group.percentile >= 80) return "city";
+  if (group.max !== undefined) return group.max <= 0.2 ? "hamlet" : group.max <= 3 ? "village" : "town";
+  return group.min !== undefined && group.min >= 10 ? "city" : "town";
+}
 
 /** The site tags a concept asks for; none when it fits anywhere */
 export const fitsOf = (concept: Concept): SiteTag[] | undefined => (CONCEPTS[concept] as ConceptData).fits;

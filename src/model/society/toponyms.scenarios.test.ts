@@ -1,13 +1,13 @@
 // Semantic names on real generated maps
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { fitsOf } from "@/data/name-concepts";
+import { fitsOf, settlementOf } from "@/data/name-concepts";
 import { Goods } from "@/model/economy/goods-generator";
 import { Rivers } from "@/model/physical/river-generator";
-import { Burgs } from "@/model/political/burgs-generator";
+import { type Burg, Burgs } from "@/model/political/burgs-generator";
 import { capitalize } from "@/utils/string-utils";
 import { generateMap, living } from "../real-map.testing";
 import { adopt } from "./name-adoption";
-import { fits, type Meaning, render } from "./name-render";
+import { fits, type Meaning, render, seeded } from "./name-render";
 import { Names } from "./names-generator";
 import { Toponyms } from "./toponyms";
 
@@ -140,22 +140,89 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
   });
 });
 
-describe("the share of meaningful names", () => {
-  const simplexShare = () => {
-    const burgs = living(pack.burgs);
-    return burgs.filter(burg => burg.meaning!.pattern === "simplex").length / burgs.length;
-  };
-
-  it("follows the option, from proper names only to as few as the places allow", async () => {
+describe("burg names of an authored base", () => {
+  beforeAll(async () => {
     options.generation.cultures.set = "european";
-    options.generation.names.meaningful = 0;
-    await generateMap({ seed: "toponyms-share", points: 4000 });
-    expect(simplexShare()).toBe(1);
-    expect(living(pack.states).every(state => state.meaning!.pattern === "simplex")).toBe(true);
+    await generateMap({ seed: "toponyms-groups", points: 6000 });
+  });
 
-    options.generation.names.meaningful = 100;
-    await generateMap({ seed: "toponyms-share", points: 4000 });
-    expect(simplexShare()).toBeLessThan(0.05);
-    options.generation.names.meaningful = 65;
+  const settlementOfBurg = (burg: Burg) =>
+    burg.capital ? "city" : settlementOf(options.map.burgs.groups.find(({ name }) => name === burg.group));
+  // burgs of each group named as Ruthenian would name them: as many as a large culture has, so names stay free
+  const inRuthenian = () =>
+    seeded("ruthenian", () => {
+      const taken = new Set<string | undefined>();
+      const burgs = living(pack.burgs);
+      const sample = ["city", "town", "village"].flatMap(group =>
+        burgs.filter(burg => settlementOfBurg(burg) === group).slice(0, 60)
+      );
+      return sample.map(burg => {
+        const named = Toponyms.burg(burg, { baseId: "ruthenian", taken });
+        taken.add(named.name);
+        return { ...named, settlement: settlementOfBurg(burg) };
+      });
+    });
+
+  it("say something, every one", () => {
+    const plain = living(pack.burgs).filter(burg => burg.meaning!.pattern === "simplex");
+    expect(plain.map(burg => `${burg.name} ${burg.meaning!.origin} ${burg.group} ${burg.capital}`)).toEqual([]);
+  });
+
+  it("mostly end in what the burg's group is", () => {
+    const burgs = living(pack.burgs);
+    const settled = burgs.filter(burg => burg.meaning!.tokens.includes(settlementOfBurg(burg)));
+    expect(settled.length / burgs.length).toBeGreaterThan(0.6);
+    expect(settled.length / burgs.length).toBeLessThan(0.95);
+  });
+
+  it("end by group in Ruthenian: -sk for a city, -ov for a town, -ovo and its like for a village", () => {
+    const names = inRuthenian();
+    const share = (settlement: string, ending: RegExp) => {
+      const group = names.filter(named => named.settlement === settlement);
+      expect(group.length, settlement).toBeGreaterThan(10);
+      return group.filter(({ name }) => ending.test(name)).length / group.length;
+    };
+    expect(share("city", /(sk|grad|gorod)$/i)).toBeGreaterThan(0.5);
+    expect(share("town", /(ov|ev|in)$/)).toBeGreaterThan(0.45);
+    expect(share("village", /(ovo|evo|ino|ka|ichi)$/)).toBeGreaterThan(0.45);
+    expect(share("town", /sk$/)).toBeLessThan(0.03);
+    expect(share("village", /(sk|ov)$/)).toBeLessThan(0.03);
+  });
+
+  it("are sometimes two words, never more than a third of them", () => {
+    const names = inRuthenian();
+    const twoWords = names.filter(({ name }) => name.includes(" ")).length / names.length;
+    expect(twoWords).toBeGreaterThan(0.1);
+    expect(twoWords).toBeLessThan(0.33);
+  });
+
+  it("say what a burg would be called in another group", () => {
+    const town = living(pack.burgs).find(
+      ({ meaning, group }) => group === "town" && meaning!.origin === "ruthenian" && meaning!.tokens.includes("town")
+    )!;
+    const village = Toponyms.regrouped({ ...town, group: "village" }, "town")!;
+    expect(village.meaning.tokens).toContain("village");
+    expect(village.name).not.toBe(town.name);
+    expect(render(village.meaning, "ruthenian")).toBe(village.name);
+    expect(Toponyms.regrouped(town, "town")).toBeUndefined();
+  });
+
+  it("agree in gender and number where they are two words", () => {
+    const pairs = inRuthenian().filter(({ meaning, name }) => meaning.pattern === "modifier-generic" && / /.test(name));
+    expect(pairs.length).toBeGreaterThan(20);
+    for (const { name } of pairs) {
+      const [describing, noun] = name.toLowerCase().split(" ");
+      if (/a$/.test(noun)) expect(describing, name).toMatch(/ya$/);
+      if (/[oe]$/.test(noun)) expect(describing, name).toMatch(/(oye|eye|ye)$/);
+    }
+  });
+});
+
+describe("names that wait for the burgs", () => {
+  it("routes and religions are named for burgs that have their names", () => {
+    const named = new Set(living(pack.burgs).map(burg => burg.name));
+    expect(named.has(undefined)).toBe(false);
+    expect(pack.routes.filter(route => route.points.length >= 4 && !route.name)).toEqual([]);
+    expect(pack.religions.filter(religion => religion.i && !religion.name)).toEqual([]);
   });
 });

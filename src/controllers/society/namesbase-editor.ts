@@ -19,9 +19,11 @@ import { sentences, t } from "@/utils/i18n";
 import { log } from "@/utils/logger";
 import {
   formatFormants,
+  formatGrammar,
   formatRules,
   formatTemplates,
   parseFormants,
+  parseGrammar,
   parseRules,
   parseTemplates
 } from "@/utils/name-notation";
@@ -129,7 +131,18 @@ function renderDialog(): void {
         <div data-pane="lexicon">
           <div data-tip="${t("How the base says each concept. A concept with no form gets a generated one, shown in grey")}">
             <span id="namesbaseCoverage"></span>.
-            ${t("Forms are written as {{- notation}}, commas between", { notation: notation("form~short+link@position:weight") })}
+            ${t("Forms are written as {{- notation}}, commas between", { notation: notation("form~short+link/class@position:weight") })}
+          </div>
+          <div data-tip="${t("A suffix ends a word after a stem or a proper name. A word with * takes the ending of the noun beside it. _ leaves the noun unsaid")}">
+            ${t(
+              "{{- suffix}} is a suffix, {{- stem}} takes one, {{- agreeing}} agrees with its noun, {{- silent}} is a noun left unsaid",
+              {
+                suffix: notation("-sk"),
+                stem: notation("berez@stem"),
+                agreeing: notation("nov*"),
+                silent: notation("_/n")
+              }
+            )}
           </div>
           <div id="namesbaseLexicon" style="display: grid; grid-template-columns: 7em 1fr; gap: 2px 6px; align-items: center"></div>
         </div>
@@ -146,7 +159,11 @@ function renderDialog(): void {
               flags: notation("| join | long | foreign | 30%")
             })}
           </div>
-          <textarea id="namesbaseRules" rows="9" autocorrect="off" spellcheck="false" style="resize: none; font-family: var(--monospace)"></textarea>
+          <textarea id="namesbaseRules" rows="7" autocorrect="off" spellcheck="false" style="resize: none; font-family: var(--monospace)"></textarea>
+          <div data-tip="${t("Noun classes such as genders and the plural: the nouns of a class match its pattern, and a word written with * takes its ending beside one")}">
+            ${t("Grammar is written as {{- notation}}, a noun class a line", { notation: notation("class: pattern => ending") })}
+          </div>
+          <textarea id="namesbaseGrammar" rows="4" autocorrect="off" spellcheck="false" style="resize: none; font-family: var(--monospace)"></textarea>
           <div>
             <span>${t("Try a name")}: </span>
             <input id="namesbaseRuleTest" autocorrect="off" spellcheck="false" style="width: 14em"
@@ -217,6 +234,7 @@ function renderDialog(): void {
   ensureEl("namesbaseLexicon").addEventListener("change", updateLexicon);
   ensureEl("namesbasePatterns").addEventListener("change", updatePatterns);
   ensureEl("namesbaseRules").addEventListener("change", updateRules);
+  ensureEl("namesbaseGrammar").addEventListener("change", updateGrammar);
   ensureEl("namesbaseRuleTest").addEventListener("input", testRules);
   ensureEl("namesbaseAdd").addEventListener("click", namesbaseAdd);
   ensureEl("namesbaseAnalyze").addEventListener("click", analyzeNamesbase);
@@ -287,12 +305,14 @@ function showBase(base: NameBase): void {
   showLexicon(base);
   showPatterns(base);
   ensureEl<HTMLTextAreaElement>("namesbaseRules").value = formatRules(base.rules);
+  ensureEl<HTMLTextAreaElement>("namesbaseGrammar").value = formatGrammar(base.grammar);
   testRules();
 }
 
 function showLexicon(base: NameBase): void {
   const kinds = [
-    ["generic", t("Settlements")],
+    ["settlement", t("Settlements")],
+    ["generic", t("Places")],
     ["modifier", t("Modifiers")],
     ["land", t("Lands")]
   ] as const;
@@ -311,7 +331,7 @@ function showLexicon(base: NameBase): void {
 
 function showCoverage(base: NameBase): void {
   const written = Object.values(base.lexicon ?? {}).filter(forms => forms?.length).length;
-  const all = (["generic", "modifier", "land"] as const).flatMap(conceptsOf).length;
+  const all = (["settlement", "generic", "modifier", "land"] as const).flatMap(conceptsOf).length;
   ensureEl("namesbaseCoverage").textContent = t("Concepts written: {{written}} of {{all}}", { written, all });
 }
 
@@ -322,7 +342,7 @@ function showPatterns(base: NameBase): void {
       <input data-pattern="${pattern}" data-field="weight" type="number" min="0" value="${weight ?? ""}"
         placeholder="${DEFAULT_WEIGHTS[pattern]}" data-tip="${t("How often the base coins such a name, against the other patterns")}" />
       <input data-pattern="${pattern}" data-field="templates" value="${escapeHtml(formatTemplates(templates))}"
-        placeholder="${DEFAULT_TEMPLATES[pattern]}" autocorrect="off" spellcheck="false" />`;
+        placeholder="${formatTemplates(DEFAULT_TEMPLATES[pattern])}" autocorrect="off" spellcheck="false" />`;
   });
   ensureEl("namesbasePatterns").innerHTML = rows.join("");
 }
@@ -459,6 +479,14 @@ function updateRules(): void {
   base.rules = rules;
   ensureEl<HTMLInputElement>("namesbaseDouble").value = getDoubles(base);
   testRules();
+  updateExamples();
+}
+
+function updateGrammar(): void {
+  const base = selectedBase();
+  if (!base) return;
+  base.grammar = parseGrammar(ensureEl<HTMLTextAreaElement>("namesbaseGrammar").value);
+  if (!base.grammar) delete base.grammar;
   updateExamples();
 }
 

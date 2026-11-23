@@ -18,9 +18,10 @@ const SHIPPED = getDefaultNameBases().map(base => base.id); // a shipped base's 
 const formantSchema = z.object({
   form: z.string().min(1),
   weight: z.number().min(0).optional(),
-  position: z.enum(["first", "last", "word"]).optional(),
+  position: z.enum(["first", "last", "word", "stem"]).optional(),
   short: z.string().optional(),
-  link: z.string().optional()
+  link: z.string().optional(),
+  class: z.string().optional()
 });
 
 const corpusSchema = z.object({
@@ -47,6 +48,12 @@ export const nameBaseSchema = z.object({
         chance: z.number().min(0).max(1).optional()
       })
     )
+    .optional(),
+  grammar: z
+    .object({
+      classes: z.record(z.string(), z.string()).optional(),
+      agreement: z.record(z.string(), z.string()).optional()
+    })
     .optional(),
   lexicon: z.record(z.string(), z.array(formantSchema)).optional(),
   patterns: z

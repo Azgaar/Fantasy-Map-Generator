@@ -181,7 +181,7 @@ class BurgModule {
 
     pack.burgs = burgs;
     this.assignPorts();
-    Toponyms.nameBurgs(burgs);
+    Toponyms.nameBurgs(burgs, "", burg => Boolean(burg.capital)); // states are named after capitals; the rest wait for their groups
 
     function getCapitalsNumber() {
       let number = options.generation.states.limit;
@@ -603,7 +603,9 @@ class BurgModule {
     }
   }
 
-  specify() {
+  /** Give burgs their population, emblem, features and group, then a name to the ones that have none:
+   * a name says what the burg is, so it comes after the group. `roll` makes the names other than the map's own */
+  specify(roll = "") {
     pack.burgs.forEach(burg => {
       if (!burg.i || burg.removed || burg.lock) return;
       this.definePopulation(burg);
@@ -620,6 +622,7 @@ class BurgModule {
       if (!burg.i || burg.removed) return;
       this.defineGroup(burg, populations);
     });
+    Toponyms.nameBurgs(pack.burgs, roll);
   }
 
   private createWatabouCityLinks(burg: Burg) {
@@ -813,7 +816,6 @@ class BurgModule {
       port: 0,
       tags: []
     };
-    Object.assign(burg, Toponyms.burg(burg));
     this.definePopulation(burg);
     this.defineEmblem(burg);
     this.defineFeatures(burg);
@@ -823,6 +825,7 @@ class BurgModule {
       .map(b => b.population as number)
       .sort((a: number, b: number) => a - b); // ascending
     this.defineGroup(burg, populations);
+    Object.assign(burg, Toponyms.burg(burg));
 
     pack.burgs.push(burg);
     cells.burg[cellId] = burgId;
@@ -907,7 +910,7 @@ class BurgModule {
 
     pack.burgs = newBurgs;
     this.assignPorts();
-    Toponyms.nameBurgs(pack.burgs, String(Math.random())); // another roll than the map's own, or the names come back
+    const roll = String(Math.random()); // another roll than the map's own, or the names come back
 
     states
       .filter(state => state.i && !state.removed && !state.capital)
@@ -923,7 +926,7 @@ class BurgModule {
       });
 
     for (const cell of oldCells) Development.vacate(cell); // land a dropped burg stood on alone
-    this.specify();
+    this.specify(roll);
     for (const province of provinces)
       if (province.i && !province.removed && !province.burg) this.seatProvince(province);
     Routes.regenerate();

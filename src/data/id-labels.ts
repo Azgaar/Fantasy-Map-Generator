@@ -259,8 +259,10 @@ export const SAMPLING_LABELS: Record<Sampling, string> = {
 
 /** The words names are made of, for a meaning read in the interface language */
 export const CONCEPT_LABELS: Record<Concept, string> = {
+  city: t("city", { context: "toponym" }),
   town: t("town", { context: "toponym" }),
   village: t("village", { context: "toponym" }),
+  hamlet: t("hamlet", { context: "toponym" }),
   home: t("home", { context: "toponym" }),
   farm: t("farm", { context: "toponym" }),
   hall: t("hall", { context: "toponym" }),
@@ -299,6 +301,7 @@ export const CONCEPT_LABELS: Record<Concept, string> = {
   mine: t("mine", { context: "toponym" }),
   quarry: t("quarry", { context: "toponym" }),
   temple: t("temple", { context: "toponym" }),
+  abbey: t("abbey", { context: "toponym" }),
   river: t("river", { context: "toponym" }),
   brook: t("brook", { context: "toponym" }),
   water: t("water", { context: "toponym" }),

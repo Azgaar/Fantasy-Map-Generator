@@ -70,10 +70,10 @@ the pipeline, since it depends only on name bases and the seeded random source.
 | Goods catalogue          | `goods`                                         | `options.map.goods`, `cells.good`                                    |
 | Ranking & cultures       | `rankCells`, `cultures`, `culturesExpand`       | `cells.s`, `cells.pop`, `pack.cultures`, `cells.culture`                        |
 | Water names              | `riversSpecify`, `featureNames`                 | river and feature (island, ocean, lake) names, which burgs are named after      |
-| Settlement & politics    | `burgs`, `states`, `routes`                     | `pack.burgs`, `pack.states` with their names and meanings, `pack.routes`        |
+| Settlement & politics    | `burgs`, `states`, `routes`                     | `pack.burgs` with capitals named, `pack.states` named after them, `pack.routes` |
 | Development              | `development`                                   | `cells.development` (see [development](../domain/development.md))               |
 | Religions                | `religions`                                     | `pack.religions`                                                                |
-| Specification            | `burgsSpecify`, `stateStatistics`, `stateForms` | burg types, state stats and forms (tribal titles read `cells.development`)      |
+| Specification            | `burgsSpecify`, `routeNames`, `stateStatistics`, `stateForms` | burg types and groups, then burg names, which say what a burg's group is, and route names after them; state stats and forms (tribal titles read `cells.development`) |
 | Provinces                | `provinces`, `provincePoles`                    | `pack.provinces`                                                                |
 | Economy                  | `markets`, `production`, `taxes`                | `pack.markets`, `cells.market`, `pack.deals`, burg/state treasuries             |
 | Overlays                 | `military`, `markers`, `zones`, `addedLabels`   | regiments, markers, zones, labels                                               |
@@ -119,7 +119,7 @@ flowchart TD
     states["states<br/><i>writes: pack.states</i>"]
     routes["routes<br/><i>writes: pack.routes</i>"]
     relig["religions<br/><i>writes: pack.religions</i>"]
-    spec["burgsSpecify + stateStatistics + stateForms"]
+    spec["burgsSpecify + routeNames + stateStatistics + stateForms"]
     prov["provinces + provincePoles<br/><i>writes: pack.provinces</i>"]
     dev["development<br/><i>writes: cells.development</i>"]
     econ["markets + production + taxes<br/><i>writes: pack.markets, deals, cells.market</i>"]
