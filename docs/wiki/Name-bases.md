@@ -27,6 +27,7 @@ old:    old:2, ald@first:2
 - `@last` lets the form stand only at the end of a word, `@first` only at the start, `@word` only as a word of its own.
 - `~burgh` is a shorter spelling, taken when the name runs too long.
 - `+s` is a link put between the form and the part after it, as in `king+s` for Kingston.
+- A form may hold an apostrophe: `king's@word` gives King's Landing.
 
 Use the forms real place names of the language are built of, in the spelling they have inside a name, not dictionary words: English towns end in -ton far more often than in -town.
 
@@ -68,6 +69,8 @@ A noun falls into the first class whose pattern it matches; the last line, with 
 - `_/n@word` is a noun left unsaid: the describing word stands alone and still agrees with it, as in Krasnoye for a village.
 - `*` works in a template as well: `{root}ov* {generic}` gives Borisov Brod and Olgina Gora.
 
+A stem written with its final `a`, such as `ryba@stem`, joins as a name ending in -a does: Rybin, Rybino, Rybinsk. A mark of your own inside a form, such as the `'` in `chert'ov*`, is there for a rule to find: the Ruthenian rules turn it into the short possessive endings of Chertov Most and Chertova Gora.
+
 Spelling that depends on the letters at the join belongs to the rules, not here: write the regular ending and let a `join` rule turn `k+yi` into `kiy`.
 
 ## Patterns and templates
@@ -80,6 +83,8 @@ owner-generic:     {root}{generic}:6, {root}ov* {generic}:2, {root}-{generic}
 ```
 
 A dash or a space in a template starts a new word, so `{root}-{generic}` gives David-Gorodok.
+
+The `compound` pattern has a third slot, `{settlement}`, after a describing word and a landform: `{modifier}{generic}{settlement}` gives Krasnogorsk, and `{modifier}{generic} {settlement}` gives Deepwood Keep. A template may leave a slot out: `{modifier}{generic}` alone gives Redhill.
 
 A name is one word or two by which forms the base has. A suffix can only join, so `birch` + `town` is Berezov. A form marked `@word` can only stand apart, so `red` + `village` is Krasnoye Selo. Where both are possible, the weights of the templates and of the forms decide together.
 

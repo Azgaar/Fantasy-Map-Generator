@@ -20,7 +20,7 @@ export interface Meaning {
   salt?: number; // re-rolls the choice between a concept's forms
 }
 
-type Slot = "root" | "generic" | "modifier";
+type Slot = "root" | "generic" | "modifier" | "settlement";
 
 export const SLOTS: Record<Pattern, Slot[]> = {
   simplex: ["root"],
@@ -28,6 +28,7 @@ export const SLOTS: Record<Pattern, Slot[]> = {
   "modifier-generic": ["modifier", "generic"],
   "owner-generic": ["root", "generic"],
   "generic-of": ["generic", "root"],
+  compound: ["modifier", "generic", "settlement"],
   relative: ["modifier", "root"],
   "root-land": ["root", "generic"],
   "modifier-land": ["modifier", "generic"]
@@ -37,8 +38,9 @@ const isRoot = (token: Token): token is `~${string}` => token.startsWith("~");
 
 /** The English reading of a meaning */
 export function gloss({ pattern, tokens }: Meaning): string {
-  const [first, second] = tokens.map(token => (isRoot(token) ? token.slice(1) : capitalize(token)));
+  const [first, second, third] = tokens.map(token => (isRoot(token) ? token.slice(1) : capitalize(token)));
   if (pattern === "simplex") return first;
+  if (pattern === "compound") return `${first} ${second} ${third}`;
   if (pattern === "feature") return `The ${first}`;
   if (pattern === "owner-generic") return `${first}${first.endsWith("s") ? "'" : "'s"} ${second}`;
   if (pattern === "generic-of") return `${first} of ${second}`;

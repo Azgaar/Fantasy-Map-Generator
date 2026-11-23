@@ -13,9 +13,10 @@ export function localGloss(meaning: Meaning): string {
 
   const word = (token: string) =>
     token.startsWith("~") ? token.slice(1) : capitalize(CONCEPT_LABELS[token as Concept] ?? token);
-  const [first, second] = meaning.tokens.map(word);
+  const [first, second, third] = meaning.tokens.map(word);
   const { pattern } = meaning;
   if (pattern === "simplex") return first;
+  if (pattern === "compound") return `${first} ${second} ${third}`;
   if (pattern === "feature") return t("The {{- generic}}", { generic: first, context: "toponym" });
   if (pattern === "owner-generic")
     return t("{{- owner}}'s {{- generic}}", { owner: first, generic: second, context: "toponym" });

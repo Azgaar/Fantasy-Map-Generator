@@ -72,7 +72,7 @@ describe("shipped name bases", () => {
       const { lexicon = {} } = Names.getNameBases().find(base => base.id === id)!;
       for (const concept of [...conceptsOf("settlement"), ...conceptsOf("generic"), ...conceptsOf("modifier")]) {
         expect(lexicon[concept]?.length, `${id}: ${concept}`).toBeGreaterThan(0);
-        for (const { form } of lexicon[concept]!) expect(form, `${id}: ${concept}`).toMatch(/^(-?\p{Ll}+[*-]?|_)$/u);
+        for (const { form } of lexicon[concept]!) expect(form, `${id}: ${concept}`).toMatch(/^(-?[\p{Ll}']+[*-]?|_)$/u);
       }
     }
   });

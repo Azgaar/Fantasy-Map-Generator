@@ -56,6 +56,7 @@ export const DEFAULT_TEMPLATES: Record<Pattern, Template[]> = {
   "modifier-generic": parseTemplates("{modifier}{generic}, {modifier} {generic}"),
   "owner-generic": parseTemplates("{root}{generic}, {root} {generic}"),
   "generic-of": parseTemplates("{root}{generic}, {generic} {root}"),
+  compound: parseTemplates("{modifier}{generic}{settlement}, {modifier}{generic}"),
   relative: parseTemplates("{modifier} {root}"),
   "root-land": parseTemplates("{root}{generic}"),
   "modifier-land": parseTemplates("{modifier}{generic}")
@@ -68,6 +69,7 @@ export const DEFAULT_WEIGHTS: Record<Pattern, number> = {
   "modifier-generic": 40,
   "owner-generic": 35,
   "generic-of": 10,
+  compound: 8,
   relative: 5,
   "root-land": 57,
   "modifier-land": 8

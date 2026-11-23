@@ -32,6 +32,8 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Burg Editor: a change of group offers the name the new group gives
 - Names: a founder's name takes a suffix, such as Davidov or Davidovo, and seldom a word of its own, as in David-Gorodok
 - Names: English endings vary more, and a namesbase sets how many burg names end in the burg's group
+- Names: three times the vocabulary, from seasons and beasts to trades and omens, written for English and Ruthenian: Winterfell, Raven's Rest, Wolf's Watch, Zmeinogorsk, Babiy Yar
+- Names: three-part names built on the lie of the land, such as Deepwood Keep and Krasnogorsk
 
 **[1.158.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.158.0) - 2026-11-12**:
 

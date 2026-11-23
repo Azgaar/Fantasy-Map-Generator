@@ -100,7 +100,8 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     }
     const waters = [...pack.rivers, ...lakes].filter(({ meaning }) => meaning!.pattern !== "simplex");
     expect(waters.length).toBeGreaterThan(0);
-    for (const { meaning } of waters) expect(["river", "brook", "water", "lake", "pool"]).toContain(meaning!.tokens[1]);
+    const kinds = ["river", "brook", "water", "run", "lake", "pool", "tarn", "eye"];
+    for (const { meaning } of waters) expect(kinds).toContain(meaning!.tokens[1]);
   });
 
   it("repeats no river name", () => {
@@ -194,6 +195,23 @@ describe("burg names of an authored base", () => {
     const twoWords = names.filter(({ name }) => name.includes(" ")).length / names.length;
     expect(twoWords).toBeGreaterThan(0.1);
     expect(twoWords).toBeLessThan(0.33);
+  });
+
+  it("draw on a wide vocabulary", () => {
+    const used = new Set(living(pack.burgs).flatMap(burg => concepts(burg.meaning!)));
+    expect(used.size).toBeGreaterThan(200);
+  });
+
+  it("build some names of three parts around the lie of the land", () => {
+    const compounds = living(pack.burgs).filter(burg => burg.meaning!.pattern === "compound");
+    expect(compounds.length / living(pack.burgs).length).toBeGreaterThan(0.05);
+    for (const { meaning, name } of compounds) {
+      expect(meaning!.tokens, name).toHaveLength(3);
+      expect(meaning!.tokens[2], name).toBe(settlementOfBurg(pack.burgs.find(burg => burg.name === name)!));
+    }
+    const krasnogorsk: Meaning = { pattern: "compound", tokens: ["red", "hill", "city"], origin: "ruthenian" };
+    expect(render(krasnogorsk, "ruthenian")).toMatch(/^Krasnogor(ov)?sk$/);
+    expect(render(krasnogorsk, "english")).toMatch(/^R[ae]d/);
   });
 
   it("say what a burg would be called in another group", () => {

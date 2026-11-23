@@ -1,7 +1,15 @@
 // Gives burgs and states a meaning that fits their place: the "semantic" half of semantic names
 
 import type { NameBase, Pattern } from "@/data/name-bases";
-import { type Concept, conceptsOf, fitsOf, isConcept, type SiteTag, settlementOf } from "@/data/name-concepts";
+import {
+  type Concept,
+  conceptsOf,
+  fitsOf,
+  isConcept,
+  type SiteTag,
+  settlementOf,
+  weightOf
+} from "@/data/name-concepts";
 import { Goods } from "@/model/economy/goods-generator";
 import type { Feature } from "@/model/physical/features-generator";
 import type { River } from "@/model/physical/river-generator";
@@ -44,7 +52,7 @@ interface StateOptions {
   seed?: string;
 }
 
-const BURG_PATTERNS: Pattern[] = ["feature", "modifier-generic", "owner-generic", "generic-of", "relative"];
+const BURG_PATTERNS: Pattern[] = ["feature", "modifier-generic", "owner-generic", "generic-of", "compound", "relative"];
 const STATE_PATTERNS: Pattern[] = ["simplex", "root-land", "modifier-land"];
 const WATER_TAGS: SiteTag[] = ["stream", "river", "mouth"];
 const SHORE_TAGS: SiteTag[] = ["lake", "port", "coast"];
@@ -52,9 +60,16 @@ const FOREST_BIOMES = [5, 6, 7, 8, 9];
 const BIG_RIVER_FLUX = 100; // from where a river carries boats
 const SETTLED = 0.85; // the share of burg names that end in what the burg is, where a base sets none
 const LANDMARK = 0.3; // of those, the share named for what stands there, not for what it is like
-const WATER_SHARE = 0.35; // waters keep old names: this many of them say something
+const WATER_SHARE = 0.5; // waters keep old names: this many of them say something
+const PLAIN = 0.6; // the weight of a concept that fits anywhere, against one the place asks for
 const TRIES = 12;
-const WATERS: Concept[] = ["river", "brook", "water"]; // what a water is, not what a burg stands by
+// the lie of the land: what a name of three parts is built around, as in Red-hill-town
+const TERRAIN: Concept[] = [
+  ...["field", "wood", "hill", "ford", "valley", "mount", "shore", "island", "lake", "marsh", "spring", "meadow"],
+  ...["grove", "bank", "bay", "cape", "cliff", "ridge", "pass", "heath", "pool", "rock", "crag", "fell", "falls"],
+  ...["glade", "glen", "hollow", "gorge", "peak", "cave", "sands", "dune", "waste", "fen", "barrow", "bend"]
+] as Concept[];
+const WATERS: Concept[] = ["river", "brook", "water", "run", "tarn", "eye"]; // what a water is, not what a burg stands by
 const isBuilt = (weight: number, _: unknown, concept: Concept) =>
   weight > 0 && concept !== "abbey" && !WATERS.includes(concept);
 
@@ -106,17 +121,19 @@ class ToponymsGenerator {
     const water = this.getWater(burg, site);
     const neighbor = this.getNeighbor(burg, burgs);
     const settlement = this.getSettlement(burg);
+    const terrain = this.pickConcept("generic", site, (weight, _, concept) => weight >= 2 && TERRAIN.includes(concept));
 
     const supported = (pattern: Pattern) =>
       (pattern !== "feature" || landmark) &&
       (pattern !== "generic-of" || water) &&
+      (pattern !== "compound" || (settlement && terrain)) &&
       (pattern !== "relative" || neighbor);
     const patterns = BURG_PATTERNS.filter(supported);
 
     for (let attempt = 0; attempt < TRIES; attempt++) {
       const pattern = this.pickPattern(base, patterns);
       const settled = P(this.settledShare(base)) ? settlement : undefined; // most names end in what the burg is
-      const tokens = this.fillBurg(pattern, base, site, { settled, landmark, water, neighbor });
+      const tokens = this.fillBurg(pattern, base, site, { settled, settlement, terrain, landmark, water, neighbor });
       const named = tokens && this.accept({ pattern, tokens, origin: base.id }, base, taken);
       if (named) return named;
     }
@@ -131,6 +148,8 @@ class ToponymsGenerator {
     site: Site,
     by: {
       settled?: Concept;
+      settlement?: Concept;
+      terrain?: Concept;
       landmark?: Concept;
       water?: { root: Token; tags: SiteTag[] };
       neighbor?: { root: Token; modifier: Concept };
@@ -140,6 +159,7 @@ class ToponymsGenerator {
     if (pattern === "feature") return [by.landmark!];
     if (pattern === "owner-generic") return [`~${Names.getPerson(base.id)}`, generic()];
     if (pattern === "relative") return [by.neighbor!.modifier, by.neighbor!.root];
+    if (pattern === "compound") return [this.pickConcept("modifier", site)!, by.terrain!, by.settlement!];
     if (pattern === "modifier-generic") {
       const named = by.settled && by.landmark && P(LANDMARK) ? by.landmark : this.pickConcept("modifier", site)!;
       return [named, generic()];
@@ -249,7 +269,7 @@ class ToponymsGenerator {
     const isSmall = river.type !== "River"; // a brook, a creek or a fork
     const [x, y] = cells.p[cell];
     const site = { ...this.getSite({ cell, x, y, culture }), [isSmall ? "small" : "big"]: 2 };
-    const waters: Concept[] = isSmall ? ["brook", "brook", "water"] : ["river", "river", "water"];
+    const waters: Concept[] = isSmall ? ["brook", "brook", "water", "run"] : ["river", "river", "water", "run"];
 
     for (let attempt = 0; attempt < TRIES; attempt++) {
       const pattern = this.pickPattern(base, ["simplex", "modifier-generic"], WATER_SHARE);
@@ -269,7 +289,8 @@ class ToponymsGenerator {
     const base = Names.resolve(baseId ?? pack.cultures[culture]?.base) ?? Names.nameBases[0];
     const [x, y] = cells.p[cell];
     const site = this.getSite({ cell, x, y, culture });
-    const waters: Concept[] = lake.cells < 4 ? ["pool", "pool", "lake", "water"] : ["lake", "lake", "lake", "water"];
+    const waters: Concept[] =
+      lake.cells < 4 ? ["pool", "pool", "tarn", "lake", "eye"] : ["lake", "lake", "lake", "water", "eye"];
 
     for (let attempt = 0; attempt < TRIES; attempt++) {
       const pattern = this.pickPattern(base, ["simplex", "modifier-generic", "owner-generic"], WATER_SHARE);
@@ -431,8 +452,8 @@ class ToponymsGenerator {
   /** How well a concept fits a site: 1 for one that fits anywhere, 0 for one the site has nothing for */
   private weigh(concept: Concept, site: Site): number {
     const tags = fitsOf(concept);
-    const fit = tags ? Math.max(...tags.map(tag => site[tag] ?? 0)) : 1;
-    return concept === site.good ? fit + 4 : fit;
+    const fit = tags ? Math.max(...tags.map(tag => site[tag] ?? 0)) : PLAIN;
+    return (concept === site.good ? fit + 4 : fit) * weightOf(concept);
   }
 
   /** Draw a pattern by the base's weights; with a share, proper names take what the share leaves */

@@ -69,6 +69,7 @@ export type Pattern =
   | "modifier-generic"
   | "owner-generic" // root, generic
   | "generic-of" // generic, root
+  | "compound" // modifier, generic, settlement
   | "relative" // modifier, root
   | "root-land" // root, generic
   | "modifier-land"; // modifier, generic
