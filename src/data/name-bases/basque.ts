@@ -379,6 +379,7 @@ tz\+di => zti | join
 tz\+[gk] => zk | join
 tz\+(?=[bdp]) => z+ | join
 (?<=[aeiou])r\+(?=[aeiou]) => rr+ | join
+[aeiou]\+(?=oa$) =>  | join
 a\+(?=[eiou]) => + | join
 (.)\+\1 => $1 | join
 \+ =>  | join

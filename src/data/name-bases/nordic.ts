@@ -853,7 +853,7 @@ hundred: hundre+
 thousand: tusen+
 
 # lands
-land: +land 6, +rike 2, +ia 2
+land: +land 6, +rike 2
 realm: +rike
 march: +mark
 country: +bygd 2, +fylke
@@ -866,6 +866,7 @@ isles: +øyar
     "owner-generic": { weight: 25, female: 0.05, templates: "{root}s{generic} 6, {root}{generic} 3" },
     "generic-of": { weight: 12, templates: "{root}{generic} 5, {root}" },
     compound: { weight: 6, templates: "{modifier}{generic} 6, {modifier}{generic}{settlement}" },
-    relative: { weight: 8, templates: "{modifier} {root}" }
+    relative: { weight: 8, templates: "{modifier} {root}" },
+    "root-land": { templates: "{root}{generic} 9, {root}ia" }
   }
 };

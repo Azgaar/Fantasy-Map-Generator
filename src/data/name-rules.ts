@@ -6,7 +6,7 @@ const [VOWEL, CONSONANT] = [`[${VOWELS}]`, `[^${VOWELS} +-]`];
 
 /** How the parts of a name meet, after its base's rules and before the `+` marks go */
 export const JOIN_RULES: SoundRule[] = [
-  { match: `(?<=${CONSONANT})${VOWEL}+\\+(?=${VOWEL}[^ +-]{0,3}$)`, replace: "" }, // a short vowel ending takes the place of a part's last vowels
+  { match: `(?<=(?!q)${CONSONANT}|qu)${VOWEL}+\\+(?=${VOWEL}[^ +-]{0,3}$)`, replace: "" }, // a short vowel ending takes the place of a part's last vowels, but for the u of qu
   { match: "(.)\\+\\1", replace: "$1" } // one letter where two of a kind meet
 ];
 

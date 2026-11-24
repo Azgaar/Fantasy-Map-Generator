@@ -102,9 +102,22 @@ describe("render", () => {
     expect(names("german")).toEqual(new Set(["Frankland", "Frankien", "Frankmark", "Frankreich"]));
     expect(names("korean")).toContain("Pranguk"); // Korean writes no f and no nk
     expect(names("chinese")).toEqual(new Set(["Fran Guo"]));
-    expect(names("arabic")).toEqual(new Set(["Frankiyya", "Al Frankiyya"])); // -istan would run too long
+    expect(names("arabic")).toEqual(new Set(["Frankiyya", "Al Frankiyya"]));
     Names.nameBases.push(custom());
     expect(names("custom")).toEqual(new Set(["Frankia"])); // the shared form: a base with no land of its own
+  });
+
+  it("leaves a land unsaid where a template has a suffix for it", () => {
+    Names.nameBases.push(custom({ patterns: { "root-land": { templates: [{ parts: "{root}mark" }] } } }));
+    expect(Meanings.render(meaning("root-land", "~Frank", "land"), "custom")).toBe("Frankmark");
+  });
+
+  it("is not whole where a part repeats the one before", () => {
+    Names.nameBases.push(custom({ lexicon: { land: [{ form: "land", position: "last" }] } }));
+    const compose = (root: `~${string}`) =>
+      Meanings.compose({ ...meaning("root-land", root, "land"), origin: "custom" }, "custom");
+    expect(compose("~Harlan")).toEqual({ name: "Harlanland", whole: false });
+    expect(compose("~Frank")).toEqual({ name: "Frankland", whole: true });
   });
 
   it("applies a base's rules at the join", () => {

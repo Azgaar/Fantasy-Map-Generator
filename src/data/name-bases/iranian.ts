@@ -517,9 +517,9 @@ long: deraz 3
 broad: pahn 2
 deep: gowd 2
 high: boland 3, bala 2
-low: Pain 3
+low: Payin 3
 upper: Bala 4, Olya 3
-lower: Pain 4, Sofla 3
+lower: Payin 4, Sofla 3
 middle: mian 4, Vosta 2
 north: Shomali 3, shomal+
 south: Jonubi 3, jonub+

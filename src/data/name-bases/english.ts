@@ -620,6 +620,8 @@ export const english: WrittenNameBase = {
       replace: "",
       at: "join"
     }, // a town on the Blackburn is Blackburn
+    { match: "(?<=[a-z]{3}(?:water|burn|rill|run|brook|beck|wash))\\+(?=[a-z]{4,}$)", replace: "", at: "join" }, // Fishwater Reach keeps its r
+    { match: "(?<=s)\\+'s(?= )", replace: "+'", at: "join" }, // James' Bridge
     // a founder is cut to a syllable before -ing-: Eddington, Rickington, Leofington
     { match: "^([^aeiou+ ]*[aeiou])c[^+ ]+\\+ing", replace: "$1ck+ing", at: "join" },
     { match: "^([^aeiou+ ]*[aeiou])([bdfglmnprst])[^+ ]*\\+ing", replace: "$1$2$2+ing", at: "join" },
@@ -1077,7 +1079,7 @@ hundred: Hundred/pl
 thousand: Thousand/pl
 
 # lands
-land: +land 7, +ia 4, +lands
+land: +land 7, +lands
 realm: +realm
 march: march
 country: +shire
@@ -1097,6 +1099,7 @@ isles: isles
       weight: 20,
       templates: "{modifier}{generic} 7, {modifier} {generic} 2, {modifier}{generic} {settlement} 3"
     },
-    relative: { weight: 10, templates: "{modifier} {root}" }
+    relative: { weight: 10, templates: "{modifier} {root}" },
+    "root-land": { templates: "{root}{generic} 8, {root}ia 3" }
   }
 };

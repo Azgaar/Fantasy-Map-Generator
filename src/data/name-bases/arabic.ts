@@ -3,9 +3,10 @@ import type { WrittenNameBase } from "@/types/names";
 export const arabic: WrittenNameBase = {
   id: "arabic",
   name: "Arabic",
-  length: [4, 9],
+  length: [4, 11],
 
   places: {
+    length: [4, 9],
     names: [
       "Abha",
       "Ajman",
@@ -396,6 +397,7 @@ export const arabic: WrittenNameBase = {
 ^al (?=al ) =>  | join
 ^al (?=[aeiou]\S* al ) =>  | join
 ^al (?=\S+ al (?!(?:jadid|qadim|atiq|kabir|kubra|saghir|sughra|tawil|wasi|amiq|ulya|sufla|awsat|wusta|aswad|sawda|abyad|bayda|ahmar|hamra|akhdar|khadra|asfar|safra|azraq|zarqa|muzlim|munir|barid|sakhin|sukhnah|nashif|ratb|tayyib|jamil|muqaddas|hurr|baid|wahid|mahruq|hilw|said|awaj|awja|dayyiq|mudawwar|sari|murr|mubarak|masud)(?:\+?ah)?$|(?:aal|wat|fawqan|tahtan|shamal|janub|sharq|gharb|dhahab|ramad|had|barr|ghan|mustaw|saf)(?:i|iyah)$)) =>  | join`, // the article goes on a noun only before a describing word
+    { match: "^al (?=al)", replace: "", at: "join" },
     { match: "^al (?=[aeiou])", replace: "al", at: "join" },
     String.raw`
 ^al (?=\S+ al allah$) =>  | join
@@ -715,7 +717,7 @@ hundred: Miah
 thousand: Alf
 
 # lands
-land: +iyya 6, +istan 3
+land: +iyya
 realm: Mamlakat
 march: Thughur
 domain: Imarat

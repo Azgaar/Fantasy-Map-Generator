@@ -583,6 +583,8 @@ g\+'ye => zhye | join
 (?<![csz])h\+'ye => shye | join
 ts\+'ye => chye | join
 [aoy]?\+'ye => ye | join
+(?<=[^aeiou])y?aya\+(?=sk|ov) => +ov+ | join
+(ov)\+(?:ov)\+? => $1+ | join
 (?<=[^aeiou])y?a\+ovichi => +ichi | join
 (?<=[^aeiou])y?a\+ov => +in | join
 (?<=[aeiou])y\+ov => yev | join

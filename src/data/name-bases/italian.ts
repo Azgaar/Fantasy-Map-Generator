@@ -471,7 +471,8 @@ export const italian: WrittenNameBase = {
 ^(mont|coll)e\+(?=[aeiou]) => $1+ | join
 ^castel\+(?=[aeiou]) => castell+ | join
 ^(val|col)\+(?=[aeiou]) => $1l+ | join
-(?<=[^aeiou]([ao]))\+(?!\1|(?:ano|ago|ate|engo|asco|ia)$)(?=[aeiou][^ +-]{0,3}$) =>  | join
+(?<=[^aeiou]([ao]))\+(?!\1|(?:ano|ago|ate|engo|asco|ia|ana|agna|ania)$)(?=[aeiou][^ +-]{0,3}$) =>  | join
+gna?\+agna$ => gn+ania | join
 à\+ => a+ | join
 %\+eto => +ara | join
 \bsan(?= s[^aeiou]) => santo | join

@@ -113,11 +113,16 @@ class ToponymsGenerator {
   burg(burg: Burg, { burgs = pack.burgs, taken = this.burgNames(burgs), baseId }: BurgOptions = {}): Named {
     const base = Names.resolve(baseId ?? pack.cultures[burg.culture!].base);
     const site = this.getSite(burg);
-    const landmark = this.pickConcept("generic", site, (fit, _, concept) => fit >= 3 && !WATERS.includes(concept)); // what the place stands out for
+    const landmark = this.pickConcept(
+      "generic",
+      site,
+      base,
+      (fit, _, concept) => fit >= 3 && !WATERS.includes(concept)
+    ); // what the place stands out for
     const water = this.getWater(burg, site);
     const neighbor = this.getNeighbor(burg, burgs);
     const settlement = this.getSettlement(burg);
-    const terrain = this.pickConcept("generic", site, (fit, _, concept) => fit >= 2 && TERRAIN.includes(concept));
+    const terrain = this.pickConcept("generic", site, base, (fit, _, concept) => fit >= 2 && TERRAIN.includes(concept));
 
     const supported = (pattern: Pattern) =>
       (pattern !== "feature" || landmark) &&
@@ -152,20 +157,20 @@ class ToponymsGenerator {
       neighbor?: { root: Token; modifier: Concept };
     }
   ): Token[] | undefined {
-    const generic = () => by.settled ?? this.pickConcept("generic", site, isBuilt)!;
+    const generic = () => by.settled ?? this.pickConcept("generic", site, base, isBuilt)!;
     if (pattern === "feature") return [by.landmark!];
     if (pattern === "owner-generic") return [`~${this.founder(base)}`, generic()];
     if (pattern === "relative") return [by.neighbor!.modifier, by.neighbor!.root];
     const numbered = (counted: Concept) => COUNTABLE.includes(counted) && P(NUMBERED);
-    const numeral = () => this.pickWeighted(conceptsOf("numeral"), weightOf);
+    const numeral = () => this.pickWeighted(Lexicon.spoken(base, conceptsOf("numeral")), weightOf);
     if (pattern === "compound") {
-      const first = numbered(by.terrain!) ? numeral() : this.pickConcept("modifier", site)!;
+      const first = numbered(by.terrain!) ? numeral() : this.pickConcept("modifier", site, base)!;
       return [first, by.terrain!, by.settlement!];
     }
     if (pattern === "modifier-generic") {
       const place = generic();
       if (!by.settled && numbered(place)) return [numeral(), place]; // Three Towers
-      const named = by.settled && by.landmark && P(LANDMARK) ? by.landmark : this.pickConcept("modifier", site)!;
+      const named = by.settled && by.landmark && P(LANDMARK) ? by.landmark : this.pickConcept("modifier", site, base)!;
       return [named, place];
     }
     const byWater =
@@ -173,6 +178,7 @@ class ToponymsGenerator {
       this.pickConcept(
         "generic",
         site,
+        base,
         (weight, tags, concept) => isBuilt(weight, tags, concept) && by.water!.tags.some(tag => tags?.includes(tag))
       );
     return byWater && [byWater, by.water!.root];
@@ -215,7 +221,7 @@ class ToponymsGenerator {
   ): Named {
     for (let attempt = 0; ; attempt++) {
       const pattern = this.pickPattern(base, LAND_PATTERNS);
-      const first = pattern === "root-land" ? root() : this.pickConcept("modifier", site)!;
+      const first = pattern === "root-land" ? root() : this.pickConcept("modifier", site, base)!;
       const meaning: Meaning = { pattern, tokens: [first, land()], origin: base.id };
       const named = this.accept(meaning, base, taken, 3);
       if (named) return named;
@@ -291,12 +297,17 @@ class ToponymsGenerator {
     const isSmall = river.type !== "River"; // a brook, a creek or a fork
     const [x, y] = cells.p[cell];
     const site = { ...this.getSite({ cell, x, y, culture }), [isSmall ? "small" : "big"]: 2 };
-    const waters: Concept[] = isSmall ? ["brook", "brook", "water", "run"] : ["river", "river", "water", "run"];
+    const waters = Lexicon.spoken(
+      base,
+      isSmall ? ["brook", "brook", "water", "run"] : ["river", "river", "water", "run"]
+    );
 
     for (let attempt = 0; attempt < TRIES; attempt++) {
       const pattern = this.pickPattern(base, ["simplex", "modifier-generic"], WATER_SHARE);
       const tokens: Token[] =
-        pattern === "simplex" ? [`~${Names.getWater(base.id)}`] : [this.pickConcept("modifier", site)!, ra(waters)];
+        pattern === "simplex"
+          ? [`~${Names.getWater(base.id)}`]
+          : [this.pickConcept("modifier", site, base)!, ra(waters)];
       const min = pattern === "simplex" ? 0 : undefined; // a water's own name is never too short: Exe, Oka
       const named = this.accept({ pattern, tokens, origin: base.id }, base, taken, min);
       if (named) return named;
@@ -312,12 +323,15 @@ class ToponymsGenerator {
     const base = Names.resolve(baseId ?? pack.cultures[culture]?.base);
     const [x, y] = cells.p[cell];
     const site = this.getSite({ cell, x, y, culture });
-    const waters: Concept[] =
-      lake.cells < 4 ? ["pool", "pool", "tarn", "lake", "eye"] : ["lake", "lake", "lake", "water", "eye"];
+    const waters = Lexicon.spoken(
+      base,
+      lake.cells < 4 ? ["pool", "pool", "tarn", "lake", "eye"] : ["lake", "lake", "lake", "water", "eye"]
+    );
 
     for (let attempt = 0; attempt < TRIES; attempt++) {
       const pattern = this.pickPattern(base, ["simplex", "modifier-generic", "owner-generic"], WATER_SHARE);
-      const first: Token = pattern === "owner-generic" ? `~${this.founder(base)}` : this.pickConcept("modifier", site)!;
+      const first: Token =
+        pattern === "owner-generic" ? `~${this.founder(base)}` : this.pickConcept("modifier", site, base)!;
       const tokens: Token[] = pattern === "simplex" ? [`~${Names.getWater(base.id)}`] : [first, ra(waters)];
       const min = pattern === "simplex" ? 0 : undefined; // a water's own name is never too short: Exe, Oka
       const named = this.accept({ pattern, tokens, origin: base.id }, base, taken, min);
@@ -340,7 +354,7 @@ class ToponymsGenerator {
 
     for (let attempt = 0; attempt < TRIES; attempt++) {
       const pattern = this.pickPattern(base, ["modifier-generic", "owner-generic"]);
-      const first = pattern === "owner-generic" ? root() : this.pickConcept("modifier", site)!;
+      const first = pattern === "owner-generic" ? root() : this.pickConcept("modifier", site, base)!;
       const named = this.accept({ pattern, tokens: [first, "island"], origin: base.id }, base, taken);
       if (named) return named;
     }
@@ -533,7 +547,7 @@ class ToponymsGenerator {
 
   /** A meaning no place stands behind and its name: what a base makes of names, for its editor to show */
   sample(base: NameBase): Named {
-    const concept = (kind: "settlement" | "generic" | "modifier") => ra(conceptsOf(kind));
+    const concept = (kind: "settlement" | "generic" | "modifier") => ra(Lexicon.spoken(base, conceptsOf(kind)));
     const pattern = this.pickPattern(base, ["feature", "modifier-generic", "owner-generic"]);
     const generic = concept(P(this.settledShare(base)) ? "settlement" : "generic");
     const tokens: Token[] =
@@ -549,9 +563,12 @@ class ToponymsGenerator {
   private pickConcept(
     kind: "generic" | "modifier",
     site: Site,
+    base: NameBase,
     allow: (fit: number, tags: SiteTag[] | undefined, concept: Concept) => boolean = fit => fit > 0
   ): Concept | undefined {
-    const concepts = conceptsOf(kind).filter(concept => allow(this.fit(concept, site), fitsOf(concept), concept));
+    const concepts = Lexicon.spoken(base, conceptsOf(kind)).filter(concept =>
+      allow(this.fit(concept, site), fitsOf(concept), concept)
+    );
     return concepts.length ? this.pickWeighted(concepts, concept => this.weigh(concept, site)) : undefined;
   }
 

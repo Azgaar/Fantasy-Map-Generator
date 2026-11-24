@@ -9,6 +9,7 @@ import { Names } from "./names-generator";
 import { NameNotation } from "./notation";
 
 const SETTLEMENT_ENDINGS = 3;
+const FLUENT = 2 / 3; // the share of places a base of a real language writes at least
 const STAR = /\*\p{L}*/u;
 
 // what a kind of concept takes of the grammar: a place a stem for its suffixes, a modifier a combining form too
@@ -79,6 +80,16 @@ class LexiconModule {
   authoredForms(base: NameBase, concept: Concept): Formant[] | undefined {
     const own = Names.lineage(base).find(({ lexicon }) => lexicon?.[concept]?.length);
     return own?.lexicon?.[concept] ?? DEFAULT_LEXICON[concept];
+  }
+
+  /** The concepts a base names with, of those given: a base that writes most places keeps to the words it writes, so
+   * that no coined word stands among real ones */
+  spoken(base: NameBase, concepts: Concept[]): Concept[] {
+    const places = conceptsOf("generic");
+    const isWritten = (concept: Concept) => Boolean(this.authoredForms(base, concept));
+    if (places.filter(isWritten).length < places.length * FLUENT) return concepts;
+    const written = concepts.filter(isWritten);
+    return written.length ? written : concepts;
   }
 
   /** The forms a base makes for a concept nobody wrote a form for: at a word's start, at its end, on its own */

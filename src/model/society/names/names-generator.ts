@@ -6,7 +6,7 @@ import { sentences, t } from "@/utils/i18n";
 import { isVowel } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { notify } from "@/utils/notices";
-import { P, ra } from "@/utils/probability-utils";
+import { P, ra, seeded } from "@/utils/probability-utils";
 import { capitalize, safeParseJSON } from "@/utils/string-utils";
 import { NameNotation } from "./notation";
 import { SoundRules } from "./sound-rules";
@@ -15,9 +15,18 @@ import { SoundRules } from "./sound-rules";
 // Note: Uses array with string keys (sparse array) to match original JS behavior
 type MarkovChain = string[][] & Record<string, string[]>;
 
+/** What the words of a corpus sound like: the letters they put together and the consonants they close in */
+interface Sounds {
+  words: Set<string>;
+  triples: Set<string>;
+  ends: Set<string>;
+}
+
 const SYLLABIC = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
 
 const STEM_LENGTH = 4; // a stem is cut once it is this long
+const MIN_CUT = 3; // a name cut short keeps this many letters
+const REDRAWS = 12; // how many times a word that does not sound like its corpus is walked anew
 
 const formantSchema = z.object({
   form: z.string().min(1),
@@ -82,6 +91,7 @@ class NamesGenerator {
   private readonly shipped = new Map<string, NameBase>(); // the shipped bases loaded so far
   nameBases: NameBaseEntry[] = this.getNameBases();
   private readonly chains = new Map<string, MarkovChain | null>(); // Markov chains by base id
+  private readonly sounds = new WeakMap<string[], Sounds>(); // by corpus
   private readonly corpusChains = new WeakMap<string[], MarkovChain>(); // of people and waters, by corpus: an edited one is chained anew
 
   /** A base of the classic make: a length range, a corpus and the letters allowed to stand twice in a row */
@@ -283,9 +293,57 @@ class NamesGenerator {
   // a new name off a corpus's chain, by the base's rules
   private coin(corpus: Corpus, base: NameBase, [min, max]: [number, number]): string {
     if (!this.corpusChains.has(corpus.names)) this.corpusChains.set(corpus.names, this.calculateChain(corpus.names));
-    const walked = this.walk(this.corpusChains.get(corpus.names)!, min, max);
+    const walked = this.draw(this.corpusChains.get(corpus.names)!, corpus.names, min, max);
     const name = SoundRules.capitalize(SoundRules.apply(walked, base.rules));
     return name.length < 2 ? ra(corpus.names) : name;
+  }
+
+  /** A word off a chain that sounds like its corpus: one that does not is walked anew, on a random sequence of its
+   * own, and the closest of the words is taken */
+  private draw(chain: MarkovChain, names: string[], min: number, max: number): string {
+    let word = this.walk(chain, min, max);
+    if (SYLLABIC.test(word)) return word;
+    const first = word;
+    let best = this.strangeness(word, names);
+    for (let n = 1; best && n <= REDRAWS; n++) {
+      const other = seeded(`${first}|${n}`, () => this.walk(chain, min, max));
+      const strangeness = other.length < min ? Infinity : this.strangeness(other, names);
+      if (strangeness < best) [word, best] = [other, strangeness];
+    }
+    return word;
+  }
+
+  // how many times a word puts three letters together as no word of the corpus does; a word of the corpus itself is one off
+  private strangeness(word: string, names: string[]): number {
+    const { triples, words } = this.soundsOf(names);
+    return triplesOf(word).filter(triple => !triples.has(triple)).length + (words.has(word) ? 1 : 0);
+  }
+
+  private soundsOf(names: string[]): Sounds {
+    let sounds = this.sounds.get(names);
+    if (!sounds) {
+      const words = names.map(name => name.trim().toLowerCase());
+      const ends = words.flatMap(word => word.split(/[^\p{L}]+/u)).map(closingOf);
+      sounds = { words: new Set(words), triples: new Set(words.flatMap(triplesOf)), ends: new Set(ends) };
+      this.sounds.set(names, sounds);
+    }
+    return sounds;
+  }
+
+  /** The start of a name, so many syllables of it, with no more consonants at its end than the base's names close in */
+  cut(name: string, base: NameBase, syllables: number): string {
+    let start = "";
+    for (const [index, syllable] of this.syllables(name).entries())
+      if (index < syllables || start.length < MIN_CUT) start += syllable;
+    return start.length < name.length ? this.close(start, base) : name;
+  }
+
+  private close(start: string, base: NameBase): string {
+    if (SYLLABIC.test(start)) return start;
+    const { ends } = this.soundsOf(base.places.names);
+    let closed = start;
+    while (closed.length > 2 && !ends.has(closingOf(closed))) closed = closed.slice(0, -1);
+    return closed.length >= MIN_CUT || start.length < MIN_CUT ? closed : start;
   }
 
   /** Walk a chain from a word's start until the word ends between the lengths given, or grows too long */
@@ -340,7 +398,7 @@ class NamesGenerator {
     }
 
     const [shortest, longest] = base.places.length ?? base.length;
-    const w = this.walk(data, min || shortest, max || longest);
+    const w = this.draw(data, base.places.names, min || shortest, max || longest);
 
     const rules = dupl === "" ? [SoundRules.doublesRule(), ...(base.rules ?? [])] : base.rules;
     let name = SoundRules.capitalize(SoundRules.apply(w, rules));
@@ -396,8 +454,10 @@ class NamesGenerator {
       const syllables = this.syllables(word);
       let stem = "";
       for (const syllable of syllables.slice(0, -1)) if (stem.length < STEM_LENGTH) stem += syllable;
-      if (SYLLABIC.test(word) || stem.replace(/[aeiouy]+$/, "").length > 2 || attempt > 8)
-        return capitalize(stem || word);
+      if (SYLLABIC.test(word)) return stem || word;
+      stem = this.close(stem.toLowerCase(), this.resolve(id));
+      if (stem.replace(/[aeiouy]+$/, "").length > 2 || attempt > 8)
+        return capitalize(stem.length < MIN_CUT ? word : stem);
     }
   }
 
@@ -478,5 +538,17 @@ class NamesGenerator {
       .join("");
   }
 }
+
+const triplesOf = (word: string) => {
+  const ended = `^${word}$`;
+  return Array.from({ length: Math.max(ended.length - 2, 0) }, (_, index) => ended.slice(index, index + 3));
+};
+
+// the consonants a word closes in
+const closingOf = (word: string) => {
+  let start = word.length;
+  while (start > 0 && !isVowel(word[start - 1])) start--;
+  return word.slice(start);
+};
 
 export const Names = new NamesGenerator();

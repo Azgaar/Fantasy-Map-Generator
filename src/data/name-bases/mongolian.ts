@@ -755,7 +755,7 @@ hundred: zuun
 thousand: myangan
 
 # lands
-land: +ud 4, +chud 2, +ia 4, Ulus 2
+land: +ud 4, +chud 2, Ulus 2
 realm: Ord 2, Khanlig
 country: Oron 2, nutag
 `,
@@ -770,7 +770,7 @@ country: Oron 2, nutag
       templates: "{modifier} {generic} 4, {modifier}{generic} 3, {modifier} {generic} {settlement}"
     },
     relative: { weight: 10, templates: "{modifier} {root} 3, {modifier}{root} 2" },
-    "root-land": { templates: "{root}{generic} 6, {root} {generic} 4" },
+    "root-land": { templates: "{root}{generic} 6, {root} {generic} 4, {root}ia 3" },
     "modifier-land": { templates: "{modifier}{generic} 4, {modifier} {generic} 6" }
   }
 };

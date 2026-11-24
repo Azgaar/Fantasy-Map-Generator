@@ -97,8 +97,8 @@ Seas, routes, markers and religions have no meanings.
 
 A state, a province not named after its burg and a continent are lands, and an island is an island: none of them is named like a town. `Toponyms.coinLand` draws `root-land` or `modifier-land` by the base's weights and ends the name in a land word of the base, the state suffixes:
 
-- **The root** is a person (`FOUNDED`, 40%) or a people. A people's name is a stem, the start of a place name cut before the ending that makes it a town (`Names.getStem`): Heibach gives Heib. One state in five takes the person or the river its capital is named after.
-- **The suffix** is a form of a land concept. `land` leads, and holds most of a base's suffixes: German -land, -ien, -mark, -reich; French -ie, -ogne, -agne, -aine; Finnish -maa; Korean -guk, -ryeo. `realm`, `march`, `domain` and `country` add some; `coast` and `isles` ask for the place. A land word with only standalone forms (Regnum, Marca) is skipped, so no state is the Kingdom of Regnum. Such words stay for names translated from other bases.
+- **The root** is a person (`FOUNDED`, 40%) or a people. A people's name is a stem, the start of a place name cut before the ending that makes it a town (`Names.getStem`): Heibach gives Heib. A stem closes in consonants the base's names close in, so Waldbach gives Wald, not Waldb. One state in five takes the person or the river its capital is named after.
+- **The suffix** is a form of a land concept. `land` leads, and holds most of a base's suffixes: German -land, -mark, -reich; French -ogne, -agne, -aine; Finnish -maa; Korean -guk, -ryeo. `realm`, `march`, `domain` and `country` add some; `coast` and `isles` ask for the place. A suffix that stands after a name only is a template of `root-land`, which may leave the land word out: `{root}ien` gives Frankien, and there is no Altien. A land word with only standalone forms (Regnum, Marca) is skipped, so no state is the Kingdom of Regnum. Such words stay for names translated from other bases.
 - **No two lands share a name.** A new state or province repeats no state, province or burg; a province may take its own burg's name (`BURG_NAMED`, 35%), if no land has it.
 - **No suffix ends a town.** A base's land suffixes are kept apart from its settlement endings, and a test checks it.
 
@@ -125,10 +125,12 @@ The burg group maps to a settlement concept by name: `capital` and `city` to `ci
 `Meanings.render(meaning, baseId)` does this:
 
 1. **Adapt foreign roots.** A root coined in another base is brought to this base's sounds: `~Eadric` is Eadrik in Ruthenian and Eadarica in Japanese. A base's own roots stand as coined.
-2. **Draw a template** for the pattern by its weight: `{modifier}{generic}` or `{modifier} {generic}`. A template may leave out what the burg is by its group, as `{root}` does for a town named after its river; it never leaves out a name or what stands at the place.
+2. **Draw a template** for the pattern by its weight: `{modifier}{generic}` or `{modifier} {generic}`. A template may leave out what the burg is by its group, as `{root}` does for a town named after its river; a land may go unsaid too, as in `{root}ia`. It never leaves out a name or what stands at the place.
 3. **Draw a form for each concept** by weight, from the forms that may stand where the template puts them. A suffix needs a stem or a proper name before it, a describing word takes the gender of its noun, and a place word that describes another joins it: Fordhall, never Ford Hall.
 4. **Join the parts** with `+` between and run the sound rules: `exe+mouth` becomes Exmouth. Every word then takes a capital, but joining words such as de, di, sur and of between two others: Pont-sur-Moselle, Puebla de Sanabria.
-5. **Shorten a name that is too long**: shorter forms, then roots clipped at a syllable, then no modifier. Another place's name, as in New Barton, is never clipped. Each word may be as long as the base allows, the whole name twice that.
+5. **Shorten a name that is too long**: shorter forms, then roots clipped at a syllable (`Names.cut`: three letters at least, closing as the base's names do), then no modifier. Another place's name, as in New Barton, is never clipped. Each word may be as long as the base allows, the whole name twice that.
+
+A part that repeats the one before it, Harlan-land or Barley-ley, makes a name that is not whole: generation draws another.
 
 Every draw is seeded by the base, the pattern, the tokens and the salt. The same meaning and base give the same name on every call, in every session.
 
@@ -143,7 +145,7 @@ A base can render any concept. `Lexicon.formsOf` takes the first source that has
 3. The shared lexicon, which holds only `land: +ia`.
 4. Forms coined from the base's place names: its commonest endings for settlements and places, and words off its Markov chain for the rest.
 
-English and Ruthenian are written in full, against counts of their historical place names. Human Generic extends English and rewrites what makes it high fantasy, see [below](#human-generic). Every other real-world base writes its real place-name words and, where describing words agree, a grammar, for every place and describing word that names often draw: `new, town` is Neuenheim in German, Neuville in French, Castiglione Nuovo in Italian, Nowabad in Persian, Mji Mpya in Swahili. The nine fantasy bases, Elven to Serpents, write an invented tongue for the same concepts, such as Elven `mith` for grey and `lond` for haven in Mithlond. What a base leaves out is coined from its place names: the commonest endings of the corpus for a settlement, a word off its Markov chain for the rest. A base the user adds starts with no words, so its names sound native but mean nothing a speaker would know until its Lexicon tab is written. A coined form is stable: the same concept always gets the same form in a base.
+English and Ruthenian are written in full, against counts of their historical place names. Human Generic extends English and rewrites what makes it high fantasy, see [below](#human-generic). Every other real-world base writes its real place-name words and, where describing words agree, a grammar, for every place and describing word that names often draw: `new, town` is Neuenheim in German, Neuville in French, Castiglione Nuovo in Italian, Nowabad in Persian, Mji Mpya in Swahili. The nine fantasy bases, Elven to Serpents, write an invented tongue for the same concepts, such as Elven `mith` for grey and `lond` for haven in Mithlond. What a base leaves out is coined from its place names: the commonest endings of the corpus for a settlement, a word off its Markov chain for the rest. A base the user adds starts with no words, so its names sound native but mean nothing a speaker would know until its Lexicon tab is written. A base that writes two thirds of the places is a real language: generation draws only concepts it writes (`Lexicon.spoken`), so that no coined word stands among real ones. Its coined forms serve names translated from other bases alone. The fantasy bases stay under that share on purpose, since a coined word fits an invented tongue. A coined form is stable: the same concept always gets the same form in a base.
 
 ## Name and meaning are independent
 
@@ -232,7 +234,7 @@ Before writing a model as whole words, render a few meanings and see what the ge
 
 ### 3. Fill the lists
 
-- **Places**: real place names. They feed the Markov chain and the forms coined for unwritten concepts.
+- **Places**: real place names, spelled as the lexicon is. They feed the Markov chain and the forms coined for unwritten concepts. A word off the chain that puts three letters together as no name of the list does is walked anew, so a foreign name on the list lets foreign sounds in.
 - **Waters**: rivers and lakes that sound native, are known and are short; Ruthenian keeps to 8 letters. Set `mode: "pick"` where the chain makes rough names of them.
 - **People**: male and female names, in full. The lists name more than founders, so a list is never cut to change how often something is drawn. A share has a setting, see step 5.
 

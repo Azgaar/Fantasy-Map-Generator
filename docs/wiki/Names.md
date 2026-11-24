@@ -272,7 +272,7 @@ Every word of a name starts with a capital but the joining words between two oth
 
 The `compound` pattern has a third slot, `{settlement}`, after a describing word and a landform: `{modifier}{generic}{settlement}` gives Krasnogorsk, and `{modifier}{generic} {settlement}` gives Deepwood Keep. A template may leave a slot out: `{modifier}{generic}` alone gives Redhill.
 
-Only what the burg is by its group may be left out, never a name or what stands at the place. So `{root}` names a town after its river as it is, Dvina, and `{root}sk` gives Dvinsk, while a bridge on the Dvina still says so: Dvinskiy Most.
+Only what the burg is by its group, or a land, may be left out, never a name or what stands at the place. So `{root}` names a town after its river as it is, Dvina, and `{root}sk` gives Dvinsk, while a bridge on the Dvina still says so: Dvinskiy Most. In `root-land`, `{root}ien` gives Frankien and keeps -ien to names.
 
 Text after a slot is a suffix of the template's own, and a stem may stand before it: `{modifier}{generic}'ye` gives Beloberezhye, with a rule that turns `g+'ye` into `zhye`.
 

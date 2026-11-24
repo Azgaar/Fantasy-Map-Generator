@@ -1,7 +1,7 @@
 // Turns a meaning into a name in a name base: the rendering half of semantic names
 
 import Alea from "alea";
-import { type Concept, kindOf, settles } from "@/data/name-concepts";
+import { type Concept, type Kind, kindOf, settles } from "@/data/name-concepts";
 import type { Formant, Meaning, NameBase, Pattern, Template, Token } from "@/types/names";
 import { capitalize } from "@/utils/string-utils";
 import { Appropriation } from "./appropriation";
@@ -23,9 +23,11 @@ const SLOTS: Record<Pattern, Slot[]> = {
   "modifier-land": ["modifier", "generic"]
 };
 
+const UNSAID: Kind[] = ["settlement", "land"];
 const [STRICT, LOOSE, ANY] = [2, 1, 0];
 const ANY_ORDER: Formant["position"][] = ["word", undefined, "stem", "first", "last"]; // what reads best when nothing fits
 const SILENT = "_"; // a noun left unsaid: the word beside it agrees with it all the same
+const STUTTER = /(\p{L}{3,})\+\1|(\p{L}{2})\+\2(?=[ -]|$)/u; // a part that repeats the one before: Harlan-land, Amnon-on
 const STAR = /\*\p{L}*/u; // where a describing word takes its ending, from the set it names, the default when none
 
 /** A template with a form drawn for each of its concepts */
@@ -106,7 +108,10 @@ class MeaningsModule {
       for (const kept of effort < 2 ? [Infinity] : effort === 2 ? [3, 2, 1] : [Infinity, 3, 2, 1]) {
         const parts = join(effort ? shortest : drawn, effort, kept);
         name = SoundRules.capitalize(SoundRules.join(parts, base.rules, { rolls, fits: fitsBase }));
-        if (this.fits(name, base)) return { name, whole: strictness === STRICT && (effort < 3 || !drawn.hasModifier) };
+        if (this.fits(name, base)) {
+          const whole = strictness === STRICT && (effort < 3 || !drawn.hasModifier) && !STUTTER.test(parts);
+          return { name, whole };
+        }
       }
     }
     return { name, whole: false };
@@ -246,9 +251,7 @@ class MeaningsModule {
               if (!token || (effort === 3 && item.slot === "modifier")) return [];
               if (isRoot(token)) {
                 const root = rootOf(token, index === items.length - 1);
-                return clips && items.length > 1 && kept !== Infinity
-                  ? Names.syllables(root).slice(0, kept).join("")
-                  : root;
+                return clips && items.length > 1 && kept !== Infinity ? Names.cut(root, base, kept) : root;
               }
               const form = drawn.get(item)!;
               const plain = agree((effort ? (form.short ?? form.form) : form.form).replace(/^-|_/g, ""));
@@ -282,8 +285,9 @@ class MeaningsModule {
 
 const isRoot = (token: Token): token is `~${string}` => token.startsWith("~");
 const isSuffix = ({ form }: Formant) => form.startsWith("-");
-// a template may leave out what a burg is by its group, never a name or what stands at the place
-const goesUnsaid = (token: Token) => !isRoot(token) && (kindOf(token) === "settlement" || settles(token));
+// a template may leave out what a burg is by its group or a land, whose name is a suffix of the template's own: Frankia;
+// never a name or what stands at the place
+const goesUnsaid = (token: Token) => !isRoot(token) && (UNSAID.includes(kindOf(token)) || settles(token));
 const isDash = (items?: Item[]) => items?.length === 1 && "text" in items[0] && items[0].text === "-";
 const bareOf = (form: string) => form.replace(STAR, "").replace(/[-_]/g, "");
 

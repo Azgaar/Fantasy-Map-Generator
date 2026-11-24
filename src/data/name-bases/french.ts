@@ -803,7 +803,7 @@ hundred: Cent/pl
 thousand: Mille/pl
 
 # lands
-land: +ie 6, +ogne 3, +agne 3, +aine 3, +terre
+land: +ogne 3, +agne 3, +aine 3, +terre
 march: Marche 2
 country: Pays/m
 coast: Côte 2
@@ -828,6 +828,7 @@ isles: Îles/fpl
       templates: "{modifier}{generic} 5, {generic}{modifier} 5, {generic} {modifier}, {modifier} {generic}"
     },
     relative: { weight: 5, templates: "{modifier} {root} 5, {root}-{modifier} 2" },
+    "root-land": { templates: "{root}{generic} 8, {root}ie 5" },
     "modifier-land": { templates: "{modifier}{generic} 2, {generic} {modifier} 3, {modifier} {generic} 2" }
   }
 };

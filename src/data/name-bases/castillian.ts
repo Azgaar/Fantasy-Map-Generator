@@ -390,6 +390,9 @@ export const castillian: WrittenNameBase = {
     String.raw`
 ^((?:blanc|negr|roj|rubi|roy|verd|pard|sec|frí|hond|larg|anch|baj|clar|franc|dorad|oscur|brav|redond|llan|quemad|bermej|viej|alb|alt)\+?[oa]s?|verdes?|mayor|menor|alegre|dulce|azul|caliente|norte|sur|este|oeste|levante|poniente) (\S+)$ => $2 $1 | join
 ^(\S+) (dos|tres|cinco|siete|nueve|diez|cien|mil)$ => $2 $1 | join
+\bgrande(?= \p{L}) => gran | join
+(?<=q)ue\+(?=[aá]) => + | join
+q\+(?=[aá]) => c+ | join
 ^(?:el|la|los|las) (?=al) =>  | join
 ^san(?= (?:tom|dom|tor)) => santo | join
 ^san (?=santiago$) =>  | join
@@ -549,7 +552,7 @@ guard: Guarda 2, Atalaya 2
 # modifiers
 new: +nuev* 6, Nuev* 2
 old: +viej* 3, Viej* 2
-great: +mayor 4, Gran 2
+great: +mayor 4, Grande 2
 little: +menor 2, +chic* 2
 long: +larg* 2, Larg*
 broad: +anch*

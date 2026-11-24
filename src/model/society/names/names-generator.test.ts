@@ -125,6 +125,26 @@ describe("shipped name bases", () => {
   });
 });
 
+describe("Names.cut", () => {
+  const base = Names.composeBase("test", "Test", [2, 12], ["Waldbach", "Kord", "Ama", "Wald"]);
+
+  it("keeps three letters at least and closes as the base's names do", () => {
+    expect(Names.cut("waldbach", base, 1)).toBe("wald");
+    expect(Names.cut("amadea", base, 1)).toBe("ama");
+    expect(Names.cut("kord", base, 1)).toBe("kord");
+  });
+});
+
+describe("a base's vocabulary", () => {
+  it("is what a base of a real language writes, and all concepts for an invented tongue", () => {
+    const modifiers = conceptsOf("modifier");
+    const spoken = (id: string) => Lexicon.spoken(Names.find(id)!, modifiers);
+    for (const concept of spoken("french")) expect(Lexicon.authoredForms(Names.find("french")!, concept)).toBeDefined();
+    expect(spoken("french").length).toBeLessThan(modifiers.length);
+    expect(spoken("orc")).toEqual(modifiers);
+  });
+});
+
 describe("Names.getBase", () => {
   const generate = (doubled: string, dupl?: string) => {
     Names.nameBases = [Names.composeBase("test", "Test", [2, 20], ["Bolla"], doubled)];

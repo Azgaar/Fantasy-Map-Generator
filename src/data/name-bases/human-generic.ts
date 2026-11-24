@@ -451,6 +451,7 @@ export const humanGeneric: WrittenNameBase = {
     }, // what stands on the Blackwater is a word of its own: Blackwater Bridge
     { match: "(?<=^|[+ ])([a-z]{3,})(?=[+ ])(.*) \\1$", replace: "$1$2", at: "join" }, // Greenhollow, not Greenhollow Hollow
     { match: "(?<=[sc]e|x|sh|ch)\\+s\\+", replace: "+", at: "join" }, // Aliceford, not Alicesford
+    { match: "(?<=s)\\+'s(?= )", replace: "+'", at: "join" }, // James' Bridge
     { match: "ll\\+(?=ton)", replace: "l+", at: "join" },
     { match: "r\\+r", replace: "rr", at: "join" }, // Winterrest, Alderrock
     { match: "le\\+l(?=ey)", replace: "+l", at: "join" },
@@ -600,6 +601,6 @@ isles: Isles
     },
     relative: { weight: 6 },
     "modifier-land": { weight: 45, templates: "{modifier}{generic} 3, {modifier} {generic}" },
-    "root-land": { weight: 25 }
+    "root-land": { weight: 25, templates: "{root}{generic}" }
   }
 };

@@ -446,6 +446,8 @@ x\+ia => cia | join
 ae\+(?=ia|a[nc]) =>  | join
 i(?:us|a|um)\+(?=a[nc]) => i | join
 (?:us|um)\+(?=a[nc]|ia) =>  | join
+o\+ania$ => onia | join
+ni(?:us|a)\+ania$ => nia | join
 o\+(?=a[nc]) => oni | join
 x\+(?=a[nc]) => ci | join
 \bad ager$ => ad agrum | join
@@ -474,9 +476,9 @@ a$ => ae | as pl`
   ],
   // describing words agree in three genders and both numbers: Nova Villa, Novum Castrum, Novus Portus, Castra Nova
   grammar: `
-fpl: ae$
-npl: (?!)
-mpl: (?!)
+fpl: ae$|^(?:turres|arbores)$
+npl: ^(?:vada|ostia|saxa|prata|castra)$
+mpl: ^(?:pontes|fontes|confluentes|putei)$
 n: um$
 m: (?:us|ns|er)$
 f:

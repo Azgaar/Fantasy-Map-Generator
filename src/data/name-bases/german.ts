@@ -557,7 +557,7 @@ temple: +kirchen 4, +kirch 3, +kappel 2, Kirchen 2, Kappel, kirch+ 4
 abbey: +münster 3, +zell 3, +beuren 2, +kloster, Münster 2, kloster+ 2
 river: +ach 5, +bach 3
 brook: +bach 8, +beck 2, bach+
-water: +wasser 3, +ach 2, +see
+water: +wasser 3, +ach 2
 keep: +burg 3, +stein 2, +turm, Burgstall
 hold: +burg 2, +feste 2, +hut 2
 watch: +wacht 3, +warte 3, +hut 2
@@ -867,7 +867,7 @@ hundred: hundert+
 thousand: tausend+
 
 # lands
-land: +land 5, +ien 4, +mark 2, +reich
+land: +land 5, +mark 2, +reich
 realm: +reich
 march: +mark
 country: +gau
@@ -883,6 +883,7 @@ country: +gau
     },
     "generic-of": { weight: 15, templates: "{root}{generic} 6, {root}" },
     compound: { weight: 6, templates: "{modifier}{generic}" },
-    relative: { weight: 8, templates: "{modifier}-{root} 4, {modifier} {root} 3" }
+    relative: { weight: 8, templates: "{modifier}-{root} 4, {modifier} {root} 3" },
+    "root-land": { templates: "{root}{generic} 8, {root}ien 3" }
   }
 };
