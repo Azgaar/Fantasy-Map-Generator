@@ -64,14 +64,14 @@ it("offers overwriting the saved file in command search without another save but
 });
 
 describe("shared regeneration commands", () => {
-  it("waits for confirmation before changing the map and refreshing its views", () => {
+  it("waits for confirmation before changing the map and refreshing its views", async () => {
     MAP_COMMANDS.find(command => command.id === "regenerateRivers")!.run();
     expect(mocks.regenerate).not.toHaveBeenCalled();
     dialogButton("Proceed").click();
     expect(mocks.regenerate).toHaveBeenCalledOnce();
     expect(mocks.syncPorts).toHaveBeenCalledOnce();
     expect(mocks.draw).toHaveBeenCalledWith("rivers", "burgIcons");
-    expect(mocks.refresh).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(mocks.refresh).toHaveBeenCalledOnce());
   });
 
   it("leaves the map unchanged when regeneration is cancelled", () => {
@@ -143,13 +143,13 @@ describe("shared regeneration commands", () => {
       ).toBe(false);
     });
 
-    it("runs the ticked parts in order, whichever button opened it", () => {
+    it("runs the ticked parts in order, whichever button opened it", async () => {
       run("regenerateEconomy");
       part("deposits").checked = true;
       part("markets").click();
       dialogButton("Proceed").click();
       expect(calls).toEqual(["deposits", "markets", "production"]);
-      expect(mocks.refresh).toHaveBeenCalledOnce();
+      await vi.waitFor(() => expect(mocks.refresh).toHaveBeenCalledOnce());
     });
 
     it("keeps the deals under new deposits or territories, and clears them when markets are replaced", () => {

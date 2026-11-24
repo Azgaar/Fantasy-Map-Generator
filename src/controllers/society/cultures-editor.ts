@@ -566,7 +566,7 @@ function getBaseOptions(base: string): string {
   for (const { id, name } of Names.nameBases) {
     options += `<option ${base === id ? "selected" : ""} value="${id}">${name}</option>`;
   }
-  if (!Names.find(base)) options += `<option selected value="${base}">${t("removed")}</option>`; // in case namesbase was removed
+  if (!Names.has(base)) options += `<option selected value="${base}">${t("removed")}</option>`; // in case namesbase was removed
   return options;
 }
 
@@ -684,7 +684,7 @@ function cultureChangeTags(this: HTMLInputElement): void {
 
 function cultureRegenerateName(this: HTMLElement): void {
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  if (!Names.find(pack.cultures[cultureId].base)) {
+  if (!Names.has(pack.cultures[cultureId].base)) {
     tip(t("Namesbase is not defined, please select a valid namesbase"), false, "error", 5000);
     return;
   }
@@ -718,11 +718,12 @@ function cultureChangeType(this: HTMLSelectElement): void {
   recalculateCultures();
 }
 
-function cultureChangeBase(this: HTMLSelectElement): void {
+async function cultureChangeBase(this: HTMLSelectElement): Promise<void> {
   const row = this.closest(".states") as HTMLElement;
   const culture = +row.dataset.id!;
   const origin = row.dataset.base!;
   Cultures.setBase(culture, this.value);
+  await Names.loadUsed();
   row.dataset.base = this.value;
 
   // names keep their meanings: the new base may say them another way
@@ -836,7 +837,7 @@ function changePopulation(this: HTMLElement): void {
 
 function cultureRegenerateBurgs(this: HTMLElement): void {
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  if (!Names.find(pack.cultures[cultureId].base)) {
+  if (!Names.has(pack.cultures[cultureId].base)) {
     tip(t("Namesbase is not defined, please select a valid namesbase"), false, "error", 5000);
     return;
   }
@@ -1072,7 +1073,7 @@ function exitAddCultureMode(): void {
   if (culturesAdd.classList.contains("pressed")) culturesAdd.classList.remove("pressed");
 }
 
-function addCulture(this: SVGElement, event: MouseEvent): void {
+async function addCulture(this: SVGElement, event: MouseEvent): Promise<void> {
   const [x, y] = getPointer(event, this);
   try {
     Cultures.add(x, y);
@@ -1082,6 +1083,7 @@ function addCulture(this: SVGElement, event: MouseEvent): void {
   }
   if (event.shiftKey === false) exitAddCultureMode();
 
+  await Names.loadUsed();
   drawCultureCenters();
   culturesTable.refresh();
 }
@@ -1096,7 +1098,7 @@ function downloadCulturesCsv(): void {
       (c.rural ?? 0) * options.map.units.population.scale +
         (c.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
-    const namesbase = Names.find(c.base)?.name ?? "";
+    const namesbase = Names.nameBases.find(({ id }) => id === c.base)?.name ?? "";
     const originList = (c.origins ?? [])
       .filter((origin): origin is number => Boolean(origin))
       .map(origin => pack.cultures[origin].name);
@@ -1158,7 +1160,7 @@ async function uploadCulturesCsv(text: string): Promise<void> {
       row.apply(
         "Namesbase",
         name => Cultures.setBase(id, Csv.byName(Names.nameBases, name).id),
-        Names.find(culture.base)?.name
+        Names.nameBases.find(({ id }) => id === culture.base)?.name
       );
       row.apply("Emblems Shape", shape => Cultures.setEmblemShape(id, shape), culture.shield);
       row.assign(
@@ -1176,6 +1178,7 @@ async function uploadCulturesCsv(text: string): Promise<void> {
   );
   if (!updated) return;
 
+  await Names.loadUsed();
   Layers.draw("cultures", "emblems");
   refreshCulturesEditor();
 }

@@ -49,7 +49,7 @@ function getFullDataJson(): string {
     mapCoordinates: options.map.geography.coordinates,
     pack: packData,
     grid: gridData,
-    nameBases: Names.nameBases
+    nameBases: Names.loaded()
   });
 }
 
@@ -79,7 +79,7 @@ function getMinimalDataJson(): string {
     settings,
     mapCoordinates: options.map.geography.coordinates,
     pack: packData,
-    nameBases: Names.nameBases
+    nameBases: Names.loaded()
   });
 }
 

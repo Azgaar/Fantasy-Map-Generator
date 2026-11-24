@@ -24,7 +24,6 @@ import { Relief } from "@/model/physical/relief-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { getDefaultMilitaryUnits } from "@/model/political/military-units";
 import { Development } from "@/model/society/development-generator";
-import { Names } from "@/model/society/names/names-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
 import { LocalDB } from "@/services/local-db";
 import { t } from "@/utils/i18n";
@@ -310,15 +309,10 @@ class OptionsModel {
       : Pins.valueOr("distanceScale", units.distance.scale);
     lore.calendar.year = Pins.rolls("year") ? rand(100, 2000) : Pins.valueOr("year", lore.calendar.year);
 
-    if (Pins.rolls("era")) {
-      lore.calendar.era = Names.getEra();
-      lore.calendar.eraShort = Names.getEraShort(lore.calendar.era);
-    } else {
-      lore.calendar.era = Pins.valueOr("era", lore.calendar.era);
-      lore.calendar.eraShort = Pins.valueOr("eraShort", lore.calendar.eraShort);
-    }
-
-    lore.name = Pins.rolls("mapName") ? Names.getMapName() : Pins.valueOr("mapName", lore.name);
+    // the pinned ones: `Lore.generate` names the rest, after the cultures
+    lore.calendar.era = Pins.valueOr("era", lore.calendar.era);
+    lore.calendar.eraShort = Pins.valueOr("eraShort", lore.calendar.eraShort);
+    lore.name = Pins.valueOr("mapName", lore.name);
     units.distance.unit = Pins.valueOr("distanceUnit", units.distance.unit);
     units.area.unit = Pins.valueOr("areaUnit", units.area.unit);
     units.height.unit = Pins.valueOr("heightUnit", units.height.unit);

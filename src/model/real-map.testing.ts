@@ -3,6 +3,12 @@ import type { IntegrityRule, IntegrityViolation } from "./map-integrity";
 
 Object.assign(globalThis, { grid: undefined, pack: {} });
 
+// where pins are read from: none are set
+Object.assign(globalThis, {
+  location: globalThis.location ?? new URL("http://localhost/"),
+  localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} }
+});
+
 const { GenerationPipeline } = await import("./generation-pipeline");
 const { MapIntegrity } = await import("./map-integrity");
 const { MapRestoration } = await import("./map-restoration");

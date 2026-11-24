@@ -596,7 +596,7 @@ Development eras are configuration, not map state: they live in `options.map.era
 
 ## Name bases
 
-Name generator consumes training sets of real-world town names (with the exception of fantasy name bases) stored in the `Names.nameBases` array. The shipped bases live one per file in `src/data/name-bases/`. Base structure is:
+Name generator consumes training sets of real-world town names (with the exception of fantasy name bases) stored in the `Names.nameBases` array. The shipped bases live one per file in `src/data/name-bases/` and are loaded on demand: a base no culture uses is listed by its `id` and `name` alone. `Names.loadUsed()` loads the bases the cultures use, with those they extend: in the generation pipelines, on map load and wherever a culture takes another base. The Namesbase Editor and the translations list show every base, so they call `Names.loadAll()` as they open. Naming itself is synchronous: `Names.find`, `Names.resolve` and `Names.randomBase` give loaded bases only. Base structure is:
 
 - `id`: `string` - stable slug of the base, such as `german` or `dark-elven`. A culture stores it as its `base`
 - `name`: `string` - names base proper name

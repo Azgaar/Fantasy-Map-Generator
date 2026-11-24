@@ -23,6 +23,15 @@ const names = () => ({
   states: living(pack.states).map(state => [state.name, state.meaning])
 });
 
+it.each(["english", "random"])("names the cultures of a %s set once their bases are loaded", async set => {
+  options.generation.cultures.set = set;
+  await generateMap({ seed: `cultures-${set}` });
+  const cultures = living(pack.cultures);
+  expect(cultures.every(({ name, development }) => name && name !== "ERROR" && development)).toBe(true);
+  expect(new Set(cultures.map(({ code }) => code)).size).toBe(cultures.length);
+  expect(pack.cultures.every(({ base }) => Names.find(base))).toBe(true);
+});
+
 describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => {
   beforeAll(async () => {
     options.generation.cultures.set = set;

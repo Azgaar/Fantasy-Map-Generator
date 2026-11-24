@@ -26,9 +26,11 @@ import { States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
+import { Names } from "@/model/society/names/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
+import { Lore } from "@/model/story/lore";
 import { Markers } from "@/model/story/markers-generator";
 import type { GridGraph } from "@/types/grid-graph";
 import { Coordinates } from "./physical/coordinates";
@@ -55,14 +57,17 @@ const generationPipelineSteps = [
   { id: "rankCells", run: () => Population.rankCells() },
   { id: "cultures", run: () => Cultures.generate() },
   { id: "culturesExpand", run: () => Cultures.expand() },
-  { id: "riversSpecify", run: () => Rivers.specify() }, // rivers and lakes are named first: burgs are named after them
+  { id: "nameBases", run: () => Names.loadUsed() },
+  { id: "cultureNames", run: () => Cultures.defineNames() },
+  { id: "lore", run: () => Lore.generate() },
+  { id: "riversSpecify", run: () => Rivers.specify() },
   { id: "featureNames", run: () => Features.defineNames() },
   { id: "burgs", run: () => Burgs.generate() },
   { id: "states", run: () => States.generate() },
   { id: "routes", run: () => Routes.generate() },
   { id: "development", run: () => Development.generate() },
   { id: "religions", run: () => Religions.generate() },
-  { id: "burgsSpecify", run: () => Burgs.specify() }, // a burg is named by its group, so here
+  { id: "burgsSpecify", run: () => Burgs.specify() },
   { id: "routeNames", run: () => Routes.defineNames() },
   { id: "stateStatistics", run: () => States.collectStatistics() },
   { id: "stateForms", run: () => States.defineStateForms() },
@@ -105,6 +110,8 @@ const erasePipelineSteps = [
   { id: "rankCells", run: () => Population.rankCells() },
   { id: "cultures", run: () => Cultures.generate() },
   { id: "culturesExpand", run: () => Cultures.expand() },
+  { id: "nameBases", run: () => Names.loadUsed() }, // before anything is named
+  { id: "cultureNames", run: () => Cultures.defineNames() },
   { id: "riversSpecify", run: () => Rivers.specify() }, // rivers and lakes are named first: burgs are named after them
   { id: "featureNames", run: () => Features.defineNames() },
   { id: "burgs", run: () => Burgs.generate() },

@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { Appropriation } from "./appropriation";
 import { Names } from "./names-generator";
+
+beforeAll(() => Names.loadAll());
 
 const into = (id: string) => (root: string) => Appropriation.adapt(root, Names.find(id)!);
 

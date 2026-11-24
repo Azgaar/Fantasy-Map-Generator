@@ -28,8 +28,9 @@ type Tab = (typeof TABS)[number];
 let namesbaseInput: HTMLInputElement | null = null;
 let activeTab: Tab = "places"; // kept between openings: the tab the user works in
 
-function open(): void {
+async function open(): Promise<void> {
   if (options.app.mode) return;
+  await Names.loadAll();
   Dialog.closeAll("#namesbaseEditor, .stable");
 
   renderDialog();
@@ -284,12 +285,12 @@ function closeNamesbaseEditor(): void {
 function createBasesList(): void {
   const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
   select.innerHTML = "";
-  Names.nameBases.forEach((b, i) => {
+  Names.loaded().forEach((b, i) => {
     select.options.add(new Option(b.name, String(i)));
   });
 }
 
-const selectedBase = (): NameBase | undefined => Names.nameBases[+ensureEl<HTMLSelectElement>("namesbaseSelect").value];
+const selectedBase = (): NameBase | undefined => Names.loaded()[+ensureEl<HTMLSelectElement>("namesbaseSelect").value];
 
 function updateInputs(): void {
   const base = selectedBase();
@@ -310,7 +311,9 @@ function showBase(base: NameBase): void {
   ensureEl<HTMLInputElement>("namesbaseMax").value = String(base.length[1]);
   ensureEl<HTMLInputElement>("namesbaseDouble").value = SoundRules.getDoubles(base);
 
-  const parents = Names.nameBases.filter(other => other !== base).map(({ id, name }) => new Option(name, id));
+  const parents = Names.loaded()
+    .filter(other => other !== base)
+    .map(({ id, name }) => new Option(name, id));
   ensureEl<HTMLSelectElement>("namesbaseExtends").replaceChildren(new Option(t("nothing"), ""), ...parents);
   ensureEl<HTMLSelectElement>("namesbaseExtends").value = base.extends ?? "";
 
@@ -651,7 +654,7 @@ function analyzeNamesbase(): void {
 }
 
 function namesbaseAdd(): void {
-  const index = Names.nameBases.length;
+  const index = Names.loaded().length;
   const name = `Base${index}`;
   const example =
     "This,is,an,example,of,name,base,showing,correct,format,It,should,have,at,least,one,hundred,names,separated,with,comma";
@@ -673,8 +676,9 @@ function namesbaseRestoreDefault(): void {
     title: t("Restore default data"),
     message: t("Are you sure you want to restore default namesbase?"),
     confirm: t("Restore"),
-    onConfirm: () => {
+    onConfirm: async () => {
       Names.replace(Names.getNameBases());
+      await Names.loadAll();
       createBasesList();
       updateInputs();
     }
@@ -682,7 +686,9 @@ function namesbaseRestoreDefault(): void {
 }
 
 function namesbaseDownload(): void {
-  const data = `[\n${Names.nameBases.map(base => JSON.stringify(base)).join(",\n")}\n]`; // a base a line
+  const data = `[\n${Names.loaded()
+    .map(base => JSON.stringify(base))
+    .join(",\n")}\n]`; // a base a line
   downloadFile(data, `${getFileName("Namesbase")}.json`, "application/json");
 }
 

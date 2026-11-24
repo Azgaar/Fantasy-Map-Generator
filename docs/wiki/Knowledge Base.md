@@ -390,7 +390,7 @@ The Ice layer is generated from temperature with a fixed threshold, so the start
 
 ### How can I regenerate name of a particular state?
 
-Go to Tools -> edit States and click the state's name. In the name editor, the book button (Generate culture-specific name) coins a new name in the namesbase of the state's culture, and the globe button (Generate random name) does the same in a random namesbase
+Go to Tools -> edit States and click the state's name. In the name editor, the book button (Generate culture-specific name) coins a new name in the namesbase of the state's culture, and the globe button (Generate random name) does the same in any namesbase in use on the map
 
 ### What does the Meaning line under a name mean?
 

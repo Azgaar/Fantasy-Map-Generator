@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { NAME_BASES, readNameBase } from "@/data/name-bases";
 import { CONCEPTS, type Concept, conceptsOf, isConcept, weightOf } from "@/data/name-concepts";
 import { DEFAULT_LEXICON, DEFAULT_TEMPLATES } from "@/data/name-rules";
 import type { Pattern } from "@/types/names";
@@ -6,9 +7,13 @@ import { Meanings } from "./meanings";
 import { Names } from "./names-generator";
 import { SoundRules } from "./sound-rules";
 
+beforeAll(() => vi.stubGlobal("pack", { cultures: [] }));
+beforeAll(() => Names.loadAll());
+
 afterEach(() => {
   vi.restoreAllMocks();
-  Names.restore();
+  Names.nameBases = Names.getNameBases();
+  Names.clearChains();
 });
 
 describe("Names.calculateChain", () => {
@@ -40,8 +45,13 @@ describe("concepts", () => {
 });
 
 describe("shipped name bases", () => {
+  it("are listed under the ids and names their files give", async () => {
+    const written = await Promise.all(NAME_BASES.map(({ id }) => readNameBase(id)));
+    expect(written.map(({ id, name }) => ({ id, name }))).toEqual(NAME_BASES);
+  });
+
   it("have unique ids made of their names, a corpus and rules that compile", () => {
-    const bases = Names.getNameBases();
+    const bases = Names.loaded();
     expect(new Set(bases.map(base => base.id)).size).toBe(bases.length);
     for (const base of bases) {
       expect(base.id).toBe(Names.uniqueId(base.name, []));
@@ -52,7 +62,7 @@ describe("shipped name bases", () => {
   });
 
   it("write lexicons in the vocabulary, patterns that exist and bases they can extend", () => {
-    const bases = Names.getNameBases();
+    const bases = Names.loaded();
     for (const base of bases) {
       for (const concept of Object.keys(base.lexicon ?? {}))
         expect(isConcept(concept), `${base.id}: ${concept}`).toBe(true);
@@ -72,7 +82,7 @@ describe("shipped name bases", () => {
   });
 
   it("list people for every base, each name once", () => {
-    for (const { id, people } of Names.getNameBases()) {
+    for (const { id, people } of Names.loaded()) {
       for (const corpus of [people?.male, people?.female]) {
         expect(corpus?.names.length, id).toBeGreaterThanOrEqual(20);
         expect(new Set(corpus!.names).size, id).toBe(corpus!.names.length);
@@ -82,7 +92,7 @@ describe("shipped name bases", () => {
 
   it("write a form for every settlement and modifier concept in English and Ruthenian", () => {
     for (const id of ["english", "ruthenian"]) {
-      const { lexicon = {} } = Names.getNameBases().find(base => base.id === id)!;
+      const { lexicon = {} } = Names.loaded().find(base => base.id === id)!;
       for (const concept of (["settlement", "generic", "modifier", "numeral"] as const).flatMap(conceptsOf)) {
         expect(lexicon[concept]?.length, `${id}: ${concept}`).toBeGreaterThan(0);
         for (const { form } of lexicon[concept]!)
@@ -92,7 +102,7 @@ describe("shipped name bases", () => {
   });
 
   it("write the settlements and a land in every shipped base", () => {
-    for (const { id, lexicon = {}, extends: parent } of Names.getNameBases()) {
+    for (const { id, lexicon = {}, extends: parent } of Names.loaded()) {
       if (parent) continue; // Human Generic speaks English's words where it writes none
       for (const concept of ["city", "town", "village", "hamlet", "land"] as const)
         expect(lexicon[concept]?.length, `${id}: ${concept}`).toBeGreaterThan(0);
@@ -116,8 +126,8 @@ describe("Names.getBase", () => {
 
   it("gives a shipped base the map dropped the base standing in its place, else the first one", () => {
     Names.nameBases = [Names.composeBase("a", "A", [2, 9], ["Aaa"]), Names.composeBase("b", "B", [2, 9], ["Bbb"])];
-    expect(Names.resolve("english")?.id).toBe("b"); // English is the second shipped base
-    expect(Names.resolve("unknown")).toBeUndefined();
+    expect(Names.resolve("english").id).toBe("b"); // English is the second shipped base
+    expect(Names.resolve("unknown").id).toBe("a");
     vi.spyOn(Math, "random").mockReturnValue(0);
     expect(Names.getBase("unknown")).toBe(Names.getBase("a"));
   });
@@ -170,7 +180,6 @@ describe("Names.getWater", () => {
     expect(["Dvina", "Desna"]).toContain(Names.getWater("test"));
     base.waters = { names: ["Dddddd"] };
     expect(Names.getWater("test")).toMatch(/^D/);
-    Names.restore();
   });
 });
 
@@ -185,7 +194,7 @@ describe("Names.uniqueId", () => {
 
 describe("Names.serialize", () => {
   it("stores a shipped base by its id and an edited or custom one in full", () => {
-    const [german, english] = Names.nameBases;
+    const [german, english] = Names.loaded();
     english.length[1] = 14;
     const custom = Names.composeBase("custom", "Custom", [4, 8], ["Aaa", "Bbb", "Ccc"]);
     Names.nameBases = [german, english, custom];
@@ -230,7 +239,7 @@ describe("Names.replace", () => {
 
     Names.replace(Names.getNameBases());
     expect(bases.map(culture => culture.base)).toEqual(["english", "greek", "custom", "levantine"]);
-    vi.unstubAllGlobals();
+    vi.stubGlobal("pack", { cultures: [] });
   });
 });
 
@@ -241,5 +250,60 @@ describe("a generated name", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     expect(Names.getBase("test")).toBe("An Giang-Le");
     expect(SoundRules.apply("an giang-le")).toBe("an giang-le");
+  });
+});
+
+describe("loading", () => {
+  const unloaded = async () => {
+    vi.resetModules();
+    return (await import("./names-generator")).Names;
+  };
+
+  it("starts with the shipped bases listed and none loaded", async () => {
+    const names = await unloaded();
+    expect(names.nameBases).toEqual(NAME_BASES);
+    expect(names.has("greek")).toBe(true);
+    expect(names.find("greek")).toBeUndefined();
+    expect(names.loaded()).toEqual([]);
+  });
+
+  it("loads the bases the cultures use, those they extend and what stands in for a dropped one", async () => {
+    const names = await unloaded();
+    vi.stubGlobal("pack", { cultures: [{ base: "goblin" }, { base: "goblin" }, { base: "heir" }, { base: "greek" }] });
+    const heir = { ...names.composeBase("heir", "Heir", [4, 8], ["Aaa", "Bbb", "Ccc"]), extends: "elven" };
+    const kept = names.getNameBases().filter(base => ["german", "nordic", "goblin", "elven"].includes(base.id));
+    names.nameBases = [...kept, heir]; // Greek, the eighth of the shipped bases, stands for the third of these five
+    expect(names.entry("greek")?.id).toBe(kept[2].id);
+
+    await names.loadUsed();
+    expect(names.loaded().map(base => base.id)).toEqual(expect.arrayContaining(["goblin", "heir", "elven", "goblin"]));
+    expect(names.find("german")).toBeUndefined();
+    vi.stubGlobal("pack", { cultures: [] });
+  });
+
+  it("leaves a base loaded and edited meanwhile as it is", async () => {
+    const names = await unloaded();
+    await Promise.all([names.load(["greek"]), names.load(["greek"])]);
+    const greek = names.find("greek")!;
+    greek.length = [1, 2];
+    await names.loadAll();
+    expect(names.find("greek")).toBe(greek);
+    expect(greek.length).toEqual([1, 2]);
+  });
+
+  it("stores a base that is not loaded by its id, and one that fails to load keeps its place", async () => {
+    vi.doMock("@/data/name-bases", async original => {
+      const data = await original<typeof import("@/data/name-bases")>();
+      const readNameBase = async (id: string) => {
+        if (id === "greek") throw new Error("offline");
+        return data.readNameBase(id);
+      };
+      return { ...data, readNameBase };
+    });
+    const names = await unloaded();
+    await names.load(["greek", "roman"]);
+    expect(names.resolve("greek").id).toBe("roman");
+    expect(JSON.parse(names.serialize())).toEqual(NAME_BASES.map(({ id }) => ({ id })));
+    vi.doUnmock("@/data/name-bases");
   });
 });

@@ -14,7 +14,7 @@ import { t } from "@/utils/i18n";
 import { abbreviate } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
-import { biased, P, rand, rw } from "@/utils/probability-utils";
+import { biased, P, ra, rand, rw } from "@/utils/probability-utils";
 import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validation-utils";
 import { Names } from "./names/names-generator";
 import { Population } from "./population-generator";
@@ -330,18 +330,18 @@ class CulturesGenerator {
     }
 
     if (set === "english") {
-      const getName = () => Names.getBase("english", 5, 9, "");
+      const name = ""; // given by `defineNames`
       return [
-        { name: getName(), development: 36, base: "english", odd: 1, shield: "heater" },
-        { name: getName(), development: 36, base: "english", odd: 1, shield: "wedged" },
-        { name: getName(), development: 36, base: "english", odd: 1, shield: "swiss" },
-        { name: getName(), development: 36, base: "english", odd: 1, shield: "oldFrench" },
-        { name: getName(), development: 36, base: "english", odd: 1, shield: "swiss" },
-        { name: getName(), development: 36, base: "english", odd: 1, shield: "spanish" },
-        { name: getName(), development: 36, base: "english", odd: 1, shield: "hessen" },
-        { name: getName(), development: 36, base: "english", odd: 1, shield: "fantasy5" },
-        { name: getName(), development: 36, base: "english", odd: 1, shield: "fantasy4" },
-        { name: getName(), development: 36, base: "english", odd: 1, shield: "fantasy1" }
+        { name, development: 36, base: "english", odd: 1, shield: "heater" },
+        { name, development: 36, base: "english", odd: 1, shield: "wedged" },
+        { name, development: 36, base: "english", odd: 1, shield: "swiss" },
+        { name, development: 36, base: "english", odd: 1, shield: "oldFrench" },
+        { name, development: 36, base: "english", odd: 1, shield: "swiss" },
+        { name, development: 36, base: "english", odd: 1, shield: "spanish" },
+        { name, development: 36, base: "english", odd: 1, shield: "hessen" },
+        { name, development: 36, base: "english", odd: 1, shield: "fantasy5" },
+        { name, development: 36, base: "english", odd: 1, shield: "fantasy4" },
+        { name, development: 36, base: "english", odd: 1, shield: "fantasy1" }
       ];
     }
 
@@ -930,9 +930,8 @@ class CulturesGenerator {
 
     if (set === "random") {
       return range(count).map(() => {
-        const base = Names.randomBase().id;
-        const name = Names.getBaseShort(base);
-        return { name, development: getNameDevelopment(name), base, odd: 1, shield: this.getRandomShield() };
+        const base = ra(Names.nameBases).id;
+        return { name: "", base, odd: 1, shield: this.getRandomShield() }; // `defineNames` gives the name and development
       });
     }
 
@@ -1359,10 +1358,12 @@ class CulturesGenerator {
       c.color = colors[i];
       c.type = defineCultureType(center);
       c.expansionism = defineCultureExpansionism(c.type);
-      c.development ??= DEFAULT_DEVELOPMENT;
       c.origins = [0];
-      c.code = abbreviate(c.name, codes);
-      codes.push(c.code);
+      if (c.name) {
+        c.development ??= DEFAULT_DEVELOPMENT;
+        c.code = abbreviate(c.name, codes);
+        codes.push(c.code);
+      }
       cultureIds[center] = newId;
       if (emblemShape === "random") c.shield = this.getRandomShield();
       c.tags = c.tags ?? [];
@@ -1388,8 +1389,20 @@ class CulturesGenerator {
     }
 
     cultures.forEach((c: Culture) => {
-      c.base = (Names.resolve(c.base) ?? Names.nameBases[0]).id;
+      c.base = Names.entry(c.base)!.id;
     });
+  }
+
+  /** Name the cultures drawn without a name, once their bases are loaded */
+  defineNames(): void {
+    const codes = pack.cultures.flatMap(culture => culture.code ?? []);
+    for (const culture of pack.cultures) {
+      if (culture.name) continue;
+      culture.name = Names.getBaseShort(culture.base);
+      culture.development ??= getNameDevelopment(culture.name);
+      culture.code = abbreviate(culture.name, codes);
+      codes.push(culture.code);
+    }
   }
 
   /** Found a culture centered at a map point; it takes land when cultures are recalculated. Returns its id */
@@ -1405,7 +1418,7 @@ class CulturesGenerator {
       // add one of the default cultures
       culture = pack.cultures.length;
       base = defaultCultures[culture].base;
-      name = defaultCultures[culture].name;
+      name = defaultCultures[culture].name || Names.getBaseShort(base);
       ancestry = defaultCultures[culture].ancestry;
       development = defaultCultures[culture].development;
     } else {
@@ -1567,7 +1580,7 @@ class CulturesGenerator {
 
   /** Set the name base a culture takes its names from, by the base's id */
   setBase(cultureId: number, baseId: string): void {
-    if (!Names.find(baseId)) throw new Error(`Name base ${baseId} does not exist`);
+    if (!Names.has(baseId)) throw new Error(`Name base ${baseId} does not exist`);
     this.living(cultureId).base = baseId;
   }
 
@@ -1685,6 +1698,7 @@ class CulturesGenerator {
     return culture;
   }
 
+  /** Make the cultures anew; the bases they use are to be loaded next, then `defineNames` */
   regenerate(): void {
     const kept = pack.cultures?.filter(culture => culture.i && culture.lock && !culture.removed) ?? [];
     const previousIds = kept.map(culture => culture.i!);

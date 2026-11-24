@@ -1,12 +1,13 @@
 import { z } from "zod";
-import { NAME_BASES } from "@/data/name-bases";
-import type { Corpus, NameBase } from "@/types/names";
+import { NAME_BASES, readNameBase } from "@/data/name-bases";
+import type { Corpus, NameBase, NameBaseEntry } from "@/types/names";
 import { last } from "@/utils/array-utils";
 import { sentences, t } from "@/utils/i18n";
 import { isVowel } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { notify } from "@/utils/notices";
-import { P, ra, rand } from "@/utils/probability-utils";
+import { P, ra } from "@/utils/probability-utils";
+import { safeParseJSON } from "@/utils/string-utils";
 import { NameNotation } from "./notation";
 import { SoundRules } from "./sound-rules";
 
@@ -76,9 +77,8 @@ const NAME_BASE_SCHEMA = z.object({
 
 class NamesGenerator {
   readonly schema = NAME_BASE_SCHEMA;
-  private readonly defaults = NAME_BASES.map(base => NameNotation.read(base));
-  private readonly shipped = this.defaults.map(base => base.id); // a shipped base's place in the default set
-  nameBases: NameBase[] = this.getNameBases();
+  private readonly shipped = new Map<string, NameBase>(); // the shipped bases loaded so far
+  nameBases: NameBaseEntry[] = this.getNameBases();
   private readonly chains = new Map<string, MarkovChain | null>(); // Markov chains by base id
   private readonly corpusChains = new WeakMap<string[], MarkovChain>(); // of people and waters, by corpus: an edited one is chained anew
 
@@ -165,18 +165,77 @@ class NamesGenerator {
     this.chains.clear();
   }
 
+  /** Whether the map lists a base, loaded or not */
+  has(id: string): boolean {
+    return this.nameBases.some(base => base.id === id);
+  }
+
+  /** The base the map lists under an id, loaded or not; a shipped one the map has dropped gives the base standing in
+   * its place, any other the first one */
+  entry(id: string): NameBaseEntry | undefined {
+    const listed = this.nameBases.find(base => base.id === id);
+    if (listed) return listed;
+    const place = NAME_BASES.findIndex(base => base.id === id);
+    return this.nameBases[place % this.nameBases.length] ?? this.nameBases[0];
+  }
+
+  /** A loaded base by id */
   find(id: string): NameBase | undefined {
-    return this.nameBases.find(base => base.id === id);
+    const base = this.nameBases.find(base => base.id === id);
+    return base?.places && base;
   }
 
-  /** A base by id; a shipped one the map has dropped gives the base standing in its place */
-  resolve(id: string): NameBase | undefined {
-    return this.find(id) ?? this.nameBases[this.shipped.indexOf(id) % this.nameBases.length];
+  /** The base an id stands for; one that failed to load gives any that is loaded */
+  resolve(id: string): NameBase {
+    const base = this.entry(id);
+    return base?.places ? base : this.loaded()[0];
   }
 
-  /** Any of the map's bases */
+  /** The map's bases loaded so far: at least those its cultures use, all of them after `loadAll` */
+  loaded(): NameBase[] {
+    return this.nameBases.filter((base): base is NameBase => Boolean(base.places));
+  }
+
+  /** Load what bases stand for, with the bases they extend. One that fails to load stays out */
+  async load(ids: Iterable<string>): Promise<void> {
+    await Promise.all([...new Set(ids)].map(id => this.loadLineage(this.entry(id))));
+  }
+
+  /** Load the bases the map's cultures use */
+  async loadUsed(): Promise<void> {
+    await this.load((pack.cultures ?? []).map(({ base }) => base));
+  }
+
+  /** Load every base the map lists */
+  async loadAll(): Promise<void> {
+    await this.load(this.nameBases.map(({ id }) => id));
+  }
+
+  /** Any of the loaded bases */
   randomBase(): NameBase {
-    return this.nameBases[rand(this.nameBases.length - 1)];
+    return ra(this.loaded());
+  }
+
+  private async loadLineage(entry: NameBaseEntry | undefined): Promise<void> {
+    const seen = new Set<NameBaseEntry>();
+    for (let base = entry; base && !seen.has(base); ) {
+      seen.add(base);
+      const { id } = base;
+      try {
+        const shipped = base.places ? undefined : await this.read(id);
+        if (!base.places) Object.assign(base, structuredClone(shipped)); // it may have loaded meanwhile
+      } catch (error) {
+        log.error(`Name base ${id} failed to load`, error);
+      }
+      const parent = base.places && base.extends;
+      base = this.nameBases.find(({ id }) => id === parent);
+    }
+  }
+
+  private async read(id: string): Promise<NameBase> {
+    const base = this.shipped.get(id) ?? NameNotation.read(await readNameBase(id));
+    this.shipped.set(id, base);
+    return base;
   }
 
   /** A base and the bases it extends, nearest first */
@@ -193,7 +252,7 @@ class NamesGenerator {
    * The base sets which, unless the options do. A base with no people names a person like a place, only shorter.
    * Women are named as often as `female` says, 0 to 1, or by the sizes of the two lists */
   getPerson(id: string, female?: number): string {
-    const base = this.resolve(id) ?? this.nameBases[0];
+    const base = this.resolve(id);
     const people =
       base &&
       this.lineage(base).find(({ people }) => people?.male?.names.length || people?.female?.names.length)?.people;
@@ -212,7 +271,7 @@ class NamesGenerator {
   /** A proper name of a river or a lake: off the chain of the base's waters or one of them as it is, as the list
    * says; a place name where the base lists none */
   getWater(id: string): string {
-    const base = this.resolve(id) ?? this.nameBases[0];
+    const base = this.resolve(id);
     const waters = base && this.lineage(base).find(({ waters }) => waters?.names.length)?.waters;
     if (!waters) return this.getBase(id);
     if (waters.mode === "pick") return ra(waters.names);
@@ -262,14 +321,10 @@ class NamesGenerator {
       return "ERROR";
     }
 
-    let base = this.resolve(id);
+    const base = this.resolve(id);
     if (!base) {
-      if (!this.nameBases[0]) {
-        log.error(`Namebase ${id} is not found`);
-        return "ERROR";
-      }
-      log.warn(`Namebase ${id} is not found. First available namebase will be used`);
-      base = this.nameBases[0];
+      log.error(`Namebase ${id} is not found`);
+      return "ERROR";
     }
 
     const data = this.chains.get(base.id) ?? this.updateChain(base.id);
@@ -348,13 +403,9 @@ class NamesGenerator {
     return this.validateSuffix(name, suffix);
   }
 
-  // generate name for the map
+  /** A name for the map, in a base its cultures use */
   getMapName(): string {
-    const base = P(0.7) ? this.resolve("french") : this.nameBases[P(0.5) ? rand(0, 6) : rand(0, 31)];
-    if (!base) {
-      notify(t("Namebase is not found"), "error");
-      return "";
-    }
+    const base = this.mapBase();
     const [shortest, longest] = base.places.length ?? base.length;
     const min = shortest - 1;
     const max = Math.max(longest - 3, min);
@@ -363,39 +414,44 @@ class NamesGenerator {
     return name;
   }
 
-  /** A fresh copy of the shipped bases */
-  getNameBases(): NameBase[] {
-    return structuredClone(this.defaults);
+  // the base of any of the map's cultures, the Wildlands where it has no other
+  private mapBase(): NameBase {
+    const cultures = pack.cultures.filter(culture => culture.i && !culture.removed);
+    return this.resolve((cultures.length ? ra(cultures) : pack.cultures[0]).base);
+  }
+
+  /** A fresh list of the shipped bases, in full where loaded */
+  getNameBases(): NameBaseEntry[] {
+    return NAME_BASES.map(base => structuredClone(this.shipped.get(base.id) ?? base));
   }
 
   /** The bases as a .map record: a shipped base left as it is goes by its id alone, so it follows later updates */
   serialize(): string {
-    const shipped = new Map(this.defaults.map(base => [base.id, JSON.stringify(base)]));
-    const isShipped = (base: NameBase) => shipped.get(base.id) === JSON.stringify(base);
+    const isShipped = (base: NameBaseEntry) =>
+      !base.places || JSON.stringify(base) === JSON.stringify(this.shipped.get(base.id));
     return JSON.stringify(this.nameBases.map(base => (isShipped(base) ? { id: base.id } : base)));
   }
 
-  /** Take the bases of a .map record, or the shipped ones when it holds none */
+  /** Take the bases of a .map record, or the shipped ones when it holds none or is of an older make */
   restore(record?: string): void {
     const shipped = this.getNameBases();
-    const stored: (NameBase | { id: string })[] | null = record ? JSON.parse(record) : null;
+    const stored: (NameBase | { id: string })[] | null = safeParseJSON(record ?? "");
     const byId = (id: string) => shipped.find(base => base.id === id) ?? [];
     this.nameBases = stored ? stored.flatMap(base => ("places" in base ? base : byId(base.id))) : shipped;
     this.clearChains();
   }
 
   /** Swap the whole set; a culture goes on with the base standing where its own stood */
-  replace(bases: NameBase[]): void {
+  replace(bases: NameBaseEntry[]): void {
     const places = new Map(this.nameBases.map(({ id }, index) => [id, index]));
     for (const culture of pack.cultures ?? []) culture.base = bases[places.get(culture.base) ?? -1]?.id ?? culture.base;
     this.nameBases = bases;
     this.clearChains();
   }
 
-  /** The calendar era: a name base plus "Era", weighted to the base most eras are built on */
+  /** The calendar era: a name in a base the map's cultures use, plus "Era" */
   getEra(): string {
-    const base = P(0.7) ? this.resolve("english") : this.nameBases[rand(this.nameBases.length)];
-    return `${this.getBaseShort(base?.id ?? "")} Era`; // the roll may fall past the last base: the first one names it
+    return `${this.getBaseShort(this.mapBase().id)} Era`;
   }
 
   /** The abbreviation an era name suggests, which the user may override */

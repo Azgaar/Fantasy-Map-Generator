@@ -28,6 +28,7 @@ import { Military } from "@/model/political/military-generator";
 import { States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
+import { Names } from "@/model/society/names/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { Religions } from "@/model/society/religions-generator";
 import type { LayerId } from "@/renderers/layers";
@@ -802,8 +803,8 @@ function isQuestion(text: string): boolean {
   return query.includes("?") || QUESTION_START.test(query);
 }
 
-function applyRegeneration(action: () => void): void {
-  action();
+async function applyRegeneration(action: () => unknown): Promise<void> {
+  await action();
   closeEntityDialogs();
   refreshEditors();
 }
@@ -819,7 +820,7 @@ const regenerationMessage = (
   </div>`;
 
 /** "Do not ask again" covers this regeneration alone, for the session */
-function confirmRegeneration(id: string, action: () => void): void {
+function confirmRegeneration(id: string, action: () => unknown): void {
   const key = `regenerateDontAsk-${id}`;
   if (sessionStorage.getItem(key)) return void applyRegeneration(action);
 
@@ -1025,8 +1026,10 @@ function regenerateReligions(): void {
   Layers.draw("religions", "goods");
 }
 
-function regenerateCultures(): void {
+async function regenerateCultures(): Promise<void> {
   Cultures.regenerate();
+  await Names.loadUsed();
+  Cultures.defineNames();
   Layers.draw("cultures", "goods");
 }
 

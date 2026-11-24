@@ -46,7 +46,7 @@ A number may stand where a describing word does: Three Towers, Tri Vezhi.
 
 ## Names in the interface
 
-- **Burg, state, province, river and lake editors** show the meaning under the name. _See the name in other name bases_, the button next to it, lists the name in every base: click one to take it. _Generate culture-specific name_ coins a new meaning and its name in the culture's base; _Generate random name_ does the same in a random base.
+- **Burg, state, province, river and lake editors** show the meaning under the name. _See the name in other name bases_, the button next to it, lists the name in every base: click one to take it. _Generate culture-specific name_ coins a new meaning and its name in the culture's base; _Generate random name_ does the same in any base in use on the map.
 - **A name you type is kept.** The name and the meaning are stored apart and neither overwrites the other, so a name may say something other than its meaning. Nothing renames a place behind your back: changing a burg's or state's culture, a culture's name base or a burg's group offers the new name and waits for a yes.
 - **Cultures editor**: the _Namesbase_ column sets the base of each culture. The arrows beside it re-generate the names of the culture's burgs. _Edit a database used for names generation_, at the bottom, opens the Namesbase Editor.
 - **Options** → **Advanced** → **Personal names**: founders that places are named after are _Generated_ anew, _Picked_ from the base's lists as they are, or _As the name base sets_.

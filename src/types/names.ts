@@ -78,6 +78,9 @@ export interface NameBase {
   settled?: number; // 0 to 1: the share of burg names that end in what the burg is by its group, 0.85 when absent
 }
 
+/** A base in the map's list. A shipped one is listed by its id and name until it is loaded */
+export type NameBaseEntry = NameBase | (Pick<NameBase, "id" | "name"> & { places?: undefined });
+
 /** How a base coins names of a pattern */
 export interface PatternLayout {
   weight?: number; // how often, against the other patterns

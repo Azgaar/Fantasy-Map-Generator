@@ -1,8 +1,19 @@
 // The map's lore in `options.map.lore`: its name, calendar and the author's description. See docs/architecture/configuration.md
+import { Pins } from "@/model/options/pins";
 import { Names } from "@/model/society/names/names-generator";
+import { seeded } from "@/utils/probability-utils";
 import { requireName } from "@/utils/validation-utils";
 
 class LoreModel {
+  /** Name a new map and its era in the bases its cultures use; what the user has pinned stays */
+  generate(): void {
+    seeded(`${options.map.seed}|lore`, () => {
+      const [era, name] = [Names.getEra(), Names.getMapName()]; // both, so that a pin moves neither
+      if (Pins.rolls("era")) this.setEra(era);
+      if (Pins.rolls("mapName")) this.rename(name);
+    });
+  }
+
   /** Rename the map; files it is downloaded as take the name */
   rename(name: string): void {
     options.map.lore.name = requireName(name);

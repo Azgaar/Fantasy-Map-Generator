@@ -323,6 +323,7 @@ Test what a rule makes of a join, agreement, and forms that are drawn often. Do 
 - **Names do not repeat** among burgs, among states and among rivers.
 - **A state takes only a land word its base has written.** A coined one would name a state like a town.
 - **Loading a map never coins meanings.** An old map keeps its names as they are; its name bases and culture bases are converted once in `migrateLegacyNameBases`.
+- **A base is loaded before anything is named in it.** Naming is synchronous and loads nothing: the bases the cultures use are loaded by the pipelines, on map load and where a culture takes another base. What offers every base calls `Names.loadAll` as it opens.
 - **A shipped base the user left as it is saves by its id alone**, so it follows later data updates. Stored names do not change; new renderings do.
 
 ## Tests

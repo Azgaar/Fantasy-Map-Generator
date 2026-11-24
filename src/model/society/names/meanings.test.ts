@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import type { Concept } from "@/data/name-concepts";
 import type { Meaning, NameBase, Token } from "@/types/names";
 import { Lexicon } from "./lexicon";
@@ -7,7 +7,11 @@ import { Names } from "./names-generator";
 import { NameNotation } from "./notation";
 import { SoundRules } from "./sound-rules";
 
-afterEach(() => Names.restore());
+beforeAll(() => Names.loadAll());
+afterEach(() => {
+  Names.nameBases = Names.getNameBases();
+  Names.clearChains();
+});
 
 const meaning = (pattern: Meaning["pattern"], ...tokens: Token[]): Meaning => ({ pattern, tokens, origin: "english" });
 const withSalt = (base: Meaning, salt: number): Meaning => ({ ...base, salt });
@@ -43,10 +47,10 @@ describe("gloss", () => {
 describe("render", () => {
   it("gives the same name for the same meaning and base, whatever was rendered between", () => {
     const meanings = [meaning("modifier-generic", "black", "ford"), meaning("owner-generic", "~Eadric", "farm")];
-    const first = Names.nameBases.map(base => meanings.map(item => Meanings.render(item, base.id)));
+    const first = Names.loaded().map(base => meanings.map(item => Meanings.render(item, base.id)));
     Names.clearChains();
     Meanings.render(meaning("feature", "harbour"), "german");
-    expect(Names.nameBases.map(base => meanings.map(item => Meanings.render(item, base.id)))).toEqual(first);
+    expect(Names.loaded().map(base => meanings.map(item => Meanings.render(item, base.id)))).toEqual(first);
   });
 
   it("renders every pattern in every shipped base", () => {
@@ -61,7 +65,7 @@ describe("render", () => {
       meaning("root-land", "~Frank", "land"),
       meaning("modifier-land", "east", "land")
     ];
-    for (const base of Names.nameBases) {
+    for (const base of Names.loaded()) {
       for (const item of meanings) {
         const name = Meanings.render(item, base.id);
         expect(name, `${base.id} ${Meanings.gloss(item)}`).toMatch(/^\p{Lu}/u);

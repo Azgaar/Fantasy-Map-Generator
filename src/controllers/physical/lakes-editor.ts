@@ -119,7 +119,7 @@ function renderDialog(): void {
   // add listeners — dropped together with the dialog HTML on close
   ensureEl("lakeName").addEventListener("input", changeName);
   ensureEl("lakeNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("lakeName").value));
-  ensureEl("lakeNameCulture").addEventListener("click", generateNameCulture);
+  ensureEl("lakeNameCulture").addEventListener("click", () => regenerateName());
   ensureEl("lakeNameRandom").addEventListener("click", generateNameRandom);
   ensureEl("lakeTranslations").addEventListener("click", showTranslations);
   ensureEl("lakeSubtype").addEventListener("change", changeLakeSubtype);
@@ -170,10 +170,6 @@ function updateLakeValues(): void {
 
 function changeName(this: HTMLInputElement): void {
   getLake().name = this.value;
-}
-
-function generateNameCulture(): void {
-  regenerateName();
 }
 
 function generateNameRandom(): void {

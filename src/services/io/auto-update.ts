@@ -34,7 +34,6 @@ import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
 import { Names } from "@/model/society/names/names-generator";
-import { SoundRules } from "@/model/society/names/sound-rules";
 import { Religions } from "@/model/society/religions-generator";
 import { getDefaultMarkerName, type Marker, Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
@@ -61,7 +60,6 @@ import { StylePresetsService } from "@/services/style-presets";
 import { compareVersions } from "@/services/versioning";
 import type { Deal, Good } from "@/types/economy";
 import type { LegendItem } from "@/types/legend";
-import type { NameBase } from "@/types/names";
 import type { StylesData } from "@/types/styles";
 import { Dialog } from "@/ui/dialog/dialog";
 import { unique } from "@/utils/array-utils";
@@ -136,6 +134,9 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
   const noteRenames = new Map<string, string>(); // legacy element id -> the id the element has now
   type LegacyReliefIcon = { icon: string; x: number; y: number; s: number };
   let extractedRelief: LegacyReliefIcon[] | null = null; // read by the 1.154 relief step
+
+  // v1.160.0 reworked name bases. This must run before older migrations that name things
+  if (isOlderThan("1.160.0")) await migrateLegacyNameBases(data);
 
   if (isOlderThan("1.139.0")) {
     // v1.139.0 moved biomes data from the legacy pipe-delimited format to pack.biomes.
@@ -2339,33 +2340,27 @@ function parseLegacySvg(markup: string): ShadowRoot {
   return root;
 }
 
-/** v1.159.0 keeps name bases as JSON under stable ids, and a culture names its base by that id */
-export function migrateLegacyNameBases(mapVersion: string, data: string[]): void {
-  if (!compareVersions(mapVersion, "1.159.0").isOlder) return;
-
-  // name|min|max|doubled|m|names per base; one saved without names holds the shipped names at its place
+/** v1.160.0 keeps name bases as JSON under stable ids, and a culture names its base by that id */
+export async function migrateLegacyNameBases(data: string[]): Promise<void> {
+  // name|min|max|doubled|m|names per base; one saved without names is the shipped one at its place
   const shipped = Names.getNameBases();
   const stored = data[31] ? data[31].split("/").map(base => base.split("|")) : [];
   const isCustom = (names = "", index: number) => names.split(",").length > 2 || !shipped[index];
   const taken = stored.flatMap((base, index) => (isCustom(base[5], index) ? [] : shipped[index].id));
 
   const bases = stored.map(([name, min, max, doubled, , names = ""], index) => {
-    if (!isCustom(names, index)) {
-      const base: NameBase = { ...shipped[index], name, length: [+min, +max] }; // the shipped base under the map's settings
-      SoundRules.setDoubles(base, doubled ?? "");
-      return base;
-    }
+    if (!isCustom(names, index)) return shipped[index];
     const id = Names.uniqueId(name, taken);
     taken.push(id);
     return Names.composeBase(id, name, [+min, +max], names ? names.split(",") : [], doubled);
   });
-  if (data[31]) data[31] = JSON.stringify(bases);
+  if (data[31]) Names.nameBases = bases;
 
-  const ids = (data[31] ? bases : shipped).map(base => base.id);
-  const cultures: unknown = safeParseJSON(data[13] ?? "");
-  if (!Array.isArray(cultures)) return;
-  for (const culture of cultures) if (typeof culture?.base === "number") culture.base = ids[culture.base] ?? ids[0];
-  data[13] = JSON.stringify(cultures);
+  const ids = Names.nameBases.map(base => base.id);
+  for (const culture of (pack.cultures ?? []) as { base: string | number }[])
+    if (typeof culture?.base === "number") culture.base = ids[culture.base] ?? ids[0];
+  Names.clearChains();
+  await Names.loadUsed();
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {

@@ -68,7 +68,7 @@ class MeaningsModule {
 
   /** A meaning's name in a base, and whether it says all of it: a name too long for the base loses its modifier */
   compose(meaning: Meaning, baseId: string): { name: string; whole: boolean } {
-    const base = Names.resolve(baseId) ?? Names.nameBases[0];
+    const base = Names.resolve(baseId);
     if (!base) return { name: "ERROR", whole: false };
 
     const random = Alea(`${base.id}|${meaning.pattern}|${meaning.tokens}|${meaning.salt ?? 0}`);

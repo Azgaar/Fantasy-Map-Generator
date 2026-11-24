@@ -282,7 +282,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     Dialog.closeAll(undefined, { minimized: true });
 
     autoUpdate?.migrateLegacySettings(mapVersion!, data);
-    autoUpdate?.migrateLegacyNameBases(mapVersion!, data);
     const settings = data[1] ? safeParseJSON(data[1]) : null;
     if (!settings) throw new Error("Map settings are missing or malformed");
     Options.applyLoaded(settings);
@@ -382,6 +381,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.legends = data[53] ? JSON.parse(data[53]) : [];
 
     Names.restore(data[31]);
+    await Names.loadUsed();
 
     await autoUpdate?.resolveVersionConflicts(mapVersion!, data);
 

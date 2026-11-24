@@ -53,8 +53,8 @@ anything but a straight line — so it added validation logic and API surface wi
 
 Full generation builds a fresh grid from the resolved seed and extent; it never reuses the previous
 map implicitly. A grid explicitly selected in the heightmap gallery is used as supplied, with its
-heights cleared before terrain generation. Map naming belongs to `Options.randomize()` before
-the pipeline, since it depends only on name bases and the seeded random source.
+heights cleared before terrain generation. The map and its era are named in the `lore` step, in the
+bases the cultures use; a pinned name stays.
 
 `generate(config)` in `app/lifecycle.ts` resolves what the pipeline doesn't own (`setSeed`, `Options.randomize`, `applyGraphSize`), calls `await GenerationPipeline.run({graph})`, then registers the map (`registerMap` logs its summary and fires `map:generated`,
 `TOTAL` timing) or shows the generation error dialog.
@@ -69,6 +69,7 @@ the pipeline, since it depends only on name bases and the seeded random source.
 | Climate art              | `ice`                                           | `pack.ice`                                                                      |
 | Goods catalogue          | `goods`                                         | `options.map.goods`, `cells.good`                                    |
 | Ranking & cultures       | `rankCells`, `cultures`, `culturesExpand`       | `cells.s`, `cells.pop`, `pack.cultures`, `cells.culture`                        |
+| Name bases & lore        | `nameBases`, `cultureNames`, `lore`             | loads the name bases the cultures use, before anything is named; names of the cultures drawn without one; `options.map.lore`: map name and era |
 | Water names              | `riversSpecify`, `featureNames`                 | river and feature (island, ocean, lake) names, which burgs are named after      |
 | Settlement & politics    | `burgs`, `states`, `routes`                     | `pack.burgs` with capitals named, `pack.states` named after them, `pack.routes` |
 | Development              | `development`                                   | `cells.development` (see [development](../domain/development.md))               |
@@ -114,6 +115,7 @@ flowchart TD
     goods["goods<br/><i>writes: cells.good</i>"]
     rank["rankCells<br/><i>writes: cells.s, cells.pop</i>"]
     cult["cultures + culturesExpand<br/><i>writes: pack.cultures, cells.culture</i>"]
+    bases["nameBases + cultureNames + lore<br/><i>loads name bases; writes: options.map.lore</i>"]
     names["riversSpecify + featureNames"]
     burgs["burgs<br/><i>writes: pack.burgs</i>"]
     states["states<br/><i>writes: pack.states</i>"]
@@ -126,7 +128,7 @@ flowchart TD
     mil["military + markers + zones + addedLabels"]
     journeys["journeys + legends"]
 
-    gg --> hm --> mg --> lakes --> coord --> temp --> prec --> repack --> ruler --> rivers --> biomes --> fg --> ice --> goods --> rank --> cult --> names --> burgs --> states --> routes --> dev --> relig --> spec --> prov --> econ --> mil --> journeys
+    gg --> hm --> mg --> lakes --> coord --> temp --> prec --> repack --> ruler --> rivers --> biomes --> fg --> ice --> goods --> rank --> cult --> bases --> names --> burgs --> states --> routes --> dev --> relig --> spec --> prov --> econ --> mil --> journeys
 
     %% cross-step (non-adjacent) global dependencies
     hm -. "grid.cells.h" .-> temp
@@ -164,7 +166,7 @@ a step id that does not exist in the canonical list is a compile error, but the 
 sync by hand. Differences, all deliberate:
 
 - **Dropped:** `grid`, `heightmap` (the user just edited the heights), `mapSize`
-  and `defaultRuler` (map bounds don't change on an edit), `addedLabels`, `journeys` and `legends` (not touched).
+  and `defaultRuler` (map bounds don't change on an edit), `lore` (the map keeps its name), `addedLabels`, `journeys` and `legends` (not touched).
 - **`erosion` context:** `addLakesInDeepDepressions` and `openNearSeaLakes` run only when erosion is
   allowed; `rivers` calls `Rivers.generate(erosion)` and, when it isn't, snaps `pack.cells.h` back to
   the grid heights wherever the land/water side didn't flip.

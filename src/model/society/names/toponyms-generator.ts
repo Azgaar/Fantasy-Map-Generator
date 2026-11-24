@@ -109,7 +109,7 @@ class ToponymsGenerator {
   /** A meaning that fits a burg's place and group, and its name in the culture's base or in the base given.
    * A burg with no group yet takes a name that says nothing of its size */
   burg(burg: Burg, { burgs = pack.burgs, taken = this.burgNames(burgs), baseId }: BurgOptions = {}): Named {
-    const base = Names.resolve(baseId ?? pack.cultures[burg.culture!].base) ?? Names.nameBases[0];
+    const base = Names.resolve(baseId ?? pack.cultures[burg.culture!].base);
     const site = this.getSite(burg);
     const landmark = this.pickConcept("generic", site, (fit, _, concept) => fit >= 3 && !WATERS.includes(concept)); // what the place stands out for
     const water = this.getWater(burg, site);
@@ -198,7 +198,7 @@ class ToponymsGenerator {
    * With a seed the name comes off a random sequence of its own */
   state(capital: Burg, cultureId: number, { taken = this.stateNames(), baseId, seed }: StateOptions = {}): Named {
     if (seed) return seeded(seed, () => this.state(capital, cultureId, { taken, baseId }));
-    const base = Names.resolve(baseId ?? pack.cultures[cultureId].base) ?? Names.nameBases[0];
+    const base = Names.resolve(baseId ?? pack.cultures[cultureId].base);
     const site = this.getSite(capital);
     const lands = conceptsOf("land").filter(concept => Lexicon.authoredForms(base, concept)); // a fallback form would name a town
 
@@ -237,7 +237,7 @@ class ToponymsGenerator {
   /** A land's meaning around a root, and its name */
   landOf(root: string, cultureOrBase: number | string): Named {
     const baseId = typeof cultureOrBase === "number" ? pack.cultures[cultureOrBase].base : cultureOrBase;
-    const base = Names.resolve(baseId) ?? Names.nameBases[0];
+    const base = Names.resolve(baseId);
     const pattern = this.pickPattern(base, ["simplex", "root-land"]);
     const lands = conceptsOf("land").filter(concept => Lexicon.authoredForms(base, concept));
     const land = this.pickWeighted(lands, weightOf);
@@ -275,7 +275,7 @@ class ToponymsGenerator {
     const course = river.cells.filter(cell => cell >= 0);
     const cell = course[Math.floor(course.length / 2)] ?? river.mouth;
     const culture = cells.culture[river.mouth] ?? 0;
-    const base = Names.resolve(baseId ?? pack.cultures[culture]?.base) ?? Names.nameBases[0];
+    const base = Names.resolve(baseId ?? pack.cultures[culture]?.base);
     const isSmall = river.type !== "River"; // a brook, a creek or a fork
     const [x, y] = cells.p[cell];
     const site = { ...this.getSite({ cell, x, y, culture }), [isSmall ? "small" : "big"]: 2 };
@@ -297,7 +297,7 @@ class ToponymsGenerator {
     const { cells } = pack;
     const cell = lake.shoreline?.[0] || lake.firstCell;
     const culture = cells.culture[cell] ?? 0;
-    const base = Names.resolve(baseId ?? pack.cultures[culture]?.base) ?? Names.nameBases[0];
+    const base = Names.resolve(baseId ?? pack.cultures[culture]?.base);
     const [x, y] = cells.p[cell];
     const site = this.getSite({ cell, x, y, culture });
     const waters: Concept[] =
@@ -374,7 +374,7 @@ class ToponymsGenerator {
   private borrow(name: string, namedAt: number, burg: Burg): Token {
     const [theirs, own] = [pack.cultures[pack.cells.culture[namedAt]]?.base, pack.cultures[burg.culture!].base];
     const base = Names.resolve(own);
-    return theirs === own || !base ? `~${name}` : `~${capitalize(Appropriation.adapt(name.toLowerCase(), base))}`;
+    return theirs === own ? `~${name}` : `~${capitalize(Appropriation.adapt(name.toLowerCase(), base))}`;
   }
 
   /** The nearest named burg of the same culture close by, and how this burg stands to it */

@@ -8,10 +8,11 @@ import { ensureEl } from "@/utils/node-utils";
 import { escapeHtml } from "@/utils/string-utils";
 
 /** Show what a name means and how every name base renders that meaning; `apply` takes the name the user picks */
-function open(meaning: Meaning, apply: (name: string) => void): void {
+async function open(meaning: Meaning, apply: (name: string) => void): Promise<void> {
+  await Names.loadAll();
   Dialog.destroy("nameTranslations");
   const origin = Names.find(meaning.origin)?.name ?? meaning.origin;
-  const rows = Names.nameBases.map(base => {
+  const rows = Names.loaded().map(base => {
     const name = escapeHtml(Meanings.render(meaning, base.id));
     return /* html */ `<div style="${base.id === meaning.origin ? "font-weight: bold" : ""}">${escapeHtml(base.name)}</div>
       <div>${name}</div>

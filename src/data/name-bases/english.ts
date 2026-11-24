@@ -4,7 +4,7 @@ export const english: WrittenNameBase = {
   id: "english",
   name: "English",
   length: [5, 12],
-  settled: 0.65, // an English name is as often what stands at the place: a ford, a hill, a wood
+  settled: 0.65,
 
   places: {
     names: [
