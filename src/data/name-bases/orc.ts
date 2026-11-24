@@ -277,6 +277,185 @@ export const orc: WrittenNameBase = {
       ]
     }
   },
-  rules: [{ match: "([^gzrcu])\\1+", replace: "$1" }],
-  patterns: { "root-land": { weight: 0 }, "modifier-land": { weight: 0 } }
+  rules: [
+    { match: "([^gzrcu])\\1+", replace: "$1" },
+    { match: "([gkd])h\\+(?=\\1|[gkbd]h)", replace: "$1+", at: "join" } // Mukor and Okghed, not Mukhkor and Okhghed
+  ],
+  settled: 0.7, // an orc name says as often what the place is: a hill, a cave, a gate
+  // a harsh tongue of closed syllables: the describing word comes first, joined or before a dash
+  lexicon: `
+# settlements
+city: +gor 4, +ghaz 3, +grod 2, -Gor 2, -Ghaz
+town: +ugh 4, +ukh 3, +oz 2, -Ugh, -Bod
+village: +ud 3, +og 3, +az 2, +urd 2
+hamlet: +ul 3, +ig 3, +ez 2
+
+# places
+home: +bod 2, -Bod
+farm: +nog 2, -Nog
+hall: +dhaz 2, -Dhaz
+field: +dakh 2, -Dakh
+wood: +ghed 3, -Ghed
+hill: +bhur 3, -Bhur 2
+ford: +vadh 3, -Vadh
+fort: +grod 3, -Grod 2
+bridge: +bral 3, -Bral
+harbour: +krar 3, -Krar
+valley: +gol 3, -Gol
+market: +chug 2, -Chug
+castle: +drekh 3, -Drekh 2
+mouth: +mugh 3, -Mugh
+mount: +khul 3, -Khul 2
+shore: +zal 2, -Zal
+island: +zub 3, -Zub
+lake: +nugh 3, -Nugh
+haven: +ord 2, -Ord
+marsh: +mukh 3, -Mukh
+spring: +ibul 2, -Ibul
+meadow: +gagh 2, -Gagh
+grove: +khed 2, -Khed
+mill: +brug 2, -Brug
+bay: +vun 2, -Vun
+cape: +nir 2, -Nir
+cliff: +drakh 2, -Drakh
+tower: +zig 3, -Zig
+ridge: +kalb 2, -Kalb
+pass: +grigh 2, -Grigh
+heath: +ulk 2, -Ulk
+camp: +vag 3, -Vag
+mine: +dug 3, -Dug
+temple: +modh 2, -Modh
+abbey: +mogh 2, -Mogh
+shrine: +mogh 2, -Mogh
+river: +rud 3, -Rud
+brook: +ruk 2, -Ruk
+water: +nub 2, -Nub
+keep: +zord 2, -Zord
+hold: +drukh 2, -Drukh
+watch: +okh 2, -Okh
+guard: +okh 2, -Okh
+gate: +brog 2, -Brog
+wall: +bhog 2, -Bhog
+rock: +kor 3, -Kor
+falls: +drodh 2, -Drodh
+den: +lorg 2, -Lorg
+head: +gur 2, -Gur
+horn: +khor 2, -Khor
+waste: +qash 2, -Qash
+gorge: +zrar 2, -Zrar
+peak: +zrog 2, -Zrog
+cave: +nudh 3, -Nudh
+forge: +kaz 2, -Kaz
+barrow: +krudh 2, -Krudh
+grave: +krudh 2, -Krudh
+pool: +gub 2, -Gub
+eye: okh
+run: +ruk 2, -Ruk
+glade: +khed 2, -Khed
+glen: +gol 2, -Gol
+fell: +bhur 2, -Bhur
+bank: +zal 2, -Zal
+pasture: +gagh 2, -Gagh
+crossing: +vadh 2, -Vadh
+hollow: +gol 2, -Gol
+lodge: +bod 2, -Bod
+
+# modifiers
+new: brak
+old: uld
+elder: uld
+great: grom
+little: riz
+long: lurz
+deep: dhum
+high: azra
+low: nud
+upper: azra
+lower: nud
+middle: bul
+broad: lag
+north: khar
+south: shag
+east: orr
+west: velg
+black: dhul
+white: ghal
+red: rez
+green: zulb
+grey: kog
+blue: vrob
+dark: drog
+gold: zag
+silver: ghig
+iron: khuz
+stone: kor
+salt: brez
+coal: kark
+bone: bagz
+skull: gugh
+blood: vrug
+fire: braz
+burnt: brazd
+smoke: ashna
+shadow: ghuz
+night: ghuz
+sun: bhak
+summer: bhak
+moon: zil
+storm: vraz
+wind: vugh
+cold: kril
+winter: kril
+ice: zrig
+snow: gheg
+dead: krudh
+broken: kruk
+grim: ghor
+dread: ghor
+wild: zrag
+strong: bulg
+sharp: ekh
+lone: ikh
+far: odh
+cursed: naz
+holy: mog
+priest: modh
+god: gul
+king: ghaz
+lord: boz
+warrior: krag
+smith: kazg
+hunter: rog
+raider: rog
+wolf: ulg
+boar: grug
+horse: ghoz
+bear: urz
+crow: kakh
+raven: kakh
+serpent: zrul
+dragon: zral
+thorn: krig
+oak: kudz
+mud: muk
+two: udu
+three: zrud
+seven: odod
+nine: nuk
+
+# lands
+land: +gund 3, +agh 2, -Gund
+march: +krog 2, -Krog
+coast: +zal 2, -Zal
+`,
+  patterns: {
+    "modifier-generic": { templates: "{modifier}{generic} 6, {modifier}-{generic} 2" },
+    "owner-generic": { weight: 20, templates: "{root}{generic} 3, {root}-{generic} 2" },
+    "generic-of": { templates: "{root}{generic} 3, {root}-{generic}" },
+    compound: { weight: 15, templates: "{modifier}{generic}-{settlement} 3, {modifier}{generic} 4" },
+    relative: { templates: "{modifier}-{root}" },
+    simplex: { weight: 20 },
+    "root-land": { weight: 25, templates: "{root}{generic} 3, {root}-{generic}" },
+    "modifier-land": { weight: 22, templates: "{modifier}{generic} 3, {modifier}-{generic}" }
+  }
 };

@@ -317,6 +317,145 @@ export const elven: WrittenNameBase = {
       ]
     }
   },
-  rules: [{ match: "([^lenmsrg])\\1+", replace: "$1" }],
-  patterns: { "root-land": { weight: 0 }, "modifier-land": { weight: 0 } }
+  rules: [
+    { match: "([^lenmsrg])\\1+", replace: "$1" },
+    { match: "(?<=dor)\\+dor", replace: "+nor", at: "join" } // Neldornor, not Neldordor
+  ],
+  settled: 0.6, // an elven name says as often what the place is: a hill, a haven, a vale
+  // after the Grey-elven tongue: a describing word goes before its noun when joined, after it when apart
+  lexicon: `
+# settlements
+city: +ost 3, +amar 3, +lond 2, +iath 2, Caras 2
+town: +dell 3, +ore 3, +thond 2, +ien 2, +alin 2, Minas
+village: +iel 3, +wen 2, +eth 2, +las 2, +ion 2, Bar
+hamlet: +il 3, +ith 2, +es 2, +lin 2
+
+# places
+home: +bar 2, bar
+hall: +rond 3, rond
+field: +parth 2, +lad 2, talath
+wood: eryn 3, taur 2, +glad 2
+hill: amon 3, +dol 2, Emyn
+ford: athrad 2, +rad
+fort: +ost 3, Barad 2, +barad
+bridge: iant 2, +iant
+harbour: lond 3, +lond 2
+valley: nan 3, imlad 2, +lad
+castle: barad 3, +ost
+mouth: ethir 3, +ethir
+mount: orod 3, +aeg 2, Ered
+shore: falas 3, +falas
+island: tol 3, +tol
+lake: aelin 3, +ael 2, nen
+haven: lond 3, +lond
+marsh: +nin 2, lo
+spring: eithel 3, +eithel
+meadow: +lad 2, +parth
+grove: +glad 3
+river: duin 3, +duin 2, sir
+brook: +sirith 3
+water: nen 3, +nen 2
+tower: minas 3, +barad
+pass: cirith 3
+rock: gond 3, +gond 2
+peak: aeg 3, +aeg 2, ras
+horn: ras 3, +ras
+cave: grod 2, +groth 2
+gate: annon 3, +annon
+watch: tirith 3, +tir 2
+guard: tirith, +tir
+falls: lanthir 3
+pool: lin 3, +lin
+temple: +nost 2
+abbey: +nost 2
+tree: galadh 3, +orn 2
+wall: ram 3, +ram 2
+
+# modifiers
+new: vin 3
+old: iaur 3
+great: beleg 3
+little: tithen 2, niben 2
+long: and+ 3
+deep: nur+ 3
+high: ar+ 3
+north: forod 3, for+ 2
+south: harad 3, har+
+east: rhun 3, rhu+
+west: annun 3, dun+ 2
+black: morn 3, mor+ 3
+white: nim 3, faen 2
+red: caran 3, car+ 2
+green: calen 3, cal+ 2
+golden: glor 3, mal+ 2
+grey: mith 3
+blue: luin 3
+dark: dur 3, morn
+bright: galad 3
+silver: celeb 3
+gold: mal 3, malth 2
+iron: ang 3
+stone: gond 3, sarn 2
+star: gil 3, elen 2
+moon: ithil 3
+sun: anor 3
+fire: naur 3
+shadow: gwath 3
+mist: hith 3
+wind: sul 3
+snow: los 3
+frost: heleg 2
+ice: heleg 3
+cold: ring 3
+winter: rhiw 3
+summer: laer 3
+autumn: iavas 2
+rain: ros 3
+holy: aer 3
+king: aran 3
+queen: rien 2
+lord: hir 3
+oak: doron 3
+beech: neldor 3
+birch: brethil 3
+willow: tathar 3
+pine: thon 3
+holly: ereg 3
+flower: loth 3
+rose: meril 3
+wolf: draug 3
+bear: brog 3
+eagle: thoron 3
+horse: roch 3
+swan: alph 3
+deer: aras 3
+raven: craban 3
+crow: craban 2
+nightingale: tinu 2
+dragon: amlug 2, lhug 2
+serpent: lhug 2
+hidden: dolen 3
+lone: ereb 3
+dread: gor 3
+fair: bain 3
+two: tad
+three: neled
+seven: odo
+nine: neder
+
+# lands
+land: +dor 4, +nor 2
+realm: +ardh 2
+coast: falas 3
+`,
+  patterns: {
+    "modifier-generic": { templates: "{modifier}{generic} 6, {generic} {modifier} 2" },
+    "owner-generic": { weight: 20, templates: "{root}{generic} 4, {generic} {root}" },
+    "generic-of": { templates: "{root}{generic} 2, {generic} {root} 3" },
+    compound: { weight: 15, templates: "{modifier}{generic} 5, {settlement} {modifier}{generic} 2" },
+    relative: { templates: "{root} {modifier}" },
+    simplex: { weight: 20 },
+    "root-land": { weight: 25 },
+    "modifier-land": { weight: 25 }
+  }
 };

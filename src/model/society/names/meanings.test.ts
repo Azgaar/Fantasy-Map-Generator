@@ -99,7 +99,8 @@ describe("render", () => {
     expect(names("korean")).toEqual(new Set(["Prankguk"])); // Korean writes no f
     expect(names("chinese")).toEqual(new Set(["Frank Guo"]));
     expect(names("arabic")).toEqual(new Set(["Franka", "Frankia", "Al Franka", "Al Frankia"]));
-    expect(names("elven")).toEqual(new Set(["Frankia"])); // the shared form: a base with no land of its own
+    Names.nameBases.push(custom());
+    expect(names("custom")).toEqual(new Set(["Frankia"])); // the shared form: a base with no land of its own
   });
 
   it("applies a base's rules at the join", () => {

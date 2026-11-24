@@ -205,8 +205,7 @@ class ToponymsGenerator {
     for (let attempt = 0; attempt < TRIES; attempt++) {
       const pattern = this.pickPattern(base, STATE_PATTERNS);
       const land = this.pickWeighted(lands, concept => this.weigh(concept, site));
-      const root: Token =
-        pattern === "simplex" ? `~${Names.getBase(base.id, 3, 6, "")}` : this.getStateRoot(capital, base);
+      const root: Token = pattern === "simplex" ? `~${Names.getBaseShort(base.id)}` : this.getStateRoot(capital, base);
       const tokens: Token[] =
         pattern === "simplex"
           ? [root]
@@ -364,10 +363,10 @@ class ToponymsGenerator {
   private getWater(burg: Burg, site: Site): { root: Token; tags: SiteTag[] } | undefined {
     const { cells, rivers, features } = pack;
     const river = site.stream || site.river ? rivers.find(river => river.i === cells.r[burg.cell]) : undefined;
-    if (river?.name && !river.name.includes(" "))
+    if (river?.name && !/[ -]/.test(river.name))
       return { root: this.borrow(river.name, river.mouth, burg), tags: WATER_TAGS };
     const lake = site.lake ? features[cells.f[cells.haven[burg.cell]]] : undefined;
-    if (!lake?.name || lake.name.includes(" ")) return undefined; // a name of two words is no root
+    if (!lake?.name || /[ -]/.test(lake.name)) return undefined; // a name of two words is no root
     return { root: this.borrow(lake.name, lake.shoreline?.[0] ?? lake.firstCell, burg), tags: SHORE_TAGS };
   }
 
@@ -398,6 +397,7 @@ class ToponymsGenerator {
     const level: Concept | undefined =
       Math.abs(climb) >= 8 ? (heights[burg.cell] > heights[nearest.cell] ? "upper" : "lower") : undefined;
     const modifier = overseas ? "new" : ra<Concept>([direction, direction, level ?? "new", "little"]);
+    if (nearest.meaning?.tokens.includes(modifier)) return undefined; // no Little Littlestead
     return { root: `~${nearest.name}`, modifier };
   }
 

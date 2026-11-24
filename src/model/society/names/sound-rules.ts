@@ -1,8 +1,14 @@
-import { JOIN_RULES, SHARED_RULES } from "@/data/name-rules";
+import { CHAIN_RULES, JOIN_RULES, SHARED_RULES } from "@/data/name-rules";
 import type { NameBase, SoundRule } from "@/types/names";
 import { log } from "@/utils/logger";
 
-const WORD_START = /(?<=^|[ -])./gu;
+// words that join the others and stay lowercase between them: Saint-Germain-en-Laye, Puebla de Sanabria
+const PARTICLES = new Set(
+  "of the upon de del della delle dei degli di da dal do dos das du des la las le les sur sous lès en am im der zum zur ad sub e ye wa cha ya".split(
+    " "
+  )
+);
+const ELIDED = /^(?:d|l|n|dell|nell|sull|dall|all)'(?=\p{L})/u; // Pont-d'Ain, Castel dell'Ovo, Tizi n'Test
 const DOUBLES = /^\((?:\.|\[\^(.+)\])\)\\1\+$/;
 
 interface JoinOptions {
@@ -15,7 +21,7 @@ class SoundRulesModule {
 
   /** Rewrite a lowercase word by a base's rules, then by the shared ones; a rule that is no valid regex is skipped */
   apply(word: string, rules: SoundRule[] = []): string {
-    return this.rewrite(this.rewrite(word, rules.filter(isWordRule)), SHARED_RULES);
+    return this.rewrite(this.rewrite(word, rules.filter(isWordRule)), [...SHARED_RULES, ...CHAIN_RULES]);
   }
 
   /** Adapt a lowercase root coined in another base by the rules a base keeps for foreign roots */
@@ -43,9 +49,18 @@ class SoundRulesModule {
     return joined;
   }
 
-  /** A lowercase name with each word capitalized */
+  /** A lowercase name with each word capitalized, but for the joining words between them */
   capitalize(name: string): string {
-    return name.replace(WORD_START, letter => letter.toUpperCase());
+    const parts = name.split(/([ -])/); // words, and the space or dash after each
+    const upper = (text: string) => text.replace(/^./u, letter => letter.toUpperCase());
+    return parts
+      .map((part, index) => {
+        if (index % 2) return part;
+        if (index && index < parts.length - 1 && PARTICLES.has(part)) return part;
+        if (index && ELIDED.test(part)) return part.replace(/'(.)/u, (_, letter) => `'${letter.toUpperCase()}`);
+        return upper(part);
+      })
+      .join("");
   }
 
   /** The rule that keeps a letter from standing twice in a row, but for the letters given */

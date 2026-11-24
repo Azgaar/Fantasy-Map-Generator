@@ -400,9 +400,9 @@ Burgs, states, provinces, rivers and lakes are named in two steps. The generator
 
 Yes. In a burg, state, province, river or lake editor, press the two-arrows button next to the Meaning (See the name in other name bases): it lists the name in every namesbase, and a click takes one
 
-### Why don't German, French and other names mean what the Meaning says?
+### Why don't the names of my own namesbase mean what the Meaning says?
 
-Only the English and Ruthenian namesbases have their words written; Human Generic builds on English with high-fantasy words, such as Black Keep, Aldric's Watch and Greyhaven. The other bases say a meaning with endings and words found in their own lists of place names, so the names sound right but mean nothing to a speaker: New Town in German is Zadetal. The meaning is still kept, and a base gets real words once someone writes its Lexicon tab in Tools -> Namesbase. How to write one: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
+Every built-in namesbase has its words written: the real-world ones their real place-name words, so New Town is Neuenheim in German, Neuville in French and Mji Mpya in Swahili; Human Generic builds on English with high-fantasy words, such as Black Keep, Aldric's Watch and Greyhaven. The fantasy bases (Elven, Dark Elven, Dwarven, Giant, Orc, Goblin, Draconic, Arachnid, Serpents) have words of their own invented tongues for the common concepts, so an Elven Brethilost means birch city and a Dwarven Zigilbhur white fort. A namesbase you add has no words yet: it says a meaning with endings and words found in its own list of place names, so the names sound right but mean nothing to a speaker. A concept a built-in base has no word for is said the same way. The meaning is still kept, and a base gets real words once someone writes its Lexicon tab in Tools -> Namesbase. How to write one: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
 
 ### How do I create my own namesbase?
 

@@ -1,7 +1,7 @@
 import type { Concept } from "@/data/name-concepts";
 import type { Formant, Pattern, SoundRule } from "@/types/names";
 
-const VOWELS = "aeiouyàèìòùáéíóúýâêîôûäëïöüÿãõāēīōūăĕĭŏŭąęįǫų";
+const VOWELS = "aeiouyàèìòùáéíóúýâêîôûäëïöüÿãõāēīōūăĕĭŏŭąęįǫųıőű";
 const [VOWEL, CONSONANT] = [`[${VOWELS}]`, `[^${VOWELS} +-]`];
 
 /** How the parts of a name meet, after its base's rules and before the `+` marks go */
@@ -13,7 +13,11 @@ export const JOIN_RULES: SoundRule[] = [
 /** The rules every name goes through after its own base's rules */
 export const SHARED_RULES: SoundRule[] = [
   { match: "(?<=[^ -])(.)\\1{2,}", replace: "$1$1" }, // no letter three times in a row inside a word
-  { match: "- +", replace: "-" }, // no space after a hyphen
+  { match: "- +", replace: "-" } // no space after a hyphen
+];
+
+/** What a word off a Markov chain goes through besides: the words of a base's lexicon are spelled as written */
+export const CHAIN_RULES: SoundRule[] = [
   { match: "(?<=[^ -])ae", replace: "e" } // "ae" reads as "e" inside a word
 ];
 

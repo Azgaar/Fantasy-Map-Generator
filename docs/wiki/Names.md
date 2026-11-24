@@ -80,7 +80,7 @@ A base needs only its place names to work:
 5. Add personal names on the People tab, so founders sound native too.
 6. In the Cultures editor, pick the base for a culture and press the arrows to rename its burgs.
 
-The names now sound like the language but mean nothing in it, as the German ones do. To make them mean what they say, write the base's words: see the next section.
+The names now sound like the language but mean nothing in it, as a built-in base does only for the few concepts it has no word for. To make them mean what they say, write the base's words: see the next section.
 
 To make a variant of a base that is already written, such as a dialect, set **Extends** to it. The new base takes its words, patterns and people until you write your own, and its own place names give it its sound.
 
@@ -265,6 +265,8 @@ owner-generic:     {root}{generic} 20, {root}ov* {generic} 2, {root}-{generic}
 ```
 
 A dash or a space in a template starts a new word. Only a word written with a dash may follow one, so `{root}-{generic}` gives David-Gorodok but never David-Stan.
+
+Every word of a name starts with a capital but the joining words between two others: of, the, de, del, della, di, da, do, du, des, la, le, les, sur, sous, en, am, der, ad, the Persian ezafe e and ye, the Swahili wa, ya and cha, and a few more. So `{generic}-sur-{root}` gives Pont-sur-Moselle and `{generic} de {root}` gives Puebla de Sanabria. After d', l', n' or dell' the next letter is a capital, as in Tizi n'Test: a rule that writes `di` as `d'` before a vowel gives Castel d'Ofanto.
 
 The `compound` pattern has a third slot, `{settlement}`, after a describing word and a landform: `{modifier}{generic}{settlement}` gives Krasnogorsk, and `{modifier}{generic} {settlement}` gives Deepwood Keep. A template may leave a slot out: `{modifier}{generic}` alone gives Redhill.
 

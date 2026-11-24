@@ -90,6 +90,14 @@ describe("shipped name bases", () => {
       }
     }
   });
+
+  it("write the settlements and a land in every shipped base", () => {
+    for (const { id, lexicon = {}, extends: parent } of Names.getNameBases()) {
+      if (parent) continue; // Human Generic speaks English's words where it writes none
+      for (const concept of ["city", "town", "village", "hamlet", "land"] as const)
+        expect(lexicon[concept]?.length, `${id}: ${concept}`).toBeGreaterThan(0);
+    }
+  });
 });
 
 describe("Names.getBase", () => {

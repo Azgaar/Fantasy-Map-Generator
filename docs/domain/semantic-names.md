@@ -117,7 +117,7 @@ The burg group maps to a settlement concept by name: `capital` and `city` to `ci
 1. **Adapt foreign roots.** A root coined in another base is brought to this base's sounds: `~Eadric` is Eadrik in Ruthenian and Eadarica in Japanese. A base's own roots stand as coined.
 2. **Draw a template** for the pattern by its weight: `{modifier}{generic}` or `{modifier} {generic}`. A template may leave out what the burg is by its group, as `{root}` does for a town named after its river; it never leaves out a name or what stands at the place.
 3. **Draw a form for each concept** by weight, from the forms that may stand where the template puts them. A suffix needs a stem or a proper name before it, a describing word takes the gender of its noun, and a place word that describes another joins it: Fordhall, never Ford Hall.
-4. **Join the parts** with `+` between and run the sound rules: `exe+mouth` becomes Exmouth.
+4. **Join the parts** with `+` between and run the sound rules: `exe+mouth` becomes Exmouth. Every word then takes a capital, but joining words such as de, di, sur and of between two others: Pont-sur-Moselle, Puebla de Sanabria.
 5. **Shorten a name that is too long**: shorter forms, then roots clipped at a syllable, then no modifier. Another place's name, as in New Barton, is never clipped. Each word may be as long as the base allows, the whole name twice that.
 
 Every draw is seeded by the base, the pattern, the tokens and the salt. The same meaning and base give the same name on every call, in every session.
@@ -133,7 +133,7 @@ A base can render any concept. `Lexicon.formsOf` takes the first source that has
 3. The shared lexicon, which holds only `land: +ia`.
 4. Forms coined from the base's place names: its commonest endings for settlements and places, and words off its Markov chain for the rest.
 
-English and Ruthenian are written in full. Human Generic extends English and rewrites what makes it high fantasy, see [below](#human-generic). Other bases write at most their words for a land and coin everything else, so their names sound native but mean nothing a speaker would know: `new, town` in German is Zadetal. A coined form is stable: the same concept always gets the same form in a base.
+English and Ruthenian are written in full, against counts of their historical place names. Human Generic extends English and rewrites what makes it high fantasy, see [below](#human-generic). Every other real-world base writes its real place-name words and, where describing words agree, a grammar, for every place and describing word that names often draw: `new, town` is Neuenheim in German, Neuville in French, Castiglione Nuovo in Italian, Nowabad in Persian, Mji Mpya in Swahili. The nine fantasy bases, Elven to Serpents, write an invented tongue for the same concepts, such as Elven `mith` for grey and `lond` for haven in Mithlond. What a base leaves out is coined from its place names: the commonest endings of the corpus for a settlement, a word off its Markov chain for the rest. A base the user adds starts with no words, so its names sound native but mean nothing a speaker would know until its Lexicon tab is written. A coined form is stable: the same concept always gets the same form in a base.
 
 ## Name and meaning are independent
 

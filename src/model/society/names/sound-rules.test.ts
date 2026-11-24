@@ -19,6 +19,18 @@ describe("SoundRules.apply", () => {
     expect(SoundRules.apply("saint- -omer")).toBe("saint--omer");
   });
 
+  it("capitalizes every word but the joining words between them", () => {
+    expect(SoundRules.capitalize("saint-germain-en-laye")).toBe("Saint-Germain-en-Laye");
+    expect(SoundRules.capitalize("puebla de sanabria")).toBe("Puebla de Sanabria");
+    expect(SoundRules.capitalize("la roche-sur-yon")).toBe("La Roche-sur-Yon");
+    expect(SoundRules.capitalize("pont-d'ain")).toBe("Pont-d'Ain");
+    expect(SoundRules.capitalize("castel de")).toBe("Castel De"); // the last word is a name's own
+  });
+
+  it("keeps the written words of a name made of parts as they are spelled", () => {
+    expect(SoundRules.join("baek+won")).toBe("baekwon"); // a chain word would read Bekwon
+  });
+
   it("runs a base's rules before the shared ones", () => {
     expect(SoundRules.apply("baae", [SoundRules.doublesRule()])).toBe("be");
   });
