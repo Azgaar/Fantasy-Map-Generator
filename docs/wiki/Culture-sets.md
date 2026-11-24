@@ -4,13 +4,13 @@ A culture set is the pool of cultures a map can draw from. It is picked in the _
 
 | Set          | Cultures defined     | Maximum used |
 | ------------ | -------------------- | ------------ |
-| All-world    | 33                   | 32           |
-| European     | 15                   | 15           |
-| Oriental     | 13                   | 13           |
+| All-world    | 48                   | 32           |
+| European     | 21                   | 21           |
+| Oriental     | 17                   | 17           |
 | English      | 10                   | 10           |
-| Antique      | 16                   | 10           |
-| High Fantasy | 17                   | 17           |
-| Dark Fantasy | 34                   | 18           |
+| Antique      | 18                   | 10           |
+| High Fantasy | 18                   | 18           |
+| Dark Fantasy | 35                   | 18           |
 | Random       | generated on the fly | 100          |
 
 Every culture in a set has an _odd_ — a chance to be included at all — and a _sort_ function that scores cells to pick the culture center. That is why two maps with the same set rarely get the same cultures, and why e.g. Inuk tends to appear in cold regions and Maui on tropical islands.
@@ -24,7 +24,7 @@ The culture set also sets the world's [development](https://github.com/Azgaar/Fa
 - Luari: Represents a culture of France. Namesbase: French. [More info about French culture](https://en.wikipedia.org/wiki/Culture_of_France).
 - Tallian: A culture in Italy after the fall of the roman empire. It can be imagined as venetian or any other italian culture. Namesbase: Italian. [More info about Italian culture](https://en.wikipedia.org/wiki/Culture_of_Italy).
 - Astellian: A culture in Spain after the fall of the roman empire. Can be [House of Trastámara](https://en.wikipedia.org/wiki/House_of_Trastámara), maybe [Habsburg Spain](https://en.wikipedia.org/wiki/Habsburg_Spain) or any other time period of Spain. Namesbase: Castillian. [More info about Spanish culture](https://en.wikipedia.org/wiki/Culture_of_Spain).
-- Slovan: A culture that can be any slavic culture. Maybe the [Kievan Rus'](https://en.wikipedia.org/wiki/Kievan_Rus%27), maybe some proto-slavic tribe, maybe the west, east or south slavs in a different time. Namesbase: Ruthenian. [More info about Slavic culture](https://en.wikipedia.org/wiki/List_of_Slavic_cultures).
+- Rucian: Inspired by the East Slavs of the [Kievan Rus'](https://en.wikipedia.org/wiki/Kievan_Rus%27) and later Ruthenia. Namesbase: Ruthenian. [More info about East Slavs](https://en.wikipedia.org/wiki/East_Slavs).
 - Norse: A culture that represents Iceland, Norway, Sweden, and Viking culture. Namesbase: Nordic. [More info about Vikings](https://en.wikipedia.org/wiki/Vikings).
 - Elladan: A culture that can represent ancient or modern Greece. Namesbase: Greek. [More info about Culture of Greece](https://en.wikipedia.org/wiki/Culture_of_Greece).
 - Romian: Ancient Roman culture. Maybe the monarchy, republic, imperium or any other period. Namesbase: Roman. [More info about Ancient Rome](https://en.wikipedia.org/wiki/Ancient_Rome).
@@ -41,7 +41,7 @@ The culture set also sets the world's [development](https://github.com/Azgaar/Fa
 - Inuk: It represents [Inuit](https://en.wikipedia.org/wiki/Inuit) and related ethnic groups. Namesbase: Inuit. [More info about Inuit culture](https://en.wikipedia.org/wiki/Inuit_culture).
 - Euskati: Inspired in [Basque people](https://en.wikipedia.org/wiki/Basques) and related ethnic groups. Namesbase: Basque. [More info about Basque culture](https://en.wikipedia.org/wiki/Basques#Culture).
 - Yoruba: Inspired in [Yoruba people](https://en.wikipedia.org/wiki/Yoruba_people) Namesbase: Nigerian. [More info about Yoruba culture](https://en.wikipedia.org/wiki/Yoruba_culture).
-- Keltan: Represents the collection of several [Celtic people](https://en.wikipedia.org/wiki/Celts) Namesbase: Celtic. [More info about Celtic culture](https://en.wikipedia.org/wiki/Celtic_culture).
+- Keltan: Represents the [Welsh](https://en.wikipedia.org/wiki/Welsh_people) and other Britons. Namesbase: Welsh. [More info about Celtic culture](https://en.wikipedia.org/wiki/Celtic_culture).
 - Efratic: Represents the collection of several cultures that appeared millenia ago in [Mesopotamia] (https://en.wikipedia.org/wiki/Mesopotamia). Can be [Sumerian](https://en.wikipedia.org/wiki/Sumer), [Akkadian](https://en.wikipedia.org/wiki/Akkadian_Empire) or any other related culture. Namesbase: Mesopotamian. [More info about Mesopotamian history](https://en.wikipedia.org/wiki/History_of_Mesopotamia).
 - Tehrani: Inspired by [Iranian peoples](https://en.wikipedia.org/wiki/Iranian_peoples) like proto-Iranians, the [Persians](https://en.wikipedia.org/wiki/Persians), the [Scythians](https://en.wikipedia.org/wiki/Scythians) and other groups in that region. Namesbase: Iranian. [More info about Iranian culture](https://en.wikipedia.org/wiki/Culture_of_Iran).
 - Maui: This represents the [Polynesians](https://en.wikipedia.org/wiki/Polynesians) such as Samoans, Tongans, Hawaiians and other related groups. Namesbase: Hawaiian. [More info about Polynesian culture](https://en.wikipedia.org/wiki/Polynesian_culture).
@@ -52,6 +52,21 @@ The culture set also sets the world's [development](https://github.com/Azgaar/Fa
 - Guantzu: Inspired by [Cantonese people](https://en.wikipedia.org/wiki/Cantonese_people). Useful as an additional culture in China. Namesbase: Cantonese. [More info about Cantonese culture](https://en.wikipedia.org/wiki/Lingnan_culture).
 - Ulus: Inspired by the [Mongolic peoples](https://en.wikipedia.org/wiki/Mongolic_peoples) like the [Mongols](https://en.wikipedia.org/wiki/Mongols). Ulus translates to "state" or "nation" in a political way. Namesbase: Mongolian. [More info about Mongolian culture](https://en.wikipedia.org/wiki/Culture_of_Mongolia).
 - Levent: Represents the peoples of the [Levant](https://en.wikipedia.org/wiki/Levant), the eastern Mediterranean coast. Namesbase: Levantine. [More info about the Levant](https://en.wikipedia.org/wiki/Levant).
+- Polan: Inspired by the [Polans](https://en.wikipedia.org/wiki/Polans_(western)) and other West Slavs. Namesbase: Polish. [More info about Polish culture](https://en.wikipedia.org/wiki/Culture_of_Poland).
+- Gaelan: Represents the [Gaels](https://en.wikipedia.org/wiki/Gaels) of Ireland and Scotland. Namesbase: Gaelic. [More info about Gaelic Ireland](https://en.wikipedia.org/wiki/Gaelic_Ireland).
+- Bharati: Represents the peoples of [North India](https://en.wikipedia.org/wiki/North_India). Namesbase: Hindustani. [More info about culture of India](https://en.wikipedia.org/wiki/Culture_of_India).
+- Siyam: Inspired by the [Thai people](https://en.wikipedia.org/wiki/Thai_people) and their kingdoms. Namesbase: Thai. [More info about Thai culture](https://en.wikipedia.org/wiki/Culture_of_Thailand).
+- Habeshan: Inspired by the [Habesha peoples](https://en.wikipedia.org/wiki/Habesha_peoples) of the Ethiopian highlands. Namesbase: Ethiopic. [More info about Ethiopian culture](https://en.wikipedia.org/wiki/Culture_of_Ethiopia).
+- Kemeti: Inspired by [ancient Egypt](https://en.wikipedia.org/wiki/Ancient_Egypt). Namesbase: Egyptian. [More info about culture of ancient Egypt](https://en.wikipedia.org/wiki/Ancient_Egypt#Culture).
+- Nusantar: Inspired by the peoples of the [Malay Archipelago](https://en.wikipedia.org/wiki/Malay_Archipelago). Namesbase: Malay. [More info about Malay culture](https://en.wikipedia.org/wiki/Malay_culture).
+- Kartlian: Inspired by the [Georgians](https://en.wikipedia.org/wiki/Georgians) of the Caucasus. Namesbase: Georgian. [More info about culture of Georgia](https://en.wikipedia.org/wiki/Culture_of_Georgia_(country)).
+- Litvan: Represents the [Balts](https://en.wikipedia.org/wiki/Balts). Namesbase: Lithuanian. [More info about Lithuanian culture](https://en.wikipedia.org/wiki/Culture_of_Lithuania).
+- Mayab: Inspired by the [Maya peoples](https://en.wikipedia.org/wiki/Maya_peoples). Namesbase: Maya. [More info about Maya civilization](https://en.wikipedia.org/wiki/Maya_civilization).
+- Bodan: Inspired by the [Tibetan people](https://en.wikipedia.org/wiki/Tibetan_people) of the high plateau. Namesbase: Tibetan. [More info about Tibetan culture](https://en.wikipedia.org/wiki/Tibetan_culture).
+- Anishin: Inspired by the [Anishinaabe](https://en.wikipedia.org/wiki/Anishinaabe) of the Great Lakes. Namesbase: Ojibwe. [More info about the Ojibwe](https://en.wikipedia.org/wiki/Ojibwe).
+- Batavan: Represents the Dutch and Flemish of the [Low Countries](https://en.wikipedia.org/wiki/Low_Countries). Namesbase: Dutch. [More info about Dutch culture](https://en.wikipedia.org/wiki/Culture_of_the_Netherlands).
+- Vlahian: Inspired by the [Romanians](https://en.wikipedia.org/wiki/Romanians) of Wallachia, Moldavia and Transylvania. Namesbase: Romanian. [More info about Romanian culture](https://en.wikipedia.org/wiki/Culture_of_Romania).
+- Raskan: Represents the [South Slavs](https://en.wikipedia.org/wiki/South_Slavs). Namesbase: Serbian. [More info about Serbian culture](https://en.wikipedia.org/wiki/Culture_of_Serbia).
 
 ### European
 
@@ -60,7 +75,7 @@ The culture set also sets the world's [development](https://github.com/Azgaar/Fa
 - Luari
 - Tallian
 - Astellian
-- Slovan
+- Rucian
 - Norse
 - Elladan
 - Romian
@@ -70,6 +85,12 @@ The culture set also sets the world's [development](https://github.com/Azgaar/Fa
 - Turchian
 - Euskati
 - Keltan
+- Polan
+- Gaelan
+- Litvan
+- Batavan
+- Vlahian
+- Raskan
 
 ### Oriental
 
@@ -86,6 +107,10 @@ The culture set also sets the world's [development](https://github.com/Azgaar/Fa
 - Vietic
 - Guantzu
 - Ulus
+- Bharati
+- Siyam
+- Nusantar
+- Bodan
 
 ### English
 
@@ -93,24 +118,26 @@ Ten cultures that all use the English namesbase, with randomly generated names a
 
 ### Antique
 
-Sixteen cultures are defined, but at most 10 are placed on a map, so the selection differs between maps.
+Eighteen cultures are defined, but at most 10 are placed on a map, so the selection differs between maps.
 
 - Roman (×4 entries, so Roman culture is likely to appear several times). Namesbase: Roman.
 - Hellenic (×2 entries). Namesbase: Greek.
 - Macedonian. Namesbase: Greek.
-- Celtic. Namesbase: Celtic.
-- Germanic. Namesbase: German.
+- Celtic. Namesbase: Gaulish.
+- Germanic. Namesbase: Gothic.
 - Persian. Namesbase: Iranian.
 - Scythian. Namesbase: Iranian.
 - Cantabrian. Namesbase: Basque.
 - Estian. Namesbase: Finnic.
-- Carthaginian. Namesbase: Levantine.
+- Carthaginian. Namesbase: Phoenician.
 - Hebrew. Namesbase: Levantine.
 - Mesopotamian. Namesbase: Mesopotamian.
+- Egyptian. Namesbase: Egyptian.
+- Colchian. Namesbase: Georgian.
 
 ### High Fantasy
 
-Thirteen fictional races plus four human cultures.
+Fourteen fictional races plus four human cultures.
 
 **Fantasy races**
 
@@ -127,17 +154,18 @@ Thirteen fictional races plus four human cultures.
 - Rake (Drakonic): Draconic creatures.
 - Arago (Arachnid): Big spiders.
 - Aj'Snaga (Serpents): Loves rainforest and tropical seasonal forests.
+- Cottan (Halfling): Small folk of mild farmland.
 
 **Fantasy humans**
 
 - Anor (Human): Generic human culture.
 - Dail (Human): Another generic human culture.
-- Rohand (Human): Turkish human culture.
+- Rohand (Human): Gothic human culture.
 - Dulandir (Human): Mongolian human culture.
 
 ### Dark Fantasy
 
-Thirty-four cultures are defined, but at most 18 are placed on a map. Real-world cultures dominate and fantasy races are rarer.
+Thirty-five cultures are defined, but at most 18 are placed on a map. Real-world cultures dominate and fantasy races are rarer.
 
 **Common real-world English**
 
@@ -168,7 +196,7 @@ Thirty-four cultures are defined, but at most 18 are placed on a map. Real-world
 - Turan: Turkish.
 - Amazi
 - Eurabic
-- Slovan
+- Rucian
 - Keltan
 - Elladan
 - Romian
@@ -184,6 +212,7 @@ Thirty-four cultures are defined, but at most 18 are placed on a map. Real-world
 - Drake (Drakonic)
 - Rakhnid (Arachnid)
 - Aj'Snaga (Serpents)
+- Gehennan (Infernal): Likes hot highlands.
 
 ### Random
 

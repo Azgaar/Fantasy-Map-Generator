@@ -2,7 +2,6 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const korean: WrittenNameBase = {
   id: "korean",
-  name: "Korean",
   length: [5, 11],
   settled: 0.45, // as often a landform: -san, -cheon, -po, -gok
 

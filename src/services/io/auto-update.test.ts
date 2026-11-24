@@ -1468,7 +1468,8 @@ describe("v1.159 name bases migration", () => {
     setCultures(...indexes);
     await migrate(data[31]);
 
-    expect(Names.nameBases.map(({ id }) => id)).toEqual(shipped.map(({ id }) => id)); // the fixtures keep the default set
+    const ids = shipped.map(({ id }) => id);
+    expect(Names.nameBases.map(({ id }) => id)).toEqual(ids.slice(0, ids.indexOf("levantine") + 1)); // the default set of the time
     expect(cultureBases()).toEqual(indexes.map(index => shipped[index].id));
     expect(cultureBases().every(id => Names.find(id))).toBe(true);
   });

@@ -2,7 +2,6 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const japanese: WrittenNameBase = {
   id: "japanese",
-  name: "Japanese",
   length: [4, 10],
   settled: 0.3, // most names are what stands there: -ta, -yama, -kawa, -shima, -saki
 

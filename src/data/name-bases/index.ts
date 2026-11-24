@@ -1,61 +1,90 @@
 import type { NameBaseEntry, WrittenNameBase } from "@/types/names";
+import { capitalize } from "@/utils/string-utils";
 
 /** The shipped bases in their order: the id is the name of the base's file */
-export const NAME_BASES: NameBaseEntry[] = [
+const IDS = [
   // real-world bases by Azgaar
-  { id: "german", name: "German" },
-  { id: "english", name: "English" },
-  { id: "french", name: "French" },
-  { id: "italian", name: "Italian" },
-  { id: "castillian", name: "Castillian" },
-  { id: "ruthenian", name: "Ruthenian" },
-  { id: "nordic", name: "Nordic" },
-  { id: "greek", name: "Greek" },
-  { id: "roman", name: "Roman" },
-  { id: "finnic", name: "Finnic" },
-  { id: "korean", name: "Korean" },
-  { id: "chinese", name: "Chinese" },
-  { id: "japanese", name: "Japanese" },
-  { id: "portuguese", name: "Portuguese" },
-  { id: "nahuatl", name: "Nahuatl" },
-  { id: "hungarian", name: "Hungarian" },
-  { id: "turkish", name: "Turkish" },
-  { id: "amazigh", name: "Amazigh" },
-  { id: "arabic", name: "Arabic" },
-  { id: "inuit", name: "Inuit" },
-  { id: "basque", name: "Basque" },
-  { id: "nigerian", name: "Nigerian" },
-  { id: "celtic", name: "Celtic" },
-  { id: "mesopotamian", name: "Mesopotamian" },
-  { id: "iranian", name: "Iranian" },
-  { id: "hawaiian", name: "Hawaiian" },
-  { id: "karnataka", name: "Karnataka" },
-  { id: "quechua", name: "Quechua" },
-  { id: "swahili", name: "Swahili" },
-  { id: "vietnamese", name: "Vietnamese" },
-  { id: "cantonese", name: "Cantonese" },
-  { id: "mongolian", name: "Mongolian" },
+  "german",
+  "english",
+  "french",
+  "italian",
+  "castillian",
+  "ruthenian",
+  "nordic",
+  "greek",
+  "roman",
+  "finnic",
+  "korean",
+  "chinese",
+  "japanese",
+  "portuguese",
+  "nahuatl",
+  "hungarian",
+  "turkish",
+  "amazigh",
+  "arabic",
+  "inuit",
+  "basque",
+  "nigerian",
+  "welsh",
+  "mesopotamian",
+  "iranian",
+  "hawaiian",
+  "karnataka",
+  "quechua",
+  "swahili",
+  "vietnamese",
+  "cantonese",
+  "mongolian",
   // fantasy bases by Dopu
-  { id: "human-generic", name: "Human Generic" },
-  { id: "elven", name: "Elven" },
-  { id: "dark-elven", name: "Dark Elven" },
-  { id: "dwarven", name: "Dwarven" },
-  { id: "goblin", name: "Goblin" },
-  { id: "orc", name: "Orc" },
-  { id: "giant", name: "Giant" },
-  { id: "draconic", name: "Draconic" },
-  { id: "arachnid", name: "Arachnid" },
-  { id: "serpents", name: "Serpents" },
+  "human-generic",
+  "elven",
+  "dark-elven",
+  "dwarven",
+  "goblin",
+  "orc",
+  "giant",
+  "draconic",
+  "arachnid",
+  "serpents",
   // additional by Avengium
-  { id: "levantine", name: "Levantine" }
+  "levantine",
+  // real-world bases by Azgaar, added later: an old map finds its bases by their places, so new ones go last
+  "egyptian",
+  "polish",
+  "hindustani",
+  "gaelic",
+  "gaulish",
+  "phoenician",
+  "ethiopic",
+  "thai",
+  "malay",
+  "georgian",
+  "lithuanian",
+  "maya",
+  "tibetan",
+  "ojibwe",
+  "gothic",
+  "dutch",
+  "romanian",
+  "serbian",
+  // fantasy bases, added later
+  "halfling",
+  "infernal"
 ];
+
+/** A shipped base is called by its id: `dark-elven` is Dark Elven */
+const entryOf = (id: string) => ({ id, name: id.split("-").map(capitalize).join(" ") });
+
+export const NAME_BASES: NameBaseEntry[] = IDS.map(entryOf);
 
 type BaseModule = Record<string, WrittenNameBase>;
 const files = import.meta.glob<BaseModule>(["./*.ts", "!./index.ts"]);
 
 /** A shipped base in its written form */
-export async function readNameBase(id: string): Promise<WrittenNameBase> {
+export async function readNameBase(id: string): Promise<WrittenNameBase & { name: string }> {
   const load = files[`./${id}.ts`];
   if (!load) throw new Error(`Name base ${id} is not shipped`);
-  return Object.values(await load())[0]; // a file exports its base alone
+  const [base] = Object.values(await load()); // a file exports its base alone
+  return { ...entryOf(id), ...base };
 }

@@ -138,7 +138,7 @@ class CulturesGenerator {
           shield: "spanish"
         },
         {
-          name: "Slovan",
+          name: "Rucian",
           development: 32,
           base: "ruthenian",
           odd: 1,
@@ -212,10 +212,58 @@ class CulturesGenerator {
         {
           name: "Keltan",
           development: 30,
-          base: "celtic",
+          base: "welsh",
           odd: 0.05,
           sort: (i: number) => (n(i) / td(i, 11) / bd(i, [6, 8])) * t[i],
           shield: "oval"
+        },
+        {
+          name: "Polan",
+          development: 32,
+          base: "polish",
+          odd: 1,
+          sort: (i: number) => n(i) / td(i, 8) / bd(i, [6]),
+          shield: "polish"
+        },
+        {
+          name: "Gaelan",
+          development: 26,
+          base: "gaelic",
+          odd: 0.3,
+          sort: (i: number) => n(i) / td(i, 9) / bd(i, [6, 8]) / sf(i),
+          shield: "oval"
+        },
+        {
+          name: "Litvan",
+          development: 30,
+          base: "lithuanian",
+          odd: 0.5,
+          sort: (i: number) => (n(i) / td(i, 7) / bd(i, [6, 9])) * t[i],
+          shield: "pavise"
+        },
+        {
+          name: "Batavan",
+          development: 38,
+          base: "dutch",
+          odd: 0.6,
+          sort: (i: number) => n(i) / td(i, 10) / sf(i),
+          shield: "renaissance"
+        },
+        {
+          name: "Vlahian",
+          development: 30,
+          base: "romanian",
+          odd: 0.5,
+          sort: (i: number) => (n(i) / td(i, 10) / bd(i, [4, 6])) * h[i],
+          shield: "wedged"
+        },
+        {
+          name: "Raskan",
+          development: 31,
+          base: "serbian",
+          odd: 0.6,
+          sort: (i: number) => (n(i) / td(i, 12)) * h[i],
+          shield: "round"
         }
       ];
     }
@@ -325,6 +373,38 @@ class CulturesGenerator {
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i],
           shield: "banner"
+        },
+        {
+          name: "Bharati",
+          development: 36,
+          base: "hindustani",
+          odd: 0.8,
+          sort: (i: number) => n(i) / td(i, 24) / bd(i, [3, 4, 5]),
+          shield: "round"
+        },
+        {
+          name: "Siyam",
+          development: 32,
+          base: "thai",
+          odd: 0.5,
+          sort: (i: number) => n(i) / td(i, 26) / bd(i, [5, 7]),
+          shield: "vesicaPiscis"
+        },
+        {
+          name: "Nusantar",
+          development: 33,
+          base: "malay",
+          odd: 0.5,
+          sort: (i: number) => n(i) / td(i, 26) / bd(i, [5, 7]) / sf(i),
+          shield: "oval"
+        },
+        {
+          name: "Bodan",
+          development: 28,
+          base: "tibetan",
+          odd: 0.3,
+          sort: (i: number) => h[i] / td(i, 2) / bd(i, [2, 4, 10]),
+          shield: "banner"
         }
       ];
     }
@@ -406,7 +486,7 @@ class CulturesGenerator {
         {
           name: "Celtic",
           development: 18,
-          base: "celtic",
+          base: "gaulish",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 11) ** 0.5 / bd(i, [6, 8]),
           shield: "round"
@@ -414,7 +494,7 @@ class CulturesGenerator {
         {
           name: "Germanic",
           development: 16,
-          base: "german",
+          base: "gothic",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 10) ** 0.5 / bd(i, [6, 8]),
           shield: "round"
@@ -454,11 +534,11 @@ class CulturesGenerator {
         {
           name: "Carthaginian",
           development: 21,
-          base: "levantine",
+          base: "phoenician",
           odd: 0.3,
           sort: (i: number) => n(i) / td(i, 20) / sf(i),
           shield: "oval"
-        }, // Levantine
+        }, // Phoenician
         {
           name: "Hebrew",
           development: 19,
@@ -474,7 +554,23 @@ class CulturesGenerator {
           odd: 0.2,
           sort: (i: number) => n(i) / td(i, 22) / bd(i, [1, 2, 3]),
           shield: "oval"
-        } // Mesopotamian
+        }, // Mesopotamian
+        {
+          name: "Egyptian",
+          development: 23,
+          base: "egyptian",
+          odd: 0.5,
+          sort: (i: number) => n(i) / td(i, 24) / bd(i, [1, 2, 3]),
+          shield: "oval"
+        },
+        {
+          name: "Colchian",
+          development: 20,
+          base: "georgian",
+          odd: 0.3,
+          sort: (i: number) => (n(i) / td(i, 13)) * h[i],
+          shield: "round"
+        }
       ];
     }
 
@@ -598,6 +694,15 @@ class CulturesGenerator {
           sort: (i: number) => n(i) / bd(i, [12], 10),
           shield: "fantasy1"
         }, // Serpents
+        {
+          name: "Cottan",
+          development: 34,
+          ancestry: "Halfling",
+          base: "halfling",
+          odd: 0.9,
+          sort: (i: number) => n(i) / td(i, 13) / bd(i, [4, 6], 10),
+          shield: "oldFrench"
+        }, // Halfling
         // fantasy human
         {
           name: "Anor",
@@ -621,7 +726,7 @@ class CulturesGenerator {
           name: "Rohand",
           development: 30,
           ancestry: "Human",
-          base: "turkish",
+          base: "gothic",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 16),
           shield: "round"
@@ -812,7 +917,7 @@ class CulturesGenerator {
           shield: "round"
         },
         {
-          name: "Slovan",
+          name: "Rucian",
           development: 32,
           base: "ruthenian",
           odd: 0.05,
@@ -822,7 +927,7 @@ class CulturesGenerator {
         {
           name: "Keltan",
           development: 30,
-          base: "celtic",
+          base: "welsh",
           odd: 0.1,
           sort: (i: number) => n(i) / td(i, 11) ** 0.5 / bd(i, [6, 8]),
           shield: "vesicaPiscis"
@@ -924,7 +1029,16 @@ class CulturesGenerator {
           odd: 0.9,
           sort: (i: number) => n(i) / bd(i, [12], 10),
           shield: "fantasy1"
-        } // Serpents
+        }, // Serpents
+        {
+          name: "Gehennan",
+          development: 30,
+          ancestry: "Infernal",
+          base: "infernal",
+          odd: 0.9,
+          sort: (i: number) => h[i] / td(i, 30),
+          shield: "fantasy4"
+        }
       ];
     }
 
@@ -978,7 +1092,7 @@ class CulturesGenerator {
         shield: "spanish"
       },
       {
-        name: "Slovan",
+        name: "Rucian",
         development: 32,
         base: "ruthenian",
         odd: 0.7,
@@ -1116,7 +1230,7 @@ class CulturesGenerator {
       {
         name: "Keltan",
         development: 30,
-        base: "celtic",
+        base: "welsh",
         odd: 0.05,
         sort: (i: number) => (n(i) / td(i, 11) / bd(i, [6, 8])) * t[i],
         shield: "vesicaPiscis"
@@ -1200,7 +1314,127 @@ class CulturesGenerator {
         odd: 0.2,
         sort: (i: number) => (n(i) / td(i, 18)) * sf(i),
         shield: "oval"
-      } // Levantine
+      }, // Levantine
+      {
+        name: "Polan",
+        development: 32,
+        base: "polish",
+        odd: 0.4,
+        sort: (i: number) => n(i) / td(i, 8) / bd(i, [6]),
+        shield: "polish"
+      },
+      {
+        name: "Gaelan",
+        development: 26,
+        base: "gaelic",
+        odd: 0.1,
+        sort: (i: number) => n(i) / td(i, 9) / bd(i, [6, 8]) / sf(i),
+        shield: "oval"
+      },
+      {
+        name: "Bharati",
+        development: 36,
+        base: "hindustani",
+        odd: 0.2,
+        sort: (i: number) => n(i) / td(i, 24) / bd(i, [3, 4, 5]),
+        shield: "round"
+      },
+      {
+        name: "Siyam",
+        development: 32,
+        base: "thai",
+        odd: 0.1,
+        sort: (i: number) => n(i) / td(i, 26) / bd(i, [5, 7]),
+        shield: "vesicaPiscis"
+      },
+      {
+        name: "Habeshan",
+        development: 28,
+        base: "ethiopic",
+        odd: 0.1,
+        sort: (i: number) => (n(i) / td(i, 19)) * h[i],
+        shield: "vesicaPiscis"
+      },
+      {
+        name: "Kemeti",
+        development: 35,
+        base: "egyptian",
+        odd: 0.1,
+        sort: (i: number) => n(i) / td(i, 24) / bd(i, [1, 2, 3]),
+        shield: "oval"
+      },
+      {
+        name: "Nusantar",
+        development: 33,
+        base: "malay",
+        odd: 0.1,
+        sort: (i: number) => n(i) / td(i, 26) / bd(i, [5, 7]) / sf(i),
+        shield: "oval"
+      },
+      {
+        name: "Kartlian",
+        development: 32,
+        base: "georgian",
+        odd: 0.1,
+        sort: (i: number) => (n(i) / td(i, 13)) * h[i],
+        shield: "round"
+      },
+      {
+        name: "Litvan",
+        development: 30,
+        base: "lithuanian",
+        odd: 0.2,
+        sort: (i: number) => (n(i) / td(i, 7) / bd(i, [6, 9])) * t[i],
+        shield: "pavise"
+      },
+      {
+        name: "Mayab",
+        development: 20,
+        base: "maya",
+        odd: 0.1,
+        sort: (i: number) => n(i) / td(i, 24) / bd(i, [5, 7]),
+        shield: "square"
+      },
+      {
+        name: "Bodan",
+        development: 28,
+        base: "tibetan",
+        odd: 0.1,
+        sort: (i: number) => h[i] / td(i, 2) / bd(i, [2, 4, 10]),
+        shield: "banner"
+      },
+      {
+        name: "Anishin",
+        development: 12,
+        base: "ojibwe",
+        odd: 0.1,
+        sort: (i: number) => n(i) / td(i, 6) / bd(i, [6, 9]),
+        shield: "round"
+      },
+      {
+        name: "Batavan",
+        development: 38,
+        base: "dutch",
+        odd: 0.2,
+        sort: (i: number) => n(i) / td(i, 10) / sf(i),
+        shield: "renaissance"
+      },
+      {
+        name: "Vlahian",
+        development: 30,
+        base: "romanian",
+        odd: 0.2,
+        sort: (i: number) => (n(i) / td(i, 10) / bd(i, [4, 6])) * h[i],
+        shield: "wedged"
+      },
+      {
+        name: "Raskan",
+        development: 31,
+        base: "serbian",
+        odd: 0.2,
+        sort: (i: number) => (n(i) / td(i, 12)) * h[i],
+        shield: "round"
+      }
     ];
   }
 

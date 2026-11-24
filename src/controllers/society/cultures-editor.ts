@@ -122,7 +122,8 @@ const columns: EditorColumn<Culture>[] = [
     label: t("Namesbase"),
     width: "9em",
     mobileHidden: true,
-    sortBy: culture => Names.nameBases.findIndex(base => base.id === culture.base)
+    sortBy: culture => Names.nameBases.find(({ id }) => id === culture.base)?.name ?? "",
+    sortType: "alpha"
   },
   {
     key: "cells",
@@ -563,7 +564,7 @@ function getTypeOptions(type: string): string {
 
 function getBaseOptions(base: string): string {
   let options = "";
-  for (const { id, name } of Names.nameBases) {
+  for (const { id, name } of Names.sorted(Names.nameBases)) {
     options += `<option ${base === id ? "selected" : ""} value="${id}">${name}</option>`;
   }
   if (!Names.has(base)) options += `<option selected value="${base}">${t("removed")}</option>`; // in case namesbase was removed

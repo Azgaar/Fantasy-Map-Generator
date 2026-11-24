@@ -1,7 +1,7 @@
 import type { Concept } from "@/data/name-concepts";
 import type { Formant, Pattern, SoundRule } from "@/types/names";
 
-const VOWELS = "aeiouyàèìòùáéíóúýâêîôûäëïöüÿãõāēīōūăĕĭŏŭąęįǫųıőű";
+const VOWELS = "aeiouyàèìòùáéíóúýâêîôûäëïöüÿãõāēīōūăĕĭŏŭąęėįǫųıőű";
 const [VOWEL, CONSONANT] = [`[${VOWELS}]`, `[^${VOWELS} +-]`];
 
 /** How the parts of a name meet, after its base's rules and before the `+` marks go */
@@ -48,7 +48,13 @@ export const NEAREST_LETTERS: Record<string, string[]> = {
   w: ["v", "u"],
   x: ["ks", "s", "k"],
   y: ["i", "j"],
-  z: ["s", "j", "k"]
+  z: ["s", "j", "k"],
+  đ: ["d"],
+  ł: ["l"],
+  ø: ["o"],
+  æ: ["ae"],
+  ß: ["ss", "s"],
+  ı: ["i"]
 };
 
 /** How a pattern is laid out where a base has no template of its own: a settlement's ending joins what it is

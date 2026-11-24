@@ -55,7 +55,7 @@ A number may stand where a describing word does: Three Towers, Tri Vezhi.
 
 ## Name bases
 
-A name base is one language. 43 are built in: 33 real-world languages, a generic human base and 9 fantasy ones. Every culture uses one, and several cultures may share one.
+A name base is one language. 63 are built in: 51 real-world languages, a generic human base and 11 fantasy ones. Every culture uses one, and several cultures may share one.
 
 Name bases are saved with the map. Changing a base changes it for this map only; to use it in other maps, download it and upload it there.
 
@@ -268,7 +268,7 @@ owner-generic:     {root}{generic} 20, {root}ov* {generic} 2, {root}-{generic}
 
 A dash or a space in a template starts a new word. Only a word written with a dash may follow one, so `{root}-{generic}` gives David-Gorodok but never David-Stan.
 
-Every word of a name starts with a capital but the joining words between two others: of, the, de, del, della, di, da, do, du, des, la, le, les, sur, sous, en, am, der, ad, the Persian ezafe e and ye, the Swahili wa, ya and cha, and a few more. So `{generic}-sur-{root}` gives Pont-sur-Moselle and `{generic} de {root}` gives Puebla de Sanabria. After d', l', n' or dell' the next letter is a capital, as in Tizi n'Test: a rule that writes `di` as `d'` before a vowel gives Castel d'Ofanto.
+Every word of a name starts with a capital but the joining words between two others: of, the, de, del, della, di, da, do, du, des, la, le, les, sur, sous, en, am, der, ad, the Persian ezafe e and ye, the Swahili wa, ya and cha, the Hindustani ka and ki, and a few more. So `{generic}-sur-{root}` gives Pont-sur-Moselle and `{generic} de {root}` gives Puebla de Sanabria. After d', l', n' or dell' the next letter is a capital, as in Tizi n'Test: a rule that writes `di` as `d'` before a vowel gives Castel d'Ofanto.
 
 The `compound` pattern has a third slot, `{settlement}`, after a describing word and a landform: `{modifier}{generic}{settlement}` gives Krasnogorsk, and `{modifier}{generic} {settlement}` gives Deepwood Keep. A template may leave a slot out: `{modifier}{generic}` alone gives Redhill.
 

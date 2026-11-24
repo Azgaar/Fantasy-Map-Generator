@@ -2,7 +2,6 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const dwarven: WrittenNameBase = {
   id: "dwarven",
-  name: "Dwarven",
   length: [4, 11],
 
   places: {

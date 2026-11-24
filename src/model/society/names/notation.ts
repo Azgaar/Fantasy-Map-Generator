@@ -12,7 +12,7 @@ const SILENT = "_";
 
 class NameNotationModule {
   /** A base with whatever it holds in the written form read */
-  read(base: WrittenNameBase): NameBase {
+  read(base: WrittenNameBase & { name: string }): NameBase {
     const { rules, grammar, lexicon, patterns } = base;
     return {
       ...base,

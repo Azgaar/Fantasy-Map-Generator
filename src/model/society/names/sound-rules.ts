@@ -4,7 +4,7 @@ import { log } from "@/utils/logger";
 
 // words that join the others and stay lowercase between them: Saint-Germain-en-Laye, Puebla de Sanabria
 const PARTICLES = new Set(
-  "of the upon de del della delle dei degli di da dal do dos das du des la las le les en am im der zum zur ad sub e ye wa cha ya".split(
+  "of the upon de del della delle dei degli di da dal do dos das du des la las le les en am im der zum zur ad sub e ye wa cha ya ka ki".split(
     " "
   )
 );

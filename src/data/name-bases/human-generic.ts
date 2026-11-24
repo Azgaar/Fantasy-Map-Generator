@@ -4,7 +4,6 @@ import type { WrittenNameBase } from "@/types/names";
 // founders take a possessive (Aldric's Watch), seats end in Keep, Hold and Hall; the rest is English's
 export const humanGeneric: WrittenNameBase = {
   id: "human-generic",
-  name: "Human Generic",
   extends: "english",
   length: [5, 12],
   settled: 0.5, // half the names say what stands at the place: a keep, a vale, a hollow

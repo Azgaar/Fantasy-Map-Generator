@@ -208,6 +208,11 @@ class NamesGenerator {
     return this.nameBases.filter((base): base is NameBase => Boolean(base.places));
   }
 
+  /** Bases in the order of their names, to choose from */
+  sorted<T extends NameBaseEntry>(bases: T[]): T[] {
+    return bases.toSorted((a, b) => a.name.localeCompare(b.name));
+  }
+
   /** Load what bases stand for, with the bases they extend. One that fails to load stays out */
   async load(ids: Iterable<string>): Promise<void> {
     await Promise.all([...new Set(ids)].map(id => this.loadLineage(this.entry(id))));

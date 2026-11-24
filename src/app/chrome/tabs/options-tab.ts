@@ -310,11 +310,11 @@ const TEMPLATE = /* html */ `
       <td>
         <select id="culturesSet" data-option="culturesSet">
           <option value="world" data-max="32" selected>${t("All-world")}</option>
-          <option value="european" data-max="15">${t("European")}</option>
-          <option value="oriental" data-max="13">${t("Oriental")}</option>
+          <option value="european" data-max="21">${t("European")}</option>
+          <option value="oriental" data-max="17">${t("Oriental")}</option>
           <option value="english" data-max="10">${t("English")}</option>
           <option value="antique" data-max="10">${t("Antique")}</option>
-          <option value="highFantasy" data-max="17">${t("High Fantasy")}</option>
+          <option value="highFantasy" data-max="18">${t("High Fantasy")}</option>
           <option value="darkFantasy" data-max="18">${t("Dark Fantasy")}</option>
           <option value="random" data-max="100">${t("Random")}</option>
         </select>

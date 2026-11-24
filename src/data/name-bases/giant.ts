@@ -2,7 +2,6 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const giant: WrittenNameBase = {
   id: "giant",
-  name: "Giant",
   length: [5, 10],
 
   places: {

@@ -284,19 +284,16 @@ function closeNamesbaseEditor(): void {
 
 function createBasesList(): void {
   const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
-  select.innerHTML = "";
-  Names.loaded().forEach((b, i) => {
-    select.options.add(new Option(b.name, String(i)));
-  });
+  select.replaceChildren(...Names.sorted(Names.loaded()).map(({ id, name }) => new Option(name, id)));
 }
 
-const selectedBase = (): NameBase | undefined => Names.loaded()[+ensureEl<HTMLSelectElement>("namesbaseSelect").value];
+const selectedBase = (): NameBase | undefined => Names.find(ensureEl<HTMLSelectElement>("namesbaseSelect").value);
 
 function updateInputs(): void {
   const base = selectedBase();
   if (!base) {
-    const index = ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-    tip(t("Namesbase {{base}} is not defined", { base: index }), false, "error");
+    const id = ensureEl<HTMLSelectElement>("namesbaseSelect").value;
+    tip(t("Namesbase {{base}} is not defined", { base: id }), false, "error");
     return;
   }
   showBase(base);
@@ -311,7 +308,7 @@ function showBase(base: NameBase): void {
   ensureEl<HTMLInputElement>("namesbaseMax").value = String(base.length[1]);
   ensureEl<HTMLInputElement>("namesbaseDouble").value = SoundRules.getDoubles(base);
 
-  const parents = Names.loaded()
+  const parents = Names.sorted(Names.loaded())
     .filter(other => other !== base)
     .map(({ id, name }) => new Option(name, id));
   ensureEl<HTMLSelectElement>("namesbaseExtends").replaceChildren(new Option(t("nothing"), ""), ...parents);
@@ -654,16 +651,14 @@ function analyzeNamesbase(): void {
 }
 
 function namesbaseAdd(): void {
-  const index = Names.loaded().length;
-  const name = `Base${index}`;
+  const name = `Base${Names.loaded().length}`;
   const example =
     "This,is,an,example,of,name,base,showing,correct,format,It,should,have,at,least,one,hundred,names,separated,with,comma";
   const base = Names.composeBase(Names.uniqueId(name, baseIds()), name, [5, 12], example.split(","));
   Names.nameBases.push(base);
 
-  const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
-  select.add(new Option(name, String(index)));
-  select.value = String(index);
+  createBasesList();
+  ensureEl<HTMLSelectElement>("namesbaseSelect").value = base.id;
   showBase(base);
   showTab("places");
   ensureEl("namesbaseExamples").innerHTML = t("Please provide names data");

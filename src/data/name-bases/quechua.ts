@@ -2,7 +2,6 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const quechua: WrittenNameBase = {
   id: "quechua",
-  name: "Quechua",
   length: [6, 12],
 
   places: {

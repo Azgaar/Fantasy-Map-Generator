@@ -2,7 +2,6 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const cantonese: WrittenNameBase = {
   id: "cantonese",
-  name: "Cantonese",
   length: [5, 11],
   settled: 0.45, // as often a landform: -wan, -kok, -tau, -shan, -mun
 

@@ -12,28 +12,19 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
-- Goods Editor: deposit distribution function UX improvement
-- Goods Editor: control deposit by min/max population
-- Goods Editor: control deposit clustering
-- Namesbase Editor: download as JSON, upload JSON or the older TXT
-- Names: burgs, states and islands are named for their place, such as a river mouth or a harbour
-- Burg Editor and State name editor: see what a name means and how other namesbases render it
-- Names: English and Ruthenian names are built of real place-name parts, such as -ton, -ford, Novo- and -gorod
-- Names: places are named after founders with personal names of their culture
-- Namesbase Editor: tabs for personal names, the lexicon, name patterns and sound rules
-- Options: whether personal names are generated or picked
-- Names: rivers, lakes and provinces are named for what they are, such as Blackwater or Kenelm's Pool
-- Burg, State and Cultures editors: a change of culture or namesbase offers the names the new one gives
-- River, Lake and Province editors: see how other namesbases render the name
-- Names: every burg name says something, and most end in what the burg is by its group, such as -sk for a Ruthenian city, -ov for a town and -ovo for a village
-- Names: a name of two stems is two words that agree in gender and number, such as Krasnoye Selo or Olgina Gora
-- Namesbase Editor: suffixes, stems, noun classes and agreement endings
-- Burg Editor: a change of group offers the name the new group gives
-- Names: a founder's name takes a suffix, such as Davidov or Davidovo, and seldom a word of its own, as in David-Gorodok
-- Names: English endings vary more, and a namesbase sets how many burg names end in the burg's group
-- Names: three times the vocabulary, from seasons and beasts to trades and omens, written for English and Ruthenian: Winterfell, Raven's Rest, Wolf's Watch, Zmeinogorsk, Babiy Yar
-- Names: three-part names built on the lie of the land, such as Deepwood Keep and Krasnogorsk
-- Names: numbers with nouns in the form they call for, such as Three Towers, Twin Peaks, Tri Ozera, Sem Holmov and Pyatigorsk
+**[1.160.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.160.0) - 2026-11-29**:
+
+- Names: built of meaningful words, such as Blackwater, Raven's Rest or Krasnoye Selo
+- Names: burgs, states, provinces, rivers, lakes and islands are named for their place and kind
+- Names: burg endings depend on the burg's group, such as -sk for a Ruthenian city and -ovo for a village
+- Names: places named after founders
+- Names: 20 new namesbases with cultures of their own, from Egyptian and Polish to Halfling and Infernal
+- Names: Celtic namesbase is now Welsh; Slovan culture is now Rucian
+- Options: generate or pick personal names
+- Editors: see what a name means and how other namesbases render it
+- Editors: a change of culture, namesbase or burg group offers new names
+- Namesbase Editor: edit personal names, lexicon, name patterns and sound rules
+- Namesbase Editor: JSON download and upload; older TXT still loads
 
 **[1.158.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.158.0) - 2026-11-12**:
 

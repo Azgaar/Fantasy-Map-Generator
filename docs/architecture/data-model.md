@@ -599,7 +599,7 @@ Development eras are configuration, not map state: they live in `options.map.era
 Name generator consumes training sets of real-world town names (with the exception of fantasy name bases) stored in the `Names.nameBases` array. The shipped bases live one per file in `src/data/name-bases/` and are loaded on demand: a base no culture uses is listed by its `id` and `name` alone. `Names.loadUsed()` loads the bases the cultures use, with those they extend: in the generation pipelines, on map load and wherever a culture takes another base. The Namesbase Editor and the translations list show every base, so they call `Names.loadAll()` as they open. Naming itself is synchronous: `Names.find`, `Names.resolve` and `Names.randomBase` give loaded bases only. Base structure is:
 
 - `id`: `string` - stable slug of the base, such as `german` or `dark-elven`. A culture stores it as its `base`
-- `name`: `string` - names base proper name
+- `name`: `string` - what the base is called, the user may change it. A shipped file holds none: the name is its id in title case, `dark-elven` is Dark Elven
 - `length`: `[number, number]` - recommended minimal and maximal length of generated names. Generator adds syllables until the minimum is reached and stops at the maximum
 - `places`: `object` - the corpus of place names: `places.names` is the `string[]` a Markov chain is built from, and an optional `places.length` sets the length of generated names where it differs from the base's `length`
 - `waters`: `object` - optional corpus of river and lake names, `{ names, mode?, length? }`: their proper names come off its chain, or are picked as they are with `mode: "pick"`. Place names stand in when absent

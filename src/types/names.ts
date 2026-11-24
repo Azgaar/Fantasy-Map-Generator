@@ -88,9 +88,9 @@ export interface PatternLayout {
   female?: number; // of owner-generic, 0 to 1: the share of founders that are women; by the sizes of the people lists when absent
 }
 
-/** A base as the shipped data holds it: rules, grammar, forms and templates may be in their written form,
+/** A base as the shipped data holds it, its name told by its id: rules, grammar, forms and templates may be in their written form,
  * which `NameNotation` reads */
-export interface WrittenNameBase extends Omit<NameBase, "rules" | "grammar" | "lexicon" | "patterns"> {
+export interface WrittenNameBase extends Omit<NameBase, "name" | "rules" | "grammar" | "lexicon" | "patterns"> {
   rules?: (SoundRule | string)[]; // a string holds rules a line each
   grammar?: Grammar | string;
   lexicon?: Partial<Record<Concept, Formant[] | string>> | string; // a string holds a concept a line

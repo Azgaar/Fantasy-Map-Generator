@@ -12,7 +12,7 @@ async function open(meaning: Meaning, apply: (name: string) => void): Promise<vo
   await Names.loadAll();
   Dialog.destroy("nameTranslations");
   const origin = Names.find(meaning.origin)?.name ?? meaning.origin;
-  const rows = Names.loaded().map(base => {
+  const rows = Names.sorted(Names.loaded()).map(base => {
     const name = escapeHtml(Meanings.render(meaning, base.id));
     return /* html */ `<div style="${base.id === meaning.origin ? "font-weight: bold" : ""}">${escapeHtml(base.name)}</div>
       <div>${name}</div>

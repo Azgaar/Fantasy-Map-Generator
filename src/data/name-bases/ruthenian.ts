@@ -2,7 +2,6 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const ruthenian: WrittenNameBase = {
   id: "ruthenian",
-  name: "Ruthenian",
   length: [5, 14],
   places: {
     length: [5, 10],

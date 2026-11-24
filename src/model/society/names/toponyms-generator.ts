@@ -70,6 +70,19 @@ const COUNTABLE: Concept[] = [
   ...["cave", "barrow", "island", "cliff", "crag", "tooth", "horn", "finger", "fork", "grove", "spire", "falls"]
 ] as Concept[];
 const NUMBERED = 0.12; // the share of such names that count them
+// what tells one of two neighbours from the other: a neighbour told apart by one of a group is told by no other of it
+const OPPOSITES: Concept[][] = [
+  ["north", "south", "east", "west"],
+  ["upper", "lower", "middle", "high", "low"],
+  ["new", "old"],
+  ["little", "great"]
+];
+// what a place is already, so that nothing more is said of it: no Stone Rock
+const REDUNDANT: Partial<Record<Concept, Concept[]>> = {
+  stone: ["rock", "crag", "quarry"],
+  sand: ["sands", "dune"],
+  wet: ["marsh", "fen"]
+};
 const WATERS: Concept[] = ["river", "brook", "water", "run", "tarn", "eye"]; // what a water is, not what a burg stands by
 const isBuilt = (fit: number, _: unknown, concept: Concept) =>
   fit > 0 && concept !== "abbey" && !WATERS.includes(concept);
@@ -164,14 +177,16 @@ class ToponymsGenerator {
     if (pattern === "relative") return [by.neighbor!.modifier, by.neighbor!.root];
     const numbered = (counted: Concept) => COUNTABLE.includes(counted) && P(NUMBERED);
     const numeral = () => this.pickWeighted(Lexicon.spoken(base, conceptsOf("numeral")), weightOf);
+    const modifier = (place: Concept) =>
+      this.pickConcept("modifier", site, base, (fit, _, concept) => fit > 0 && !REDUNDANT[concept]?.includes(place))!;
     if (pattern === "compound") {
-      const first = numbered(by.terrain!) ? numeral() : this.pickConcept("modifier", site, base)!;
+      const first = numbered(by.terrain!) ? numeral() : modifier(by.terrain!);
       return [first, by.terrain!, by.settlement!];
     }
     if (pattern === "modifier-generic") {
       const place = generic();
       if (!by.settled && numbered(place)) return [numeral(), place]; // Three Towers
-      const named = by.settled && by.landmark && P(LANDMARK) ? by.landmark : this.pickConcept("modifier", site, base)!;
+      const named = by.settled && by.landmark && P(LANDMARK) ? by.landmark : modifier(place);
       return [named, place];
     }
     const byWater =
@@ -391,7 +406,18 @@ class ToponymsGenerator {
 
   // who a land or an island is named after: a person, or a people
   private getLandRoot(base: NameBase): Token {
-    return `~${P(FOUNDED) ? this.founder(base) : Names.getStem(base.id)}`;
+    if (P(FOUNDED)) return `~${this.founder(base)}`;
+    for (let attempt = 0; ; attempt++) {
+      const stem = Names.getStem(base.id);
+      if (attempt >= TRIES || !this.isPlaceWord(stem.toLowerCase(), base)) return `~${stem}`; // no Land of Town
+    }
+  }
+
+  /** Whether a word is what the base calls a kind of place or land */
+  private isPlaceWord(word: string, base: NameBase): boolean {
+    return [...conceptsOf("settlement"), ...conceptsOf("generic"), ...conceptsOf("land")].some(concept =>
+      Lexicon.authoredForms(base, concept)?.some(({ form }) => form.replaceAll("-", "").toLowerCase() === word)
+    );
   }
 
   /** Render a meaning and take the name when it is free, long enough and no longer than the base allows */
@@ -456,7 +482,8 @@ class ToponymsGenerator {
     const level: Concept | undefined =
       Math.abs(climb) >= 8 ? (heights[burg.cell] > heights[nearest.cell] ? "upper" : "lower") : undefined;
     const modifier = overseas ? "new" : ra<Concept>([direction, direction, level ?? "new", "little"]);
-    if (nearest.meaning?.tokens.includes(modifier)) return undefined; // no Little Littlestead
+    const akin = OPPOSITES.find(group => group.includes(modifier))!;
+    if (nearest.meaning?.tokens.some(token => (akin as Token[]).includes(token))) return undefined; // no Little Littlestead or West Southby
     return { root: `~${nearest.name}`, modifier };
   }
 
