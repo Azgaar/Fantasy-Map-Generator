@@ -602,7 +602,7 @@ nine: Qulingiluat/pl
 ten: Qulit/pl
 
 # lands
-land: Nunaa 3, nuna^ 2, ^miut 2
+land: Nunaa 3, Nunaat 2, nuna^ 2, +vut 2
 `,
   settled: 0.5,
   patterns: {

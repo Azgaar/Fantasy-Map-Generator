@@ -867,7 +867,7 @@ hundred: hundert+
 thousand: tausend+
 
 # lands
-land: +land, +ia
+land: +land 5, +ien 4, +mark 2, +reich
 realm: +reich
 march: +mark
 country: +gau

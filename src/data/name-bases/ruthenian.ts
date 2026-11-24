@@ -1092,7 +1092,7 @@ hundred: sto+ 2, Sto/many
 thousand: tysyache+, Tysyacha/many
 
 # lands
-land: +ia 8, +schina 2, +zemye
+land: +ia 5, +schina 1, +zemye 1
 `,
   settled: 0.98,
   patterns: {

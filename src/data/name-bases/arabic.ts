@@ -715,7 +715,7 @@ hundred: Miah
 thousand: Alf
 
 # lands
-land: +a 8, +ia 2
+land: +iyya 6, +istan 3
 realm: Mamlakat
 march: Thughur
 domain: Imarat

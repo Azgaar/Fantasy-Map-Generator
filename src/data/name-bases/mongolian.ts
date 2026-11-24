@@ -375,8 +375,8 @@ export const mongolian: WrittenNameBase = {
 (?<=(?:^|[ -])[^aou +-]*)\+t(?=$|[ -]) => et | join
 (?<=o[^aeiu +-]*)\+t(?=$|[ -]) => ot | join
 \+t(?=$|[ -]) => at | join
-(?<=[aeiouy])\+ia$ => ia | join
-\+(?=[aeiouy])(?!ia$) => - | join
+[aeiouy]\+(ia|ud)$ => $1 | join
+\+(?=[aeiouy])(?!(?:ia|ud)$) => - | join
 \+ =>  | join`
   ],
   lexicon: `
@@ -755,7 +755,7 @@ hundred: zuun
 thousand: myangan
 
 # lands
-land: +ia 6, Ulus 4
+land: +ud 4, +chud 2, +ia 4, Ulus 2
 realm: Ord 2, Khanlig
 country: Oron 2, nutag
 `,

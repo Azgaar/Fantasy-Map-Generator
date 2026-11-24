@@ -414,9 +414,8 @@ seven: syv
 nine: nyn
 
 # lands
-land: +heim 3, +jord 2
+land: +jord 4, +grund 3, +rike 2
 realm: +ric 2
-march: +mark
 folk: +theod
 `,
   patterns: {
@@ -424,7 +423,6 @@ folk: +theod
     "owner-generic": { weight: 20, templates: "{root}s{generic} 3, {root}{generic} 2" },
     "generic-of": { templates: "{root}{generic} 3, {root}s{generic} 2" },
     compound: { templates: "{modifier}{generic} 4, {modifier}{generic}{settlement}" },
-    simplex: { weight: 20 },
     "root-land": { weight: 22 },
     "modifier-land": { weight: 22 }
   }

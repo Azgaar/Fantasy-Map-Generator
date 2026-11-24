@@ -410,16 +410,14 @@ seven: zaban
 nine: nunz
 
 # lands
-land: +ur 3, +undur 2
+land: +ur 3, +undur 3, +agrim 2
 realm: +azun
-march: +shur
 `,
   patterns: {
     "modifier-generic": { templates: "{modifier}{generic} 6, {modifier}-{generic} 2" },
     "owner-generic": { weight: 20, templates: "{root}{generic} 3, {root}-{generic} 2" },
     "generic-of": { templates: "{root}{generic} 3, {generic}-{root}" },
     compound: { templates: "{modifier}{generic} 4, {modifier}{generic}-{settlement} 2" },
-    simplex: { weight: 20 },
     "root-land": { weight: 22 },
     "modifier-land": { weight: 22 }
   }

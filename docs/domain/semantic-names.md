@@ -65,15 +65,15 @@ Nine patterns, fixed, because every name base must be able to render every one. 
 
 | Pattern            | Slots                         | Gloss         | English     | Ruthenian       | Used for                     |
 | ------------------ | ----------------------------- | ------------- | ----------- | --------------- | ---------------------------- |
-| `simplex`          | root                          | Aldwick       | Aldwick     | Aldvik          | state, river, lake, province |
+| `simplex`          | root                          | Aldwick       | Aldwick     | Aldvik          | river, lake                  |
 | `feature`          | generic                       | The Ford      | Ford        | Brod            | burg                         |
-| `modifier-generic` | modifier, generic             | New Town      | Newton      | Novgorod        | burg, river, lake            |
-| `owner-generic`    | root, generic                 | Eadric's Town | Eadricswick | Eadrikov        | burg, lake                   |
+| `modifier-generic` | modifier, generic             | New Town      | Newton      | Novgorod        | burg, river, lake, island    |
+| `owner-generic`    | root, generic                 | Eadric's Town | Eadricswick | Eadrikov        | burg, lake, island           |
 | `generic-of`       | generic, root                 | Mouth of Exe  | Exmouth     | Ekseskoye Ustye | burg                         |
 | `compound`         | modifier, generic, settlement | Red Hill City | Redhill     | Chervonoholmye  | burg                         |
 | `relative`         | modifier, root                | New Barton    | New Barton  | Novyi Barton    | burg, colony province        |
-| `root-land`        | root, generic                 | Land of Frank | Frankia     | Frankia         | state, province              |
-| `modifier-land`    | modifier, generic             | East Realm    | Easric      | Vostochnia      | state                        |
+| `root-land`        | root, generic                 | Land of Frank | Frankland   | Frankia         | state, province, continent   |
+| `modifier-land`    | modifier, generic             | East Realm    | Easrealm    | Vostochnia      | state, province, continent   |
 
 A numeral stands in the modifier slot: `modifier-generic: three, tower` gives Three Towers and Tri Vezhi.
 
@@ -83,14 +83,24 @@ A numeral stands in the modifier slot: `modifier-generic: three, tower` gives Th
 | -------- | ---------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | Capital  | `Burgs.generate`                         | its culture's                                | as a burg; it is always a `city`                                                                |
 | Burg     | `Burgs.specify`, once its group is known | its culture's                                | always a meaning, see below                                                                     |
-| State    | `States.generate`                        | its culture's                                | a proper name, or a land around a root or a modifier                                            |
-| Province | `Provinces.generate`                     | the local culture's; a colony's, its state's | its burg's meaning, or a land around a root; a colony is new + its state's or a province's name |
+| State    | `States.generate`                        | its culture's                                | a land around a root or a modifier, never a bare name                                           |
+| Province | `Provinces.generate`                     | the local culture's; a colony's, its state's | its burg's meaning, or a land as a state is; a colony is new + its state's or a province's name |
 | River    | `Rivers.specify`, before burgs           | the culture's at its mouth                   | half are proper names, off the base's list of waters; half say what the water looks like        |
 | Lake     | `Features.defineNames`, before burgs     | the culture's on its shore                   | as a river, or after a person                                                                   |
+| Island   | `Features.defineNames`, before burgs     | the culture's on its first cell              | an island like something, or someone's; a continent is named as a state is                      |
 
 Rivers and lakes are named before burgs so a burg can be named after them. States are named after capitals, so capitals are named first. A religion that needs a burg's name before the burg has one names it on the spot (`Toponyms.nameOf`); that name says nothing of the burg's size.
 
-Islands, seas, routes, markers and religions have no meanings.
+Seas, routes, markers and religions have no meanings.
+
+### Lands and islands
+
+A state, a province not named after its burg and a continent are lands, and an island is an island: none of them is named like a town. `Toponyms.coinLand` draws `root-land` or `modifier-land` by the base's weights and ends the name in a land word of the base, the state suffixes:
+
+- **The root** is a person (`FOUNDED`, 40%) or a people. A people's name is a stem, the start of a place name cut before the ending that makes it a town (`Names.getStem`): Heibach gives Heib. One state in five takes the person or the river its capital is named after.
+- **The suffix** is a form of a land concept. `land` leads, and holds most of a base's suffixes: German -land, -ien, -mark, -reich; French -ie, -ogne, -agne, -aine; Finnish -maa; Korean -guk, -ryeo. `realm`, `march`, `domain` and `country` add some; `coast` and `isles` ask for the place. A land word with only standalone forms (Regnum, Marca) is skipped, so no state is the Kingdom of Regnum. Such words stay for names translated from other bases.
+- **No two lands share a name.** A new state or province repeats no state, province or burg; a province may take its own burg's name (`BURG_NAMED`, 35%), if no land has it.
+- **No suffix ends a town.** A base's land suffixes are kept apart from its settlement endings, and a test checks it.
 
 ## How a burg's meaning is picked
 

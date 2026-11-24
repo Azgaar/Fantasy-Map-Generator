@@ -434,6 +434,7 @@ export const turkish: WrittenNameBase = {
     { match: "(.)\\1+", replace: "$1" },
     // a describing word, marked ', takes no possessive: Karadağ, but Elmadağı; suffixes follow the last vowel
     String.raw`
+[ıi]'?\+(?=istan$|iye$) =>  | join
 '\+([^+ -]+)\+ı(?=$|[ -]) => '+$1 | join
 burun\+ı(?=$|[ -]) => burn+ı | join
 ağız\+ı(?=$|[ -]) => ağz+ı | join
@@ -790,9 +791,8 @@ hundred: yüz'+
 thousand: bin'+
 
 # lands
-land: +yurt 6, +eli 4
-realm: +beylik 2, +han
-march: +uç
+land: +eli 5, +istan 3, +iye 2, +yurdu 2
+realm: +beylik
 country: +diyar 2, +ülke
 coast: +kıyı 2, +yalı
 isles: +adalar

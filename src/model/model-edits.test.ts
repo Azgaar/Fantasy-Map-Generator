@@ -15,7 +15,8 @@ import { Provinces } from "@/model/political/provinces-generator";
 import { noFinance, States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
-import { Names } from "@/model/society/names/names-generator";
+import { Meanings } from "@/model/society/names/meanings";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
@@ -722,10 +723,10 @@ describe("States: chronicle, painting and merging as provinces", () => {
     vi.spyOn(Burgs, "getType").mockReturnValue("Generic");
     vi.spyOn(Emblems, "generate").mockReturnValue({ t1: "or" });
     vi.spyOn(Emblems, "getShield").mockReturnValue("heater");
-    Object.assign(Names, { getState: () => "Marca", getCultureShort: () => "M" });
+    vi.spyOn(Toponyms, "landOf").mockReturnValue({ name: "Marca", meaning: Meanings.simplex("Marca", "english") });
     States.setCells(2, [2]);
     expect([...pack.cells.state]).toEqual([0, 1, 2, 2, 2]);
-    expect(pack.provinces[2]).toMatchObject({ i: 2, state: 2, center: 2, name: "Vel" }); // the split-off part of Vel
+    expect(pack.provinces[2]).toMatchObject({ i: 2, state: 2, center: 2, name: "Marca" }); // the split-off part of Vel takes a name of its own
     expect([...pack.cells.province]).toEqual([0, 1, 2, 0, 0]);
     expect(pack.states[2].provinces).toEqual([2]);
     expect(() => States.setCells(2, [1])).toThrow("center of state 1");

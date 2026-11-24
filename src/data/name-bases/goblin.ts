@@ -340,14 +340,13 @@ seven: zep
 nine: nug
 
 # lands
-land: +uz 3, +oz 2
+land: +uz 3, +oz 2, +ogia 2
 folk: +mob 2
 `,
   patterns: {
     "modifier-generic": { templates: "{modifier}{generic} 8, {modifier}'{generic} 1" },
     "owner-generic": { weight: 20, templates: "{root}{generic} 4, {root}'{generic}" },
     compound: { weight: 12 },
-    simplex: { weight: 20 },
     "root-land": { weight: 25 },
     "modifier-land": { weight: 22 }
   }

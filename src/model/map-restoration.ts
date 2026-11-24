@@ -581,8 +581,9 @@ class MapRestorationModule {
     for (const [oldFeatureId, featureId] of featureIds) {
       const feature = features[featureId];
       const old = parent.features[oldFeatureId];
-      const { name, note, coastline, tags, subtype, group } = old;
+      const { name, meaning, note, coastline, tags, subtype, group } = old;
       if (name) feature.name = name;
+      if (meaning) feature.meaning = meaning;
       if (note) feature.note = note;
       if (coastline) feature.coastline = coastline;
       if (tags) feature.tags = [...tags];

@@ -469,7 +469,7 @@ seven: szet
 nine: nen
 
 # lands
-land: +'zhar 3, +azhar 2
+land: +'zhar 3, +azhar 2, +'voth 2, +axxul 2
 realm: +qazar 2
 `,
   patterns: {
@@ -478,7 +478,6 @@ realm: +qazar 2
     "generic-of": { templates: "{root}{generic} 3, {root}'{generic} 2" },
     compound: { weight: 15, templates: "{modifier}{generic}{settlement} 4, {modifier}'{generic}{settlement} 2" },
     relative: { templates: "{modifier} {root} 2, {root}'{modifier}" },
-    simplex: { weight: 20 },
     "root-land": { weight: 25 },
     "modifier-land": { weight: 22 }
   }

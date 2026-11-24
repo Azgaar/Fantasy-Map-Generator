@@ -1,6 +1,5 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
-import { Names } from "@/model/society/names/names-generator";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import type { Meaning } from "@/types/names";
 import { TYPED_ARRAY_MAX } from "@/utils/array-utils";
@@ -34,7 +33,7 @@ export interface Feature {
   flux: number;
   evaporation: number;
   name: string;
-  meaning?: Meaning; // what a lake's name says, kept apart from the name itself
+  meaning?: Meaning; // what an island's or a lake's name says, kept apart from the name itself
 
   // River related
   inlets?: number[];
@@ -438,26 +437,19 @@ class FeatureModule {
     Math.random = Alea(options.map.seed); // the names roll the PRNG, the steps after stay put
     for (const feature of pack.features) {
       if (!feature || feature.name) continue;
-      // a lake's name comes off a sequence of its own: how it is coined moves nothing else
-      if (feature.type === "lake")
+      const { type, i } = feature;
+      if (type === "ocean") feature.name = this.getOceanName(feature);
+      // off a sequence of its own: how a land's or a lake's name is coined moves nothing else
+      else
         Object.assign(
           feature,
-          seeded(`${options.map.seed}|lake|${feature.i}`, () => Toponyms.lake(feature))
+          seeded(`${options.map.seed}|${type}|${i}`, () => Toponyms[type](feature))
         );
-      else feature.name = this.getName(feature);
     }
   }
 
-  getName(feature: Feature): string {
-    if (feature.type === "ocean") return this.getOceanName(feature);
-    if (P(0.1)) return ra(ADJECTIVES);
-    const cell = feature.type === "lake" ? feature.shoreline?.[0] || feature.firstCell : feature.firstCell;
-    const culture = pack.cells.culture[cell];
-    return pack.cultures[culture] ? Names.getCulture(culture) : ra(ADJECTIVES); // a loaded map may hold a dropped culture
-  }
-
   // oceans belong to no culture: an adjective or the map side, the subtype noun is shown separately
-  private getOceanName(feature: Feature) {
+  getOceanName(feature: Feature) {
     if (P(0.8)) return ra(ADJECTIVES);
     const [x, y] = pack.cells.p[feature.firstCell];
     const { width, height } = options.map.graph;

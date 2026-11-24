@@ -430,7 +430,7 @@ seven: ssaith
 nine: nauth
 
 # lands
-land: +ath 4, +aun 2
+land: +aun 4, +orath 3, +yrr 2
 realm: +ilith 2
 march: +ustath 2
 `,
@@ -440,7 +440,6 @@ march: +ustath 2
     "generic-of": { templates: "{root}{generic} 2, {generic} {root} 2" },
     compound: { weight: 12, templates: "{modifier}{generic}{settlement} 2, {modifier}{generic} 4" },
     relative: { templates: "{root} {modifier}" },
-    simplex: { weight: 20 },
     "root-land": { weight: 25 },
     "modifier-land": { weight: 22 }
   }

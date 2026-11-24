@@ -45,8 +45,8 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     }
   });
 
-  it("repeats no burg name and no state name", () => {
-    for (const list of [living(pack.burgs), living(pack.states)]) {
+  it("repeats no burg name and no name of a state or a province", () => {
+    for (const list of [living(pack.burgs), [...living(pack.states), ...living(pack.provinces)]]) {
       const all = list.map(({ name }) => name);
       expect(all.length - new Set(all).size).toBe(0);
     }
@@ -101,11 +101,27 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     }
   });
 
-  it("gives rivers, lakes and provinces meanings their names are rendered from", () => {
+  it("gives a province no burg's name but its own", () => {
+    for (const { name, burg } of living(pack.provinces)) {
+      const named = living(pack.burgs).find(other => other.name === name);
+      if (named) expect(burg, name).toBe(named.i);
+    }
+  });
+
+  it("names states as lands and islands as islands, not as towns", () => {
+    for (const { name, meaning } of living(pack.states)) expect(meaning!.pattern, name).toMatch(/-land$/);
+    for (const { name, meaning, subtype, type } of pack.features.filter(Boolean)) {
+      if (type !== "island" || subtype === "continent") continue;
+      if (meaning!.tokens[1] !== "island") expect(meaning!.pattern, name).toBe("root-land");
+    }
+  });
+
+  it("gives rivers, lakes, islands and provinces meanings their names are rendered from", () => {
     const lakes = pack.features.filter(feature => feature?.type === "lake");
+    const islands = pack.features.filter(feature => feature?.type === "island");
     const provinces = living(pack.provinces);
-    expect(pack.rivers.length * lakes.length * provinces.length).toBeGreaterThan(0);
-    for (const { name, meaning } of [...pack.rivers, ...lakes, ...provinces]) {
+    expect(pack.rivers.length * lakes.length * islands.length * provinces.length).toBeGreaterThan(0);
+    for (const { name, meaning } of [...pack.rivers, ...lakes, ...islands, ...provinces]) {
       expect(meaning, name).toBeDefined();
       expect(Meanings.render(meaning!, meaning!.origin)).toBe(name);
     }

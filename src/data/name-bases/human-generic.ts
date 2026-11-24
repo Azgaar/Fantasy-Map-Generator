@@ -580,7 +580,8 @@ dead: Dead 3, dead+
 
 # lands
 land: +land 4, +lands 3
-march: +march 2, +mark 2, Marches
+realm: +realm
+march: +march 3, +marches
 country: +shire 3, +dom
 isles: Isles
 `,
@@ -598,7 +599,6 @@ isles: Isles
       templates: "{modifier}{generic} 4, {modifier}{generic} {settlement} 5, {modifier} {generic} 2"
     },
     relative: { weight: 6 },
-    simplex: { weight: 10 },
     "modifier-land": { weight: 45, templates: "{modifier}{generic} 3, {modifier} {generic}" },
     "root-land": { weight: 25 }
   }

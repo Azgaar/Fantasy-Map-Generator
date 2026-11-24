@@ -67,15 +67,15 @@ export const DEFAULT_TEMPLATES: Record<Pattern, string> = {
 
 /** How often a base coins a name of each pattern where it sets no weight of its own */
 export const DEFAULT_WEIGHTS: Record<Pattern, number> = {
-  simplex: 35,
+  simplex: 0, // drawn by share alone
   feature: 3,
   "modifier-generic": 40,
   "owner-generic": 35,
   "generic-of": 10,
   compound: 8,
   relative: 5,
-  "root-land": 57,
-  "modifier-land": 8
+  "root-land": 65,
+  "modifier-land": 35
 };
 
 /** The forms a concept takes in a base that has none of its own */

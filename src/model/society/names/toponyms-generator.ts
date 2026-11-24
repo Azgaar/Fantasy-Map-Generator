@@ -1,4 +1,4 @@
-// Gives burgs and states a meaning that fits their place: the "semantic" half of semantic names
+// Gives burgs, lands and waters a meaning that fits their place: the "semantic" half of semantic names
 
 import {
   type Concept,
@@ -13,6 +13,7 @@ import { Goods } from "@/model/economy/goods-generator";
 import type { Feature } from "@/model/physical/features-generator";
 import type { River } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
+import type { Province } from "@/model/political/provinces-generator";
 import type { Meaning, NameBase, Pattern, Token } from "@/types/names";
 import { P, ra, seeded } from "@/utils/probability-utils";
 import { capitalize } from "@/utils/string-utils";
@@ -45,13 +46,14 @@ interface StateOptions {
 }
 
 const BURG_PATTERNS: Pattern[] = ["feature", "modifier-generic", "owner-generic", "generic-of", "compound", "relative"];
-const STATE_PATTERNS: Pattern[] = ["simplex", "root-land", "modifier-land"];
+const LAND_PATTERNS: Pattern[] = ["root-land", "modifier-land"];
 const WATER_TAGS: SiteTag[] = ["stream", "river", "mouth"];
 const SHORE_TAGS: SiteTag[] = ["lake", "port", "coast"];
 const FOREST_BIOMES = [5, 6, 7, 8, 9];
 const BIG_RIVER_FLUX = 100; // from where a river carries boats
 const SETTLED = 0.85; // the share of burg names that end in what the burg is, where a base sets none
 const LANDMARK = 0.3; // of those, the share named for what stands there, not for what it is like
+const FOUNDED = 0.4; // the share of lands and islands named after a person, not after a people
 const WATER_SHARE = 0.5; // waters keep old names: this many of them say something
 const PLAIN = 1; // how well a concept that fits anywhere fits, against one the place asks for (2 to 4)
 const TRIES = 12;
@@ -194,30 +196,39 @@ class ToponymsGenerator {
     return group ? settlementOf(group) : undefined;
   }
 
-  /** A meaning for a state and its name in its culture's base, or in the base given.
+  /** A meaning for a state and its name in its culture's base, or in the base given: a land, never a bare name.
    * With a seed the name comes off a random sequence of its own */
-  state(capital: Burg, cultureId: number, { taken = this.stateNames(), baseId, seed }: StateOptions = {}): Named {
+  state(capital: Burg, cultureId: number, { taken = this.landNames(), baseId, seed }: StateOptions = {}): Named {
     if (seed) return seeded(seed, () => this.state(capital, cultureId, { taken, baseId }));
     const base = Names.resolve(baseId ?? pack.cultures[cultureId].base);
-    const site = this.getSite(capital);
-    const lands = conceptsOf("land").filter(concept => Lexicon.authoredForms(base, concept)); // a fallback form would name a town
+    const root = () => this.getCapitalRoot(capital) ?? this.getLandRoot(base);
+    return this.coinLand(base, taken, this.getSite(capital), root);
+  }
 
-    for (let attempt = 0; attempt < TRIES; attempt++) {
-      const pattern = this.pickPattern(base, STATE_PATTERNS);
-      const land = this.pickWeighted(lands, concept => this.weigh(concept, site));
-      const root: Token = pattern === "simplex" ? `~${Names.getBaseShort(base.id)}` : this.getStateRoot(capital, base);
-      const tokens: Token[] =
-        pattern === "simplex"
-          ? [root]
-          : pattern === "root-land"
-            ? [root, land]
-            : [this.pickConcept("modifier", site)!, land];
-      const named = this.accept({ pattern, tokens, origin: base.id }, base, taken, 3);
+  // a land around a root or a describing word, its name not yet taken
+  private coinLand(
+    base: NameBase,
+    taken: Set<string | undefined>,
+    site: Site,
+    root: () => Token,
+    land = () => this.pickLand(base, site)
+  ): Named {
+    for (let attempt = 0; ; attempt++) {
+      const pattern = this.pickPattern(base, LAND_PATTERNS);
+      const first = pattern === "root-land" ? root() : this.pickConcept("modifier", site)!;
+      const meaning: Meaning = { pattern, tokens: [first, land()], origin: base.id };
+      const named = this.accept(meaning, base, taken, 3);
       if (named) return named;
+      const name = Meanings.render(meaning, base.id); // no name fits the base's length: one cut short will do
+      if ((attempt >= TRIES && !taken.has(name)) || attempt >= TRIES * 4) return { name, meaning };
     }
+  }
 
-    const name = Names.getBaseShort(base.id);
-    return { name, meaning: { pattern: "simplex", tokens: [`~${name}`], origin: base.id } };
+  // what a land is called: a word the base ends a name with, so that no state is the Kingdom of a Realm
+  private pickLand(base: NameBase, site: Site): Concept {
+    const lands = conceptsOf("land").filter(concept => Lexicon.authoredForms(base, concept)); // a fallback form would name a town
+    const joined = lands.filter(land => Lexicon.authoredForms(base, land)!.some(({ position }) => position !== "word"));
+    return this.pickWeighted(joined.length ? joined : lands, concept => this.weigh(concept, site));
   }
 
   /** The name a named thing would take in a culture's base, when that is another name than it has.
@@ -229,21 +240,22 @@ class ToponymsGenerator {
     return name === named.name ? undefined : name;
   }
 
-  /** A land's name around a root, such as a province named after no burg, in a culture's base or the base given */
-  land(root: string, cultureOrBase: number | string): string {
-    return this.landOf(root, cultureOrBase).name;
+  /** A land's name, such as a province's named after no burg, in a culture's base or the base given */
+  land(cultureOrBase: number | string): string {
+    return this.landOf(cultureOrBase).name;
   }
 
-  /** A land's meaning around a root, and its name */
-  landOf(root: string, cultureOrBase: number | string): Named {
+  /** A land's meaning and its name, which repeats none of those taken and no burg's */
+  landOf(cultureOrBase: number | string, taken = this.landNames()): Named {
     const baseId = typeof cultureOrBase === "number" ? pack.cultures[cultureOrBase].base : cultureOrBase;
     const base = Names.resolve(baseId);
-    const pattern = this.pickPattern(base, ["simplex", "root-land"]);
-    const lands = conceptsOf("land").filter(concept => Lexicon.authoredForms(base, concept));
-    const land = this.pickWeighted(lands, weightOf);
-    const tokens: Token[] = pattern === "simplex" ? [`~${root}`] : [`~${root}`, land];
-    const meaning: Meaning = { pattern, tokens, origin: base.id };
-    return { name: Meanings.render(meaning, base.id), meaning };
+    const all = new Set([...taken, ...this.burgNames(pack.burgs)]);
+    return this.coinLand(base, all, {}, () => this.getLandRoot(base));
+  }
+
+  /** The names of the lands there are, states and provinces */
+  landNames(provinces: Province[] = pack.provinces): Set<string | undefined> {
+    return new Set([...this.stateNames(), ...provinces.filter(p => p.i && !p.removed).map(({ name }) => name)]);
   }
 
   /** A colony's meaning after the land it was settled from, as in New Oswinfall, and its name in a culture's base.
@@ -314,6 +326,27 @@ class ToponymsGenerator {
     return this.proper(base);
   }
 
+  /** A meaning for an island and its name in the base of the culture on its first cell: an island of some kind or
+   * of someone's. A continent is named as a land */
+  island(island: Feature, { taken = this.featureNames(), baseId }: StateOptions = {}): Named {
+    const { cells } = pack;
+    const cell = island.firstCell;
+    const culture = cells.culture[cell] ?? 0;
+    const base = Names.resolve(baseId ?? pack.cultures[culture]?.base);
+    const [x, y] = cells.p[cell];
+    const site = this.getSite({ cell, x, y, culture });
+    const root = () => this.getLandRoot(base);
+    if (island.subtype === "continent") return this.coinLand(base, taken, site, root, () => "land");
+
+    for (let attempt = 0; attempt < TRIES; attempt++) {
+      const pattern = this.pickPattern(base, ["modifier-generic", "owner-generic"]);
+      const first = pattern === "owner-generic" ? root() : this.pickConcept("modifier", site)!;
+      const named = this.accept({ pattern, tokens: [first, "island"], origin: base.id }, base, taken);
+      if (named) return named;
+    }
+    return this.coinLand(base, taken, site, root);
+  }
+
   // a person a place is named after: a woman as often as the base's owner-generic pattern says
   private founder(base: NameBase): string {
     return Names.getPerson(base.id, Lexicon.femaleFounders(base));
@@ -326,13 +359,18 @@ class ToponymsGenerator {
   }
 
   private featureNames(): Set<string | undefined> {
-    return new Set(pack.features.map(feature => feature?.name));
+    return new Set([...pack.features.map(feature => feature?.name), ...pack.rivers.map(({ name }) => name)]);
   }
 
-  // one time in five a state is named after its capital, when the capital's name is one short word to build on
-  private getStateRoot(capital: Burg, base: NameBase): Token {
-    const own = capital.meaning?.tokens.find(token => token.startsWith("~")) ?? `~${capital.name}`;
-    return own.length < 10 && P(0.2) && !own.includes(" ") ? (own as Token) : `~${this.founder(base)}`; // else after a founder
+  // one time in five a state is named after the person or the river its capital is named after
+  private getCapitalRoot({ meaning }: Burg): Token | undefined {
+    if (meaning?.pattern !== "owner-generic" && meaning?.pattern !== "generic-of") return undefined;
+    return P(0.2) ? meaning.tokens.find(token => token.startsWith("~")) : undefined;
+  }
+
+  // who a land or an island is named after: a person, or a people
+  private getLandRoot(base: NameBase): Token {
+    return `~${P(FOUNDED) ? this.founder(base) : Names.getStem(base.id)}`;
   }
 
   /** Render a meaning and take the name when it is free, long enough and no longer than the base allows */

@@ -439,6 +439,7 @@ er\+' => ri | join
 on\+' => onis | join
 \+' => i | join
 anus\+an => an | join
+i?(?:us|um|a|o)\+(?=ic) => + | join
 i(?:us|a|um)?\+ia => ia | join
 o\+ia => onia | join
 x\+ia => cia | join
@@ -830,7 +831,7 @@ hundred: centum+/pl 2
 thousand: mille+/pl
 
 # lands
-land: +ia 10
+land: +ia 6, +ania 3, +ica 3, +icum
 realm: Regnum 2
 march: Limes/m 2
 country: Ager 2

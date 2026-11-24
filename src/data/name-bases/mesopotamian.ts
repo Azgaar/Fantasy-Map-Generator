@@ -571,7 +571,7 @@ hundred: -Me'at/c
 thousand: -Limi/c
 
 # lands
-land: bit-+ 6, mat-+ 3, Mat/c 3, +tu
+land: mat-+ 4, Mat/c 3, +amtu 2, +artu 2
 isles: Nagu/c
 `,
   settled: 0.7,
@@ -582,7 +582,7 @@ isles: Nagu/c
     "generic-of": { weight: 10, templates: "{generic}{root} 4, {root} 2" },
     compound: { weight: 8, templates: "{generic}-{modifier}" },
     relative: { weight: 6, templates: "{root}-{modifier}" },
-    "root-land": { templates: "{generic}{root} 8, {root}{generic}" },
+    "root-land": { templates: "{generic}{root} 5, {root}{generic} 4" },
     "modifier-land": { templates: "{generic}-{modifier}" }
   }
 };

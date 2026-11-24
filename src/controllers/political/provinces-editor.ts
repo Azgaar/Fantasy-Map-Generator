@@ -399,7 +399,7 @@ function regenerateProvinceNames(): void {
   for (const province of getProvincesData()) {
     if (province.lock) continue;
     const culture = pack.cells.culture[province.center];
-    const { name, meaning } = Toponyms.landOf(Names.getCultureShort(culture), culture);
+    const { name, meaning } = Toponyms.landOf(culture);
     Provinces.rename(province.i, name);
     Provinces.setMeaning(province.i, meaning);
   }
@@ -914,13 +914,12 @@ let coined: ReturnType<typeof Toponyms.landOf> | undefined; // the name last gen
 function regenerateShortNameCulture(): void {
   const province = +ensureEl("provinceNameEditor").dataset.province!;
   const culture = pack.cells.culture[pack.provinces[province].center];
-  coined = Toponyms.landOf(Names.getCultureShort(culture), culture);
+  coined = Toponyms.landOf(culture);
   ensureEl<HTMLInputElement>("provinceNameEditorShort").value = coined.name;
 }
 
 function regenerateShortNameRandom(): void {
-  const base = Names.randomBase().id;
-  coined = Toponyms.landOf(Names.getBase(base), base);
+  coined = Toponyms.landOf(Names.randomBase().id);
   ensureEl<HTMLInputElement>("provinceNameEditorShort").value = coined.name;
 }
 

@@ -844,7 +844,7 @@ hundred: cento+/pl 2
 thousand: mille+/pl
 
 # lands
-land: +terra 3, +ia 97
+land: +ia 6, +agna 4, +ania 3, +ana 2, +landia
 realm: Regno 2
 march: Marca/f 2
 country: Contado 2

@@ -671,7 +671,7 @@ hundred: haneli
 thousand: mano
 
 # lands
-land: +ia 5, moku 2
+land: +nui 4, aina 3
 realm: aupuni
 coast: kahakai
 isles: moku

@@ -414,14 +414,8 @@ function changeText(): void {
 
 const nameGenerators: Record<LabelType, (label: LabelData) => string> = {
   burg: label => Names.getCulture(pack.burgs[label.entityId].culture ?? 0),
-  state: label => {
-    const culture = pack.states[label.entityId].culture;
-    return Toponyms.land(Names.getCulture(culture, 4, 7, ""), culture);
-  },
-  province: label => {
-    const province = pack.provinces[label.entityId];
-    return Toponyms.land(province.name, pack.cells.culture[province.center]);
-  },
+  state: label => Toponyms.land(pack.states[label.entityId].culture),
+  province: label => Toponyms.land(pack.cells.culture[pack.provinces[label.entityId].center]),
   added: label => {
     const cellId = Pack.findCell(...label.anchor);
     if (!cellId) return "";

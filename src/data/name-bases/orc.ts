@@ -454,7 +454,6 @@ coast: +zal 2, -Zal
     "generic-of": { templates: "{root}{generic} 3, {root}-{generic}" },
     compound: { weight: 15, templates: "{modifier}{generic}-{settlement} 3, {modifier}{generic} 4" },
     relative: { templates: "{modifier}-{root}" },
-    simplex: { weight: 20 },
     "root-land": { weight: 25, templates: "{root}{generic} 3, {root}-{generic}" },
     "modifier-land": { weight: 22, templates: "{modifier}{generic} 3, {modifier}-{generic}" }
   }

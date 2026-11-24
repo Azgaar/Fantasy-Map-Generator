@@ -2,7 +2,8 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { NAME_BASES, readNameBase } from "@/data/name-bases";
 import { CONCEPTS, type Concept, conceptsOf, isConcept, weightOf } from "@/data/name-concepts";
 import { DEFAULT_LEXICON, DEFAULT_TEMPLATES } from "@/data/name-rules";
-import type { Pattern } from "@/types/names";
+import type { NameBase, Pattern } from "@/types/names";
+import { Lexicon } from "./lexicon";
 import { Meanings } from "./meanings";
 import { Names } from "./names-generator";
 import { SoundRules } from "./sound-rules";
@@ -106,6 +107,20 @@ describe("shipped name bases", () => {
       if (parent) continue; // Human Generic speaks English's words where it writes none
       for (const concept of ["city", "town", "village", "hamlet", "land"] as const)
         expect(lexicon[concept]?.length, `${id}: ${concept}`).toBeGreaterThan(0);
+    }
+  });
+
+  it("end no state as they end a town", () => {
+    const endings = (base: NameBase, concepts: Concept[]) =>
+      concepts.flatMap(concept =>
+        Lexicon.formsOf(base, concept).flatMap(({ form, position }) =>
+          position === "word" ? [] : form.replace("-", "")
+        )
+      );
+    const lands: Concept[] = ["land", "realm", "march", "domain", "country"];
+    for (const base of Names.loaded()) {
+      const towns = endings(base, conceptsOf("settlement"));
+      for (const ending of endings(base, lands)) expect(towns, base.id).not.toContain(ending);
     }
   });
 });

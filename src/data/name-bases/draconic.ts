@@ -434,7 +434,7 @@ seven: zalaq
 nine: mauruk
 
 # lands
-land: +aar 4, +agoth 2
+land: +aar 4, +agoth 2, +ynth 2
 realm: +anyx 2
 isles: +skaar 2
 `,
@@ -443,7 +443,6 @@ isles: +skaar 2
     "owner-generic": { weight: 20, templates: "{root}{generic} 6, {root}'{generic}, {generic} {root}" },
     "generic-of": { templates: "{root}{generic} 2, {generic} {root} 2" },
     compound: { weight: 12, templates: "{modifier}{generic}{settlement} 2, {modifier}{generic} 4" },
-    simplex: { weight: 20 },
     "root-land": { weight: 25 },
     "modifier-land": { weight: 22 }
   }

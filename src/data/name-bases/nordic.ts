@@ -433,14 +433,14 @@ i\+s\+ => a+ | join
 # settlements
 city: +borg 5, +by 4, +stad 4, +køping 3, +havn 2, +heim 2, +holm, +vik
 town: +by 6, +stad 6, +heim 3, +vik 2, +dal 2, +borg 2, +køping 2, +sted 2, +lev, +inge, +hamn
-village: +by 8, +torp 7, +stad 5, +set 3, +rud 3, +land 3, +dal 2, +ås 2, +berg 2, +rup 2, +heim 2, +bø 2, +lev 2, +inge 2, +vin, +sta, +hem
+village: +by 8, +torp 7, +stad 5, +set 3, +rud 3, +dal 2, +ås 2, +berg 2, +rup 2, +heim 2, +bø 2, +lev 2, +inge 2, +vin, +sta, +hem
 hamlet: +torp 4, +rud 4, +gard 4, +set 3, +tun 3, +seter 2, +haug 2, +ås 2, +hult 2, +ryd 2, +bø 2, +bu 2, +stad
 
 # places
 home: +heim 5, +hem 2, heim+
 farm: +gard 4, +bø 3, +tun 2, +bol, Garden, gard+
 hall: +sal 3, +hall 2, sal+
-field: +vang 3, +voll 3, +åker 2, +mark, Vangen, Vollen
+field: +vang 3, +voll 3, +åker 2, Vangen, Vollen
 wood: +skog 4, +lund 3, +hult 2, +mork, Skogen, skog+ 2
 hill: +haug 4, +ås 3, +bakke 2, +berg 2, +høj, Haugen 3, Bakken 3, haug+
 ford: +vad 4, vad+ 2
@@ -853,7 +853,7 @@ hundred: hundre+
 thousand: tusen+
 
 # lands
-land: +land 3, +ia 7
+land: +land 6, +rike 2, +ia 2
 realm: +rike
 march: +mark
 country: +bygd 2, +fylke

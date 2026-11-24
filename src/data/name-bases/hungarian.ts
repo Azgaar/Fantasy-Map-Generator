@@ -751,9 +751,9 @@ hundred: száz+
 thousand: ezer+
 
 # lands
-land: +orszag 4, +ia 6
-country: +föld 3, +vidék 2, ^ság 2
-march: +bánság 2, +gyepű
+land: +orszag 5, +ia 3, +ság 2
+country: +vidék 2, ^ság 2
+march: +bánság
 coast: +part
 isles: +szigetek
 `,

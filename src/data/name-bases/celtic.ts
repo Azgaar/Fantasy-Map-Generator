@@ -618,7 +618,7 @@ ten: deg+
 hundred: cant+
 
 # lands
-land: +ia 6, +ion 2, tir+ 2
+land: +ion 4, tir+ 3, +iog 2, +edd 2, +ia 3
 country: tir+, +wg
 realm: bro+
 `,

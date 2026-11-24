@@ -675,7 +675,7 @@ hundred: -Mea 2
 thousand: -Elef 2
 
 # lands
-land: Eretz 6, Bet 3
+land: +on 4, +am 3, +an 2, Eretz 2
 realm: Malkhut 2, Bet 2
 march: Gvul 2
 domain: Nahalat 2
@@ -695,7 +695,7 @@ folk: Bnei 3
     "generic-of": { weight: 8, templates: "{generic} {root} 6, {root} 2" },
     compound: { weight: 6, templates: "{generic} {modifier} 4, {generic}-{modifier}" },
     relative: { weight: 6, templates: "{root} {modifier}" },
-    "root-land": { templates: "{generic} {root} 4, {generic}-{root}" },
-    "modifier-land": { templates: "{generic} {modifier}" }
+    "root-land": { templates: "{root}{generic} 8, {generic} {root}" },
+    "modifier-land": { weight: 10, templates: "{generic} {modifier}" }
   }
 };

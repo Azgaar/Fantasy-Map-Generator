@@ -394,7 +394,7 @@ Go to Tools -> edit States and click the state's name. In the name editor, the b
 
 ### What does the Meaning line under a name mean?
 
-Burgs, states, provinces, rivers and lakes are named in two steps. The generator first decides what the name means from what is at the place, such as Birch Town for a town by a birch forest or Eadric's Farm for a farm founded by Eadric. Then the namesbase of the culture says it in its language: Birkton in English, Berezin in Ruthenian. The editor shows that meaning under the name. The name and the meaning are stored apart, so a name you type is never overwritten and may say something other than its meaning. Islands, seas, routes, markers and religions have no meanings. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
+Burgs, states, provinces, rivers, lakes and islands are named in two steps. The generator first decides what the name means from what is at the place, such as Birch Town for a town by a birch forest or Eadric's Farm for a farm founded by Eadric. Then the namesbase of the culture says it in its language: Birkton in English, Berezin in Ruthenian. The editor shows that meaning under the name. The name and the meaning are stored apart, so a name you type is never overwritten and may say something other than its meaning. Islands, seas, routes, markers and religions have no meanings. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
 
 ### Can I see a name in another language?
 

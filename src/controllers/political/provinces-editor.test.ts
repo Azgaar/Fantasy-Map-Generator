@@ -19,7 +19,7 @@ vi.mock("@/renderers/overlays/fogging", () => ({ fog: vi.fn(), unfog: vi.fn() })
 vi.mock("@/ui/map/highlight", () => ({ highlightElement: vi.fn(), highlightOutline: vi.fn() }));
 
 import { Meanings } from "@/model/society/names/meanings";
-import { Names } from "@/model/society/names/names-generator";
+
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Layers } from "@/renderers/layers";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -64,8 +64,10 @@ afterEach(() => {
 
 describe("ProvincesEditor name regeneration", () => {
   beforeEach(() => {
-    vi.spyOn(Names, "getCultureShort").mockImplementation(culture => `Culture${culture}`);
-    vi.spyOn(Toponyms, "landOf").mockImplementation(name => ({ name, meaning: Meanings.simplex(name, "english") }));
+    vi.spyOn(Toponyms, "landOf").mockImplementation(culture => {
+      const name = `Culture${culture}`;
+      return { name, meaning: Meanings.simplex(name, "english") };
+    });
   });
 
   it("uses each province's local culture, including Wildlands, and updates names and labels", () => {
@@ -104,7 +106,7 @@ describe("ProvincesEditor name regeneration", () => {
       "Removed",
       "Search excluded"
     ]);
-    expect(Names.getCultureShort).toHaveBeenCalledExactlyOnceWith(0);
+    expect(Toponyms.landOf).toHaveBeenCalledExactlyOnceWith(0);
   });
 
   it("renames matching provinces beyond the first table page", () => {
@@ -114,7 +116,7 @@ describe("ProvincesEditor name regeneration", () => {
     document.querySelector<HTMLButtonElement>("#regenerateProvinceNames")!.click();
 
     expect(pack.provinces[105].name).toBe("Culture2");
-    expect(Names.getCultureShort).toHaveBeenCalledTimes(105);
+    expect(Toponyms.landOf).toHaveBeenCalledTimes(105);
   });
 });
 

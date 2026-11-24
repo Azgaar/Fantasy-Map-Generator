@@ -690,12 +690,10 @@ hundred: sad+
 thousand: hezar+
 
 # lands
-land: +estan 6, +an 3
-realm: +shahr 3
+land: +estan 6, +zamin 3
 march: Marz 2
 country: +zamin 2, Keshvar
 domain: +bum
-folk: +an
 isles: Jazayer 2
 coast: Sahel
 `,

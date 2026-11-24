@@ -444,7 +444,7 @@ seven: odo
 nine: neder
 
 # lands
-land: +dor 4, +nor 2
+land: +dor 4, +nor 2, +iand 3, +ador
 realm: +ardh 2
 coast: falas 3
 `,
@@ -454,7 +454,6 @@ coast: falas 3
     "generic-of": { templates: "{root}{generic} 2, {generic} {root} 3" },
     compound: { weight: 15, templates: "{modifier}{generic} 5, {settlement} {modifier}{generic} 2" },
     relative: { templates: "{root} {modifier}" },
-    simplex: { weight: 20 },
     "root-land": { weight: 25 },
     "modifier-land": { weight: 25 }
   }

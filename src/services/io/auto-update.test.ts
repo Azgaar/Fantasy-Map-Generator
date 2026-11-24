@@ -272,7 +272,7 @@ describe("v1.146 rendering groups", () => {
         { i: 4, type: "lake", group: "freshwater", firstCell: 0 } // the old group is the classification
       ]
     } as unknown as typeof globalThis.pack;
-    Object.assign(Names, { getCulture: () => "Named" });
+    Object.assign(Names, { getStem: () => "Named" });
 
     placement = /* html */ `<svg id="map"><g id="viewbox">
       <g id="coastline">
@@ -485,7 +485,7 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
       ]
     } as unknown as typeof globalThis.pack;
     globalThis.grid = { cells: { i: new Array(1000) } } as unknown as typeof grid;
-    Object.assign(Names, { getCulture: () => "Named" });
+    Object.assign(Names, { getStem: () => "Named" });
 
     lakesSvg = /* html */ `<svg id="map"><g id="viewbox">
       <g id="lakes">

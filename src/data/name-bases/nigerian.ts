@@ -657,7 +657,7 @@ hundred: -Ogorun/yo, -Nnari/ig
 thousand: -Egberun/yo, -Puku/ig
 
 # lands
-land: kasar+ 3, +kasa/haf, ala+ 2, Ala/ig, ile-+ 2, Ile
+land: kasar+ 3, +kasa/haf, ala+ 2, Ala/ig, orile-+ 2, Orile
 `,
   settled: 0.6,
   patterns: {

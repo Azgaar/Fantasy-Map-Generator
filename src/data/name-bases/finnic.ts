@@ -411,6 +411,8 @@ export const finnic: WrittenNameBase = {
   rules: [
     { match: "([^akiut])\\1+", replace: "$1" },
     String.raw`
+i\+(?=ia$) =>  | join
+(?<=[^aeiouyäö])\+(?=nmaa$) => +i | join
 ([kpt])\1([aeiouyäö])\+n\+ => $1$2+n+ | join
 ht([aeiouyäö])\+n\+ => hd$1+n+ | join
 (?<=[^aeiouyäö])\+n\+ => +in+ | join
@@ -772,7 +774,7 @@ ten: kymmenen+
 hundred: sata+
 
 # lands
-land: +maa 35, +ia 65
+land: +maa 6, +ia 3, +nmaa 2
 domain: +kunta
 `,
   settled: 0.45,

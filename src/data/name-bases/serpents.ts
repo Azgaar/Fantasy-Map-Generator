@@ -466,7 +466,6 @@ coast: sol+ 2, +sol
     "generic-of": { templates: "{generic}'{root} 3, {generic}{root} 2" },
     compound: { weight: 15, templates: "{settlement}'{generic}{modifier} 3, {settlement}{generic}'{modifier} 2" },
     relative: { templates: "{root} {modifier}" },
-    simplex: { weight: 20 },
     "root-land": { weight: 25, templates: "{generic}'{root}, {root}{generic} 3" },
     "modifier-land": { weight: 22, templates: "{generic}'{modifier} 3, {generic}{modifier} 2" }
   }

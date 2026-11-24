@@ -647,7 +647,7 @@ nine: chiconauh+
 ten: matlac+
 
 # lands
-land: +tlan, +co
+land: +tlalli 4, +yotl 3
 coast: +anahuac
 `,
   settled: 0.55,

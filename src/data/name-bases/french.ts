@@ -803,7 +803,7 @@ hundred: Cent/pl
 thousand: Mille/pl
 
 # lands
-land: +terre 3, +ia 97
+land: +ie 6, +ogne 3, +agne 3, +aine 3, +terre
 march: Marche 2
 country: Pays/m
 coast: Côte 2

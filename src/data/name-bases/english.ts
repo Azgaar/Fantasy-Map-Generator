@@ -1077,14 +1077,10 @@ hundred: Hundred/pl
 thousand: Thousand/pl
 
 # lands
-land: +land 4, +ia 6
-realm: realm 2, +ric
-march: march 2, mark 2
-domain: +dom 2, domain
-reach: reach
-country: country, +shire
-crown: crown
-folk: folk
+land: +land 7, +ia 4, +lands
+realm: +realm
+march: march
+country: +shire
 coast: coast 2, shore
 isles: isles
 `,

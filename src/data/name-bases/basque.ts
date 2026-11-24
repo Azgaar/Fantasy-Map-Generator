@@ -620,8 +620,7 @@ hundred: ehun+
 thousand: mila+
 
 # lands
-land: +alde 3, +herri 2, +ia 5
-country: +herri
+land: +herri 4, +oa 4, +ia 2
 `,
   settled: 0.65,
   patterns: {

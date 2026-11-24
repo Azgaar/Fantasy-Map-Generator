@@ -403,6 +403,7 @@ export const chinese: WrittenNameBase = {
   rules: [
     { match: "(.)\\1+", replace: "$1" },
     { match: "^([a-z]*?(?:[aeiou]|ng?))(?:he|jiang|shui|hu)\\+", replace: "$1+", at: "join" }, // a town on the Luohe is Luoyang
+    { match: "^([a-z]*?[aeiou]+(?:ng?|r)?)[^aeiou +]*(?= guo$)", replace: "$1", at: "join" }, // a state is of whole syllables
     { match: "^([a-z]+)\\+\\1$", replace: "", at: "join" }, // no syllable twice: Jinjin
     { match: "\\+", replace: "", at: "join" } // syllables meet as they are: Taian, Xinning
   ],
@@ -430,7 +431,7 @@ castle: cheng 3, bao 2
 mouth: kou
 mount: shan 5, feng 2, yue
 shore: bin 3, tan 2, an
-island: dao 4, zhou 2, yu
+island: dao 4, yu
 lake: hu 4, tan, chi
 haven: wan 2, gang 2, jin
 marsh: ze 3, wa 2, tang

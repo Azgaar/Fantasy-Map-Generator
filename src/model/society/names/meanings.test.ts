@@ -99,24 +99,22 @@ describe("render", () => {
     const frank = meaning("root-land", "~Frank", "land");
     const names = (baseId: string) =>
       new Set(Array.from({ length: 40 }, (_, salt) => Meanings.render(withSalt(frank, salt), baseId)));
-    expect(names("german")).toEqual(new Set(["Frankland", "Frankia"]));
-    expect(names("korean")).toEqual(new Set(["Prankguk"])); // Korean writes no f
-    expect(names("chinese")).toEqual(new Set(["Frank Guo"]));
-    expect(names("arabic")).toEqual(new Set(["Franka", "Frankia", "Al Franka", "Al Frankia"]));
+    expect(names("german")).toEqual(new Set(["Frankland", "Frankien", "Frankmark", "Frankreich"]));
+    expect(names("korean")).toContain("Pranguk"); // Korean writes no f and no nk
+    expect(names("chinese")).toEqual(new Set(["Fran Guo"]));
+    expect(names("arabic")).toEqual(new Set(["Frankiyya", "Al Frankiyya"])); // -istan would run too long
     Names.nameBases.push(custom());
     expect(names("custom")).toEqual(new Set(["Frankia"])); // the shared form: a base with no land of its own
   });
 
   it("applies a base's rules at the join", () => {
-    expect(Meanings.render(meaning("root-land", "~Kyoto", "land"), "japanese")).toBe("Kyoto");
-    expect(Meanings.render(meaning("root-land", "~Kan", "land"), "japanese")).toBe("Kanu");
-    const aswan = meaning("root-land", "~Aswan", "land");
-    const arabic = Array.from({ length: 40 }, (_, salt) => Meanings.render(withSalt(aswan, salt), "arabic"));
-    expect(arabic).toContain("Alaswana"); // "al" joins a root that starts with a vowel
+    const aden = meaning("root-land", "~Adn", "land");
+    const arabic = Array.from({ length: 40 }, (_, salt) => Meanings.render(withSalt(aden, salt), "arabic"));
+    expect(arabic).toContain("Aladniyya"); // "al" joins a root that starts with a vowel
   });
 
   it("drops a root's last vowels before a short vowel ending", () => {
-    expect(Meanings.render(meaning("root-land", "~Friede", "land"), "greek")).toMatch(/^Fried(e?ia)$/);
+    expect(Meanings.render(meaning("root-land", "~Friede", "land"), "greek")).toMatch(/^Fried(ia|ike|is|otis)$/);
     const lexicon = {
       free: [{ form: "free", position: "first" as const }],
       island: [{ form: "island", position: "last" as const }]

@@ -549,7 +549,7 @@ nine: Tza
 ten: Mraw 2
 
 # lands
-land: +a 8, +ia 2
+land: +ata 4, +awa 3, +etania 2, +ia 2
 country: Tamazirt 2
 realm: Tageldit 2
 `,

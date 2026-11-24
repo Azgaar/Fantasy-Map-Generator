@@ -728,7 +728,7 @@ hundred: Cien/pl
 thousand: Mil/pl
 
 # lands
-land: +terra 3, +ia 97
+land: +ia 8, +ania 4, +landia 2, +aña 2, +terra
 realm: Reino
 march: Marca 2
 country: Tierra 2

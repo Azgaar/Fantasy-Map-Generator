@@ -1846,7 +1846,10 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       } else if (feature.type === "lake" && !lakeSubtypes.has(feature.subtype)) {
         feature.subtype = "freshwater"; // the old lake editor wrote custom group names into the subtype
       }
-      if (!feature.name) feature.name = Features.getName(feature); // islands and oceans were nameless before
+      if (feature.name) continue; // islands and oceans were nameless before
+      const culture = pack.cultures[pack.cells.culture[feature.shoreline?.[0] || feature.firstCell]];
+      feature.name =
+        feature.type === "ocean" || !culture ? Features.getOceanName(feature) : Names.getStem(culture.base);
     }
 
     // custom lake groups lived only in the svg; the styles record now keeps them under lakes.groups

@@ -393,7 +393,7 @@ export const japanese: WrittenNameBase = {
   },
   rules: [
     { match: "(.)\\1+", replace: "$1" },
-    { match: "([aeiouy])\\+u$", replace: "$1", at: "join" },
+    { match: "(?<=[aeiou])(?:[^aeioun+ ]|n[^aeiou+ ])+(?=\\+(?:koku|shu|kuni|kaido)$)", replace: "", at: "join" }, // a state is of whole syllables
     { match: "\\+", replace: "++", at: "join" }, // parts meet as they are: Fukuoka, not Fukoka
     { match: "\\+\\+kuchi", replace: "++guchi", at: "join" }, // Yamaguchi, Kawaguchi
     // rendaku: half the names voice the second part, but not after no or ga, nor a part already voiced
@@ -709,7 +709,7 @@ hundred: momo 2, hyaku
 thousand: chi 3, sen 2
 
 # lands
-land: +u
+land: +koku 4, +shu 4, +kuni 2
 isles: +shima
 coast: +kaido
 `,
@@ -722,7 +722,6 @@ coast: +kaido
     "owner-generic": { weight: 2, female: 0.1, templates: "{root}{generic}" },
     "generic-of": { weight: 8, templates: "{root}{generic} 3, {root}" },
     compound: { weight: 10, templates: "{modifier}{generic} 3, {modifier}{generic}{settlement}" },
-    relative: { weight: 6, templates: "{modifier}{root} 2, {modifier}-{root}" },
-    "modifier-land": { weight: 3 } // a land is +u, which a modifier swallows: Nishi
+    relative: { weight: 6, templates: "{modifier}{root} 2, {modifier}-{root}" }
   }
 };

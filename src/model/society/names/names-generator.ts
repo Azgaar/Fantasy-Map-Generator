@@ -7,7 +7,7 @@ import { isVowel } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { notify } from "@/utils/notices";
 import { P, ra } from "@/utils/probability-utils";
-import { safeParseJSON } from "@/utils/string-utils";
+import { capitalize, safeParseJSON } from "@/utils/string-utils";
 import { NameNotation } from "./notation";
 import { SoundRules } from "./sound-rules";
 
@@ -16,6 +16,8 @@ import { SoundRules } from "./sound-rules";
 type MarkovChain = string[][] & Record<string, string[]>;
 
 const SYLLABIC = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+
+const STEM_LENGTH = 4; // a stem is cut once it is this long
 
 const formantSchema = z.object({
   form: z.string().min(1),
@@ -384,6 +386,19 @@ class NamesGenerator {
     const min = shortest ? shortest - 1 : undefined;
     const max = longest && min ? Math.max(longest - 2, min) : undefined;
     return this.getBase(id, min, max, "");
+  }
+
+  /** The start of a place name, without the ending that makes it a town: what a people is called */
+  getStem(id: string): string {
+    for (let attempt = 0; ; attempt++) {
+      const name = this.getBaseShort(id);
+      const [word] = name.split(/[^\p{L}]+/u).sort((a, b) => b.length - a.length);
+      const syllables = this.syllables(word);
+      let stem = "";
+      for (const syllable of syllables.slice(0, -1)) if (stem.length < STEM_LENGTH) stem += syllable;
+      if (SYLLABIC.test(word) || stem.replace(/[aeiouy]+$/, "").length > 2 || attempt > 8)
+        return capitalize(stem || word);
+    }
   }
 
   private validateSuffix(name: string, suffix: string): string {

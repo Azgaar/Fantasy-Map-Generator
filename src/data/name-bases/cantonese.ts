@@ -363,6 +363,7 @@ export const cantonese: WrittenNameBase = {
   rules: [
     { match: "(.)\\1+", replace: "$1" },
     { match: "^([a-z]*?(?:[aeiou]|ng?|[kpt]|m))kong\\+", replace: "$1+", at: "join" }, // a town on the Chukong is Chuhau
+    { match: "^([a-z]*?[aeiou]+(?:ng|[nmktp])?)[^aeiou+]*(?=\\+(?:kwok|pong|yik)$)", replace: "$1", at: "join" }, // a state is of whole syllables
     { match: "^([a-z]+)\\+\\1$", replace: "", at: "join" }, // no syllable twice: Wanwan
     { match: "\\+", replace: "", at: "join" } // syllables meet as they are: Tsuenwan, Saiyingpun
   ],
@@ -390,7 +391,7 @@ castle: shing 4, po 2
 mouth: hau 4, tsui 2
 mount: shan 5, fung 2
 shore: hoi 4, pin 2, ngon
-island: chau 6, to
+island: to 4, chau 2
 lake: wu 4, tam 2, tong
 haven: wan 3, kong 3
 marsh: tong 3, chak 2
@@ -666,7 +667,7 @@ hundred: pak
 thousand: tsin
 
 # lands
-land: +kwok
+land: +kwok 6, +pong 2, +yik
 isles: +chau
 coast: +hoi
 `,

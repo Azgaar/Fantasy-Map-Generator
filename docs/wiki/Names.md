@@ -1,4 +1,4 @@
-Every burg, state, province, river and lake gets a name in the language of its culture. This page explains how those names are made, what you can do with them in the interface, and how to create or change the name bases that define each language.
+Every burg, state, province, river, lake and island gets a name in the language of its culture. This page explains how those names are made, what you can do with them in the interface, and how to create or change the name bases that define each language.
 
 ## How naming works
 
@@ -16,7 +16,9 @@ A name is made in two steps. First the generator decides what the name **means**
 
 The place keeps the meaning apart from its name. So the same place can be shown in any other name base, and a label can show what its name means.
 
-Islands, seas, routes, markers and religions have no meanings. They get plain names that only sound like their language.
+Seas, routes, markers and religions have no meanings. They get plain names that only sound like their language.
+
+States, continents and the provinces not named after a burg are named as lands, with suffixes of their own that end no town: Frankland, Frankia. An island is named as an island.
 
 ### Where a meaning comes from
 
@@ -32,15 +34,15 @@ Every name has one of nine shapes, called patterns. The Patterns tab of the Name
 
 | Pattern            | A name made of                                  | Meaning       | English     | Ruthenian      | Used for                         |
 | ------------------ | ----------------------------------------------- | ------------- | ----------- | -------------- | -------------------------------- |
-| `simplex`          | a proper name with no meaning                   | Aldwick       | Aldwick     | Aldvik         | states, rivers, lakes, provinces |
+| `simplex`          | a proper name with no meaning                   | Aldwick       | Aldwick     | Aldvik         | rivers, lakes                    |
 | `feature`          | what stands at the place                        | The Ford      | Ford        | Brod           | burgs                            |
-| `modifier-generic` | what the place is like, and what it is          | New Town      | Newton      | Novgorod       | burgs, rivers, lakes             |
-| `owner-generic`    | a founder, and what the place is                | Eadric's Farm | Eadricworth | Eadrikov Hutor | burgs, lakes                     |
+| `modifier-generic` | what the place is like, and what it is          | New Town      | Newton      | Novgorod       | burgs, rivers, lakes, islands    |
+| `owner-generic`    | a founder, and what the place is                | Eadric's Farm | Eadricworth | Eadrikov Hutor | burgs, lakes, islands            |
 | `generic-of`       | what the place is, on a named river             | Mouth of Exe  | Exmouth     | Ust-Ekse       | burgs                            |
 | `compound`         | a description of the land, and what the burg is | Red Hill City | Redhill     | Krasnogorsk    | burgs                            |
 | `relative`         | another place's name told apart                 | New Barton    | New Barton  | Novyi Barton   | burgs, colony provinces          |
-| `root-land`        | a name, and a word for a land                   | Land of Frank | Frankia     | Frankia        | states, provinces                |
-| `modifier-land`    | a describing word and a land                    | East Realm    | Eastrealm   | Vostochnia     | states                           |
+| `root-land`        | a name, and a word for a land                   | Land of Frank | Frankland   | Frankia        | states, provinces, continents    |
+| `modifier-land`    | a describing word and a land                    | East Realm    | Easrealm    | Vostochnia     | states, provinces, continents    |
 
 A number may stand where a describing word does: Three Towers, Tri Vezhi.
 

@@ -659,7 +659,7 @@ hundred: pachac
 thousand: huaranca
 
 # lands
-land: suyu 3, llacta
+land: suyu 5, pacha 2
 `,
   settled: 0.45,
   patterns: {

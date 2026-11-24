@@ -451,9 +451,9 @@ first: (?<=[^aeio*])$ => o`,
   lexicon: `
 # settlements
 city: +polis 12, ^eia
-town: +polis 4, +chora 2, +kastro 2, ^eia, ^ia, Chora
-village: +chori 6, +chorion~chori 2, +kome 3, ^ia 2, Kome 2, Chorion
-hamlet: +chori 3, +kome, ^ia 2, Kalyvia 3, +kalyvia, Mandra 2, +mandra 2
+town: +polis 4, +chora 2, +kastro 2, ^eia, Chora
+village: +chori 6, +chorion~chori 2, +kome 3, Kome 2, Chorion
+hamlet: +chori 3, +kome, Kalyvia 3, +kalyvia, Mandra 2, +mandra 2
 
 # places
 home: Oikoi 2, +oikos 2, Oikia, oiko+
@@ -809,11 +809,9 @@ hundred: hekaton+
 thousand: chilio+
 
 # lands
-land: +eia 1, +ia 9
-country: +chora
+land: +ia 5, +ike 3, +is 3, +otis 2
 coast: +paralia
 isles: +nesoi
-march: +eschatia
 `,
   settled: 0.65,
   patterns: {
