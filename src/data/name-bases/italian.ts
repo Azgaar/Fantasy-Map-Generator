@@ -464,6 +464,18 @@ export const italian: WrittenNameBase = {
   rules: [
     { match: "([^cltr])\\1+", replace: "$1" },
     { match: "\\b(due|tre|cinque|sette|nove|dieci|cento|mille)\\+", replace: "$1 ", at: "join", chance: 0.5 }, // Tre Torri, Settefonti
+    // Civita Acquaontano keeps both letters where two meet
+    {
+      match:
+        "(?<=^(?:villa|civita|terra|rocca|pietra|guardia|badia|vigna|ripa|riva|punta|isola|selva|serra|grotta|fontana|porta))\\+(?=a[a-z]{6,}$)",
+      replace: " ",
+      at: "join"
+    },
+    {
+      match: "(?<=^(?:borgo|porto|lago|bosco|campo|poggio|prato|sasso|pozzo|capo))\\+(?=o[a-z]{6,}$)",
+      replace: " ",
+      at: "join"
+    },
     { match: "città\\+(?=[aeiou])", replace: "città ", at: "join" }, // Città Alta, Cittanova
     { match: " di (?=[aeiouàèìòù])", replace: " d'", at: "join" }, // Castel d'Ario
     String.raw`
@@ -471,10 +483,13 @@ export const italian: WrittenNameBase = {
 ^(mont|coll)e\+(?=[aeiou]) => $1+ | join
 ^castel\+(?=[aeiou]) => castell+ | join
 ^(val|col)\+(?=[aeiou]) => $1l+ | join
+^(val|col|castel)\+(?=l) => $1 | join
 (?<=[^aeiou]([ao]))\+(?!\1|(?:ano|ago|ate|engo|asco|ia|ana|agna|ania)$)(?=[aeiou][^ +-]{0,3}$) =>  | join
 gna?\+agna$ => gn+ania | join
 à\+ => a+ | join
 %\+eto => +ara | join
+%\+eti => +aie | join
+% =>  | join
 \bsan(?= s[^aeiou]) => santo | join
 \bsan(?:ta)? a => sant'A | join
 \bsan(?:ta)? e => sant'E | join
@@ -498,12 +513,13 @@ a$ => e | as pl
   grammar: `
 pl: (?!)
 fpl: (?!)
-f: ^(?!(?:andrea|luca|nicola|elia|mattia|enea|battista)$).*[aà]$|(?:ice|^agnese)$
+f: ^(?!(?:andrea|luca|nicola|elia|mattia|enea|battista)$).*[aà]$|(?:ice|^agnese|^violante)$
 m:
 
 *: m o, f a, pl i, fpl e
 *i: m o, f a, pl , fpl e
 *c: m o, f a, pl hi, fpl he
+*e: m e, f e, pl i, fpl i
 *saint: m , f ta`,
   lexicon: `
 # settlements
@@ -561,7 +577,7 @@ watch: guardia/f 4, Vedetta/f, Guardiola/f
 end: Finale 3, Confine 2
 landing: Scalo 3, Approdo, Scala/f
 gate: porta/f 3, chiusa/f 2, Varco 2, Portella/f
-wall: mura/f 3, muro 2
+wall: mura/fpl 3, muro 2
 rock: sasso 4, pietra/f 4, Scoglio 2
 crag: rocca/f 3, rupe/f 2, Sperone
 fell: alpe/f 3, costa/f 2
@@ -619,29 +635,29 @@ stair: Scala/f
 # modifiers
 new: +nuov* 5, nuov* 2
 old: +vecchi*i 4, vecchi*i 2, +vetere
-great: +maggiore 3, Maggiore 2, +grande 2, Grande
-little: Minore 2, +piccol*, piccol*
+great: +maggiore 3, Maggior*e 2, +grande 2, Grand*e
+little: Minor*e 2, +piccol*, piccol*
 long: +lung*c 3, +long*c, lung*c
 broad: +larg*c 2, larg*c
 deep: +fond* 2, +cup*, fond*
 high: +alt* 4, alt*+ 2, alt* 2
 low: +bass* 3, bass* 2
-upper: Superiore 3, sopra+ 2
-lower: Inferiore 3, sotto+ 2
+upper: Superior*e 3, sopra+ 2
+lower: Inferior*e 3, sotto+ 2
 middle: +mezzan* 2, mezzan*, mezzo+ 2
-north: Boreale
-south: Meridionale
-east: Levante 3, Orientale 2
-west: Ponente 3, Occidentale 2
+north: Boreal*e
+south: Meridional*e
+east: Levante 3, Oriental*e 2
+west: Ponente 3, Occidental*e 2
 black: +ner* 4, +negr* 2, ner* 2
 white: +bianc*c 4, +alb* 2, bianc*c 2
 red: +ross* 4, ross* 2
-green: +verde 4, Verde 2
+green: +verde 4, Verd*e 2
 golden: +dorat* 2, +aure*i, dorat*
 grey: +grigi*i 2, grigi*i
 blue: +azzurr* 2, azzurr*
 dark: +scur* 3, +oscur*, scur*
-bright: +lucente 2, chiar*+, Lucente
+bright: +lucente 2, chiar*+, Lucent*e
 oak: rover^ 3, querc^ 2, cerr^ 2
 pine: pin^ 3
 birch: betull^ 2
@@ -696,7 +712,7 @@ wild: +selvaggi*i 2, selvaggi*i
 fair: bel+ 4, +bell* 3, bell*
 holy: +sant* 4, sant* 2
 free: +franc*c 5, franc*+ 2, franc*c
-king: +reale 4, Reale 2
+king: +reale 4, Real*e 2
 queen: +regina 2, Regina
 lord: +conte 3, Conte
 priest: +abate 3, +vescovo 2, +prete 2
@@ -845,7 +861,7 @@ hundred: cento+/pl 2
 thousand: mille+/pl
 
 # lands
-land: +ia 6, +agna 4, +ania 3, +ana 2, +landia
+land: +ia 6, +agna 4, +ania 3, +ana 2, +landia, Terra 2
 realm: Regno 2
 march: Marca/f 2
 country: Contado 2
@@ -873,6 +889,6 @@ isles: Isole/fpl 3
       templates: "{generic}{modifier} 8, {modifier}{generic} 4, {settlement} {generic}{modifier}"
     },
     relative: { weight: 6, templates: "{root} {modifier} 10, {modifier}{root}" },
-    "modifier-land": { templates: "{generic} {modifier}" }
+    "modifier-land": { weight: 12, templates: "{generic} {modifier} 4, {generic} di {modifier}eti" }
   }
 };

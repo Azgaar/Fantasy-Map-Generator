@@ -638,7 +638,7 @@ devil: supay
 thief: sua
 badger: añas
 swift: utca
-wine: aca
+wine: asua
 flint: rumi
 crooked: ccencco
 miller: maran

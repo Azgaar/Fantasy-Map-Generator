@@ -25,6 +25,8 @@ describe("SoundRules.apply", () => {
     expect(SoundRules.capitalize("la roche-sur-yon")).toBe("La Roche-sur-Yon");
     expect(SoundRules.capitalize("pont-d'ain")).toBe("Pont-d'Ain");
     expect(SoundRules.capitalize("castel de")).toBe("Castel De"); // the last word is a name's own
+    expect(SoundRules.capitalize("pont-sur-moselle")).toBe("Pont-sur-Moselle");
+    expect(SoundRules.capitalize("al sur al kabir")).toBe("Al Sur Al Kabir"); // a wall, not the French word
   });
 
   it("keeps the written words of a name made of parts as they are spelled", () => {

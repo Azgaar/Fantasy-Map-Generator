@@ -423,11 +423,13 @@ export const nordic: WrittenNameBase = {
 \+s\+(?=inge$) => + | join
 i\+s\+ => a+ | join
 (?<=[aeo])\+s\+ => + | join
+(?<!\+)([b-df-hj-np-tv-z])\+(?=\1) => $1 | join
 ^th(?=[a-zæøå]{7}) => t | long
-(?<=^[a-zæøå]{2,})steins?(?=[a-zæøå]{2,}$) => sten | long
+(?<=^[a-zæøå]{2,})stein(?:s(?!t|und|and|et|kog|jø))?(?=[a-zæøå]{2,}$) => sten | long
 ^gunnbjorns? => gunnars | long
 ^thorfinns? => finns | long
-(?<=^[a-zæøå]{3,}[^s])s(?!(?:t(?:ed|ad|a|ein|en|ø|ue|ig)|e(?:t|ter|l)|and|und|kog|jø|trand|kard|kjær|mie)$)(?=[a-zæøå]{2,6}$) =>  | long`
+(?<=^[a-zæøå]{3,}[^s])s(?!(?:t(?:er|ed|ad|a|ein|en|ø|ue|ig)|e(?:t|ter|l)|and|und|kog|jø|trand|kard|kjær|mie)$)(?=[a-zæøå]{2,6}$) =>  | long
+([a-z])\1\1 => $1$1 | long`
   ],
   lexicon: `
 # settlements

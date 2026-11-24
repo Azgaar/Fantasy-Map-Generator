@@ -630,6 +630,11 @@ export const english: WrittenNameBase = {
     { match: "(?<=[sc]e|x|sh|ch)\\+s\\+", replace: "+", at: "join" }, // Aliceton, not Alicesston
     { match: "(?<=[^aeiou])a\\+(?:s\\+)?(?=[b-df-hj-np-tv-z])", replace: "+", at: "join" }, // Wada's is Wadby, Offa's is Offton
     { match: "ll\\+(?=ton)", replace: "l+", at: "join" }, // Milton, Hilton
+    { match: "(?<=(?:[cs]h|th))\\+(?=h(?!urst))", replace: " ", at: "join" }, // Fish Hollow; but Ashurst
+    { match: "^ac\\+(?=c)", replace: "oak+", at: "join" }, // Oakcamp
+    { match: "w\\+w(?=ood|ater|atch|all|ell)", replace: "w w", at: "join" }, // New Wood
+    { match: "r\\+r", replace: "rr", at: "join" }, // Beaverrun
+    { match: "([dmnp])\\+\\1(?=[a-z]{3,}$)", replace: "$1$1", at: "join" }, // Reddean, Elmmark
     { match: "le\\+l(?=ey|eigh)", replace: "+l", at: "join" }, // Appley, not Appleley
     { match: "ing\\+ing", replace: "ing+", at: "join" }, // Eadrington, not Eadricingington
     { match: "s\\+s(?=t)", replace: "+s", at: "join" },

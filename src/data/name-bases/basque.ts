@@ -366,7 +366,8 @@ export const basque: WrittenNameBase = {
 (?<!\p{L})zurine(?!\p{L}) => zuriñe | join
 ^done\+(?=[aeiou]) => don | join
 ^done\+ => dona | join
-[aeiou]\+(?=(?:ain|iz)$) =>  | join
+ai\+ain$ => ain | join
+(?:ia|[aeiou])\+(?=(?:ain|iz)$) =>  | join
 (?<=[aeiou])\+(?=ena$) => r | join
 \+h => + | join
 iturri\+(?=[^aeiou]) => itur+ | join
@@ -374,6 +375,10 @@ zahar\+(?=[aeiou]) => zarr+ | join
 (?<=^(?:bas|sor))o\+ => a+ | join
 o\+(?=di$) => a+ | join
 i\+uri => iri | join
+aretx\+(?=[^aeiou]) => aretxe | join
+r\+tt(?=[aeiou]) => r+t | join
+ts\+z => tz | join
+(?<=[lrn])tz\+s => +ts | join
 tz\+tz => tz | join
 tz\+di => zti | join
 tz\+[gk] => zk | join
@@ -630,7 +635,7 @@ land: +herri 4, +oa 4, +ia 2
     "owner-generic": {
       weight: 20,
       female: 0.05,
-      templates: "{root}ain 4, {root}tegi 3, {root}ena 3, {root}iz 2, done{root} 3"
+      templates: "{root}ain 4, {root}tegi 3, {root}ena 3, {root}iz 2, done{root} 3, {root}{generic} 3"
     },
     "generic-of": { weight: 10, templates: "{root}{generic} 4, {root} 3" },
     compound: {

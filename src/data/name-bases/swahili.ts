@@ -3,9 +3,10 @@ import type { WrittenNameBase } from "@/types/names";
 export const swahili: WrittenNameBase = {
   id: "swahili",
   name: "Swahili",
-  length: [4, 9],
+  length: [4, 11],
 
   places: {
+    length: [4, 9],
     names: [
       "Abim",
       "Adjumani",
@@ -372,7 +373,7 @@ ni\+ni$ => ni | join
 ^mw => mi | as plm
 ^m(?=[^aeiou]) => mi | as plm
 ^ki => vi | as plki
-^ch => vy | as plki`
+^ch(?!emchemi) => vy | as plki`
   ],
   // a describing word agrees with its noun by the noun's class prefix: Mji Mpya, Kijiji Kipya, Ziwa Jipya, Bandari Mpya
   grammar: `
@@ -744,6 +745,6 @@ isles: Visiwa/plki
     compound: { weight: 5, templates: "{generic} {modifier} 3, {generic} *wa{modifier} 2" },
     relative: { weight: 5, templates: "{root} {modifier}" },
     "root-land": { templates: "{generic}{root}" },
-    "modifier-land": { templates: "{generic} {modifier}" }
+    "modifier-land": { templates: "{generic} {modifier}, {generic} *wa{modifier}" }
   }
 };

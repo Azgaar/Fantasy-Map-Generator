@@ -1492,7 +1492,7 @@ class ReligionsModule {
       const stateId = cells.state[center];
 
       const base = burgId ? Toponyms.nameOf(burgs[burgId]) : states[stateId].name; // most burgs have no name yet
-      const name = trimVowels(base.split(/[ ,]+/)[0]);
+      const name = trimVowels(base.split(/[ ,]+/)[0]).replace(/-$/, ""); // Cheshmeh-ye leaves Cheshmeh
       return adj ? getAdjective(name) : name;
     };
 

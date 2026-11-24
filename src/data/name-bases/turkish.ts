@@ -616,7 +616,7 @@ crane: turna+ 3, Turnalı 2
 gull: martı+
 seal: fok+
 fish: balık+ 4, Balıklı 3
-otter: samur+
+otter: susamuru+
 stone: taş'+ 5, Taşlı 2, Taşlık
 iron: demir'+ 4, Demirci 2
 copper: bakır'+
@@ -679,7 +679,7 @@ narrow: dar'+
 steep: dik'+
 flat: düz'+ 3, Düzce 2
 round: yuvarlak'+
-swift: akar'+
+swift: hızlı'+
 clear: duru'+
 dragon: ejder+
 lion: aslan+ 3, arslan+ 2, Aslanlı
@@ -696,7 +696,7 @@ duck: ördek+ 3, Ördekli
 dove: güvercin+ 3, Güvercinlik
 lark: toygar+
 stork: leylek+ 3, Leylekli
-salmon: alabalık+
+salmon: somon+
 bee: arı+ 3, Arılı
 holly: çobanpüskülü+
 yew: porsuk+

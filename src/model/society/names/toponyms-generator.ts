@@ -57,6 +57,7 @@ const FOUNDED = 0.4; // the share of lands and islands named after a person, not
 const WATER_SHARE = 0.5; // waters keep old names: this many of them say something
 const PLAIN = 1; // how well a concept that fits anywhere fits, against one the place asks for (2 to 4)
 const TRIES = 12;
+const RENAMES = 16; // how many ways a burg's new name is drawn, to take the one nearest to the old
 // the lie of the land: what a name of three parts is built around, as in Red-hill-town
 const TERRAIN: Concept[] = [
   ...["field", "wood", "hill", "ford", "valley", "mount", "shore", "island", "lake", "marsh", "spring", "meadow"],
@@ -185,14 +186,20 @@ class ToponymsGenerator {
   }
 
   /** The name a burg would take now that its group is no longer `was`: the same meaning, ending in what the burg
-   * has become. Nothing when its name says nothing of its group, or would stay as it is */
+   * has become, and as much of the name kept as can be. Nothing when its name says nothing of its group, or would stay as it is */
   regrouped(burg: Burg, was?: string): Named | undefined {
     const [old, now] = [this.getSettlement({ ...burg, group: was }), this.getSettlement(burg)];
     if (!burg.meaning || !old || !now || old === now || !burg.meaning.tokens.includes(old)) return undefined;
     const tokens = burg.meaning.tokens.map(token => (token === old ? now : token));
-    const meaning: Meaning = { ...burg.meaning, tokens };
-    const name = Meanings.render(meaning, meaning.origin);
-    return name === burg.name || this.burgNames(pack.burgs).has(name) ? undefined : { name, meaning };
+    const taken = this.burgNames(pack.burgs);
+    let best: Named | undefined;
+    for (let salt = 0; salt < RENAMES; salt++) {
+      const meaning: Meaning = { ...burg.meaning, tokens, salt: salt || undefined };
+      const { name, whole } = Meanings.compose(meaning, meaning.origin);
+      if (!whole || taken.has(name)) continue; // its own name is taken too
+      if (!best || shared(name, burg.name!) > shared(best.name, burg.name!)) best = { name, meaning };
+    }
+    return best;
   }
 
   // what a burg is by its group; a capital is a city whatever its group, a burg with no group yet is nothing
@@ -582,6 +589,14 @@ class ToponymsGenerator {
     return items[items.length - 1];
   }
 }
+
+// how many letters two names share at their start and at their end
+const shared = (name: string, other: string) => {
+  let [start, end] = [0, 0];
+  while (start < name.length && name[start] === other[start]) start++;
+  while (end < name.length - start && name.at(-1 - end) === other.at(-1 - end)) end++;
+  return start + end;
+};
 
 const without = <T>(items: T[], item: T) => items.filter(other => other !== item);
 

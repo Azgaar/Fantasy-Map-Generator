@@ -456,7 +456,7 @@ seven: suph
 nine: ner
 
 # lands
-land: shas+ 3, rras+ 2, +shass 3
+land: Shass 2, shas+ 3, rras+ 2, +shass 3
 realm: ssar+ 2, +ssar
 coast: sol+ 2, +sol
 `,
@@ -467,6 +467,6 @@ coast: sol+ 2, +sol
     compound: { weight: 15, templates: "{settlement}'{generic}{modifier} 3, {settlement}{generic}'{modifier} 2" },
     relative: { templates: "{root} {modifier}" },
     "root-land": { weight: 25, templates: "{generic}'{root}, {root}{generic} 3" },
-    "modifier-land": { weight: 22, templates: "{generic}'{modifier} 3, {generic}{modifier} 2" }
+    "modifier-land": { weight: 22, templates: "{generic}'{modifier} 3, {generic}{modifier} 2, {generic} {modifier}" }
   }
 };

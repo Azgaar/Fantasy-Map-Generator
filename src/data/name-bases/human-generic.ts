@@ -453,6 +453,10 @@ export const humanGeneric: WrittenNameBase = {
     { match: "(?<=[sc]e|x|sh|ch)\\+s\\+", replace: "+", at: "join" }, // Aliceford, not Alicesford
     { match: "(?<=s)\\+'s(?= )", replace: "+'", at: "join" }, // James' Bridge
     { match: "ll\\+(?=ton)", replace: "l+", at: "join" },
+    { match: "(?<=(?:[cs]h|th))\\+(?=h(?!urst))", replace: " ", at: "join" }, // Fish Hollow; but Ashurst
+    { match: "^ac\\+(?=c)", replace: "oak+", at: "join" }, // Oakcamp
+    { match: "w\\+w(?=ood|ater|atch|all|ell)", replace: "w w", at: "join" }, // New Wood
+    { match: "t\\+(?=tower)", replace: "t ", at: "join" }, // Burnt Tower
     { match: "r\\+r", replace: "rr", at: "join" }, // Winterrest, Alderrock
     { match: "le\\+l(?=ey)", replace: "+l", at: "join" },
     { match: "s\\+s(?=t)", replace: "+s", at: "join" },

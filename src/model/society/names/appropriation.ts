@@ -17,6 +17,7 @@ interface Profile {
 }
 
 const OPEN_SHARE = 0.12; // a base pairing fewer of its consonants than this parts the pairs it does not know
+const MEN = 10; // how much more a man's name counts for the vowel a borrowed root ends in
 const VOCALIC_SHARE = 0.6; // a base ending this share of its names in a vowel ends a borrowed root in one too
 
 class AppropriationModule {
@@ -24,8 +25,8 @@ class AppropriationModule {
 
   /** Adapt a lowercase root coined in another base: its rules for foreign roots run, letters the base never writes
    * give way to the nearest it does, a base of open syllables parts the consonants it never puts together, a root
-   * that ends the word takes a vowel where the base's names end in vowels and never in its last letter, then the
-   * word rules run */
+   * that ends the word, any root in such a base, takes a vowel where the base's names end in vowels and never in its
+   * last letter, then the word rules run */
   adapt(root: string, base: NameBase, endsWord = true): string {
     const { letters, clusters, open, endings, vocalic, vowel, finalVowel } = this.profileOf(base);
     if (!letters.size) return root;
@@ -39,7 +40,7 @@ class AppropriationModule {
     }
 
     const end = word[word.length - 1];
-    const isClosed = endsWord && vocalic && end && isConsonant(end) && !endings.has(end);
+    const isClosed = (endsWord || open) && vocalic && end && isConsonant(end) && !endings.has(end);
     return SoundRules.apply(isClosed ? word + finalVowel : word, base.rules);
   }
 
@@ -78,6 +79,8 @@ class AppropriationModule {
     }
 
     const vowel = commonest(vowels);
+    const ends = (base.people?.male?.names ?? []).map(name => name[name.length - 1]).filter(isVowel); // a root is a man's mostly
+    for (const end of ends) finalVowels.set(end, (finalVowels.get(end) ?? 0) + MEN);
     const finalVowel = finalVowels.size ? commonest(finalVowels) : vowel;
     const profile = {
       letters,

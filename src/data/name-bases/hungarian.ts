@@ -378,7 +378,7 @@ export const hungarian: WrittenNameBase = {
         "Éva",
         "Julianna",
         "Teréz",
-        "Rozalia",
+        "Rozália",
         "Viola",
         "Enikő",
         "Csilla",
@@ -391,6 +391,7 @@ export const hungarian: WrittenNameBase = {
     String.raw`
 (?<=[aáeéiíoóöőuúüű])\+i(?=$|[ -]) => +d | join
 d\+d(?=$|[ -]) => d+i | join
+[aeioáéóö]\+(?=ia$) => + | join
 a\+d(?=$|[ -]) => á+d | join
 e\+d(?=$|[ -]) => é+d | join
 (m|h)alom\+a(?=$|[ -]) => $1alm+a | join

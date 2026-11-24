@@ -446,6 +446,7 @@ m:
 *: m o, f a, pl os, fpl as
 *o: m o, f a, pl os, fpl as
 *e: m e, f e, pl es, fpl es
+*r: m r, f r, pl res, fpl res
 *ão: m ão, f ã, pl ãos, fpl ãs
 *om: m om, f oa, pl ons, fpl oas
 *sao: m são, f santa, pl são, fpl santa`,
@@ -553,8 +554,8 @@ guard: Guarda/f 4, Vigia/f
 # modifiers
 new: Nov* 8
 old: Velh* 6
-great: Grand*e 4, Maior 3, +mor 3
-little: ^inh* 4, Pequen* 2, Pouc* 2
+great: Grand*e 4, Maio*r 3, +mor 3
+little: ^inh* 4, Pequen* 4
 long: Long* 3, +long* 2
 broad: Larg* 2
 deep: Fund* 3
@@ -580,7 +581,7 @@ oak: carvalh^ 5, sobr^ 3, azinh^ 2
 pine: pinh^ 4
 birch: bido^ 2
 ash: freix^ 4
-elm: ulm^ 2, Ulme
+elm: ulm^ 2, D'Ulmeiros 2
 willow: salgueir^ 3, vim^ 2
 thorn: espinh^ 3, silv^ 3, toj^ 2
 reed: junc^ 3, caniç^ 2
@@ -661,8 +662,8 @@ crimson: Vermelh* 2
 yellow: Amarel*
 burnt: Queimad* 3
 bitter: Amarg*
-sweet: Doce 2
-merry: Alegre 2, +alegre 2
+sweet: Doc*e 2
+merry: Alegr*e 2, +alegre 2
 crooked: Tort* 2
 rich: Ric* 2
 narrow: Estreit* 2
@@ -696,7 +697,7 @@ cross: D'Cruz 2
 owl: coruj^ 2
 goose: D'Gansos
 archer: D'Besteiros
-flower: Flor 2
+flower: D'Flores 2
 lady: D'Donas
 maiden: D'Moças
 knight: D'Cavaleiros 2
@@ -716,7 +717,7 @@ hundred: Cem/pl
 thousand: Mil/pl
 
 # lands
-land: +ia 8, +ânia 4, +lândia 2, +anha 2, +terra
+land: +ia 8, +ânia 4, +lândia 2, +anha 2, +terra, Terra/f 2
 realm: Reino
 march: Marca/f 2
 country: Terra/f 2
@@ -737,6 +738,6 @@ coast: Costa/f 2
     "generic-of": { weight: 20, templates: "{generic} de {root} 6, {root} 2, {generic} {root}" },
     compound: { weight: 8, templates: "{generic} {modifier} 5, {generic}{modifier} 3, {modifier}{generic}" },
     relative: { weight: 8, templates: "{root} {modifier}" },
-    "modifier-land": { templates: "{generic} {modifier} 3, {modifier}{generic}" }
+    "modifier-land": { weight: 12, templates: "{generic} {modifier} 4, {generic} de {modifier}ais" }
   }
 };

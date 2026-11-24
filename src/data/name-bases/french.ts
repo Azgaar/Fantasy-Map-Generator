@@ -636,8 +636,8 @@ broad: +large, Large
 deep: parfond*+, +creu*x 2, Creu*x
 high: haut*+ 4, Haut* 3
 low: ba*s+ 2, Ba*s 3
-upper: haut*+ 2, Haut* 3, -Haut
-lower: ba*s+, Ba*s 3, -Bas
+upper: haut*+ 2, Haut* 3, -Haut/m, -Haute/f
+lower: ba*s+, Ba*s 3, -Bas/m, -Basse/f
 middle: moye*n+ 2, Moye*n
 north: -Nord
 south: -Sud
@@ -803,7 +803,7 @@ hundred: Cent/pl
 thousand: Mille/pl
 
 # lands
-land: +ogne 3, +agne 3, +aine 3, +terre
+land: +ogne 3, +agne 3, +aine 3, +terre, Terre/f 2
 march: Marche 2
 country: Pays/m
 coast: Côte 2

@@ -593,6 +593,6 @@ land: Nunaa 3, Nunaat 2, nuna^ 2, +vut 2
     compound: { weight: 10, templates: "{generic}{modifier} 4, {generic} {modifier}, {generic} {modifier}lik" },
     relative: { weight: 5, templates: "{root}{modifier} 3, {root} {modifier} 2" },
     "root-land": { templates: "{root}p {generic} 3, {root}{generic} 2" },
-    "modifier-land": { templates: "{generic}{modifier} 2, {generic} {modifier} 2" }
+    "modifier-land": { templates: "{generic}{modifier} 2, {generic} {modifier} 2, {generic} {modifier}lik" }
   }
 };

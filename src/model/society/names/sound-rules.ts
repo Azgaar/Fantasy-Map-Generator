@@ -4,10 +4,11 @@ import { log } from "@/utils/logger";
 
 // words that join the others and stay lowercase between them: Saint-Germain-en-Laye, Puebla de Sanabria
 const PARTICLES = new Set(
-  "of the upon de del della delle dei degli di da dal do dos das du des la las le les sur sous lès en am im der zum zur ad sub e ye wa cha ya".split(
+  "of the upon de del della delle dei degli di da dal do dos das du des la las le les en am im der zum zur ad sub e ye wa cha ya".split(
     " "
   )
 );
+const DASHED = new Set(["sur", "sous", "lès"]); // between dashes only: Pont-sur-Moselle, but Al Sur Al Kabir
 const ELIDED = /^(?:d|l|n|dell|nell|sull|dall|all)'(?=\p{L})/u; // Pont-d'Ain, Castel dell'Ovo, Tizi n'Test
 const DOUBLES = /^\((?:\.|\[\^(.+)\])\)\\1\+$/;
 
@@ -56,7 +57,7 @@ class SoundRulesModule {
     return parts
       .map((part, index) => {
         if (index % 2) return part;
-        if (index && index < parts.length - 1 && PARTICLES.has(part)) return part;
+        if (index && index < parts.length - 1 && isJoining(part, parts[index - 1])) return part;
         if (index && ELIDED.test(part)) return part.replace(/'(.)/u, (_, letter) => `'${letter.toUpperCase()}`);
         return upper(part);
       })
@@ -109,6 +110,7 @@ class SoundRulesModule {
   }
 }
 
+const isJoining = (word: string, before: string) => PARTICLES.has(word) || (before === "-" && DASHED.has(word));
 const isWordRule = (rule: SoundRule) => !rule.at && !rule.when && !rule.as && rule.chance === undefined;
 
 export const SoundRules = new SoundRulesModule();

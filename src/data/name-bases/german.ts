@@ -470,35 +470,38 @@ i[ae]\+s\+ => ien+ | join
 (?<=[^aeiou])[aoe]\+s\+ => en+ | join
 (?<=^(?:neu|frei|blau|grau|heu))\+(?=[aeiouäöü]) => en+ | join
 ia\+(?=[^aeiouäöü+]) => ien+ | join
-^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)(brück|eich|buch|lind|tann|kirch|mühl|quell|wies|weid|hütt|klaus|eck|linde|eiche|buche|tanne|mühle|quelle|wiese|weide|hütte|klause)$ => $1$2en | join
+^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)(brück|eich|buch|lind|tann|kirch|mühl|quell|wies|weid|hütt|klaus|eck)$ => $1$2en | join
+^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)(linde|eiche|buche|tanne|mühle|quelle|wiese|weide|hütte|klause)$ => $1$2n | join
+(?<=^(?:zwei|drei))\+(?=[aeiouäöü]) =>  | join
 ^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)burg$ => $1bürgen | join
 ^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)(berg|brunn|bronn|born|stein)$ => $1$2en | join
 ^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)turm$ => $1türme | join
 ^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)hof$ => $1höfen | join
+(?<!\+)([b-df-hj-np-tv-zß])\+(?=\1) => $1 | join
 (?<=[a-zäöü]{2}(?:hard|bert|old|mund|fried|fred|rad|mut|gard|trud|ward))\+(?=dorf$) => s+ | join
 (?<=[a-zäöüß]{3}(?:bach|beck|graben|fließ|wasser))\+(?:burg|stadt|heim|berg|furt|hausen|feld|dorf|hofen|stetten|au|weiler|rode|stedt|reuth|rath|zell|hof|ried|hagen|hütte|winkel|eck|grund|loh|schlag)$ =>  | join
 (?<=[^aeiouäöü])e\+(?=[b-df-hj-lnp-tv-zß]) => + | 30%
 (?<=[a-zäöüß]{3})(?:bach|beck|graben|fließ|wasser)(?=[a-zäöüß]{3,}$) =>  | long
-^gottfried(?:s(?!ch))? => götzen | long
-^heinrich(?:s(?!ch))? => heinzen | long
-^konrad(?:s(?!ch))? => kunzen | long
-^dietrich(?:s(?!ch))? => dietzen | long
-^friedrich(?:s(?!ch))? => fritzen | long
-^ulrich(?:s(?!ch))? => utzen | long
-^eberhard(?:s(?!ch))? => eberts | long
-^burkhard(?:s(?!ch))? => burks | long
-^engelbert(?:s(?!ch))? => engels | long
-^hildebrand(?:s(?!ch))? => hildes | long
-^siegfried(?:s(?!ch))? => siegs | long
-^wolfgang(?:s(?!ch))? => wolfs | long
-^adalbert(?:s(?!ch))? => alberts | long
-^edeltraud(?:s(?!ch))? => edels | long
-^hildegard(?:s(?!ch))? => hilden | long
+^gottfried(?:s(?!ch|t|ee|and|itz))? => götzen | long
+^heinrich(?:s(?!ch|t|ee|and|itz))? => heinzen | long
+^konrad(?:s(?!ch|t|ee|and|itz))? => kunzen | long
+^dietrich(?:s(?!ch|t|ee|and|itz))? => dietzen | long
+^friedrich(?:s(?!ch|t|ee|and|itz))? => fritzen | long
+^ulrich(?:s(?!ch|t|ee|and|itz))? => utzen | long
+^eberhard(?:s(?!ch|t|ee|and|itz))? => eberts | long
+^burkhard(?:s(?!ch|t|ee|and|itz))? => burks | long
+^engelbert(?:s(?!ch|t|ee|and|itz))? => engels | long
+^hildebrand(?:s(?!ch|t|ee|and|itz))? => hildes | long
+^siegfried(?:s(?!ch|t|ee|and|itz))? => siegs | long
+^wolfgang(?:s(?!ch|t|ee|and|itz))? => wolfs | long
+^adalbert(?:s(?!ch|t|ee|and|itz))? => alberts | long
+^edeltraud(?:s(?!ch|t|ee|and|itz))? => edels | long
+^hildegard(?:s(?!ch|t|ee|and|itz))? => hilden | long
 ^kunigunden => kunen | long
-^mechthild(?:en|s(?!ch))? => mechten | long
-^winfried(?:s(?!ch))? => winnen | long
+^mechthild(?:en|s(?!ch|t|ee|and|itz))? => mechten | long
+^winfried(?:s(?!ch|t|ee|and|itz))? => winnen | long
 ^margareten => greten | long
-^elisabeth(?:en|s(?!ch))? => elsen | long
+^elisabeth(?:en|s(?!ch|t|ee|and|itz))? => elsen | long
 hausen$ => husen | long
 kirchen$ => kirch | long`,
     {

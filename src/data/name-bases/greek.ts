@@ -428,6 +428,8 @@ o\+ou$ => ous | join
 (?<=[^aeiouy])\+ou$ => os | join
 (?<=[a-z]{2})(?:eus|os|as|es|is|ys|a|e|o)\+o(?=\+|polis$) => +o | join
 (?<=[a-z]{3})(?:eus|os|as|es|is|ys|a|e)\+(?=e?i) => + | join
+(?<=^tri)\+(?=[aeiouy]) =>  | join
+(?<=[^aeiouy +-]|[ei])o\+(?=a) => + | join
 (?<=[^aeiouy +-])\+(?=[^aeiouy +-]) => o+ | join
 \b(ne|hier)o\+(?=polis) => $1a+ | join
 (?<=[a-z]{3})\+o(?=\+?polis$) => +ou | 30%
@@ -438,8 +440,8 @@ oupolis$ => opolis | long
   grammar: String.raw`
 fpl: ai$
 mpl: oi$
-n: (?:on|o|i)$
-f: (?:a|e|is)$
+n: (?:on|(?<!^(?:kallist|sapph|klei|gorg))o|i)$
+f: (?:a|e|is)$|^(?:kallisto|sappho|kleio|gorgo)$
 m:
 
 *: m os, f e, n on, fpl ai, mpl oi

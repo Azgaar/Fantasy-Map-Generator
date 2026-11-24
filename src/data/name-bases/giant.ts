@@ -281,7 +281,8 @@ export const giant: WrittenNameBase = {
   },
   rules: [
     { match: "([^kdtng])\\1+", replace: "$1" },
-    { match: "(?<=[sxz])\\+s\\+", replace: "+", at: "join" } // Hrimsborg, not Hrimssborg
+    { match: "(?<=[sxz])\\+s\\+", replace: "+", at: "join" }, // Hrimsborg, not Hrimssborg
+    { match: "(?<=[^aeiouy+]{2})\\+s\\+(?=[^aeiouy])", replace: "+", at: "join" } // Fornkan, not Fornskan
   ],
   settled: 0.7,
   // heavy words of the frost-giants: a describing word before its noun, a founder's name in -s: Thrymsgarth

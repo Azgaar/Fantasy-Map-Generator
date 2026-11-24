@@ -3,7 +3,7 @@ import { NAME_BASES, readNameBase } from "@/data/name-bases";
 import type { Corpus, NameBase, NameBaseEntry } from "@/types/names";
 import { last } from "@/utils/array-utils";
 import { sentences, t } from "@/utils/i18n";
-import { isVowel } from "@/utils/language-utils";
+import { isVowel, trimVowels } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { notify } from "@/utils/notices";
 import { P, ra, seeded } from "@/utils/probability-utils";
@@ -342,7 +342,7 @@ class NamesGenerator {
     if (SYLLABIC.test(start)) return start;
     const { ends } = this.soundsOf(base.places.names);
     let closed = start;
-    while (closed.length > 2 && !ends.has(closingOf(closed))) closed = closed.slice(0, -1);
+    while (closed.length > 2 && closingOf(closed) && !ends.has(closingOf(closed))) closed = closed.slice(0, -1);
     return closed.length >= MIN_CUT || start.length < MIN_CUT ? closed : start;
   }
 
@@ -461,32 +461,13 @@ class NamesGenerator {
     }
   }
 
-  private validateSuffix(name: string, suffix: string): string {
-    if (name.slice(-1 * suffix.length) === suffix) return name; // no suffix if name already ends with it
-    const s1 = suffix.charAt(0);
-    if (name.slice(-1) === s1) name = name.slice(0, -1); // remove name last letter if it's a suffix first letter
-    if (isVowel(s1) === isVowel(name.slice(-1)) && isVowel(s1) === isVowel(name.slice(-2, -1)))
-      name = name.slice(0, -1); // remove name last char if 2 last chars are the same type as suffix's 1st
-    if (name.slice(-1) === s1) name = name.slice(0, -1); // remove name last letter if it's a suffix first letter
-    return name + suffix;
-  }
-
-  private addSuffix(name: string): string {
-    const suffix = P(0.8) ? "ia" : "land";
-    if (suffix === "ia" && name.length > 6) name = name.slice(0, -(name.length - 3));
-    else if (suffix === "land" && name.length > 6) name = name.slice(0, -(name.length - 5));
-    return this.validateSuffix(name, suffix);
-  }
-
-  /** A name for the map, in a base its cultures use */
+  /** A name for the map, in a base its cultures use: a land's, or a place's as it is */
   getMapName(): string {
     const base = this.mapBase();
-    const [shortest, longest] = base.places.length ?? base.length;
-    const min = shortest - 1;
-    const max = Math.max(longest - 3, min);
-    const baseName = this.getBase(base.id, min, max, "");
-    const name = P(0.7) ? this.addSuffix(baseName) : baseName;
-    return name;
+    if (P(0.3)) return this.getBaseShort(base.id);
+    const stem = this.getStem(base.id);
+    if (SYLLABIC.test(stem)) return stem;
+    return P(0.8) ? `${trimVowels(stem)}ia` : `${stem.replace(/l$/, "")}land`;
   }
 
   // the base of any of the map's cultures, the Wildlands where it has no other

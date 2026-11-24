@@ -157,7 +157,7 @@ describe("painting relations", () => {
       [
         "War termination",
         "Two and One agreed to cease fire and signed a peace treaty",
-        "Two-Onean relations changed to friendly"
+        "Two-Onian relations changed to friendly"
       ]
     ]);
   });

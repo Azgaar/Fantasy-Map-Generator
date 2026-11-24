@@ -1165,6 +1165,7 @@ class StatesModule {
       "Marches"
     ];
     if (!state.formName) return state.name;
+    if (state.name?.split(" ").includes(state.formName)) return state.name; // an ulus called Nugas Ulus
     if (!state.name && state.formName) return `The ${state.formName}`;
     const adjName = adjForms.includes(state.formName) && !/-| /.test(state.name);
     return adjName ? `${getAdjective(state.name)} ${state.formName}` : `${state.formName} of ${state.name}`;

@@ -672,7 +672,7 @@ linden: niini+ 3, lehmus+ 2
 beech: pyökki+
 maple: vaahtera+
 aspen: haapa+ 5, haapa^ 3
-poplar: haava+
+poplar: poppeli+
 spruce: kuusi+ 4, kuuse^ 3
 cedar: setri+
 heather: kanerva+
@@ -693,7 +693,7 @@ dun: ruskea+ 2, ruskea^
 miller: mylläri+
 lucky: onni+ 2, onne^ 2
 acorn: terho+
-whispering: kohina+
+whispering: kuiske+
 smoke: savu+
 poor: köyhä+
 broken: rikki+

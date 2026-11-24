@@ -23,11 +23,14 @@ const SLOTS: Record<Pattern, Slot[]> = {
   "modifier-land": ["modifier", "generic"]
 };
 
+const CLIPPED = 2 / 3; // the share of a root that must be left for it to be told
 const UNSAID: Kind[] = ["settlement", "land"];
 const [STRICT, LOOSE, ANY] = [2, 1, 0];
-const ANY_ORDER: Formant["position"][] = ["word", undefined, "stem", "first", "last"]; // what reads best when nothing fits
+const ANY_ORDER: Formant["position"][] = ["word", undefined, "last", "stem", "first"]; // what reads best when nothing fits
+const MIN_NAME = 3;
 const SILENT = "_"; // a noun left unsaid: the word beside it agrees with it all the same
 const STUTTER = /(\p{L}{3,})\+\1|(\p{L}{2})\+\2(?=[ -]|$)/u; // a part that repeats the one before: Harlan-land, Amnon-on
+const LEFT_OVER = /(?<=^|[ -])[ '+-]+|[ +-]+$/g; // the marks between a name and a modifier given up
 const STAR = /\*\p{L}*/u; // where a describing word takes its ending, from the set it names, the default when none
 
 /** A template with a form drawn for each of its concepts */
@@ -103,18 +106,27 @@ class MeaningsModule {
 
     // a name too long is made again with more effort: its shortest forms, then clipped roots, then no modifier
     const shortest = layouts.reduce((a, b) => (length(b) < length(a) ? b : a), drawn);
-    let name = "";
+    const isTold = (name: string) => name.length >= MIN_NAME || meaning.pattern === "simplex"; // not an ending alone: Ni
+    let [name, spare] = ["", ""];
     for (const effort of [0, 1, 2, 3]) {
       for (const kept of effort < 2 ? [Infinity] : effort === 2 ? [3, 2, 1] : [Infinity, 3, 2, 1]) {
         const parts = join(effort ? shortest : drawn, effort, kept);
         name = SoundRules.capitalize(SoundRules.join(parts, base.rules, { rolls, fits: fitsBase }));
-        if (this.fits(name, base)) {
-          const whole = strictness === STRICT && (effort < 3 || !drawn.hasModifier) && !STUTTER.test(parts);
-          return { name, whole };
+        if (isTold(name)) spare = name;
+        else spare ||= name;
+        if (isTold(name) && this.fits(name, base)) {
+          const says = strictness === STRICT && (effort < 3 || !drawn.hasModifier);
+          return { name, whole: says && !STUTTER.test(parts) && !isStub(kept) };
         }
       }
     }
-    return { name, whole: false };
+    return { name: spare, whole: false };
+
+    // a root clipped to a stub tells nobody's name: Ana of Anahita
+    function isStub(kept: number): boolean {
+      const roots = kept === Infinity ? [] : meaning.tokens.filter(isRoot).map(token => rootOf(token, false));
+      return roots.some(root => Names.cut(root, base, kept).length < root.length * CLIPPED);
+    }
 
     /** Every way to fill a template's concepts with forms that may stand where it puts them */
     function layoutsOf({ parts }: Template, strictness: number): Layout[] {
@@ -138,7 +150,8 @@ class MeaningsModule {
         const standing = forms.filter(form =>
           site.afterDash ? form.hyphen : standsAt(form, site.items, site.index, strictness)
         );
-        const sole = [...forms].sort((a, b) => ANY_ORDER.indexOf(a.position) - ANY_ORDER.indexOf(b.position));
+        const reads = (form: Formant) => (isSuffix(form) ? ANY_ORDER.length : ANY_ORDER.indexOf(form.position));
+        const sole = [...forms].sort((a, b) => reads(a) - reads(b));
         filled = filled.flatMap(before =>
           (strictness === ANY ? sole.slice(0, 1) : standing).map(form => [...before, form])
         );
@@ -261,7 +274,7 @@ class MeaningsModule {
         )
         .join("")
         .replace(/ +/g, " ")
-        .trim();
+        .replace(effort === 3 ? LEFT_OVER : /^ +| +$/g, "");
     }
   }
 

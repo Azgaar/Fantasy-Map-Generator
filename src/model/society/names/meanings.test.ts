@@ -102,9 +102,21 @@ describe("render", () => {
     expect(names("german")).toEqual(new Set(["Frankland", "Frankien", "Frankmark", "Frankreich"]));
     expect(names("korean")).toContain("Pranguk"); // Korean writes no f and no nk
     expect(names("chinese")).toEqual(new Set(["Fran Guo"]));
-    expect(names("arabic")).toEqual(new Set(["Frankiyya", "Al Frankiyya"]));
+    expect(names("arabic")).toEqual(new Set(["Frankiyya", "Al Frankiyya", "Bilad Frank"]));
     Names.nameBases.push(custom());
     expect(names("custom")).toEqual(new Set(["Frankia"])); // the shared form: a base with no land of its own
+  });
+
+  it("sets a describing word in the number of its noun", () => {
+    const names = (baseId: string, modifier: Token, generic: Token) =>
+      Array.from({ length: 80 }, (_, salt) =>
+        Meanings.render(withSalt({ ...meaning("modifier-generic", modifier, generic), origin: baseId }, salt), baseId)
+      );
+    for (const name of names("roman", "new", "spring")) expect(name).not.toMatch(/Nova Aquae|Aquae Nova$/);
+    for (const name of names("castillian", "great", "cave")) expect(name).not.toMatch(/Cuevas Grande$|Gran Cuevas/);
+    for (const name of names("italian", "great", "lake")) expect(name).not.toMatch(/Laghi (?:Grande|Maggiore)$/);
+    for (const name of names("french", "upper", "shore"))
+      expect(name).not.toMatch(/Haut-(?:Côte|Rive)|(?:Côte|Rive)-Haut$/);
   });
 
   it("leaves a land unsaid where a template has a suffix for it", () => {
@@ -123,7 +135,7 @@ describe("render", () => {
   it("applies a base's rules at the join", () => {
     const aden = meaning("root-land", "~Adn", "land");
     const arabic = Array.from({ length: 40 }, (_, salt) => Meanings.render(withSalt(aden, salt), "arabic"));
-    expect(arabic).toContain("Aladniyya"); // "al" joins a root that starts with a vowel
+    expect(arabic).toContain("Al Adniyya");
   });
 
   it("drops a root's last vowels before a short vowel ending", () => {
@@ -170,7 +182,9 @@ describe("a name too long for its base", () => {
   it("clips its root at a syllable, then gives up its modifier", () => {
     Names.nameBases.push(custom({ length: [4, 9] }));
     const long = Meanings.compose(meaning("owner-generic", "~Korbachmelheim", "town"), "custom");
-    expect(long).toEqual({ name: "Kordorf", whole: true }); // the root kept as far as the ending leaves room
+    expect(long).toEqual({ name: "Kordorf", whole: false }); // a stub of the root: generation draws another
+    const short = Meanings.compose(meaning("owner-generic", "~Korbame", "town"), "custom");
+    expect(short).toEqual({ name: "Korbadorf", whole: true }); // the root kept as far as the ending leaves room
     expect(Meanings.render(meaning("simplex", "~Korbachmelheim"), "custom")).toBe("Korbachmelheim"); // a name of its own is left whole
 
     Names.nameBases.push({ ...custom({ length: [4, 9] }), id: "plain", extends: "human-generic" });
@@ -178,6 +192,11 @@ describe("a name too long for its base", () => {
     expect(harbour).toMatchObject({ whole: false });
     expect(harbour.name).not.toMatch(/sh[ei]p/i);
     expect(Meanings.compose(meaning("modifier-generic", "new", "town"), "plain")).toMatchObject({ whole: true });
+
+    const lexicon = { pine: "msonobari+", town: "+ni" };
+    Names.nameBases.push({ ...custom({ length: [4, 9], lexicon: NameNotation.parseLexicon(lexicon) }), id: "ending" });
+    const pine = Meanings.compose(meaning("modifier-generic", "pine", "town"), "ending");
+    expect(pine).toEqual({ name: "Msonobarini", whole: false }); // the ending alone would be no name
   });
 });
 

@@ -630,7 +630,7 @@ heather: tsutsuji
 holly: hiiragi
 yew: ichii
 alder: hari
-hazel: haru
+hazel: hashibami+
 linden: shina
 beech: buna
 maple: kaede 3, momiji

@@ -289,6 +289,7 @@ export const darkElven: WrittenNameBase = {
     { match: "([^nrslamg])\\1+", replace: "$1" },
     { match: "(?<='[a-z]+)\\+'\\+", replace: "+", at: "join" }, // T'linith, not T'lin'ith
     { match: "([a-z]{3,})\\+\\1(?![a-z])", replace: "$1", at: "join" }, // Zaknar, not Zaknarnar
+    { match: "(?<=[^aeiouy+' ])\\+ss", replace: "+s", at: "join" }, // Undsin, not Undssin
     { match: "th\\+th", replace: "+th", at: "join" }
   ],
   settled: 0.7,

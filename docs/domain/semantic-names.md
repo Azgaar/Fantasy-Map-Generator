@@ -124,13 +124,13 @@ The burg group maps to a settlement concept by name: `capital` and `city` to `ci
 
 `Meanings.render(meaning, baseId)` does this:
 
-1. **Adapt foreign roots.** A root coined in another base is brought to this base's sounds: `~Eadric` is Eadrik in Ruthenian and Eadarica in Japanese. A base's own roots stand as coined.
+1. **Adapt foreign roots.** A root coined in another base is brought to this base's sounds: `~Eadric` is Eadrik in Ruthenian and Eadarico in Japanese. A base's own roots stand as coined.
 2. **Draw a template** for the pattern by its weight: `{modifier}{generic}` or `{modifier} {generic}`. A template may leave out what the burg is by its group, as `{root}` does for a town named after its river; a land may go unsaid too, as in `{root}ia`. It never leaves out a name or what stands at the place.
 3. **Draw a form for each concept** by weight, from the forms that may stand where the template puts them. A suffix needs a stem or a proper name before it, a describing word takes the gender of its noun, and a place word that describes another joins it: Fordhall, never Ford Hall.
 4. **Join the parts** with `+` between and run the sound rules: `exe+mouth` becomes Exmouth. Every word then takes a capital, but joining words such as de, di, sur and of between two others: Pont-sur-Moselle, Puebla de Sanabria.
 5. **Shorten a name that is too long**: shorter forms, then roots clipped at a syllable (`Names.cut`: three letters at least, closing as the base's names do), then no modifier. Another place's name, as in New Barton, is never clipped. Each word may be as long as the base allows, the whole name twice that.
 
-A part that repeats the one before it, Harlan-land or Barley-ley, makes a name that is not whole: generation draws another.
+A part that repeats the one before it, Harlan-land or Barley-ley, makes a name that is not whole, and so does a root clipped to less than two thirds, Ana of Anahita: generation draws another. A name is never an ending alone: where giving up the modifier would leave Ni of a Swahili pine hamlet, the long name stays.
 
 Every draw is seeded by the base, the pattern, the tokens and the salt. The same meaning and base give the same name on every call, in every session.
 
@@ -155,7 +155,7 @@ English and Ruthenian are written in full, against counts of their historical pl
 | --------------------------- | ------------------------------------------ | -------------------- |
 | A burg's or state's culture | the same meaning in the new culture's base | `Toponyms.nameIn`    |
 | A culture's name base       | the same for all its unlocked burgs        | `Toponyms.nameIn`    |
-| A burg's group              | the same meaning ending in the new group   | `Toponyms.regrouped` |
+| A burg's group              | the same meaning ending in the new group, drawn the nearest to the old name | `Toponyms.regrouped` |
 
 A meaning records why the name was given and is not checked again: a town keeps "harbour" in its name after its port is removed.
 

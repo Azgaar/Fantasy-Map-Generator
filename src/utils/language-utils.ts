@@ -30,6 +30,7 @@ export const trimVowels = (string: string, minLength: number = 3) => {
  * @returns The adjective form of the noun.
  */
 export const getAdjective = (nounToBeAdjective: string) => {
+  if (/[ -]/.test(nounToBeAdjective) && !/ Guo$/.test(nounToBeAdjective)) return nounToBeAdjective; // Martin's Castle Flood
   const adjectivizationRules = [
     {
       name: "guo",
@@ -40,14 +41,14 @@ export const getAdjective = (nounToBeAdjective: string) => {
     {
       name: "orszag",
       probability: 1,
-      condition: /orszag$/,
+      condition: /orsz[aá]g$/,
       action: (noun: string) => (noun.length < 9 ? `${noun}ian` : noun.slice(0, -6))
     },
     {
       name: "stan",
       probability: 1,
       condition: /stan$/,
-      action: (noun: string) => (noun.length < 9 ? `${noun}i` : trimVowels(noun.slice(0, -4)))
+      action: (noun: string) => `${noun}i`
     },
     {
       name: "land",
@@ -56,8 +57,7 @@ export const getAdjective = (nounToBeAdjective: string) => {
       action: (noun: string) => {
         if (noun.length > 9) return noun.slice(0, -4);
         const root = trimVowels(noun.slice(0, -4), 0);
-        if (root.length < 3) return `${noun}ic`;
-        if (root.length < 4) return `${root}lish`;
+        if (root.length < 4 || ![...root.toLowerCase()].some(isVowel)) return `${noun}ic`;
         return `${root}ish`;
       }
     },
@@ -66,6 +66,18 @@ export const getAdjective = (nounToBeAdjective: string) => {
       probability: 1,
       condition: /que$/,
       action: (noun: string) => noun.replace(/que$/, "can")
+    },
+    {
+      name: "shire",
+      probability: 1,
+      condition: /(?:shire|[^aeiou]en)$/,
+      action: (noun: string) => noun
+    },
+    {
+      name: "ie",
+      probability: 1,
+      condition: /[^aeouy]e$/,
+      action: (noun: string) => noun.replace(/i?e$/, "ian")
     },
     {
       name: "a",
@@ -109,7 +121,7 @@ export const getAdjective = (nounToBeAdjective: string) => {
       condition: /os$/,
       action: (noun: string) => {
         const root = trimVowels(noun.slice(0, -2), 0);
-        if (root.length < 4) return noun.slice(0, -1);
+        if (root.length < 3) return noun.slice(0, -1);
         return `${root}ian`;
       }
     },
@@ -119,7 +131,7 @@ export const getAdjective = (nounToBeAdjective: string) => {
       condition: /es$/,
       action: (noun: string) => {
         const root = trimVowels(noun.slice(0, -2), 0);
-        if (root.length > 7) return noun.slice(0, -1);
+        if (root.length > 7) return noun;
         return `${root}ian`;
       }
     },

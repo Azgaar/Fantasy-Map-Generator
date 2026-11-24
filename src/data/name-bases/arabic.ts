@@ -398,8 +398,8 @@ export const arabic: WrittenNameBase = {
 ^al (?=[aeiou]\S* al ) =>  | join
 ^al (?=\S+ al (?!(?:jadid|qadim|atiq|kabir|kubra|saghir|sughra|tawil|wasi|amiq|ulya|sufla|awsat|wusta|aswad|sawda|abyad|bayda|ahmar|hamra|akhdar|khadra|asfar|safra|azraq|zarqa|muzlim|munir|barid|sakhin|sukhnah|nashif|ratb|tayyib|jamil|muqaddas|hurr|baid|wahid|mahruq|hilw|said|awaj|awja|dayyiq|mudawwar|sari|murr|mubarak|masud)(?:\+?ah)?$|(?:aal|wat|fawqan|tahtan|shamal|janub|sharq|gharb|dhahab|ramad|had|barr|ghan|mustaw|saf)(?:i|iyah)$)) =>  | join`, // the article goes on a noun only before a describing word
     { match: "^al (?=al)", replace: "", at: "join" },
-    { match: "^al (?=[aeiou])", replace: "al", at: "join" },
     String.raw`
+ayya\+iyya => ayyiyya | join
 ^al (?=\S+ al allah$) =>  | join
 (?<= )al (?=allah$) =>  | join
 \sal$ =>  | join
@@ -410,7 +410,7 @@ $ => ayn | as du`
   ],
   // a describing word takes the gender of its noun, and a city is feminine: Qasr Al Abyad, Madinah Al Bayda
   grammar: `
-m: ^(?:qusayr|tulayl|jubayl|burayj|buwayb|kufayr|bayt|manzil|hawsh|qasr|diwan|haql|marj|sahl|hirsh|tell|kom|maabar|jisr|mina|marsa|wadi|fam|masabb|jabal|sahil|shati|shatt|jurf|khalij|khor|ras|burj|dhahr|naqb|fajj|ghadir|manjam|maadin|mahjar|nahr|sayl|tarf|bab|sur|hajar|qarn|shallal|bustan|arin|kahf|lisan|fasht|nafud|irq|raml|kathib|fayd|shib|jawf|qaa|siq|madiq|masbak|rujm|maqam|mashhad|mafraq|multaqa|munhana|karm|hima|khan|darb|tariq|sadd|marqab|hisn|ribat|masjid|jami|haykal|dayr|suq|kafr|balad|majlis|qabr|maydan|funduq|makhzan|sinn|qalb|daraj|thughur|sahil)$
+m: ^(?:qusayr|tulayl|jubayl|burayj|buwayb|kufayr|bayt|manzil|hawsh|qasr|diwan|haql|marj|sahl|hirsh|tell|kom|maabar|jisr|mina|marsa|wadi|fam|masabb|jabal|sahil|shati|shatt|jurf|khalij|khor|ras|burj|dhahr|naqb|fajj|ghadir|manjam|maadin|mahjar|nahr|sayl|tarf|bab|sur|hajar|qarn|shallal|bustan|arin|wakr|kahf|lisan|fasht|nafud|irq|raml|kathib|fayd|shib|jawf|qaa|siq|madiq|masbak|rujm|maqam|mashhad|mafraq|multaqa|munhana|karm|hima|khan|darb|tariq|sadd|marqab|hisn|ribat|masjid|jami|haykal|dayr|suq|kafr|balad|majlis|qabr|maydan|funduq|makhzan|sinn|qalb|daraj|thughur|sahil)$
 du: (?!)
 f:
 
@@ -717,7 +717,7 @@ hundred: Miah
 thousand: Alf
 
 # lands
-land: +iyya
+land: +iyya 8, Bilad
 realm: Mamlakat
 march: Thughur
 domain: Imarat
@@ -744,6 +744,6 @@ isles: Juzur
         { parts: "{generic} {root}", weight: 3 }
       ]
     },
-    "modifier-land": { templates: "{generic} al {modifier}" }
+    "modifier-land": { weight: 12, templates: "{generic} al {modifier}" }
   }
 };

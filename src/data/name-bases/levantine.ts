@@ -368,7 +368,8 @@ export const levantine: WrittenNameBase = {
     { match: "([^ankprs])\\1+", replace: "$1" },
     String.raw`
 [\s-]+$ =>  | join
-(?<=^(?:kiry|giv|ram|tir|horsh|tahan|breikh|mear|pisg|mesil|hom|nahal|metzud|bik|arav|gad))at(?= (?:hadasha|yeshana|atika|gdola|rabba|ktana|arukha|rehava|amuka|rama|nemukha|illit|tahtit|tikhona|tzfonit|dromit|mizrahit|maaravit|hofshit|shehora|levana|aduma|yeruka|zehuba|afora|kehula|keha|behira|tzehuba|kara|hama|yevesha|laha|shketa|yafa|kdosha|metuka|mara|rehoka|bodeda|srufa|smeha|akuba|ashira|tzara|telula|agula|mehira|tzlula|brukha)$) => a | join
+(?<!qart[ -])hadasht$ => hadasha | join
+(?<=^(?:kiry|giv|ram|tir|horsh|tahan|breikh|mear|pisg|mesil|hom|nahal|metzud|bik|arav|gad))at(?=[ -](?:hadasha|yeshana|atika|gdola|rabba|ktana|arukha|rehava|amuka|rama|nemukha|illit|tahtit|tikhona|tzfonit|dromit|mizrahit|maaravit|hofshit|shehora|levana|aduma|yeruka|zehuba|afora|kehula|keha|behira|tzehuba|kara|hama|yevesha|laha|shketa|yafa|kdosha|metuka|mara|rehoka|bodeda|srufa|smeha|akuba|ashira|tzara|telula|agula|mehira|tzlula|brukha)$) => a | join
 (?<=^(?:kiry|giv|ram|tir|horsh|tahan|breikh|mear|pisg|mesil|hom|nahal|metzud|bik|arav|gad))at$ => a | join
 e$ => ayim | as du
 at$ => atayim | as du
@@ -378,7 +379,7 @@ $ => ayim | as du`
   grammar: `
 mpl: ^(?:mei|ganei)$|im$
 fpl: ot$
-m: ^(?:beit|beth|bet|kfar|neve|ohel|moshav|armon|sde|yaar|horesh|tel|maavar|gesher|namal|mahoz|emek|gei|pi|mevo|har|tur|hof|iy|yam|agam|agmon|abel|ahu|tzuk|sela|migdal|rekhes|shen|maale|midbar|gev|mahane|gilgal|mikhre|nahal|nahar|yeor|yuval|afik|metzad|mivtzar|mitzpe|efes|ketz|shaar|petah|gader|tzur|mapal|gan|pardes|maon|rosh|hol|yeshimon|gal|tzomet|migdalor|kerem|mire|malon|ilan|sekher|mishmar|kever|kikar|pundak|goren|lev|yad|deir|heikhal|mikdash|shuk|hatzor|mifratz|maayan|mizbeah|magen|gvul|mizrah)$
+m: ^(?:beit|beth|bet|kfar|neve|ohel|moshav|armon|sde|yaar|horesh|tel|maavar|gesher|namal|mahoz|emek|gei|pi|mevo|har|tur|hof|iy|yam|agam|agmon|abel|ahu|tzuk|sela|migdal|rekhes|maale|midbar|gev|mahane|gilgal|mikhre|nahal|nahar|yeor|yuval|afik|metzad|mivtzar|mitzpe|efes|ketz|shaar|petah|tzur|mapal|gan|pardes|maon|rosh|hol|yeshimon|gal|tzomet|migdalor|kerem|mire|malon|ilan|sekher|mishmar|kever|kikar|pundak|lev|deir|heikhal|mikdash|shuk|hatzor|mifratz|maayan|mizbeah|magen|gvul|mizrah)$
 du: (?!)
 f:
 

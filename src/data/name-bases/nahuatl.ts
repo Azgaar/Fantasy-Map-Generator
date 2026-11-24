@@ -350,7 +350,8 @@ export const nahuatl: WrittenNameBase = {
     { match: "([^l])\\1+", replace: "$1" },
     String.raw`
 (?:tli|tl|li)\+ => + | join
-(?<=[^aeiou])in\+ => + | join
+(?<=[a-z]{3})tzin\+ => + | join
+(?<=[a-z]{2}[^aeiou])in\+ => + | join
 (?<=^[a-z]{3,})(?:ti)?tlan\+(?=(?:ti)?tlan$|co$|pan$) => + | join
 (?<=^[a-z]{3,}[aeiou])c\+(?=(?:ti)?tlan$|co$|pan$|can$|tla$) => + | join
 l\+tla => ll+a | join

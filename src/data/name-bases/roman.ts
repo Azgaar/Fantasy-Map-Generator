@@ -420,6 +420,7 @@ export const roman: WrittenNameBase = {
     { match: "\\b(duo|duae|tres|tria|quinque|septem|novem|decem|centum|mille)\\+", replace: "$1 ", at: "join" }, // Tres Tabernae
     String.raw`
 %\+etum => +aria | join
+% =>  | join
 ae\+\+ =>  | join
 ius\+\+ => i | join
 (?:us|um|a)\+\+ =>  | join
@@ -439,6 +440,7 @@ er\+' => ri | join
 on\+' => onis | join
 \+' => i | join
 anus\+an => an | join
+(agripp|sull|senec)a\+(?=(?:us|a|um|i|ae)$) => $1an+ | join
 i?(?:us|um|a|o)\+(?=ic) => + | join
 i(?:us|a|um)?\+ia => ia | join
 o\+ia => onia | join
@@ -476,7 +478,7 @@ a$ => ae | as pl`
   ],
   // describing words agree in three genders and both numbers: Nova Villa, Novum Castrum, Novus Portus, Castra Nova
   grammar: `
-fpl: ae$|^(?:turres|arbores)$
+fpl: ^[^ ]+ae$|^(?:turres|arbores)$
 npl: ^(?:vada|ostia|saxa|prata|castra)$
 mpl: ^(?:pontes|fontes|confluentes|putei)$
 n: um$
@@ -833,7 +835,7 @@ hundred: centum+/pl 2
 thousand: mille+/pl
 
 # lands
-land: +ia 6, +ania 3, +ica 3, +icum
+land: +ia 6, +ania 3, +ica 3, +icum, Terra 2
 realm: Regnum 2
 march: Limes/m 2
 country: Ager 2
@@ -859,6 +861,6 @@ crown: Corona
     compound: { weight: 10, templates: "{generic} {modifier} 6, {modifier} {generic} 2, {modifier}{generic} 2" },
     relative: { weight: 10, templates: "{root} {modifier} 6, {modifier} {root} 2" },
     "root-land": { templates: "{root}{generic} 10, {generic} {root}' 2, {generic} {root}* 2" },
-    "modifier-land": { templates: "{generic} {modifier}" }
+    "modifier-land": { weight: 12, templates: "{generic} {modifier} 4, {generic} {modifier}osa" }
   }
 };

@@ -356,7 +356,11 @@ export const amazigh: WrittenNameBase = {
       ]
     }
   },
-  rules: [{ match: "([^s])\\1+", replace: "$1" }, String.raw`[\s-]+$ =>  | join`],
+  rules: [
+    { match: "([^s])\\1+", replace: "$1" },
+    String.raw`[aeiou]\+(?=etania$) => + | join
+[\s-]+$ =>  | join`
+  ],
   // a describing word takes the gender of its noun, feminine in t-…-t: Adrar Amellal, Tighremt Tamellalt
   grammar: `
 mpl: ^(?:idurar|ifrane|ighanim|iselman|irden|timzin)$
@@ -472,7 +476,7 @@ east: Ugmud 3
 west: Utaram 3
 black: Aberkan/m 4, Taberkant/f 4
 dark: Aberkan/m, Taberkant/f
-white: Amellal/m 5, Tamellalt/f 5, Melloul 2
+white: Amellal/m 5, Tamellalt/f 5, Melloul/m 2, Tamelloult/f 2
 red: Azeggagh/m 4, Tazeggaght/f 4
 green: Azegzaw/m 4, Tazegzawt/f 4
 blue: Azegzaw/m 2, Tazegzawt/f 2
@@ -549,7 +553,7 @@ nine: Tza
 ten: Mraw 2
 
 # lands
-land: +ata 4, +awa 3, +etania 2, +ia 2
+land: +ata 4, +awa 3, +etania 2, +ia 2, Tamurt 2
 country: Tamazirt 2
 realm: Tageldit 2
 `,
@@ -566,6 +570,6 @@ realm: Tageldit 2
     compound: { weight: 6, templates: "{generic} {modifier}" },
     relative: { weight: 5, templates: "{root} {modifier}" },
     "root-land": { templates: "{root}{generic} 8, {generic} {root} 2" },
-    "modifier-land": { templates: "{generic} {modifier}" }
+    "modifier-land": { weight: 12, templates: "{generic} {modifier}" }
   }
 };

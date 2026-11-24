@@ -443,6 +443,7 @@ m:
 *: m o, f a, pl os, fpl as
 *o: m o, f a, pl os, fpl as
 *e: m e, f e, pl es, fpl es
+*l: m , f , pl es, fpl es
 *art: m el, f la, pl los, fpl las
 *san: m san, f santa, pl san, fpl santa`,
   lexicon: `
@@ -524,7 +525,7 @@ glade: Nava 3, Navas 2, nava+ 3, naval+ 2
 glen: Hoya 3, Cañada 3, Hoz/f 2
 hollow: Hoya 3, Hoyo 2, Hondonada, hoyo+
 gorge: Hoz/f 3, Barranco 3, Garganta 2
-peak: Pico 3, Picacho, Peña 2, Cumbre
+peak: Pico 3, Picacho, Peña 2, Cumbre/f
 spire: Aguja
 cave: Cueva 3, Cuevas 2, cueva^ 2
 forge: Herrería 3, Fragua 2, Herrera 2
@@ -552,7 +553,7 @@ guard: Guarda 2, Atalaya 2
 # modifiers
 new: +nuev* 6, Nuev* 2
 old: +viej* 3, Viej* 2
-great: +mayor 4, Grande 2
+great: +mayor 4, Grand*e 2
 little: +menor 2, +chic* 2
 long: +larg* 2, Larg*
 broad: +anch*
@@ -586,7 +587,7 @@ reed: junc^ 3
 rose: ros^ 2
 apple: manzan^ 4
 wolf: +lobos 3, lob^ 2
-bear: os^ 2, +osos
+bear: os^ 2, +losos
 eagle: aguil^ 4
 deer: cerv^ 3, +ciervos
 horse: caball^ 2, +caballos 2
@@ -625,7 +626,7 @@ wild: +brav* 3
 fair: +buen* 3, bel+ 3, buena+ 2
 holy: +sant* 3
 free: +franc* 4, Franc*
-king: +real 4, +rey 2, Real
+king: +real 4, +rey 2, Real*l
 queen: +reina 3
 lord: +señor 2, +conde 2
 priest: +obispo 2, +abad 2, +frailes 2
@@ -731,7 +732,7 @@ hundred: Cien/pl
 thousand: Mil/pl
 
 # lands
-land: +ia 8, +ania 4, +landia 2, +aña 2, +terra
+land: +ia 8, +ania 4, +landia 2, +aña 2, +terra, Tierra 2
 realm: Reino
 march: Marca 2
 country: Tierra 2
@@ -752,6 +753,6 @@ coast: Costa 2
     "generic-of": { weight: 12, templates: "{generic}{root} 2, {generic} {root}, {generic} de {root} 3, {root} 3" },
     compound: { weight: 6, templates: "{generic}{modifier} 5, {modifier}{generic} 2, {generic} {modifier}" },
     relative: { weight: 5, templates: "{modifier} {root} 4, {root} {modifier} 4" },
-    "modifier-land": { templates: "{generic} {modifier} 3, {modifier}{generic}" }
+    "modifier-land": { weight: 12, templates: "{generic} {modifier} 4, {generic} de {modifier}ales" }
   }
 };

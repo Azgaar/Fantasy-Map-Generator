@@ -375,7 +375,7 @@ export const mongolian: WrittenNameBase = {
 (?<=(?:^|[ -])[^aou +-]*)\+t(?=$|[ -]) => et | join
 (?<=o[^aeiu +-]*)\+t(?=$|[ -]) => ot | join
 \+t(?=$|[ -]) => at | join
-[aeiouy]\+(ia|ud)$ => $1 | join
+[aeiouy]+\+(ia|ud)$ => $1 | join
 \+(?=[aeiouy])(?!(?:ia|ud)$) => - | join
 \+ =>  | join`
   ],

@@ -346,7 +346,7 @@ export const korean: WrittenNameBase = {
   rules: [
     { match: "(.)\\1+", replace: "$1" },
     { match: "^([a-z]{2,}?)(?:gang|cheon)\\+", replace: "$1+", at: "join" }, // a town on the Hangang is Hanyang
-    { match: "(?<=[aeiou](?:ng|[nmlkps]))[^aeiou+]+(?=\\+(?:guk|ryeo|ra)$)", replace: "", at: "join" }, // a state is of whole syllables
+    { match: "(?<=[aeiou](?:ng|n(?!g)|[mlkps]))[^aeiou+]+(?=\\+(?:guk|ryeo|ra)$)", replace: "", at: "join" }, // a state is of whole syllables
     { match: "^([a-z]+)\\+\\1$", replace: "", at: "join" }, // no syllable twice: Jinjin
     { match: "^r(?=[iy])", replace: "", at: "join" }, // no r at the start of a word: Imchon, Yeongbong
     { match: "^r", replace: "n", at: "join" },

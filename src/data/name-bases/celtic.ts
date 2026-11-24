@@ -387,6 +387,7 @@ export const celtic: WrittenNameBase = {
 (?<=^dau\+)([bm]) => f | join
 (?<=^dau\+)p => b | join
 (?<=^dau\+)t(?!h) => d | join
+([nrg])\+(?=\1) => $1 | join
 (?<=[^l])(.)\+\1 => $1 | join
 \+ =>  | join
 ^(pen|tal|bryn|cwm|coed|nant|maes|glan|pant)(?=[^aeiouy ][a-z]{2,}$) => $1y | 15%`
