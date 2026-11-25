@@ -332,7 +332,7 @@ Test what a rule makes of a join, agreement, and forms that are drawn often. Do 
 ## Rules to keep
 
 - **Rendering is pure.** `Meanings` never draws from `Math.random`. A change that breaks this makes saved maps show other names in the translations list and on labels.
-- **Burgs, rivers, lakes and generated states are named on a random sequence of their own**, seeded by the map seed and the entity's id. Naming one does not shift the draws of another or of the rest of the generation.
+- **Burgs, rivers, lakes, generated states and provinces are named on a random sequence of their own**, seeded by the map seed and the entity's id. Naming one does not shift the draws of another or of the rest of the generation.
 - **The same seed gives the same names**, and a scenario test checks it. Reordering the draws in `Toponyms` keeps that true but changes the names every existing seed gives.
 - **Names do not repeat** among burgs, among states and among rivers.
 - **A state takes only a land word its base has written.** A coined one would name a state like a town.

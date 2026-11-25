@@ -649,7 +649,7 @@ test.describe("Map loading", () => {
         defaultIds: Names.getNameBases().map((base: any) => base.id),
         changed: Names.nameBases.filter((base: any) => !base.places || !Names.isShipped(base)),
         chainFromDefault:
-          JSON.stringify(Object.entries(Names.chains.get("german") ?? Names.updateChain("german"))) ===
+          JSON.stringify(Object.entries(Names.chainOf(Names.find("german").places.names))) ===
           JSON.stringify(Object.entries(Names.calculateChain(german.places.names)))
       };
     });

@@ -1,4 +1,3 @@
-import Alea from "alea";
 import { randomNormal } from "d3";
 import { minmax, rn } from "./number-utils";
 
@@ -130,10 +129,22 @@ export const generateSeed = (): string => {
   return String(Math.floor(Math.random() * 1e9));
 };
 
+/** A random sequence of a seed, for many short ones: far cheaper to start than Alea. FNV-1a hash, then mulberry32 */
+export function seededRandom(seed: string): () => number {
+  let state = 0x811c9dc5;
+  for (let i = 0; i < seed.length; i++) state = Math.imul(state ^ seed.charCodeAt(i), 0x01000193);
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let roll = Math.imul(state ^ (state >>> 15), state | 1);
+    roll ^= roll + Math.imul(roll ^ (roll >>> 7), roll | 61);
+    return ((roll ^ (roll >>> 14)) >>> 0) / 0x100000000;
+  };
+}
+
 /** Run a function on a random sequence of its own, leaving the ambient sequence where it was */
 export function seeded<T>(seed: string, run: () => T): T {
   const ambient = Math.random;
-  Math.random = Alea(seed);
+  Math.random = seededRandom(seed);
   try {
     return run();
   } finally {

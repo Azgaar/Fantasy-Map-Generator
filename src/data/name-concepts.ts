@@ -487,10 +487,13 @@ export type Kind = keyof typeof KINDS;
 
 export const isConcept = (word: string): word is Concept => Object.hasOwn(CONCEPTS, word);
 
-export const kindOf = (concept: Concept): Kind =>
-  (Object.keys(KINDS) as Kind[]).find(kind => Object.hasOwn(KINDS[kind], concept))!;
-
 export const conceptsOf = (kind: Kind): Concept[] => Object.keys(KINDS[kind]) as Concept[];
+
+const KIND_OF = new Map(
+  (Object.keys(KINDS) as Kind[]).flatMap(kind => conceptsOf(kind).map(concept => [concept, kind]))
+);
+
+export const kindOf = (concept: Concept): Kind => KIND_OF.get(concept)!;
 
 /** The settlement a burg group's burgs are named as; a group of another name goes by the size it takes */
 const GROUP_SETTLEMENTS: Record<string, Concept> = {

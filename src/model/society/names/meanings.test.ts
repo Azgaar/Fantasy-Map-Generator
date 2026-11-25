@@ -157,17 +157,14 @@ describe("a base with no lexicon", () => {
     expect(Meanings.render(meaning("owner-generic", "~Mel", "quarry"), "custom")).toMatch(/^Mel ?\p{L}+$/u); // a place may be a word
   });
 
-  it("keeps one form for a concept across names", () => {
-    Names.nameBases.push(custom());
-    const [town, farm] = ["town", "farm"].map(generic =>
-      Meanings.render(meaning("modifier-generic", "black", generic as Token), "custom")
-    );
-    const prefix = town.slice(
-      0,
-      [...town].findIndex((letter, index) => letter !== farm[index])
-    );
-    expect(prefix.length).toBeGreaterThanOrEqual(2);
-    expect(Meanings.render(meaning("modifier-generic", "white", "town"), "custom")).not.toBe(town);
+  it("keeps the forms of a concept across names", () => {
+    const base = custom();
+    Names.nameBases.push(base);
+    const starts = Lexicon.formsOf(base, "black").map(({ form }) => form.slice(0, 2));
+    for (const generic of ["city", "town", "village", "hamlet"] as Token[]) {
+      const name = Meanings.render(meaning("modifier-generic", "black", generic), "custom");
+      expect(starts, name).toContain(name.slice(0, 2).toLowerCase());
+    }
   });
 
   it("keeps its coined forms when another concept is written, and coins anew when its rules change", () => {

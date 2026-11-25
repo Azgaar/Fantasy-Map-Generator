@@ -10,7 +10,9 @@ import {
   pickWeighted,
   ra,
   rand,
-  rw
+  rw,
+  seeded,
+  seededRandom
 } from "./probability-utils";
 
 describe("rand", () => {
@@ -387,5 +389,28 @@ describe("pickWeighted", () => {
 
   it("picks any item when none has a weight", () => {
     expect(["a", "b"]).toContain(pickWeighted(["a", "b"], [0, 0]));
+  });
+});
+
+describe("seededRandom", () => {
+  it("rolls the same for a seed, evenly, and apart for seeds alike", () => {
+    const rolls = (seed: string, count: number) => Array.from({ length: count }, seededRandom(seed));
+    expect(rolls("burg|1", 5)).toEqual(rolls("burg|1", 5));
+    expect(rolls("burg|1", 5)).not.toEqual(rolls("burg|2", 5));
+
+    const first = Array.from({ length: 5000 }, (_, i) => seededRandom(`burg|${i}`)());
+    for (const all of [first, rolls("burg", 5000)]) {
+      expect(all.every(roll => roll >= 0 && roll < 1)).toBe(true);
+      const shares = [0, 0.25, 0.5, 0.75].map(
+        from => all.filter(roll => roll >= from && roll < from + 0.25).length / 5000
+      );
+      for (const share of shares) expect(share).toBeCloseTo(0.25, 1);
+    }
+  });
+
+  it("leaves the ambient sequence where it was", () => {
+    const ambient = Math.random;
+    expect(seeded("a", () => Math.random())).toBe(seededRandom("a")());
+    expect(Math.random).toBe(ambient);
   });
 });

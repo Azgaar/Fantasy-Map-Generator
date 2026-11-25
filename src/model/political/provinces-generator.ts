@@ -11,7 +11,7 @@ import { getMixedColor, requireColor } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { replaceWholeWord } from "@/utils/language-utils";
 import { getPolesOfInaccessibility } from "@/utils/path-utils";
-import { gauss, generateSeed, P, rand, rw } from "@/utils/probability-utils";
+import { gauss, generateSeed, P, rand, rw, seeded } from "@/utils/probability-utils";
 import { requireName } from "@/utils/validation-utils";
 import { Burgs } from "./burgs-generator";
 import { States } from "./states-generator";
@@ -120,6 +120,9 @@ class ProvinceModule {
     const maxGrowth = provincesRatio === 100 ? 1000 : gauss(20, 5, 5, 100) * Math.max(provincesRatio, 1) ** 0.5; // max growth
 
     const taken = Toponyms.landNames(provinces); // no two lands share a name
+    // off a sequence of its own: how a name is coined moves no border
+    const nameLand = (culture: number) =>
+      seeded(`${localSeed}|province|${provinces.length}`, () => Toponyms.landOf(culture, taken));
 
     // generate provinces for selected burgs
     states.forEach(s => {
@@ -144,7 +147,7 @@ class ProvinceModule {
         const burg = stateBurgs[i];
         const c = stateBurgs[i].culture!;
         const nameByBurg = P(BURG_NAMED) && !taken.has(burg.name);
-        const named = nameByBurg ? burg : Toponyms.landOf(c, taken); // after its burg, or a land's name
+        const named = nameByBurg ? burg : nameLand(c); // after its burg, or a land's name
         const name = named.name!;
         taken.add(name);
         const formName = rw(form);
@@ -290,7 +293,7 @@ class ProvinceModule {
           const colonyNamed = colony && P(0.8) && getColonyName();
           if (colonyNamed) return colonyNamed;
           if (burgCell && P(BURG_NAMED) && !taken.has(burgs[burg].name)) return burgs[burg];
-          return Toponyms.landOf(c, taken);
+          return nameLand(c);
         })();
         taken.add(name);
 

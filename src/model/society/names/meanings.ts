@@ -1,9 +1,8 @@
 // Turns a meaning into a name in a name base: the rendering half of semantic names
 
-import Alea from "alea";
 import { type Concept, type Kind, kindOf, settles } from "@/data/name-concepts";
 import type { Formant, Meaning, NameBase, Pattern, Template, Token } from "@/types/names";
-import { pickWeighted } from "@/utils/probability-utils";
+import { pickWeighted, seededRandom } from "@/utils/probability-utils";
 import { capitalize, compileRegex } from "@/utils/string-utils";
 import { Appropriation } from "./appropriation";
 import { Lexicon } from "./lexicon";
@@ -36,7 +35,8 @@ const LEFT_OVER = /(?<=^|[ -])[ '+-]+|[ +-]+$/g; // the marks between a name and
 /** A template with a form drawn for each of its concepts */
 interface Layout {
   words: Item[][];
-  forms: Formant[]; // in the order the concepts stand
+  sites: Site[];
+  forms: Formant[]; // in the order of the sites
   weight: number;
   hasModifier: boolean;
 }
@@ -45,11 +45,15 @@ type Item = { slot: Slot } | { text: string };
 
 /** Where a template puts a concept */
 interface Site {
-  items: Item[];
-  index: number;
+  item: Item;
+  items: Item[]; // of the word it is in
   slot: Slot;
+  after?: Standing; // what it comes after in the word, and before
+  before?: Standing;
   afterDash: boolean;
 }
+
+type Standing = "text" | "concept" | "name";
 
 class MeaningsModule {
   readonly slots = SLOTS;
@@ -84,12 +88,12 @@ class MeaningsModule {
   }
 
   /** A meaning's name in a base, and whether it says all of it: a name too long for the base loses its modifier */
-  compose(meaning: Meaning, baseId: string): { name: string; whole: boolean } {
-    const base = Names.resolve(baseId);
-    const random = Alea(`${base.id}|${meaning.pattern}|${meaning.tokens}|${meaning.salt ?? 0}`);
+  compose(meaning: Meaning, of: NameBase | string): { name: string; whole: boolean } {
+    const base = typeof of === "string" ? Names.resolve(of) : of;
+    const random = seededRandom(`${base.id}|${meaning.pattern}|${meaning.tokens}|${meaning.salt ?? 0}`);
     const values = Object.fromEntries(SLOTS[meaning.pattern].map((slot, index) => [slot, meaning.tokens[index]]));
     const grammar = Lexicon.grammarOf(base);
-    const counting = Names.lineage(base).flatMap(({ rules = [] }) => rules.filter(rule => rule.as)); // what makes a noun plural
+    const counting = Names.lineage(base).flatMap(({ rules }) => SoundRules.sort(rules).counting);
     const formsOf = once((concept: Concept) => Lexicon.formsOf(base, concept));
     const matches = (pattern: string, text: string) => compileRegex(pattern)?.test(text) ?? false;
     const isForeign = base.id !== meaning.origin; // a root coined elsewhere is adapted to this base
@@ -107,7 +111,7 @@ class MeaningsModule {
     // a template by its own weight, then its forms by theirs: how many forms fit a template does not favour it
     const { layouts } = pick(fitting, random);
     const drawn = pick(layouts, random);
-    const rolls = (base.rules ?? []).filter(rule => rule.chance !== undefined).map(() => random());
+    const rolls = Array.from({ length: SoundRules.sort(base.rules).rolls }, () => random());
     const fitsBase = (name: string) => this.fits(name, base);
 
     // a name too long is made again with more effort: its shortest forms, then clipped roots, then no modifier
@@ -144,41 +148,34 @@ class MeaningsModule {
 
     /** Every way to fill a template's concepts with forms that may stand where it puts them */
     function layoutsOf(template: Template, strictness: number): Layout[] {
-      const { parts } = template;
-      const unsaid = SLOTS[meaning.pattern].filter(slot => values[slot] && !parts.includes(`{${slot}}`));
-      if (strictness !== ANY && !unsaid.every(slot => goesUnsaid(values[slot]))) return [];
-      const words = wordsOf(template);
-      const sites = words.flatMap((items, order) =>
-        items.flatMap((item, index) =>
-          "slot" in item && isConceptAt(item.slot)
-            ? { items, index, slot: item.slot, afterDash: index === 0 && isDash(words[order - 1]) }
-            : []
-        )
-      );
+      const { words, slots, inflects } = wordsOf(template);
+      const isSaid = (slot: Slot) => !values[slot] || slots.has(slot) || goesUnsaid(values[slot]);
+      if (strictness !== ANY && !SLOTS[meaning.pattern].every(isSaid)) return [];
+      const sites = sitesOf(template, SLOTS[meaning.pattern].filter(isConceptAt));
 
       let filled: Formant[][] = [[]];
       for (const [order, site] of sites.entries()) {
         const forms = standingAt(site, strictness);
-        const follows = sites[order - 1]?.items === site.items && sites[order - 1].index === site.index - 1;
-        const fits = (before: Formant, form: Formant) =>
-          strictness === ANY || !follows || isSuffix(form) === takesSuffix(before);
-        filled = filled.flatMap(before =>
-          forms.filter(form => fits(before[order - 1], form)).map(form => [...before, form])
-        );
+        const longer: Formant[][] = [];
+        for (const before of filled) {
+          const onStem = strictness !== ANY && site.after === "concept" ? takesSuffix(before[order - 1]) : undefined;
+          for (const form of forms)
+            if (onStem === undefined || isSuffix(form) === onStem) longer.push([...before, form]);
+        }
+        filled = longer;
       }
 
-      const agreeing = strictness === ANY ? filled : filled.filter(forms => agrees(sites, forms, parts.includes("*")));
-      return agreeing.map(forms => ({
-        words,
-        forms,
-        weight: forms.reduce((product, form) => product * (form.weight ?? 1), 1),
-        hasModifier: parts.includes("{modifier}")
-      }));
+      const agreeing = strictness === ANY ? filled : filled.filter(forms => agrees(sites, forms, inflects));
+      return agreeing.map(forms => {
+        let weight = 1;
+        for (const form of forms) weight *= form.weight ?? 1;
+        return { words, sites, forms, weight, hasModifier: slots.has("modifier") };
+      });
     }
 
     /** The forms that may stand at a site, whatever stands at the others */
     function standingAt(site: Site, strictness: number): Formant[] {
-      const { items, index, slot, afterDash } = site;
+      const { items, slot, afterDash, after } = site;
       const concept = values[slot] as Concept;
       const forms = formsOf(concept);
       if (strictness === ANY) {
@@ -186,16 +183,14 @@ class MeaningsModule {
         return [...forms].sort((a, b) => reads(a) - reads(b)).slice(0, 1);
       }
 
-      const joined = items[index - 1];
-      const afterText = Boolean(joined && "text" in joined);
       // a proper name takes a suffix where the concept has one: its full forms stand apart from the name
-      const afterRoot = Boolean(joined && "slot" in joined && !isConceptAt(joined.slot)) && forms.some(isSuffix);
+      const needsSuffix = after === "name" && forms.some(isSuffix);
       // a word that describes the noun beside it is no noun itself, which joins it: Fordhall
-      const describes =
-        slot === "modifier" && items.length === 1 && ["generic", "settlement"].includes(kindOf(concept));
+      const kind = kindOf(concept);
+      const describes = slot === "modifier" && items.length === 1 && (kind === "generic" || kind === "settlement");
       return forms.filter(form => {
-        if (!(afterDash ? form.hyphen : standsAt(form, items, index, strictness))) return false;
-        if (isSuffix(form) ? afterText : afterRoot) return false;
+        if (!(afterDash ? form.hyphen : standsAt(form, site, strictness))) return false;
+        if (isSuffix(form) ? after === "text" : needsSuffix) return false;
         return !describes || form.form.includes("*");
       });
     }
@@ -204,17 +199,15 @@ class MeaningsModule {
       return Boolean(values[slot]) && !isRoot(values[slot]);
     }
 
-    // where a form may stand by its own make; what stands beside it is checked once every form is drawn
-    function standsAt(form: Formant, items: Item[], index: number, strictness: number): boolean {
-      const next = items[index + 1];
+    // where a form may stand by its own make; what stands beside it is checked as the others are drawn
+    function standsAt(form: Formant, { items, before }: Site, strictness: number): boolean {
       const position = form.position ?? (isSuffix(form) ? "last" : form.form.includes("*") ? "word" : undefined);
-      const beforeConcept = Boolean(next && "slot" in next && isConceptAt(next.slot));
       if (items.length === 1) return !position || position === "word";
-      if (position === "stem") return beforeConcept || Boolean(next && "text" in next); // a suffix of the template's own
-      if (strictness === LOOSE && beforeConcept && position === "word") return !/[*_]/.test(form.form); // a noun for a stem
-      if (form.form.endsWith("-")) return Boolean(next && "slot" in next && !isConceptAt(next.slot)); // a prefix goes before a root
+      if (position === "stem") return before === "concept" || before === "text"; // a suffix of the template's own
+      if (strictness === LOOSE && before === "concept" && position === "word") return !/[*_]/.test(form.form); // a noun for a stem
+      if (form.form.endsWith("-")) return before === "name"; // a prefix goes before a root
       if (!position) return form.form !== SILENT;
-      return position === (next ? "first" : "last");
+      return position === (before ? "first" : "last");
     }
 
     // a describing word of one class needs its noun, a noun unsaid a word that shows it
@@ -230,7 +223,7 @@ class MeaningsModule {
     }
 
     // the class of the noun a name is built on: its generic, or the root where it has none
-    function headClass(sites: { slot: Slot }[], forms: Formant[]): string | undefined {
+    function headClass(sites: Site[], forms: Formant[]): string | undefined {
       const generic = forms[sites.findIndex(site => site.slot === "generic")];
       if (generic) return generic.class ?? classOf(bareOf(generic.form));
       return values.root && isRoot(values.root) ? classOf(rootOf(values.root, true)) : classOf("");
@@ -256,14 +249,13 @@ class MeaningsModule {
       return forms.reduce((sum, form) => sum + (form.short ?? form.form).length, 0);
     }
 
-    function join({ words, forms }: Layout, effort: number, kept: number): string {
-      const sites = words.flatMap(items => items.filter(item => "slot" in item && isConceptAt(item.slot)));
-      const head = headClass(sites as { slot: Slot }[], forms) ?? "";
+    function join({ words, sites, forms }: Layout, effort: number, kept: number): string {
+      const head = headClass(sites, forms) ?? "";
       // the default endings join as parts do, a named set's are spelled as they stand
       const agree = (text: string) =>
         text.replace(STAR, set => `${set.length > 1 ? "" : "+"}${grammar?.endings?.[set.slice(1)]?.[head] ?? ""}`);
-      const drawn = new Map(sites.map((site, order) => [site, forms[order]]));
-      const describing = forms[(sites as { slot: Slot }[]).findIndex(site => site.slot === "modifier")];
+      const drawn = new Map(sites.map(({ item }, order) => [item, forms[order]]));
+      const describing = forms[sites.findIndex(site => site.slot === "modifier")];
       const count = counts(describing?.class) ? describing.class : undefined;
 
       return words
@@ -296,22 +288,52 @@ class MeaningsModule {
   }
 }
 
-const parsed = new WeakMap<Template, Item[][]>();
+interface ParsedTemplate {
+  words: Item[][];
+  slots: Set<Slot>;
+  inflects: boolean; // it has an ending that agrees with the noun
+  sites: Map<string, Site[]>; // by the slots that hold concepts
+}
 
-function wordsOf(template: Template): Item[][] {
-  let words = parsed.get(template);
-  if (!words) {
+const parsed = new WeakMap<Template, ParsedTemplate>();
+
+function wordsOf(template: Template): ParsedTemplate {
+  let known = parsed.get(template);
+  if (!known) {
     const toItem = (text: string): Item => {
       const slot = /^\{(\w+)\}$/.exec(text)?.[1] as Slot | undefined;
       return slot ? { slot } : { text };
     };
-    words = template.parts
+    const words = template.parts
       .trim()
       .split(/(?<=[ -])|(?=[ -])/)
       .map(word => (word.match(/\{\w+\}|[^{}]+/g) ?? []).map(toItem));
-    parsed.set(template, words);
+    const slots = new Set(words.flat().flatMap(item => ("slot" in item ? item.slot : [])));
+    known = { words, slots, inflects: template.parts.includes("*"), sites: new Map() };
+    parsed.set(template, known);
   }
-  return words;
+  return known;
+}
+
+/** Where a template puts the concepts of a meaning */
+function sitesOf(template: Template, concepts: Slot[]): Site[] {
+  const { words, sites } = wordsOf(template);
+  const key = concepts.join();
+  let known = sites.get(key);
+  if (!known) {
+    const standing = (item?: Item): Standing | undefined =>
+      item && ("text" in item ? "text" : concepts.includes(item.slot) ? "concept" : "name");
+    known = words.flatMap((items, order) =>
+      items.flatMap((item, index) => {
+        if ("text" in item || !concepts.includes(item.slot)) return [];
+        const [after, before] = [standing(items[index - 1]), standing(items[index + 1])];
+        const afterDash = index === 0 && isDash(words[order - 1]);
+        return { item, items, slot: item.slot, after, before, afterDash };
+      })
+    );
+    sites.set(key, known);
+  }
+  return known;
 }
 
 /** A function that works out each answer once */

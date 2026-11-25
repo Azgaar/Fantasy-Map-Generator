@@ -29,6 +29,8 @@ interface Sorted {
   join: Rewrite[];
   long: Rewrite[];
   chances: { chance: number; rewrites: Rewrite[] }[];
+  rolls: number; // of the rules with a chance
+  counting: SoundRule[]; // what puts a noun in a class: "tower" in the plural
 }
 
 class SoundRulesModule {
@@ -65,7 +67,10 @@ class SoundRulesModule {
   /** A lowercase name with each word capitalized, but for the joining words between them */
   capitalize(name: string): string {
     const parts = name.split(/([ -])/); // words, and the space or dash after each
-    const upper = (text: string) => text.replace(/^./u, letter => letter.toUpperCase());
+    const upper = (text: string) => {
+      const [letter = ""] = text;
+      return letter.toUpperCase() + text.slice(letter.length);
+    };
     return parts
       .map((part, index) => {
         if (index % 2) return part;
@@ -100,7 +105,8 @@ class SoundRulesModule {
     base.rules = index < 0 ? [this.doublesRule(letters), ...rules] : rules.with(index, this.doublesRule(letters));
   }
 
-  private sort(rules: SoundRule[] = NONE): Sorted {
+  /** A base's rules by what they are for, sorted once */
+  sort(rules: SoundRule[] = NONE): Sorted {
     let sorted = this.sorted.get(rules);
     if (!sorted) {
       sorted = {
@@ -110,7 +116,9 @@ class SoundRulesModule {
         long: compile(rules.filter(rule => rule.when === "long" && rule.chance === undefined)),
         chances: rules
           .filter(rule => rule.chance !== undefined && rule.when !== "foreign")
-          .map(rule => ({ chance: rule.chance!, rewrites: compile([rule]) }))
+          .map(rule => ({ chance: rule.chance!, rewrites: compile([rule]) })),
+        rolls: rules.filter(rule => rule.chance !== undefined).length,
+        counting: rules.filter(rule => rule.as)
       };
       this.sorted.set(rules, sorted);
     }

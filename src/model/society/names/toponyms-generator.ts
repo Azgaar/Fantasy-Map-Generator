@@ -1,5 +1,6 @@
 // Gives burgs, lands and waters a meaning that fits their place: the "semantic" half of semantic names
 
+import { group } from "d3";
 import {
   type Concept,
   conceptsOf,
@@ -39,7 +40,7 @@ type Place = Pick<Burg, "cell" | "x" | "y" | "culture" | "port" | "capital">;
 type Taken = { has(name?: string): boolean };
 
 interface BurgOptions {
-  burgs?: Burg[]; // the burgs around: the map's, or the ones a generator is still placing
+  burgs?: Burg[]; // the burgs that may be around, the map's where none are given
   taken?: Taken;
   baseId?: string;
 }
@@ -159,13 +160,20 @@ class ToponymsGenerator {
    * With `only`, name just the burgs it takes */
   nameBurgs(burgs: Burg[], roll = "", only: (burg: Burg) => boolean = () => true): void {
     const taken = this.burgNames(burgs);
+    const named = group(
+      burgs.filter(burg => burg.name),
+      burg => burg.culture
+    );
     for (const burg of burgs) {
       if (!burg.i || burg.name || burg.removed || !only(burg)) continue;
+      const kin = named.get(burg.culture) ?? [];
       Object.assign(
         burg,
-        seeded(`${options.map.seed}|burg|${burg.i}|${roll}`, () => this.burg(burg, { burgs, taken }))
+        seeded(`${options.map.seed}|burg|${burg.i}|${roll}`, () => this.burg(burg, { burgs: kin, taken }))
       );
       taken.add(burg.name);
+      kin.push(burg);
+      named.set(burg.culture, kin);
     }
   }
 
@@ -349,7 +357,11 @@ class ToponymsGenerator {
   landOf(cultureOrBase: number | string, taken = this.landNames(), size: LandSize = "small"): Named {
     const baseId = typeof cultureOrBase === "number" ? pack.cultures[cultureOrBase].base : cultureOrBase;
     const base = Names.resolve(baseId);
-    const has = (name?: string) => taken.has(name) || pack.burgs.some(burg => burg.name === name && !burg.removed);
+    const has = (name?: string) => {
+      if (taken.has(name)) return true;
+      for (const burg of pack.burgs) if (burg.name === name && !burg.removed) return true;
+      return false;
+    };
     return this.coinLand(base, { has }, {}, () => this.getLandRoot(base), { size });
   }
 
@@ -480,7 +492,7 @@ class ToponymsGenerator {
     // a name taken is drawn again with other forms of the same meaning
     for (const salt of [0, 1, 2]) {
       const salted = salt ? { ...meaning, salt } : meaning;
-      const { name, whole } = Meanings.compose(salted, base.id);
+      const { name, whole } = Meanings.compose(salted, base);
       if (whole && name.length >= min && !taken.has(name)) return { name, meaning: salted };
     }
     return undefined;
@@ -704,11 +716,12 @@ class ToponymsGenerator {
   private fitsOf(site: Site): Float64Array {
     let fits = this.fits.get(site);
     if (!fits) {
-      const { good, ...offers } = site;
       fits = BARE.slice();
-      for (const [tag, offer] of Object.entries(offers) as [SiteTag, number][])
-        for (const index of ASKING.get(tag) ?? []) if (offer > fits[index]) fits[index] = offer;
-      const made = good && PLACES.get(good);
+      for (const [tag, words] of ASKING) {
+        const offer = site[tag];
+        if (offer) for (const index of words) if (offer > fits[index]) fits[index] = offer;
+      }
+      const made = site.good && PLACES.get(site.good);
       if (made !== undefined) fits[made] += GOOD;
       this.fits.set(site, fits);
     }
