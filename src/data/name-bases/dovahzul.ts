@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const dovahzul: WrittenNameBase = {
-  id: "dovahzul",
   description: "The dragon language of The Elder Scrolls, extended in its style",
   length: [5, 14],
 

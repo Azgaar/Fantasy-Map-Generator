@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const giant: WrittenNameBase = {
-  id: "giant",
   description: "Heavy Norse; people and rivers of the Eddas",
   length: [5, 10],
 

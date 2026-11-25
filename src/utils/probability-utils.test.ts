@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probability-utils";
+import {
+  biased,
+  each,
+  gauss,
+  generateSeed,
+  getNumberInRange,
+  P,
+  Pint,
+  pickWeighted,
+  ra,
+  rand,
+  rw
+} from "./probability-utils";
 
 describe("rand", () => {
   describe("when called with no arguments", () => {
@@ -364,5 +376,16 @@ describe("generateSeed", () => {
     }
     // Should have many unique seeds (allow for some rare collisions)
     expect(seeds.size).toBeGreaterThan(90);
+  });
+});
+
+describe("pickWeighted", () => {
+  it("picks an item by its share of the weights", () => {
+    const pick = (roll: number) => pickWeighted(["a", "b", "c"], [1, 0, 3], () => roll);
+    expect([0, 0.24, 0.26, 0.99].map(pick)).toEqual(["a", "a", "c", "c"]);
+  });
+
+  it("picks any item when none has a weight", () => {
+    expect(["a", "b"]).toContain(pickWeighted(["a", "b"], [0, 0]));
   });
 });

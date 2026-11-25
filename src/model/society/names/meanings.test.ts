@@ -10,7 +10,6 @@ import { SoundRules } from "./sound-rules";
 beforeAll(() => Names.loadAll());
 afterEach(() => {
   Names.nameBases = Names.getNameBases();
-  Names.clearChains();
 });
 
 const meaning = (pattern: Meaning["pattern"], ...tokens: Token[]): Meaning => ({ pattern, tokens, origin: "english" });
@@ -48,7 +47,6 @@ describe("render", () => {
   it("gives the same name for the same meaning and base, whatever was rendered between", () => {
     const meanings = [meaning("modifier-generic", "black", "ford"), meaning("owner-generic", "~Eadric", "farm")];
     const first = Names.loaded().map(base => meanings.map(item => Meanings.render(item, base.id)));
-    Names.clearChains();
     Meanings.render(meaning("feature", "harbour"), "german");
     expect(Names.loaded().map(base => meanings.map(item => Meanings.render(item, base.id)))).toEqual(first);
   });
@@ -170,6 +168,17 @@ describe("a base with no lexicon", () => {
     );
     expect(prefix.length).toBeGreaterThanOrEqual(2);
     expect(Meanings.render(meaning("modifier-generic", "white", "town"), "custom")).not.toBe(town);
+  });
+
+  it("keeps its coined forms when another concept is written, and coins anew when its rules change", () => {
+    const base = custom();
+    Names.nameBases = [base];
+    const coined = Lexicon.formsOf(base, "wolf");
+    base.lexicon = { town: [{ form: coined[0].form }] };
+    expect(Lexicon.formsOf(base, "wolf")).toEqual(coined);
+
+    base.rules = [{ match: "[aeiou]", replace: "y" }];
+    for (const { form } of Lexicon.formsOf(base, "wolf")) expect(form).not.toMatch(/[aeiou]/);
   });
 
   it("takes the lexicon and templates of the base it extends", () => {

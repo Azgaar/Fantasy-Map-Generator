@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const dothraki: WrittenNameBase = {
-  id: "dothraki",
   description: "Dothraki by David J. Peterson, from Game of Thrones",
   length: [4, 13],
 

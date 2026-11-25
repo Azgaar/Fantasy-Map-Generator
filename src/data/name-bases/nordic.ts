@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const nordic: WrittenNameBase = {
-  id: "nordic",
   description: "Places of Norway, Iceland and the rest of Scandinavia, in plain letters",
   length: [6, 10],
 

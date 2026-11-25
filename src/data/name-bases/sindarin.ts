@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const sindarin: WrittenNameBase = {
-  id: "sindarin",
   description: "Tolkien's Grey-elven tongue, words after Eldamo",
   length: [5, 12],
 

@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const goblin: WrittenNameBase = {
-  id: "goblin",
   description: "Invented grabbing tongue, after the goblin songs of The Hobbit",
   length: [4, 9],
 

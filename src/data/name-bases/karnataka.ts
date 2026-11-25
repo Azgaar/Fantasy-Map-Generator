@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const karnataka: WrittenNameBase = {
-  id: "karnataka",
   description: "Towns of Karnataka in southern India, in Kannada words",
   length: [5, 11],
 

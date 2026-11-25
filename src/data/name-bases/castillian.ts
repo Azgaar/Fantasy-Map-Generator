@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const castillian: WrittenNameBase = {
-  id: "castillian",
   description: "Places of Castile, around Toledo and Guadalajara",
   length: [5, 11],
 

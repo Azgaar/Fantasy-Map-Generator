@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const serpents: WrittenNameBase = {
-  id: "serpents",
   description: "Invented hissing tongue that puts the head word first",
   length: [5, 11],
 

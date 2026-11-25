@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const mesopotamian: WrittenNameBase = {
-  id: "mesopotamian",
   description: "Cities of ancient Mesopotamia, in Akkadian and Sumerian words",
   length: [4, 9],
 

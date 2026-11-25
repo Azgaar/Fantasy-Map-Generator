@@ -5,6 +5,7 @@ import { DEFAULT_LEXICON, DEFAULT_TEMPLATES } from "@/data/name-rules";
 import type { NameBase, Pattern } from "@/types/names";
 import { Lexicon } from "./lexicon";
 import { Meanings } from "./meanings";
+import { NAME_BASE_SCHEMA } from "./name-base-schema";
 import { Names } from "./names-generator";
 import { SoundRules } from "./sound-rules";
 
@@ -14,7 +15,6 @@ beforeAll(() => Names.loadAll());
 afterEach(() => {
   vi.restoreAllMocks();
   Names.nameBases = Names.getNameBases();
-  Names.clearChains();
 });
 
 describe("Names.calculateChain", () => {
@@ -56,7 +56,7 @@ describe("shipped name bases", () => {
     expect(new Set(bases.map(base => base.id)).size).toBe(bases.length);
     for (const base of bases) {
       expect(base.id).toBe(Names.uniqueId(base.name, []));
-      expect(Names.schema.safeParse(base).success).toBe(true);
+      expect(NAME_BASE_SCHEMA.safeParse(base).success).toBe(true);
       expect(base.places.names.length).toBeGreaterThan(100);
       expect(base.description, base.id).toBeTruthy();
       for (const { match } of base.rules ?? []) expect(() => new RegExp(match, "gu")).not.toThrow();
@@ -147,17 +147,16 @@ describe("a base's vocabulary", () => {
 });
 
 describe("Names.getBase", () => {
-  const generate = (doubled: string, dupl?: string) => {
+  const generate = (doubled: string, single?: boolean) => {
     Names.nameBases = [Names.composeBase("test", "Test", [2, 20], ["Bolla"], doubled)];
-    Names.clearChains();
     vi.spyOn(Math, "random").mockReturnValue(0);
-    return Names.getBase("test", undefined, undefined, dupl);
+    return Names.getBase("test", undefined, undefined, single);
   };
 
   it("doubles only the letters the base's rule allows", () => {
     expect(generate("l")).toBe("Bolla");
     expect(generate("")).toBe("Bola");
-    expect(generate("l", "")).toBe("Bola"); // an empty dupl allows none
+    expect(generate("l", true)).toBe("Bola");
   });
 
   it("gives a shipped base the map dropped the base standing in its place, else the first one", () => {
@@ -310,7 +309,6 @@ describe("Names.replace", () => {
 describe("a generated name", () => {
   it("is capitalized after a space and a hyphen", () => {
     Names.nameBases = [Names.composeBase("test", "Test", [2, 30], ["an giang-le"], "")];
-    Names.clearChains();
     vi.spyOn(Math, "random").mockReturnValue(0);
     expect(Names.getBase("test")).toBe("An Giang-Le");
     expect(SoundRules.apply("an giang-le")).toBe("an giang-le");

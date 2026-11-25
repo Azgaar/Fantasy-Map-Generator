@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const halfling: WrittenNameBase = {
-  id: "halfling",
   description: "Cosy English after Tolkien's Shire",
   extends: "english",
   length: [5, 12],

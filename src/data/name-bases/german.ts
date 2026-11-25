@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const german: WrittenNameBase = {
-  id: "german",
   description: "Places of Germany, mostly the Black Forest",
   length: [5, 12],
 

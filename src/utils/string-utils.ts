@@ -1,3 +1,4 @@
+import { log } from "./logger";
 import { rn } from "./number-utils";
 
 /**
@@ -109,3 +110,19 @@ export const sanitizeId = (inputString: string) => {
 
   return sanitized;
 };
+
+const compiled: Record<"u" | "gu", Map<string, RegExp | null>> = { u: new Map(), gu: new Map() };
+
+/** A regex of a source the user may have written, compiled once; null when it is no valid one */
+export function compileRegex(source: string, flags: "u" | "gu" = "u"): RegExp | null {
+  const known = compiled[flags].get(source);
+  if (known !== undefined) return known;
+  let regex: RegExp | null = null;
+  try {
+    regex = new RegExp(source, flags);
+  } catch (error) {
+    log.error(`${source} is not a valid pattern`, error);
+  }
+  compiled[flags].set(source, regex);
+  return regex;
+}

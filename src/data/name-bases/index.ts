@@ -1,4 +1,4 @@
-import type { NameBaseEntry, WrittenNameBase } from "@/types/names";
+import type { NameBaseEntry, ShippedNameBase, WrittenNameBase } from "@/types/names";
 import { capitalize } from "@/utils/string-utils";
 
 /** The shipped bases in their order: the id is the name of the base's file */
@@ -86,7 +86,7 @@ type BaseModule = Record<string, WrittenNameBase>;
 const files = import.meta.glob<BaseModule>(["./*.ts", "!./index.ts"]);
 
 /** A shipped base in its written form */
-export async function readNameBase(id: string): Promise<WrittenNameBase & { name: string }> {
+export async function readNameBase(id: string): Promise<ShippedNameBase> {
   const load = files[`./${id}.ts`];
   if (!load) throw new Error(`Name base ${id} is not shipped`);
   const [base] = Object.values(await load()); // a file exports its base alone

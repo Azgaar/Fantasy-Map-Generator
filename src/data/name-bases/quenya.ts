@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const quenya: WrittenNameBase = {
-  id: "quenya",
   description: "Tolkien's High-elven tongue, words after Eldamo",
   length: [5, 13],
 

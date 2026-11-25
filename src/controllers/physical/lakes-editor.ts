@@ -183,13 +183,10 @@ function regenerateName(baseId?: string): void {
 
 function showTranslations(): void {
   const lake = getLake();
-  const origin = pack.cultures[pack.cells.culture[lake.shoreline?.[0] || lake.firstCell]]?.base;
-  void Controllers.NameTranslations.open(
-    lake.meaning ?? Meanings.simplex(lake.name, origin ?? Names.nameBases[0].id),
-    name => {
-      lake.name = ensureEl<HTMLInputElement>("lakeName").value = name;
-    }
-  );
+  const culture = pack.cells.culture[lake.shoreline?.[0] || lake.firstCell];
+  void Controllers.NameTranslations.open(Meanings.of(lake, culture), name => {
+    lake.name = ensureEl<HTMLInputElement>("lakeName").value = name;
+  });
 }
 
 function changeLakeSubtype(this: HTMLSelectElement): void {

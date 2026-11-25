@@ -6,7 +6,6 @@ const PLACES =
 const HEADS = `${PLACES}|ban|bang|chiang|wiang|mueang|nakhon|krung|phra|khwaen|monthon|thap|khum|lan|song|sam|ha|chet|kao|sip|roi|phan`;
 
 export const thai: WrittenNameBase = {
-  id: "thai",
   description: "Places of Thailand and Laos",
   length: [4, 12],
 

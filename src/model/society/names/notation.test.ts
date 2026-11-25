@@ -16,7 +16,7 @@ it("reads and writes the forms of a concept", () => {
   ).toEqual([{ form: "ton" }]);
 });
 
-it("reads and writes a lexicon, a concept a line", () => {
+it("reads a lexicon, a concept a line", () => {
   const text = "# settlements\ntown: +ton\n\nland: +ia 6, land 4";
   const lexicon = NameNotation.parseLexicon(text);
   expect(lexicon).toEqual({
@@ -26,7 +26,6 @@ it("reads and writes a lexicon, a concept a line", () => {
       { form: "land", weight: 4 }
     ]
   });
-  expect(NameNotation.formatLexicon(lexicon)).toBe("town: +ton\nland: +ia 6, land 4");
   expect(NameNotation.parseLexicon({ town: "+ton" })).toEqual({ town: [{ form: "ton", position: "last" }] });
 });
 

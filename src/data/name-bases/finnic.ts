@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const finnic: WrittenNameBase = {
-  id: "finnic",
   description: "Places of Finland, with some of Estonia",
   length: [5, 11],
 

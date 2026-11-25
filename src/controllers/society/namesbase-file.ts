@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { NAME_BASE_SCHEMA } from "@/model/society/names/name-base-schema";
 import { Names } from "@/model/society/names/names-generator";
 import type { NameBase } from "@/types/names";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -41,7 +42,7 @@ function withOwnIds(bases: NameBase[], taken: string[]): NameBase[] {
 /** A JSON file holds one base or a list */
 function parseJson(data: string): NameBase[] {
   const parsed: unknown = safeParseJSON(data);
-  const { data: bases = [] } = z.array(Names.schema).safeParse(Array.isArray(parsed) ? parsed : [parsed]);
+  const { data: bases = [] } = z.array(NAME_BASE_SCHEMA).safeParse(Array.isArray(parsed) ? parsed : [parsed]);
   return withOwnIds(bases as NameBase[], []);
 }
 

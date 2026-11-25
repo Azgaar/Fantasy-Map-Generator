@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const humanGeneric: WrittenNameBase = {
-  id: "human-generic",
   description: "High-fantasy English after Tolkien's Men and Martin's Westeros",
   extends: "english",
   length: [5, 12],

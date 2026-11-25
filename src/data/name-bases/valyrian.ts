@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const valyrian: WrittenNameBase = {
-  id: "valyrian",
   description: "High Valyrian by David J. Peterson, from Game of Thrones",
   length: [5, 14],
 

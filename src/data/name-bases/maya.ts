@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const maya: WrittenNameBase = {
-  id: "maya",
   description: "Places and ruins of the Maya, mostly Yucatan",
   length: [4, 12],
 

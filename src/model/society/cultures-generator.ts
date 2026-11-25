@@ -1695,7 +1695,7 @@ class CulturesGenerator {
     } else {
       // add random culture based on one of the current ones
       culture = rand(pack.cultures.length - 1);
-      name = Names.getCulture(culture, 5, 8, "");
+      name = Names.getCulture(culture, 5, 8, true);
       base = pack.cultures[culture].base;
       ancestry = pack.cultures[culture].ancestry;
       development = pack.cultures[culture].development;

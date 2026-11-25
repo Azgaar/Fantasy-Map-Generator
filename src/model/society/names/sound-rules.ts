@@ -1,6 +1,6 @@
 import { CHAIN_RULES, JOIN_RULES, SHARED_RULES } from "@/data/name-rules";
 import type { NameBase, SoundRule } from "@/types/names";
-import { log } from "@/utils/logger";
+import { compileRegex } from "@/utils/string-utils";
 
 // words that join the others and stay lowercase between them: Saint-Germain-en-Laye, Puebla de Sanabria
 const PARTICLES = new Set(
@@ -17,35 +17,47 @@ interface JoinOptions {
   fits?: (name: string) => boolean; // whether the name is short enough: the rules for long names run until it is
 }
 
-class SoundRulesModule {
-  private readonly patterns = new Map<string, RegExp | null>();
+interface Rewrite {
+  regex: RegExp;
+  replace: string;
+}
 
-  /** Rewrite a lowercase word by a base's rules, then by the shared ones; a rule that is no valid regex is skipped */
-  apply(word: string, rules: SoundRule[] = []): string {
-    return this.rewrite(this.rewrite(word, rules.filter(isWordRule)), [...SHARED_RULES, ...CHAIN_RULES]);
+/** A base's rules by what they are for */
+interface Sorted {
+  word: Rewrite[];
+  foreign: Rewrite[];
+  join: Rewrite[];
+  long: Rewrite[];
+  chances: { chance: number; rewrites: Rewrite[] }[];
+}
+
+class SoundRulesModule {
+  private readonly sorted = new WeakMap<SoundRule[], Sorted>();
+
+  /** Rewrite a lowercase word by a base's rules, then by the shared ones; a rule that is no valid regex is skipped.
+   * A `single` word has no letter twice in a row */
+  apply(word: string, rules?: SoundRule[], single = false): string {
+    return rewrite(rewrite(single ? rewrite(word, SINGLE) : word, this.sort(rules).word), WORD);
   }
 
   /** Adapt a lowercase root coined in another base by the rules a base keeps for foreign roots */
-  applyForeign(root: string, rules: SoundRule[] = []): string {
-    return this.rewrite(
-      root,
-      rules.filter(rule => rule.when === "foreign")
-    );
+  applyForeign(root: string, rules?: SoundRule[]): string {
+    return rewrite(root, this.sort(rules).foreign);
   }
 
   /** Join a lowercase name made of parts, `+` at each join: the base's join rules, the ones whose chance came up,
    * the shared join rules, then the shared word rules. The parts stay as they came: a form written for the base
    * is not what its word rules are for. A name still too long goes through the rules for long names, one at a time */
-  join(name: string, rules: SoundRule[] = [], { rolls = [], fits }: JoinOptions = {}): string {
-    const chances = rules.filter(rule => rule.chance !== undefined && rule.when !== "foreign");
-    const fired = chances.filter((rule, index) => (rolls[index] ?? 1) < rule.chance!);
-    const joins = rules.filter(rule => rule.at === "join" && !rule.when && rule.chance === undefined);
-    const parted = this.rewrite(this.rewrite(name, [...joins, ...fired]), JOIN_RULES);
-    let joined = this.rewrite(parted.replaceAll("+", ""), SHARED_RULES);
+  join(name: string, rules?: SoundRule[], { rolls = [], fits }: JoinOptions = {}): string {
+    const { join, long, chances } = this.sort(rules);
+    let parted = rewrite(name, join);
+    for (const [index, { chance, rewrites }] of chances.entries())
+      if ((rolls[index] ?? 1) < chance) parted = rewrite(parted, rewrites);
+    let joined = rewrite(rewrite(parted, JOIN).replaceAll("+", ""), SHARED);
 
-    for (const rule of rules.filter(rule => rule.when === "long" && rule.chance === undefined)) {
+    for (const rule of long) {
       if (!fits || fits(joined)) break;
-      joined = this.rewrite(joined, [rule]);
+      joined = rewrite(joined, [rule]);
     }
     return joined;
   }
@@ -83,34 +95,47 @@ class SoundRulesModule {
   }
 
   setDoubles(base: NameBase, letters: string): void {
-    base.rules ??= [];
-    const index = base.rules.findIndex(rule => DOUBLES.test(rule.match));
-    if (index < 0) base.rules.unshift(this.doublesRule(letters));
-    else base.rules[index] = this.doublesRule(letters);
+    const rules = base.rules ?? [];
+    const index = rules.findIndex(rule => DOUBLES.test(rule.match));
+    base.rules = index < 0 ? [this.doublesRule(letters), ...rules] : rules.with(index, this.doublesRule(letters));
   }
 
-  private rewrite(name: string, rules: SoundRule[]): string {
-    for (const { match, replace } of rules) {
-      const pattern = this.compile(match);
-      if (pattern) name = name.replace(pattern, replace);
+  private sort(rules: SoundRule[] = NONE): Sorted {
+    let sorted = this.sorted.get(rules);
+    if (!sorted) {
+      sorted = {
+        word: compile(rules.filter(isWordRule)),
+        foreign: compile(rules.filter(rule => rule.when === "foreign")),
+        join: compile(rules.filter(rule => rule.at === "join" && !rule.when && rule.chance === undefined)),
+        long: compile(rules.filter(rule => rule.when === "long" && rule.chance === undefined)),
+        chances: rules
+          .filter(rule => rule.chance !== undefined && rule.when !== "foreign")
+          .map(rule => ({ chance: rule.chance!, rewrites: compile([rule]) }))
+      };
+      this.sorted.set(rules, sorted);
     }
-    return name;
+    return sorted;
   }
+}
 
-  private compile(match: string): RegExp | null {
-    if (!this.patterns.has(match)) {
-      try {
-        this.patterns.set(match, new RegExp(match, "gu"));
-      } catch (error) {
-        log.error(`Sound rule ${match} is not a valid pattern`, error);
-        this.patterns.set(match, null);
-      }
-    }
-    return this.patterns.get(match)!;
-  }
+const NONE: SoundRule[] = [];
+
+const compile = (rules: SoundRule[]): Rewrite[] =>
+  rules.flatMap(({ match, replace }) => {
+    const regex = compileRegex(match, "gu");
+    return regex ? { regex, replace } : [];
+  });
+
+function rewrite(name: string, rewrites: Rewrite[]): string {
+  for (const { regex, replace } of rewrites) name = name.replace(regex, replace);
+  return name;
 }
 
 const isJoining = (word: string, before: string) => PARTICLES.has(word) || (before === "-" && DASHED.has(word));
 const isWordRule = (rule: SoundRule) => !rule.at && !rule.when && !rule.as && rule.chance === undefined;
 
 export const SoundRules = new SoundRulesModule();
+
+const [SHARED, JOIN] = [compile(SHARED_RULES), compile(JOIN_RULES)];
+const WORD = compile([...SHARED_RULES, ...CHAIN_RULES]); // of a word off a chain
+const SINGLE = compile([SoundRules.doublesRule()]);

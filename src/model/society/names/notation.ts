@@ -1,18 +1,21 @@
 // The short written form of name base data: what a lexicon, a grammar, a template list and a rule list look like as text
 
 import type { Concept } from "@/data/name-concepts";
-import type { Derivation, Formant, Grammar, NameBase, SoundRule, Template, WrittenNameBase } from "@/types/names";
+import type { Derivation, Formant, Grammar, NameBase, ShippedNameBase, SoundRule, Template } from "@/types/names";
 
 const MARKS = "\\s,/~@:+^!_";
 const PART = `[^${MARKS}-][^${MARKS}]*?`; // a dash inside a form, not leading it
 const FORMANT = new RegExp(`^([-+^!])?(${PART})?(?:~(${PART}))?([+^])?(?:/(${PART}))?(?:\\s+(\\d+))?$`, "u");
 const WEIGHTED = /^(.*?)(?:\s+(\d+))?$/;
 const DERIVATIONS: Derivation[] = ["stem", "first"];
-const SILENT = "_";
+/** A noun left unsaid: the word beside it agrees with it all the same */
+export const SILENT = "_";
+/** Where a describing word takes its ending, from the set it names, the default when none */
+export const STAR = /\*\p{L}*/u;
 
 class NameNotationModule {
   /** A base with whatever it holds in the written form read */
-  read(base: WrittenNameBase & { name: string }): NameBase {
+  read(base: ShippedNameBase): NameBase {
     const { rules, grammar, lexicon, patterns } = base;
     return {
       ...base,
@@ -86,12 +89,6 @@ class NameNotationModule {
     return Object.fromEntries(
       entries.map(([concept, forms]) => [concept, Array.isArray(forms) ? forms : this.parseFormants(forms ?? "")])
     );
-  }
-
-  formatLexicon(lexicon: Partial<Record<Concept, Formant[]>> = {}): string {
-    return Object.entries<Formant[] | undefined>(lexicon)
-      .map(([concept, forms]) => `${concept}: ${this.formatFormants(forms)}`)
-      .join("\n");
   }
 
   /** A grammar from text, a line each: `class: pattern` for a noun class, whose nouns match the regex, the last

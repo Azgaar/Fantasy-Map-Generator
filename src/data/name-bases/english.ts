@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const english: WrittenNameBase = {
-  id: "english",
   description: "Places of England after medieval counts, with a touch of fantasy endings",
   length: [5, 12],
   settled: 0.65,

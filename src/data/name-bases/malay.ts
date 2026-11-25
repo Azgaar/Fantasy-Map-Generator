@@ -9,7 +9,6 @@ const ENDINGS =
   "pura|puri|karta|kerta|rejo|harjo|sari|mulya|mukti|jaya|agung|asri|mekar|wangi|negara|nagara|loka|buana|dwipa|mandala";
 
 export const malay: WrittenNameBase = {
-  id: "malay",
   description: "Places of Malaya and the Indies, in Malay and Javanese words",
   length: [4, 13],
 

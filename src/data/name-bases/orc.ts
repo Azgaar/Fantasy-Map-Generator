@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const orc: WrittenNameBase = {
-  id: "orc",
   description: "Tolkien's Black Speech, with fan-made words",
   length: [4, 10],
 

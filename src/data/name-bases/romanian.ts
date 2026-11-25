@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const romanian: WrittenNameBase = {
-  id: "romanian",
   description: "Places of Romania and Moldova",
   length: [4, 13],
 

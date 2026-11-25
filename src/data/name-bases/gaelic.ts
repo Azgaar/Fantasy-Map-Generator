@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const gaelic: WrittenNameBase = {
-  id: "gaelic",
   description: "Places of Ireland, with some of Scotland, in English spelling",
   length: [4, 13],
 

@@ -836,7 +836,7 @@ function editStateName(state: number): void {
   /** The meaning the name carries; a name without one stands as a proper name of the culture's base */
   function getMeaning(): Meaning {
     const name = ensureEl<HTMLInputElement>("stateNameEditorShort").value;
-    return meaning ?? Meanings.simplex(name, pack.cultures[s.culture].base);
+    return Meanings.of({ name, meaning }, s.culture);
   }
 
   function showMeaning() {

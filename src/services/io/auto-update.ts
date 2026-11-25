@@ -2362,7 +2362,6 @@ export async function migrateLegacyNameBases(data: string[]): Promise<void> {
   const ids = Names.nameBases.map(base => base.id);
   for (const culture of (pack.cultures ?? []) as { base: string | number }[])
     if (typeof culture?.base === "number") culture.base = ids[culture.base] ?? ids[0];
-  Names.clearChains();
   await Names.loadUsed();
 }
 

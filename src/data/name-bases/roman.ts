@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const roman: WrittenNameBase = {
-  id: "roman",
   description: "Towns and forts of the Roman Empire, in Latin",
   length: [6, 11],
 

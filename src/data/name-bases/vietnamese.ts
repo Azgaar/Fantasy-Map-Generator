@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const vietnamese: WrittenNameBase = {
-  id: "vietnamese",
   description: "Places of Vietnam, without tone marks",
   length: [3, 12],
   settled: 0.55, // most end in a word of good omen or a settlement: An, Binh, Ninh, Hoa; Lang, Cho

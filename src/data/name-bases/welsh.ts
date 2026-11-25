@@ -4,7 +4,6 @@ import type { WrittenNameBase } from "@/types/names";
 const SOFT = String.raw`^(?:llan|tre|hendre|caer|ynys|bod|eglwys|hen|gwyn|du|hir|glas|cam|llwyd|coch|garw|uchel|dau|dwy)\+|^\p{L}+\+ar\+`;
 
 export const welsh: WrittenNameBase = {
-  id: "welsh",
   description: "Places of Wales",
   length: [4, 13],
 

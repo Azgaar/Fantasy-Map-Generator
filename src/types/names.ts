@@ -89,15 +89,18 @@ export interface PatternLayout {
   female?: number; // of owner-generic, 0 to 1: the share of founders that are women; by the sizes of the people lists when absent
 }
 
-/** A base as the shipped data holds it, its name told by its id: rules, grammar, forms and templates may be in their written form,
+/** A base as the shipped data holds it, its id the name of its file and its name told by the id: rules, grammar, forms and templates may be in their written form,
  * which `NameNotation` reads */
-export interface WrittenNameBase extends Omit<NameBase, "name" | "rules" | "grammar" | "lexicon" | "patterns"> {
+export interface WrittenNameBase extends Omit<NameBase, "id" | "name" | "rules" | "grammar" | "lexicon" | "patterns"> {
   description: string;
   rules?: (SoundRule | string)[]; // a string holds rules a line each
   grammar?: Grammar | string;
   lexicon?: Partial<Record<Concept, Formant[] | string>> | string; // a string holds a concept a line
   patterns?: Partial<Record<Pattern, Omit<PatternLayout, "templates"> & { templates?: Template[] | string }>>;
 }
+
+/** A shipped base as read from its file, its id and name given */
+export type ShippedNameBase = WrittenNameBase & Pick<NameBase, "id" | "name">;
 
 /** A concept, or a proper root with no concept behind it, marked with `~` */
 export type Token = Concept | `~${string}`;

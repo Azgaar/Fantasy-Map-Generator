@@ -2,7 +2,7 @@ import { Controllers } from "@/controllers";
 import { CONCEPT_LABELS } from "@/data/id-labels";
 import { type Concept, conceptsOf, type Kind } from "@/data/name-concepts";
 import { Lexicon } from "@/model/society/names/lexicon";
-import { Names } from "@/model/society/names/names-generator";
+import { Names, PEOPLE_LENGTH } from "@/model/society/names/names-generator";
 import { NameNotation } from "@/model/society/names/notation";
 import { SoundRules } from "@/model/society/names/sound-rules";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
@@ -17,13 +17,12 @@ import { downloadFile } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { seeded } from "@/utils/probability-utils";
-import { escapeHtml } from "@/utils/string-utils";
+import { compileRegex, escapeHtml } from "@/utils/string-utils";
 import { NamesbaseAnalysis } from "./namesbase-analysis";
 import { NamesbaseFile } from "./namesbase-file";
 
 const dialogId = "namesbaseEditor" as const;
 const MIN_PLACES = 3;
-const PEOPLE_LENGTH: [number, number] = [4, 8];
 
 type Tab = "names" | "lexicon" | "patterns" | "rules";
 type ListKey = "places" | "waters" | "male" | "female";
@@ -402,13 +401,12 @@ function setList(base: NameBase, key: ListKey, list: Corpus | undefined): void {
   if (!base.people?.male) delete base.people?.male;
   if (!base.people?.female) delete base.people?.female;
   if (base.people && !Object.keys(base.people).length) delete base.people;
-  if (key === "places") Names.updateChain(base.id);
 }
 
 /** The lengths of a list's generated names where the list sets none */
 function getDefaultLength(base: NameBase, key: ListKey): [number, number] {
   if (key === "male" || key === "female") return PEOPLE_LENGTH;
-  return key === "waters" ? (base.places.length ?? base.length) : base.length;
+  return key === "waters" ? Names.placeLength(base) : base.length;
 }
 
 /** What stands in for an empty list */
@@ -531,7 +529,7 @@ function renderLexicon(base: NameBase): string {
     return /* html */ `<label data-concept="${concept}">
         <span>${CONCEPT_LABELS[concept]}</span>
         <input class="notation" data-field="forms" value="${escapeHtml(NameNotation.formatFormants(base.lexicon?.[concept]))}"
-          placeholder="${escapeHtml(getStandInForms(base, concept))}" data-tip="${escapeHtml(getDerivedTip(base, concept))}"
+          placeholder="${escapeHtml(NameNotation.formatFormants(Lexicon.standInForms(base, concept)))}" data-tip="${escapeHtml(getDerivedTip(base, concept))}"
           autocorrect="off" autocapitalize="off" spellcheck="false" />
         <i data-example data-concept="${concept}"></i>
       </label>`;
@@ -540,15 +538,7 @@ function renderLexicon(base: NameBase): string {
 
 function getCoverage(base: NameBase): string {
   const all = (Object.keys(KINDS) as Kind[]).flatMap(conceptsOf).length;
-  return t("Concepts written: {{written}} of {{all}}", { written: Lexicon.writtenConcepts(base).length, all });
-}
-
-/** The forms of a concept the base writes none for: inherited ones or generated */
-function getStandInForms(base: NameBase, concept: Concept): string {
-  const inherited = Lexicon.authoredForms({ ...base, lexicon: {} }, concept);
-  if (inherited) return NameNotation.formatFormants(inherited);
-  const { first, last } = Lexicon.fallbackForms(base, concept);
-  return `${first}-, -${last}`;
+  return t("Concepts written: {{written}} of {{all}}", { written: Lexicon.writtenConcepts(base).size, all });
 }
 
 /** What the grammar makes of a concept's forms */
@@ -561,7 +551,7 @@ function filterConcepts(): void {
   const base = getBase();
   const search = ensureEl<HTMLInputElement>("namesbaseSearch").value.trim().toLowerCase();
   shown = ensureEl<HTMLSelectElement>("namesbaseShown").value as Shown;
-  const written = new Set(Lexicon.writtenConcepts(base));
+  const written = Lexicon.writtenConcepts(base);
 
   const container = ensureEl("namesbaseConcepts");
   for (const kind of Object.keys(KINDS) as Kind[]) {
@@ -667,7 +657,7 @@ function setPattern(base: NameBase, pattern: Pattern, change: PatternLayout): vo
 // RULES
 
 function renderRules(base: NameBase): string {
-  const grammar = Names.lineage({ ...base, grammar: undefined }).find(({ grammar }) => grammar)?.grammar;
+  const grammar = Lexicon.grammarOf({ ...base, grammar: undefined });
   return /* html */ `<div id="namesbaseRulesPane">
       <h4 data-tip="${t("Regex rewrites, applied in order")}">${t("Sound rules")}</h4>
       <h4 data-tip="${t("Noun classes, endings and form rules")}">${t("Grammar")}</h4>
@@ -688,7 +678,7 @@ function changeRules(input: Field): void {
   const { field } = input.dataset;
   if (field === "rules") {
     const rules = NameNotation.parseRules(input.value);
-    const broken = rules.filter(({ match }) => !isRegex(match)).map(({ match }) => match);
+    const broken = rules.filter(({ match }) => !compileRegex(match, "gu")).map(({ match }) => match);
     if (broken.length)
       tip(t("Rules that are no valid regex are skipped: {{rules}}", { rules: broken.join(", ") }), false, "error");
     base.rules = rules;
@@ -705,15 +695,6 @@ function changeRules(input: Field): void {
 
 function setField(field: string, value: string): void {
   ensureEl("namesbasePane").querySelector<Field>(`[data-field="${field}"]`)!.value = value;
-}
-
-function isRegex(source: string): boolean {
-  try {
-    new RegExp(source, "gu");
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 /** Show what the base's rules make of the name typed: a word, or a name made of parts where it holds a + */

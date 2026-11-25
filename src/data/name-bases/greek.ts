@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const greek: WrittenNameBase = {
-  id: "greek",
   description: "Cities of ancient and Byzantine Greece and its colonies",
   length: [5, 11],
 

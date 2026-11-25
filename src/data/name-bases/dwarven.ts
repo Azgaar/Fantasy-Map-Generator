@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const dwarven: WrittenNameBase = {
-  id: "dwarven",
   description: "Tolkien's Khuzdul, extended in its style; people bear Norse names",
   length: [4, 11],
 

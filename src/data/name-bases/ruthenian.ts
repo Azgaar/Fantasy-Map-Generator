@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const ruthenian: WrittenNameBase = {
-  id: "ruthenian",
   description: "Towns and rivers of Old Rus', 10th to 14th century",
   length: [5, 14],
   places: {

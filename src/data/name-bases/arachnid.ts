@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const arachnid: WrittenNameBase = {
-  id: "arachnid",
   description: "Invented clicking tongue of spiders",
   length: [4, 10],
 

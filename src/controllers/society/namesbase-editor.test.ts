@@ -28,7 +28,6 @@ beforeEach(async () => {
   options.app.mode = null;
   vi.stubGlobal("pack", { cultures: [{ i: 0, name: "Wildlands", base: "english" }] });
   Names.nameBases = NAME_BASES.map(base => ({ ...base })); // none loaded
-  Names.clearChains();
 });
 
 describe("NamesbaseEditor", () => {

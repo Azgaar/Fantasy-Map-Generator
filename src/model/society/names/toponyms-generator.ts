@@ -17,7 +17,7 @@ import type { River } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Province } from "@/model/political/provinces-generator";
 import type { Meaning, NameBase, Pattern, Token } from "@/types/names";
-import { P, ra, seeded } from "@/utils/probability-utils";
+import { P, pickWeighted, ra, seeded } from "@/utils/probability-utils";
 import { capitalize } from "@/utils/string-utils";
 import { Appropriation } from "./appropriation";
 import { Lexicon } from "./lexicon";
@@ -35,9 +35,12 @@ interface Named {
 /** What a site is read from: a burg, or the cell a river or a lake is named at */
 type Place = Pick<Burg, "cell" | "x" | "y" | "culture" | "port" | "capital">;
 
+/** Names no new one may repeat */
+type Taken = { has(name?: string): boolean };
+
 interface BurgOptions {
   burgs?: Burg[]; // the burgs around: the map's, or the ones a generator is still placing
-  taken?: Set<string | undefined>; // names no new one may repeat
+  taken?: Taken;
   baseId?: string;
 }
 
@@ -50,7 +53,7 @@ interface SampleOptions {
 export type LandSize = "big" | "middle" | "small";
 
 interface StateOptions {
-  taken?: Set<string | undefined>;
+  taken?: Taken;
   baseId?: string;
   seed?: string;
   size?: LandSize;
@@ -58,8 +61,6 @@ interface StateOptions {
 
 const BURG_PATTERNS: Pattern[] = ["feature", "modifier-generic", "owner-generic", "generic-of", "compound", "relative"];
 const LAND_PATTERNS: Pattern[] = ["root-land", "modifier-land"];
-const WATER_TAGS: SiteTag[] = ["stream", "river", "mouth"];
-const SHORE_TAGS: SiteTag[] = ["lake", "port", "coast"];
 const FOREST_BIOMES = [5, 6, 7, 8, 9];
 const BIG_RIVER_FLUX = 100; // from where a river carries boats
 const SETTLED = 0.85; // the share of burg names that end in what the burg is, where a base sets none
@@ -76,6 +77,7 @@ const LAND_REDRAWS = 3;
 const FOUNDED = 0.4; // the share of lands and islands named after a person, not after a people
 const WATER_SHARE = 0.5; // waters keep old names: this many of them say something
 const PLAIN = 1; // how well a concept that fits anywhere fits, against one the place asks for (2 to 4)
+const GOOD = 4; // how much better a concept fits where the good it names is made
 const TRIES = 12;
 const RENAMES = 16; // how many ways a burg's new name is drawn, to take the one nearest to the old
 // the lie of the land: what a name of three parts is built around, as in Red-hill-town
@@ -98,14 +100,46 @@ const OPPOSITES: Concept[][] = [
   ["little", "great"]
 ];
 // what a place is already, so that nothing more is said of it: no Stone Rock
-const REDUNDANT: Partial<Record<Concept, Concept[]>> = {
-  stone: ["rock", "crag", "quarry"],
-  sand: ["sands", "dune"],
-  wet: ["marsh", "fen"]
+const REDUNDANT: Partial<Record<Concept, Concept>> = {
+  rock: "stone",
+  crag: "stone",
+  quarry: "stone",
+  sands: "sand",
+  dune: "sand",
+  marsh: "wet",
+  fen: "wet"
 };
 const WATERS: Concept[] = ["river", "brook", "water", "run", "tarn", "eye"]; // what a water is, not what a burg stands by
-const isBuilt = (fit: number, _: unknown, concept: Concept) =>
-  fit > 0 && concept !== "abbey" && !WATERS.includes(concept);
+
+const WORDS: Concept[] = [...conceptsOf("generic"), ...conceptsOf("modifier")];
+const PLACES = new Map(WORDS.map((concept, index) => [concept, index]));
+// how well each word fits a place that offers nothing, and the words that ask for each thing it may offer
+const BARE = Float64Array.from(WORDS, concept => (fitsOf(concept) ? 0 : PLAIN));
+const ASKING = new Map<SiteTag, number[]>();
+for (const [index, concept] of WORDS.entries())
+  for (const tag of fitsOf(concept) ?? []) ASKING.set(tag, [...(ASKING.get(tag) ?? []), index]);
+
+const isBuilt = (concept: Concept) => concept !== "abbey" && !WATERS.includes(concept);
+const asksFor = (tags: SiteTag[]) => (concept: Concept) =>
+  isBuilt(concept) && tags.some(tag => fitsOf(concept)?.includes(tag));
+
+// the concepts one is picked from
+const POOLS = {
+  landmark: ["generic", concept => !WATERS.includes(concept)],
+  terrain: ["generic", concept => TERRAIN.includes(concept)],
+  built: ["generic", isBuilt],
+  riverside: ["generic", asksFor(["stream", "river", "mouth"])],
+  shore: ["generic", asksFor(["lake", "port", "coast"])],
+  modifier: ["modifier", () => true]
+} satisfies Record<string, ["generic" | "modifier", (concept: Concept) => boolean]>;
+
+type PoolName = keyof typeof POOLS;
+
+/** The words of a base in a pool: their places among all words, and how common they are */
+interface Pool {
+  places: number[];
+  weights: number[];
+}
 
 // what each culture type makes more of when it names a place
 const LEANINGS: Record<string, SiteTag[]> = {
@@ -118,6 +152,9 @@ const LEANINGS: Record<string, SiteTag[]> = {
 };
 
 class ToponymsGenerator {
+  private readonly pools = new WeakMap<Set<Concept>, Partial<Record<PoolName, Pool>>>(); // by the concepts a base writes
+  private readonly fits = new WeakMap<Site, Float64Array>();
+
   /** Name the burgs that have no name yet, each on a random sequence of its own: one name does not move another.
    * With `only`, name just the burgs it takes */
   nameBurgs(burgs: Burg[], roll = "", only: (burg: Burg) => boolean = () => true): void {
@@ -149,16 +186,11 @@ class ToponymsGenerator {
     const picked = this.pickBurg(base, taken);
     if (picked) return picked;
     const site = this.getSite(burg);
-    const landmark = this.pickConcept(
-      "generic",
-      site,
-      base,
-      (fit, _, concept) => fit >= 3 && !WATERS.includes(concept)
-    ); // what the place stands out for
+    const landmark = this.pickConcept("landmark", site, base, 3); // what the place stands out for
     const water = this.getWater(burg, site);
     const neighbor = this.getNeighbor(burg, burgs);
     const settlement = this.getSettlement(burg);
-    const terrain = this.pickConcept("generic", site, base, (fit, _, concept) => fit >= 2 && TERRAIN.includes(concept));
+    const terrain = this.pickConcept("terrain", site, base, 2);
 
     const supported = (pattern: Pattern) =>
       (pattern !== "feature" || landmark) &&
@@ -176,16 +208,14 @@ class ToponymsGenerator {
       if (pattern === "feature" && patterns.length > 1) patterns = without(patterns, "feature"); // its names stay the same
     }
 
-    const name = burg.capital ? Names.getBaseShort(base.id) : Names.getBase(base.id);
-    return { name, meaning: Meanings.simplex(name, base.id) };
+    return proper(burg.capital ? Names.getBaseShort(base.id) : Names.getBase(base.id), base);
   }
 
   // a listed place not on the map yet, where the base picks its burg names; one like them when all are taken
-  private pickBurg({ id, places }: NameBase, taken: Set<string | undefined>): Named | undefined {
-    if (places.mode !== "pick") return undefined;
-    const free = places.names.filter(name => !taken.has(name));
-    const name = free.length ? ra(free) : Names.getBase(id);
-    return { name, meaning: Meanings.simplex(name, id) };
+  private pickBurg(base: NameBase, taken: Taken): Named | undefined {
+    if (base.places.mode !== "pick") return undefined;
+    const free = base.places.names.filter(name => !taken.has(name));
+    return proper(free.length ? ra(free) : Names.getBase(base.id), base);
   }
 
   private fillBurg(
@@ -197,18 +227,17 @@ class ToponymsGenerator {
       settlement?: Concept;
       terrain?: Concept;
       landmark?: Concept;
-      water?: { root: Token; tags: SiteTag[] };
+      water?: { root: Token; pool: PoolName };
       neighbor?: { root: Token; modifier: Concept };
     }
   ): Token[] | undefined {
-    const generic = () => by.settled ?? this.pickConcept("generic", site, base, isBuilt)!;
+    const generic = () => by.settled ?? this.pickConcept("built", site, base)!;
     if (pattern === "feature") return [by.landmark!];
     if (pattern === "owner-generic") return [`~${this.founder(base)}`, generic()];
     if (pattern === "relative") return [by.neighbor!.modifier, by.neighbor!.root];
     const numbered = (counted: Concept) => COUNTABLE.includes(counted) && P(NUMBERED);
-    const numeral = () => this.pickWeighted(Lexicon.spoken(base, conceptsOf("numeral")), weightOf);
-    const modifier = (place: Concept) =>
-      this.pickConcept("modifier", site, base, (fit, _, concept) => fit > 0 && !REDUNDANT[concept]?.includes(place))!;
+    const numeral = () => pickBy(Lexicon.spoken(base, conceptsOf("numeral")), weightOf);
+    const modifier = (place: Concept) => this.pickConcept("modifier", site, base, 0, REDUNDANT[place])!;
     if (pattern === "compound") {
       const first = numbered(by.terrain!) ? numeral() : modifier(by.terrain!);
       return [first, by.terrain!, by.settlement!];
@@ -219,14 +248,7 @@ class ToponymsGenerator {
       const named = by.settled && by.landmark && P(LANDMARK) ? by.landmark : modifier(place);
       return [named, place];
     }
-    const byWater =
-      by.settled ??
-      this.pickConcept(
-        "generic",
-        site,
-        base,
-        (weight, tags, concept) => isBuilt(weight, tags, concept) && by.water!.tags.some(tag => tags?.includes(tag))
-      );
+    const byWater = by.settled ?? this.pickConcept(by.water!.pool, site, base);
     return byWater && [byWater, by.water!.root];
   }
 
@@ -272,7 +294,7 @@ class ToponymsGenerator {
   // a land around a root or a describing word, its name not yet taken and not too long where a shorter one is found
   private coinLand(
     base: NameBase,
-    taken: Set<string | undefined>,
+    taken: Taken,
     site: Site,
     root: () => Token,
     { size, water, land }: { size: LandSize; water?: Token; land?: Concept }
@@ -282,7 +304,7 @@ class ToponymsGenerator {
       Lexicon.patternWeight(base, pattern) * (pattern === "modifier-land" && size === "big" ? BIG_DESCRIBED : 1);
     let shortest: Named | undefined;
     for (let attempt = 0; ; attempt++) {
-      const pattern = this.pickWeighted(LAND_PATTERNS, weigh);
+      const pattern = pickBy(LAND_PATTERNS, weigh);
       const first = pattern === "root-land" ? root() : this.pickConcept("modifier", landSite, base)!;
       const meaning: Meaning = { pattern, tokens: [first, land ?? this.pickLand(base, landSite)], origin: base.id };
       const named = this.accept(meaning, base, taken, 3);
@@ -303,7 +325,10 @@ class ToponymsGenerator {
   private pickLand(base: NameBase, site: Site): Concept {
     const lands = conceptsOf("land").filter(concept => Lexicon.authoredForms(base, concept)); // a fallback form would name a town
     const joined = lands.filter(land => Lexicon.authoredForms(base, land)!.some(({ position }) => position !== "word"));
-    return this.pickWeighted(joined.length ? joined : lands, concept => this.weigh(concept, site));
+    return pickBy(joined.length ? joined : lands, land => {
+      const fit = Math.max(...(fitsOf(land)?.map(tag => site[tag] ?? 0) ?? [PLAIN]));
+      return fit * commonness(land);
+    });
   }
 
   /** The name a named thing would take in a culture's base, when that is another name than it has.
@@ -324,8 +349,8 @@ class ToponymsGenerator {
   landOf(cultureOrBase: number | string, taken = this.landNames(), size: LandSize = "small"): Named {
     const baseId = typeof cultureOrBase === "number" ? pack.cultures[cultureOrBase].base : cultureOrBase;
     const base = Names.resolve(baseId);
-    const all = new Set([...taken, ...this.burgNames(pack.burgs)]);
-    return this.coinLand(base, all, {}, () => this.getLandRoot(base), { size });
+    const has = (name?: string) => taken.has(name) || pack.burgs.some(burg => burg.name === name && !burg.removed);
+    return this.coinLand(base, { has }, {}, () => this.getLandRoot(base), { size });
   }
 
   /** The names of the lands there are, states and provinces */
@@ -358,76 +383,53 @@ class ToponymsGenerator {
   /** A meaning for a river and its name in the base of the culture at its mouth, or in the base given:
    * a proper name, or what its water looks like */
   river(river: River, { taken = new Set(pack.rivers.map(({ name }) => name)), baseId }: StateOptions = {}): Named {
-    const { cells } = pack;
     const course = river.cells.filter(cell => cell >= 0);
     const cell = course[Math.floor(course.length / 2)] ?? river.mouth;
-    const culture = cells.culture[river.mouth] ?? 0;
-    const base = Names.resolve(baseId ?? pack.cultures[culture]?.base);
+    const { base, site } = this.getGround(cell, baseId, river.mouth);
     const isSmall = river.type !== "River"; // a brook, a creek or a fork
-    const [x, y] = cells.p[cell];
-    const site = { ...this.getSite({ cell, x, y, culture }), [isSmall ? "small" : "big"]: 2 };
+    site[isSmall ? "small" : "big"] = 2;
     const waters = Lexicon.spoken(
       base,
       isSmall ? ["brook", "brook", "water", "run"] : ["river", "river", "water", "run"]
     );
 
-    for (let attempt = 0; attempt < TRIES; attempt++) {
+    const named = this.coin(base, taken, () => {
       const pattern = this.pickPattern(base, ["simplex", "modifier-generic"], WATER_SHARE);
-      const tokens: Token[] =
-        pattern === "simplex"
-          ? [`~${Names.getWater(base.id)}`]
-          : [this.pickConcept("modifier", site, base)!, ra(waters)];
-      const min = pattern === "simplex" ? 0 : undefined; // a water's own name is never too short: Exe, Oka
-      const named = this.accept({ pattern, tokens, origin: base.id }, base, taken, min);
-      if (named) return named;
-    }
-    return this.proper(base);
+      if (pattern === "simplex") return [pattern, [`~${Names.getWater(base.id)}`]];
+      return [pattern, [this.pickConcept("modifier", site, base)!, ra(waters)]];
+    });
+    return named ?? proper(Names.getWater(base.id), base);
   }
 
   /** A meaning for a lake and its name in the base of the culture on its shore, or in the base given */
   lake(lake: Feature, { taken = this.featureNames(), baseId }: StateOptions = {}): Named {
-    const { cells } = pack;
-    const cell = lake.shoreline?.[0] || lake.firstCell;
-    const culture = cells.culture[cell] ?? 0;
-    const base = Names.resolve(baseId ?? pack.cultures[culture]?.base);
-    const [x, y] = cells.p[cell];
-    const site = this.getSite({ cell, x, y, culture });
+    const { base, site } = this.getGround(lake.shoreline?.[0] || lake.firstCell, baseId);
     const waters = Lexicon.spoken(
       base,
       lake.cells < 4 ? ["pool", "pool", "tarn", "lake", "eye"] : ["lake", "lake", "lake", "water", "eye"]
     );
 
-    for (let attempt = 0; attempt < TRIES; attempt++) {
+    const named = this.coin(base, taken, () => {
       const pattern = this.pickPattern(base, ["simplex", "modifier-generic", "owner-generic"], WATER_SHARE);
       const first: Token =
         pattern === "owner-generic" ? `~${this.founder(base)}` : this.pickConcept("modifier", site, base)!;
-      const tokens: Token[] = pattern === "simplex" ? [`~${Names.getWater(base.id)}`] : [first, ra(waters)];
-      const min = pattern === "simplex" ? 0 : undefined; // a water's own name is never too short: Exe, Oka
-      const named = this.accept({ pattern, tokens, origin: base.id }, base, taken, min);
-      if (named) return named;
-    }
-    return this.proper(base);
+      return [pattern, pattern === "simplex" ? [`~${Names.getWater(base.id)}`] : [first, ra(waters)]];
+    });
+    return named ?? proper(Names.getWater(base.id), base);
   }
 
   /** A meaning for an island and its name in the base of the culture on its first cell: an island of some kind or
    * of someone's. A continent is named as a land */
   island(island: Feature, { taken = this.featureNames(), baseId }: StateOptions = {}): Named {
-    const { cells } = pack;
-    const cell = island.firstCell;
-    const culture = cells.culture[cell] ?? 0;
-    const base = Names.resolve(baseId ?? pack.cultures[culture]?.base);
-    const [x, y] = cells.p[cell];
-    const site = this.getSite({ cell, x, y, culture });
+    const { base, site } = this.getGround(island.firstCell, baseId);
     const root = () => this.getLandRoot(base);
     if (island.subtype === "continent") return this.coinLand(base, taken, site, root, { size: "middle", land: "land" });
 
-    for (let attempt = 0; attempt < TRIES; attempt++) {
+    const named = this.coin(base, taken, () => {
       const pattern = this.pickPattern(base, ["modifier-generic", "owner-generic"]);
-      const first = pattern === "owner-generic" ? root() : this.pickConcept("modifier", site, base)!;
-      const named = this.accept({ pattern, tokens: [first, "island"], origin: base.id }, base, taken);
-      if (named) return named;
-    }
-    return this.coinLand(base, taken, site, root, { size: "small" });
+      return [pattern, [pattern === "owner-generic" ? root() : this.pickConcept("modifier", site, base)!, "island"]];
+    });
+    return named ?? this.coinLand(base, taken, site, root, { size: "small" });
   }
 
   // a person a place is named after: a woman as often as the base's owner-generic pattern says
@@ -435,10 +437,23 @@ class ToponymsGenerator {
     return Names.getPerson(base.id, Lexicon.femaleFounders(base));
   }
 
-  /** A proper name of a base: what a water is called when no meaning would do */
-  private proper(base: NameBase): Named {
-    const name = Names.getWater(base.id);
-    return { name, meaning: { pattern: "simplex", tokens: [`~${name}`], origin: base.id } };
+  /** What a cell offers a name, and the base to say it in: the one given, or that of the culture at a cell */
+  private getGround(cell: number, baseId?: string, namedAt = cell): { base: NameBase; site: Site } {
+    const culture = pack.cells.culture[namedAt] ?? 0;
+    const [x, y] = pack.cells.p[cell];
+    const base = Names.resolve(baseId ?? pack.cultures[culture]?.base);
+    return { base, site: this.getSite({ cell, x, y, culture }) };
+  }
+
+  /** The first of the meanings drawn whose name may be taken */
+  private coin(base: NameBase, taken: Taken, draw: () => [Pattern, Token[]]): Named | undefined {
+    for (let attempt = 0; attempt < TRIES; attempt++) {
+      const [pattern, tokens] = draw();
+      const min = pattern === "simplex" ? 0 : undefined; // a water's own name is never too short: Exe, Oka
+      const named = this.accept({ pattern, tokens, origin: base.id }, base, taken, min);
+      if (named) return named;
+    }
+    return undefined;
   }
 
   private featureNames(): Set<string | undefined> {
@@ -456,24 +471,12 @@ class ToponymsGenerator {
     if (P(FOUNDED)) return `~${this.founder(base)}`;
     for (let attempt = 0; ; attempt++) {
       const stem = Names.getStem(base.id);
-      if (attempt >= TRIES || !this.isPlaceWord(stem.toLowerCase(), base)) return `~${stem}`; // no Land of Town
+      if (attempt >= TRIES || !Lexicon.isPlaceWord(stem.toLowerCase(), base)) return `~${stem}`; // no Land of Town
     }
   }
 
-  /** Whether a word is what the base calls a kind of place or land */
-  private isPlaceWord(word: string, base: NameBase): boolean {
-    return [...conceptsOf("settlement"), ...conceptsOf("generic"), ...conceptsOf("land")].some(concept =>
-      Lexicon.authoredForms(base, concept)?.some(({ form }) => form.replaceAll("-", "").toLowerCase() === word)
-    );
-  }
-
   /** Render a meaning and take the name when it is free, long enough and no longer than the base allows */
-  private accept(
-    meaning: Meaning,
-    base: NameBase,
-    taken: Set<string | undefined>,
-    min = base.length[0]
-  ): Named | undefined {
+  private accept(meaning: Meaning, base: NameBase, taken: Taken, min = base.length[0]): Named | undefined {
     // a name taken is drawn again with other forms of the same meaning
     for (const salt of [0, 1, 2]) {
       const salted = salt ? { ...meaning, salt } : meaning;
@@ -491,15 +494,15 @@ class ToponymsGenerator {
     return new Set(burgs.filter(burg => !burg.removed).map(burg => burg.name));
   }
 
-  /** The river or lake a burg stands by, as a root for its name, with the tags a generic must share with it */
-  private getWater(burg: Burg, site: Site): { root: Token; tags: SiteTag[] } | undefined {
+  /** The river or lake a burg stands by, as a root for its name, with the pool of what stands by it */
+  private getWater(burg: Burg, site: Site): { root: Token; pool: PoolName } | undefined {
     const { cells, rivers, features } = pack;
     const river = site.stream || site.river ? rivers.find(river => river.i === cells.r[burg.cell]) : undefined;
     if (river?.name && !/[ -]/.test(river.name))
-      return { root: this.borrow(river.name, river.mouth, burg), tags: WATER_TAGS };
+      return { root: this.borrow(river.name, river.mouth, burg), pool: "riverside" };
     const lake = site.lake ? features[cells.f[cells.haven[burg.cell]]] : undefined;
     if (!lake?.name || /[ -]/.test(lake.name)) return undefined; // a name of two words is no root
-    return { root: this.borrow(lake.name, lake.shoreline?.[0] ?? lake.firstCell, burg), tags: SHORE_TAGS };
+    return { root: this.borrow(lake.name, lake.shoreline?.[0] ?? lake.firstCell, burg), pool: "shore" };
   }
 
   /** A name as a root for a burg's own: one the culture at a cell gave is adapted to the burg's base */
@@ -515,6 +518,7 @@ class ToponymsGenerator {
     let nearest: Burg | undefined;
     let distance = reach;
     for (const other of burgs) {
+      if (Math.abs(other.x - burg.x) >= distance || Math.abs(other.y - burg.y) >= distance) continue;
       if (!other.i || other === burg || other.removed || !other.name || other.culture !== burg.culture) continue;
       if (other.meaning?.pattern === "relative") continue; // no New New Barton
       const apart = Math.hypot(other.x - burg.x, other.y - burg.y);
@@ -602,29 +606,15 @@ class ToponymsGenerator {
     return max || 1;
   }
 
-  /** How well a concept fits a site: what the site offers of its tags, a little for one that fits anywhere,
-   * more for the good made there, 0 for one the site has nothing for */
-  private fit(concept: Concept, site: Site): number {
-    const tags = fitsOf(concept);
-    const fit = tags ? Math.max(...tags.map(tag => site[tag] ?? 0)) : PLAIN;
-    return concept === site.good ? fit + 4 : fit;
-  }
-
-  /** How readily a site's name takes a concept: how well it fits, times how common the concept is. Commonness
-   * counts squared: real names repeat a few words and leave the rest rare */
-  private weigh(concept: Concept, site: Site): number {
-    return this.fit(concept, site) * weightOf(concept) ** 2;
-  }
-
   /** Draw a pattern by the base's weights; with a share, proper names take what the share leaves */
   private pickPattern(base: NameBase, patterns: Pattern[], share?: number): Pattern {
     if (share !== undefined) return P(share) ? this.pickPattern(base, without(patterns, "simplex")) : "simplex";
-    return this.pickWeighted(patterns, pattern => Lexicon.patternWeight(base, pattern));
+    return pickBy(patterns, pattern => Lexicon.patternWeight(base, pattern));
   }
 
   /** The share of a base's burg names that end in what the burg is by its group */
   settledShare(base: NameBase): number {
-    return Names.lineage(base).find(({ settled }) => settled !== undefined)?.settled ?? SETTLED;
+    return Names.inherited(base, ({ settled }) => settled) ?? SETTLED;
   }
 
   /** A meaning no place stands behind and its name: what a base makes of names, for its editor to show. A pattern or
@@ -639,7 +629,7 @@ class ToponymsGenerator {
 
     const any = (of: Kind, from = conceptsOf(of)) => {
       const spoken = Lexicon.spoken(base, from);
-      return of === "settlement" ? ra(spoken) : this.pickWeighted(spoken, word => weightOf(word) ** 2);
+      return of === "settlement" ? ra(spoken) : pickBy(spoken, commonness);
     };
     const modifier = () => (concept && (kind === "modifier" || kind === "numeral") ? concept : any("modifier"));
     const place = () => (kind === "numeral" ? any("generic", COUNTABLE) : any("generic"));
@@ -669,28 +659,64 @@ class ToponymsGenerator {
     return this.sample(base, { pattern: this.pickPattern(base, LAND_PATTERNS) });
   }
 
-  private pickConcept(
-    kind: "generic" | "modifier",
-    site: Site,
-    base: NameBase,
-    allow: (fit: number, tags: SiteTag[] | undefined, concept: Concept) => boolean = fit => fit > 0
-  ): Concept | undefined {
-    const concepts = Lexicon.spoken(base, conceptsOf(kind)).filter(concept =>
-      allow(this.fit(concept, site), fitsOf(concept), concept)
-    );
-    return concepts.length ? this.pickWeighted(concepts, concept => this.weigh(concept, site)) : undefined;
+  /** A concept as likely as it fits the site, times how common it is; none when the site offers none so much */
+  private pickConcept(pool: PoolName, site: Site, base: NameBase, min = 0, except?: Concept): Concept | undefined {
+    const { places, weights } = this.poolOf(pool, base);
+    const fits = this.fitsOf(site);
+    const barred = except ? PLACES.get(except) : undefined;
+    let total = 0;
+    for (let i = 0; i < places.length; i++) {
+      const fit = fits[places[i]];
+      const weight = fit < min || places[i] === barred ? 0 : fit * weights[i];
+      total += weight;
+      drawn[i] = weight;
+    }
+    if (!total) return undefined;
+
+    let roll = Math.random() * total;
+    let picked = 0;
+    for (let i = 0; i < places.length; i++) {
+      if (!drawn[i]) continue;
+      picked = places[i];
+      roll -= drawn[i];
+      if (roll < 0) break;
+    }
+    return WORDS[picked];
   }
 
-  private pickWeighted<T>(items: T[], weigh: (item: T) => number): T {
-    const weights = items.map(weigh);
-    let roll = Math.random() * weights.reduce((sum, weight) => sum + weight, 0);
-    for (const [index, item] of items.entries()) {
-      roll -= weights[index];
-      if (roll < 0) return item;
+  // a pool holds while the vocabulary it is of stands
+  private poolOf(name: PoolName, base: NameBase): Pool {
+    const written = Lexicon.writtenConcepts(base);
+    let pools = this.pools.get(written);
+    if (!pools) {
+      pools = {};
+      this.pools.set(written, pools);
     }
-    return items[items.length - 1];
+    if (!pools[name]) {
+      const [kind, takes] = POOLS[name];
+      const concepts = Lexicon.spoken(base, conceptsOf(kind)).filter(takes);
+      pools[name] = { places: concepts.map(concept => PLACES.get(concept)!), weights: concepts.map(commonness) };
+    }
+    return pools[name];
+  }
+
+  // how well each word fits a site
+  private fitsOf(site: Site): Float64Array {
+    let fits = this.fits.get(site);
+    if (!fits) {
+      const { good, ...offers } = site;
+      fits = BARE.slice();
+      for (const [tag, offer] of Object.entries(offers) as [SiteTag, number][])
+        for (const index of ASKING.get(tag) ?? []) if (offer > fits[index]) fits[index] = offer;
+      const made = good && PLACES.get(good);
+      if (made !== undefined) fits[made] += GOOD;
+      this.fits.set(site, fits);
+    }
+    return fits;
   }
 }
+
+const drawn = new Float64Array(WORDS.length); // the weights of the pool being picked from
 
 const isLongLand = (name: string) =>
   name.length > LAND_LENGTH * 1.5 || name.split(/[ -]/).some(word => word.length > LAND_LENGTH);
@@ -702,6 +728,16 @@ const shared = (name: string, other: string) => {
   while (end < name.length - start && name.at(-1 - end) === other.at(-1 - end)) end++;
   return start + end;
 };
+
+const pickBy = <T>(items: T[], weigh: (item: T) => number): T => pickWeighted(items, items.map(weigh));
+
+// commonness counts squared: real names repeat a few words and leave the rest rare
+function commonness(concept: Concept): number {
+  return weightOf(concept) ** 2;
+}
+
+/** A name that says nothing but itself */
+const proper = (name: string, base: NameBase): Named => ({ name, meaning: Meanings.simplex(name, base.id) });
 
 const without = <T>(items: T[], item: T) => items.filter(other => other !== item);
 

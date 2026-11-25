@@ -355,8 +355,7 @@ function regenerateName(baseId?: string): void {
 
 function showTranslations(): void {
   const river = getRiver();
-  const origin = pack.cultures[pack.cells.culture[river.mouth]]?.base ?? Names.nameBases[0].id;
-  void Controllers.NameTranslations.open(river.meaning ?? Meanings.simplex(river.name, origin), name => {
+  void Controllers.NameTranslations.open(Meanings.of(river, pack.cells.culture[river.mouth]), name => {
     ensureEl<HTMLInputElement>("riverName").value = name;
     Rivers.rename(river.i, name);
     Layers.draw("labels");

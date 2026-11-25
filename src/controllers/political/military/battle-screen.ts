@@ -704,7 +704,7 @@ function generateBattleName(type: "culture" | "random"): void {
   const b = battle!;
   const place =
     type === "culture"
-      ? Names.getCulture(pack.cells.culture[b.cell], undefined, undefined, "")
+      ? Names.getCulture(pack.cells.culture[b.cell], undefined, undefined, true)
       : Names.getBase(Names.randomBase().id);
   b.place = place;
   ensureEl<HTMLInputElement>("battleNamePlace").value = place;

@@ -393,8 +393,7 @@ function regenerateName(baseId?: string): void {
 }
 
 /** The meaning a burg's name carries; a name without one stands as a proper name of its culture's base */
-const getMeaning = (burg: Burg): Meaning =>
-  burg.meaning ?? Meanings.simplex(burg.name!, pack.cultures[burg.culture ?? 0]?.base ?? Names.nameBases[0].id);
+const getMeaning = (burg: Burg): Meaning => Meanings.of(burg, burg.culture);
 
 function getMeaningGloss(burg: Burg): string {
   const meaning = getMeaning(burg);

@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const mongolian: WrittenNameBase = {
-  id: "mongolian",
   description: "Districts and places of Mongolia",
   length: [5, 12],
 

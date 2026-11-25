@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const celestial: WrittenNameBase = {
-  id: "celestial",
   description: "Enochian, the angelic tongue of John Dee and Edward Kelley, 1580s",
   length: [5, 13],
 

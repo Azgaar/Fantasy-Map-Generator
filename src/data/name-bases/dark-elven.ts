@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const darkElven: WrittenNameBase = {
-  id: "dark-elven",
   description: "Invented hissing tongue of the deep",
   length: [6, 14],
 

@@ -926,9 +926,9 @@ function regenerateShortNameRandom(): void {
 function showTranslations(): void {
   const province = pack.provinces[+ensureEl("provinceNameEditor").dataset.province!];
   const input = ensureEl<HTMLInputElement>("provinceNameEditorShort");
-  const origin = pack.cultures[pack.cells.culture[province.center]]?.base ?? Names.nameBases[0].id;
-  const meaning = coined?.name === input.value ? coined.meaning : province.meaning;
-  void Controllers.NameTranslations.open(meaning ?? Meanings.simplex(input.value || province.name, origin), name => {
+  const { meaning } = coined?.name === input.value ? coined : province;
+  const named = { name: input.value || province.name, meaning };
+  void Controllers.NameTranslations.open(Meanings.of(named, pack.cells.culture[province.center]), name => {
     input.value = name;
   });
 }

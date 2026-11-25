@@ -1,7 +1,6 @@
 import type { WrittenNameBase } from "@/types/names";
 
 export const gothic: WrittenNameBase = {
-  id: "gothic",
   description: "East Germanic peoples and places of the migration age, after Wulfila's Gothic",
   length: [5, 15],
 
