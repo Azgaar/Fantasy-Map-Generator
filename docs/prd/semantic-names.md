@@ -532,7 +532,6 @@ The examples panel shows meanings with their gloss and rendered name instead of 
 ### Later
 
 - A display mode for labels: native names, the English gloss, or every name rendered in one chosen base. It changes what is drawn, not what is stored.
-- Glosses in the interface language, with concept words as locale keys.
 - Meanings in the map context the Assistant and the lore generator read.
 
 ## Data authoring

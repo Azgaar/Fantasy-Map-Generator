@@ -399,7 +399,6 @@ function editName(input: HTMLElement): void {
   const feature = getFeature(input);
   const { type } = feature;
   void Controllers.NameEditor.open({
-    title: { lake: t("Rename lake"), island: t("Rename island"), ocean: t("Rename ocean") }[type],
     entity: `feature:${feature.i}`,
     owner: dialogId,
     name: feature.name || "",

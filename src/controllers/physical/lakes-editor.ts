@@ -162,7 +162,6 @@ function updateLakeValues(): void {
 function editName(): void {
   const lake = getLake();
   void Controllers.NameEditor.open({
-    title: t("Rename lake"),
     entity: `feature:${lake.i}`,
     owner: "lakeEditor",
     name: lake.name,

@@ -10,12 +10,11 @@ import { Tags } from "@/model/tags";
 import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/units";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
-import { localGloss } from "@/renderers/labels/name-display";
 import { Layers } from "@/renderers/layers";
 import type { Market } from "@/types/economy";
 import { renderDevelopment } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { closeEntityDialogs, nameEditButton, noteButton } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, nameEditButton, noteButton, offerRename } from "@/ui/dialog/dialog-helpers";
 import { EconomyTerms, prosperityTip, renderProsperity } from "@/ui/economy-view";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
@@ -71,7 +70,7 @@ function renderDialog(): void {
               <div id="burgNameBlock">
                 <span id="burgName"></span>
                 ${nameEditButton("burgNameEdit")}
-                <div id="burgMeaning" data-tip="${t("What the name says, apart from any language")}"></div>
+                <div id="burgMeaning" data-tip="${t("Meaning")}"></div>
               </div>
             </div>
             <div data-tip="${t("Select burg group. Groups defines burg icon, label size and style")}">
@@ -350,13 +349,12 @@ function updateBurgValues(): void {
 function showName(burg: Burg): void {
   ensureEl("burgName").textContent = burg.name!;
   const says = burg.meaning && burg.meaning.pattern !== "simplex";
-  ensureEl("burgMeaning").textContent = says ? localGloss(burg.meaning!) : "";
+  ensureEl("burgMeaning").textContent = says ? Meanings.gloss(burg.meaning!) : "";
 }
 
 function editName(): void {
   const burg = pack.burgs[getSelectedId()];
   void Controllers.NameEditor.open({
-    title: t("Rename burg"),
     entity: `burg:${burg.i}`,
     owner: "burgEditor",
     name: burg.name!,
@@ -382,19 +380,11 @@ function changeGroup(this: HTMLSelectElement): void {
   // a name ends in what the burg is: in another group it may end another way
   const named = Toponyms.regrouped(burg, was);
   if (!named) return;
-  Dialog.confirm({
-    title: t("Rename burg"),
-    message: t("In its new group {{burg}} would be called “{{name}}”. Rename the burg?", {
-      burg: burg.name!,
-      name: named.name
-    }),
-    confirm: t("Rename"),
-    onConfirm: () => {
-      Burgs.setMeaning(burg.i, named.meaning);
-      Burgs.rename(burg.i, named.name);
-      showName(burg);
-      Layers.draw("labels");
-    }
+  offerRename(burg.name!, named.name, () => {
+    Burgs.setMeaning(burg.i, named.meaning);
+    Burgs.rename(burg.i, named.name);
+    showName(burg);
+    Layers.draw("labels");
   });
 }
 
@@ -413,19 +403,11 @@ function changeCulture(this: HTMLSelectElement): void {
   // the new culture may say the name another way
   const named = Toponyms.nameIn(burg, +this.value, origin);
   if (!named) return;
-  Dialog.confirm({
-    title: t("Rename burg"),
-    message: t("The new culture would call {{burg}} “{{name}}”. Rename the burg?", {
-      burg: burg.name!,
-      name: named.name
-    }),
-    confirm: t("Rename"),
-    onConfirm: () => {
-      Burgs.setMeaning(burg.i, named.meaning);
-      Burgs.rename(burg.i, named.name);
-      showName(burg);
-      Layers.draw("labels");
-    }
+  offerRename(burg.name!, named.name, () => {
+    Burgs.setMeaning(burg.i, named.meaning);
+    Burgs.rename(burg.i, named.name);
+    showName(burg);
+    Layers.draw("labels");
   });
 }
 

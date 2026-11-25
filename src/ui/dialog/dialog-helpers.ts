@@ -15,8 +15,18 @@ export function noteIcon(tip: string): string {
 }
 
 /** The button beside a name that opens the Name Editor */
-export function nameEditButton(id: string, tip = t("Edit the name and its meaning")): string {
-  return `<span id="${id}" data-tip="${tip}" class="icon-pencil pointer"></span>`;
+export function nameEditButton(id: string): string {
+  return `<span id="${id}" data-tip="${t("Rename")}" class="icon-pencil pointer"></span>`;
+}
+
+/** Offer the name a place would take now */
+export function offerRename(from: string, to: string, onConfirm: () => void): void {
+  Dialog.confirm({
+    title: t("Rename"),
+    message: t("Rename {{from}} to {{to}}?", { from, to }),
+    confirm: t("Rename"),
+    onConfirm
+  });
 }
 
 // TODO: editors should register a refresh callback when they open,

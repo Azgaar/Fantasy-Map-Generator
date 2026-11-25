@@ -1,6 +1,6 @@
 // One dialog to rename anything on the map: the name, what it says and how another name base would say it
 
-import { CONCEPT_LABELS } from "@/data/id-labels";
+import { PATTERN_LABELS } from "@/data/id-labels";
 import { type Concept, conceptsOf, settles } from "@/data/name-concepts";
 import { Appropriation } from "@/model/society/names/appropriation";
 import { Meanings } from "@/model/society/names/meanings";
@@ -19,7 +19,6 @@ interface Named {
 }
 
 interface NameEditorOptions {
-  title: string;
   owner: string; // the dialog it is opened from: the editor closes with it
   entity?: string; // the key of what is named, such as "burg:12"
   name: string;
@@ -38,37 +37,15 @@ type Draft = Omit<Meaning, "tokens"> & { tokens: (Token | "")[] }; // a slot not
 const dialogId = "nameEditor";
 const REROLLS = 12;
 
-const PATTERNS: [string, [Pattern, string][]][] = [
-  [
-    t("Burgs, rivers, lakes and islands"),
-    [
-      ["simplex", t("Proper name")],
-      ["feature", t("Place")],
-      ["modifier-generic", t("Description + place")],
-      ["owner-generic", t("Owner + place")],
-      ["generic-of", t("Place + name")],
-      ["compound", t("Description + place + settlement")],
-      ["relative", t("Description + name")]
-    ]
-  ],
-  [
-    t("States, provinces and continents"),
-    [
-      ["root-land", t("Name + land")],
-      ["modifier-land", t("Description + land")]
-    ]
-  ]
-];
-
 const LANDS: Pattern[] = ["root-land", "modifier-land"];
 
-// the words a slot offers, in the order of their labels
-const byLabel = (words: Concept[]) => words.toSorted((a, b) => CONCEPT_LABELS[a].localeCompare(CONCEPT_LABELS[b]));
+// the words a slot offers, in alphabetical order
+const inOrder = (words: Concept[]) => words.toSorted();
 const WORDS: Record<string, Concept[]> = {
-  modifier: byLabel([...conceptsOf("modifier"), ...conceptsOf("numeral")]),
-  generic: byLabel([...conceptsOf("generic"), ...conceptsOf("settlement")]),
-  land: byLabel(conceptsOf("land")),
-  settlement: byLabel([...conceptsOf("settlement"), ...conceptsOf("generic").filter(settles)])
+  modifier: inOrder([...conceptsOf("modifier"), ...conceptsOf("numeral")]),
+  generic: inOrder([...conceptsOf("generic"), ...conceptsOf("settlement")]),
+  land: inOrder(conceptsOf("land")),
+  settlement: inOrder([...conceptsOf("settlement"), ...conceptsOf("generic").filter(settles)])
 };
 
 const STYLES = /* html */ `<style>
@@ -99,7 +76,7 @@ async function open(options: NameEditorOptions): Promise<void> {
   const draft = structuredClone(options.meaning ?? Meanings.simplex(options.name, baseId));
   editing = { options, draft };
 
-  const patterns = PATTERNS.map(
+  const patterns = PATTERN_LABELS.map(
     ([group, list]) =>
       `<optgroup label="${group}">${list.map(([pattern, label]) => `<option value="${pattern}">${label}</option>`).join("")}</optgroup>`
   );
@@ -108,12 +85,12 @@ async function open(options: NameEditorOptions): Promise<void> {
   );
 
   const meaningRows = /* html */ `<label for="nameEditorPattern">${t("Meaning")}</label>
-      <select id="nameEditorPattern" data-tip="${sentences(t("What the name says, apart from any language"), t("A proper name says nothing"))}">${patterns.join("")}</select>
+      <select id="nameEditorPattern">${patterns.join("")}</select>
       ${options.generate ? `<span id="nameEditorGenerate" data-tip="${t("Generate a new meaning and its name")}" class="icon-arrows-cw pointer"></span>` : "<span></span>"}
-      <div id="nameEditorSlots" data-tip="${t("The words of the meaning")}"></div>`;
+      <div id="nameEditorSlots"></div>`;
   const fullRow = /* html */ `<span>${t("Full name")}</span>
       <span id="nameEditorFull">${escapeHtml(options.full?.name ?? "")}</span>
-      <span id="nameEditorFullEdit" data-tip="${t("Change the form and the full name")}" class="icon-pencil pointer"></span>`;
+      <span id="nameEditorFullEdit" data-tip="${t("Form and full name")}" class="icon-pencil pointer"></span>`;
 
   const html = /* html */ `<div id="${dialogId}" class="dialog" data-entity="${options.entity ?? ""}">
     ${STYLES}
@@ -123,12 +100,12 @@ async function open(options: NameEditorOptions): Promise<void> {
         <input id="nameEditorName" value="${escapeHtml(options.name)}" data-tip="${t("Type to rename")}" autocorrect="off" spellcheck="false" />
         <span id="nameEditorSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
       </div>
-      <span id="nameEditorReroll" data-tip="${options.plain ? t("Generate another name") : t("Generate another name with the same meaning")}" class="icon-shuffle pointer"></span>
+      <span id="nameEditorReroll" data-tip="${t("Generate another name")}" class="icon-shuffle pointer"></span>
       ${options.plain ? "" : meaningRows}
       <label for="nameEditorBase">${t("Name base")}</label>
       <div id="nameEditorIn">
         <select id="nameEditorBase" data-tip="${t("Select a name base to see the name in it")}">${bases.join("")}</select>
-        <i id="nameEditorVariant" data-tip="${t("The name in the selected name base")}"></i>
+        <i id="nameEditorVariant"></i>
       </div>
       <span id="nameEditorTake" data-tip="${t("Use this name")}" class="icon-ok pointer"></span>
       ${options.full ? fullRow : ""}
@@ -154,7 +131,7 @@ async function open(options: NameEditorOptions): Promise<void> {
   ensureEl(options.owner).addEventListener("dialog:close", closeWithOwner);
 
   Dialog.open(dialogId, {
-    title: options.title,
+    title: t("Rename"),
     resizable: false,
     position: { my: "center", at: "center", of: "svg" },
     buttons: [
@@ -283,7 +260,7 @@ function rerollName(): void {
     return;
   }
   if (!isWhole(draft)) {
-    tip(t("Fill in the meaning first"), false, "error");
+    tip(t("Fill in the meaning or select a proper name"), false, "error");
     return;
   }
 
@@ -341,14 +318,13 @@ function editFull(): void {
 }
 
 const isWhole = ({ tokens }: Draft) => tokens.every(token => token.length > 1); // "~" alone is a name not typed yet
-const wordOf = (token: string) =>
-  token.startsWith("~") ? token.slice(1) : (CONCEPT_LABELS[token as Concept] ?? token);
+const wordOf = (token: string) => (token.startsWith("~") ? token.slice(1) : token);
 
 function placeholderOf(pattern: Pattern, slot: Slot): string {
-  if (slot === "modifier") return t("description");
-  if (slot === "settlement") return t("settlement");
-  if (slot === "generic") return LANDS.includes(pattern) ? t("land") : t("place");
-  return pattern === "owner-generic" ? t("owner") : t("name");
+  if (slot === "modifier") return t("Description");
+  if (slot === "settlement") return t("Settlements");
+  if (slot === "generic") return LANDS.includes(pattern) ? t("Lands") : t("Place");
+  return pattern === "owner-generic" ? t("Owner") : t("Name");
 }
 
 export const NameEditor = { open };

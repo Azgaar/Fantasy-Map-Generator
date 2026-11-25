@@ -326,7 +326,6 @@ function changeTags(this: HTMLInputElement): void {
 function editName(): void {
   const river = getRiver();
   void Controllers.NameEditor.open({
-    title: t("Rename river"),
     entity: `river:${river.i}`,
     owner: "riverEditor",
     name: river.name,

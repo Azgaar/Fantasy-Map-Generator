@@ -1,8 +1,8 @@
 import { layerLabel } from "@/data/layer-labels";
 import { Icons } from "@/model/icons";
 import { MapEntities } from "@/model/map-entities";
+import { Meanings } from "@/model/society/names/meanings";
 import { formatPrice, getArea, getAreaUnit, getPeople } from "@/model/units";
-import { localGloss } from "@/renderers/labels/name-display";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
 import type { Meaning } from "@/types/names";
 import { t } from "@/utils/i18n";
@@ -220,7 +220,7 @@ class ProposalCardView {
       if (idType) return this.entityName(`${idType}:${value}`) || String(value);
     }
     if (Array.isArray(value)) return this.isChronicle(row) ? String(value.length) : plural(value.length, "item");
-    if (field === "meaning") return localGloss(value as Meaning);
+    if (field === "meaning") return Meanings.gloss(value as Meaning);
     const shown = typeof value === "string" ? value : JSON.stringify(value);
     return shown.length > 80 ? `${shown.slice(0, 80)}…` : shown;
   }

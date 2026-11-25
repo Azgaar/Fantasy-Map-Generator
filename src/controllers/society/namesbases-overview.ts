@@ -84,7 +84,7 @@ function renderDialog(): void {
       ${renderEditorHeader({ dialogId, columns })}
       <div id="namesbasesBody" class="table"></div>
       <div class="editorFilters">
-        <label data-tip="${t("Filter by name or culture")}">${t("Search")}:
+        <label>${t("Search")}:
           <input id="namesbasesSearch" type="search" value="${escapeHtml(filterState.search)}" /></label>
       </div>
       <div id="namesbasesFooter" class="totalLine">
@@ -94,7 +94,7 @@ function renderDialog(): void {
         <button id="namesbasesAdd" data-tip="${t("Add")}" class="icon-plus"></button>
         <button id="namesbasesDownload" data-tip="${t("Download all")}" class="icon-download"></button>
         <button id="namesbasesUpload" data-tip="${t("Upload")}" class="icon-upload"></button>
-        <button id="namesbasesRestore" data-tip="${t("Restore default")}" class="icon-retweet"></button>
+        <button id="namesbasesRestore" data-tip="${t("Restore default namesbase")}" class="icon-retweet"></button>
         <button id="namesbasesWiki" data-tip="${t("Open the wiki page")}" class="icon-info"></button>
       </div>
     </div>`;
@@ -209,7 +209,7 @@ async function offerUpload(data: string): Promise<void> {
     return;
   }
   Dialog.message({
-    title: t("Upload namesbases"),
+    title: t("Upload"),
     message: sentences(
       t("Namesbases in the file: {{- names}}", { names: escapeHtml(bases.map(({ name }) => name).join(", ")) }),
       t("Add them or replace all custom and edited namesbases with them?")
@@ -228,7 +228,6 @@ async function take(bases: NameBase[], replace: boolean): Promise<void> {
   Options.save();
   await Names.loadUsed();
   refresh();
-  tip(t("Namesbases uploaded: {{number}}", { number: bases.length }), false, "success", 4000);
 }
 
 function restoreDefault(): void {

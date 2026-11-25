@@ -41,6 +41,8 @@ Concepts come in five kinds:
 | `numeral`    | How many there are         | three, seven                    |
 | `land`       | What a state is            | land, realm, march, isles       |
 
+Concept words and glosses stay in English in every interface language, as in the CSV and for the Assistant: a gloss joins bare words, which most languages would have to make agree.
+
 ## Elements
 
 | Element                             | Code                                                                                            | Persisted state                    |
@@ -55,7 +57,6 @@ Concepts come in five kinds:
 | Foreign names                       | `Appropriation` ([appropriation.ts](../../src/model/society/names/appropriation.ts))            | nothing                            |
 | The written form of base data       | `NameNotation` ([notation.ts](../../src/model/society/names/notation.ts))                       | nothing                            |
 | Markov names and personal names     | `Names` ([names-generator.ts](../../src/model/society/names/names-generator.ts))                | nothing                            |
-| Gloss in the interface language     | `localGloss` ([name-display.ts](../../src/renderers/labels/name-display.ts))                    | nothing                            |
 | Renaming, in any base               | `NameEditor` ([name-editor.ts](../../src/controllers/society/name-editor.ts))                   | `name` and `meaning` through the entity's setters |
 | Types                               | [types/names.ts](../../src/types/names.ts)                                                      |                                    |
 
@@ -199,7 +200,6 @@ const { name, meaning } = Toponyms.burg(burg); // coin a meaning that fits the p
 Meanings.render(Meanings.coinedIn(meaning, base), base.id); // the same meaning said anew in another base
 Appropriation.adopt(name, base); // the name as another base's people say it
 Meanings.gloss(meaning); // "Birch Town"
-localGloss(meaning); // the gloss in the interface language
 Meanings.read("feature: ford", baseId); // a meaning as a CSV writes it
 Meanings.simplex(burg.name, baseId); // a meaning for a name that has none
 Toponyms.nameIn(burg, cultureId, origin); // its name in a culture's base and the meaning that keeps its own; undefined when it would not change
@@ -208,11 +208,11 @@ Toponyms.nameIn(burg, cultureId, origin); // its name in a culture's base and th
 | To                                   | Do                                                                                                                                                                                                                                                                                                                                    |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Find why a place got its name        | Read its `meaning`: the pattern and tokens say what was picked. The editor shows the same as a gloss                                                                                                                                                                                                                                  |
-| Add a concept                        | Add it to its kind in `name-concepts.ts` with the tags it `fits` and a `weight` from 1 to 10, which counts squared: a 10 is drawn a hundred times as readily as a 1. Add its label to `CONCEPT_LABELS` in `data/id-labels.ts`. Write its forms in `english.ts` and `ruthenian.ts`; a test fails without them. Other bases coin a form |
+| Add a concept                        | Add it to its kind in `name-concepts.ts` with the tags it `fits` and a `weight` from 1 to 10, which counts squared: a 10 is drawn a hundred times as readily as a 1. Write its forms in `english.ts` and `ruthenian.ts`; a test fails without them. Other bases coin a form |
 | Make a concept depend on the map     | Give it a tag in `fits`. For a new tag, add it to `SiteTag` and set it in `Toponyms.getSite`                                                                                                                                                                                                                                          |
 | Change how often a pattern is coined | `DEFAULT_WEIGHTS` in `name-rules.ts` for all bases, or `patterns.<pattern>.weight` in one base. 0 turns it off                                                                                                                                                                                                                        |
 | Teach a base real words              | Follow [Preparing a name base](#preparing-a-name-base); the notation is on the [wiki page](../wiki/Names.md#teaching-a-base-its-words)                                                                                                                                                                                                |
-| Add a pattern                        | `Pattern` type, `SLOTS` in `meanings.ts`, `DEFAULT_TEMPLATES` and `DEFAULT_WEIGHTS` in `name-rules.ts`, `Meanings.gloss` and `localGloss`, and a branch in `Toponyms` that fills it                                                                                                                                                   |
+| Add a pattern                        | `Pattern` type, `SLOTS` in `meanings.ts`, `DEFAULT_TEMPLATES` and `DEFAULT_WEIGHTS` in `name-rules.ts`, `Meanings.gloss` and `PATTERN_LABELS` in `data/id-labels.ts`, and a branch in `Toponyms` that fills it                                                                                                                                                   |
 | Give another entity a meaning        | Add `meaning?: Meaning` to it, name it through `Toponyms`, and open `NameEditor` from its editor with a `generate` that coins it                                                                                                                                                                                                               |
 
 ## Preparing a name base

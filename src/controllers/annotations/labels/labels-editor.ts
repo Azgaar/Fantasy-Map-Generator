@@ -78,7 +78,7 @@ function renderDialog(): void {
           data-tip="${t("Type to change the label. Enter “|” to move to a new line")}"
           style="width: 12em"
         />
-        ${nameEditButton("labelTextEdit", t("Edit the label text"))}
+        ${nameEditButton("labelTextEdit")}
       </div>
       <button id="labelEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-brush"></button>
       <button id="labelPathToggle"></button>
@@ -426,7 +426,6 @@ const nameGenerators: Record<LabelType, (label: LabelData, baseId: string) => st
 function editText(): void {
   const cell = Pack.findCell(...label.anchor);
   void Controllers.NameEditor.open({
-    title: t("Edit label text"),
     owner: "labelEditor",
     name: label.text || "",
     plain: true,

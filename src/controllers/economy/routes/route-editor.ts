@@ -66,7 +66,7 @@ function renderDialog(): void {
       <div>
         <div class="label">${t("Name")}:</div>
         <span id="routeName"></span>
-        ${nameEditButton("routeNameEdit", t("Edit the name"))}
+        ${nameEditButton("routeNameEdit")}
       </div>
       <div data-tip="${t("Select route group")}">
         <div class="label">${t("Group")}:</div>
@@ -324,7 +324,6 @@ function updateLinks(): void {
 function editName(): void {
   const route = getRoute();
   void Controllers.NameEditor.open({
-    title: t("Rename route"),
     entity: `route:${route.i}`,
     owner: "routeEditor",
     name: route.name ?? "",

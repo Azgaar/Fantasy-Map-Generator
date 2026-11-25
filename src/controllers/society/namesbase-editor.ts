@@ -1,13 +1,13 @@
 import { Controllers } from "@/controllers";
-import { CONCEPT_LABELS } from "@/data/id-labels";
+import { PATTERN_LABELS } from "@/data/id-labels";
 import { type Concept, conceptsOf, type Kind } from "@/data/name-concepts";
 import { Options } from "@/model/options/options-model";
 import { Lexicon } from "@/model/society/names/lexicon";
+import { Meanings } from "@/model/society/names/meanings";
 import { Names, PEOPLE_LENGTH } from "@/model/society/names/names-generator";
 import { NameNotation } from "@/model/society/names/notation";
 import { SoundRules } from "@/model/society/names/sound-rules";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
-import { localGloss } from "@/renderers/labels/name-display";
 import { viewport } from "@/renderers/viewport/viewport";
 import { getFileName } from "@/services/io/file-name";
 import type { Corpus, NameBase, Pattern, PatternLayout } from "@/types/names";
@@ -15,7 +15,7 @@ import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { wiki } from "@/utils/common-utils";
 import { downloadFile } from "@/utils/file-utils";
-import { sentences, t } from "@/utils/i18n";
+import { t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { seeded } from "@/utils/probability-utils";
 import { compileRegex, escapeHtml } from "@/utils/string-utils";
@@ -57,28 +57,6 @@ const KINDS: Record<Kind, string> = {
   numeral: t("Numerals"),
   land: t("Lands")
 };
-
-const PATTERN_GROUPS: [string, [Pattern, string][]][] = [
-  [
-    t("Burgs, rivers, lakes and islands"),
-    [
-      ["feature", t("What stands at the place")],
-      ["modifier-generic", t("What the place is like, and what it is")],
-      ["owner-generic", t("A founder, and what the place is")],
-      ["generic-of", t("What the place is, on a named river")],
-      ["compound", t("A description of the land, and what the burg is")],
-      ["relative", t("Another place's name told apart")],
-      ["simplex", t("A proper name with no meaning")]
-    ]
-  ],
-  [
-    t("States, provinces and continents"),
-    [
-      ["root-land", t("A name, and a word for a land")],
-      ["modifier-land", t("A describing word and a land")]
-    ]
-  ]
-];
 
 type Field = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
@@ -207,9 +185,9 @@ function renderDialog(base: NameBase): void {
           <input id="namesbaseDescription" autocorrect="off" spellcheck="false" />
         </div>
         <div id="namesbaseLock">
-          <span>${sentences(t("A built-in namesbase is improved with each app update"), t("To change it, edit a copy"))}</span>
+          <span>${t("A built-in namesbase is improved with each app update")}</span>
           <button id="namesbaseEditCopy">${t("Edit a copy")}</button>
-          <button id="namesbaseEditAnyway" data-tip="${t("Edit the built-in namesbase itself")}">${t("Edit anyway")}</button>
+          <button id="namesbaseEditAnyway">${t("Edit anyway")}</button>
         </div>
         <div id="namesbaseMain">
           <div id="namesbaseWork">
@@ -217,15 +195,15 @@ function renderDialog(base: NameBase): void {
             <div id="namesbasePane"></div>
           </div>
           <div id="namesbaseSide">
-            <div id="namesbaseSideHead"><b>${t("Examples")}</b><span id="namesbaseRoll" data-tip="${t("Show other examples")}" class="icon-shuffle pointer"></span></div>
+            <div id="namesbaseSideHead"><b>${t("Examples")}</b><span id="namesbaseRoll" data-tip="${t("Examples. Click to re-generate")}" class="icon-shuffle pointer"></span></div>
             <div id="namesbaseSamples"></div>
           </div>
         </div>
         <div id="namesbaseFooter">
-          <button id="namesbaseAnalyze" data-tip="${t("Analyze place names")}" class="icon-flask"></button>
+          <button id="namesbaseAnalyze" data-tip="${t("Analyze namesbase to get a validity and quality overview")}" class="icon-flask"></button>
           <button id="namesbaseCopy" data-tip="${t("Duplicate")}" class="icon-clone"></button>
           <button id="namesbaseDownload" data-tip="${t("Download")}" class="icon-download"></button>
-          <button id="namesbaseReset" data-tip="${t("Restore default")}" class="icon-retweet"></button>
+          <button id="namesbaseReset" data-tip="${t("Restore default namesbase")}" class="icon-retweet"></button>
           <button id="namesbaseOverview" data-tip="${t("Namesbases Overview")}" class="icon-list-bullet"></button>
           <button id="namesbaseWiki" data-tip="${t("Open the wiki page")}" class="icon-info"></button>
         </div>
@@ -260,14 +238,12 @@ function renderBase(base: NameBase): void {
 
   const parents = Names.sorted(Names.nameBases.filter(({ id }) => id !== base.id));
   const select = ensureEl<HTMLSelectElement>("namesbaseExtends");
-  select.replaceChildren(new Option(t("nothing"), ""), ...parents.map(({ id, name }) => new Option(name, id)));
+  select.replaceChildren(new Option(t("none"), ""), ...parents.map(({ id, name }) => new Option(name, id)));
   select.value = base.extends ?? "";
 
   const cultures = pack.cultures.filter(culture => !culture.removed && culture.base === base.id);
   const users = ensureEl("namesbaseCultures");
-  users.textContent = cultures.length
-    ? `${t("Cultures")}: ${cultures.map(({ name }) => name).join(", ")}`
-    : t("No culture uses the base");
+  users.textContent = `${t("Cultures")}: ${cultures.map(({ name }) => name).join(", ") || t("none")}`;
   users.dataset.tip = users.textContent;
 
   ensureEl("namesbaseLock").hidden = !isLocked();
@@ -339,7 +315,7 @@ function renderSamples(): void {
   const many = (number: number, key: string, run: () => string) =>
     Array.from({ length: number }, (_, i) => sampled(`${key}${i}`, run));
   const named = ({ name, meaning }: ReturnType<typeof Toponyms.sample>) =>
-    `<div class="named"><span>${escapeHtml(name)}</span><i>${meaning.pattern === "simplex" ? "" : escapeHtml(localGloss(meaning))}</i></div>`;
+    `<div class="named"><span>${escapeHtml(name)}</span><i>${meaning.pattern === "simplex" ? "" : escapeHtml(Meanings.gloss(meaning))}</i></div>`;
   const plain = (run: () => string) => () => escapeHtml(run());
 
   const groups = [
@@ -354,7 +330,7 @@ function renderSamples(): void {
       ).join(", ")
     ],
     [
-      t("People"),
+      t("Personal names"),
       many(
         5,
         "person",
@@ -388,7 +364,7 @@ function renderExamples(): void {
     const { concept, pattern } = el.dataset as { concept?: Concept; pattern?: Pattern };
     const { name, meaning } = sampled(`${concept}|${pattern}`, () => Toponyms.sample(base, { concept, pattern }));
     el.textContent = name;
-    el.dataset.tip = `${name}: ${localGloss(meaning)}`;
+    el.dataset.tip = `${name}: ${Meanings.gloss(meaning)}`;
   }
 }
 
@@ -452,7 +428,7 @@ function getStandIn(base: NameBase, key: ListKey): string {
 
 function renderNames(): string {
   const lists = (Object.keys(LISTS) as ListKey[]).map(key => {
-    const mode = /* html */ `<select data-field="mode" data-tip="${t("Generate similar names or pick listed ones")}">
+    const mode = /* html */ `<select data-field="mode">
         <option value="chain">${t("Generated")}</option>
         <option value="pick">${t("Picked")}</option>
       </select>`;
@@ -465,7 +441,7 @@ function renderNames(): string {
             – <input data-field="max" type="number" min="1" max="100" data-tip="${t("Max name length")}" />
           </span>
         </div>
-        <textarea data-field="names" autocorrect="off" spellcheck="false" data-tip="${t("Names, commas between")}"></textarea>
+        <textarea data-field="names" autocorrect="off" spellcheck="false" data-tip="${t("Names data: a comma separated list of source names used for names generation")}"></textarea>
       </div>`;
   });
   return `<div class="namesbaseLists">${lists.join("")}</div>`;
@@ -492,7 +468,7 @@ function showLists(): void {
     const verdict = list && list.mode !== "pick" ? NamesbaseAnalysis.judgeLength(list.names.length) : undefined;
     count.textContent = String(list?.names.length ?? 0);
     count.style.color = verdict?.color ?? "#666";
-    count.dataset.tip = verdict?.tip ?? t("Names listed");
+    count.dataset.tip = verdict?.tip ?? "";
   }
 }
 
@@ -536,7 +512,7 @@ function getLength(el: HTMLElement, defaults: [number, number]): [number, number
 
 function renderLexicon(base: NameBase): string {
   const filters: [Shown, string][] = [
-    ["all", t("All concepts")],
+    ["all", t("All")],
     ["written", t("Written")],
     ["unwritten", t("Not written")],
     ...(Object.entries(KINDS) as [Kind, string][])
@@ -547,7 +523,7 @@ function renderLexicon(base: NameBase): string {
 
   return /* html */ `<div id="namesbaseLexicon">
       <div id="namesbaseFilter">
-        <input id="namesbaseSearch" type="search" placeholder="${t("Search")}" data-tip="${t("Filter by concept or form")}" />
+        <input id="namesbaseSearch" type="search" placeholder="${t("Search")}" />
         <select id="namesbaseShown">
           ${filters.map(([value, label]) => `<option value="${value}" ${value === shown ? "selected" : ""}>${label}</option>`).join("")}
         </select>
@@ -558,7 +534,7 @@ function renderLexicon(base: NameBase): string {
 
   function renderConcept(concept: Concept): string {
     return /* html */ `<label data-concept="${concept}">
-        <span>${CONCEPT_LABELS[concept]}</span>
+        <span>${concept}</span>
         <input class="notation" data-field="forms" value="${escapeHtml(NameNotation.formatFormants(base.lexicon?.[concept]))}"
           placeholder="${escapeHtml(NameNotation.formatFormants(Lexicon.standInForms(base, concept)))}" data-tip="${escapeHtml(getDerivedTip(base, concept))}"
           autocorrect="off" autocapitalize="off" spellcheck="false" />
@@ -591,7 +567,7 @@ function filterConcepts(): void {
       const row = container.querySelector<HTMLElement>(`label[data-concept="${concept}"]`)!;
       const forms = row.querySelector("input")!.value;
       const isShown = shown === "all" || shown === kind || shown === (written.has(concept) ? "written" : "unwritten");
-      row.hidden = !isShown || !`${concept} ${CONCEPT_LABELS[concept]} ${forms}`.toLowerCase().includes(search);
+      row.hidden = !isShown || !`${concept} ${forms}`.toLowerCase().includes(search);
       any ||= !row.hidden;
     }
     container.querySelector<HTMLElement>(`h4[data-kind="${kind}"]`)!.hidden = !any;
@@ -616,11 +592,11 @@ function changeLexicon(input: Field): void {
 
 function renderPatterns(base: NameBase): string {
   const bare: NameBase = { ...base, patterns: {}, settled: undefined }; // what it takes where it sets nothing
-  const rows = PATTERN_GROUPS.map(([label, patterns]) => {
+  const rows = PATTERN_LABELS.map(([label, patterns]) => {
     const lines = patterns.map(([pattern, meaning]) => {
       const { weight, templates } = base.patterns?.[pattern] ?? {};
       const weightInput = /* html */ `<input data-field="weight" data-pattern="${pattern}" type="number" min="0" value="${weight ?? ""}"
-          placeholder="${Lexicon.patternWeight(bare, pattern)}" data-tip="${t("How often it is used")}" />`;
+          placeholder="${Lexicon.patternWeight(bare, pattern)}" data-tip="${t("Weight")}" />`;
       return /* html */ `<span data-tip="${meaning}">${pattern}</span>
         ${pattern === "simplex" ? "<span></span>" : weightInput}
         <input class="notation" data-field="templates" data-pattern="${pattern}" value="${escapeHtml(NameNotation.formatTemplates(templates))}"
@@ -639,7 +615,7 @@ function renderPatterns(base: NameBase): string {
         <input data-field="min" type="number" min="1" max="100" value="${base.length[0]}" data-tip="${t("Min name length")}" />
         – <input data-field="max" type="number" min="1" max="100" value="${base.length[1]}" data-tip="${t("Max name length")}" />
       </span>
-      <span data-tip="${t("The rest are named for what stands at the place")}">${t("Names ending in the burg's group")}:</span>
+      <span>${t("Names ending in the burg's group")}:</span>
       <span><input data-field="settled" type="number" min="0" max="100" value="${percent(base.settled)}" placeholder="${percent(Toponyms.settledShare(bare))}" /> %</span>
       <span data-tip="${t("Empty: by the sizes of the two lists")}">${t("Founders who are women")}:</span>
       <span><input data-field="female" type="number" min="0" max="100" value="${percent(base.patterns?.["owner-generic"]?.female)}" placeholder="${percent(Lexicon.femaleFounders(bare))}" /> %</span>
@@ -695,7 +671,7 @@ function renderRules(base: NameBase): string {
       <textarea class="notation" data-field="rules" autocorrect="off" spellcheck="false">${escapeHtml(NameNotation.formatRules(base.rules))}</textarea>
       <textarea class="notation" data-field="grammar" autocorrect="off" spellcheck="false" placeholder="${escapeHtml(NameNotation.formatGrammar(grammar))}">${escapeHtml(NameNotation.formatGrammar(base.grammar))}</textarea>
       <div>
-        <label data-tip="${t("Letters allowed twice in a row")}">${t("Doubled letters")}:
+        <label data-tip="${t("Populate with letters that can be used twice in a row (geminates)")}">${t("Doubled letters")}:
           <input data-field="doubled" class="notation" style="width: 10em" value="${escapeHtml(SoundRules.getDoubles(base))}" autocorrect="off" spellcheck="false" /></label>
         <label data-tip="${t("Put + where parts join")}">${t("Try a name")}:
           <input id="namesbaseTry" class="notation" style="width: 12em" placeholder="novo+gorod" autocorrect="off" spellcheck="false" />
@@ -753,11 +729,8 @@ function copyBase(): void {
 
 function triggerUnlock(): void {
   Dialog.confirm({
-    title: t("Edit built-in namesbase"),
-    message: sentences(
-      t("Your version will replace the built-in one on this map and on new maps"),
-      t("It will not get the improvements of app updates until you restore it")
-    ),
+    title: t("Edit anyway"),
+    message: t("Your version will replace the built-in one and get no updates until restored"),
     confirm: t("Edit anyway"),
     onConfirm: () => {
       if (!findEl(dialogId)) return;
@@ -775,7 +748,7 @@ function downloadBase(): void {
 function triggerReset(): void {
   Dialog.confirm({
     title: t("Restore default data"),
-    message: t("Restore the built-in namesbase? Your changes to it will be lost"),
+    message: t("Are you sure you want to restore default namesbase?"),
     confirm: t("Restore"),
     onConfirm: async () => {
       const id = baseId;
@@ -783,7 +756,7 @@ function triggerReset(): void {
       Options.save();
       if (baseId !== id) return;
       if (Names.isChanged(getBase())) {
-        tip(t("Cannot load the built-in namesbase"), false, "error");
+        tip(t("Cannot load a namesbase"), false, "error");
         return;
       }
       isUnlocked = false;

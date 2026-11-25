@@ -763,7 +763,6 @@ function removeProvince(p: number): void {
 function editProvinceName(province: number): void {
   const p = pack.provinces[province];
   void Controllers.NameEditor.open({
-    title: t("Rename province"),
     entity: `province:${province}`,
     owner: dialogId,
     name: p.name,
@@ -796,7 +795,7 @@ function editProvinceForm(province: number): void {
   ensureEl<HTMLInputElement>("provinceFormEditorFull").value = p.fullName;
 
   Dialog.open("provinceFormEditor", {
-    title: t("Change province form"),
+    title: t("Form and full name"),
     buttons: [
       {
         label: t("Apply"),

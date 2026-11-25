@@ -740,7 +740,7 @@ async function cultureChangeBase(this: HTMLSelectElement): Promise<void> {
   if (!renames.length) return;
 
   Dialog.confirm({
-    title: t("Rename burgs"),
+    title: t("Rename"),
     message: t("The new name base would name {{count}} burgs of the culture another way. Rename them?", {
       count: renames.length
     }),

@@ -23,19 +23,20 @@ function judgeLength(length: number): Verdict {
     return {
       label: t("not enough"),
       color: BAD,
-      tip: t("Too few names, less than 30")
+      tip: t("Namesbase contains < 30 names - not enough to generate reasonable data")
     };
   if (length < 100)
     return {
       label: t("low"),
       color: FAIR,
-      tip: t("Few names, less than 100")
+      tip: t("Namesbase contains < 100 names - not enough to generate good names")
     };
-  if (length <= 400) return { label: t("good"), color: GOOD, tip: t("Enough names") };
+  if (length <= 400)
+    return { label: t("good"), color: GOOD, tip: t("Namesbase contains a reasonable number of samples") };
   return {
     label: t("overmuch"),
     color: FAIR,
-    tip: t("Too many names, more than 400")
+    tip: t("Namesbase contains > 400 names. That is too much, try to reduce it to ~300 names")
   };
 }
 
@@ -44,15 +45,15 @@ function judgeVariety(variety: number): Verdict {
     return {
       label: t("low"),
       color: BAD,
-      tip: t("Names will be too repetitive")
+      tip: t("Namesbase average variety < 15 - generated names will be too repetitive")
     };
   if (variety < 30)
     return {
       label: t("mean"),
       color: FAIR,
-      tip: t("Names can be repetitive")
+      tip: t("Namesbase average variety < 30 - names can be too repetitive")
     };
-  return { label: t("good"), color: GOOD, tip: t("Names will be varied") };
+  return { label: t("good"), color: GOOD, tip: t("Namesbase variety is good") };
 }
 
 /** Tell how fit a list of names is to generate others like them */
@@ -72,16 +73,20 @@ function open(title: string, source: string[]): void {
     `<span data-tip="${tip}" style="color: ${color}">(${label})</span>`;
 
   const rows = [
-    [t("Names"), `${names.length} ${verdict(judgeLength(names.length))}`, ""],
-    [t("Variety"), `${variety} ${verdict(judgeVariety(variety))}`, t("Average number of ways a name may go on")],
+    [t("Namesbase length"), `${names.length} ${verdict(judgeLength(names.length))}`, ""],
+    [
+      t("Namesbase variety"),
+      `${variety} ${verdict(judgeVariety(variety))}`,
+      t("Average number of generation variants for each key in the chain")
+    ],
     [t("Length"), `${min(lengths)}–${max(lengths)}`, ""],
     [t("Mean name length"), rn(mean(lengths) ?? 0, 1), ""],
     [t("Median name length"), median(lengths) ?? 0, ""],
     [t("Multi-word names"), `${rn(multiword, 1)}%`, ""],
-    [t("Non-basic chars"), listed(letters, ""), t("May lack font support")],
-    [t("Doubled chars"), listed(doubled, ""), t("Doubled more than 3 times")],
+    [t("Non-basic chars"), listed(letters, ""), t("Characters outside of Basic Latin have bad font support")],
+    [t("Doubled chars"), listed(doubled, ""), t("Characters that are frequently (more than 3 times) doubled")],
     [t("Duplicates"), listed(duplicates), ""],
-    [t("Common endings"), listed(endings.map(ending => `-${ending}`)), t("Candidates for the Lexicon")]
+    [t("Common endings"), listed(endings.map(ending => `-${ending}`)), ""]
   ].map(([label, value, tip]) => `<div data-tip="${tip}">${label}:</div><div data-tip="${tip}">${value}</div>`);
 
   Dialog.message({

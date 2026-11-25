@@ -24,7 +24,7 @@ import { speak } from "@/services/speech";
 import type { LegendItem } from "@/types/legend";
 import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { closeEntityDialogs, nameEditButton, noteIcon } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, nameEditButton, noteIcon, offerRename } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -771,7 +771,6 @@ function editStateName(state: number): void {
   const s = pack.states[state];
   const capital = pack.burgs[s.capital];
   void Controllers.NameEditor.open({
-    title: t("Rename state"),
     entity: `state:${state}`,
     owner: dialogId,
     name: s.name,
@@ -804,7 +803,7 @@ function editStateForm(state: number): void {
 
   Dialog.open("stateFormEditor", {
     resizable: false,
-    title: t("Change state form"),
+    title: t("Form and full name"),
     buttons: [
       {
         label: t("Apply"),
@@ -998,19 +997,11 @@ function stateChangeCulture(state: number, line: HTMLElement, value: string): vo
   // the new culture may say the name another way
   const named = Toponyms.nameIn(s, +value, origin);
   if (!named) return;
-  Dialog.confirm({
-    title: t("Rename state"),
-    message: t("The new culture would call {{state}} “{{name}}”. Rename the state?", {
-      state: s.name,
-      name: named.name
-    }),
-    confirm: t("Rename"),
-    onConfirm: () => {
-      States.setMeaning(state, named.meaning);
-      States.rename(state, named.name);
-      refreshStatesEditor();
-      Layers.draw("labels");
-    }
+  offerRename(s.name, named.name, () => {
+    States.setMeaning(state, named.meaning);
+    States.rename(state, named.name);
+    refreshStatesEditor();
+    Layers.draw("labels");
   });
 }
 
