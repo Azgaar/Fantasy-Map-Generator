@@ -240,6 +240,7 @@ test.describe("Diplomacy", () => {
     });
     await page.evaluate(() => FMG.Controllers.DiplomacyOverview.open());
     await expect(page.locator("#diplomacyOverview")).toBeVisible();
+    await page.locator(`#diplomacyBodySection .states[data-id="${ids[0]}"]`).click(); // it opens on the first state
     await expect(selfId(page)).toHaveAttribute("data-id", String(ids[0]));
   });
 

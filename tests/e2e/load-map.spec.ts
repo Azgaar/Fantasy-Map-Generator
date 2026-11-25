@@ -640,21 +640,22 @@ test.describe("Map loading", () => {
     await page.locator("#mapToLoad").setInputFiles(path.join(__dirname, "../fixtures/1.154.0.map"));
     await waitForNextMap(page, maps);
 
-    const result = await page.evaluate(() => {
+    const result = await page.evaluate(async () => {
       const Names = (window as any).FMG.Names;
-      const defaults = Names.getNameBases();
+      await Names.loadAll(); // a base the map's cultures do not use is listed by its id and name alone
+      const german = Names.getNameBases().find((base: any) => base.id === "german");
       return {
-        count: Names.nameBases.length,
-        matchDefaults: JSON.stringify(Names.nameBases) === JSON.stringify(defaults),
+        ids: Names.ids(),
+        defaultIds: Names.getNameBases().map((base: any) => base.id),
+        changed: Names.nameBases.filter((base: any) => !base.places || !Names.isShipped(base)),
         chainFromDefault:
-          !Names.chains.get("german") ||
-          JSON.stringify(Object.entries(Names.chains.get("german"))) ===
-            JSON.stringify(Object.entries(Names.calculateChain(defaults[0].places.names)))
+          JSON.stringify(Object.entries(Names.chains.get("german") ?? Names.updateChain("german"))) ===
+          JSON.stringify(Object.entries(Names.calculateChain(german.places.names)))
       };
     });
 
-    expect(result.count).toBe(43);
-    expect(result.matchDefaults).toBe(true);
+    expect(result.ids).toEqual(result.defaultIds.slice(0, 43)); // the bases shipped at the map's version
+    expect(result.changed).toEqual([]);
     expect(result.chainFromDefault).toBe(true);
   });
 });
