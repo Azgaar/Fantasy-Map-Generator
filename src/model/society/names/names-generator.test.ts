@@ -263,6 +263,34 @@ describe("Names.serialize", () => {
   });
 });
 
+describe("editing the list", () => {
+  it("tells a changed shipped base and puts it back as it ships", async () => {
+    const base = Names.find("english")!;
+    expect(Names.isChanged(base)).toBe(false);
+    base.settled = 0.1;
+    expect(Names.isChanged(base)).toBe(true);
+
+    await Names.reset("english");
+    expect(Names.isChanged(Names.find("english")!)).toBe(false);
+    expect(Names.find("english")!.settled).not.toBe(0.1);
+  });
+
+  it("copies a base under an id of its own, apart from the one copied", () => {
+    const base = Names.find("english")!;
+    const copy = Names.copy(base, "English");
+    expect([copy.id, Names.nameBases.at(-1)]).toEqual(["english-2", copy]);
+    expect(Names.isChanged(copy)).toBe(false); // nothing to restore
+    copy.places.names.push("Testham");
+    expect(base.places.names).not.toContain("Testham");
+  });
+
+  it("removes a base", () => {
+    Names.remove("english");
+    expect(Names.has("english")).toBe(false);
+    expect(Names.nameBases).toHaveLength(NAME_BASES.length - 1);
+  });
+});
+
 describe("Names.replace", () => {
   it("moves each culture to the base standing where its own stood", () => {
     const bases = ["english", "greek", "custom", "levantine"].map(base => ({ base }));

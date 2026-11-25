@@ -293,7 +293,7 @@ function renderDialog(): void {
   ensureEl("culturesHeirarchy").addEventListener("click", showHierarchy);
   ensureEl("culturesRecalculate").addEventListener("click", () => recalculateCultures(true));
   ensureEl("culturesManually").addEventListener("click", openPaintEditor);
-  ensureEl("culturesEditNamesBase").addEventListener("click", () => Controllers.NamesbaseEditor.open());
+  ensureEl("culturesEditNamesBase").addEventListener("click", () => Controllers.NamesbasesOverview.open());
   ensureEl("culturesAdd").addEventListener("click", enterAddCulturesMode);
   ensureEl("culturesExport").addEventListener("click", downloadCulturesCsv);
   ensureEl("culturesImport").addEventListener("click", () => Csv.pick(uploadCulturesCsv));

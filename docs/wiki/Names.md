@@ -42,7 +42,7 @@ Every name has one of nine shapes, called patterns. The Patterns tab of the Name
 | `compound`         | a description of the land, and what the burg is | Red Hill City | Redhill     | Krasnogorsk    | burgs                            |
 | `relative`         | another place's name told apart                 | New Barton    | New Barton  | Novyi Barton   | burgs, colony provinces          |
 | `root-land`        | a name, and a word for a land                   | Land of Frank | Frankland   | Frankia        | states, provinces, continents    |
-| `modifier-land`    | a describing word and a land                    | East Realm    | Easrealm    | Vostochnia     | states, provinces, continents    |
+| `modifier-land`    | a describing word and a land                    | East Realm    | East Realm  | Vostochnia     | states, provinces, continents    |
 
 A number may stand where a describing word does: Three Towers, Tri Vezhi.
 
@@ -50,7 +50,7 @@ A number may stand where a describing word does: Three Towers, Tri Vezhi.
 
 - **Burg, state, province, river and lake editors** show the meaning under the name. _See the name in other name bases_, the button next to it, lists the name in every base: click one to take it. _Generate culture-specific name_ coins a new meaning and its name in the culture's base; _Generate random name_ does the same in any base in use on the map.
 - **A name you type is kept.** The name and the meaning are stored apart and neither overwrites the other, so a name may say something other than its meaning. Nothing renames a place behind your back: changing a burg's or state's culture, a culture's name base or a burg's group offers the new name and waits for a yes.
-- **Cultures editor**: the _Namesbase_ column sets the base of each culture. The arrows beside it re-generate the names of the culture's burgs. _Edit a database used for names generation_, at the bottom, opens the Namesbase Editor.
+- **Cultures editor**: the _Namesbase_ column sets the base of each culture. The arrows beside it re-generate the names of the culture's burgs. _Edit a database used for names generation_, at the bottom, opens the Namesbases Overview.
 - **Options** → **Advanced** → **Personal names**: founders that places are named after are _Generated_ anew, _Picked_ from the base's lists as they are, or _As the name base sets_.
 
 ## Name bases
@@ -59,36 +59,49 @@ A name base is one language. 67 are built in: 51 real-world languages, a generic
 
 Name bases are saved with the map. Changing a base changes it for this map only; to use it in other maps, download it and upload it there.
 
+### Namesbases Overview
+
+Open _Tools_ → _Namesbase_, press `Shift + N`, or open it from the Cultures editor. The table lists every base, whether it is built-in, edited or custom, and the cultures that use it. Search finds a base by its name or culture.
+
+Click a base's name or its pencil to edit it. The bin removes a base that no culture uses and no other base extends. The buttons at the bottom add a base, download all bases, upload bases and restore the built-in ones.
+
 ### The Namesbase Editor
 
-Open _Tools_ → _Namesbase_, or open it from the Cultures editor. At the top, select a base, rename it, and choose a base it **extends**: that base's lexicon, patterns and people stand in where this one has none. The **description** under them says where the base's data comes from and the idea behind it. Each tab is one part of the base:
+The editor shows one base. At the top, rename it and choose a base it **extends**: that base's lexicon, patterns and people stand in where this one has none. The **description** says where the base's data comes from and the idea behind it.
 
-- **Places**: real place names, commas between. New names are generated to sound like these. A few hundred names give good results. Below them, the names of rivers and lakes: waters are named like these, and like places when the list is empty. **Length** sets the shortest and longest names to aim for; **Doubled** lists the letters that may stand twice in a row, as in Kalla.
-- **People**: male and female personal names. Places are named after founders, such as Eadric's Farm. Names are either generated like the listed ones or picked as they are. Keep both lists full: how many founders are women is set on the Patterns tab, not by the lists' sizes.
-- **Lexicon**: how the base says each concept: `town`, `ford`, `new`, `black` and so on. A concept left empty gets a generated form, shown in grey.
-- **Patterns**: how often the base coins each kind of name, and how the parts are laid out.
-- **Rules**: sound changes that make joined parts read naturally and bring foreign names into the language, and the grammar: noun classes, the endings that agree with them, and the rules that make a word's other forms.
+On the right are **Examples**, names the base makes: burgs and lands with their meanings, waters, people and names without meaning. They stay the same while you edit, so you see at once what a change does to them. The arrows beside the heading show others.
 
-Under the tabs, sample names show what the base makes; click them for new ones. The buttons at the bottom add a base, restore the built-in bases, download and upload bases, open the Cartography Assets portal to find bases others shared, and analyze the place names: how many there are, how varied, how long, and which endings they share.
+Each tab is one part of the base:
+
+- **Names**: four lists of names, commas between. Beside each is how many it holds and the shortest and longest names to aim for; grey numbers are the default.
+  - **Places**: real place names. New names are generated to sound like these. A few hundred names give good results. With _Picked_, burgs take these names as they are, with no meaning: each is used once, and when all are taken, new names are generated to sound like them.
+  - **Rivers and lakes**: waters are named like these, and like places when the list is empty.
+  - **Male** and **female names**: places are named after founders, such as Eadric's Farm. Keep both lists full: how many founders are women is set on the Patterns tab, not by the lists' sizes.
+  - Each list is either _Generated_, new names like the listed ones, or _Picked_, the listed names as they are.
+- **Lexicon**: how the base says each concept: `town`, `ford`, `new`, `black` and so on, with an example name of each. A concept left empty takes an inherited or a generated form, shown in grey. Search by a concept or a form, or show only the concepts of a kind, written or not written.
+- **Patterns**: how often the base coins each kind of name, and how the parts are laid out, with an example of each. Below are the length of names to aim for and the shares of names that end in the burg's group and of founders who are women.
+- **Rules**: sound changes that make joined parts read naturally and bring foreign names into the language, and the grammar: noun classes, the endings that agree with them, and the rules that make a word's other forms. **Doubled letters** lists the letters that may stand twice in a row, as in Kalla.
+
+The buttons at the bottom analyze the place names (how many there are, how varied, how long, which endings they share), duplicate the base, download it, and restore a built-in base you have changed.
 
 ### Making a new base
 
 A base needs only its place names to work:
 
-1. Press _Add_. A new base appears with a short example list.
-2. Name it, and replace the example on the Places tab with real place names of the language, commas between. A few hundred is good, a hundred the least.
-3. Set **Length** to the range of the names you listed. Fill **Doubled** if the language doubles letters.
+1. Press _Add_ in the Namesbases Overview. A new base opens with a short example list.
+2. Name it, and replace the example list of places on the Names tab with real place names of the language, commas between. A few hundred is good, a hundred the least.
+3. Set the lengths beside the list to the range of the names you listed. Fill **Doubled letters** on the Rules tab if the language doubles letters.
 4. Press _Analyze_ to check the list: too few names, odd characters and duplicates show there.
-5. Add personal names on the People tab, so founders sound native too.
+5. Add male and female names, so founders sound native too.
 6. In the Cultures editor, pick the base for a culture and press the arrows to rename its burgs.
 
 The names now sound like the language but mean nothing in it, as a built-in base does only for the few concepts it has no word for. To make them mean what they say, write the base's words: see the next section.
 
-To make a variant of a base that is already written, such as a dialect, set **Extends** to it. The new base takes its words, patterns and people until you write your own, and its own place names give it its sound.
+To make a variant of a base that is already written, copy it and change the copy. For a dialect that follows its parent, add a base and set **Extends** to the parent. It takes its parent's words, patterns and people until you write your own, and its own place names give it its sound.
 
 ### Sharing a base
 
-Download the bases as `.json` from the editor to share or back them up; the same file uploads back. Upload either replaces all bases or adds to them.
+Download one base from its editor, or all bases from the overview, as `.json` to share or back them up; the same file uploads back. Upload asks whether to add the bases of the file or to replace all current ones with them.
 
 ## Teaching a base its words
 
@@ -302,4 +315,4 @@ The **Try a name** box on the tab shows what the rules make of a name.
 
 ### Checking the result
 
-The sample names under the tabs are regenerated on a click. The Lexicon tab counts the concepts written. To see whole names, open a burg or state and press _See the name in other name bases_ next to its meaning: it lists the name in every base.
+The examples beside the tabs and on the Lexicon and Patterns tabs show an edit at once. The Lexicon tab counts the concepts written. To see whole names, open a burg or state and press _See the name in other name bases_ next to its meaning: it lists the name in every base.

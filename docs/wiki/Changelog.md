@@ -21,9 +21,12 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Names: 20 new namesbases with cultures of their own, from Egyptian and Polish to Halfling and Infernal
 - Names: Celtic namesbase is now Welsh; Slovan culture is now Rucian
 - Options: generate or pick personal names
+- Names: a namesbase may name burgs with its listed places as they are
 - Editors: see what a name means and how other namesbases render it
 - Editors: a change of culture, namesbase or burg group offers new names
-- Namesbase Editor: edit personal names, lexicon, name patterns and sound rules
+- Namesbases Overview: all namesbases and cultures that use them; remove a namesbase
+- Namesbase Editor: edit personal names, lexicon, name patterns and sound rules, with live examples
+- Namesbase Editor: copy, download or restore a single namesbase
 - Namesbase Editor: JSON download and upload; older TXT still loads
 
 **[1.158.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.158.0) - 2026-11-12**:

@@ -73,7 +73,7 @@ Nine patterns, fixed, because every name base must be able to render every one. 
 | `compound`         | modifier, generic, settlement | Red Hill City | Redhill     | Chervonoholmye  | burg                         |
 | `relative`         | modifier, root                | New Barton    | New Barton  | Novyi Barton    | burg, colony province        |
 | `root-land`        | root, generic                 | Land of Frank | Frankland   | Frankia         | state, province, continent   |
-| `modifier-land`    | modifier, generic             | East Realm    | Easrealm    | Vostochnia      | state, province, continent   |
+| `modifier-land`    | modifier, generic             | East Realm    | East Realm  | Vostochnia      | state, province, continent   |
 
 A numeral stands in the modifier slot: `modifier-generic: three, tower` gives Three Towers and Tri Vezhi.
 
@@ -166,7 +166,7 @@ A name with no meaning, from an old map or typed by hand, is treated as a proper
 - **Burg, state, province, river and lake editors**: the gloss under the name, and a button that lists the name in every name base, with one click to take any of them.
 - **Regenerate name** in those editors coins a new meaning, not just a new name.
 - **Options → Personal names**: founders are generated, picked from the base's list as they are, or as each base sets.
-- **Tools → Namesbase**: tabs for Places (with the names of rivers and lakes), People, Lexicon, Patterns and Rules, with sample names and a box to try the rules on a name.
+- **Tools → Namesbase**: the Namesbases Overview lists the bases; the Namesbase Editor edits one on the tabs Names, Lexicon, Patterns and Rules, beside examples seeded so that an edit shows on them (`Toponyms.sample`).
 
 ## Using it in code
 

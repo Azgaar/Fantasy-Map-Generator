@@ -508,4 +508,11 @@ describe("English", () => {
     expect(names("compound", "deep", "wood", "fort")).toEqual(expect.arrayContaining(["Deepwood", "Deepwood Keep"]));
     expect(names("compound", "black", "water", "town")).toContain("Blackwater");
   });
+
+  it("joins a land's ending, and sets isles and a coast apart from a name", () => {
+    expect(names("root-land", "~Godwin", "isles")).toContain("Godwin Isles");
+    expect(names("root-land", "~Osbert", "coast")).toEqual(expect.arrayContaining(["Osbert Coast", "Osbertshore"]));
+    expect(names("modifier-land", "salt", "coast")).toEqual(["Saltshore"]);
+    expect(names("modifier-land", "north", "folk")).toContain("Norfolk");
+  });
 });

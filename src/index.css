@@ -1875,11 +1875,6 @@ div.textual span,
   font-weight: bold;
 }
 
-#namesbaseExamples {
-  font-family: var(--monospace);
-  cursor: pointer;
-}
-
 #markers {
   cursor: pointer;
   font-family: var(--monospace);

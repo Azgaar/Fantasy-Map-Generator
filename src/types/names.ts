@@ -69,7 +69,7 @@ export interface NameBase {
   description?: string; // where its data comes from and the idea behind it
   extends?: string; // the base whose lexicon and patterns stand in where this one has none
   length: [min: number, max: number]; // of a name, generated or made of parts
-  places: Corpus; // the place names a Markov chain is built from; its own length, if any, is for generated names
+  places: Corpus; // the place names a Markov chain is built from; burgs take them as they are in pick mode; its own length, if any, is for generated names
   waters?: Corpus; // river and lake names, a chain of their own; place names stand in when absent
   people?: { male?: Corpus; female?: Corpus }; // personal names: the founders places are named after
   rules?: SoundRule[]; // applied in order, before the shared ones

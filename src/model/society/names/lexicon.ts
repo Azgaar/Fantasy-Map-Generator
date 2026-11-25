@@ -1,7 +1,7 @@
 // What a base holds for its concepts and patterns: forms and templates written for it, for a base it extends or
 // for all bases, and forms coined from its corpus where nobody wrote any
 
-import { type Concept, conceptsOf, type Kind, kindOf, settles } from "@/data/name-concepts";
+import { CONCEPTS, type Concept, conceptsOf, type Kind, kindOf, settles } from "@/data/name-concepts";
 import { DEFAULT_LEXICON, DEFAULT_TEMPLATES, DEFAULT_WEIGHTS } from "@/data/name-rules";
 import type { Derivation, Formant, Grammar, NameBase, Pattern, Template } from "@/types/names";
 import { seeded } from "@/utils/probability-utils";
@@ -80,6 +80,11 @@ class LexiconModule {
   authoredForms(base: NameBase, concept: Concept): Formant[] | undefined {
     const own = Names.lineage(base).find(({ lexicon }) => lexicon?.[concept]?.length);
     return own?.lexicon?.[concept] ?? DEFAULT_LEXICON[concept];
+  }
+
+  /** The concepts a base has forms of, its own or inherited */
+  writtenConcepts(base: NameBase): Concept[] {
+    return (Object.keys(CONCEPTS) as Concept[]).filter(concept => this.authoredForms(base, concept)?.length);
   }
 
   /** The concepts a base names with, of those given: a base that writes most places keeps to the words it writes, so

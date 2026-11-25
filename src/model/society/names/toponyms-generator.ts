@@ -5,6 +5,8 @@ import {
   conceptsOf,
   fitsOf,
   isConcept,
+  type Kind,
+  kindOf,
   type SiteTag,
   settlementOf,
   weightOf
@@ -37,6 +39,11 @@ interface BurgOptions {
   burgs?: Burg[]; // the burgs around: the map's, or the ones a generator is still placing
   taken?: Set<string | undefined>; // names no new one may repeat
   baseId?: string;
+}
+
+interface SampleOptions {
+  pattern?: Pattern;
+  concept?: Concept;
 }
 
 interface StateOptions {
@@ -126,6 +133,8 @@ class ToponymsGenerator {
    * A burg with no group yet takes a name that says nothing of its size */
   burg(burg: Burg, { burgs = pack.burgs, taken = this.burgNames(burgs), baseId }: BurgOptions = {}): Named {
     const base = Names.resolve(baseId ?? pack.cultures[burg.culture!].base);
+    const picked = this.pickBurg(base, taken);
+    if (picked) return picked;
     const site = this.getSite(burg);
     const landmark = this.pickConcept(
       "generic",
@@ -155,7 +164,15 @@ class ToponymsGenerator {
     }
 
     const name = burg.capital ? Names.getBaseShort(base.id) : Names.getBase(base.id);
-    return { name, meaning: { pattern: "simplex", tokens: [`~${name}`], origin: base.id } };
+    return { name, meaning: Meanings.simplex(name, base.id) };
+  }
+
+  // a listed place not on the map yet, where the base picks its burg names; one like them when all are taken
+  private pickBurg({ id, places }: NameBase, taken: Set<string | undefined>): Named | undefined {
+    if (places.mode !== "pick") return undefined;
+    const free = places.names.filter(name => !taken.has(name));
+    const name = free.length ? ra(free) : Names.getBase(id);
+    return { name, meaning: Meanings.simplex(name, id) };
   }
 
   private fillBurg(
@@ -575,23 +592,51 @@ class ToponymsGenerator {
     return this.pickWeighted(patterns, pattern => Lexicon.patternWeight(base, pattern));
   }
 
-  private settledShare(base: NameBase): number {
+  /** The share of a base's burg names that end in what the burg is by its group */
+  settledShare(base: NameBase): number {
     return Names.lineage(base).find(({ settled }) => settled !== undefined)?.settled ?? SETTLED;
   }
 
-  /** A meaning no place stands behind and its name: what a base makes of names, for its editor to show */
-  sample(base: NameBase): Named {
-    const concept = (kind: "settlement" | "generic" | "modifier") => ra(Lexicon.spoken(base, conceptsOf(kind)));
-    const pattern = this.pickPattern(base, ["feature", "modifier-generic", "owner-generic"]);
-    const generic = concept(P(this.settledShare(base)) ? "settlement" : "generic");
-    const tokens: Token[] =
-      pattern === "feature"
-        ? [concept("generic")]
-        : pattern === "modifier-generic"
-          ? [concept("modifier"), generic]
-          : [`~${this.founder(base)}`, generic];
-    const meaning: Meaning = { pattern, tokens, origin: base.id };
+  /** A meaning no place stands behind and its name: what a base makes of names, for its editor to show. A pattern or
+   * a concept to say may be asked for */
+  sample(base: NameBase, { pattern, concept }: SampleOptions = {}): Named {
+    const picked = pattern || concept ? undefined : this.pickBurg(base, new Set());
+    if (picked) return picked;
+    const kind = concept && kindOf(concept);
+    const patterns: Pattern[] = ["feature", "modifier-generic", "owner-generic"];
+    const layout =
+      pattern ?? (kind ? (kind === "land" ? "modifier-land" : "modifier-generic") : this.pickPattern(base, patterns));
+
+    const any = (of: Kind, from = conceptsOf(of)) => {
+      const spoken = Lexicon.spoken(base, from);
+      return of === "settlement" ? ra(spoken) : this.pickWeighted(spoken, word => weightOf(word) ** 2);
+    };
+    const modifier = () => (concept && (kind === "modifier" || kind === "numeral") ? concept : any("modifier"));
+    const place = () => (kind === "numeral" ? any("generic", COUNTABLE) : any("generic"));
+    const generic = () => {
+      if (concept && (kind === "settlement" || kind === "generic")) return concept;
+      return kind !== "numeral" && P(this.settledShare(base)) ? any("settlement") : place();
+    };
+    const land = () => (concept && kind === "land" ? concept : any("land"));
+
+    const fill: Record<Pattern, () => Token[]> = {
+      simplex: () => [`~${Names.getWater(base.id)}`],
+      feature: () => [place()],
+      "modifier-generic": () => [modifier(), generic()],
+      "owner-generic": () => [`~${this.founder(base)}`, generic()],
+      "generic-of": () => [generic(), `~${Names.getWater(base.id)}`],
+      compound: () => [modifier(), any("generic", TERRAIN), any("settlement")],
+      relative: () => [modifier(), `~${Names.getBase(base.id)}`],
+      "root-land": () => [this.getLandRoot(base), land()],
+      "modifier-land": () => [modifier(), land()]
+    };
+    const meaning: Meaning = { pattern: layout, tokens: fill[layout](), origin: base.id };
     return { name: Meanings.render(meaning, base.id), meaning };
+  }
+
+  /** A land's name and meaning, as `sample` */
+  sampleLand(base: NameBase): Named {
+    return this.sample(base, { pattern: this.pickPattern(base, LAND_PATTERNS) });
   }
 
   private pickConcept(

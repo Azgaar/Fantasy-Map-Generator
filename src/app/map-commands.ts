@@ -268,10 +268,10 @@ export const MAP_COMMANDS: MapCommand[] = [
   },
   {
     id: "editNamesBaseButton",
-    name: t("Namesbase Editor"),
+    name: t("Namesbases Overview"),
     link: true,
     aliases: "names language",
-    run: () => Controllers.NamesbaseEditor.open()
+    run: () => Controllers.NamesbasesOverview.open()
   },
   {
     id: "editUnitsButton",

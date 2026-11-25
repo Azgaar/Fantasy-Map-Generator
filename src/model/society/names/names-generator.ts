@@ -33,7 +33,8 @@ const formantSchema = z.object({
   weight: z.number().int().min(0).optional(),
   position: z.enum(["first", "last", "word", "stem"]).optional(),
   short: z.string().optional(),
-  class: z.string().optional()
+  class: z.string().optional(),
+  hyphen: z.boolean().optional()
 });
 
 const rewritesSchema = z.array(z.object({ match: z.string(), replace: z.string() })).optional();
@@ -226,7 +227,7 @@ class NamesGenerator {
 
   /** Load every base the map lists */
   async loadAll(): Promise<void> {
-    await this.load(this.nameBases.map(({ id }) => id));
+    await this.load(this.ids());
   }
 
   /** Any of the loaded bases */
@@ -487,11 +488,46 @@ class NamesGenerator {
     return NAME_BASES.map(base => structuredClone(this.shipped.get(base.id) ?? base));
   }
 
+  /** Whether a base stands as shipped: one the user added or changed does not */
+  isShipped(base: NameBaseEntry): boolean {
+    return !base.places || JSON.stringify(base) === JSON.stringify(this.shipped.get(base.id));
+  }
+
+  /** Whether a base is a shipped one the user has changed */
+  isChanged(base: NameBaseEntry): boolean {
+    return !this.isShipped(base) && NAME_BASES.some(({ id }) => id === base.id);
+  }
+
+  /** Put a shipped base back as it ships */
+  async reset(id: string): Promise<void> {
+    const shipped = await this.read(id);
+    this.nameBases = this.nameBases.map(base => (base.id === id ? structuredClone(shipped) : base));
+    this.chains.delete(id);
+  }
+
+  add(base: NameBase): NameBase {
+    this.nameBases.push(base);
+    return base;
+  }
+
+  /** Add a copy of a base under a name and an id of its own */
+  copy(base: NameBase, name: string): NameBase {
+    const id = this.uniqueId(name, this.ids());
+    return this.add({ ...structuredClone(base), id, name });
+  }
+
+  remove(id: string): void {
+    this.nameBases = this.nameBases.filter(base => base.id !== id);
+    this.chains.delete(id);
+  }
+
+  ids(): string[] {
+    return this.nameBases.map(({ id }) => id);
+  }
+
   /** The bases as a .map record: a shipped base left as it is goes by its id alone, so it follows later updates */
   serialize(): string {
-    const isShipped = (base: NameBaseEntry) =>
-      !base.places || JSON.stringify(base) === JSON.stringify(this.shipped.get(base.id));
-    return JSON.stringify(this.nameBases.map(base => (isShipped(base) ? { id: base.id } : base)));
+    return JSON.stringify(this.nameBases.map(base => (this.isShipped(base) ? { id: base.id } : base)));
   }
 
   /** Take the bases of a .map record, or the shipped ones when it holds none or is of an older make */

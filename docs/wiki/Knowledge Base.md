@@ -406,7 +406,7 @@ Every built-in namesbase has its words written: the real-world ones their real p
 
 ### How do I create my own namesbase?
 
-Open Tools -> Namesbase and press Add. Name the base and replace the example on the Places tab with a few hundred real place names, commas between; set Length to the range of those names and add personal names on the People tab. Press Analyze to check the list. Then in Tools -> Cultures pick the base for a culture and click the arrows next to it to rename its burgs. The names will sound like the language; writing the Lexicon tab makes them mean something too. Namesbases are saved with the map, so download the base to use it in other maps. Guide: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
+Open Tools -> Namesbase and press Add. Name the base and replace the example list of places on the Names tab with a few hundred real place names, commas between; set the lengths beside the list to the range of those names and add male and female names below. Press Analyze to check the list. Then in Tools -> Cultures pick the base for a culture and click the arrows next to it to rename its burgs. The names will sound like the language; writing the Lexicon tab makes them mean something too. Namesbases are saved with the map, so download the base to use it in other maps. Guide: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
 
 ### How to create landmass on an already generated map?
 
