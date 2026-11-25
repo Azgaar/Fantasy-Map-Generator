@@ -2,8 +2,6 @@ import { mean, min, polygonLength, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import { type Feature, Features, LAKE_SUBTYPES } from "@/model/physical/features-generator";
-import { Names } from "@/model/society/names/names-generator";
-import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Styles } from "@/model/styles/styles";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit, getHeight } from "@/model/units";
@@ -160,18 +158,9 @@ function updateLakeValues(): void {
 }
 
 function editName(): void {
-  const lake = getLake();
-  void Controllers.NameEditor.open({
-    entity: `feature:${lake.i}`,
+  void Controllers.NameEditor.openPlace("feature", getLake().i, {
     owner: "lakeEditor",
-    name: lake.name,
-    meaning: lake.meaning,
-    culture: Toponyms.cultureOfFeature(lake),
-    generate: baseId => Toponyms.lake(lake, { baseId }),
-    proper: baseId => Names.getWater(baseId),
-    onApply: ({ name, meaning }) => {
-      Features.setMeaning(lake.i, meaning);
-      Features.rename(lake.i, name);
+    onApply: name => {
       ensureEl("lakeName").textContent = name;
     }
   });

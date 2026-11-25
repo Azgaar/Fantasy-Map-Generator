@@ -1659,7 +1659,7 @@ class CulturesGenerator {
     const codes = pack.cultures.flatMap(culture => culture.code ?? []);
     for (const culture of pack.cultures) {
       if (culture.name) continue;
-      culture.name = Names.getBaseShort(culture.base);
+      culture.name = Names.getPeople(culture.base);
       culture.development ??= getNameDevelopment(culture.name);
       culture.code = abbreviate(culture.name, codes);
       codes.push(culture.code);
@@ -1679,14 +1679,14 @@ class CulturesGenerator {
       // add one of the default cultures
       culture = pack.cultures.length;
       base = defaultCultures[culture].base;
-      name = defaultCultures[culture].name || Names.getBaseShort(base);
+      name = defaultCultures[culture].name || Names.getPeople(base);
       ancestry = defaultCultures[culture].ancestry;
       development = defaultCultures[culture].development;
     } else {
       // add random culture based on one of the current ones
       culture = rand(pack.cultures.length - 1);
-      name = Names.getCulture(culture, 5, 8, true);
       base = pack.cultures[culture].base;
+      name = Names.getPeople(base);
       ancestry = pack.cultures[culture].ancestry;
       development = pack.cultures[culture].development;
     }

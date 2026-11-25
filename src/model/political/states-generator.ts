@@ -13,7 +13,7 @@ import { type LandSize, Toponyms } from "@/model/society/names/toponyms-generato
 import { Population } from "@/model/society/population-generator";
 import { Tags } from "@/model/tags";
 import type { Emblem } from "@/types/emblems";
-import type { Meaning } from "@/types/names";
+import type { Meaning, Named } from "@/types/names";
 import { getMixedColor, getRandomColor, requireColor } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { getAdjective, replaceWholeWord, trimVowels } from "@/utils/language-utils";
@@ -1196,10 +1196,15 @@ class StatesModule {
 
   /** Rename a state; a custom full name or label keeps its pattern when the old name stands in it as a whole word */
   rename(stateId: number, name: string): void {
-    const state = pack.states[stateId];
-    if (!state || state.removed) throw new Error(`State ${stateId} does not exist`);
+    this.setName(stateId, { name });
+  }
+
+  /** Rename a state and set what the name says: with no meaning it is a proper name, whatever the old one said */
+  setName(stateId: number, { name, meaning }: Named): void {
+    const state = this.living(stateId);
     const old = state.name;
     state.name = requireName(name);
+    state.meaning = meaning;
     state.fullName = replaceWholeWord(state.fullName, old, state.name) ?? this.getFullName(state);
     if (state.label?.text) state.label.text = replaceWholeWord(state.label.text, old, state.name) ?? state.label.text;
   }

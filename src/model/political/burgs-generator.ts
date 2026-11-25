@@ -17,7 +17,7 @@ import type { BurgGroup } from "@/types/burg-groups";
 import type { BurgProduction } from "@/types/economy";
 import type { Emblem } from "@/types/emblems";
 import type { IconSet } from "@/types/icons";
-import type { Meaning } from "@/types/names";
+import type { Meaning, Named } from "@/types/names";
 import { log } from "@/utils/logger";
 import { minmax, normalize, rn } from "@/utils/number-utils";
 import { each, gauss, P } from "@/utils/probability-utils";
@@ -964,9 +964,14 @@ class BurgModule {
 
   /** Rename a burg; its label text follows the name */
   rename(burgId: number, name: string): void {
-    const burg = pack.burgs[burgId];
-    if (!burg || burg.removed) throw new Error(`Burg ${burgId} does not exist`);
+    this.setName(burgId, { name });
+  }
+
+  /** Rename a burg and set what the name says: with no meaning it is a proper name, whatever the old one said */
+  setName(burgId: number, { name, meaning }: Named): void {
+    const burg = this.living(burgId);
     burg.name = requireName(name);
+    burg.meaning = meaning;
     if (burg.label?.text !== undefined) burg.label.text = burg.name;
   }
 
@@ -977,10 +982,7 @@ class BurgModule {
 
   /** Give a burg a new meaning that fits its place and the name its culture's base, or the base given, renders it to */
   regenerateName(burgId: number, baseId?: string): void {
-    const burg = this.living(burgId);
-    const { name, meaning } = Toponyms.burg(burg, { baseId });
-    burg.meaning = meaning;
-    this.rename(burgId, name);
+    this.setName(burgId, Toponyms.burg(this.living(burgId), { baseId }));
   }
 
   /** Regenerate the names of many burgs: none is named after a name another is about to lose */

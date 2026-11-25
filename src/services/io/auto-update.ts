@@ -398,7 +398,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
         const e = this.getPointAtLength(0);
         const source = Pack.findCell(s.x, s.y)!;
         const mouth = Pack.findCell(e.x, e.y)!;
-        const name = Rivers.getName(mouth);
+        const name = Names.getCulture(pack.cells.culture[mouth]);
         const type = length < 25 ? rw({ Creek: 9, River: 3, Brook: 3, Stream: 1 }) : "River";
         pack.rivers.push({
           i,

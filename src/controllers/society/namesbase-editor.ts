@@ -334,7 +334,7 @@ function renderSamples(): void {
       many(
         5,
         "person",
-        plain(() => Names.getPerson(base.id, Lexicon.femaleFounders(base)))
+        plain(() => Names.getPerson(base.id))
       ).join(", ")
     ],
     [
@@ -618,7 +618,7 @@ function renderPatterns(base: NameBase): string {
       <span>${t("Names ending in the burg's group")}:</span>
       <span><input data-field="settled" type="number" min="0" max="100" value="${percent(base.settled)}" placeholder="${percent(Toponyms.settledShare(bare))}" /> %</span>
       <span data-tip="${t("Empty: by the sizes of the two lists")}">${t("Founders who are women")}:</span>
-      <span><input data-field="female" type="number" min="0" max="100" value="${percent(base.patterns?.["owner-generic"]?.female)}" placeholder="${percent(Lexicon.femaleFounders(bare))}" /> %</span>
+      <span><input data-field="female" type="number" min="0" max="100" value="${percent(base.patterns?.["owner-generic"]?.female)}" placeholder="${percent(Names.femaleFounders(bare))}" /> %</span>
     </div>`;
 }
 

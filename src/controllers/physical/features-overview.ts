@@ -10,7 +10,6 @@ import {
   OCEAN_SUBTYPES
 } from "@/model/physical/features-generator";
 import { Meanings } from "@/model/society/names/meanings";
-import { Names } from "@/model/society/names/names-generator";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
@@ -396,25 +395,9 @@ function zoomToFeature(element: HTMLElement): void {
 }
 
 function editName(input: HTMLElement): void {
-  const feature = getFeature(input);
-  const { type } = feature;
-  void Controllers.NameEditor.open({
-    entity: `feature:${feature.i}`,
+  void Controllers.NameEditor.openPlace("feature", getFeature(input).i, {
     owner: dialogId,
-    name: feature.name || "",
-    meaning: feature.meaning,
-    plain: type === "ocean", // oceans belong to no culture and their names say nothing
-    culture: Toponyms.cultureOfFeature(feature),
-    generate: type === "ocean" ? undefined : baseId => Toponyms[type](feature, { baseId }),
-    proper: baseId =>
-      type === "ocean"
-        ? Features.getOceanName(feature)
-        : type === "lake"
-          ? Names.getWater(baseId)
-          : Names.getBase(baseId),
-    onApply: ({ name, meaning }) => {
-      if (type !== "ocean") Features.setMeaning(feature.i, meaning);
-      Features.rename(feature.i, name);
+    onApply: () => {
       featuresTable.refresh();
     }
   });

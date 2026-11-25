@@ -1,7 +1,7 @@
 import { World } from "@/controllers/assistant/world";
 import { Meanings } from "@/model/society/names/meanings";
 import { Csv } from "@/services/io/csv";
-import type { Meaning } from "@/types/names";
+import type { Meaning, Named } from "@/types/names";
 import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
@@ -12,8 +12,6 @@ interface UpdateOptions {
   units?: readonly string[]; // columns exported with a unit, such as "Area mi2"
   text?: readonly string[]; // columns whose text the editors show; a changed value cannot hold markup characters
 }
-
-type Named = { name?: string; meaning?: Meaning };
 
 interface NameModel {
   rename(id: number, name: string): void;
@@ -27,7 +25,7 @@ interface CsvRow {
   /** Set a present cell even when blank, for flags and lists */
   assign(column: string, set: (value: string) => void, current?: unknown): void;
   /** Set a changed name and a changed meaning, coined in a culture's base; a new name with no new meaning is a proper name */
-  named(column: string, current: Named, culture: number, model: NameModel): void;
+  named(column: string, current: Partial<Named>, culture: number, model: NameModel): void;
   /** Set rural and urban people: changed rural and urban cells win, else a changed total keeps the current split */
   population(current: [number, number], set: (rural: number, urban: number) => void, columns?: string[]): void;
 }
@@ -116,11 +114,7 @@ async function update(
         apply,
         named: (column, { name, meaning }, culture, model) => {
           const said = meaning ? Meanings.write(meaning) : "";
-          const rename = (value: string) => {
-            model.rename(+id, value);
-            model.setMeaning(+id);
-          };
-          apply(column, rename, name);
+          apply(column, value => model.rename(+id, value), name);
           const { origin } = Meanings.of({}, culture);
           apply("Meaning", value => model.setMeaning(+id, Meanings.read(value, origin)), said);
         },

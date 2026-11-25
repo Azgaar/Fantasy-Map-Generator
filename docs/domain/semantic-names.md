@@ -48,7 +48,8 @@ Concept words and glosses stay in English in every interface language, as in the
 | Element                             | Code                                                                                            | Persisted state                    |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------- |
 | Concepts, their fit and weight      | [data/name-concepts.ts](../../src/data/name-concepts.ts)                                        | nothing                            |
-| Shared templates, weights and rules | [data/name-rules.ts](../../src/data/name-rules.ts)                                              | nothing                            |
+| Patterns: slots, gloss, templates, weight | [data/name-patterns.ts](../../src/data/name-patterns.ts) | nothing |
+| Shared rules | [data/name-rules.ts](../../src/data/name-rules.ts) | nothing |
 | Name bases, one per file            | [data/name-bases/](../../src/data/name-bases/)                                                  | `options.map.nameBases`: edited and custom ones |
 | Picking a meaning                   | `Toponyms` ([toponyms-generator.ts](../../src/model/society/names/toponyms-generator.ts))       | `meaning` and `name` on the entity |
 | Rendering and gloss                 | `Meanings` ([meanings.ts](../../src/model/society/names/meanings.ts))                           | nothing                            |
@@ -56,8 +57,10 @@ Concept words and glosses stay in English in every interface language, as in the
 | Sound rules                         | `SoundRules` ([sound-rules.ts](../../src/model/society/names/sound-rules.ts))                   | nothing                            |
 | Foreign names                       | `Appropriation` ([appropriation.ts](../../src/model/society/names/appropriation.ts))            | nothing                            |
 | The written form of base data       | `NameNotation` ([notation.ts](../../src/model/society/names/notation.ts))                       | nothing                            |
-| Markov names and personal names     | `Names` ([names-generator.ts](../../src/model/society/names/names-generator.ts))                | nothing                            |
-| Renaming, in any base               | `NameEditor` ([name-editor.ts](../../src/controllers/society/name-editor.ts))                   | `name` and `meaning` through the entity's setters |
+| Catalog of bases, Markov and personal names | `Names` ([names-generator.ts](../../src/model/society/names/names-generator.ts)) | nothing |
+| What a list of names sounds like: chains, cuts, endings | `Corpora` ([corpora.ts](../../src/model/society/names/corpora.ts)) | nothing |
+| Renaming, in any base | `NameEditor` ([name-editor.ts](../../src/controllers/society/name-editor.ts)) | `name` and `meaning` through the model's `setName` |
+| What names each kind of place | `NAMINGS` ([named-places.ts](../../src/controllers/society/named-places.ts)) | nothing |
 | Types                               | [types/names.ts](../../src/types/names.ts)                                                      |                                    |
 
 ## Patterns
@@ -92,17 +95,18 @@ A numeral stands in the modifier slot: `modifier-generic: three, tower` gives Th
 
 Rivers and lakes are named before burgs so a burg can be named after them. States are named after capitals, so capitals are named first; the states take their names once they have expanded. A religion that needs a burg's name before the burg has one names it on the spot (`Toponyms.nameOf`); that name says nothing of the burg's size.
 
-Seas, routes, markers and religions have no meanings.
+Seas, routes, markers and religions have no meanings. Gods, founders of religions, merchant houses and travellers bear personal names of their culture's base (`Names.getCulturePerson`), a woman's as often as a place's founder does; among gods women are halfway from there to a half (`Names.getCultureDeity`), and a culture with no name of its own is called by a stem, as a people is (`Names.getPeople`).
 
 ### Lands and islands
 
 A state, a province not named after its burg and a continent are lands, and an island is an island: none of them is named like a town. `Toponyms.coinLand` draws `root-land` or `modifier-land` by the base's weights and ends the name in a land word of the base, the state suffixes:
 
-- **The root** is a person (`FOUNDED`, 40%) or a people. A people's name is a stem, the start of a place name cut before the ending that makes it a town (`Names.getStem`): Heibach gives Heib. A stem closes in consonants the base's names close in, so Waldbach gives Wald, not Waldb. One state in five takes the person or the river its capital is named after.
+- **The root** is a person (`FOUNDED`, 40%) or a people. A people's name is a stem, the start of a place name cut before the ending that makes it a town (`Names.getStem`): Heibach gives Heib. A stem closes in consonants the base's names close in, so Waldbach gives Wald, not Waldb. One state in five takes the person or the river its capital is named after. Half of the other draws of a state's root take its own people, its culture's name without an English ending (`OWN_PEOPLE`): Siyamrat, Anglands; no two states are named after one people.
 - **The suffix** is a form of a land concept. `land` leads, and holds most of a base's suffixes: German -land; French -ogne, -agne, -aine; Finnish -maa; Korean -ryeo, -ra. `realm` (-reich, -guk), `march` (-mark), `domain` and `country` (-gau) add some by the land's size; `coast` and `isles` ask for the place. A suffix that stands after a name only is a template of `root-land`, which may leave the land word out: `{root}ien` gives Frankien, and there is no Altien. A land word with only standalone forms (Regnum, Marca) is skipped, so no state is the Kingdom of Regnum. Such words stay for names translated from other bases.
 - **Size leans on the name** (`LAND_SITES`, `BIG_DESCRIBED`). A big land, one of a kingdom's or an empire's area, is more often a `realm` and seldom a `march`, `domain` or `country`, and is named after a person or a people: a describing word tells what the capital stands by, which suits a duchy. A small land leans the other way, and a province is small. States are therefore named once they have expanded (`States.getLandSize`). A name is never changed when a state grows or shrinks. A word of one size goes on the line of that size, not on `land`, or it ends any land's name.
 - **A long name is drawn again** (`LAND_LENGTH`, 10 letters in a word), a few times, and the shortest is kept. A state named after a long river needs no land word: Platvliet, not Platvlietsland. A person's or a people's name never stands alone.
 - **No two lands share a name.** A new state or province repeats no state, province or burg; a province may take its own burg's name (`BURG_NAMED`, 35%), if no land has it.
+- **The map** is named as a big land in a base of one of its cultures (`Toponyms.mapName`).
 - **No suffix ends a town.** A base's land suffixes are kept apart from its settlement endings, and a test checks it.
 
 ## How a burg's meaning is picked
@@ -130,7 +134,7 @@ The burg group maps to a settlement concept by name: `capital` and `city` to `ci
 1. **Draw a template** for the pattern by its weight: `{modifier}{generic}` or `{modifier} {generic}`. A template may leave out what the burg is by its group, as `{root}` does for a town named after its river; a land may go unsaid too, as in `{root}ia`. It never leaves out a name or what stands at the place.
 2. **Draw a form for each concept** by weight, from the forms that may stand where the template puts them. A suffix needs a stem or a proper name before it, a describing word takes the gender of its noun, and a place word that describes another joins it: Fordhall, never Ford Hall.
 3. **Join the parts** with `+` between and run the sound rules: `exe+mouth` becomes Exmouth. Every word then takes a capital, but joining words such as de, di, sur and of between two others: Pont-sur-Moselle, Puebla de Sanabria.
-4. **Shorten a name that is too long**: shorter forms, then roots clipped at a syllable (`Names.cut`: three letters at least, closing as the base's names do), then no modifier. Another place's name, as in New Barton, is never clipped. Each word may be as long as the base allows, the whole name twice that.
+4. **Shorten a name that is too long**: shorter forms, then roots clipped at a syllable (`Corpora.cut`: three letters at least, closing as the base's names do), then no modifier. Another place's name, as in New Barton, is never clipped. Each word may be as long as the base allows, the whole name twice that.
 
 A part that repeats the one before it, Harlan-land or Barley-ley, makes a name that is not whole, and so does a root clipped to less than two thirds, Ana of Anahita: generation draws another. A name is never an ending alone: where giving up the modifier would leave Ni of a Swahili pine hamlet, the long name stays.
 
@@ -172,7 +176,7 @@ English and Ruthenian are written in full, against counts of their historical pl
 | The user changes            | Offer                                      | Code                 |
 | --------------------------- | ------------------------------------------ | -------------------- |
 | A burg's or state's culture | the whole name [appropriated](#appropriation) | `Toponyms.nameIn`    |
-| A culture's name base       | the same for all its unlocked burgs        | `Toponyms.nameIn`    |
+| A culture's name base       | the same for all unlocked places the culture names: burgs, states, provinces, rivers, lakes and islands | `Toponyms.renamings` |
 | A burg's group              | the same meaning ending in the new group, drawn the nearest to the old name; a respelled name is respelled again | `Toponyms.regrouped` |
 
 A culture of the same name base says the name as it is, so nothing is offered.
@@ -181,16 +185,16 @@ Many burgs are renamed at once by `Burgs.regenerateNames`, which takes all the o
 
 A meaning records why the name was given and is not checked again: a town keeps "harbour" in its name after its port is removed.
 
-A rename that comes with no meaning, from a CSV upload or the Assistant, clears the old one: nobody sees it there to keep it true. Changing a culture or a group the same way renames nothing. A CSV may carry a meaning in its `Meaning` column, written as `owner-generic: ~Eadric, town` (`Meanings.write` and `read`): a changed cell is stored, coined in the base of the place's culture, and an untouched one counts as no meaning where the name changes. The Assistant sets one in the same notation, after the rename (`Toponyms.setMeaning`). A name that takes a foreign form is kept in `own` of its meaning, a proper name if it had none, until it comes back or the place is renamed.
+A model's `setName` stores a name with its meaning. A rename that comes with no meaning (`rename`), from a CSV upload or the Assistant, clears the old one: nobody sees it there to keep it true. Changing a culture or a group the same way renames nothing. A CSV may carry a meaning in its `Meaning` column, written as `owner-generic: ~Eadric, town` (`Meanings.write` and `read`): a changed cell is stored, coined in the base of the place's culture, and an untouched one counts as no meaning where the name changes. The Assistant sets one in the same notation, after the rename (`Toponyms.setMeaning`). A name that takes a foreign form is kept in `own` of its meaning, a proper name if it had none, until it comes back or the place is renamed.
 
 A name with no meaning, from an old map or such a rename, is treated as a proper name of its culture's base (`Meanings.simplex`). It can still be shown in other bases, where it is [appropriated](#appropriation).
 
 ## Where the user sees it
 
 - **Name Editor**: the one place a name is typed. It renames a burg, state, province, river, lake or island, opened by the pencil beside the name or a click on the name in a table; the editors themselves show the name read-only, the Burg Editor with its gloss under it. The dialog edits the name, speaks it (the speaker shows inside the field on hover) and edits the meaning as a pattern and its words: a concept is selected from the words of its slot, a proper name is typed. A name base picked there shows the name there, loaded then and not before, with one click to take it: the meaning's own name in its `origin`, the whole name [appropriated](#appropriation) in any other. One button says the same meaning another way (another `salt`), another coins a new meaning that fits the place, both in the picked base; with the first, or with an edit of the meaning, the name is coined anew there. Nothing is stored until Apply.
-- **Names with no meaning** use the same dialog without the Meaning row (`plain`): a route's or an ocean's name and a label's text.
+- **Names with no meaning** use the same dialog without the Meaning row: a route's, an ocean's or the neutral lands' name and a label's text.
 - **Form and full name** of a state or province have a dialog of their own, opened from the Form column. It shows the name and the Name Editor shows the full name, each read-only with a pencil that stores the open dialog and opens the other.
-- **Options → Personal names**: founders are generated, picked from the base's list as they are, or as each base sets.
+- **Options → Personal names**: personal names are generated, picked from the base's list as they are, or as each base sets.
 - **Tools → Namesbase**: the Namesbases Overview lists the bases; the Namesbase Editor edits one on the tabs Names, Lexicon, Patterns and Rules, beside examples seeded so that an edit shows on them (`Toponyms.sample`).
 
 ## Using it in code
@@ -210,10 +214,10 @@ Toponyms.nameIn(burg, cultureId, origin); // its name in a culture's base and th
 | Find why a place got its name        | Read its `meaning`: the pattern and tokens say what was picked. The editor shows the same as a gloss                                                                                                                                                                                                                                  |
 | Add a concept                        | Add it to its kind in `name-concepts.ts` with the tags it `fits` and a `weight` from 1 to 10, which counts squared: a 10 is drawn a hundred times as readily as a 1. Write its forms in `english.ts` and `ruthenian.ts`; a test fails without them. Other bases coin a form |
 | Make a concept depend on the map     | Give it a tag in `fits`. For a new tag, add it to `SiteTag` and set it in `Toponyms.getSite`                                                                                                                                                                                                                                          |
-| Change how often a pattern is coined | `DEFAULT_WEIGHTS` in `name-rules.ts` for all bases, or `patterns.<pattern>.weight` in one base. 0 turns it off                                                                                                                                                                                                                        |
+| Change how often a pattern is coined | `weight` in `name-patterns.ts` for all bases, or `patterns.<pattern>.weight` in one base. 0 turns it off                                                                                                                                                                                                                        |
 | Teach a base real words              | Follow [Preparing a name base](#preparing-a-name-base); the notation is on the [wiki page](../wiki/Names.md#teaching-a-base-its-words)                                                                                                                                                                                                |
-| Add a pattern                        | `Pattern` type, `SLOTS` in `meanings.ts`, `DEFAULT_TEMPLATES` and `DEFAULT_WEIGHTS` in `name-rules.ts`, `Meanings.gloss` and `PATTERN_LABELS` in `data/id-labels.ts`, and a branch in `Toponyms` that fills it                                                                                                                                                   |
-| Give another entity a meaning        | Add `meaning?: Meaning` to it, name it through `Toponyms`, and open `NameEditor` from its editor with a `generate` that coins it                                                                                                                                                                                                               |
+| Add a pattern                        | `Pattern` type, a record in `data/name-patterns.ts`, a label in `PATTERN_LABELS` of `data/id-labels.ts`, and a branch in `Toponyms` that fills it                                                                                                                                                   |
+| Give another entity a meaning        | Add `meaning?: Meaning` to it, a `setName` to its model and its culture to `Toponyms.cultureOf`, name it through `Toponyms`, add it to `NAMINGS` and open `NameEditor.openPlace` from its editor                                                                                                                                                                                                               |
 
 ## Preparing a name base
 

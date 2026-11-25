@@ -65,6 +65,21 @@ describe("Appropriation.adapt", () => {
     expect(into("german")("chotěbuz")).toBe(into("german")("chotěbuz"));
   });
 
+  it("hears the people and waters of a base, its own or inherited, and measures an edited list anew", () => {
+    options.map.nameBases = [];
+    const parent = Names.add(Names.composeBase("parent", "Parent", [3, 9], []));
+    const base = Names.add({ ...Names.composeBase("child", "Child", [3, 9], ["tana", "nata"]), extends: "parent" });
+    expect(Appropriation.adapt("tona", base)).toBe("tana"); // it writes no o
+    const names = Array(200).fill("tona");
+    parent.waters = { names };
+    expect(Appropriation.adapt("tona", base)).toBe("tona");
+    parent.waters = undefined;
+    expect(Appropriation.adapt("tona", base)).toBe("tana");
+    base.people = { male: { names } };
+    expect(Appropriation.adapt("tona", base)).toBe("tona");
+    options.map.nameBases = [];
+  });
+
   it("leaves a name alone in a base with no names to measure it by, or of another script", () => {
     expect(Appropriation.adapt("frank", Names.composeBase("empty", "Empty", [3, 9], []))).toBe("frank");
     expect(Appropriation.adapt("frank", Names.composeBase("other", "Other", [3, 9], ["Москва", "Киев"]))).toBe("frank");

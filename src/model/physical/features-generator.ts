@@ -1,7 +1,7 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
-import type { Meaning } from "@/types/names";
+import type { Meaning, Named } from "@/types/names";
 import { TYPED_ARRAY_MAX } from "@/utils/array-utils";
 import { clipPoly } from "@/utils/common-utils";
 import { isLand, isWater } from "@/utils/height-utils";
@@ -330,7 +330,14 @@ class FeatureModule {
 
   /** Rename a geographical feature: an island, lake or ocean */
   rename(featureId: number, name: string): void {
-    this.living(featureId).name = requireName(name);
+    this.setName(featureId, { name });
+  }
+
+  /** Rename a feature and set what the name says: with no meaning it is a proper name, whatever the old one said */
+  setName(featureId: number, { name, meaning }: Named): void {
+    const feature = this.living(featureId);
+    feature.name = requireName(name);
+    feature.meaning = meaning;
   }
 
   /** Set what an island's or a lake's name says, or clear it; the name itself stays as it is */

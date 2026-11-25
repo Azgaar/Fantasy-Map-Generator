@@ -479,9 +479,8 @@ function nameHalt(archetype: JourneyArchetype, leg: PlannedLeg, cellId: number, 
 }
 
 function personName(burg: Burg): string {
-  const culture = burg.culture;
-  if (culture === undefined || !pack.cultures?.[culture]) return ra(NAMELESS);
-  return Names.getCultureShort(culture) || ra(NAMELESS);
+  const { culture } = burg;
+  return culture !== undefined && pack.cultures?.[culture] ? Names.getCulturePerson(culture) : ra(NAMELESS);
 }
 
 const burgName = (burg: Burg): string => burg.name || `Burg ${burg.i}`;

@@ -12,6 +12,7 @@ import { removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import type { Market } from "@/types/economy";
+import type { Named } from "@/types/names";
 import { renderDevelopment } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
 import { closeEntityDialogs, nameEditButton, noteButton, offerRename } from "@/ui/dialog/dialog-helpers";
@@ -354,16 +355,9 @@ function showName(burg: Burg): void {
 
 function editName(): void {
   const burg = pack.burgs[getSelectedId()];
-  void Controllers.NameEditor.open({
-    entity: `burg:${burg.i}`,
+  void Controllers.NameEditor.openPlace("burg", burg.i, {
     owner: "burgEditor",
-    name: burg.name!,
-    meaning: burg.meaning,
-    culture: burg.culture!,
-    generate: baseId => Toponyms.burg(burg, { baseId }),
-    onApply: ({ name, meaning }) => {
-      Burgs.setMeaning(burg.i, meaning);
-      Burgs.rename(burg.i, name);
+    onApply: () => {
       showName(burg);
       Layers.draw("labels");
     }
@@ -378,11 +372,13 @@ function changeGroup(this: HTMLSelectElement): void {
   Layers.draw("burgIcons", "labels");
 
   // a name ends in what the burg is: in another group it may end another way
-  const named = Toponyms.regrouped(burg, was);
+  offerName(burg, Toponyms.regrouped(burg, was));
+}
+
+function offerName(burg: Burg, named?: Named): void {
   if (!named) return;
   offerRename(burg.name!, named.name, () => {
-    Burgs.setMeaning(burg.i, named.meaning);
-    Burgs.rename(burg.i, named.name);
+    Burgs.setName(burg.i, named);
     showName(burg);
     Layers.draw("labels");
   });
@@ -395,20 +391,9 @@ function changeType(this: HTMLSelectElement): void {
 
 function changeCulture(this: HTMLSelectElement): void {
   const burg = pack.burgs[getSelectedId()];
-  const { origin } = Meanings.of(burg, burg.culture);
-  const tongue = pack.cultures[burg.culture!]?.base;
+  const { base } = pack.cultures[burg.culture!];
   Burgs.setCulture(burg.i, +this.value);
-  if (pack.cultures[+this.value].base === tongue) return; // a people of the same tongue says the name as it is
-
-  // the new culture may say the name another way
-  const named = Toponyms.nameIn(burg, +this.value, origin);
-  if (!named) return;
-  offerRename(burg.name!, named.name, () => {
-    Burgs.setMeaning(burg.i, named.meaning);
-    Burgs.rename(burg.i, named.name);
-    showName(burg);
-    Layers.draw("labels");
-  });
+  offerName(burg, Toponyms.nameIn(burg, +this.value, base)); // the new culture may say the name another way
 }
 
 function changePopulation(): void {

@@ -1,37 +1,16 @@
 // Turns a meaning into a name in a name base: the rendering half of semantic names
 
 import { type Concept, isConcept, type Kind, kindOf, settles } from "@/data/name-concepts";
-import type { Formant, Meaning, NameBase, Pattern, Template, Token } from "@/types/names";
+import { isPattern, kindsOf, PATTERNS, type Slot } from "@/data/name-patterns";
+import type { Formant, Meaning, NameBase, Template, Token } from "@/types/names";
 import { pickWeighted, seededRandom } from "@/utils/probability-utils";
 import { capitalize, compileRegex } from "@/utils/string-utils";
 import { Appropriation } from "./appropriation";
+import { Corpora } from "./corpora";
 import { Lexicon } from "./lexicon";
 import { Names } from "./names-generator";
 import { SILENT, STAR } from "./notation";
 import { SoundRules } from "./sound-rules";
-
-type Slot = "root" | "generic" | "modifier" | "settlement";
-
-const SLOTS: Record<Pattern, Slot[]> = {
-  simplex: ["root"],
-  feature: ["generic"],
-  "modifier-generic": ["modifier", "generic"],
-  "owner-generic": ["root", "generic"],
-  "generic-of": ["generic", "root"],
-  compound: ["modifier", "generic", "settlement"],
-  relative: ["modifier", "root"],
-  "root-land": ["root", "generic"],
-  "modifier-land": ["modifier", "generic"]
-};
-
-// the kinds of words a slot takes; a place word may describe, and a fort is what a burg is
-const TAKES: Record<Slot, Kind[]> = {
-  root: [],
-  generic: ["generic", "settlement"],
-  modifier: ["modifier", "numeral", "generic", "settlement"],
-  settlement: ["settlement", "generic"]
-};
-const LAND: Kind[] = ["land"];
 
 const CLIPPED = 2 / 3; // the share of a root that must be left for it to be told
 const UNSAID: Kind[] = ["settlement", "land"];
@@ -65,20 +44,17 @@ interface Site {
 type Standing = "text" | "concept" | "name";
 
 class MeaningsModule {
-  readonly slots = SLOTS;
-
   /** The English reading of a meaning */
   gloss({ pattern, tokens }: Meaning): string {
     const words = tokens.map(token => (isRoot(token) ? token.slice(1) : capitalize(token)));
     const counts = tokens.length > 1 && !isRoot(tokens[0]) && kindOf(tokens[0]) === "numeral";
-    const [first, second, third] = counts ? [words[0], plural(words[1]), words[2]] : words;
-    if (pattern === "simplex") return first;
-    if (pattern === "compound") return `${first} ${second} ${third}`;
-    if (pattern === "feature") return `The ${first}`;
-    if (pattern === "owner-generic") return `${first}${first.endsWith("s") ? "'" : "'s"} ${second}`;
-    if (pattern === "generic-of") return `${first} of ${second}`;
-    if (pattern === "root-land") return `${second} of ${first}`;
-    return `${first} ${second}`;
+    if (counts) words[1] = plural(words[1]);
+    const { slots, gloss } = PATTERNS[pattern];
+    const said = new Map<string, string>(slots.map((slot, order) => [slot, words[order]]));
+    return gloss.replace(/\{(\w+)\}('s)?/g, (_, slot, owns = "") => {
+      const word = said.get(slot)!;
+      return word + (owns && word.endsWith("s") ? "'" : owns);
+    });
   }
 
   /** A meaning as a table keeps it, such as "owner-generic: ~Eadric, town" */
@@ -91,8 +67,8 @@ class MeaningsModule {
     const [, name = "", words = ""] = /^([^:]*):(.*)$/s.exec(text) ?? [];
     const pattern = name.trim().toLowerCase();
     if (!isPattern(pattern))
-      throw new Error(`A meaning starts with a pattern and a colon. Patterns: ${Object.keys(SLOTS).join(", ")}`);
-    const slots = SLOTS[pattern];
+      throw new Error(`A meaning starts with a pattern and a colon. Patterns: ${Object.keys(PATTERNS).join(", ")}`);
+    const { slots } = PATTERNS[pattern];
     const parts = words.split(",").map(word => word.trim());
     if (parts.length !== slots.length || parts.some(word => !word.replace(/^~+/, "").trim()))
       throw new Error(`A meaning of the pattern ${pattern} has these words: ${slots.join(", ")}`);
@@ -101,7 +77,7 @@ class MeaningsModule {
       if (isRoot(word) || slot === "root") return `~${word.replace(/^~+/, "").trim()}`;
       const concept = word.toLowerCase();
       if (!isConcept(concept)) throw new Error(`"${word}" is not a known word. A proper name starts with ~`);
-      const kinds = slot === "generic" && pattern.endsWith("-land") ? LAND : TAKES[slot];
+      const kinds = kindsOf(pattern, slot);
       if (!kinds.includes(kindOf(concept)))
         throw new Error(`"${word}" cannot stand as the ${slot} of ${pattern}, which is a word of: ${kinds.join(", ")}`);
       return concept;
@@ -135,7 +111,8 @@ class MeaningsModule {
   compose(meaning: Meaning, of: NameBase | string): { name: string; whole: boolean } {
     const base = typeof of === "string" ? Names.resolve(of) : of;
     const random = seededRandom(`${base.id}|${meaning.pattern}|${meaning.tokens}|${meaning.salt ?? 0}`);
-    const values = Object.fromEntries(SLOTS[meaning.pattern].map((slot, index) => [slot, meaning.tokens[index]]));
+    const { slots: asked } = PATTERNS[meaning.pattern];
+    const values = Object.fromEntries(asked.map((slot, index) => [slot, meaning.tokens[index]]));
     const grammar = Lexicon.grammarOf(base);
     const counting = Names.lineage(base).flatMap(({ rules }) => SoundRules.sort(rules).counting);
     const formsOf = once((concept: Concept) => Lexicon.formsOf(base, concept));
@@ -177,7 +154,7 @@ class MeaningsModule {
     // a root clipped to a stub tells nobody's name: Ana of Anahita
     function isStub(kept: number): boolean {
       const roots = kept === Infinity ? [] : meaning.tokens.filter(isRoot).map(token => rootOf(token));
-      return roots.some(root => Names.cut(root, base, kept).length < root.length * CLIPPED);
+      return roots.some(root => Corpora.cut(root, base.places.names, kept).length < root.length * CLIPPED);
     }
 
     function fittingAt(strictness: number): { weight?: number; layouts: Layout[] }[] {
@@ -190,8 +167,8 @@ class MeaningsModule {
     function layoutsOf(template: Template, strictness: number): Layout[] {
       const { words, slots, inflects } = wordsOf(template);
       const isSaid = (slot: Slot) => !values[slot] || slots.has(slot) || goesUnsaid(values[slot]);
-      if (strictness !== ANY && !SLOTS[meaning.pattern].every(isSaid)) return [];
-      const sites = sitesOf(template, SLOTS[meaning.pattern].filter(isConceptAt));
+      if (strictness !== ANY && !asked.every(isSaid)) return [];
+      const sites = sitesOf(template, asked.filter(isConceptAt));
 
       let filled: Formant[][] = [[]];
       for (const [order, site] of sites.entries()) {
@@ -307,7 +284,9 @@ class MeaningsModule {
               if (!token || (effort === 3 && item.slot === "modifier")) return [];
               if (isRoot(token)) {
                 const root = rootOf(token);
-                return clips && items.length > 1 && kept !== Infinity ? Names.cut(root, base, kept) : root;
+                return clips && items.length > 1 && kept !== Infinity
+                  ? Corpora.cut(root, base.places.names, kept)
+                  : root;
               }
               const form = drawn.get(item)!;
               const plain = agree((effort ? (form.short ?? form.form) : form.form).replace(/^-|_/g, ""));
@@ -385,7 +364,6 @@ function once<K, T>(run: (key: K) => T): (key: K) => T {
   };
 }
 
-const isPattern = (name: string): name is Pattern => Object.hasOwn(SLOTS, name);
 const isRoot = (token: string): token is `~${string}` => token.startsWith("~");
 const isSuffix = ({ form }: Formant) => form.startsWith("-");
 // a template may leave out what a burg is by its group or a land, whose name is a suffix of the template's own: Frankia;

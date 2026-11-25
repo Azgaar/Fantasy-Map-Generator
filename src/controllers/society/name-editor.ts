@@ -1,52 +1,44 @@
 // One dialog to rename anything on the map: the name, what it says and how another name base would say it
 
 import { PATTERN_LABELS } from "@/data/id-labels";
-import { type Concept, conceptsOf, settles } from "@/data/name-concepts";
+import { conceptsOf } from "@/data/name-concepts";
+import { kindsOf, PATTERNS, type Slot } from "@/data/name-patterns";
 import { Appropriation } from "@/model/society/names/appropriation";
 import { Meanings } from "@/model/society/names/meanings";
 import { Names } from "@/model/society/names/names-generator";
+import { type PlaceType, Toponyms } from "@/model/society/names/toponyms-generator";
 import { speak } from "@/services/speech";
-import type { Meaning, NameBase, Pattern, Token } from "@/types/names";
+import type { Meaning, NameBase, Named, Pattern, Token } from "@/types/names";
 import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { escapeHtml } from "@/utils/string-utils";
+import { NAMINGS } from "./named-places";
 
-interface Named {
-  name: string;
-  meaning?: Meaning;
+interface Owner {
+  owner: string; // the dialog it is opened from: the editor closes with it
+  full?: { name: string; edit: () => void }; // a state's or a province's full name, changed in a dialog of its own
 }
 
-interface NameEditorOptions {
-  owner: string; // the dialog it is opened from: the editor closes with it
+interface PlaceOptions extends Owner {
+  onApply: (name: string) => void; // once the place has its new name
+}
+
+interface NameEditorOptions extends Owner {
   entity?: string; // the key of what is named, such as "burg:12"
   name: string;
   meaning?: Meaning;
-  plain?: boolean; // a name that keeps no meaning, as a route's or a label's
   culture: number; // a name with no meaning is a proper name of its base
-  generate?: (baseId: string) => Named; // a new meaning that fits what is named, and its name in a base
-  proper?: (baseId: string) => string; // a new proper name, one of a base's place names when not given
-  full?: { name: string; edit: () => void }; // a state's or a province's full name, changed in a dialog of its own
+  generate?: (baseId: string) => Named; // a new meaning that fits what is named, and its name in a base; a name with none keeps no meaning
+  proper: (baseId: string) => string; // a new proper name
   onApply: (named: Required<Named>) => void;
 }
 
-type Slot = (typeof Meanings.slots)[Pattern][number];
 type Draft = Omit<Meaning, "tokens"> & { tokens: (Token | "")[] }; // a slot not filled yet holds ""
 
 const dialogId = "nameEditor";
 const REROLLS = 12;
-
-const LANDS: Pattern[] = ["root-land", "modifier-land"];
-
-// the words a slot offers, in alphabetical order
-const inOrder = (words: Concept[]) => words.toSorted();
-const WORDS: Record<string, Concept[]> = {
-  modifier: inOrder([...conceptsOf("modifier"), ...conceptsOf("numeral")]),
-  generic: inOrder([...conceptsOf("generic"), ...conceptsOf("settlement")]),
-  land: inOrder(conceptsOf("land")),
-  settlement: inOrder([...conceptsOf("settlement"), ...conceptsOf("generic").filter(settles)])
-};
 
 const STYLES = /* html */ `<style>
   #nameEditorGrid { display: grid; grid-template-columns: auto 18em auto; gap: 0.4em 0.6em; align-items: center; width: auto; }
@@ -67,6 +59,26 @@ const STYLES = /* html */ `<style>
 
 let editing: { options: NameEditorOptions; draft: Draft } | undefined;
 
+/** Rename a place that keeps a meaning */
+function openPlace(type: PlaceType, id: number, { onApply, ...owner }: PlaceOptions): Promise<void> {
+  const { model, find, generate, proper } = NAMINGS[type];
+  const { name = "", meaning } = find(id);
+  const culture = Toponyms.cultureOf({ type, id });
+  return open({
+    ...owner,
+    entity: `${type}:${id}`,
+    name,
+    meaning,
+    culture: culture ?? 0,
+    generate: culture === undefined ? undefined : baseId => generate(id, baseId), // neutral lands, an ocean
+    proper: baseId => proper(id, baseId),
+    onApply: ({ name, meaning }) => {
+      model.setName(id, { name, meaning: culture === undefined ? undefined : meaning });
+      onApply(name);
+    }
+  });
+}
+
 async function open(options: NameEditorOptions): Promise<void> {
   const baseId = Names.entry(pack.cultures[options.culture]?.base).id;
   await Names.load([baseId]);
@@ -86,7 +98,7 @@ async function open(options: NameEditorOptions): Promise<void> {
 
   const meaningRows = /* html */ `<label for="nameEditorPattern">${t("Meaning")}</label>
       <select id="nameEditorPattern">${patterns.join("")}</select>
-      ${options.generate ? `<span id="nameEditorGenerate" data-tip="${t("Generate a new meaning and its name")}" class="icon-arrows-cw pointer"></span>` : "<span></span>"}
+      <span id="nameEditorGenerate" data-tip="${t("Generate a new meaning and its name")}" class="icon-arrows-cw pointer"></span>
       <div id="nameEditorSlots"></div>`;
   const fullRow = /* html */ `<span>${t("Full name")}</span>
       <span id="nameEditorFull">${escapeHtml(options.full?.name ?? "")}</span>
@@ -101,7 +113,7 @@ async function open(options: NameEditorOptions): Promise<void> {
         <span id="nameEditorSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
       </div>
       <span id="nameEditorReroll" data-tip="${t("Generate another name")}" class="icon-shuffle pointer"></span>
-      ${options.plain ? "" : meaningRows}
+      ${options.generate ? meaningRows : ""}
       <label for="nameEditorBase">${t("Name base")}</label>
       <div id="nameEditorIn">
         <select id="nameEditorBase" data-tip="${t("Select a name base to see the name in it")}">${bases.join("")}</select>
@@ -113,12 +125,12 @@ async function open(options: NameEditorOptions): Promise<void> {
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
-  if (!options.plain) {
+  if (options.generate) {
     getPattern().value = draft.pattern;
     renderSlots();
     getPattern().addEventListener("change", changePattern);
     ensureEl("nameEditorSlots").addEventListener("input", changeWord);
-    findEl("nameEditorGenerate")?.addEventListener("click", generate);
+    ensureEl("nameEditorGenerate").addEventListener("click", generate);
   }
   showVariant();
 
@@ -156,20 +168,20 @@ const getBase = () => ensureEl<HTMLSelectElement>("nameEditorBase");
 /** The fields of the meaning's words, in the order the pattern names them */
 function renderSlots(): void {
   const { pattern } = editing!.draft;
-  const fields = pattern === "simplex" ? [] : Meanings.slots[pattern];
+  const fields = pattern === "simplex" ? [] : PATTERNS[pattern].slots;
   ensureEl("nameEditorSlots").innerHTML = fields.map((_, order) => fieldOf(order)).join("");
 }
 
 /** A word's field: a proper name is typed, a concept is selected from the words of its slot */
 function fieldOf(order: number): string {
   const { pattern, tokens } = editing!.draft;
-  const slot = Meanings.slots[pattern][order];
+  const slot = PATTERNS[pattern].slots[order];
   const token = tokens[order] ?? "";
   const placeholder = placeholderOf(pattern, slot);
   if (slot === "root")
     return `<input data-order="${order}" value="${escapeHtml(token.slice(1))}" placeholder="${placeholder}" autocorrect="off" spellcheck="false" />`;
 
-  const words: string[] = WORDS[LANDS.includes(pattern) && slot === "generic" ? "land" : slot];
+  const words: string[] = kindsOf(pattern, slot).flatMap(conceptsOf).toSorted();
   const listed = !token || words.includes(token) ? words : [token, ...words]; // a word from elsewhere stays selectable
   const choices = listed.map(
     word =>
@@ -213,9 +225,9 @@ function changePattern(): void {
   recoin();
   const pattern = getPattern().value as Pattern;
   const name = getName().value.trim();
-  const words = new Map(Meanings.slots[draft.pattern].map((slot, order) => [slot, draft.tokens[order]]));
+  const words = new Map(PATTERNS[draft.pattern].slots.map((slot, order) => [slot, draft.tokens[order]]));
   if (draft.pattern === "simplex" || pattern === "simplex") words.set("root", name ? `~${name}` : "");
-  Object.assign(draft, { pattern, tokens: Meanings.slots[pattern].map(slot => words.get(slot) ?? "") });
+  Object.assign(draft, { pattern, tokens: PATTERNS[pattern].slots.map(slot => words.get(slot) ?? "") });
   if (pattern === "simplex") draft.origin = getBase().value;
   renderSlots();
   showVariant();
@@ -255,7 +267,7 @@ function rerollName(): void {
   if (!base) return;
 
   if (draft.pattern === "simplex") {
-    getName().value = options.proper?.(base.id) ?? Names.getBase(base.id);
+    getName().value = options.proper(base.id);
     changeName();
     return;
   }
@@ -323,8 +335,8 @@ const wordOf = (token: string) => (token.startsWith("~") ? token.slice(1) : toke
 function placeholderOf(pattern: Pattern, slot: Slot): string {
   if (slot === "modifier") return t("Description");
   if (slot === "settlement") return t("Settlements");
-  if (slot === "generic") return LANDS.includes(pattern) ? t("Lands") : t("Place");
+  if (slot === "generic") return kindsOf(pattern, slot).includes("land") ? t("Lands") : t("Place");
   return pattern === "owner-generic" ? t("Owner") : t("Name");
 }
 
-export const NameEditor = { open };
+export const NameEditor = { open, openPlace };

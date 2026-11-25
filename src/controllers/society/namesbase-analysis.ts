@@ -1,6 +1,5 @@
 import { max, mean, median, min } from "d3";
-import { Lexicon } from "@/model/society/names/lexicon";
-import { Names } from "@/model/society/names/names-generator";
+import { Corpora } from "@/model/society/names/corpora";
 import { Dialog } from "@/ui/dialog/dialog";
 import { unique } from "@/utils/array-utils";
 import { t } from "@/utils/i18n";
@@ -57,17 +56,17 @@ function judgeVariety(variety: number): Verdict {
 }
 
 /** Tell how fit a list of names is to generate others like them */
-function open(title: string, source: string[]): void {
+function open(title: string, source: readonly string[]): void {
   const names = source.map(name => name.toLowerCase());
   const lengths = names.map(({ length }) => length);
-  const variety = rn(mean(Object.values(Names.calculateChain(names)), next => next.length) ?? 0);
+  const variety = rn(mean(Object.values(Corpora.chainOf(names)), next => next.length) ?? 0);
   const listed = (items: string[], separator = ", ") => escapeHtml(items.join(separator)) || t("none");
 
   const letters = unique(names.join("").match(/[\u0080-￿]/gu) ?? []);
   const doubles = names.flatMap(name => name.match(/[^\w\s]|(.)(?=\1)/g) ?? []);
   const doubled = unique(doubles).filter(letter => doubles.filter(other => other === letter).length > 3);
   const duplicates = unique(names.filter((name, i) => names.indexOf(name) !== i));
-  const endings = Lexicon.mineEndings(names).slice(0, 10);
+  const endings = Corpora.mineEndings(names).slice(0, 10);
   const multiword = (mean(names, name => +name.includes(" ")) ?? 0) * 100;
   const verdict = ({ label, color, tip }: Verdict) =>
     `<span data-tip="${tip}" style="color: ${color}">(${label})</span>`;

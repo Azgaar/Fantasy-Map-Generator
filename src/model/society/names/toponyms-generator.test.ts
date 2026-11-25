@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { type Concept, conceptsOf, kindOf } from "@/data/name-concepts";
-import { DEFAULT_TEMPLATES } from "@/data/name-rules";
+import { PATTERNS } from "@/data/name-patterns";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Pattern } from "@/types/names";
 import { seeded } from "@/utils/probability-utils";
@@ -12,7 +12,7 @@ beforeAll(() => Names.load(["english", "german"]));
 
 describe("Toponyms.sample", () => {
   it("makes a name of any pattern asked for", () => {
-    for (const pattern of Object.keys(DEFAULT_TEMPLATES) as Pattern[]) {
+    for (const pattern of Object.keys(PATTERNS) as Pattern[]) {
       const { name, meaning } = Toponyms.sample(Names.find("english")!, { pattern });
       expect(meaning.pattern).toBe(pattern);
       expect(name.length, pattern).toBeGreaterThan(1);

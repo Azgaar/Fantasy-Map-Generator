@@ -219,7 +219,5 @@ export const OPERATIONS = new Set(
 export function runOperation(op: string, args: unknown[]): unknown {
   const [name, method] = op.split(".");
   const model = MODELS[name as keyof Models] as unknown as Record<string, (...args: unknown[]) => unknown>;
-  const result = model[method](...args);
-  if (method === "rename") model.setMeaning?.(args[0]); // a new name is a proper name, whatever the old one said
-  return result;
+  return model[method](...args);
 }

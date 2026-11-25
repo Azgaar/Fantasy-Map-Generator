@@ -56,7 +56,7 @@ class NameNotationModule {
     });
   }
 
-  formatFormants(formants: Formant[] = []): string {
+  formatFormants(formants: readonly Formant[] = []): string {
     return formants
       .map(({ form, short, class: nounClass, position, weight, hyphen }) => {
         const suffix = form.startsWith("-");
@@ -143,7 +143,7 @@ class NameNotationModule {
     });
   }
 
-  formatTemplates(templates: Template[] = []): string {
+  formatTemplates(templates: readonly Template[] = []): string {
     return templates.map(({ parts, weight }) => (weight === undefined ? parts : `${parts} ${weight}`)).join(", ");
   }
 
@@ -165,7 +165,7 @@ class NameNotationModule {
     });
   }
 
-  formatRules(rules: SoundRule[] = []): string {
+  formatRules(rules: readonly SoundRule[] = []): string {
     return rules
       .map(({ match, replace, at, when, chance, as }) => {
         const flags = [at, when, as && `as ${as}`, chance !== undefined && `${Math.round(chance * 1000) / 10}%`].filter(

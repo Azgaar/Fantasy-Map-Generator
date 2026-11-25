@@ -4,8 +4,6 @@ import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import type { River } from "@/model/physical/river-generator";
 import { Rivers } from "@/model/physical/river-generator";
-import { Names } from "@/model/society/names/names-generator";
-import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
 import { redrawRiver as redrawRiverShape, setEditedRiver } from "@/renderers/draw-rivers";
 import { Layers } from "@/renderers/layers";
@@ -325,17 +323,9 @@ function changeTags(this: HTMLInputElement): void {
 
 function editName(): void {
   const river = getRiver();
-  void Controllers.NameEditor.open({
-    entity: `river:${river.i}`,
+  void Controllers.NameEditor.openPlace("river", river.i, {
     owner: "riverEditor",
-    name: river.name,
-    meaning: river.meaning,
-    culture: pack.cells.culture[river.mouth],
-    generate: baseId => Toponyms.river(river, { baseId }),
-    proper: baseId => Names.getWater(baseId),
-    onApply: ({ name, meaning }) => {
-      Rivers.setMeaning(river.i, meaning);
-      Rivers.rename(river.i, name);
+    onApply: name => {
       ensureEl("riverName").textContent = name;
       Layers.draw("labels");
     }

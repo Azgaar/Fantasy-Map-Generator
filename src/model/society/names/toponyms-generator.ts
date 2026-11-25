@@ -12,13 +12,14 @@ import {
   settlementOf,
   weightOf
 } from "@/data/name-concepts";
+import { PATTERNS } from "@/data/name-patterns";
 import { Goods } from "@/model/economy/goods-generator";
 import { type EntityRef, MapEntities } from "@/model/map-entities";
 import type { Feature } from "@/model/physical/features-generator";
 import type { River } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Province } from "@/model/political/provinces-generator";
-import type { Meaning, NameBase, Pattern, Token } from "@/types/names";
+import type { Meaning, NameBase, Named, Pattern, Token } from "@/types/names";
 import { P, pickWeighted, ra, seeded } from "@/utils/probability-utils";
 import { Appropriation } from "./appropriation";
 import { Lexicon } from "./lexicon";
@@ -28,9 +29,19 @@ import { Names } from "./names-generator";
 /** How strongly a place offers each thing a concept may ask for */
 type Site = Partial<Record<SiteTag, number>> & { good?: Concept };
 
-interface Named {
-  name: string;
-  meaning: Meaning;
+type Coined = Required<Named>;
+
+/** The places that keep what their names say */
+export type PlaceType = "burg" | "state" | "province" | "river" | "feature";
+
+/** A place as it is renamed */
+type Renamed = Partial<Named> & { i?: number; removed?: boolean; lock?: boolean };
+
+/** A new name for one of the map's places */
+interface Renaming {
+  type: PlaceType;
+  id: number;
+  named: Coined;
 }
 
 /** What a site is read from: a burg, or the cell a river or a lake is named at */
@@ -61,7 +72,7 @@ interface StateOptions {
 }
 
 const BURG_PATTERNS: Pattern[] = ["feature", "modifier-generic", "owner-generic", "generic-of", "compound", "relative"];
-const LAND_PATTERNS: Pattern[] = ["root-land", "modifier-land"];
+const LAND_PATTERNS = (Object.keys(PATTERNS) as Pattern[]).filter(pattern => PATTERNS[pattern].isLand);
 const FOREST_BIOMES = [5, 6, 7, 8, 9];
 const BIG_RIVER_FLUX = 100; // from where a river carries boats
 const SETTLED = 0.85; // the share of burg names that end in what the burg is, where a base sets none
@@ -76,6 +87,8 @@ const BIG_DESCRIBED = 0.2; // how readily a big land takes a describing word, ag
 const LAND_LENGTH = 10; // the letters of a land's longest word, past which a shorter name is looked for
 const LAND_REDRAWS = 3;
 const FOUNDED = 0.4; // the share of lands and islands named after a person, not after a people
+const OWN_PEOPLE = 0.5; // how readily a state is named after its own people
+const ADJECTIVE = /(?:shire|(?<=.{3})ian|(?<=.{4})an)$/; // what a people's name is without
 const WATER_SHARE = 0.5; // waters keep old names: this many of them say something
 const PLAIN = 1; // how well a concept that fits anywhere fits, against one the place asks for (2 to 4)
 const GOOD = 4; // how much better a concept fits where the good it names is made
@@ -189,7 +202,7 @@ class ToponymsGenerator {
 
   /** A meaning that fits a burg's place and group, and its name in the culture's base or in the base given.
    * A burg with no group yet takes a name that says nothing of its size */
-  burg(burg: Burg, { burgs = pack.burgs, taken = this.burgNames(burgs), baseId }: BurgOptions = {}): Named {
+  burg(burg: Burg, { burgs = pack.burgs, taken = this.burgNames(burgs), baseId }: BurgOptions = {}): Coined {
     const base = Names.resolve(baseId ?? pack.cultures[burg.culture!].base);
     const picked = this.pickBurg(base, taken);
     if (picked) return picked;
@@ -220,7 +233,7 @@ class ToponymsGenerator {
   }
 
   // a listed place not on the map yet, where the base picks its burg names; one like them when all are taken
-  private pickBurg(base: NameBase, taken: Taken): Named | undefined {
+  private pickBurg(base: NameBase, taken: Taken): Coined | undefined {
     if (base.places.mode !== "pick") return undefined;
     const free = base.places.names.filter(name => !taken.has(name));
     return proper(free.length ? ra(free) : Names.getBase(base.id), base);
@@ -241,7 +254,7 @@ class ToponymsGenerator {
   ): Token[] | undefined {
     const generic = () => by.settled ?? this.pickConcept("built", site, base)!;
     if (pattern === "feature") return [by.landmark!];
-    if (pattern === "owner-generic") return [`~${this.founder(base)}`, generic()];
+    if (pattern === "owner-generic") return [`~${Names.getPerson(base.id)}`, generic()];
     if (pattern === "relative") return [by.neighbor!.modifier, by.neighbor!.root];
     const numbered = (counted: Concept) => COUNTABLE.includes(counted) && P(NUMBERED);
     const numeral = () => pickBy(Lexicon.spoken(base, conceptsOf("numeral")), weightOf);
@@ -263,7 +276,7 @@ class ToponymsGenerator {
   /** The name a burg would take now that its group is no longer `was`: the same meaning, ending in what the burg
    * has become, and as much of the name kept as can be, said as its people say it where they respell the name.
    * Nothing when its name says nothing of its group, or would stay as it is */
-  regrouped(burg: Burg, was?: string): Named | undefined {
+  regrouped(burg: Burg, was?: string): Coined | undefined {
     const [old, now] = [this.getSettlement({ ...burg, group: was }), this.getSettlement(burg)];
     if (!burg.meaning || !old || !now || old === now || !burg.meaning.tokens.includes(old)) return undefined;
     const base = Names.find(burg.meaning.origin);
@@ -271,7 +284,7 @@ class ToponymsGenerator {
     const { own } = burg.meaning;
     const tokens = burg.meaning.tokens.map(token => (token === old ? now : token));
     const taken = this.burgNames(pack.burgs);
-    let best: Named | undefined;
+    let best: Coined | undefined;
     for (let salt = 0; salt < RENAMES; salt++) {
       const meaning: Meaning = { ...burg.meaning, tokens, salt: salt || undefined, own: undefined };
       const { name, whole } = Meanings.compose(meaning, base);
@@ -297,11 +310,12 @@ class ToponymsGenerator {
     capital: Burg,
     cultureId: number,
     { taken = this.landNames(), baseId, seed, size = "small" }: StateOptions = {}
-  ): Named {
+  ): Coined {
     if (seed) return seeded(seed, () => this.state(capital, cultureId, { taken, baseId, size }));
     const base = Names.resolve(baseId ?? pack.cultures[cultureId].base);
     const meaning = capital.meaning && Meanings.coinedIn(capital.meaning, base);
-    const root = () => this.getCapitalRoot(meaning) ?? this.getLandRoot(base);
+    const people = this.getPeopleRoot(cultureId);
+    const root = () => this.getCapitalRoot(meaning) ?? (people && P(OWN_PEOPLE) ? people : this.getLandRoot(base));
     const water = meaning?.pattern === "generic-of" ? meaning.tokens[1] : undefined;
     return this.coinLand(base, taken, this.getSite(capital), root, { size, water });
   }
@@ -313,11 +327,11 @@ class ToponymsGenerator {
     site: Site,
     root: () => Token,
     { size, water, land }: { size: LandSize; water?: Token; land?: Concept }
-  ): Named {
+  ): Coined {
     const landSite = { ...site, ...LAND_SITES[size] };
     const weigh = (pattern: Pattern) =>
       Lexicon.patternWeight(base, pattern) * (pattern === "modifier-land" && size === "big" ? BIG_DESCRIBED : 1);
-    let shortest: Named | undefined;
+    let shortest: Coined | undefined;
     for (let attempt = 0; ; attempt++) {
       const pattern = pickBy(LAND_PATTERNS, weigh);
       const first = pattern === "root-land" ? root() : this.pickConcept("modifier", landSite, base)!;
@@ -346,16 +360,43 @@ class ToponymsGenerator {
     });
   }
 
-  /** The name a named thing would take in a culture's base, when that is another name than it has: the whole name as
-   * the culture says it, its own name back in the base it was coined in. One with no meaning was coined in `origin`.
-   * The meaning given keeps the own name of a thing respelled */
-  nameIn(named: { name?: string; meaning?: Meaning }, cultureId: number, origin: string): Named | undefined {
+  /** The name a named thing would take in a culture's base instead of the base it is said in, when that is another
+   * name than it has: the whole name as the culture says it, its own name back in the base it was coined in. The
+   * meaning given keeps the own name of a thing respelled */
+  nameIn(named: Partial<Named>, cultureId: number, saidIn: string): Coined | undefined {
     const baseId = pack.cultures[cultureId]?.base;
-    if (!baseId || !named.name) return undefined;
-    const { own = named.name, ...meaning } = named.meaning ?? Meanings.simplex(named.name, origin);
+    if (!baseId || baseId === saidIn || !named.name) return undefined; // a people of the same tongue says it as it is
+    const { own = named.name, ...meaning } = named.meaning ?? Meanings.simplex(named.name, saidIn);
     if (baseId === meaning.origin) return own === named.name ? undefined : { name: own, meaning };
     const name = Appropriation.adopt(named.name, Names.resolve(baseId));
     return !name || name === named.name ? undefined : { name, meaning: { ...meaning, own } };
+  }
+
+  /** The names a culture that took another base would give the places it names, locked ones aside */
+  renamings(cultureId: number, saidIn: string): Renaming[] {
+    const lands = this.landNames();
+    const places: [PlaceType, Renamed[], Set<string | undefined>][] = [
+      ["burg", pack.burgs, this.burgNames(pack.burgs)],
+      ["state", pack.states, lands],
+      ["province", pack.provinces, lands],
+      ["river", pack.rivers, new Set(pack.rivers.map(({ name }) => name))],
+      ["feature", pack.features, this.featureNames()]
+    ];
+    return places.flatMap(([type, list, taken]) =>
+      list.flatMap(place => {
+        if (!place?.i || place.removed || place.lock || this.cultureOf({ type, id: place.i }) !== cultureId) return [];
+        const named = this.nameIn(place, cultureId, saidIn);
+        if (!named || taken.has(named.name)) return [];
+        taken.add(named.name);
+        return { type, id: place.i, named };
+      })
+    );
+  }
+
+  /** A name for the map: a big land's, in a base its cultures use */
+  mapName(): string {
+    const base = Names.mapBase();
+    return this.coinLand(base, new Set(), {}, () => this.getLandRoot(base), { size: "big" }).name;
   }
 
   /** A land's name, such as a province's named after no burg, in a culture's base or the base given */
@@ -364,7 +405,7 @@ class ToponymsGenerator {
   }
 
   /** A land's meaning and its name, which repeats none of those taken and no burg's */
-  landOf(cultureOrBase: number | string, taken = this.landNames(), size: LandSize = "small"): Named {
+  landOf(cultureOrBase: number | string, taken = this.landNames(), size: LandSize = "small"): Coined {
     const baseId = typeof cultureOrBase === "number" ? pack.cultures[cultureOrBase].base : cultureOrBase;
     const base = Names.resolve(baseId);
     const has = (name?: string) => {
@@ -382,7 +423,7 @@ class ToponymsGenerator {
 
   /** A colony's meaning after the land it was settled from, as in New Oswinfall, and its name in a culture's base.
    * Nothing when the name is too long to keep "new" */
-  colonyOf(root: string, cultureId: number): Named | undefined {
+  colonyOf(root: string, cultureId: number): Coined | undefined {
     const baseId = pack.cultures[cultureId].base;
     const meaning: Meaning = { pattern: "relative", tokens: ["new", `~${root}`], origin: baseId };
     const { name, whole } = Meanings.compose(meaning, baseId);
@@ -401,8 +442,8 @@ class ToponymsGenerator {
     else delete named.meaning;
   }
 
-  // the culture in whose tongue a thing is named; nothing for what has no meaning
-  private cultureOf({ type, id }: EntityRef): number | undefined {
+  /** The culture in whose tongue a thing is named; nothing for what has no meaning */
+  cultureOf({ type, id }: EntityRef): number | undefined {
     if (type === "burg") return pack.burgs[id].culture;
     if (type === "state") return id ? pack.states[id].culture : undefined; // neutral lands are no state
     if (type === "province") return pack.cells.culture[pack.provinces[id].center];
@@ -431,7 +472,7 @@ class ToponymsGenerator {
 
   /** A meaning for a river and its name in the base of the culture at its mouth, or in the base given:
    * a proper name, or what its water looks like */
-  river(river: River, { taken = new Set(pack.rivers.map(({ name }) => name)), baseId }: StateOptions = {}): Named {
+  river(river: River, { taken = new Set(pack.rivers.map(({ name }) => name)), baseId }: StateOptions = {}): Coined {
     const course = river.cells.filter(cell => cell >= 0);
     const cell = course[Math.floor(course.length / 2)] ?? river.mouth;
     const { base, site } = this.getGround(cell, baseId, river.mouth);
@@ -451,7 +492,7 @@ class ToponymsGenerator {
   }
 
   /** A meaning for a lake and its name in the base of the culture on its shore, or in the base given */
-  lake(lake: Feature, { taken = this.featureNames(), baseId }: StateOptions = {}): Named {
+  lake(lake: Feature, { taken = this.featureNames(), baseId }: StateOptions = {}): Coined {
     const { base, site } = this.getGround(lake.shoreline?.[0] || lake.firstCell, baseId);
     const waters = Lexicon.spoken(
       base,
@@ -461,7 +502,7 @@ class ToponymsGenerator {
     const named = this.coin(base, taken, () => {
       const pattern = this.pickPattern(base, ["simplex", "modifier-generic", "owner-generic"], WATER_SHARE);
       const first: Token =
-        pattern === "owner-generic" ? `~${this.founder(base)}` : this.pickConcept("modifier", site, base)!;
+        pattern === "owner-generic" ? `~${Names.getPerson(base.id)}` : this.pickConcept("modifier", site, base)!;
       return [pattern, pattern === "simplex" ? [`~${Names.getWater(base.id)}`] : [first, ra(waters)]];
     });
     return named ?? proper(Names.getWater(base.id), base);
@@ -469,7 +510,7 @@ class ToponymsGenerator {
 
   /** A meaning for an island and its name in the base of the culture on its first cell: an island of some kind or
    * of someone's. A continent is named as a land */
-  island(island: Feature, { taken = this.featureNames(), baseId }: StateOptions = {}): Named {
+  island(island: Feature, { taken = this.featureNames(), baseId }: StateOptions = {}): Coined {
     const { base, site } = this.getGround(island.firstCell, baseId);
     const root = () => this.getLandRoot(base);
     if (island.subtype === "continent") return this.coinLand(base, taken, site, root, { size: "middle", land: "land" });
@@ -481,11 +522,6 @@ class ToponymsGenerator {
     return named ?? this.coinLand(base, taken, site, root, { size: "small" });
   }
 
-  // a person a place is named after: a woman as often as the base's owner-generic pattern says
-  private founder(base: NameBase): string {
-    return Names.getPerson(base.id, Lexicon.femaleFounders(base));
-  }
-
   /** What a cell offers a name, and the base to say it in: the one given, or that of the culture at a cell */
   private getGround(cell: number, baseId?: string, namedAt = cell): { base: NameBase; site: Site } {
     const culture = pack.cells.culture[namedAt] ?? 0;
@@ -495,7 +531,7 @@ class ToponymsGenerator {
   }
 
   /** The first of the meanings drawn whose name may be taken */
-  private coin(base: NameBase, taken: Taken, draw: () => [Pattern, Token[]]): Named | undefined {
+  private coin(base: NameBase, taken: Taken, draw: () => [Pattern, Token[]]): Coined | undefined {
     for (let attempt = 0; attempt < TRIES; attempt++) {
       const [pattern, tokens] = draw();
       const min = pattern === "simplex" ? 0 : undefined; // a water's own name is never too short: Exe, Oka
@@ -515,9 +551,17 @@ class ToponymsGenerator {
     return P(0.2) ? meaning.tokens.find(token => token.startsWith("~")) : undefined;
   }
 
+  // a state's own people, where no other state is named after them: Shwazen, or Portuz of Portuzian
+  private getPeopleRoot(cultureId: number): Token | undefined {
+    const name = cultureId ? pack.cultures[cultureId].name : "";
+    if (!/^\p{L}{3,}$/u.test(name)) return undefined;
+    const root: Token = `~${name.replace(ADJECTIVE, "")}`;
+    return pack.states.some(({ meaning, removed }) => !removed && meaning?.tokens[0] === root) ? undefined : root;
+  }
+
   // who a land or an island is named after: a person, or a people
   private getLandRoot(base: NameBase): Token {
-    if (P(FOUNDED)) return `~${this.founder(base)}`;
+    if (P(FOUNDED)) return `~${Names.getPerson(base.id)}`;
     for (let attempt = 0; ; attempt++) {
       const stem = Names.getStem(base.id);
       if (attempt >= TRIES || !Lexicon.isPlaceWord(stem.toLowerCase(), base)) return `~${stem}`; // no Land of Town
@@ -525,7 +569,7 @@ class ToponymsGenerator {
   }
 
   /** Render a meaning and take the name when it is free, long enough and no longer than the base allows */
-  private accept(meaning: Meaning, base: NameBase, taken: Taken, min = base.length[0]): Named | undefined {
+  private accept(meaning: Meaning, base: NameBase, taken: Taken, min = base.length[0]): Coined | undefined {
     // a name taken is drawn again with other forms of the same meaning
     for (const salt of [0, 1, 2]) {
       const salted = salt ? { ...meaning, salt } : meaning;
@@ -667,7 +711,7 @@ class ToponymsGenerator {
 
   /** A meaning no place stands behind and its name: what a base makes of names, for its editor to show. A pattern or
    * a concept to say may be asked for */
-  sample(base: NameBase, { pattern, concept }: SampleOptions = {}): Named {
+  sample(base: NameBase, { pattern, concept }: SampleOptions = {}): Coined {
     const picked = pattern || concept ? undefined : this.pickBurg(base, new Set());
     if (picked) return picked;
     const kind = concept && kindOf(concept);
@@ -691,7 +735,7 @@ class ToponymsGenerator {
       simplex: () => [`~${Names.getWater(base.id)}`],
       feature: () => [place()],
       "modifier-generic": () => [modifier(), generic()],
-      "owner-generic": () => [`~${this.founder(base)}`, generic()],
+      "owner-generic": () => [`~${Names.getPerson(base.id)}`, generic()],
       "generic-of": () => [generic(), `~${Names.getWater(base.id)}`],
       compound: () => [modifier(), any("generic", TERRAIN), any("settlement")],
       relative: () => [modifier(), `~${Names.getBase(base.id)}`],
@@ -703,7 +747,7 @@ class ToponymsGenerator {
   }
 
   /** A land's name and meaning, as `sample` */
-  sampleLand(base: NameBase): Named {
+  sampleLand(base: NameBase): Coined {
     return this.sample(base, { pattern: this.pickPattern(base, LAND_PATTERNS) });
   }
 
@@ -786,7 +830,7 @@ function commonness(concept: Concept): number {
 }
 
 /** A name that says nothing but itself */
-const proper = (name: string, base: NameBase): Named => ({ name, meaning: Meanings.simplex(name, base.id) });
+const proper = (name: string, base: NameBase): Coined => ({ name, meaning: Meanings.simplex(name, base.id) });
 
 const without = <T>(items: T[], item: T) => items.filter(other => other !== item);
 

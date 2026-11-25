@@ -152,10 +152,10 @@ export function seeded<T>(seed: string, run: () => T): T {
   }
 }
 
-/** One of the items, each as likely as its weight; with no weight at all the same pick as `ra` */
-export function pickWeighted<T>(items: T[], weights: number[], random: () => number = Math.random): T {
+/** One of the items, each as likely as its weight; with no weight at all each is as likely */
+export function pickWeighted<T>(items: readonly T[], weights: number[], random: () => number = Math.random): T {
   const total = weights.reduce((sum, weight) => sum + weight, 0);
-  if (!total) return ra(items);
+  if (!total) return items[Math.floor(random() * items.length)];
   let roll = random() * total;
   for (const [index, item] of items.entries()) {
     roll -= weights[index];

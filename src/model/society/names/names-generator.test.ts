@@ -1,11 +1,11 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { NAME_BASES, readNameBase } from "@/data/name-bases";
 import { CONCEPTS, type Concept, conceptsOf, isConcept, weightOf } from "@/data/name-concepts";
-import { DEFAULT_LEXICON, DEFAULT_TEMPLATES } from "@/data/name-rules";
+import { isPattern, PATTERNS } from "@/data/name-patterns";
+import { DEFAULT_LEXICON } from "@/data/name-rules";
 import { mapSchema } from "@/model/options/options-schema";
 import type { NameBase, Pattern } from "@/types/names";
 import { Lexicon } from "./lexicon";
-import { Meanings } from "./meanings";
 import { NAME_BASE_SCHEMA } from "./name-base-schema";
 import { Names } from "./names-generator";
 import { SoundRules } from "./sound-rules";
@@ -16,21 +16,6 @@ beforeAll(() => Names.loadAll());
 afterEach(() => {
   vi.restoreAllMocks();
   options.map.nameBases = [];
-});
-
-describe("Names.calculateChain", () => {
-  it("splits CJK names into single-character syllables", () => {
-    const chain = Names.calculateChain(["长安", "洛阳", "ソウル", "서울"]);
-    expect(chain[""]).toEqual(["长", "洛", "ソ", "서"]);
-    expect(chain.长).toEqual(["安"]);
-    expect(chain.安).toEqual([""]);
-    expect(chain.ウ).toEqual(["ル"]);
-    expect(chain.서).toEqual(["울"]);
-  });
-
-  it("keeps multi-letter syllables for alphabetic names", () => {
-    expect(Names.calculateChain(["Chester"])[""]).toEqual(["ches"]);
-  });
 });
 
 describe("concepts", () => {
@@ -70,8 +55,8 @@ describe("shipped name bases", () => {
       for (const concept of Object.keys(base.lexicon ?? {}))
         expect(isConcept(concept), `${base.id}: ${concept}`).toBe(true);
       for (const [pattern, { templates = [] }] of Object.entries(base.patterns ?? {})) {
-        expect(Object.keys(DEFAULT_TEMPLATES), base.id).toContain(pattern);
-        const slots = Meanings.slots[pattern as Pattern].map(slot => `{${slot}}`);
+        expect(isPattern(pattern), `${base.id}: ${pattern}`).toBe(true);
+        const slots = PATTERNS[pattern as Pattern].slots.map(slot => `{${slot}}`);
         for (const { parts } of templates)
           expect(slots, `${base.id}: ${parts}`).toEqual(expect.arrayContaining(parts.match(/\{\w+\}/g)!));
       }
@@ -124,16 +109,6 @@ describe("shipped name bases", () => {
       const towns = endings(base, conceptsOf("settlement"));
       for (const ending of endings(base, lands)) expect(towns, base.id).not.toContain(ending);
     }
-  });
-});
-
-describe("Names.cut", () => {
-  const base = Names.composeBase("test", "Test", [2, 12], ["Waldbach", "Kord", "Ama", "Wald"]);
-
-  it("keeps three letters at least and closes as the base's names do", () => {
-    expect(Names.cut("waldbach", base, 1)).toBe("wald");
-    expect(Names.cut("amadea", base, 1)).toBe("ama");
-    expect(Names.cut("kord", base, 1)).toBe("kord");
   });
 });
 
@@ -254,7 +229,7 @@ describe("editing the bases", () => {
     const copy = Names.copy(base, "English");
     expect([copy.id, Names.nameBases.at(-1)]).toEqual(["english-2", copy]);
     expect(Names.isChanged(copy) || Names.isShipped(copy)).toBe(false);
-    copy.places.names.push("Testham");
+    copy.places = { names: [...copy.places.names, "Testham"] };
     expect(base.places.names).not.toContain("Testham");
     Names.remove(copy.id);
     expect(Names.has(copy.id)).toBe(false);
@@ -356,5 +331,37 @@ describe("loading", () => {
     expect(names.isChanged(names.entry("greek"))).toBe(true); // nothing to go back to
     names.remove("greek");
     vi.doUnmock("@/data/name-bases");
+  });
+});
+
+describe("Names.getPeople", () => {
+  it("is a stem of four letters at least that no culture is called by", async () => {
+    await Names.load(["english"]);
+    vi.stubGlobal("pack", { cultures: [] });
+    for (let i = 0; i < 20; i++) {
+      const name = Names.getPeople("english");
+      expect(pack.cultures.map(culture => culture.name)).not.toContain(name);
+      expect(name.length).toBeGreaterThanOrEqual(4);
+      pack.cultures.push({ name } as (typeof pack.cultures)[number]);
+    }
+  });
+});
+
+describe("women's names", () => {
+  it("are as common as the base sets, and nearer to a half among gods", () => {
+    const base = Names.composeBase("people", "People", [3, 8], ["Town"]);
+    base.people = { male: { names: ["Man"], mode: "pick" }, female: { names: ["Woman"], mode: "pick" } };
+    Names.add(base);
+    vi.stubGlobal("pack", { cultures: [{ base: "people" }] });
+    const women = (female: number | undefined, draw: () => string) => {
+      base.patterns = { "owner-generic": { female } };
+      return Array.from({ length: 1000 }, draw).filter(name => name === "Woman").length;
+    };
+    const person = () => Names.getCulturePerson(0);
+    const god = () => Names.getCultureDeity(0);
+    expect([women(0, person), women(1, person)]).toEqual([0, 1000]);
+    expect(Math.abs(women(undefined, person) - 500)).toBeLessThan(100); // by the sizes of the lists
+    expect(Math.abs(women(0, god) - 250)).toBeLessThan(100);
+    expect(Math.abs(women(1, god) - 750)).toBeLessThan(100);
   });
 });

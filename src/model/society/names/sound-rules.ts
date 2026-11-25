@@ -34,23 +34,23 @@ interface Sorted {
 }
 
 class SoundRulesModule {
-  private readonly sorted = new WeakMap<SoundRule[], Sorted>();
+  private readonly sorted = new WeakMap<readonly SoundRule[], Sorted>();
 
   /** Rewrite a lowercase word by a base's rules, then by the shared ones; a rule that is no valid regex is skipped.
    * A `single` word has no letter twice in a row */
-  apply(word: string, rules?: SoundRule[], single = false): string {
+  apply(word: string, rules?: readonly SoundRule[], single = false): string {
     return rewrite(rewrite(single ? rewrite(word, SINGLE) : word, this.sort(rules).word), WORD);
   }
 
   /** Adapt a lowercase name coined in another base by the rules a base keeps for foreign names */
-  applyForeign(root: string, rules?: SoundRule[]): string {
+  applyForeign(root: string, rules?: readonly SoundRule[]): string {
     return rewrite(root, this.sort(rules).foreign);
   }
 
   /** Join a lowercase name made of parts, `+` at each join: the base's join rules, the ones whose chance came up,
    * the shared join rules, then the shared word rules. The parts stay as they came: a form written for the base
    * is not what its word rules are for. A name still too long goes through the rules for long names, one at a time */
-  join(name: string, rules?: SoundRule[], { rolls = [], fits }: JoinOptions = {}): string {
+  join(name: string, rules?: readonly SoundRule[], { rolls = [], fits }: JoinOptions = {}): string {
     const { join, long, chances } = this.sort(rules);
     let parted = rewrite(name, join);
     for (const [index, { chance, rewrites }] of chances.entries())
@@ -106,7 +106,7 @@ class SoundRulesModule {
   }
 
   /** A base's rules by what they are for, sorted once */
-  sort(rules: SoundRule[] = NONE): Sorted {
+  sort(rules: readonly SoundRule[] = NONE): Sorted {
     let sorted = this.sorted.get(rules);
     if (!sorted) {
       sorted = {
@@ -128,7 +128,7 @@ class SoundRulesModule {
 
 const NONE: SoundRule[] = [];
 
-const compile = (rules: SoundRule[]): Rewrite[] =>
+const compile = (rules: readonly SoundRule[]): Rewrite[] =>
   rules.flatMap(({ match, replace }) => {
     const regex = compileRegex(match, "gu");
     return regex ? { regex, replace } : [];

@@ -5,6 +5,7 @@
 import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
 import { Names } from "@/model/society/names/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Lore } from "@/model/story/lore";
 import { Dialog } from "@/ui/dialog/dialog";
 
@@ -167,7 +168,7 @@ function onLoreChange(event: Event): void {
 
 function regenerateMapName(): void {
   Pins.clear("mapName");
-  Lore.rename(Names.getMapName());
+  Lore.rename(Toponyms.mapName());
   Options.save();
   fillInputs();
 }

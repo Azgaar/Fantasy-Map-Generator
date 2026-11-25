@@ -6,7 +6,7 @@ import { Emblems } from "@/model/political/emblems-generator";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Population } from "@/model/society/population-generator";
 import type { Emblem } from "@/types/emblems";
-import type { Meaning } from "@/types/names";
+import type { Meaning, Named } from "@/types/names";
 import { getMixedColor, requireColor } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { replaceWholeWord } from "@/utils/language-utils";
@@ -361,10 +361,20 @@ class ProvinceModule {
 
   /** Rename a province; a custom full name or label keeps its pattern when the old name stands in it as a whole word */
   rename(provinceId: number, name: string): void {
-    const province = pack.provinces[provinceId];
-    if (!province || province.removed) throw new Error(`Province ${provinceId} does not exist`);
+    this.setName(provinceId, { name });
+  }
+
+  /** Give provinces new names, each a land's in the culture's base at its center */
+  regenerateNames(provinces: Province[]): void {
+    for (const { i, center } of provinces) this.setName(i, Toponyms.landOf(pack.cells.culture[center]));
+  }
+
+  /** Rename a province and set what the name says: with no meaning it is a proper name, whatever the old one said */
+  setName(provinceId: number, { name, meaning }: Named): void {
+    const province = this.living(provinceId);
     const old = province.name;
     province.name = requireName(name);
+    province.meaning = meaning;
     province.fullName =
       replaceWholeWord(province.fullName, old, province.name) ??
       (province.formName ? `${province.name} ${province.formName}` : province.name);

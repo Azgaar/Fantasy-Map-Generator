@@ -3,9 +3,8 @@ import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
 import type { Label } from "@/model/annotations/labels-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
-import { Names } from "@/model/society/names/names-generator";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
-import type { Meaning } from "@/types/names";
+import type { Meaning, Named } from "@/types/names";
 import { replaceWholeWord } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { rn } from "@/utils/number-utils";
@@ -740,10 +739,6 @@ class RiverModule {
     Toponyms.nameRivers(rivers);
   }
 
-  getName(cell: number) {
-    return Names.getCulture(pack.cells.culture[cell]);
-  }
-
   getType({ i, length, parent }: River) {
     if (this.smallLength === null) {
       const threshold = Math.ceil(pack.rivers.length * 0.15);
@@ -796,27 +791,21 @@ class RiverModule {
 
   /** Rename a river; a custom label keeps its pattern when the old name stands in it as a whole word */
   rename(riverId: number, name: string): void {
-    const river = pack.rivers.find(r => r.i === riverId);
-    if (!river) throw new Error(`River ${riverId} does not exist`);
+    this.setName(riverId, { name });
+  }
+
+  /** Rename a river and set what the name says: with no meaning it is a proper name, whatever the old one said */
+  setName(riverId: number, { name, meaning }: Named): void {
+    const river = this.living(riverId);
     const old = river.name;
     river.name = requireName(name);
+    river.meaning = meaning;
     if (river.label?.text) river.label.text = replaceWholeWord(river.label.text, old, river.name) ?? river.label.text;
   }
 
   /** Set what a river's name says, or clear it; the name itself stays as it is */
   setMeaning(riverId: number, meaning?: Meaning): void {
-    const river = pack.rivers.find(r => r.i === riverId);
-    if (!river) throw new Error(`River ${riverId} does not exist`);
-    river.meaning = meaning;
-  }
-
-  /** Coin a new meaning for a river, named in the base of the culture at its mouth or in the base given */
-  regenerateName(riverId: number, baseId?: string): void {
-    const river = pack.rivers.find(r => r.i === riverId);
-    if (!river) throw new Error(`River ${riverId} does not exist`);
-    const { name, meaning } = Toponyms.river(river, { baseId });
-    river.meaning = meaning;
-    this.rename(riverId, name);
+    this.living(riverId).meaning = meaning;
   }
 
   /** Lock a river so regeneration keeps its course and data, or unlock it */

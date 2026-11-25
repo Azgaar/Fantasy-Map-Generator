@@ -329,8 +329,8 @@ describe("a base with a grammar", () => {
 
   it("puts a noun in the class a counting word calls for, by the base's rules", () => {
     const counting = slavic();
-    counting.rules!.push(
-      ...NameNotation.parseRules("o$ => a | as few\n(?<=[^aeiou])$ => a | as few\na$ => y | as fewf")
+    counting.rules = counting.rules!.concat(
+      NameNotation.parseRules("o$ => a | as few\n(?<=[^aeiou])$ => a | as few\na$ => y | as fewf")
     );
     Object.assign(
       counting.lexicon!,

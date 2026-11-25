@@ -1,37 +1,23 @@
 import { NAME_BASES, readNameBase } from "@/data/name-bases";
 import type { Corpus, NameBase, NameBaseEntry } from "@/types/names";
 import { sentences, t } from "@/utils/i18n";
-import { isVowel, trimVowels } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { notify } from "@/utils/notices";
-import { P, ra, seeded } from "@/utils/probability-utils";
+import { ra, seeded } from "@/utils/probability-utils";
 import { capitalize } from "@/utils/string-utils";
+import { Corpora, MIN_CUT } from "./corpora";
 import { NameNotation } from "./notation";
 import { SoundRules } from "./sound-rules";
 
-/** The syllables that may follow a letter, or start a word under "" */
-type MarkovChain = Record<string, string[]>;
-
-/** What the words of a corpus sound like: the letters they put together and the consonants they close in */
-interface Sounds {
-  words: Set<string>;
-  triples: Set<string>;
-  ends: Set<string>;
-}
-
-const SYLLABIC = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
-
+const PEOPLE_NAME = 4; // the letters a people's name has at least
+const PEOPLE_TRIES = 12;
 const STEM_LENGTH = 4; // a stem is cut once it is this long
-const MIN_CUT = 3; // a name cut short keeps this many letters
 const WORD_TRIES = 60; // how many times a word that is not free is walked anew
 const WORD_PATIENCE = 12; // how many walks before a longer word will do
 export const PEOPLE_LENGTH: [number, number] = [4, 8]; // of a personal name, where its list sets none
-const REDRAWS = 12; // how many times a word that does not sound like its corpus is walked anew
 
 class NamesGenerator {
   private readonly shipped = new Map(NAME_BASES.map(base => [base.id, { ...base }])); // filled as they load, never edited
-  private readonly sounds = new WeakMap<string[], Sounds>(); // by corpus
-  private readonly chains = new WeakMap<string[], MarkovChain>(); // by corpus: an edited one is chained anew
 
   /** All bases: the shipped ones, each as edited where it is, and the user's own */
   get nameBases(): NameBaseEntry[] {
@@ -55,69 +41,6 @@ class NamesGenerator {
     let id = slug;
     for (let n = 2; taken.includes(id); n++) id = `${slug}-${n}`;
     return id;
-  }
-
-  calculateChain(names: string[]): MarkovChain {
-    const chain: MarkovChain = {};
-
-    for (const name of names) {
-      let prev = ""; // the letter a syllable follows; a word ends in an empty syllable
-      for (const syllable of [...this.syllables(name), ""]) {
-        chain[prev] ??= [];
-        chain[prev].push(syllable);
-        prev = syllable[syllable.length - 1];
-      }
-    }
-
-    return chain;
-  }
-
-  /** Split a name into the pseudo-syllables the chain is made of */
-  syllables(rawName: string): string[] {
-    const name = rawName.trim().toLowerCase();
-    const basic = !/[^\x20-\x7e]/.test(name); // basic printable ASCII chars and English rules can be applied
-    const syllables: string[] = [];
-
-    for (let i = 0; i < name.length; i += syllables[syllables.length - 1].length) {
-      let syllable = "";
-      let v = 0; // 0 if no vowels in syllable
-
-      for (let c = i; name[c] && syllable.length < 5; c++) {
-        const that = name[c],
-          next = name[c + 1]; // next char
-        syllable += that;
-        if (syllable === " " || syllable === "-") break; // syllable starts with space or hyphen
-        if (!next || next === " " || next === "-") break; // no need to check
-        if (SYLLABIC.test(that) || SYLLABIC.test(next)) break; // CJK character is a syllable on its own
-
-        if (isVowel(that)) v = 1; // check if letter is vowel
-
-        // do not split some diphthongs
-        if (that === "y" && next === "e") continue; // 'ye'
-        if (basic) {
-          // English-like
-          if (that === "o" && next === "o") continue; // 'oo'
-          if (that === "e" && next === "e") continue; // 'ee'
-          if (that === "a" && next === "e") continue; // 'ae'
-          if (that === "c" && next === "h") continue; // 'ch'
-        }
-
-        if (v && isVowel(name[c + 2])) break; // syllable has vowel and additional vowel is expected soon
-      }
-
-      syllables.push(syllable);
-    }
-
-    return syllables;
-  }
-
-  private chainOf(names: string[]): MarkovChain {
-    let chain = this.chains.get(names);
-    if (!chain) {
-      chain = this.calculateChain(names);
-      this.chains.set(names, chain);
-    }
-    return chain;
   }
 
   /** Whether there is a base of an id, loaded or not */
@@ -216,6 +139,19 @@ class NamesGenerator {
     return undefined;
   }
 
+  /** The lists of personal names of a base, its own or inherited */
+  peopleOf(base: NameBase): Corpus[] | undefined {
+    return this.inherited(base, ({ people }) => {
+      const listed = [people?.male, people?.female].filter((list): list is Corpus => Boolean(list?.names.length));
+      return listed.length ? listed : undefined;
+    });
+  }
+
+  /** The names of rivers and lakes of a base, its own or inherited */
+  watersOf(base: NameBase): Corpus | undefined {
+    return this.inherited(base, ({ waters }) => (waters?.names.length ? waters : undefined));
+  }
+
   /** The lengths of a base's generated place names */
   placeLength(base: NameBase): [min: number, max: number] {
     return base.places.length ?? base.length;
@@ -223,29 +159,45 @@ class NamesGenerator {
 
   /** A personal name of a base: a new one off the chain of its people corpus, or one of the corpus as it is.
    * The base sets which, unless the options do. A base with no people names a person like a place, only shorter.
-   * Women are named as often as `female` says, 0 to 1, or by the sizes of the two lists */
+   * Women are named as often as `female` says, 0 to 1, or as the base does */
   getPerson(id: string, female?: number): string {
     const base = this.resolve(id);
-    const corpora = this.inherited(base, ({ people }) => {
-      const listed = [people?.male, people?.female].filter((list): list is Corpus => Boolean(list?.names.length));
-      return listed.length ? listed : undefined;
-    });
+    const corpora = this.peopleOf(base);
     if (!corpora) return this.getBase(id, 3, 6, true);
-
-    const total = corpora.reduce((sum, { names }) => sum + names.length, 0);
-    const men = female === undefined ? corpora[0].names.length / total : 1 - female;
-    const corpus = corpora[1] && Math.random() >= men ? corpora[1] : corpora[0];
+    const corpus = corpora[1] && Math.random() >= 1 - (female ?? this.womenShare(base)) ? corpora[1] : corpora[0];
 
     const { proper } = options.generation.names;
     if ((proper === "base" ? (corpus.mode ?? "chain") : proper) === "pick") return ra(corpus.names);
     return this.coin(corpus, base, corpus.length ?? PEOPLE_LENGTH);
   }
 
+  /** The share of women among the persons a base names: its founders', where it sets one, or by the sizes of its lists */
+  womenShare(base: NameBase): number {
+    const [men = 0, women = 0] = (this.peopleOf(base) ?? []).map(({ names }) => names.length);
+    return this.femaleFounders(base) ?? (women ? women / (men + women) : 0);
+  }
+
+  /** The share of a base's founders that are women, where it sets one */
+  femaleFounders(base: NameBase): number | undefined {
+    return this.inherited(base, ({ patterns }) => patterns?.["owner-generic"]?.female);
+  }
+
+  /** A person of a culture, off one roll of the ambient sequence: how the name is coined moves nothing else */
+  getCulturePerson(culture: number): string {
+    return seeded(`${Math.random()}`, () => this.getPerson(pack.cultures[culture].base));
+  }
+
+  /** A god of a culture, off one roll too: goddesses are nearer to a half than women are among founders */
+  getCultureDeity(culture: number): string {
+    const { base } = pack.cultures[culture];
+    return seeded(`${Math.random()}`, () => this.getPerson(base, (0.5 + this.womenShare(this.resolve(base))) / 2));
+  }
+
   /** A proper name of a river or a lake: off the chain of the base's waters or one of them as it is, as the list
    * says; a place name where the base lists none */
   getWater(id: string): string {
     const base = this.resolve(id);
-    const waters = this.inherited(base, ({ waters }) => (waters?.names.length ? waters : undefined));
+    const waters = this.watersOf(base);
     if (!waters) return this.getBase(id);
     if (waters.mode === "pick") return ra(waters.names);
     return this.coin(waters, base, waters.length ?? this.placeLength(base));
@@ -253,45 +205,21 @@ class NamesGenerator {
 
   // a new name off a corpus's chain, by the base's rules
   private coin(corpus: Corpus, base: NameBase, [min, max]: [number, number]): string {
-    const walked = this.draw(this.chainOf(corpus.names), corpus.names, min, max);
+    const walked = Corpora.draw(corpus.names, min, max);
     const name = SoundRules.capitalize(SoundRules.apply(walked, base.rules));
     return name.length < 2 ? ra(corpus.names) : name;
-  }
-
-  /** A word off a chain that sounds like its corpus: one that does not is walked anew, on a random sequence of its
-   * own, and the closest of the words is taken */
-  private draw(chain: MarkovChain, names: string[], min: number, max: number): string {
-    let word = this.walk(chain, min, max);
-    if (SYLLABIC.test(word)) return word;
-    const first = word;
-    let best = this.strangeness(word, names);
-    for (let n = 1; best && n <= REDRAWS; n++) {
-      const other = seeded(`${first}|${n}`, () => this.walk(chain, min, max));
-      const strangeness = other.length < min ? Infinity : this.strangeness(other, names);
-      if (strangeness < best) [word, best] = [other, strangeness];
-    }
-    return word;
-  }
-
-  // how many times a word puts three letters together as no word of the corpus does; a word of the corpus itself is one off
-  private strangeness(word: string, names: string[]): number {
-    const { triples, words } = this.soundsOf(names);
-    let strange = words.has(word) ? 1 : 0;
-    for (const triple of triplesOf(word)) if (!triples.has(triple)) strange++;
-    return strange;
   }
 
   /** A lowercase word that sounds like a base's names and is free: a longer one where those run out, any in the end */
   getWord(base: NameBase, min: number, max: number, isFree: (word: string) => boolean): string {
     const { names } = base.places;
-    const chain = this.chainOf(names);
-    if (!chain[""]) return "error";
+    if (!Corpora.chainOf(names)[""]) return "error";
     let word = "";
     for (let attempt = 0; attempt < WORD_TRIES; attempt++) {
       const room = max + Math.floor(attempt / WORD_PATIENCE);
-      const walked = this.walk(chain, min, room);
+      const walked = Corpora.walk(names, min, room);
       if (walked.length < min || walked.length > room + 2) continue;
-      const isFit = isFree(walked) && this.isFamiliar(walked, names);
+      const isFit = isFree(walked) && Corpora.isFamiliar(walked, names);
       if (word && !isFit) continue;
       const ruled = SoundRules.apply(walked, base.rules, true);
       word = ruled.replace(/[^\p{L}]/gu, "");
@@ -300,74 +228,10 @@ class NamesGenerator {
     return word;
   }
 
-  // whether a word puts letters together as the words of a corpus do, and is none of them
-  private isFamiliar(word: string, names: string[]): boolean {
-    if (SYLLABIC.test(word)) return true;
-    const { triples, words } = this.soundsOf(names);
-    const ended = `^${word}$`;
-    for (let i = 0; i + 3 <= ended.length; i++) if (!triples.has(ended.slice(i, i + 3))) return false;
-    return !words.has(word);
-  }
-
-  private soundsOf(names: string[]): Sounds {
-    let sounds = this.sounds.get(names);
-    if (!sounds) {
-      const words = names.map(name => name.trim().toLowerCase());
-      const ends = words.flatMap(word => word.split(/[^\p{L}]+/u)).map(closingOf);
-      sounds = { words: new Set(words), triples: new Set(words.flatMap(triplesOf)), ends: new Set(ends) };
-      this.sounds.set(names, sounds);
-    }
-    return sounds;
-  }
-
-  /** The start of a name, so many syllables of it, with no more consonants at its end than the base's names close in */
-  cut(name: string, base: NameBase, syllables: number): string {
-    let start = "";
-    for (const [index, syllable] of this.syllables(name).entries())
-      if (index < syllables || start.length < MIN_CUT) start += syllable;
-    return start.length < name.length ? this.close(start, base) : name;
-  }
-
-  private close(start: string, base: NameBase): string {
-    if (SYLLABIC.test(start)) return start;
-    const { ends } = this.soundsOf(base.places.names);
-    let closed = start;
-    while (closed.length > 2 && closingOf(closed) && !ends.has(closingOf(closed))) closed = closed.slice(0, -1);
-    return closed.length >= MIN_CUT || start.length < MIN_CUT ? closed : start;
-  }
-
-  /** Walk a chain from a word's start until the word ends between the lengths given, or grows too long */
-  private walk(chain: MarkovChain, min: number, max: number): string {
-    let v = chain[""],
-      cur = ra(v),
-      w = "";
-    for (let i = 0; i < 20; i++) {
-      if (cur === "") {
-        // end of word
-        if (w.length < min) {
-          w = "";
-          v = chain[""];
-        } else break;
-      } else {
-        if (w.length + cur.length > max) {
-          // word too long
-          if (w.length < min) w += cur;
-          break;
-        } else v = chain[cur[cur.length - 1]] || chain[""];
-      }
-
-      w += cur;
-      cur = ra(v);
-    }
-
-    return /['\- ]$/.test(w) ? w.slice(0, -1) : w; // a name ends in a letter
-  }
-
   /** Generate a name with the base's Markov chain, with no doubled letters if `single` */
   getBase(id: string, min?: number, max?: number, single = false): string {
     const base = this.resolve(id);
-    const chain = this.chainOf(base.places.names);
-    if (!chain[""]) {
+    if (!Corpora.chainOf(base.places.names)[""]) {
       notify(
         sentences(t("Namesbase {{base}} is incorrect", { base: base.name }), t("Please check in namesbase editor")),
         "error"
@@ -377,7 +241,7 @@ class NamesGenerator {
     }
 
     const [shortest, longest] = this.placeLength(base);
-    const w = this.draw(chain, base.places.names, min || shortest, max || longest);
+    const w = Corpora.draw(base.places.names, min || shortest, max || longest);
 
     let name = SoundRules.capitalize(SoundRules.apply(w, base.rules, single));
 
@@ -427,27 +291,28 @@ class NamesGenerator {
     for (let attempt = 0; ; attempt++) {
       const name = this.getBaseShort(id);
       const [word] = name.split(/[^\p{L}]+/u).sort((a, b) => b.length - a.length);
-      const syllables = this.syllables(word);
+      const syllables = Corpora.syllables(word);
       let stem = "";
       for (const syllable of syllables.slice(0, -1)) if (stem.length < STEM_LENGTH) stem += syllable;
-      if (SYLLABIC.test(word)) return stem || word;
-      stem = this.close(stem.toLowerCase(), this.resolve(id));
+      if (Corpora.isSyllabic(word)) return stem || word;
+      stem = Corpora.close(stem.toLowerCase(), this.resolve(id).places.names);
       if (stem.replace(/[aeiouy]+$/, "").length > 2 || attempt > 8)
         return capitalize(stem.length < MIN_CUT ? word : stem);
     }
   }
 
-  /** A name for the map, in a base its cultures use: a land's, or a place's as it is */
-  getMapName(): string {
-    const base = this.mapBase();
-    if (P(0.3)) return this.getBaseShort(base.id);
-    const stem = this.getStem(base.id);
-    if (SYLLABIC.test(stem)) return stem;
-    return P(0.8) ? `${trimVowels(stem)}ia` : `${stem.replace(/l$/, "")}land`;
+  /** What a people of a base is called: the stem of a place name no culture of the map is called by */
+  getPeople(id: string): string {
+    const taken = new Set(pack.cultures.map(({ name }) => name));
+    for (let attempt = 0; ; attempt++) {
+      const stem = this.getStem(id);
+      const isWhole = stem.length >= PEOPLE_NAME || Corpora.isSyllabic(stem);
+      if ((isWhole && !taken.has(stem)) || attempt >= PEOPLE_TRIES) return stem;
+    }
   }
 
-  // the base of any of the map's cultures, the Wildlands where it has no other
-  private mapBase(): NameBase {
+  /** The base of any of the map's cultures, the Wildlands where it has no other */
+  mapBase(): NameBase {
     const cultures = pack.cultures.filter(culture => culture.i && !culture.removed);
     return this.resolve((cultures.length ? ra(cultures) : pack.cultures[0]).base);
   }
@@ -519,19 +384,5 @@ class NamesGenerator {
       .join("");
   }
 }
-
-const triplesOf = (word: string) => {
-  const ended = `^${word}$`;
-  const triples: string[] = [];
-  for (let i = 0; i + 3 <= ended.length; i++) triples.push(ended.slice(i, i + 3));
-  return triples;
-};
-
-// the consonants a word closes in
-const closingOf = (word: string) => {
-  let start = word.length;
-  while (start > 0 && !isVowel(word[start - 1])) start--;
-  return word.slice(start);
-};
 
 export const Names = new NamesGenerator();

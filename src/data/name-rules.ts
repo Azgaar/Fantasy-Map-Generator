@@ -1,5 +1,5 @@
 import type { Concept } from "@/data/name-concepts";
-import type { Formant, Pattern, SoundRule } from "@/types/names";
+import type { Formant, SoundRule } from "@/types/names";
 
 const VOWELS = "aeiouyàèìòùáéíóúýâêîôûäëïöüÿãõāēīōūăĕĭŏŭąęėįǫųıőű";
 const [VOWEL, CONSONANT] = [`[${VOWELS}]`, `[^${VOWELS} +-]`];
@@ -55,33 +55,6 @@ export const NEAREST_LETTERS: Record<string, string[]> = {
   æ: ["ae"],
   ß: ["ss", "s"],
   ı: ["i"]
-};
-
-/** How a pattern is laid out where a base has no template of its own: a settlement's ending joins what it is
- * named for, two words of their own stand apart */
-export const DEFAULT_TEMPLATES: Record<Pattern, string> = {
-  simplex: "{root}",
-  feature: "{generic}",
-  "modifier-generic": "{modifier}{generic}, {modifier} {generic}",
-  "owner-generic": "{root}{generic}, {root} {generic}",
-  "generic-of": "{root}{generic}, {generic} {root}",
-  compound: "{modifier}{generic}{settlement}, {modifier}{generic}",
-  relative: "{modifier} {root}",
-  "root-land": "{root}{generic}",
-  "modifier-land": "{modifier}{generic}"
-};
-
-/** How often a base coins a name of each pattern where it sets no weight of its own */
-export const DEFAULT_WEIGHTS: Record<Pattern, number> = {
-  simplex: 0, // drawn by share alone
-  feature: 3,
-  "modifier-generic": 40,
-  "owner-generic": 35,
-  "generic-of": 10,
-  compound: 8,
-  relative: 5,
-  "root-land": 65,
-  "modifier-land": 35
 };
 
 /** The forms a concept takes in a base that has none of its own */

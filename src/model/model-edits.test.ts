@@ -21,6 +21,7 @@ import { Religions } from "@/model/society/religions-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
 import { Markers } from "@/model/story/markers-generator";
+import type { Meaning } from "@/types/names";
 import { Emblems } from "./political/emblems-generator";
 import { Lore } from "./story/lore";
 
@@ -252,7 +253,11 @@ describe("Routes and Features", () => {
   it("rename by id and reject missing ones", () => {
     vi.stubGlobal("pack", { routes: [{ i: 3, group: "roads" }], features: [{}, { i: 1, name: "Old" }] });
     Routes.rename(3, "King's Road");
+    const meaning: Meaning = { pattern: "feature", tokens: ["island"], origin: "english" };
+    Features.setName(1, { name: "Eyot", meaning });
+    expect(pack.features[1]).toMatchObject({ name: "Eyot", meaning });
     Features.rename(1, "Isle of Varn");
+    expect(pack.features[1].meaning).toBeUndefined(); // a new name is a proper name
     expect(pack.routes[0].name).toBe("King's Road");
     expect(pack.features[1].name).toBe("Isle of Varn");
     expect(() => Routes.rename(0, "X")).toThrow("Route 0 does not exist");

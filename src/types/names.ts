@@ -13,24 +13,25 @@ export interface SoundRule {
   as?: string; // the rule makes a noun of this class of a plain one, beside a counting word of the class: "tower" to "towers"
 }
 
-/** A list of names a Markov chain is built from, or drawn from as they are */
+/** A list of names a Markov chain is built from, or drawn from as they are. What is made of a list is kept with it, as
+ * with rules, lexicons and templates: they are replaced, never edited in place */
 export interface Corpus {
-  names: string[];
+  readonly names: readonly string[];
   mode?: "chain" | "pick"; // generate new names of the corpus, the default, or pick one of its own
   length?: [min: number, max: number]; // of a generated name
 }
 
 /** The shape of a meaning: which slots a name has */
 export type Pattern =
-  | "simplex" // root
-  | "feature" // generic
+  | "simplex"
+  | "feature"
   | "modifier-generic"
-  | "owner-generic" // root, generic
-  | "generic-of" // generic, root
-  | "compound" // modifier, generic, settlement
-  | "relative" // modifier, root
-  | "root-land" // root, generic
-  | "modifier-land"; // modifier, generic
+  | "owner-generic"
+  | "generic-of"
+  | "compound"
+  | "relative"
+  | "root-land"
+  | "modifier-land";
 
 /** A base's fixed form of a concept inside a name. A form written `-sk` is a suffix: it ends a word and stands
  * only after a stem or a root. One with `*` takes an ending that agrees with the noun beside it, from the default
@@ -72,10 +73,10 @@ export interface NameBase {
   places: Corpus; // the place names a Markov chain is built from; burgs take them as they are in pick mode; its own length, if any, is for generated names
   waters?: Corpus; // river and lake names, a chain of their own; place names stand in when absent
   people?: { male?: Corpus; female?: Corpus }; // personal names: the founders places are named after
-  rules?: SoundRule[]; // applied in order, before the shared ones
+  rules?: readonly SoundRule[]; // applied in order, before the shared ones
   grammar?: Grammar;
-  lexicon?: Partial<Record<Concept, Formant[]>>;
-  patterns?: Partial<Record<Pattern, PatternLayout>>;
+  lexicon?: Readonly<Partial<Record<Concept, readonly Formant[]>>>;
+  patterns?: Readonly<Partial<Record<Pattern, PatternLayout>>>;
   settled?: number; // 0 to 1: the share of burg names that end in what the burg is by its group, 0.85 when absent
 }
 
@@ -85,8 +86,9 @@ export type NameBaseEntry = NameBase | (Pick<NameBase, "id" | "name"> & { places
 /** How a base coins names of a pattern */
 export interface PatternLayout {
   weight?: number; // how often, against the other patterns
-  templates?: Template[];
-  female?: number; // of owner-generic, 0 to 1: the share of founders that are women; by the sizes of the people lists when absent
+  readonly templates?: readonly Template[];
+  // TODO: belongs to a culture rather than to a name base; kept here until cultures have parameters of the kind
+  female?: number; // of owner-generic, 0 to 1: the share of women among the persons named, founders above all; by the sizes of the people lists when absent
 }
 
 /** A base as the shipped data holds it, its id the name of its file and its name told by the id: rules, grammar, forms and templates may be in their written form,
@@ -112,4 +114,10 @@ export interface Meaning {
   origin: string; // id of the name base it was coined in
   salt?: number; // re-rolls the choice between a concept's forms
   own?: string; // the name before another people respelled it
+}
+
+/** A name and what it says */
+export interface Named {
+  name: string;
+  meaning?: Meaning;
 }

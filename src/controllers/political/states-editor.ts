@@ -10,7 +10,6 @@ import { Stability } from "@/model/political/stability";
 import { STATE_FORMS, type State, States } from "@/model/political/states-generator";
 import { Development } from "@/model/society/development-generator";
 import { Meanings } from "@/model/society/names/meanings";
-import { Names } from "@/model/society/names/names-generator";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
@@ -769,21 +768,10 @@ function stateChangeFill(fillBox: FillBoxElement): void {
 
 function editStateName(state: number): void {
   const s = pack.states[state];
-  const capital = pack.burgs[s.capital];
-  void Controllers.NameEditor.open({
-    entity: `state:${state}`,
+  void Controllers.NameEditor.openPlace("state", state, {
     owner: dialogId,
-    name: s.name,
-    meaning: s.meaning,
-    culture: s.culture ?? 0,
-    generate: state
-      ? baseId => Toponyms.state(capital, s.culture, { baseId, size: States.getLandSize(s.area) })
-      : undefined, // neutral lands are no state to name
-    proper: baseId => Names.getBaseShort(baseId),
     full: state ? { name: s.fullName ?? s.name, edit: () => editStateForm(state) } : undefined,
-    onApply: ({ name, meaning }) => {
-      if (state) States.setMeaning(state, meaning);
-      States.rename(state, name);
+    onApply: () => {
       Layers.draw("labels");
       refreshStatesEditor();
     }
@@ -988,18 +976,13 @@ function stateCapitalZoomIn(state: number): void {
 
 function stateChangeCulture(state: number, line: HTMLElement, value: string): void {
   const s = pack.states[state];
-  const origin = s.meaning?.origin ?? pack.cultures[s.culture].base;
-  const tongue = pack.cultures[s.culture].base;
+  const { base } = pack.cultures[s.culture];
   States.setCulture(state, +value);
   line.dataset.base = String(+value);
-  if (pack.cultures[+value].base === tongue) return; // a people of the same tongue says the name as it is
-
-  // the new culture may say the name another way
-  const named = Toponyms.nameIn(s, +value, origin);
+  const named = Toponyms.nameIn(s, +value, base); // the new culture may say the name another way
   if (!named) return;
   offerRename(s.name, named.name, () => {
-    States.setMeaning(state, named.meaning);
-    States.rename(state, named.name);
+    States.setName(state, named);
     refreshStatesEditor();
     Layers.draw("labels");
   });

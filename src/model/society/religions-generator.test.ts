@@ -351,7 +351,7 @@ describe("ReligionsModule origins", () => {
       if (randomIndex < randomValues.length) return randomValues[randomIndex++];
       return randomIndex++ % 2 ? 0.25 : 0.75;
     });
-    Object.assign(Names, { getCulture: () => "Test" });
+    Object.assign(Names, { getCulturePerson: () => "Test", getCultureDeity: () => "Test" });
     Object.assign(Pack, { requireCell: () => 0 });
     globalThis.pack = {
       cells: {
@@ -393,7 +393,7 @@ describe("ReligionsModule.add", () => {
     await import("./religions-generator");
     let randomIndex = 0;
     vi.spyOn(Math, "random").mockImplementation(() => (randomIndex++ % 2 ? 0.25 : 0.75));
-    Object.assign(Names, { getCulture: () => "Test" });
+    Object.assign(Names, { getCulturePerson: () => "Test", getCultureDeity: () => "Test" });
     Object.assign(Pack, { requireCell: () => 0 });
     globalThis.pack = {
       cells: {

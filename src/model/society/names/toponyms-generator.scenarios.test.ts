@@ -169,6 +169,32 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     }
   });
 
+  it("offers new names for all places of a culture that takes another base, each free", () => {
+    const culture = living(pack.cultures).find(({ i, base }) => pack.states.some(s => s.i && s.culture === i && base))!;
+    const saidIn = culture.base;
+    const other = living(pack.cultures).find(({ base }) => base !== saidIn)!;
+    expect(Toponyms.renamings(culture.i, saidIn)).toEqual([]); // the base it has
+    culture.base = other.base;
+    const renamings = Toponyms.renamings(culture.i, saidIn);
+    culture.base = saidIn;
+    const types = new Set(renamings.map(({ type }) => type));
+    expect([...types]).toEqual(expect.arrayContaining(["burg", "state"]));
+    for (const { type, named } of renamings) expect(named.meaning.own, type).toBeTruthy();
+    for (const kinds of [["burg"], ["state", "province"], ["river"], ["feature"]]) {
+      const all = renamings.filter(({ type }) => kinds.includes(type)).map(({ named }) => named.name);
+      expect(all.length).toBe(new Set(all).size);
+    }
+  });
+
+  it("names some states after their own people, none after the same", () => {
+    const roots = living(pack.states).flatMap(({ culture, meaning }) => {
+      const [root] = meaning!.tokens;
+      return pack.cultures[culture].name.startsWith(root.slice(1)) ? `${culture} ${root}` : [];
+    });
+    expect(roots.length).toBeGreaterThan(0);
+    expect(roots.length).toBe(new Set(roots).size);
+  });
+
   it("generates the same names for the same seed", async () => {
     const before = names();
     await generateMap({ seed: `toponyms-${set}`, points: 5000 });
@@ -178,7 +204,7 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
   it("gives a river another meaning and name on request", () => {
     const river = pack.rivers[0];
     const before = [river.name, river.meaning];
-    Rivers.regenerateName(river.i);
+    Rivers.setName(river.i, Toponyms.river(river));
     expect([river.name, river.meaning]).not.toEqual(before);
     expect(Meanings.render(river.meaning!, river.meaning!.origin)).toBe(river.name);
   });

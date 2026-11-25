@@ -18,8 +18,6 @@ import { Stability } from "@/model/political/stability";
 import type { State } from "@/model/political/states-generator";
 import { Development } from "@/model/society/development-generator";
 import { Meanings } from "@/model/society/names/meanings";
-import { Names } from "@/model/society/names/names-generator";
-import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
@@ -398,14 +396,7 @@ function refreshProvincesEditor(): void {
 }
 
 function regenerateProvinceNames(): void {
-  for (const province of getProvincesData()) {
-    if (province.lock) continue;
-    const culture = pack.cells.culture[province.center];
-    const { name, meaning } = Toponyms.landOf(culture);
-    Provinces.rename(province.i, name);
-    Provinces.setMeaning(province.i, meaning);
-  }
-
+  Provinces.regenerateNames(getProvincesData().filter(({ lock }) => !lock));
   provincesTable.refresh();
   Layers.draw("labels");
 }
@@ -762,18 +753,10 @@ function removeProvince(p: number): void {
 
 function editProvinceName(province: number): void {
   const p = pack.provinces[province];
-  void Controllers.NameEditor.open({
-    entity: `province:${province}`,
+  void Controllers.NameEditor.openPlace("province", province, {
     owner: dialogId,
-    name: p.name,
-    meaning: p.meaning,
-    culture: pack.cells.culture[p.center],
-    generate: baseId => Toponyms.landOf(baseId),
-    proper: baseId => Names.getBaseShort(baseId),
     full: { name: p.fullName, edit: () => editProvinceForm(province) },
-    onApply: ({ name, meaning }) => {
-      Provinces.setMeaning(province, meaning);
-      Provinces.rename(province, name);
+    onApply: () => {
       Layers.draw("provinces");
       Layers.draw("labels");
       refreshProvincesEditor();

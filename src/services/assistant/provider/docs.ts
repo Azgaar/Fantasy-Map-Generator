@@ -18,12 +18,12 @@ const loadHeraldry = async () => {
 };
 
 async function load(): Promise<Map<string, { title: string; text: string }>> {
-  const [dataModel, configuration, packedGraph, heraldry, meanings, concepts] = await Promise.all([
+  const [dataModel, configuration, packedGraph, heraldry, patterns, concepts] = await Promise.all([
     import("../../../../docs/architecture/data-model.md?raw"),
     import("../../../../docs/architecture/configuration.md?raw"),
     import("../../../types/packed-graph.ts?raw"),
     loadHeraldry(),
-    import("@/model/society/names/meanings"),
+    import("@/data/name-patterns"),
     import("@/data/name-concepts")
   ]);
   const map = new Map<string, string>();
@@ -43,7 +43,7 @@ async function load(): Promise<Map<string, { title: string; text: string }>> {
     `Operations for \`propose_change\`, with argument types:\n\`\`\`ts\n${OPERATIONS}\n\`\`\`\n\nThe types they name:\n\`\`\`ts\n${OPERATION_TYPES}\n\`\`\``
   );
   map.set("Emblems", emblemVocabulary(heraldry));
-  map.set("Meanings", meaningVocabulary(meanings.Meanings.slots, concepts));
+  map.set("Meanings", meaningVocabulary(patterns, concepts));
   const commands = App.mapCommands.filter(App.isLinkable).map(({ id, name }) => `${id}: ${name}`);
   map.set("Commands", `Command ids for \`[label](command:id)\` links, as \`id: name\`:\n${commands.join("\n")}`);
   return new Map([...map].map(([title, text]) => [title.toLowerCase(), { title, text }]));
@@ -103,15 +103,18 @@ export async function readDocs(requested: string[]): Promise<string> {
 
 /** The notation and the words `Toponyms.setMeaning` accepts */
 function meaningVocabulary(
-  slots: Record<string, string[]>,
+  { PATTERNS, kindsOf }: typeof import("@/data/name-patterns"),
   { conceptsOf }: typeof import("@/data/name-concepts")
 ): string {
   const kinds = ["settlement", "generic", "modifier", "numeral", "land"] as const;
   return [
     'A meaning is a pattern, a colon and its words: "owner-generic: ~Eadric, town" (Eadric\'s Town), "modifier-generic: three, tower" (Three Towers), "generic-of: mouth, ~Exe" (Mouth of Exe), "simplex: ~Aldwick" (a proper name). A word is one of the lists below; a proper name starts with ~. A root is always a proper name. No other word is accepted.',
     "Patterns and their slots (root-land and modifier-land are for states, provinces and continents; their generic is a land):",
-    ...Object.entries(slots).map(([pattern, names]) => `- ${pattern}: ${names.join(", ")}`),
-    "A modifier slot takes a modifier, a numeral, a generic or a settlement; a generic or settlement slot a generic or a settlement. Words by kind:",
+    ...Object.entries(PATTERNS).map(([pattern, { slots }]) => `- ${pattern}: ${slots.join(", ")}`),
+    ...(["modifier", "generic", "settlement"] as const).map(
+      slot => `A ${slot} slot takes a word of these kinds: ${kindsOf("compound", slot).join(", ")}.`
+    ),
+    "Words by kind:",
     ...kinds.map(kind => `- ${kind}: ${conceptsOf(kind).join(", ")}`)
   ].join("\n");
 }

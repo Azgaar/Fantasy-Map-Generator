@@ -1,5 +1,6 @@
 import { type D3DragEvent, drag, easeSinIn, select, transition } from "d3";
 import { Controllers } from "@/controllers";
+import { NAMINGS } from "@/controllers/society/named-places";
 import { CULTURE_TYPES } from "@/data/culture-types";
 import { DEFAULT_DEVELOPMENT } from "@/data/development";
 import { CULTURE_TYPE_LABELS, SHIELD_LABELS } from "@/data/id-labels";
@@ -690,7 +691,7 @@ function cultureRegenerateName(this: HTMLElement): void {
     return;
   }
 
-  const name = Names.getCultureShort(cultureId);
+  const name = Names.getPeople(pack.cultures[cultureId].base);
   (this.parentNode as HTMLElement).querySelector<HTMLInputElement>("input.cultureName")!.value = name;
   Cultures.rename(cultureId, name);
 }
@@ -722,34 +723,23 @@ function cultureChangeType(this: HTMLSelectElement): void {
 async function cultureChangeBase(this: HTMLSelectElement): Promise<void> {
   const row = this.closest(".states") as HTMLElement;
   const culture = +row.dataset.id!;
-  const origin = row.dataset.base!;
+  const saidIn = row.dataset.base!;
   Cultures.setBase(culture, this.value);
   await Names.loadUsed();
   row.dataset.base = this.value;
 
   // the new base may say the names another way
-  const taken = new Set(pack.burgs.map(burg => burg.name));
-  const renames: [burgId: number, named: NonNullable<ReturnType<typeof Toponyms.nameIn>>][] = [];
-  for (const burg of pack.burgs) {
-    if (!burg.i || burg.removed || burg.lock || burg.culture !== culture) continue;
-    const named = Toponyms.nameIn(burg, culture, origin);
-    if (!named || taken.has(named.name)) continue;
-    taken.add(named.name);
-    renames.push([burg.i, named]);
-  }
-  if (!renames.length) return;
+  const renamings = Toponyms.renamings(culture, saidIn);
+  if (!renamings.length) return;
 
   Dialog.confirm({
     title: t("Rename"),
-    message: t("The new name base would name {{count}} burgs of the culture another way. Rename them?", {
-      count: renames.length
+    message: t("The new name base would name {{count}} places of the culture another way. Rename them?", {
+      count: renamings.length
     }),
     confirm: t("Rename"),
     onConfirm: () => {
-      for (const [burgId, { name, meaning }] of renames) {
-        Burgs.setMeaning(burgId, meaning);
-        Burgs.rename(burgId, name);
-      }
+      for (const { type, id, named } of renamings) NAMINGS[type].model.setName(id, named);
       Layers.draw("labels");
     }
   });

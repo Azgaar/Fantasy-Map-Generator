@@ -1473,14 +1473,13 @@ class ReligionsModule {
       return;
     }
     const meaning = this.generateMeaning();
-    const cultureName = Names.getCulture(culture);
-    return `${cultureName}, The ${meaning}`;
+    return `${Names.getCultureDeity(culture)}, The ${meaning}`;
   }
 
   private generateReligionName(variety: string, form: string, deity: string, center: number): [string, string] {
     const { cells, cultures, burgs, states } = pack;
 
-    const random = () => Names.getCulture(cells.culture[center]);
+    const random = () => Names.getCulturePerson(cells.culture[center]);
     const type = rw(types[form]);
     const supreme = deity.split(/[ ,]+/)[0];
     const cultureObj = cultures[cells.culture[center]];

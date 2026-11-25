@@ -388,7 +388,12 @@ describe("pickWeighted", () => {
   });
 
   it("picks any item when none has a weight", () => {
-    expect(["a", "b"]).toContain(pickWeighted(["a", "b"], [0, 0]));
+    expect([0, 0.49, 0.51, 0.99].map(roll => pickWeighted(["a", "b"], [0, 0], () => roll))).toEqual([
+      "a",
+      "a",
+      "b",
+      "b"
+    ]);
   });
 });
 

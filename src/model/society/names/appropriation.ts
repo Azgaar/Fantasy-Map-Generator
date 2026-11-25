@@ -4,6 +4,7 @@
 import { NEAREST_LETTERS } from "@/data/name-rules";
 import type { NameBase } from "@/types/names";
 import { isVowel } from "@/utils/language-utils";
+import { Names } from "./names-generator";
 import { SoundRules } from "./sound-rules";
 
 // what it costs to change a name
@@ -28,8 +29,9 @@ const [PAIR_PRIOR, TRIPLE_PRIOR] = [2, 12]; // how many names it takes to trust 
 const OTHERS = 0.2; // what a name of a person or a water counts for, against a place name
 const BEAM = 40; // how many spellings are kept in mind
 
-/** What a base's place names sound like */
+/** What a base's names sound like */
 interface Profile {
+  others: (readonly string[])[]; // the lists of people and waters it was measured with
   letters: string[];
   vowels: string[];
   counts: Map<string, number>; // of a letter, a pair and a triple, `^` before a word and `$` after it
@@ -44,7 +46,7 @@ interface Spelling {
 }
 
 class AppropriationModule {
-  private readonly profiles = new WeakMap<string[], Profile>(); // by corpus, so an edited corpus is measured anew
+  private readonly profiles = new WeakMap<readonly string[], Profile>(); // by place names: edited lists are measured anew
 
   /** A lowercase name coined in another base as a base's people say it: its rules for foreign names run, then each word is
    * respelled to the closest one that sounds native, then the word rules run */
@@ -71,20 +73,21 @@ class AppropriationModule {
   }
 
   private profileOf(base: NameBase): Profile {
-    let profile = this.profiles.get(base.places.names);
-    if (!profile) {
-      profile = measure(base);
-      this.profiles.set(base.places.names, profile);
-    }
+    const { names } = base.places;
+    const others = [Names.watersOf(base) ?? [], Names.peopleOf(base) ?? []].flat().map(corpus => corpus.names);
+    const known = this.profiles.get(names);
+    if (known?.others.length === others.length && known.others.every((list, i) => list === others[i])) return known;
+    const profile = measure(names, others);
+    this.profiles.set(names, profile);
     return profile;
   }
 }
 
-function measure({ places, waters, people }: NameBase): Profile {
+function measure(places: readonly string[], others: (readonly string[])[]): Profile {
   const counts = new Map<string, number>();
   const letters = new Set<string>();
   let total = 0;
-  const read = (names: string[], weight: number) => {
+  const read = (names: readonly string[], weight: number) => {
     const add = (key: string) => counts.set(key, (counts.get(key) ?? 0) + weight);
     for (const word of names.flatMap(name => name.toLowerCase().split(/[^\p{L}\p{M}]+/u)).filter(Boolean)) {
       const chars = [..."^^", ...word, "$"];
@@ -98,11 +101,11 @@ function measure({ places, waters, people }: NameBase): Profile {
       }
     }
   };
-  read(places.names, 1);
-  for (const corpus of [waters, people?.male, people?.female]) read(corpus?.names ?? [], OTHERS);
+  read(places, 1);
+  for (const list of others) read(list, OTHERS);
 
   const all = [...letters];
-  return { letters: all, vowels: all.filter(isVowel), counts, total, costs: new Map(), adapted: new Map() };
+  return { others, letters: all, vowels: all.filter(isVowel), counts, total, costs: new Map(), adapted: new Map() };
 }
 
 /** The spelling of a word that changes it least and sounds most like the names of a profile */

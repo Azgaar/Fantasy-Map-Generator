@@ -107,7 +107,7 @@ describe("CsvUpload.update", () => {
     globalThis.pack = { items: named, cultures: [{ base: "german" }] } as unknown as typeof pack;
     const list = () => (globalThis.pack as unknown as { items: Meant[] }).items;
     const model = {
-      rename: (id: number, name: string) => void Object.assign(list()[id], { name }),
+      rename: (id: number, name: string) => void Object.assign(list()[id], { name, meaning: undefined }),
       setMeaning: (id: number, meaning?: Meaning) => void Object.assign(list()[id], { meaning })
     };
     const text = "Id,Name,Meaning\n0,Z,feature: hill\n1,Y,feature: ford\n2,C,feature: hill\n3,D,\n4,X,nonsense";
