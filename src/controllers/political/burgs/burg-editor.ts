@@ -5,7 +5,6 @@ import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Meanings } from "@/model/society/names/meanings";
-import { Names } from "@/model/society/names/names-generator";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
 import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/units";
@@ -13,12 +12,10 @@ import { removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { localGloss } from "@/renderers/labels/name-display";
 import { Layers } from "@/renderers/layers";
-import { speak } from "@/services/speech";
 import type { Market } from "@/types/economy";
-import type { Meaning } from "@/types/names";
 import { renderDevelopment } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { closeEntityDialogs, noteButton } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, nameEditButton, noteButton } from "@/ui/dialog/dialog-helpers";
 import { EconomyTerms, prosperityTip, renderProsperity } from "@/ui/economy-view";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
@@ -71,24 +68,11 @@ function renderDialog(): void {
             <div id="burgProvinceAndState" style="font-weight: bold; max-width: 16em"></div>
             <div>
               <div class="label">${t("Name")}:</div>
-              <input
-                id="burgName"
-                data-tip="${t("Type to rename")}"
-                autocorrect="off"
-                spellcheck="false"
-                style="width: 9em"
-              />
-              <span id="burgNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
-              <span
-                id="burgNameReRandom"
-                data-tip="${t("Generate random name")}"
-                class="icon-globe pointer"
-              ></span>
-            </div>
-            <div data-tip="${t("What the name says, apart from any language")}">
-              <div class="label">${t("Meaning")}:</div>
-              <i id="burgMeaning" style="display: inline-block; width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom"></i>
-              <span id="burgTranslations" data-tip="${t("See the name in other name bases")}" class="icon-exchange pointer"></span>
+              <div id="burgNameBlock">
+                <span id="burgName"></span>
+                ${nameEditButton("burgNameEdit")}
+                <div id="burgMeaning" data-tip="${t("What the name says, apart from any language")}"></div>
+              </div>
             </div>
             <div data-tip="${t("Select burg group. Groups defines burg icon, label size and style")}">
               <div class="label">${t("Group")}:</div>
@@ -110,11 +94,6 @@ function renderDialog(): void {
             <div data-tip="${t("Select dominant culture")}">
               <div class="label">${t("Culture")}:</div>
               <select id="burgCulture" style="width: 9em"></select>
-              <span
-                id="burgNameReCulture"
-                data-tip="${t("Generate culture-specific name")}"
-                class="icon-book pointer"
-              ></span>
             </div>
             <div data-tip="${t("Set burg population")}">
               <div class="label">${t("Population")}:</div>
@@ -267,15 +246,11 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-  ensureEl("burgName").addEventListener("input", changeName);
-  ensureEl("burgNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("burgName").value));
-  ensureEl("burgNameReRandom").addEventListener("click", generateNameRandom);
+  ensureEl("burgNameEdit").addEventListener("click", editName);
   ensureEl("burgGroup").addEventListener("change", changeGroup);
   ensureEl("burgGroupConfigure").addEventListener("click", editBurgGroups);
   ensureEl("burgType").addEventListener("change", changeType);
   ensureEl("burgCulture").addEventListener("change", changeCulture);
-  ensureEl("burgNameReCulture").addEventListener("click", generateNameCulture);
-  ensureEl("burgTranslations").addEventListener("click", showTranslations);
   ensureEl("burgPopulation").addEventListener("change", changePopulation);
   ensureEl("burgWealthEconomy").addEventListener("click", showBurgEconomy);
   ensureEl("burgTags").addEventListener("change", changeTags);
@@ -326,8 +301,7 @@ function updateBurgValues(): void {
   const stateName = pack.states[b.state!].fullName || pack.states[b.state!].name;
   ensureEl("burgProvinceAndState").textContent = provinceName + stateName;
 
-  ensureEl<HTMLInputElement>("burgName").value = b.name!;
-  ensureEl("burgMeaning").textContent = getMeaningGloss(b);
+  showName(b);
   ensureEl<HTMLSelectElement>("burgGroup").value = b.group!;
   ensureEl<HTMLSelectElement>("burgType").value = b.type || "Generic";
   ensureEl<HTMLInputElement>("burgPopulation").value = String(
@@ -372,39 +346,29 @@ function updateBurgValues(): void {
   updateBurgPreview(b);
 }
 
-function changeName(): void {
-  const value = ensureEl<HTMLInputElement>("burgName").value;
-  if (!value.trim()) return;
-  Burgs.rename(getSelectedId(), value);
-  Layers.draw("labels");
+/** Show the burg's name and under it what the name says; a proper name says nothing */
+function showName(burg: Burg): void {
+  ensureEl("burgName").textContent = burg.name!;
+  const says = burg.meaning && burg.meaning.pattern !== "simplex";
+  ensureEl("burgMeaning").textContent = says ? localGloss(burg.meaning!) : "";
 }
 
-function generateNameRandom(): void {
-  regenerateName(Names.randomBase().id);
-}
-
-/** Coin a new meaning for the burg, named in its culture's base or the base given */
-function regenerateName(baseId?: string): void {
+function editName(): void {
   const burg = pack.burgs[getSelectedId()];
-  Burgs.regenerateName(burg.i, baseId);
-  ensureEl<HTMLInputElement>("burgName").value = burg.name!;
-  ensureEl("burgMeaning").textContent = getMeaningGloss(burg);
-  Layers.draw("labels");
-}
-
-/** The meaning a burg's name carries; a name without one stands as a proper name of its culture's base */
-const getMeaning = (burg: Burg): Meaning => Meanings.of(burg, burg.culture);
-
-function getMeaningGloss(burg: Burg): string {
-  const meaning = getMeaning(burg);
-  return meaning.pattern === "simplex" ? t("proper name") : localGloss(meaning);
-}
-
-function showTranslations(): void {
-  const burg = pack.burgs[getSelectedId()];
-  void Controllers.NameTranslations.open(getMeaning(burg), name => {
-    ensureEl<HTMLInputElement>("burgName").value = name;
-    changeName();
+  void Controllers.NameEditor.open({
+    title: t("Rename burg"),
+    entity: `burg:${burg.i}`,
+    owner: "burgEditor",
+    name: burg.name!,
+    meaning: burg.meaning,
+    culture: burg.culture!,
+    generate: baseId => Toponyms.burg(burg, { baseId }),
+    onApply: ({ name, meaning }) => {
+      Burgs.setMeaning(burg.i, meaning);
+      Burgs.rename(burg.i, name);
+      showName(burg);
+      Layers.draw("labels");
+    }
   });
 }
 
@@ -428,8 +392,7 @@ function changeGroup(this: HTMLSelectElement): void {
     onConfirm: () => {
       Burgs.setMeaning(burg.i, named.meaning);
       Burgs.rename(burg.i, named.name);
-      ensureEl<HTMLInputElement>("burgName").value = named.name;
-      ensureEl("burgMeaning").textContent = getMeaningGloss(burg);
+      showName(burg);
       Layers.draw("labels");
     }
   });
@@ -442,26 +405,28 @@ function changeType(this: HTMLSelectElement): void {
 
 function changeCulture(this: HTMLSelectElement): void {
   const burg = pack.burgs[getSelectedId()];
-  const origin = getMeaning(burg).origin;
+  const { origin } = Meanings.of(burg, burg.culture);
+  const tongue = pack.cultures[burg.culture!]?.base;
   Burgs.setCulture(burg.i, +this.value);
+  if (pack.cultures[+this.value].base === tongue) return; // a people of the same tongue says the name as it is
 
-  // the name keeps its meaning: the new culture may say it another way
-  const name = Toponyms.nameIn(burg, +this.value, origin);
-  if (!name) return;
+  // the new culture may say the name another way
+  const named = Toponyms.nameIn(burg, +this.value, origin);
+  if (!named) return;
   Dialog.confirm({
     title: t("Rename burg"),
-    message: t("The new culture would call {{burg}} “{{name}}”. Rename the burg?", { burg: burg.name!, name }),
+    message: t("The new culture would call {{burg}} “{{name}}”. Rename the burg?", {
+      burg: burg.name!,
+      name: named.name
+    }),
     confirm: t("Rename"),
     onConfirm: () => {
-      Burgs.rename(burg.i, name);
-      ensureEl<HTMLInputElement>("burgName").value = name;
+      Burgs.setMeaning(burg.i, named.meaning);
+      Burgs.rename(burg.i, named.name);
+      showName(burg);
       Layers.draw("labels");
     }
   });
-}
-
-function generateNameCulture(): void {
-  regenerateName();
 }
 
 function changePopulation(): void {
@@ -863,4 +828,4 @@ function closeBurgEditor(): void {
   Dialog.destroy("burgEditor");
 }
 
-export const BurgEditor = { open };
+export const BurgEditor = { open, refreshName: () => showName(pack.burgs[getSelectedId()]) };

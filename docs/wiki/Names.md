@@ -48,26 +48,35 @@ A number may stand where a describing word does: Three Towers, Tri Vezhi.
 
 ## Names in the interface
 
-- **Burg, state, province, river and lake editors** show the meaning under the name. _See the name in other name bases_, the button next to it, lists the name in every base: click one to take it. _Generate culture-specific name_ coins a new meaning and its name in the culture's base; _Generate random name_ does the same in any base in use on the map.
-- **A name you type is kept.** The name and the meaning are stored apart and neither overwrites the other, so a name may say something other than its meaning. Nothing renames a place behind your back: changing a burg's or state's culture, a culture's name base or a burg's group offers the new name and waits for a yes.
-- **Cultures editor**: the _Namesbase_ column sets the base of each culture. The arrows beside it re-generate the names of the culture's burgs. _Edit a database used for names generation_, at the bottom, opens the Namesbases Overview.
+- **Name Editor**: names are changed in one dialog. Open it with the pencil beside the name in a burg, river, lake or route editor, or with a click on the name of a state, a province or a feature in its table. The Burg Editor shows the meaning in small print under the name.
+  - **Name**: type any name. Hover the field for the speaker, which reads it out loud; the crossed arrows say the same meaning another way.
+  - **Meaning**: what the name says, as a pattern and its words, such as _Description + place_: birch, town. Select each word from its list; a founder's or another place's name is typed. _Proper name_ is a name that says nothing. The round arrows coin a new meaning that fits the place, and its name.
+  - **Name base**: select a base to see how its people would say the name: Lipsko is Lipzku in German. Press the check mark to take it. New names are generated in the selected base too, so the crossed arrows say the meaning in its own words: a name of "new" and "town" may become Novgorod in Ruthenian.
+  - **Full name**, for a state or province, is shown as it is; its pencil stores the name and opens the form dialog.
+  - Nothing changes on the map until you press _Apply_.
+  - A route, an ocean and a label's text have no meaning: their dialog has no Meaning row.
+- **Form and full name** of a state or province are changed by a click on its form. The pencil beside the short name there opens the Name Editor.
+- **A name you type is kept.** The name and the meaning are stored apart and neither overwrites the other, so a name may say something other than its meaning. Nothing renames a place behind your back: changing a burg's or state's culture, a culture's name base or a burg's group offers the new name and waits for a yes. A name changed that way is remembered: when the place comes back to its own name base, the name it had is offered, unless you renamed it meanwhile. A name set by the Assistant or uploaded from a CSV file is a proper name and the old meaning is cleared, unless a new one comes with it: ask the Assistant for one or fill in the [Meaning column](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import#meanings).
+- **Cultures editor**: the _Namesbase_ column sets the base of each culture. The arrows beside it re-generate the names of the culture's burgs, as the button of the Burgs overview does for the listed ones. Both skip locked burgs, and give each a new meaning with its name. _Edit a database used for names generation_, at the bottom, opens the Namesbases Overview.
 - **Options** → **Advanced** → **Personal names**: founders that places are named after are _Generated_ anew, _Picked_ from the base's lists as they are, or _As the name base sets_.
 
 ## Name bases
 
 A name base is one language. 67 are built in: 51 real-world languages, a generic human base and 15 fantasy ones. Every culture uses one, and several cultures may share one.
 
-Name bases are saved with the map. Changing a base changes it for this map only; to use it in other maps, download it and upload it there.
+The built-in bases come with the app and get better with its updates. The bases you add or edit are saved with the map, and new maps start with them too. Opening another map brings its own.
+
+Change a built-in base only with a good reason: your version stays as it is and gets no updates. It is nearly always better to edit a copy and give it to the cultures you want.
 
 ### Namesbases Overview
 
 Open _Tools_ → _Namesbase_, press `Shift + N`, or open it from the Cultures editor. The table lists every base, whether it is built-in, edited or custom, and the cultures that use it. Search finds a base by its name or culture.
 
-Click a base's name or its pencil to edit it. The bin removes a base that no culture uses and no other base extends. The buttons at the bottom add a base, download all bases, upload bases and restore the built-in ones.
+Click a base's name or its pencil to edit it. The bin removes a base of yours that no culture uses and no other base extends; a built-in base cannot be removed. The buttons at the bottom add a base, download all bases, upload bases and restore the built-in ones, which drops your own and edited bases. A culture that used a dropped base takes German.
 
 ### The Namesbase Editor
 
-The editor shows one base. At the top, rename it and choose a base it **extends**: that base's lexicon, patterns and people stand in where this one has none. The **description** says where the base's data comes from and the idea behind it.
+The editor shows one base. A built-in base opens locked: _Edit a copy_ makes a base of your own from it, _Edit anyway_ unlocks it. At the top, rename it and choose a base it **extends**: that base's lexicon, patterns and people stand in where this one has none. The **description** says where the base's data comes from and the idea behind it.
 
 On the right are **Examples**, names the base makes: burgs and lands with their meanings, waters, people and names without meaning. They stay the same while you edit, so you see at once what a change does to them. The arrows beside the heading show others.
 
@@ -101,7 +110,7 @@ To make a variant of a base that is already written, copy it and change the copy
 
 ### Sharing a base
 
-Download one base from its editor, or all bases from the overview, as `.json` to share or back them up; the same file uploads back. Upload asks whether to add the bases of the file or to replace all current ones with them.
+Download one base from its editor, or all bases from the overview, as `.json` to share or back them up; the same file uploads back. Upload asks whether to add the bases of the file or to replace all your custom and edited ones with them. Built-in bases in the file that are as they ship are left out.
 
 ## Teaching a base its words
 
@@ -308,11 +317,11 @@ e\+(?=[aeiou]) => + | 50%
 - no flag: applies to every name the base generates
 - `join`: applies where parts meet; `+` marks each join
 - `long`: applies only while the name is longer than the base allows
-- `foreign`: applies to names borrowed from another base
+- `foreign`: applies to names borrowed from another base, before they are bent to the sounds of the place names
 - `50%`: applies to that share of names, always the same ones
 
 The **Try a name** box on the tab shows what the rules make of a name.
 
 ### Checking the result
 
-The examples beside the tabs and on the Lexicon and Patterns tabs show an edit at once. The Lexicon tab counts the concepts written. To see whole names, open a burg or state and press _See the name in other name bases_ next to its meaning: it lists the name in every base.
+The examples beside the tabs and on the Lexicon and Patterns tabs show an edit at once. The Lexicon tab counts the concepts written. To see whole names, open the Name Editor of a burg or state and select the base in _Name base_: it shows the name in that base.

@@ -1,6 +1,7 @@
 import { Controllers } from "@/controllers";
 import { CONCEPT_LABELS } from "@/data/id-labels";
 import { type Concept, conceptsOf, type Kind } from "@/data/name-concepts";
+import { Options } from "@/model/options/options-model";
 import { Lexicon } from "@/model/society/names/lexicon";
 import { Names, PEOPLE_LENGTH } from "@/model/society/names/names-generator";
 import { NameNotation } from "@/model/society/names/notation";
@@ -14,7 +15,7 @@ import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { wiki } from "@/utils/common-utils";
 import { downloadFile } from "@/utils/file-utils";
-import { t } from "@/utils/i18n";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { seeded } from "@/utils/probability-utils";
 import { compileRegex, escapeHtml } from "@/utils/string-utils";
@@ -82,6 +83,7 @@ const PATTERN_GROUPS: [string, [Pattern, string][]][] = [
 type Field = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
 let baseId = "";
+let isUnlocked = false; // a built-in base is edited only once the user insists
 let roll = 0; // of the samples: an edit shows on the same ones
 let activeTab: Tab = "names"; // kept between openings, as the lexicon's filter is
 let shown: Shown = "all";
@@ -99,7 +101,9 @@ async function open(i: number): Promise<void> {
   }
 
   Dialog.closeAll(`#${dialogId}, .stable`);
+  findEl(dialogId)?.querySelector<HTMLElement>(":focus")?.blur(); // what is being typed goes to the base shown
   baseId = base.id;
+  isUnlocked = false;
   renderDialog(base);
   Dialog.open(dialogId, {
     title: t("Namesbase Editor"),
@@ -116,14 +120,17 @@ function close(): void {
   Dialog.destroy(dialogId);
 }
 
-// the base edited: the model may have put another object under its id
+// the base shown: the model may have put another object under its id
 const getBase = (): NameBase => Names.find(baseId)!;
+const isLocked = () => !isUnlocked && Names.isShipped(getBase());
 
 const STYLES = /* html */ `<style>
   #namesbaseLayout { display: flex; flex-direction: column; gap: 0.4em; height: 100%; width: auto; }
   #namesbaseHead { display: grid; grid-template-columns: auto 12em auto 12em 1fr; gap: 0.3em 0.5em; align-items: center; flex-shrink: 0; }
   #namesbaseHead > input, #namesbaseHead > select { width: 100%; }
   #namesbaseHead > #namesbaseDescription { grid-column: 2 / -1; }
+  #namesbaseLock { display: flex; flex-wrap: wrap; gap: 0.3em 0.6em; align-items: center; flex-shrink: 0; }
+  #namesbaseLock[hidden] { display: none; }
   #namesbaseCultures { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic; color: #666; }
   #namesbaseMain { display: grid; grid-template-columns: 1fr 18em; gap: 0.8em; flex: 1; min-height: 0; }
   #namesbaseWork { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
@@ -199,6 +206,11 @@ function renderDialog(base: NameBase): void {
           <b>${t("Description")}:</b>
           <input id="namesbaseDescription" autocorrect="off" spellcheck="false" />
         </div>
+        <div id="namesbaseLock">
+          <span>${sentences(t("A built-in namesbase is improved with each app update"), t("To change it, edit a copy"))}</span>
+          <button id="namesbaseEditCopy">${t("Edit a copy")}</button>
+          <button id="namesbaseEditAnyway" data-tip="${t("Edit the built-in namesbase itself")}">${t("Edit anyway")}</button>
+        </div>
         <div id="namesbaseMain">
           <div id="namesbaseWork">
             <div id="namesbaseTabs" class="tab">${tabs.join("")}</div>
@@ -232,6 +244,8 @@ function renderDialog(base: NameBase): void {
     NamesbaseAnalysis.open(getBase().name, getBase().places.names)
   );
   ensureEl("namesbaseCopy").addEventListener("click", copyBase);
+  ensureEl("namesbaseEditCopy").addEventListener("click", copyBase);
+  ensureEl("namesbaseEditAnyway").addEventListener("click", triggerUnlock);
   ensureEl("namesbaseDownload").addEventListener("click", downloadBase);
   ensureEl("namesbaseReset").addEventListener("click", triggerReset);
   ensureEl("namesbaseOverview").addEventListener("click", () => void Controllers.NamesbasesOverview.open());
@@ -256,8 +270,21 @@ function renderBase(base: NameBase): void {
     : t("No culture uses the base");
   users.dataset.tip = users.textContent;
 
+  ensureEl("namesbaseLock").hidden = !isLocked();
   renderPane();
   renderSamples();
+}
+
+/** Keep the fields of a built-in base from being changed; their text can still be read and copied */
+function lockFields(): void {
+  const locked = isLocked();
+  const fields = ensureEl(dialogId).querySelectorAll<Field>(
+    "#namesbaseName, #namesbaseDescription, #namesbaseExtends, #namesbasePane [data-field]"
+  );
+  for (const field of fields) {
+    if (!(field instanceof HTMLSelectElement)) field.readOnly = locked;
+    else if (locked || field.id) field.disabled = locked; // a list's select is disabled by its list
+  }
 }
 
 function onTabClick({ target }: MouseEvent): void {
@@ -275,12 +302,14 @@ function renderPane(): void {
   pane.innerHTML = render(getBase());
   pane.scrollTop = 0;
   onRender?.();
+  lockFields();
   renderExamples();
 }
 
 function onPaneChange({ target }: Event): void {
   const input = target as Field;
   if (!input.dataset.field) return; // a filter, not data
+  Names.edit(baseId);
   TABS[activeTab].onChange(input);
   showChange();
 }
@@ -291,8 +320,10 @@ function onPaneInput({ target }: Event): void {
   else if (id === "namesbaseTry") tryRules();
 }
 
-/** Show what an edit does: on the samples, on the examples of the tab, in the overview */
+/** Store an edit and show what it does: on the samples, on the examples of the tab, in the overview */
 function showChange(): void {
+  Names.dropUnchanged(baseId);
+  Options.save();
   renderSamples();
   renderExamples();
   if (findEl("namesbasesOverview")) void Controllers.NamesbasesOverview.refresh();
@@ -364,20 +395,20 @@ function renderExamples(): void {
 // HEAD
 
 function changeName(this: HTMLInputElement): void {
-  const base = getBase();
+  const base = Names.edit(baseId);
   base.name = this.value = this.value.trim() || base.name;
   showChange();
 }
 
 function changeDescription(this: HTMLInputElement): void {
-  const base = getBase();
+  const base = Names.edit(baseId);
   base.description = this.value.trim();
   if (!base.description) delete base.description;
   showChange();
 }
 
 async function changeExtends(this: HTMLSelectElement): Promise<void> {
-  const base = getBase();
+  const base = Names.edit(baseId);
   if (this.value) base.extends = this.value;
   else delete base.extends;
   await Names.load([base.id]);
@@ -720,6 +751,22 @@ function copyBase(): void {
   ensureEl<HTMLInputElement>("namesbaseName").select();
 }
 
+function triggerUnlock(): void {
+  Dialog.confirm({
+    title: t("Edit built-in namesbase"),
+    message: sentences(
+      t("Your version will replace the built-in one on this map and on new maps"),
+      t("It will not get the improvements of app updates until you restore it")
+    ),
+    confirm: t("Edit anyway"),
+    onConfirm: () => {
+      if (!findEl(dialogId)) return;
+      isUnlocked = true;
+      renderBase(getBase());
+    }
+  });
+}
+
 function downloadBase(): void {
   const base = getBase();
   downloadFile(NamesbaseFile.format([base]), `${getFileName(`Namesbase ${base.name}`)}.json`, "application/json");
@@ -731,8 +778,15 @@ function triggerReset(): void {
     message: t("Restore the built-in namesbase? Your changes to it will be lost"),
     confirm: t("Restore"),
     onConfirm: async () => {
-      await Names.reset(baseId);
-      if (!findEl(dialogId)) return;
+      const id = baseId;
+      await Names.reset(id);
+      Options.save();
+      if (baseId !== id) return;
+      if (Names.isChanged(getBase())) {
+        tip(t("Cannot load the built-in namesbase"), false, "error");
+        return;
+      }
+      isUnlocked = false;
       renderBase(getBase());
       showChange();
     }

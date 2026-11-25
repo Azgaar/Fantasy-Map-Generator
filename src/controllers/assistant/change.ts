@@ -10,6 +10,8 @@ type Row = Omit<ChangeRow, "entity">;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !ArrayBuffer.isView(value);
+const NAME_FIELDS = new Set(["name", "meaning", "removed"]);
+const WHOLE_FIELDS = new Set(["meaning"]); // recorded as one value, as its parts say nothing alone
 const isSame = (a: unknown, b: unknown) => a === b || JSON.stringify(a) === JSON.stringify(b);
 
 /** Where `items` were last appended to `list`, or -1 */
@@ -48,6 +50,11 @@ export class Change {
 
   get keys(): Set<string> {
     return new Set(this.rows.map(row => row.key));
+  }
+
+  /** The keys of entities whose name or meaning the change touches */
+  get renamed(): Set<string> {
+    return new Set(this.rows.filter(({ field }) => !field || NAME_FIELDS.has(field)).map(row => row.key));
   }
 
   /** The map layers that draw what the change touches */
@@ -182,6 +189,7 @@ export class Change {
     const bothRecords =
       isRecord(before) &&
       isRecord(after) &&
+      !WHOLE_FIELDS.has(path.join(".")) &&
       Array.isArray(before) === Array.isArray(after) &&
       (!Array.isArray(before) || before.length === (after as unknown as unknown[]).length);
     if (bothRecords)

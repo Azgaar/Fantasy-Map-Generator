@@ -3,6 +3,7 @@ import { Controllers } from "@/controllers";
 import { Lakes } from "@/model/physical/lakes";
 import type { River } from "@/model/physical/river-generator";
 import { Rivers } from "@/model/physical/river-generator";
+import { Meanings } from "@/model/society/names/meanings";
 import { Tags } from "@/model/tags";
 import { getRiverBox, toggleBasinHighlight } from "@/renderers/draw-rivers";
 import { Layers } from "@/renderers/layers";
@@ -27,7 +28,7 @@ import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
 const dialogId = "riversOverview" as const;
-const CSV_COLUMNS = ["Id", "River", "Type", "Group", "Discharge", "Length", "Width", "Basin", "Tags"];
+const CSV_COLUMNS = ["Id", "River", "Meaning", "Type", "Group", "Discharge", "Length", "Width", "Basin", "Tags"];
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string };
 
@@ -322,6 +323,7 @@ function downloadRiversData(): void {
     .all.map((r: River) => [
       r.i,
       r.name,
+      r.meaning ? Meanings.write(r.meaning) : "",
       r.type,
       r.group,
       `${r.discharge} m³/s`,
@@ -405,10 +407,10 @@ async function uploadRiversCsv(text: string): Promise<void> {
   const updated = await Controllers.CsvUpload.update(
     text,
     CSV_COLUMNS,
-    { find, text: ["River", "Type", "Tags"] },
+    { find, text: ["River", "Meaning", "Type", "Tags"] },
     (id, row) => {
       const river = find(id)!;
-      row.apply("River", name => Rivers.rename(river.i, name), river.name);
+      row.named("River", river, pack.cells.culture[river.mouth], Rivers);
       row.apply("Type", type => Rivers.setType(river.i, type), river.type);
       row.apply("Group", group => Rivers.setGroup(river.i, group), river.group);
       row.assign("Tags", tags => Tags.set(river, tags), Tags.format(river.tags));

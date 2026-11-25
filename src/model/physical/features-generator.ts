@@ -333,6 +333,11 @@ class FeatureModule {
     this.living(featureId).name = requireName(name);
   }
 
+  /** Set what an island's or a lake's name says, or clear it; the name itself stays as it is */
+  setMeaning(featureId: number, meaning?: Meaning): void {
+    this.living(featureId).meaning = meaning;
+  }
+
   /** Set a feature's subtype within its type: a lake's freshwater, salt, dry…, an island's continent, island or isle, an ocean's ocean, sea or gulf. Generators read it on their next run */
   setSubtype(featureId: number, subtype: string): void {
     const feature = this.living(featureId);

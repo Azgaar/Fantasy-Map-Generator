@@ -4,6 +4,7 @@ import { extent, min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
 import { isDrawable } from "@/controllers/political/emblems/drawability";
 import { DEFAULT_DEVELOPMENT } from "@/data/development";
+import { NAME_BASES } from "@/data/name-bases";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
@@ -2343,25 +2344,26 @@ function parseLegacySvg(markup: string): ShadowRoot {
   return root;
 }
 
-/** v1.160.0 keeps name bases as JSON under stable ids, and a culture names its base by that id */
+const LEGACY_BASES = 43; // how many bases shipped before v1.160.0
+/** v1.160.0 keeps the edited and custom name bases in `options.map.nameBases` under stable ids */
 export async function migrateLegacyNameBases(data: string[]): Promise<void> {
-  // name|min|max|doubled|m|names per base; one saved without names is the shipped one at its place
-  const shipped = Names.getNameBases();
+  const legacy = NAME_BASES.slice(0, LEGACY_BASES).map(({ id }) => id);
+  const taken = NAME_BASES.map(({ id }) => id);
+
   const stored = data[31] ? data[31].split("/").map(base => base.split("|")) : [];
-  const isCustom = (names = "", index: number) => names.split(",").length > 2 || !shipped[index];
-  const taken = stored.flatMap((base, index) => (isCustom(base[5], index) ? [] : shipped[index].id));
-
-  const bases = stored.map(([name, min, max, doubled, , names = ""], index) => {
-    if (!isCustom(names, index)) return shipped[index];
-    const id = Names.uniqueId(name, taken);
+  const ids = stored.map(([name, min, max, doubled, , names = ""], index) => {
+    if (names.split(",").length <= 2 && legacy[index]) return legacy[index];
+    const id = Names.uniqueId(
+      name,
+      taken.filter(id => id !== legacy[index]) // a shipped base edited in its place
+    );
     taken.push(id);
-    return Names.composeBase(id, name, [+min, +max], names ? names.split(",") : [], doubled);
+    Names.add(Names.composeBase(id, name, [+min, +max], names ? names.split(",") : [], doubled));
+    return id;
   });
-  if (data[31]) Names.nameBases = bases;
 
-  const ids = Names.nameBases.map(base => base.id);
   for (const culture of (pack.cultures ?? []) as { base: string | number }[])
-    if (typeof culture?.base === "number") culture.base = ids[culture.base] ?? ids[0];
+    if (typeof culture?.base === "number") culture.base = (data[31] ? ids : legacy)[culture.base] ?? legacy[0];
   await Names.loadUsed();
 }
 

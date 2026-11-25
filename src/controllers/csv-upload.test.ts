@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Meaning } from "@/types/names";
 import { Dialog } from "@/ui/dialog/dialog";
 import { CsvUpload } from "./csv-upload";
 
@@ -8,6 +9,7 @@ vi.mock("@/ui/dialog/dialog", async importOriginal => {
   return { Dialog: Object.assign(Dialog, { confirm: vi.fn(), message: vi.fn() }) };
 });
 
+type Meant = { i: number; name: string; meaning?: Meaning };
 type Entity = { i: number; name: string; tags: string; people: [number, number] };
 const COLUMNS = ["Id", "Name", "Tags", "Total Population", "Rural Population", "Urban Population"];
 const items = () => (globalThis.pack as unknown as { items: Entity[] }).items;
@@ -97,6 +99,27 @@ describe("CsvUpload.update", () => {
     await done;
     expect(lastAlert()).toContain("1 Tags: Changed meanwhile");
     expect(lastAlert()).not.toContain("Bad name");
+  });
+
+  it("takes a new meaning with a name, and clears the old one of a name that comes with none", async () => {
+    const meaning: Meaning = { pattern: "feature", tokens: ["ford"], origin: "english" };
+    const named = ["A", "B", "C", "D", "E"].map((name, i): Meant => ({ i, name, meaning }));
+    globalThis.pack = { items: named, cultures: [{ base: "german" }] } as unknown as typeof pack;
+    const list = () => (globalThis.pack as unknown as { items: Meant[] }).items;
+    const model = {
+      rename: (id: number, name: string) => void Object.assign(list()[id], { name }),
+      setMeaning: (id: number, meaning?: Meaning) => void Object.assign(list()[id], { meaning })
+    };
+    const text = "Id,Name,Meaning\n0,Z,feature: hill\n1,Y,feature: ford\n2,C,feature: hill\n3,D,\n4,X,nonsense";
+    const done = CsvUpload.update(text, ["Id", "Name", "Meaning"], { find: id => list()[id] }, (id, row) =>
+      row.named("Name", list()[id], 0, model)
+    );
+    expect(dialog().message).toContain("Values that will not be applied: 1");
+    dialog().onConfirm!();
+    await done;
+    const hill = { pattern: "feature", tokens: ["hill"], origin: "german" };
+    expect(list().map(({ name }) => name)).toEqual(["Z", "Y", "C", "D", "X"]);
+    expect(list().map(item => item.meaning)).toEqual([hill, undefined, hill, meaning, undefined]);
   });
 
   it("splits a changed total by the current ratio and ignores rounding", async () => {

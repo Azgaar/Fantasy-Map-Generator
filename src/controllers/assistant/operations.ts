@@ -14,6 +14,7 @@ import { States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Lore } from "@/model/story/lore";
@@ -45,6 +46,7 @@ export const MODELS = {
   States,
   Styles,
   StylePresets,
+  Toponyms,
   Zones
 };
 
@@ -205,6 +207,7 @@ export const METHODS = {
   Markets: ["rename", "recolor"],
   Lore: ["rename", "setYear", "setEra", "setDescription"],
   Notes: ["write"],
+  Toponyms: ["setMeaning"],
   Styles: ["setValue"],
   StylePresets: ["apply"]
 } satisfies { [K in keyof Models]?: (keyof Models[K])[] };
@@ -216,5 +219,7 @@ export const OPERATIONS = new Set(
 export function runOperation(op: string, args: unknown[]): unknown {
   const [name, method] = op.split(".");
   const model = MODELS[name as keyof Models] as unknown as Record<string, (...args: unknown[]) => unknown>;
-  return model[method](...args);
+  const result = model[method](...args);
+  if (method === "rename") model.setMeaning?.(args[0]); // a new name is a proper name, whatever the old one said
+  return result;
 }

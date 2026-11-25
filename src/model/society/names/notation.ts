@@ -159,7 +159,7 @@ class NameNotationModule {
         if (flag === "join") rule.at = "join";
         else if (flag === "long" || flag === "foreign") rule.when = flag;
         else if (flag.startsWith("as ")) rule.as = flag.slice(3).trim();
-        else if (/^\d*\.?\d+%$/.test(flag)) rule.chance = Number.parseFloat(flag) / 100;
+        else if (/^\d*\.?\d+%$/.test(flag)) rule.chance = Math.min(Number.parseFloat(flag) / 100, 1);
       }
       return rule;
     });

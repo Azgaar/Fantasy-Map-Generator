@@ -42,7 +42,7 @@ class SoundRulesModule {
     return rewrite(rewrite(single ? rewrite(word, SINGLE) : word, this.sort(rules).word), WORD);
   }
 
-  /** Adapt a lowercase root coined in another base by the rules a base keeps for foreign roots */
+  /** Adapt a lowercase name coined in another base by the rules a base keeps for foreign names */
   applyForeign(root: string, rules?: SoundRule[]): string {
     return rewrite(root, this.sort(rules).foreign);
   }

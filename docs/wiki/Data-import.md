@@ -32,6 +32,7 @@ All uploads **update existing entries only**. Every row is matched by `Id`, and 
 - Columns are matched ignoring letter case and spaces around them; a column the upload does not know (a typo, for example) is listed in the message.
 - Columns calculated from the map (cells, area, burgs, length and so on) are ignored. Territory is not part of the file: re-draw it with the editor's brush.
 - A name in a cell that refers to something else (a capital, culture, state or origin) must match an existing name exactly.
+- A changed name of a burg, state, province, river or feature becomes a proper name: its old [meaning](#meanings) is cleared, unless the `Meaning` cell is changed too.
 - A value that cannot be applied is skipped and listed in the preview. After _Apply_, a message appears only if something failed that the preview did not expect.
 - Population cells are people. A changed total is split between rural and urban as the entry has them now; when the rural and urban columns are both filled in and one of them changed, they are used instead. Burg and cell populations scale to match.
 
@@ -41,25 +42,43 @@ Tags are separated by `;`. Colors are HEX like `#a1b2c3`; a hatched fill is kept
 
 | Editor | Columns |
 | --- | --- |
-| States | `State`, `Full Name` (rebuilt from a new name or form unless changed too), `Form`, `Color`, `Capital` (a burg of the state), `Culture`, `Type`, `Expansionism` (0 to 99, takes effect on _Recalculate_), population, `Sales Tax` (0 to 1), `Poll Tax`, `Treasury`, `Tags`. `Id` 0 is the neutral lands, which take only a name and population |
+| States | `State`, `Meaning`, `Full Name` (rebuilt from a new name or form unless changed too), `Form`, `Color`, `Capital` (a burg of the state), `Culture`, `Type`, `Expansionism` (0 to 99, takes effect on _Recalculate_), population, `Sales Tax` (0 to 1), `Poll Tax`, `Treasury`, `Tags`. `Id` 0 is the neutral lands, which take only a name and population |
 | Cultures | `Name`, `Ancestry`, `Color`, `Expansionism` (0 to 99, takes effect on _Recalculate_), `Type`, `Population`, `Namesbase` (a namesbase name), `Emblems Shape`, `Origins` (culture names separated by commas, empty for none), `Tags` |
 | Religions | `Name`, `Color`, `Type`, `Form`, `Supreme Deity`, `Potential`, `Expansionism`, `Believers` (population), `Origins` (religion names separated by commas, empty for none), `Tags` |
-| Provinces | `Province`, `Full Name`, `Form`, `Color`, `State` (moves the province), `Capital` (a burg of the province), population, `Tags` |
-| Burgs | `Burg`, `Culture`, `Group`, `Type`, `Population`, `Treasury`, `Capital` (makes it the state capital), `Port`, `Citadel`, `Walls`, `Plaza`, `Temple`, `Shanty Town` (any text adds it, empty removes it), `Preview link`, `Tags` |
-| Rivers | `River`, `Type`, `Group` (regular, frozen, dry, lava or a custom group), `Tags` |
+| Provinces | `Province`, `Meaning`, `Full Name`, `Form`, `Color`, `State` (moves the province), `Capital` (a burg of the province), population, `Tags` |
+| Burgs | `Burg`, `Meaning`, `Culture`, `Group`, `Type`, `Population`, `Treasury`, `Capital` (makes it the state capital), `Port`, `Citadel`, `Walls`, `Plaza`, `Temple`, `Shanty Town` (any text adds it, empty removes it), `Preview link`, `Tags` |
+| Rivers | `River`, `Meaning`, `Type`, `Group` (regular, frozen, dry, lava or a custom group), `Tags` |
 | Routes | `Route`, `Group` (roads, trails, searoutes or a custom group), `Tags` |
 | Markers | `Name`, `Type`, `Tags`. Marker notes are uploaded in the Notes editor |
 | Zones | `Description`, `Color`, `Type`, `Population`, `Tags` |
 | Biomes | `Biome`, `Color`, `Habitability` (percent) |
-| Features | `Name`, `Subtype`, `Group` (lakes only), `Tags` |
+| Features | `Name`, `Meaning` (not of oceans), `Subtype`, `Group` (lakes only), `Tags` |
 | Goods | `Good`, `Color`, `Tags`, `Value`, `Carriage`, `Unit`, `Demand Coverage` (`category:share` pairs separated by `;`, such as `food:1;luxury:0.5`), `Deposits` (deposits on the map as `min-max`, such as `2-4`). `Model` is code and is edited in the good's editor only. Prices and production follow on the next economy run |
+
+## Meanings
+
+The `Meaning` column says [what a name means](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names): a pattern, a colon and its words, separated by commas. A word is one of the list the Name Editor offers, in English as the downloaded file writes it; a proper name starts with `~`.
+
+| Pattern | Words | Example | Says |
+| --- | --- | --- | --- |
+| `simplex` | name | `simplex: ~Aldwick` | Aldwick |
+| `feature` | place | `feature: ford` | The Ford |
+| `modifier-generic` | description, place | `modifier-generic: three, tower` | Three Towers |
+| `owner-generic` | owner, place | `owner-generic: ~Eadric, town` | Eadric's Town |
+| `generic-of` | place, name | `generic-of: mouth, ~Exe` | Mouth of Exe |
+| `compound` | description, place, settlement | `compound: red, hill, city` | Red Hill City |
+| `relative` | description, name | `relative: new, ~Barton` | New Barton |
+| `root-land` | name, land | `root-land: ~Frank, land` | Land of Frank |
+| `modifier-land` | description, land | `modifier-land: east, realm` | East Realm |
+
+The last two are for states, provinces and continents. The name and the meaning are set apart: a new meaning does not change the name, so change both cells to change both. A changed name with an untouched meaning loses the meaning; to mend a name's spelling and keep its meaning, use the Name Editor.
 
 # Text data
 
 | What | Where | Format |
 | --- | --- | --- |
 | Notes (legends) | _Tools_ → _Notes_ → _Upload notes from PC_ | `.csv` with a `type,id,note` header, as downloaded by _Download notes to PC_. Each row sets the note of an object on the map; rows for objects that are not on the map are skipped |
-| Namesbases | _Tools_ → _Namesbase_ → upload, either adding to or replacing the current set | `.json`, a list of namesbases as downloaded by the editor. The older `.txt` still loads: one namesbase per line, `name\|min length\|max length\|doubled letters\|multi-word rate\|names separated by commas` |
+| Namesbases | _Tools_ → _Namesbase_ → upload, either adding to or replacing the custom and edited bases | `.json`, a list of namesbases as downloaded by the editor. The older `.txt` still loads: one namesbase per line, `name\|min length\|max length\|doubled letters\|multi-word rate\|names separated by commas` |
 | Heightmap templates | _Tools_ → _Heightmap_ → _Erase_ → _Template editor_ → upload | `.txt`, one step per line with 5 values separated by spaces, e.g. `Hill 1 90-99 44-56 40-60`. See the [Heightmap template editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-template-editor) |
 | Style presets | _Style_ → the plus button next to the style preset → _Style Saver_ → _Open previously downloaded style file_ | `.json` saved by the same dialog |
 

@@ -8,6 +8,7 @@ import { Styles } from "@/model/styles/styles";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { type LayerId, Layers } from "@/renderers/layers";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
+import { Dialog } from "@/ui/dialog/dialog";
 import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { invokeActiveZooming } from "@/ui/map/zoom";
 import { findEl } from "@/utils/node-utils";
@@ -146,6 +147,7 @@ class ProposalLifecycle {
     Options.save();
     refreshEditors();
     for (const key of change.keys) this.refreshNameInputs(key);
+    if (change.renamed.has(findEl("nameEditor")?.dataset.entity ?? "")) Dialog.close("nameEditor"); // it holds the old name
     if (findEl("notesEditor")) void Controllers.NotesEditor.refresh();
     if (change.keys.has(Change.LORE) && findEl("loreEditor")) void Controllers.LoreEditor.refresh();
   }
@@ -174,16 +176,16 @@ class ProposalLifecycle {
     if (!ref || !entity) return;
     const value = entity.name ?? "";
     if (ref.type === "state" || ref.type === "province") {
-      const dialog = findEl(`${ref.type}NameEditor`);
-      if (dialog?.dataset[ref.type] !== String(ref.id)) return;
-      const short = findEl<HTMLInputElement>(`${ref.type}NameEditorShort`);
-      const full = findEl<HTMLInputElement>(`${ref.type}NameEditorFull`);
-      if (short) short.value = value;
-      if (full) full.value = entity.fullName ?? value;
+      const full = findEl<HTMLInputElement>(`${ref.type}FormEditorFull`);
+      if (full && findEl(`${ref.type}FormEditor`)?.dataset[ref.type] === String(ref.id))
+        full.value = entity.fullName ?? value;
     } else {
       const dialog = findEl(`${ref.type}Editor`);
-      const input = findEl<HTMLInputElement>(`${ref.type}Name`);
-      if (dialog?.dataset.entity === key && input) input.value = value;
+      const shown = findEl(`${ref.type}Name`); // an input where the name is typed in place, text elsewhere
+      if (dialog?.dataset.entity !== key || !shown) return;
+      if (shown instanceof HTMLInputElement) shown.value = value;
+      else shown.textContent = value;
+      if (ref.type === "burg") void Controllers.BurgEditor.refreshName();
     }
   }
 }

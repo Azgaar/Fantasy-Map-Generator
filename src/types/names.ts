@@ -1,9 +1,9 @@
 import type { Concept } from "@/data/name-concepts";
 
 /** A regex rewrite: `match` is a regex source, `replace` may use `$1` groups. A rule shapes the words a base
- * generates and the roots it borrows. One set `at` the join, or with a `chance`, shapes a name made of parts,
+ * generates and the names it borrows. One set `at` the join, or with a `chance`, shapes a name made of parts,
  * where `+` marks each join; one for `long` names runs on the finished name while it is too long;
- * one for `foreign` roots adapts a root coined in another base */
+ * one for `foreign` names adapts a name coined in another base */
 export interface SoundRule {
   match: string;
   replace: string;
@@ -111,4 +111,5 @@ export interface Meaning {
   tokens: Token[]; // in the pattern's slot order
   origin: string; // id of the name base it was coined in
   salt?: number; // re-rolls the choice between a concept's forms
+  own?: string; // the name before another people respelled it
 }

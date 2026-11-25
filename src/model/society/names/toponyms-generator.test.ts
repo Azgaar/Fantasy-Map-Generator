@@ -56,11 +56,11 @@ describe("Toponyms.landOf", () => {
 
 describe("a base that picks its places", () => {
   const burg = { i: 1, cell: 0, culture: 1 } as Burg;
-  const base = () => Names.find("english")!;
+  const base = () => Names.edit("english");
   const named = () => Toponyms.burg(burg, { burgs: [], baseId: "english", taken: new Set(["Alpha", "Beta"]) });
 
   afterEach(() => {
-    Names.nameBases = Names.getNameBases();
+    options.map.nameBases = [];
   });
 
   it("names a burg with a listed place not taken yet, as it is", () => {

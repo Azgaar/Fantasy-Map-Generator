@@ -90,6 +90,7 @@ class OptionsModel {
         eras: Development.getDefaultEras(),
         customIcons: [],
         goods: [],
+        nameBases: [],
         coastline: Coastline.getDefaultSettings(),
         relief: { rules: Relief.getDefaultRules() }
       },
@@ -282,6 +283,7 @@ class OptionsModel {
     map.coastline = previous.coastline;
     map.relief = previous.relief;
     map.goods = previous.goods;
+    map.nameBases = previous.nameBases;
     clearEntityMultipliers(map.goods);
 
     // and the requests it consumes

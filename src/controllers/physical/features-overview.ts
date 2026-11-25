@@ -9,6 +9,9 @@ import {
   LAKE_SUBTYPES,
   OCEAN_SUBTYPES
 } from "@/model/physical/features-generator";
+import { Meanings } from "@/model/society/names/meanings";
+import { Names } from "@/model/society/names/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
@@ -35,7 +38,7 @@ import { getVertexPath } from "@/utils/path-utils";
 import { escapeHtml } from "@/utils/string-utils";
 
 const dialogId = "featuresOverview" as const;
-const CSV_COLUMNS = ["Id", "Name", "Type", "Subtype", "Group", "Tags", "Area", "Map area", "Cut by border"];
+const CSV_COLUMNS = ["Id", "Name", "Meaning", "Type", "Subtype", "Group", "Tags", "Area", "Map area", "Cut by border"];
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string; type: string; subtype: string };
 
@@ -274,7 +277,7 @@ function renderFeaturesPage(view: TableView<Feature>): void {
   for (const feature of view.rows) {
     lines += /* html */ `<div class="states" data-id="${feature.i}">
       <span data-tip="${t("Locate on map")}" data-col="locate" class="icon-target"></span>
-      <input data-tip="${t("Name")}" class="featureName stateName" value="${escapeHtml(feature.name || "")}" placeholder="${UNNAMED}" data-col="name" />
+      <input data-tip="${sentences(t("Name"), t("Click to change"))}" class="featureName stateName pointer" value="${escapeHtml(feature.name || "")}" placeholder="${UNNAMED}" data-col="name" readonly />
       ${renderTypeCell(feature)}
       ${renderGroupCell(feature, Object.keys(styles.lakes.groups))}
       ${renderAreaCell(feature, unit)}
@@ -316,9 +319,9 @@ const rowActions: Record<string, Record<string, (element: HTMLElement) => void>>
     "span.featureGroupStyle": editGroupStyle,
     "span.icon-book": editNote,
     "span.icon-pencil": openLakeEditor,
-    "span.featureCoastline": openCoastlineEditor
+    "span.featureCoastline": openCoastlineEditor,
+    "input.featureName": editName
   },
-  input: { "input.featureName": changeName },
   change: {
     "input.featureTags": changeTags,
     "select.featureSubtype": changeSubtype,
@@ -392,11 +395,30 @@ function zoomToFeature(element: HTMLElement): void {
   highlightArea({ x: minX, y: minY, width: maxX - minX, height: maxY - minY }, 3);
 }
 
-function changeName(input: HTMLElement): void {
+function editName(input: HTMLElement): void {
   const feature = getFeature(input);
-  const name = (input as HTMLInputElement).value.trim();
-  if (name) Features.rename(feature.i, name);
-  else feature.name = "";
+  const { type } = feature;
+  void Controllers.NameEditor.open({
+    title: { lake: t("Rename lake"), island: t("Rename island"), ocean: t("Rename ocean") }[type],
+    entity: `feature:${feature.i}`,
+    owner: dialogId,
+    name: feature.name || "",
+    meaning: feature.meaning,
+    plain: type === "ocean", // oceans belong to no culture and their names say nothing
+    culture: Toponyms.cultureOfFeature(feature),
+    generate: type === "ocean" ? undefined : baseId => Toponyms[type](feature, { baseId }),
+    proper: baseId =>
+      type === "ocean"
+        ? Features.getOceanName(feature)
+        : type === "lake"
+          ? Names.getWater(baseId)
+          : Names.getBase(baseId),
+    onApply: ({ name, meaning }) => {
+      if (type !== "ocean") Features.setMeaning(feature.i, meaning);
+      Features.rename(feature.i, name);
+      featuresTable.refresh();
+    }
+  });
 }
 
 function changeTags(input: HTMLElement): void {
@@ -444,6 +466,7 @@ function downloadFeaturesData(): void {
     .all.map(feature => [
       feature.i,
       getName(feature),
+      feature.meaning ? Meanings.write(feature.meaning) : "",
       feature.type,
       feature.subtype,
       feature.group,
@@ -462,10 +485,16 @@ async function uploadFeaturesCsv(text: string): Promise<void> {
   const updated = await Controllers.CsvUpload.update(
     text,
     CSV_COLUMNS,
-    { find, units, text: ["Name", "Tags"] },
+    { find, units, text: ["Name", "Meaning", "Tags"] },
     (id, row) => {
       const feature = find(id)!;
-      row.apply("Name", name => Features.rename(feature.i, name), getName(feature));
+      const name = getName(feature);
+      if (feature.type === "ocean") {
+        row.apply("Name", name => Features.rename(id, name), name);
+        row.apply("Meaning", () => {
+          throw new Error(t("The name of an ocean has no meaning"));
+        });
+      } else row.named("Name", { name, meaning: feature.meaning }, Toponyms.cultureOfFeature(feature), Features);
       row.apply("Subtype", subtype => Features.setSubtype(feature.i, subtype), feature.subtype);
       row.apply("Group", group => Features.setGroup(feature.i, group), feature.group);
       row.assign("Tags", tags => Tags.set(feature, tags), Tags.format(feature.tags));

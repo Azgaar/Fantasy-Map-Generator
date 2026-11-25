@@ -1652,16 +1652,6 @@ class CulturesGenerator {
       type: DEFAULT_CULTURE_TYPE,
       tags: []
     });
-
-    // make sure all bases exist in Names.nameBases
-    if (!Names.nameBases.length) {
-      log.error("Name base is empty, default nameBases will be applied");
-      Names.nameBases = Names.getNameBases();
-    }
-
-    cultures.forEach((c: Culture) => {
-      c.base = Names.entry(c.base)!.id;
-    });
   }
 
   /** Name the cultures drawn without a name, once their bases are loaded */

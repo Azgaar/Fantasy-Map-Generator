@@ -803,6 +803,13 @@ class RiverModule {
     if (river.label?.text) river.label.text = replaceWholeWord(river.label.text, old, river.name) ?? river.label.text;
   }
 
+  /** Set what a river's name says, or clear it; the name itself stays as it is */
+  setMeaning(riverId: number, meaning?: Meaning): void {
+    const river = pack.rivers.find(r => r.i === riverId);
+    if (!river) throw new Error(`River ${riverId} does not exist`);
+    river.meaning = meaning;
+  }
+
   /** Coin a new meaning for a river, named in the base of the culture at its mouth or in the base given */
   regenerateName(riverId: number, baseId?: string): void {
     const river = pack.rivers.find(r => r.i === riverId);

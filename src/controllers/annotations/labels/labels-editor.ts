@@ -7,7 +7,6 @@ import { Routes, UNNAMED_ROUTE } from "@/model/economy/routes-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { MapEntities } from "@/model/map-entities";
-import { Rivers } from "@/model/physical/river-generator";
 import { States } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names/names-generator";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
@@ -16,9 +15,8 @@ import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
 import { getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
 import { Layers } from "@/renderers/layers";
-import { speak } from "@/services/speech";
 import { Dialog } from "@/ui/dialog/dialog";
-import { noteButton } from "@/ui/dialog/dialog-helpers";
+import { nameEditButton, noteButton } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { showMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
@@ -80,8 +78,7 @@ function renderDialog(): void {
           data-tip="${t("Type to change the label. Enter “|” to move to a new line")}"
           style="width: 12em"
         />
-        <span id="labelTextSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
-        <span id="labelTextRandom" data-tip="${t("Generate random name")}" class="icon-shuffle pointer"></span>
+        ${nameEditButton("labelTextEdit", t("Edit the label text"))}
       </div>
       <button id="labelEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-brush"></button>
       <button id="labelPathToggle"></button>
@@ -158,8 +155,7 @@ function renderDialog(): void {
   ensureEl("labelTextShow").addEventListener("click", showTextSection);
   ensureEl("labelTextHide").addEventListener("click", hideTextSection);
   ensureEl("labelText").addEventListener("input", changeText);
-  ensureEl("labelTextSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("labelText").value));
-  ensureEl("labelTextRandom").addEventListener("click", generateRandomName);
+  ensureEl("labelTextEdit").addEventListener("click", editText);
 
   ensureEl("labelEditStyle").addEventListener("click", editGroupStyle);
 
@@ -413,32 +409,34 @@ function changeText(): void {
     tip(t("Use Provinces Editor to change the actual province name, not just a label"), false, "warn");
 }
 
-const nameGenerators: Record<LabelType, (label: LabelData) => string> = {
-  burg: label => Names.getCulture(pack.burgs[label.entityId].culture ?? 0),
-  state: ({ entityId }) => {
-    const { culture, area } = pack.states[entityId];
-    return Toponyms.land(culture, States.getLandSize(area));
-  },
-  province: label => Toponyms.land(pack.cells.culture[pack.provinces[label.entityId].center]),
-  added: label => {
-    const cellId = Pack.findCell(...label.anchor);
-    if (!cellId) return "";
-    return Names.getCulture(pack.cells.culture[cellId]);
-  },
-  river: label => {
-    const cellId = Pack.findCell(...label.anchor);
-    if (!cellId) return "";
-    return Rivers.getName(cellId);
-  },
+// a new text for a label, in a name base
+const nameGenerators: Record<LabelType, (label: LabelData, baseId: string) => string> = {
+  burg: (_, baseId) => Names.getBase(baseId),
+  state: ({ entityId }, baseId) => Toponyms.land(baseId, States.getLandSize(pack.states[entityId].area)),
+  province: (_, baseId) => Toponyms.land(baseId),
+  added: (_, baseId) => Names.getBase(baseId),
+  river: (_, baseId) => Names.getWater(baseId),
   route: label => {
     const points = pack.routes.find(route => route.i === label.entityId)?.points ?? [];
     return Routes.generateName({ group: label.group, points }) || UNNAMED_ROUTE;
   }
 };
 
-function generateRandomName(): void {
-  ensureEl<HTMLInputElement>("labelText").value = nameGenerators[label.type](label);
-  changeText();
+/** The label's text in the Name Editor: it is the label's own, the entity keeps its name */
+function editText(): void {
+  const cell = Pack.findCell(...label.anchor);
+  void Controllers.NameEditor.open({
+    title: t("Edit label text"),
+    owner: "labelEditor",
+    name: label.text || "",
+    plain: true,
+    culture: cell ? pack.cells.culture[cell] : 0,
+    proper: baseId => nameGenerators[label.type](label, baseId),
+    onApply: ({ name }) => {
+      ensureEl<HTMLInputElement>("labelText").value = name;
+      changeText();
+    }
+  });
 }
 
 function editGroupStyle(): void {

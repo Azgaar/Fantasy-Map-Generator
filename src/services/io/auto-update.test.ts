@@ -7,7 +7,7 @@ import "@/model/physical/features-generator"; // migrations call the Features mo
 import "@/model/political/burgs-generator"; // the burg sets that tell style icon references from text
 import { Goods } from "@/model/economy/goods-generator"; // also the goods icon namespace the 1.154 step migrates into
 import "@/model/physical/relief-generator"; // the relief set namespace the 1.154 step migrates into
-import { readNameBase } from "@/data/name-bases";
+import { NAME_BASES, readNameBase } from "@/data/name-bases";
 import { DEAL_KINDS } from "@/model/economy/deals";
 import { Pack } from "@/model/graph/pack-generator";
 import { Options } from "@/model/options/options-model";
@@ -1402,7 +1402,7 @@ describe("v1.157.0 deposit counts", () => {
 });
 
 describe("v1.159 name bases migration", () => {
-  const shipped = Names.getNameBases();
+  const shipped = NAME_BASES.slice(0, 43); // of the time
   /** the record older maps keep: a base a slash, names left out where they are the default ones */
   const legacyRecord = (edit: (fields: (string | number)[], index: number) => (string | number)[] = fields => fields) =>
     shipped.map((base, index) => edit([base.name, 4, 12, "lt", 0, ""], index).join("|")).join("/");
@@ -1413,18 +1413,19 @@ describe("v1.159 name bases migration", () => {
   const migrate = (record?: string) => {
     const data: string[] = [];
     if (record) data[31] = record;
-    Names.restore(record); // as the load does before the version checks
     return migrateLegacyNameBases(data);
   };
 
-  afterEach(() => Names.restore());
+  afterEach(() => {
+    options.map.nameBases = [];
+  });
 
   it("turns bases with the shipped names into the shipped ones and culture bases into ids", async () => {
     setCultures(1, 5, 42, 99);
     await migrate(legacyRecord());
-    expect(Names.loaded().map(({ id }) => id)).toEqual(["german", "english", "ruthenian", "levantine"]); // those used
+    for (const base of cultureBases()) expect(Names.find(base)).toBeDefined();
     expect(Names.find("english")!.length).toEqual((await readNameBase("english")).length); // not the map's own
-    expect(JSON.parse(Names.serialize())).toEqual(shipped.map(({ id }) => ({ id })));
+    expect(options.map.nameBases).toEqual([]);
     expect(cultureBases()).toEqual(["english", "ruthenian", "levantine", "german"]); // a base out of range was the first one
   });
 
@@ -1442,7 +1443,7 @@ describe("v1.159 name bases migration", () => {
     expect(own).toMatchObject({ id: "my-base", length: [5, 9] });
     expect(SoundRules.getDoubles(own)).toBe("ab");
     expect(cultureBases()).toEqual(["german-2", "my-base"]);
-    expect(JSON.parse(Names.serialize()).slice(0, 4)).toEqual([{ id: "german" }, custom, own, { id: "italian" }]);
+    expect(options.map.nameBases).toEqual([custom, own]);
   });
 
   it("gives cultures the shipped ids when a map holds no bases", async () => {
@@ -1450,6 +1451,17 @@ describe("v1.159 name bases migration", () => {
     await migrate();
     expect(cultureBases()).toEqual(["french"]);
     expect(Names.find("french")).toBeDefined();
+  });
+
+  it("keeps a shipped base edited in its place, and one called as a base shipped since apart from it", async () => {
+    setCultures(0, 43);
+    const old = legacyRecord().split("/");
+    old[0] = "German|5|9||0|Aaa,Bbb,Ccc";
+    await migrate([...old, "Polish|5|9||0|Aaa,Bbb,Ccc"].join("/"));
+    expect(options.map.nameBases.map(({ id }) => id)).toEqual(["german", "polish-2"]);
+    expect(Names.isChanged(Names.find("german")!)).toBe(true);
+    expect(cultureBases()).toEqual(["german", "polish-2"]);
+    expect(Names.ids()).toHaveLength(NAME_BASES.length + 1);
   });
 
   it("runs on older maps only", async () => {
@@ -1468,8 +1480,7 @@ describe("v1.159 name bases migration", () => {
     setCultures(...indexes);
     await migrate(data[31]);
 
-    const ids = shipped.map(({ id }) => id);
-    expect(Names.nameBases.map(({ id }) => id)).toEqual(ids.slice(0, ids.indexOf("levantine") + 1)); // the default set of the time
+    expect(options.map.nameBases).toEqual([]);
     expect(cultureBases()).toEqual(indexes.map(index => shipped[index].id));
     expect(cultureBases().every(id => Names.find(id))).toBe(true);
   });

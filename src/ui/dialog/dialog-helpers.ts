@@ -1,6 +1,7 @@
 // Building blocks shared by editor dialogs
 
 import { Dialog } from "@/ui/dialog/dialog";
+import { t } from "@/utils/i18n";
 import { findEl } from "@/utils/node-utils";
 
 /** The note button every entity dialog puts in its toolbar, with its translated tooltip */
@@ -11,6 +12,11 @@ export function noteButton(id: string, tip: string): string {
 /** The same button as a table row action, in the `note` column every editor table gives it */
 export function noteIcon(tip: string): string {
   return `<span data-col="note" data-tip="${tip}" class="icon-book pointer"></span>`;
+}
+
+/** The button beside a name that opens the Name Editor */
+export function nameEditButton(id: string, tip = t("Edit the name and its meaning")): string {
+  return `<span id="${id}" data-tip="${tip}" class="icon-pencil pointer"></span>`;
 }
 
 // TODO: editors should register a refresh callback when they open,

@@ -9,7 +9,7 @@ import { SoundRules } from "./sound-rules";
 
 beforeAll(() => Names.loadAll());
 afterEach(() => {
-  Names.nameBases = Names.getNameBases();
+  options.map.nameBases = [];
 });
 
 const meaning = (pattern: Meaning["pattern"], ...tokens: Token[]): Meaning => ({ pattern, tokens, origin: "english" });
@@ -24,7 +24,33 @@ const custom = (extra: Partial<NameBase> = {}): NameBase => {
   return { ...Names.composeBase("custom", "Custom", [4, 12], names, "l"), ...extra };
 };
 
+describe("notation", () => {
+  it("reads back what it writes", () => {
+    const said = meaning("owner-generic", "~Eadric", "town");
+    expect(Meanings.write(said)).toBe("owner-generic: ~Eadric, town");
+    expect(Meanings.read(Meanings.write(said), "english")).toEqual(said);
+  });
+
+  it("takes spaces, capitals and a name slot with no mark", () => {
+    const said = meaning("owner-generic", "~Eadric", "town");
+    expect(Meanings.read(" Owner-Generic :Eadric,  Town ", "english")).toEqual(said);
+  });
+
+  it("refuses what cannot be rendered", () => {
+    expect(() => Meanings.read("Three Towers", "english")).toThrow("starts with a pattern");
+    expect(() => Meanings.read("modifier-generic: three", "english")).toThrow("modifier, generic");
+    expect(() => Meanings.read("modifier-generic: three, ", "english")).toThrow("modifier, generic");
+    expect(() => Meanings.read("modifier-generic: three, towerr", "english")).toThrow('"towerr" is not a known word');
+    expect(() => Meanings.read("feature: three", "english")).toThrow('"three" cannot stand as the generic');
+    expect(() => Meanings.read("root-land: Frank, town", "english")).toThrow('"town" cannot stand as the generic');
+  });
+});
+
 describe("gloss", () => {
+  it("reads a numeral that counts nothing", () => {
+    expect(Meanings.gloss(meaning("feature", "three"))).toBe("The Three");
+  });
+
   it("reads each pattern in English", () => {
     expect(Meanings.gloss(meaning("simplex", "~Aitern"))).toBe("Aitern");
     expect(Meanings.gloss(meaning("feature", "ford"))).toBe("The Ford");
@@ -98,10 +124,9 @@ describe("render", () => {
     const names = (baseId: string) =>
       new Set(Array.from({ length: 40 }, (_, salt) => Meanings.render(withSalt(frank, salt), baseId)));
     expect(names("german")).toEqual(new Set(["Frankland", "Frankien"]));
-    expect(names("korean")).toContain("Pralla"); // Korean writes no f and no nk
     expect(names("chinese")).toEqual(new Set(["Fran Yu", "Fran Bang"]));
     expect(names("arabic")).toEqual(new Set(["Frankiyya", "Al Frankiyya", "Bilad Frank"]));
-    Names.nameBases.push(custom());
+    Names.add(custom());
     expect(names("custom")).toEqual(new Set(["Frankia"])); // the shared form: a base with no land of its own
   });
 
@@ -117,13 +142,23 @@ describe("render", () => {
       expect(name).not.toMatch(/Haut-(?:Côte|Rive)|(?:Côte|Rive)-Haut$/);
   });
 
+  it("says a meaning anew in another base, its roots as the people there say them", () => {
+    const frank = meaning("root-land", "~Frank", "land");
+    const korean = Meanings.coinedIn(frank, Names.find("korean")!);
+    expect(korean.tokens[1]).toBe("land");
+    expect(korean.origin).toBe("korean");
+    expect(Meanings.render(korean, "korean")).not.toMatch(/f|nk/i); // Korean writes no f and no nk
+    const kin = Meanings.coinedIn(frank, Names.find("human-generic")!); // extends English
+    expect(kin).toEqual({ ...frank, origin: "human-generic" });
+  });
+
   it("leaves a land unsaid where a template has a suffix for it", () => {
-    Names.nameBases.push(custom({ patterns: { "root-land": { templates: [{ parts: "{root}mark" }] } } }));
+    Names.add(custom({ patterns: { "root-land": { templates: [{ parts: "{root}mark" }] } } }));
     expect(Meanings.render(meaning("root-land", "~Frank", "land"), "custom")).toBe("Frankmark");
   });
 
   it("is not whole where a part repeats the one before", () => {
-    Names.nameBases.push(custom({ lexicon: { land: [{ form: "land", position: "last" }] } }));
+    Names.add(custom({ lexicon: { land: [{ form: "land", position: "last" }] } }));
     const compose = (root: `~${string}`) =>
       Meanings.compose({ ...meaning("root-land", root, "land"), origin: "custom" }, "custom");
     expect(compose("~Harlan")).toEqual({ name: "Harlanland", whole: false });
@@ -131,25 +166,26 @@ describe("render", () => {
   });
 
   it("applies a base's rules at the join", () => {
-    const aden = meaning("root-land", "~Adn", "land");
+    const aden: Meaning = { ...meaning("root-land", "~Adn", "land"), origin: "arabic" };
     const arabic = Array.from({ length: 40 }, (_, salt) => Meanings.render(withSalt(aden, salt), "arabic"));
     expect(arabic).toContain("Al Adniyya");
   });
 
   it("drops a root's last vowels before a short vowel ending", () => {
-    expect(Meanings.render(meaning("root-land", "~Friede", "land"), "greek")).toMatch(/^Fried(ia|ike|is|otis)$/);
+    const friede: Meaning = { ...meaning("root-land", "~Friede", "land"), origin: "greek" };
+    expect(Meanings.render(friede, "greek")).toMatch(/^Fried(ia|ike|is|otis)$/);
     const lexicon = {
       free: [{ form: "free", position: "first" as const }],
       island: [{ form: "island", position: "last" as const }]
     };
-    Names.nameBases.push(custom({ lexicon }));
+    Names.add(custom({ lexicon }));
     expect(Meanings.render(meaning("modifier-generic", "free", "island"), "custom")).toBe("Freeisland");
   });
 });
 
 describe("a base with no lexicon", () => {
   it("ends its generics with the commonest endings of its corpus and coins the rest from its chain", () => {
-    Names.nameBases.push(custom());
+    Names.add(custom());
     const names = ["city", "town", "village", "hamlet"].map(generic =>
       Meanings.render(meaning("owner-generic", "~Mel", generic as Token), "custom")
     );
@@ -159,7 +195,7 @@ describe("a base with no lexicon", () => {
 
   it("keeps the forms of a concept across names", () => {
     const base = custom();
-    Names.nameBases.push(base);
+    Names.add(base);
     const starts = Lexicon.formsOf(base, "black").map(({ form }) => form.slice(0, 2));
     for (const generic of ["city", "town", "village", "hamlet"] as Token[]) {
       const name = Meanings.render(meaning("modifier-generic", "black", generic), "custom");
@@ -169,7 +205,7 @@ describe("a base with no lexicon", () => {
 
   it("keeps its coined forms when another concept is written, and coins anew when its rules change", () => {
     const base = custom();
-    Names.nameBases = [base];
+    options.map.nameBases = [base];
     const coined = Lexicon.formsOf(base, "wolf");
     base.lexicon = { town: [{ form: coined[0].form }] };
     expect(Lexicon.formsOf(base, "wolf")).toEqual(coined);
@@ -179,28 +215,29 @@ describe("a base with no lexicon", () => {
   });
 
   it("takes the lexicon and templates of the base it extends", () => {
-    Names.nameBases.push(custom({ extends: "chinese" }));
+    Names.add(custom({ extends: "chinese" }));
     expect(Meanings.render({ ...meaning("root-land", "~Mel", "realm"), origin: "custom" }, "custom")).toBe("Mel Guo");
   });
 });
 
 describe("a name too long for its base", () => {
   it("clips its root at a syllable, then gives up its modifier", () => {
-    Names.nameBases.push(custom({ length: [4, 9] }));
-    const long = Meanings.compose(meaning("owner-generic", "~Korbachmelheim", "town"), "custom");
+    Names.add(custom({ length: [4, 9] }));
+    const own = (root: Token) => ({ ...meaning("owner-generic", root, "town"), origin: "custom" });
+    const long = Meanings.compose(own("~Korbachmelheim"), "custom");
     expect(long).toEqual({ name: "Kordorf", whole: false }); // a stub of the root: generation draws another
-    const short = Meanings.compose(meaning("owner-generic", "~Korbame", "town"), "custom");
+    const short = Meanings.compose(own("~Korbame"), "custom");
     expect(short).toEqual({ name: "Korbadorf", whole: true }); // the root kept as far as the ending leaves room
     expect(Meanings.render(meaning("simplex", "~Korbachmelheim"), "custom")).toBe("Korbachmelheim"); // a name of its own is left whole
 
-    Names.nameBases.push({ ...custom({ length: [4, 9] }), id: "plain", extends: "human-generic" });
+    Names.add({ ...custom({ length: [4, 9] }), id: "plain", extends: "human-generic" });
     const harbour = Meanings.compose(meaning("modifier-generic", "shepherd", "harbour"), "plain");
     expect(harbour).toMatchObject({ whole: false });
     expect(harbour.name).not.toMatch(/sh[ei]p/i);
     expect(Meanings.compose(meaning("modifier-generic", "new", "town"), "plain")).toMatchObject({ whole: true });
 
     const lexicon = { pine: "msonobari+", town: "+ni" };
-    Names.nameBases.push({ ...custom({ length: [4, 9], lexicon: NameNotation.parseLexicon(lexicon) }), id: "ending" });
+    Names.add({ ...custom({ length: [4, 9], lexicon: NameNotation.parseLexicon(lexicon) }), id: "ending" });
     const pine = Meanings.compose(meaning("modifier-generic", "pine", "town"), "ending");
     expect(pine).toEqual({ name: "Msonobarini", whole: false }); // the ending alone would be no name
   });
@@ -238,7 +275,7 @@ describe("a base with a grammar", () => {
     );
 
   it("ends a stem or a proper name with a suffix, and nothing else", () => {
-    Names.nameBases.push(slavic());
+    Names.add(slavic());
     expect(names(meaning("modifier-generic", "birch", "town"))).toEqual(
       new Set(["Berezov", "Berezogorod", "Berezovyi Gorod"])
     );
@@ -249,7 +286,7 @@ describe("a base with a grammar", () => {
   });
 
   it("gives a describing word the ending of its noun, said or unsaid, and of a root where there is no noun", () => {
-    Names.nameBases.push(slavic());
+    Names.add(slavic());
     expect(names(meaning("modifier-generic", "new", "village"))).toEqual(new Set(["Novoye Selo", "Novoye"]));
     expect(names(meaning("modifier-generic", "new", "harbour"))).toEqual(new Set(["Novaya Pristan"])); // a class it is told
     expect(names(meaning("modifier-generic", "upper", "hill"))).toEqual(new Set(["Verhnyaya Gora"])); // a form per class
@@ -263,7 +300,7 @@ describe("a base with a grammar", () => {
     const base = slavic();
     Object.assign(base.grammar!, NameNotation.parseGrammar("*soft: f yaya, n eye, pl iye, m iy"));
     Object.assign(base.lexicon!, NameNotation.parseLexicon({ middle: "sredn*soft" }));
-    Names.nameBases.push(base);
+    Names.add(base);
     expect(names(meaning("modifier-generic", "middle", "hill"))).toEqual(new Set(["Srednyaya Gora"]));
     expect(names(meaning("modifier-generic", "middle", "town"))).toEqual(new Set(["Sredniy Gorod"]));
   });
@@ -275,7 +312,7 @@ describe("a base with a grammar", () => {
       base.lexicon!,
       NameNotation.parseLexicon({ black: "chern* 2", field: "Pole", wolf: "volk^ 3, volch*" })
     );
-    Names.nameBases.push(base);
+    Names.add(base);
     const derived = (concept: Concept) => Lexicon.derivedForms(base, concept, base.lexicon![concept]!);
     expect(derived("black")).toEqual([{ form: "cherno", position: "first", weight: 2 }]); // a describing word has no stem
     expect(derived("field")).toEqual([{ form: "pol", position: "stem" }]);
@@ -286,7 +323,7 @@ describe("a base with a grammar", () => {
   });
 
   it("puts a prefix before a root only", () => {
-    Names.nameBases.push(slavic());
+    Names.add(slavic());
     expect(names(meaning("generic-of", "mouth", "~Luga"))).toEqual(new Set(["Ust-Luga"]));
   });
 
@@ -299,14 +336,14 @@ describe("a base with a grammar", () => {
       counting.lexicon!,
       NameNotation.parseLexicon({ three: "Tri/few, Tri/fewf", two: "Dva/few, Dve/fewf" })
     );
-    Names.nameBases.push(counting);
+    Names.add(counting);
     expect(names(meaning("modifier-generic", "three", "village"))).toEqual(new Set(["Tri Sela"]));
     expect(names(meaning("modifier-generic", "two", "hill"))).toEqual(new Set(["Dve Gory"])); // the form its class allows
     expect(names(meaning("modifier-generic", "new", "village"))).toEqual(new Set(["Novoye Selo", "Novoye"])); // no number, no change
   });
 
   it("makes do where no forms fit, and says the name is not whole", () => {
-    Names.nameBases.push(slavic());
+    Names.add(slavic());
     expect(Meanings.compose({ ...meaning("modifier-generic", "harbour", "town"), origin: "slavic" }, "slavic")).toEqual(
       {
         name: "Pristanov", // a noun for a stem

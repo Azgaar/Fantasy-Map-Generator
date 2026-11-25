@@ -2,16 +2,14 @@ import { mean, min, polygonLength, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import { type Feature, Features, LAKE_SUBTYPES } from "@/model/physical/features-generator";
-import { Meanings } from "@/model/society/names/meanings";
 import { Names } from "@/model/society/names/names-generator";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Styles } from "@/model/styles/styles";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit, getHeight } from "@/model/units";
 import { Layers } from "@/renderers/layers";
-import { speak } from "@/services/speech";
 import { Dialog } from "@/ui/dialog/dialog";
-import { noteButton } from "@/ui/dialog/dialog-helpers";
+import { nameEditButton, noteButton } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
@@ -43,12 +41,9 @@ function renderDialog(): void {
   const html = /* html */ `<div id="lakeEditor" class="dialog">
     <div id="lakeBody" style="padding-bottom: 0.3em">
       <div>
-        <div class="label" style="width: 4.8em">${t("Name")}:</div>
-        <span id="lakeNameCulture" data-tip="${t("Generate culture-specific name")}" class="icon-book pointer"></span>
-        <span id="lakeNameRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
-        <input id="lakeName" data-tip="${t("Type to rename")}" autocorrect="off" spellcheck="false" />
-        <span id="lakeNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
-        <span id="lakeTranslations" data-tip="${t("See the name in other name bases")}" class="icon-exchange pointer"></span>
+        <div class="label">${t("Name")}:</div>
+        <span id="lakeName"></span>
+        ${nameEditButton("lakeNameEdit")}
       </div>
       <div data-tip="${t("Lake subtype. Generators read it: burgs cannot port on dry, frozen or lava lakes")}">
         <div class="label" style="width: 7em">${t("Subtype")}:</div>
@@ -75,39 +70,39 @@ function renderDialog(): void {
       </div>
       <div data-tip="${t("Lake area in selected units")}">
         <div class="label">${t("Area")}:</div>
-        <input id="lakeArea" disabled />
+        <span id="lakeArea"></span>
       </div>
       <div data-tip="${t("Lake shore length in selected units")}">
         <div class="label">${t("Shore length")}:</div>
-        <input id="lakeShoreLength" disabled />
+        <span id="lakeShoreLength"></span>
       </div>
       <div data-tip="${t("Lake elevation in selected units")}">
         <div class="label">${t("Elevation")}:</div>
-        <input id="lakeElevation" disabled />
+        <span id="lakeElevation"></span>
       </div>
       <div data-tip="${t("Lake average depth in selected units")}">
         <div class="label">${t("Average depth")}:</div>
-        <input id="lakeAverageDepth" disabled />
+        <span id="lakeAverageDepth"></span>
       </div>
       <div data-tip="${t("Lake maximum depth in selected units")}">
         <div class="label">${t("Max depth")}:</div>
-        <input id="lakeMaxDepth" disabled />
+        <span id="lakeMaxDepth"></span>
       </div>
       <div data-tip="${t("Lake water supply. If supply > evaporation and there is an outlet, the lake water is fresh. If supply is very low, the lake becomes dry")}">
         <div class="label">${t("Supply")}:</div>
-        <input id="lakeFlux" disabled />
+        <span id="lakeFlux"></span>
       </div>
       <div data-tip="${t("Evaporation from lake surface. If evaporation > supply, the lake water is saline. If difference is high, the lake becomes dry")}">
         <div class="label">${t("Evaporation")}:</div>
-        <input id="lakeEvaporation" disabled />
+        <span id="lakeEvaporation"></span>
       </div>
       <div data-tip="${t("Number of lake inlet rivers")}">
         <div class="label">${t("Inlets")}:</div>
-        <input id="lakeInlets" disabled />
+        <span id="lakeInlets"></span>
       </div>
       <div data-tip="${t("Lake outlet river")}">
         <div class="label">${t("Outlet")}:</div>
-        <input id="lakeOutlet" disabled />
+        <span id="lakeOutlet"></span>
       </div>
     </div>
     <div id="lakeBottom">
@@ -117,11 +112,7 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   // add listeners — dropped together with the dialog HTML on close
-  ensureEl("lakeName").addEventListener("input", changeName);
-  ensureEl("lakeNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("lakeName").value));
-  ensureEl("lakeNameCulture").addEventListener("click", () => regenerateName());
-  ensureEl("lakeNameRandom").addEventListener("click", generateNameRandom);
-  ensureEl("lakeTranslations").addEventListener("click", showTranslations);
+  ensureEl("lakeNameEdit").addEventListener("click", editName);
   ensureEl("lakeSubtype").addEventListener("change", changeLakeSubtype);
   ensureEl("lakeGroup").addEventListener("change", changeLakeGroup);
   ensureEl("lakeGroupAdd").addEventListener("click", toggleNewGroupInput);
@@ -141,51 +132,49 @@ function updateLakeValues(): void {
   const { cells, vertices, rivers } = pack;
 
   const l = getLake();
-  ensureEl<HTMLInputElement>("lakeName").value = l.name;
+  ensureEl("lakeName").textContent = l.name;
   ensureEl<HTMLSelectElement>("lakeSubtype").value = l.subtype || "freshwater";
   ensureEl<HTMLInputElement>("lakeTags").value = Tags.format(l.tags);
-  ensureEl<HTMLInputElement>("lakeArea").value = `${si(getArea(l.area))} ${getAreaUnit()}`;
+  ensureEl("lakeArea").textContent = `${si(getArea(l.area))} ${getAreaUnit()}`;
 
   const length = polygonLength(l.vertices.map(v => vertices.p[v] as [number, number]));
-  ensureEl<HTMLInputElement>("lakeShoreLength").value =
+  ensureEl("lakeShoreLength").textContent =
     `${si(length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
 
   const lakeCells = Array.from(cells.i.filter(i => cells.f[i] === l.i));
   const heights = lakeCells.map(i => cells.h[i]);
 
-  ensureEl<HTMLInputElement>("lakeElevation").value = getHeight(l.height);
-  ensureEl<HTMLInputElement>("lakeAverageDepth").value = getHeight(mean(heights) ?? 0, true);
-  ensureEl<HTMLInputElement>("lakeMaxDepth").value = getHeight(min(heights) ?? 0, true);
+  ensureEl("lakeElevation").textContent = getHeight(l.height);
+  ensureEl("lakeAverageDepth").textContent = getHeight(mean(heights) ?? 0, true);
+  ensureEl("lakeMaxDepth").textContent = getHeight(min(heights) ?? 0, true);
 
-  ensureEl<HTMLInputElement>("lakeFlux").value = String(l.flux);
-  ensureEl<HTMLInputElement>("lakeEvaporation").value = String(l.evaporation);
+  ensureEl("lakeFlux").textContent = String(l.flux);
+  ensureEl("lakeEvaporation").textContent = String(l.evaporation);
 
   const inlets = l.inlets?.map(inlet => rivers.find(river => river.i === inlet)?.name);
   const outlet = l.outlet ? rivers.find(river => river.i === l.outlet)?.name : "no";
-  const inletsInput = ensureEl<HTMLInputElement>("lakeInlets");
-  inletsInput.value = inlets ? String(inlets.length) : "no";
-  inletsInput.title = inlets ? inlets.join(", ") : "";
-  ensureEl<HTMLInputElement>("lakeOutlet").value = outlet ?? "no";
+  const inletsText = ensureEl("lakeInlets");
+  inletsText.textContent = inlets ? String(inlets.length) : "no";
+  inletsText.title = inlets ? inlets.join(", ") : "";
+  ensureEl("lakeOutlet").textContent = outlet ?? "no";
 }
 
-function changeName(this: HTMLInputElement): void {
-  getLake().name = this.value;
-}
-
-function generateNameRandom(): void {
-  regenerateName(Names.randomBase().id);
-}
-
-function regenerateName(baseId?: string): void {
-  const lake = Object.assign(getLake(), Toponyms.lake(getLake(), { baseId }));
-  ensureEl<HTMLInputElement>("lakeName").value = lake.name;
-}
-
-function showTranslations(): void {
+function editName(): void {
   const lake = getLake();
-  const culture = pack.cells.culture[lake.shoreline?.[0] || lake.firstCell];
-  void Controllers.NameTranslations.open(Meanings.of(lake, culture), name => {
-    lake.name = ensureEl<HTMLInputElement>("lakeName").value = name;
+  void Controllers.NameEditor.open({
+    title: t("Rename lake"),
+    entity: `feature:${lake.i}`,
+    owner: "lakeEditor",
+    name: lake.name,
+    meaning: lake.meaning,
+    culture: Toponyms.cultureOfFeature(lake),
+    generate: baseId => Toponyms.lake(lake, { baseId }),
+    proper: baseId => Names.getWater(baseId),
+    onApply: ({ name, meaning }) => {
+      Features.setMeaning(lake.i, meaning);
+      Features.rename(lake.i, name);
+      ensureEl("lakeName").textContent = name;
+    }
   });
 }
 

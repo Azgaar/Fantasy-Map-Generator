@@ -24,7 +24,8 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Names: a namesbase may name burgs with its listed places as they are
 - Editors: see what a name means and how other namesbases render it
 - Editors: a change of culture, namesbase or burg group offers new names
-- Namesbases Overview: all namesbases and cultures that use them; remove a namesbase
+- Namesbases Overview: all namesbases and cultures that use them; remove a custom namesbase
+- Namesbases: custom and edited ones are kept for new maps; built-in ones are locked, edit a copy
 - Namesbase Editor: edit personal names, lexicon, name patterns and sound rules, with live examples
 - Namesbase Editor: copy, download or restore a single namesbase
 - Namesbase Editor: JSON download and upload; older TXT still loads

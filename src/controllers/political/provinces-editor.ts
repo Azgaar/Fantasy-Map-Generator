@@ -30,7 +30,7 @@ import { Csv } from "@/services/io/csv";
 import { speak } from "@/services/speech";
 import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { closeEntityDialogs, noteIcon } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, nameEditButton, noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -71,6 +71,7 @@ let development: (number | undefined)[] = []; // the people's average by provinc
 const CSV_COLUMNS = [
   "Id",
   "Province",
+  "Meaning",
   "Full Name",
   "Form",
   "State",
@@ -362,6 +363,7 @@ function renderDialog(): void {
     const stateId = pack.provinces[p].state;
 
     if (el.tagName === "FILL-BOX") changeFill(el as FillBoxElement);
+    else if (el.dataset.col === "form") editProvinceForm(p);
     else if (cl.contains("name")) editProvinceName(p);
     else if (cl.contains("coaIcon"))
       void Controllers.EmblemsEditor.open("province", `provinceCOA${p}`, pack.provinces[p]);
@@ -759,63 +761,67 @@ function removeProvince(p: number): void {
 }
 
 function editProvinceName(province: number): void {
-  renderNameEditor();
-  coined = undefined;
   const p = pack.provinces[province];
-  ensureEl("provinceNameEditor").dataset.province = String(province);
-  ensureEl<HTMLInputElement>("provinceNameEditorShort").value = p.name;
-  applyOption(ensureEl("provinceNameEditorSelectForm"), p.formName);
-  ensureEl<HTMLInputElement>("provinceNameEditorFull").value = p.fullName;
+  void Controllers.NameEditor.open({
+    title: t("Rename province"),
+    entity: `province:${province}`,
+    owner: dialogId,
+    name: p.name,
+    meaning: p.meaning,
+    culture: pack.cells.culture[p.center],
+    generate: baseId => Toponyms.landOf(baseId),
+    proper: baseId => Names.getBaseShort(baseId),
+    full: { name: p.fullName, edit: () => editProvinceForm(province) },
+    onApply: ({ name, meaning }) => {
+      Provinces.setMeaning(province, meaning);
+      Provinces.rename(province, name);
+      Layers.draw("provinces");
+      Layers.draw("labels");
+      refreshProvincesEditor();
+    }
+  });
+}
 
-  const cultureId = pack.cells.culture[p.center];
-  ensureEl("provinceCultureDisplay").textContent = pack.cultures[cultureId].name;
+function editProvinceForm(province: number): void {
+  renderFormEditor();
+  const p = pack.provinces[province];
+  ensureEl("provinceFormEditor").dataset.province = String(province);
+  ensureEl("provinceFormEditorName").textContent = p.name;
+  ensureEl("provinceFormEditorNameEdit").addEventListener("click", () => {
+    applyFormChange(p); // the name's dialog shows the full name as it is stored
+    Dialog.close("provinceFormEditor");
+    editProvinceName(province);
+  });
+  applyOption(ensureEl("provinceFormEditorSelect"), p.formName);
+  ensureEl<HTMLInputElement>("provinceFormEditorFull").value = p.fullName;
 
-  Dialog.open("provinceNameEditor", {
-    title: t("Change province name"),
+  Dialog.open("provinceFormEditor", {
+    title: t("Change province form"),
     buttons: [
       {
         label: t("Apply"),
         onClick: () => {
-          applyNameChange(p);
-          Dialog.close("provinceNameEditor");
+          applyFormChange(p);
+          Dialog.close("provinceFormEditor");
         }
       },
-      {
-        label: t("Cancel"),
-        onClick: () => {
-          Dialog.close("provinceNameEditor");
-        }
-      }
+      { label: t("Cancel"), onClick: () => Dialog.close("provinceFormEditor") }
     ],
-    position: { my: "center", at: "center", of: "svg" },
-    onClose: closeProvinceNameEditor
+    position: { my: "center", at: "center", of: "svg" }
   });
 }
 
-function renderNameEditor(): void {
-  Dialog.destroy("provinceNameEditor");
-  const nameEditorHtml = /* html */ `<div id="provinceNameEditor" class="dialog" data-province="0">
+function renderFormEditor(): void {
+  Dialog.destroy("provinceFormEditor");
+  const formEditorHtml = /* html */ `<div id="provinceFormEditor" class="dialog" data-province="0">
       <div>
-        <div data-tip="${t("Short name")}" class="label">${t("Short name")}:</div>
-        <input
-          id="provinceNameEditorShort"
-          data-tip="${t("Type to change the short name")}"
-          autocorrect="off"
-          spellcheck="false"
-          style="width: 11em"
-        />
-        <span id="provinceNameEditorShortSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
-        <span
-          id="provinceNameEditorShortCulture"
-          data-tip="${t("Generate culture-specific name")}"
-          class="icon-book pointer"
-        ></span>
-        <span id="provinceNameEditorShortRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
-        <span id="provinceNameEditorTranslations" data-tip="${t("See the name in other name bases")}" class="icon-exchange pointer"></span>
+        <div class="label">${t("Short name")}:</div>
+        <span id="provinceFormEditorName"></span>
+        ${nameEditButton("provinceFormEditorNameEdit")}
       </div>
       <div data-tip="${t("Select form name")}">
         <div data-tip="${t("Form name")}" class="label">${t("Form name")}:</div>
-        <select id="provinceNameEditorSelectForm" style="display: inline-block; width: 11em; height: 1.645em">
+        <select id="provinceFormEditorSelect" style="display: inline-block; width: 11em; height: 1.645em">
           <option value="">${t("blank")}</option>
           <option value="Area">${t("Area")}</option>
           <option value="Autonomy">${t("Autonomy")}</option>
@@ -855,13 +861,13 @@ function renderNameEditor(): void {
           <option value="Tribe">${t("Tribe")}</option>
         </select>
         <input
-          id="provinceNameEditorCustomForm"
+          id="provinceFormEditorCustom"
           placeholder="${t("Enter custom form name")}"
           data-tip="${t("Create custom province form name")}"
           style="display: none; width: 11em"
         />
         <span
-          id="provinceNameEditorAddForm"
+          id="provinceFormEditorAdd"
           data-tip="${t("Click to add custom province form name to the list")}"
           class="icon-plus pointer"
         ></span>
@@ -869,73 +875,32 @@ function renderNameEditor(): void {
       <div>
         <div data-tip="${t("Full name")}" class="label">${t("Full name")}:</div>
         <input
-          id="provinceNameEditorFull"
+          id="provinceFormEditorFull"
           data-tip="${t("Type to change the full name")}"
           autocorrect="off"
           spellcheck="false"
           style="width: 11em"
         />
-        <span id="provinceNameEditorFullSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
+        <span id="provinceFormEditorFullSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
         <span
-          id="provinceNameEditorFullRegenerate"
+          id="provinceFormEditorFullRegenerate"
           data-tip="${t("Click to re-generate full name")}"
           class="icon-arrows-cw pointer"
         ></span>
       </div>
-      <div
-        id="provinceCultureName"
-        data-tip="${t("Dominant culture in the province. This defines culture-based naming. Can be changed via the Cultures Editor")}"
-        style="margin-top: 0.2em"
-      >
-        ${t("Dominant culture")}:&nbsp;<span id="provinceCultureDisplay"></span>
-      </div>
     </div>`;
-  ensureEl("dialogs").insertAdjacentHTML("beforeend", nameEditorHtml);
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", formEditorHtml);
 
-  ensureEl("provinceNameEditorShortCulture").addEventListener("click", regenerateShortNameCulture);
-  ensureEl("provinceNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
-  ensureEl("provinceNameEditorTranslations").addEventListener("click", showTranslations);
-  ensureEl("provinceNameEditorShortSpeak").addEventListener("click", () =>
-    speak(ensureEl<HTMLInputElement>("provinceNameEditorShort").value)
+  ensureEl("provinceFormEditorAdd").addEventListener("click", addCustomForm);
+  ensureEl("provinceFormEditorFullRegenerate").addEventListener("click", regenerateFullName);
+  ensureEl("provinceFormEditorFullSpeak").addEventListener("click", () =>
+    speak(ensureEl<HTMLInputElement>("provinceFormEditorFull").value)
   );
-  ensureEl("provinceNameEditorAddForm").addEventListener("click", addCustomForm);
-  ensureEl("provinceNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
-  ensureEl("provinceNameEditorFullSpeak").addEventListener("click", () =>
-    speak(ensureEl<HTMLInputElement>("provinceNameEditorFull").value)
-  );
-}
-
-function closeProvinceNameEditor(): void {
-  Dialog.destroy("provinceNameEditor");
-}
-
-let coined: ReturnType<typeof Toponyms.landOf> | undefined; // the name last generated here, kept with its meaning
-
-function regenerateShortNameCulture(): void {
-  const province = +ensureEl("provinceNameEditor").dataset.province!;
-  const culture = pack.cells.culture[pack.provinces[province].center];
-  coined = Toponyms.landOf(culture);
-  ensureEl<HTMLInputElement>("provinceNameEditorShort").value = coined.name;
-}
-
-function regenerateShortNameRandom(): void {
-  coined = Toponyms.landOf(Names.randomBase().id);
-  ensureEl<HTMLInputElement>("provinceNameEditorShort").value = coined.name;
-}
-
-function showTranslations(): void {
-  const province = pack.provinces[+ensureEl("provinceNameEditor").dataset.province!];
-  const input = ensureEl<HTMLInputElement>("provinceNameEditorShort");
-  const { meaning } = coined?.name === input.value ? coined : province;
-  const named = { name: input.value || province.name, meaning };
-  void Controllers.NameTranslations.open(Meanings.of(named, pack.cells.culture[province.center]), name => {
-    input.value = name;
-  });
 }
 
 function addCustomForm(): void {
-  const customForm = ensureEl<HTMLInputElement>("provinceNameEditorCustomForm");
-  const selectForm = ensureEl("provinceNameEditorSelectForm");
+  const customForm = ensureEl<HTMLInputElement>("provinceFormEditorCustom");
+  const selectForm = ensureEl("provinceFormEditorSelect");
   const value = customForm.value;
   const displayed = customForm.style.display === "inline-block";
   customForm.style.display = displayed ? "none" : "inline-block";
@@ -944,25 +909,16 @@ function addCustomForm(): void {
 }
 
 function regenerateFullName(): void {
-  const short = ensureEl<HTMLInputElement>("provinceNameEditorShort").value;
-  const form = ensureEl<HTMLSelectElement>("provinceNameEditorSelectForm").value;
-  const getFullName = (): string => {
-    if (!form) return short;
-    if (!short && form) return `The ${form}`;
-    return `${short} ${form}`;
-  };
-  ensureEl<HTMLInputElement>("provinceNameEditorFull").value = getFullName();
+  const { name } = pack.provinces[+ensureEl("provinceFormEditor").dataset.province!];
+  const form = ensureEl<HTMLSelectElement>("provinceFormEditorSelect").value;
+  ensureEl<HTMLInputElement>("provinceFormEditorFull").value = form ? `${name} ${form}` : name;
 }
 
-function applyNameChange(p: Province): void {
-  const name = ensureEl<HTMLInputElement>("provinceNameEditorShort").value.trim();
-  const formName = ensureEl<HTMLSelectElement>("provinceNameEditorSelectForm").value;
-  const fullName = ensureEl<HTMLInputElement>("provinceNameEditorFull").value.trim();
-  const oldFullName = p.fullName;
-  if (name && name !== p.name) Provinces.rename(p.i, name);
-  if (coined?.name === name) Provinces.setMeaning(p.i, coined.meaning);
+function applyFormChange(p: Province): void {
+  const formName = ensureEl<HTMLSelectElement>("provinceFormEditorSelect").value;
+  const fullName = ensureEl<HTMLInputElement>("provinceFormEditorFull").value.trim();
   if (formName !== (p.formName ?? "")) Provinces.setForm(p.i, formName);
-  if (fullName && fullName !== oldFullName) Provinces.setFullName(p.i, fullName);
+  if (fullName && fullName !== p.fullName) Provinces.setFullName(p.i, fullName);
   Layers.draw("provinces");
   Layers.draw("labels");
   refreshProvincesEditor();
@@ -1304,6 +1260,7 @@ function downloadProvincesData(): void {
   const rows = getProvincesData().map(province => [
     province.i,
     province.name,
+    province.meaning ? Meanings.write(province.meaning) : "",
     province.fullName,
     province.formName,
     pack.states[province.state].name,
@@ -1531,7 +1488,7 @@ async function uploadProvincesCsv(text: string): Promise<void> {
     const province = pack.provinces[id];
     return id && province && !province.removed ? province : undefined;
   };
-  const textColumns = ["Province", "Full Name", "Form", "Tags"];
+  const textColumns = ["Province", "Meaning", "Full Name", "Form", "Tags"];
   const updated = await Controllers.CsvUpload.update(
     text,
     [...CSV_COLUMNS, ...PROVINCE_FIGURES],
@@ -1539,7 +1496,7 @@ async function uploadProvincesCsv(text: string): Promise<void> {
     (id, row) => {
       const province = find(id)!;
       const fullName = province.fullName; // a new name or form rebuilds it, so an unchanged cell must not restore the old one
-      row.apply("Province", name => Provinces.rename(id, name), province.name);
+      row.named("Province", province, pack.cells.culture[province.center], Provinces);
       row.apply("Form", form => Provinces.setForm(id, form), province.formName);
       row.apply("Full Name", name => Provinces.setFullName(id, name), fullName);
       row.apply("Color", color => Provinces.recolor(id, color), province.color);

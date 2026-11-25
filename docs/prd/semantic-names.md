@@ -418,15 +418,14 @@ One file per base makes a lexicon a per-language contribution, like a locale fil
 
 ## Save format and migration
 
-The name bases record of a `.map` file becomes a JSON array of `NameBase` objects, and old maps are converted once on load.
+Name bases of a `.map` file become `NameBase` objects in its settings, and old maps are converted once on load.
 
 ### The record
 
-- Record 31 holds `JSON.stringify` of the bases the map uses.
-- A base equal to the shipped one with the same id is saved as a reference, `{ "id": "german" }`. An edited or custom base is saved in full.
+- Edited and custom bases are saved in full in the settings, `options.map.nameBases`. Shipped bases are not saved: the app has them all.
 - Burgs and states carry `meaning` inside their existing JSON records. Cultures carry the base id.
 
-A referenced base picks up later improvements to the shipped data. Stored names do not change, because `name` is saved; only new renderings and the translations view reflect the newer lexicon.
+A shipped base picks up later improvements to the shipped data. Stored names do not change, because `name` is saved; only new renderings and the translations view reflect the newer lexicon.
 
 ### Migrating old maps
 
@@ -509,7 +508,7 @@ When a burg's culture changes, `Burgs.setCulture` offers to re-render its name i
 
 ### Burgs overview
 
-An optional Meaning column with the gloss, included in search and CSV export.
+An optional Meaning column with the gloss, included in search. The CSV has a Meaning column in notation (`owner-generic: ~Eadric, town`), which uploads back.
 
 ### Namesbase editor
 
@@ -662,7 +661,7 @@ All four phases are done, with the differences listed below. The sections after 
 - **Land generics:** a state takes only a land generic its base has a written form for. Without that, a fallback form would name a state like a town.
 - **State suffixes:** the suffix table of `Names.getState` became lexicon, templates and join rules in 27 shipped bases, and the function is gone. Provinces use the same forms through `Toponyms.land`.
 - **Plain English:** Human Generic renders every concept with its own English word, and English borrowed it until phase 3 gave English a lexicon of its own.
-- **Appropriation:** in phase 2 a root rendered in another base went through that base's word rules only. Phase 3 added the letter table, foreign rules and cluster repair.
+- **Appropriation:** in phase 2 a root rendered in another base went through that base's word rules only. Phase 3 added the letter table, foreign rules and cluster repair. It was later rebuilt to take a whole name over, see [semantic names](../domain/semantic-names.md#appropriation).
 - **Meaning editor:** the editors show the gloss and the Translations view and can coin a new meaning. Editing a meaning slot by slot is not built.
 - **Uniqueness:** a name already taken is re-drawn with another meaning. The salt is stored and read, but nothing sets it yet, because fallback forms have no variants to choose between.
 

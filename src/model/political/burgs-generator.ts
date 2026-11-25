@@ -983,6 +983,12 @@ class BurgModule {
     this.rename(burgId, name);
   }
 
+  /** Regenerate the names of many burgs: none is named after a name another is about to lose */
+  regenerateNames(burgs: Burg[]): void {
+    for (const burg of burgs) burg.name = "";
+    for (const { i } of burgs) this.regenerateName(i);
+  }
+
   /** Set a burg's population as shown in the Burg Editor, in people */
   setPopulation(burgId: number, people: number): void {
     const burg = this.living(burgId);

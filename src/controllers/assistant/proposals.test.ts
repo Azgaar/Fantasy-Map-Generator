@@ -124,6 +124,39 @@ it("runs the batch on a draft, so even fields a proposal does not record stay un
   expect(proposal.change.map(row => [row.key, row.field, row.after])).toEqual([["zone:1", "name", "Peace"]]);
 });
 
+it("clears what the old name said, and undo restores it", () => {
+  const meaning = { pattern: "owner-generic", tokens: ["~Vela", "town"], origin: "english" };
+  Object.assign(pack.burgs[2] as object, { meaning });
+  const proposal = proposeOk([rename(2, "Gull")]);
+  expect(pack.burgs[2].meaning).toEqual(meaning);
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(pack.burgs[2]).toMatchObject({ name: "Gull" });
+  expect(pack.burgs[2].meaning).toBeUndefined();
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(pack.burgs[2]).toMatchObject({ name: "Orn", meaning });
+});
+
+it("gives a renamed burg a meaning, as one row, and undo restores the old one", () => {
+  const meaning = { pattern: "feature", tokens: ["ford"], origin: "english" };
+  Object.assign(pack.burgs[2] as object, { meaning, culture: 0 });
+  Object.assign(pack, { cultures: [{ i: 0, base: "german" }] });
+  const say = (text: string, key: unknown = "burg:2") => ({ op: "Toponyms.setMeaning", args: [key, text] });
+  const proposal = proposeOk([rename(2, "Gull"), say("owner-generic: ~Eadric, town")]);
+  const after = { pattern: "owner-generic", tokens: ["~Eadric", "town"], origin: "german" };
+  expect(proposal.change.map(row => [row.field, row.before, row.after])).toEqual([
+    ["name", "Orn", "Gull"],
+    ["meaning", meaning, after]
+  ]);
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(pack.burgs[2].meaning).toEqual(after);
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(pack.burgs[2]).toMatchObject({ name: "Orn", meaning });
+
+  expect(propose("Bad", [say("owner-generic: ~Eadric, twon")], 1, MAP)).toContain('"twon" is not a known word');
+  expect(propose("Bad", [say("feature: ford", "state:0")], 1, MAP)).toBe("The name of state:0 has no meaning");
+  expect(propose("Bad", [say("feature: ford", "burg:9")], 1, MAP)).toBe("Entity burg:9 does not exist");
+});
+
 it("records a state's rebuilt full name", () => {
   const proposal = proposeOk([{ op: "States.rename", args: [1, "New"] }]);
   expect(proposal.change.map(row => [row.field, row.after])).toEqual([

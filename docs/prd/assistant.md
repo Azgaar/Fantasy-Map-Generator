@@ -438,7 +438,7 @@ Assistant services (no world state, no DOM)
     - **Each method validates its own arguments** (entity exists and is not removed, name not empty) and throws a readable message. It only changes data: model classes cannot reach renderers, so redrawing is not their job.
     - **Notes own the safe-HTML rule.** Notes render into tooltips as HTML, so `Notes.write` accepts only the notes editor's subset: no event-handler attributes, no `javascript:` URLs, no scripts or iframes. The notes editor keeps its own path for its rich-text output.
 
-11. **Operations registry (controller layer).** A plain allowlist of model-class methods, by model. The name is the method it runs, so the registry holds no logic of its own:
+11. **Operations registry (controller layer).** A plain allowlist of model-class methods, by model. The name is the method it runs, so the registry holds no logic of its own, but that a `rename` clears what the old name meant:
 
     ```ts
     Burgs: ["rename", "setPopulation", "move", …],
@@ -500,6 +500,7 @@ Names follow one pattern: `rename`, `recolor`, `set<Field>`, `add`, `create` or 
 | Edit (where)                                                          | Operation                                      | Status     |
 | --------------------------------------------------------------------- | ---------------------------------------------- | ---------- |
 | Name (Burg editor, Burgs overview)                                    | `Burgs.rename(burgId, name)`                   | Registered |
+| Meaning, as of a state, province, river, lake or island (Name Editor) | `Toponyms.setMeaning(key, text)`               | Registered |
 | Population                                                            | `Burgs.setPopulation(burgId, people)`          | Registered |
 | Group                                                                 | `Burgs.setGroup(burgId, group)`                | Registered |
 | Type                                                                  | `Burgs.setType(burgId, type)`                  | Registered |

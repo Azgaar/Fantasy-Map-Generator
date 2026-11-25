@@ -373,7 +373,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.journeys = data[52] ? JSON.parse(data[52]) : [];
     pack.legends = data[53] ? JSON.parse(data[53]) : [];
 
-    Names.restore(data[31]);
     await Names.loadUsed();
 
     await autoUpdate?.resolveVersionConflicts(mapVersion!, data);

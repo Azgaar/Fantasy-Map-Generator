@@ -39,6 +39,15 @@ function withOwnIds(bases: NameBase[], taken: string[]): NameBase[] {
   });
 }
 
+/** The bases that differ from the loaded built-in ones */
+function withoutShipped(bases: NameBase[]): NameBase[] {
+  const asFiled = (base: NameBase) => JSON.stringify(NAME_BASE_SCHEMA.parse(base)); // its fields in one order
+  return bases.filter(base => {
+    const listed = Names.find(base.id);
+    return !listed || !Names.isShipped(listed) || asFiled(listed) !== asFiled(base);
+  });
+}
+
 /** A JSON file holds one base or a list */
 function parseJson(data: string): NameBase[] {
   const parsed: unknown = safeParseJSON(data);
@@ -116,4 +125,4 @@ function showParseErrors(errors: ParseError[], added: number): void {
   });
 }
 
-export const NamesbaseFile = { format, parse, withOwnIds };
+export const NamesbaseFile = { format, parse, withOwnIds, withoutShipped };

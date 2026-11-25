@@ -2,7 +2,6 @@
 
 import { GraphOverride } from "@/model/graph/graph-override";
 import { mapHistory } from "@/model/map-history";
-import { Names } from "@/model/society/names/names-generator";
 import { Notes } from "@/model/story/notes";
 import { Layers } from "@/renderers/layers";
 import { restoreOceanVectors } from "@/renderers/ocean-cache";
@@ -144,8 +143,6 @@ function prepareMapData(viewOnly = false): string {
   const labels = JSON.stringify(pack.addedLabels || []);
   const styleData = JSON.stringify(styles);
 
-  const namesData = Names.serialize();
-
   // round population to save space
   const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
 
@@ -182,7 +179,7 @@ function prepareMapData(viewOnly = false): string {
     [], // deprecated pack.cells.crossroad
     religions,
     provinces,
-    namesData,
+    "", // deprecated name bases, now options.map.nameBases
     rivers,
     "", // rulers are deprecated, use pack.measurers instead
     fonts,

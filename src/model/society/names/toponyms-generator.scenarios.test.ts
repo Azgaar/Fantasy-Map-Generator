@@ -151,8 +151,22 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
   it("says what a name would be in another culture's base, and nothing when it stays", () => {
     const burg = living(pack.burgs).find(({ meaning }) => meaning!.pattern === "modifier-generic")!;
     const other = living(pack.cultures).find(culture => culture.base !== burg.meaning!.origin)!;
-    expect(Toponyms.nameIn(burg, other.i, burg.meaning!.origin)).toBe(Meanings.render(burg.meaning!, other.base));
+    const adopted = Toponyms.nameIn(burg, other.i, burg.meaning!.origin)?.name ?? burg.name!;
+    expect(adopted.toLowerCase()).toBe(Appropriation.adapt(burg.name!.toLowerCase(), Names.find(other.base)!));
     expect(Toponyms.nameIn(burg, burg.culture!, burg.meaning!.origin)).toBeUndefined();
+  });
+
+  it("gives back the name a thing had, typed or not, and whatever it means", () => {
+    const home = living(pack.cultures)[1];
+    const away = living(pack.cultures).find(culture => culture.base !== home.base)!;
+    const meaning: Meaning = { pattern: "feature", tokens: ["ford"], origin: home.base };
+    for (const typed of [{ name: "Qwyxxa" }, { name: "Qwyxxa", meaning }]) {
+      expect(Toponyms.nameIn(typed, home.i, home.base)).toBeUndefined();
+      const named = Toponyms.nameIn(typed, away.i, home.base)!;
+      expect(named.meaning.own).toBe("Qwyxxa");
+      const back = Toponyms.nameIn(named, home.i, away.base)!;
+      expect(back).toEqual({ name: "Qwyxxa", meaning: typed.meaning ?? Meanings.simplex("Qwyxxa", home.base) });
+    }
   });
 
   it("generates the same names for the same seed", async () => {
@@ -177,6 +191,30 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     expect([burg.name, burg.meaning]).not.toEqual(before);
     expect(burg.label!.text).toBe(burg.name);
     expect(Meanings.render(burg.meaning!, burg.meaning!.origin)).toBe(burg.name);
+  });
+
+  it("reads every meaning of the map back from its notation", () => {
+    const named = [
+      ...living(pack.burgs),
+      ...living(pack.states),
+      ...living(pack.provinces),
+      ...pack.rivers,
+      ...pack.features
+    ];
+    for (const { meaning } of named as { meaning?: Meaning }[]) {
+      if (!meaning) continue;
+      const { pattern, tokens, origin } = meaning;
+      expect(Meanings.read(Meanings.write(meaning), origin)).toEqual({ pattern, tokens, origin });
+    }
+  });
+
+  it("names no burg after a name another loses when they are renamed together", () => {
+    const burgs = living(pack.burgs).filter(({ i }) => i);
+    Burgs.regenerateNames(burgs);
+    const names = new Set(burgs.map(({ name }) => `~${name}`));
+    expect(names.size).toBe(burgs.length);
+    const relative = burgs.filter(({ meaning }) => meaning!.pattern === "relative");
+    for (const { meaning } of relative) expect(names).toContain(meaning!.tokens[1]);
   });
 });
 
@@ -238,6 +276,58 @@ describe("burg names of an authored base", () => {
     expect(village.name).not.toBe(town.name);
     expect(Meanings.render(village.meaning, "ruthenian")).toBe(village.name);
     expect(Toponyms.regrouped(town, "town")).toBeUndefined();
+  });
+
+  it("keep a name respelled by another people respelled in another group", () => {
+    const groups = ["town", "village"];
+    const inGroup = (burg: Burg) => groups.includes(burg.group!) && burg.meaning!.tokens.includes(burg.group as never);
+    let offered = 0;
+    for (const burg of living(pack.burgs).filter(inGroup)) {
+      const home = pack.cultures[burg.culture!].base;
+      const host = living(pack.cultures).find(({ base }) => base !== home)!;
+      const there = Toponyms.nameIn(burg, host.i, home);
+      if (!there) continue;
+      const group = groups.find(name => name !== burg.group)!;
+      const named = Toponyms.regrouped({ ...burg, ...there, culture: host.i, group }, burg.group);
+      if (!named) continue;
+      offered++;
+      const { own = named.name } = named.meaning;
+      expect(named.meaning.tokens).toContain(group);
+      expect(Meanings.render(named.meaning, home), named.name).toBe(own);
+      expect(Appropriation.adopt(own, Names.find(host.base)!)).toBe(named.name);
+    }
+    expect(offered).toBeGreaterThan(20);
+  });
+
+  it("take no other group's ending where their tongue is not on the map", () => {
+    const town = living(pack.burgs).find(({ meaning, group }) => group === "town" && meaning!.tokens.includes("town"))!;
+    const meaning = { ...town.meaning!, origin: "dropped" };
+    expect(Toponyms.regrouped({ ...town, meaning, group: "village" }, "town")).toBeUndefined();
+  });
+
+  it("build on rivers, neighbours and capitals as another base says them", async () => {
+    await Names.load(["japanese"]);
+    const base = Names.find("japanese")!;
+    const native = (root: string) => Appropriation.adopt(root, base);
+    const waters = [...pack.rivers, ...pack.features].flatMap(water => water?.name ?? []);
+    const theirs = new Set([...waters, ...living(pack.burgs).map(({ name }) => name!)].map(native));
+
+    const burgs = seeded("borrowed", () => living(pack.burgs).map(burg => Toponyms.burg(burg, { baseId: base.id })));
+    const roots = burgs.flatMap(({ meaning: { pattern, tokens } }) =>
+      pattern === "generic-of" || pattern === "relative" ? tokens[1].slice(1) : []
+    );
+    expect(roots.length).toBeGreaterThan(10);
+    for (const root of roots) expect(theirs, root).toContain(root);
+
+    const founded = living(pack.states).map(({ capital }) => pack.burgs[capital]);
+    const isForeign = (token: string) => token.startsWith("~") && native(token.slice(1)) !== token.slice(1);
+    const foreign = founded.flatMap(({ meaning }) => meaning!.tokens.filter(isForeign));
+    const states = seeded("borrowed", () =>
+      founded.flatMap(capital =>
+        Array.from({ length: 12 }, () => Toponyms.state(capital, capital.culture!, { baseId: base.id }))
+      )
+    );
+    for (const { meaning, name } of states) expect(foreign, name).not.toContain(meaning.tokens[0]);
   });
 
   it("agree in gender and number where they are two words", () => {

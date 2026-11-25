@@ -627,12 +627,12 @@ test.describe("Map loading", () => {
     expect(criticalErrors).toEqual([]);
   });
 
-  // a .map stores a shipped base by its id alone, so a session's own base of that id must not stand in for it
+  // a .map stores no shipped base, so a session's own version of one must not stand in for it
   test("loading a map should restore default namebases over the session's ones", async ({ page }) => {
     await waitForMap(page);
     await page.evaluate(() => {
       const Names = (window as any).FMG.Names;
-      Names.nameBases = [{ id: "german", name: "Custom", length: [4, 8], places: { names: ["Aaa", "Bbb", "Ccc"] } }];
+      Names.replace([{ id: "german", name: "Custom", length: [4, 8], places: { names: ["Aaa", "Bbb", "Ccc"] } }]);
       Names.getBase("german"); // caches the custom chain
     });
 
@@ -643,19 +643,17 @@ test.describe("Map loading", () => {
     const result = await page.evaluate(async () => {
       const Names = (window as any).FMG.Names;
       await Names.loadAll(); // a base the map's cultures do not use is listed by its id and name alone
-      const german = Names.getNameBases().find((base: any) => base.id === "german");
       return {
-        ids: Names.ids(),
-        defaultIds: Names.getNameBases().map((base: any) => base.id),
-        changed: Names.nameBases.filter((base: any) => !base.places || !Names.isShipped(base)),
-        chainFromDefault:
-          JSON.stringify(Object.entries(Names.chainOf(Names.find("german").places.names))) ===
-          JSON.stringify(Object.entries(Names.calculateChain(german.places.names)))
+        own: (window as any).FMG.options.map.nameBases,
+        unloaded: Names.nameBases.filter((base: any) => !base.places),
+        german: Names.find("german").places.names.length,
+        name: Names.getBase("german")
       };
     });
 
-    expect(result.ids).toEqual(result.defaultIds.slice(0, 43)); // the bases shipped at the map's version
-    expect(result.changed).toEqual([]);
-    expect(result.chainFromDefault).toBe(true);
+    expect(result.own).toEqual([]);
+    expect(result.unloaded).toEqual([]);
+    expect(result.german).toBeGreaterThan(100);
+    expect(result.name).not.toMatch(/^[abc]+$/i);
   });
 });

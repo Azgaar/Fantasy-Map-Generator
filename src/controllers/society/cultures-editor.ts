@@ -727,15 +727,15 @@ async function cultureChangeBase(this: HTMLSelectElement): Promise<void> {
   await Names.loadUsed();
   row.dataset.base = this.value;
 
-  // names keep their meanings: the new base may say them another way
+  // the new base may say the names another way
   const taken = new Set(pack.burgs.map(burg => burg.name));
-  const renames: [burgId: number, name: string][] = [];
+  const renames: [burgId: number, named: NonNullable<ReturnType<typeof Toponyms.nameIn>>][] = [];
   for (const burg of pack.burgs) {
     if (!burg.i || burg.removed || burg.lock || burg.culture !== culture) continue;
-    const name = Toponyms.nameIn(burg, culture, origin);
-    if (!name || taken.has(name)) continue;
-    taken.add(name);
-    renames.push([burg.i, name]);
+    const named = Toponyms.nameIn(burg, culture, origin);
+    if (!named || taken.has(named.name)) continue;
+    taken.add(named.name);
+    renames.push([burg.i, named]);
   }
   if (!renames.length) return;
 
@@ -746,7 +746,10 @@ async function cultureChangeBase(this: HTMLSelectElement): Promise<void> {
     }),
     confirm: t("Rename"),
     onConfirm: () => {
-      for (const [burgId, name] of renames) Burgs.rename(burgId, name);
+      for (const [burgId, { name, meaning }] of renames) {
+        Burgs.setMeaning(burgId, meaning);
+        Burgs.rename(burgId, name);
+      }
       Layers.draw("labels");
     }
   });
@@ -843,8 +846,8 @@ function cultureRegenerateBurgs(this: HTMLElement): void {
     return;
   }
 
-  const cultureBurgs = pack.burgs.filter(b => b.culture === cultureId && !b.removed && !b.lock);
-  for (const burg of cultureBurgs) Burgs.regenerateName(burg.i);
+  const cultureBurgs = pack.burgs.filter(b => b.i && b.culture === cultureId && !b.removed && !b.lock);
+  Burgs.regenerateNames(cultureBurgs);
   Layers.draw("labels");
   tip(t("Burg names regenerated: {{burgs}}", { burgs: cultureBurgs.length }), false, "success");
 }

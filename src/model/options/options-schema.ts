@@ -9,6 +9,7 @@ import { Icons } from "@/model/icons";
 import type { LayerId } from "@/renderers/layers";
 import type { Good } from "@/types/economy";
 import type { HeraldicEmblem } from "@/types/emblems";
+import type { NameBase } from "@/types/names";
 import { DEBUG_MODES, log } from "@/utils/logger";
 import { count, degrees, hexColor, ids, nonNegative, percent, positive, ratio } from "@/utils/schema-utils";
 
@@ -116,6 +117,25 @@ const goods = z.preprocess(
   z.array(good)
 );
 
+/** only what naming cannot do without: a base is the user's work, not to be lost for a detail */
+const nameBase = z.custom<NameBase>(
+  value =>
+    z
+      .looseObject({
+        id: z.string().min(1),
+        name: z.string(),
+        length: z.tuple([z.number(), z.number()]),
+        places: z.looseObject({ names: z.array(z.string()) })
+      })
+      .safeParse(value).success
+);
+
+/** a broken base is dropped on its own; absent in older maps, which keep bases outside the settings */
+const nameBases = z.preprocess(
+  value => (Array.isArray(value) ? value.filter(item => nameBase.safeParse(item).success) : []),
+  z.array(nameBase)
+);
+
 /** absent in older maps, which take the defaults */
 const eras = z.preprocess(
   value => value ?? [],
@@ -209,6 +229,7 @@ export const mapSchema = z.strictObject({
   eras,
   customIcons,
   goods,
+  nameBases,
   coastline: coastlineSettings,
   relief: z.strictObject({ rules: z.array(reliefRule) }),
   viewOnly: z.boolean().optional()

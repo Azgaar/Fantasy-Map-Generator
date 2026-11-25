@@ -1,4 +1,5 @@
 import { Controllers } from "@/controllers";
+import { Options } from "@/model/options/options-model";
 import { Names } from "@/model/society/names/names-generator";
 import { getFileName } from "@/services/io/file-name";
 import type { NameBase, NameBaseEntry } from "@/types/names";
@@ -126,13 +127,15 @@ function getRows(): Row[] {
 function renderRows(view: TableView<Row>): void {
   const lines = view.rows.map(({ i, base, status, cultures }) => {
     const users = escapeHtml(cultures.join(", "));
+    const isCustom = !Names.isShipped(base) && !Names.isChanged(base);
     const removeTip = cultures.length ? t("Used by a culture") : t("Remove");
+    const remove = `<span data-action="remove" data-tip="${removeTip}" class="icon-trash-empty${cultures.length ? " disabled" : ""}"></span>`;
     return /* html */ `<div class="states" data-id="${i}">
       <div data-col="name" class="pointer" data-action="edit" data-tip="${t("Edit")}">${escapeHtml(base.name)}</div>
       <div data-col="status">${status}</div>
       <div data-col="cultures" data-tip="${users}"><span style="overflow: hidden; text-overflow: ellipsis">${users}</span></div>
       <div data-col="edit"><span data-action="edit" data-tip="${t("Edit")}" class="icon-pencil"></span></div>
-      <div data-col="remove"><span data-action="remove" data-tip="${removeTip}" class="icon-trash-empty${cultures.length ? " disabled" : ""}"></span></div>
+      <div data-col="remove">${isCustom ? remove : ""}</div>
     </div>`;
   });
   ensureEl("namesbasesBody").innerHTML = lines.join("");
@@ -164,6 +167,7 @@ async function triggerRemove(i: number): Promise<void> {
     onConfirm: () => {
       Dialog.close("namesbaseEditor");
       Names.remove(id);
+      Options.save();
       table.refresh();
     }
   });
@@ -178,6 +182,7 @@ function search(this: HTMLInputElement): void {
 function addBase(): void {
   const name = `Base${Names.nameBases.length}`;
   Names.add(Names.composeBase(Names.uniqueId(name, Names.ids()), name, [5, 12], EXAMPLE.split(",")));
+  Options.save();
   table.refresh();
   void Controllers.NamesbaseEditor.open(Names.nameBases.length - 1);
 }
@@ -194,14 +199,20 @@ function pickFile(): void {
   fileInput.click();
 }
 
-function offerUpload(data: string): void {
-  const bases = NamesbaseFile.parse(data);
-  if (!bases.length) return;
+async function offerUpload(data: string): Promise<void> {
+  const parsed = NamesbaseFile.parse(data);
+  if (!parsed.length) return;
+  await Names.loadAll(); // the file may hold built-in bases as they are
+  const bases = NamesbaseFile.withoutShipped(parsed);
+  if (!bases.length) {
+    tip(t("The file holds only built-in namesbases"), false, "warn");
+    return;
+  }
   Dialog.message({
     title: t("Upload namesbases"),
     message: sentences(
       t("Namesbases in the file: {{- names}}", { names: escapeHtml(bases.map(({ name }) => name).join(", ")) }),
-      t("Add them to the current ones or replace all of them?")
+      t("Add them or replace all custom and edited namesbases with them?")
     ),
     buttons: [
       { label: t("Add"), onClick: () => void take(NamesbaseFile.withOwnIds(bases, Names.ids()), false) },
@@ -213,7 +224,8 @@ function offerUpload(data: string): void {
 
 async function take(bases: NameBase[], replace: boolean): Promise<void> {
   Dialog.close("namesbaseEditor");
-  Names.replace(replace ? bases : [...Names.nameBases, ...bases]);
+  Names.replace(replace ? bases : [...options.map.nameBases, ...bases]);
+  Options.save();
   await Names.loadUsed();
   refresh();
   tip(t("Namesbases uploaded: {{number}}", { number: bases.length }), false, "success", 4000);
@@ -222,11 +234,12 @@ async function take(bases: NameBase[], replace: boolean): Promise<void> {
 function restoreDefault(): void {
   Dialog.confirm({
     title: t("Restore default data"),
-    message: t("Are you sure you want to restore default namesbase?"),
+    message: t("Restore the built-in namesbases? Custom and edited ones will be lost"),
     confirm: t("Restore"),
     onConfirm: async () => {
       Dialog.close("namesbaseEditor");
-      Names.replace(Names.getNameBases());
+      Names.replace([]);
+      Options.save();
       await Names.loadUsed();
       refresh();
     }
