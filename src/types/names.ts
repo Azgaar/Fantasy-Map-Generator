@@ -66,6 +66,7 @@ export interface Template {
 export interface NameBase {
   id: string; // stable slug, what a culture stores as its base
   name: string;
+  description?: string; // where its data comes from and the idea behind it
   extends?: string; // the base whose lexicon and patterns stand in where this one has none
   length: [min: number, max: number]; // of a name, generated or made of parts
   places: Corpus; // the place names a Markov chain is built from; its own length, if any, is for generated names
@@ -91,6 +92,7 @@ export interface PatternLayout {
 /** A base as the shipped data holds it, its name told by its id: rules, grammar, forms and templates may be in their written form,
  * which `NameNotation` reads */
 export interface WrittenNameBase extends Omit<NameBase, "name" | "rules" | "grammar" | "lexicon" | "patterns"> {
+  description: string;
   rules?: (SoundRule | string)[]; // a string holds rules a line each
   grammar?: Grammar | string;
   lexicon?: Partial<Record<Concept, Formant[] | string>> | string; // a string holds a concept a line

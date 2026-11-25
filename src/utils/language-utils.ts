@@ -70,7 +70,7 @@ export const getAdjective = (nounToBeAdjective: string) => {
     {
       name: "shire",
       probability: 1,
-      condition: /(?:shire|[^aeiou]en)$/,
+      condition: /(?:shire|czyzna|[^aeiou]en)$/,
       action: (noun: string) => noun
     },
     {

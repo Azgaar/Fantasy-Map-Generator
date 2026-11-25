@@ -1,9 +1,8 @@
 import type { WrittenNameBase } from "@/types/names";
 
-// East Germanic of the migration age, in Wulfila's Gothic where it has the word, else in its reconstructed shape:
-// th, hw and kw for his single letters, au and ai kept, ng for gg, long vowels unmarked
 export const gothic: WrittenNameBase = {
   id: "gothic",
+  description: "East Germanic peoples and places of the migration age, after Wulfila's Gothic",
   length: [5, 15],
 
   places: {

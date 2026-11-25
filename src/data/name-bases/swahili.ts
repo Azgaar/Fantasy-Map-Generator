@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const swahili: WrittenNameBase = {
   id: "swahili",
+  description: "Places of the East African coast",
   length: [4, 11],
 
   places: {

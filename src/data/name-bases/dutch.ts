@@ -1,8 +1,8 @@
 import type { WrittenNameBase } from "@/types/names";
 
-// Dutch and Flemish in modern spelling, with a few Frisian elements (terp, zijl, -um): dams, dikes and peat land lead
 export const dutch: WrittenNameBase = {
   id: "dutch",
+  description: "Towns of the Netherlands and Flanders, with some Frisian",
   length: [4, 14],
 
   places: {

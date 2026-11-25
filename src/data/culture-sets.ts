@@ -5,7 +5,7 @@ export const CULTURE_SETS: Record<string, { name: string; max: number; probabili
   oriental: { name: "Oriental", max: 17, probability: 2 },
   english: { name: "English", max: 10, probability: 5 },
   antique: { name: "Antique", max: 10, probability: 3 },
-  highFantasy: { name: "High Fantasy", max: 18, probability: 11 },
+  highFantasy: { name: "High Fantasy", max: 20, probability: 11 },
   darkFantasy: { name: "Dark Fantasy", max: 18, probability: 3 },
   random: { name: "Random", max: 100, probability: 1 }
 };

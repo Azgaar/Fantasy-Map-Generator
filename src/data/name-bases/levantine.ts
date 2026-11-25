@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const levantine: WrittenNameBase = {
   id: "levantine",
+  description: "Towns of the Bible and ancient Canaan, in Hebrew words",
   length: [4, 12],
 
   places: {

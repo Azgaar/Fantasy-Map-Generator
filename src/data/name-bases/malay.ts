@@ -10,6 +10,7 @@ const ENDINGS =
 
 export const malay: WrittenNameBase = {
   id: "malay",
+  description: "Places of Malaya and the Indies, in Malay and Javanese words",
   length: [4, 13],
 
   places: {

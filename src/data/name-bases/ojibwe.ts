@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const ojibwe: WrittenNameBase = {
   id: "ojibwe",
+  description: "Places in the Ojibwe language, in double-vowel spelling",
   length: [5, 15],
 
   places: {

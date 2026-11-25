@@ -55,13 +55,13 @@ A number may stand where a describing word does: Three Towers, Tri Vezhi.
 
 ## Name bases
 
-A name base is one language. 63 are built in: 51 real-world languages, a generic human base and 11 fantasy ones. Every culture uses one, and several cultures may share one.
+A name base is one language. 67 are built in: 51 real-world languages, a generic human base and 15 fantasy ones. Every culture uses one, and several cultures may share one.
 
 Name bases are saved with the map. Changing a base changes it for this map only; to use it in other maps, download it and upload it there.
 
 ### The Namesbase Editor
 
-Open _Tools_ → _Namesbase_, or open it from the Cultures editor. At the top, select a base, rename it, and choose a base it **extends**: that base's lexicon, patterns and people stand in where this one has none. Each tab is one part of the base:
+Open _Tools_ → _Namesbase_, or open it from the Cultures editor. At the top, select a base, rename it, and choose a base it **extends**: that base's lexicon, patterns and people stand in where this one has none. The **description** under them says where the base's data comes from and the idea behind it. Each tab is one part of the base:
 
 - **Places**: real place names, commas between. New names are generated to sound like these. A few hundred names give good results. Below them, the names of rivers and lakes: waters are named like these, and like places when the list is empty. **Length** sets the shortest and longest names to aim for; **Doubled** lists the letters that may stand twice in a row, as in Kalla.
 - **People**: male and female personal names. Places are named after founders, such as Eadric's Farm. Names are either generated like the listed ones or picked as they are. Keep both lists full: how many founders are women is set on the Patterns tab, not by the lists' sizes.

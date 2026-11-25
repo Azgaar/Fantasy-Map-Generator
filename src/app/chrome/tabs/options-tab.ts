@@ -314,7 +314,7 @@ const TEMPLATE = /* html */ `
           <option value="oriental" data-max="17">${t("Oriental")}</option>
           <option value="english" data-max="10">${t("English")}</option>
           <option value="antique" data-max="10">${t("Antique")}</option>
-          <option value="highFantasy" data-max="18">${t("High Fantasy")}</option>
+          <option value="highFantasy" data-max="20">${t("High Fantasy")}</option>
           <option value="darkFantasy" data-max="18">${t("Dark Fantasy")}</option>
           <option value="random" data-max="100">${t("Random")}</option>
         </select>

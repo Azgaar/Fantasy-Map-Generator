@@ -78,6 +78,8 @@ function renderDialog(): void {
           style="width: 10em"
         ></select>
       </div>
+      <input id="namesbaseDescription" autocorrect="off" spellcheck="false" style="width: 100%; margin-block-start: 4px"
+        data-tip="${t("What the base is: where its data comes from and the idea behind it")}" placeholder="${t("Description")}" />
       <div id="namesbaseTabs" style="display: flex; gap: 2px; margin-block: 4px">${tabs}</div>
       <div id="namesbaseBody" style="margin-block: 2px; width: auto; height: 16em; overflow-y: auto">
         <div data-pane="places">
@@ -239,6 +241,7 @@ function renderDialog(): void {
   ensureEl("namesbaseExamples").addEventListener("click", updateExamples);
   ensureEl("namesbaseName").addEventListener("input", e => updateBaseName((e.target as HTMLInputElement).value));
   ensureEl("namesbaseExtends").addEventListener("change", updateBaseExtends);
+  ensureEl("namesbaseDescription").addEventListener("change", updateDescription);
   ensureEl("namesbaseMin").addEventListener("input", e => updateBaseMin((e.target as HTMLInputElement).value));
   ensureEl("namesbaseMax").addEventListener("input", e => updateBaseMax((e.target as HTMLInputElement).value));
   ensureEl("namesbaseDouble").addEventListener("input", e =>
@@ -304,6 +307,7 @@ function showBase(base: NameBase): void {
   ensureEl<HTMLTextAreaElement>("namesbaseTextarea").value = base.places.names.join(",");
   ensureEl<HTMLTextAreaElement>("namesbaseWaters").value = base.waters?.names.join(",") ?? "";
   ensureEl<HTMLInputElement>("namesbaseName").value = base.name;
+  ensureEl<HTMLInputElement>("namesbaseDescription").value = base.description ?? "";
   ensureEl<HTMLInputElement>("namesbaseMin").value = String(base.length[0]);
   ensureEl<HTMLInputElement>("namesbaseMax").value = String(base.length[1]);
   ensureEl<HTMLInputElement>("namesbaseDouble").value = SoundRules.getDoubles(base);
@@ -413,6 +417,13 @@ function updateBaseName(name: string): void {
   const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
   select.options[select.selectedIndex].text = name;
   base.name = name;
+}
+
+function updateDescription(this: HTMLInputElement): void {
+  const base = selectedBase();
+  if (!base) return;
+  base.description = this.value.trim();
+  if (!base.description) delete base.description;
 }
 
 function updateBaseExtends(this: HTMLSelectElement): void {

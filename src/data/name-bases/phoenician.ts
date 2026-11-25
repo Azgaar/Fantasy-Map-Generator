@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const phoenician: WrittenNameBase = {
   id: "phoenician",
+  description: "Cities of Phoenicia and Carthage",
   length: [4, 11],
 
   places: {

@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const polish: WrittenNameBase = {
   id: "polish",
+  description: "Towns and castles of Poland",
   length: [4, 14],
   places: {
     length: [5, 10],
@@ -639,7 +640,7 @@ o'\+ => o+ | join
 o\+(?=(?:no|nica|nik)$) => + | join
 (biał|krasn|such|bystr|zielon)o\+(stok|staw)$ => $1y+$2 | join
 \bbóbr\+ => bobr+ | join
-e([kł])\+(?=[oóiejk]) => $1+ | join
+(?<!dal)e([kł])\+(?=[oóiejk]) => $1+ | join
 niec\+(?=[oóiej]) => ńc+ | join
 siemomysł\+(?=[oóie]) => siemomysł+ | join
 mir\+j => mierz | join
@@ -666,19 +667,36 @@ wój\+ => woj+ | join
 [oyę]\+(?=[oó]w|i[cn]|ec$|k[ia]$|') => + | join
 i\+(?=i[cn]|ec$|n(?:o|ica|ik)$|k[ia]$|s) => + | join
 ^([^ ]+)\+(ow|in|yn)\+e$ => $1+$2o | join
-i\+ow([oa])$ => iew$1 | join
+i\+owo$ => iewo | join
 i\+(?=[oó]w) => i | join
 (?<=ow)\+ów(?=$|k|e) => +ów | join
 ow\+(ów|ow) => $1 | join
 ów\+sk(?=$|[ +]) => ow+sk | join
+(ca|ec|cz|ć|ik)\+sk$ => $1 | join
+(br|w|gw)da\+sk$ => $1da | join
+ga\+sk(?=$|[ +]) => żańsk | join
+(mar|jac|lesz|spyt)ek\+sk(?=$|[ +]) => $1kowsk | join
+bug\+sk(?=$|[ +]) => bużańsk | join
+prosna\+sk(?=$|[ +]) => prośniańsk | join
+(br|w|gw)da\+sk(?=$|[ +]) => $1dzk | join
+(?<=[aeou])sz\+sk(?=$|[ +]) => szowsk | join
+rta\+sk(?=$|[ +]) => rciańsk | join
+(?<=[bdgkp])ra\+sk(?=$|[ +]) => rzańsk | join
+(?<=[yi])sa\+sk(?=$|[ +]) => sk | join
 nna\+sk(?=$|[ +]) => ńsk | join
 (?<=^|[ +])([bcćdfghjklłmnńprsśtwzźż]+)[eyęą]\+sk(?=$|[ +]) => $1esk | join
 (?<=^|[ +])([bcćdfghjklłmnńprsśtwzźż]+)[eyęą]\+ia$ => $1enia | join
 (król|książ|biskup|pop|kowal|kupc|łowc|rybak|rybitw|owczar|skotnik|rycerz|mnich|sokolnik|bartnik|bobrownik|strzelc|stróż|zdun|garncar|garbar|bednar|psar|bartodziej|kołodziej|szklar|grotnik|pielgrzym|czart|łucznik|pustelnik|miecznik|młynarz|pątnik|pleban|pasterz)\+n(?:o|ik)$ => $1+owo | join
 (bartnik|bobrownik|grotnik|sokolnik|skotnik|pustelnik|miecznik|łucznik|pątnik|kowal|król|książ|pop|biskup|rybak|rybitw|kupc|owczar|rycerz|mnich|strzelc|zdun|garncar|garbar|bednar|psar|czart)\+nica$ => $1+owa | join
+([^aeiouyąęó])n\+na$ => $1na | join
+modr\+na$ => modra | join
 (?<=[^aeiouyąęó+][^aeiouyąęó+])(?<!cz|sz|rz|ch|dz)\+no$ => +owo | join
 (?<=[^aeiouyąęó+][^aeiouyąęó+])(?<!cz|sz|rz|ch|dz)\+nica$ => +owica | join
 (?<=[^aeiouyąęó+][^aeiouyąęó+])(?<!cz|sz|rz|ch|dz)\+nik$ => +owiec | join
+krasn\+nica$ => krasna | join
+(bystr|mokr|ostr)\+nica$ => $1zyca | join
+^pan\+(?:no|nica|nik)$ => panowo | join
+(?<!kamie)[nń]\+n(?=ica|ik) => n | join
 [nń]\+n(?=o|ica|ik|a$) => nn | join
 (?<![csrd])z\+n(?=o|ica|ik|a$) => źn | join
 s\+n(?=o|ica|ik|a$) => śn | join
@@ -707,6 +725,8 @@ t\+i(?=[cn]) => ci | join
 ń\+i(?=[cn]) => ni | join
 (?<=[bpwmfn]|(?<![csrd])[sz])\+ec$ => iec | join
 dzierżk\+ec$ => dzierżkowiec | join
+młyne?k\+ec$ => młyniec | join
+nik\+ec$ => niki | join
 k\+ec$ => czec | join
 śc\+ec$ => ściec | join
 ch\+ec$ => szec | join
@@ -717,7 +737,7 @@ d\+ec$ => dziec | join
 t\+ec$ => ciec | join
 ł\+ec$ => lec | join
 c\+ec$ => czec | join
-(?<=l|j|rz|sz|cz|ż|dz)\+ow([oa])$ => ew$1 | join
+(?<=l|j|rz|sz|cz|ż|dz)\+owo$ => ewo | join
 (?<=[^aeiouyąęó])ka\+sk(?=$|[ +]) => +sk | join
 ów\+sk(?=$|[ +]) => ow+sk | join
 sła\+sk(?=$|[ +]) => ślańsk | join
@@ -738,7 +758,7 @@ ch\+k(?=[ia]$) => szk | join
 (?<=[aeiouyąęó])g\+k(?=[ia]$) => żk | join
 c\+k(?=[ia]$) => czk | join
 (?<=[^aeiouyąęó+][^aeiouyąęó+])(?<!cz|sz|rz|ch|dz)\+k(?=[ia]$) => +ówk | join
-(isk|jezior|błot|źródł|drzew|pol|bagn|gniazd|serc)\+'y$ => $1a | join
+(żyt|sian|żelaz|srebr|win|isk|jezior|błot|źródł|drzew|pol|bagn|gniazd|serc)\+'y$ => $1a | join
 niedźwiedz\+'y$ => niedźwiedzie | join
 przystan\+'y$ => przystanie | join
 i\+'y$ => ie | join
@@ -767,6 +787,7 @@ t\+'e$ => cie | join
 (?<=cz|sz|rz|ż|j)\+'e$ => e | join
 \+'e$ => ie | join
 a\+ia$ => +ia | join
+ń\+ia$ => nia | join
 (?<=cz|sz|rz|ż|c|dz|j)[aeiouyąę]?\+ia$ => owia | join
 ł\+(?=ia$|ania$) => l | join
 t\+ia$ => cia | join
@@ -775,7 +796,7 @@ d\+ia$ => dzia | join
 (?<=[aeiouyąęó])n\+szczyzna$ => ńszczyzna | join
 (?<=[aeiouyąęó])ł\+szczyzna$ => lszczyzna | join
 (?<=[aeiouyąęó](?:[rlw]|ń))\+szczyzna$ => szczyzna | join
-[aeiouyęą]?\+szczyzna$ => owszczyzna | join
+[aeiouyęąó]?\+szczyzna$ => owszczyzna | join
 (?<=w)owice$ => ice | long
 rzowice$ => rzyce | long
 kieł$ => kły | as few
@@ -838,14 +859,11 @@ stem: ń$ => n
 stem: ąb$ => ęb
 stem: óg$ => og
 stem: ó([^aeiouyąęó])$ => o$1
-stem: (?:ie|[aeoyiąę])$ =>
-first: \*soft$ => io'
-first: \*$ => o'
-first: (?:[aeoyiąę])?$ => o`,
+stem: (?:ie|[aeoyiąę])$ =>`,
   lexicon: `
 # settlements
-city: ^ów 10, ^j 10, ^sk 3, +gród 4, /n, Miasto, Gród
-town: ^ów 14, ^j 8, ^ec 5, ^sk, +gród, /f, /n 2, Miasto 2, Targ 2
+city: ^ów 14, ^j 10, +gród 5, /n, Miasto 2, Gród 2
+town: ^ów 16, ^j 8, ^ec 6, +gród 2, /f, /n 2, Miasto 2, Targ 2
 village: ^ice 10, ^owice 12, ^owo 9, ^ów 8, ^owa 3, +wola 2, /f 3, /n 3, Wieś/f 3, Wola 4
 hamlet: ^ówka 10, ^ówek 5, ^ki 8, ^'y 6, /f 2, /pl 2, Wólka 4, Chaty
 
@@ -854,8 +872,8 @@ home: Dwór 2, Siedlisko 2, Siedlec 2, Siedliska/pl 2, Dworzysko, siedl^ 2
 farm: Folwark 2, Zagroda 2, Poręba 4, Poręby 2, Łazy 3
 hall: Dwór 3, Dworzyszcze
 field: Pole 3, Niwa 3, Niwy 2, Błonie 3, Opole 2, +pole 4
-wood: Las 2, Bór 3, Borek 2, Borki 3, Laski 3, Zalesie 5, Podlesie 4, Przylesie 2, Zaborze 2, Podborze, +las 3
-hill: Góra 3, Górka 2, Górki 3, Zagórze 4, Podgórze 4, Pagórek, Chełm 3, +góra 3
+wood: Las 2, Bór 3, Borek 2, Borki 3, Laski 3, Zalesie 5, Podlesie 4, Przylesie 2, Zaborze 2, Podborze, +las 3, +lesie 2
+hill: Góra 3, Górka 2, Górki 3, Zagórze 4, Podgórze 4, Pagórek, Chełm 3, +góra, +górze 2
 ford: Bród 4, Brody 3, Zabrodzie 2, Podbrodzie, +bród 4
 fort: Gród 2, Grodziec 4, Grodzisko 4, Grodzisk 3, Podgrodzie 2, Warownia, +gród 3, grod^ 2
 bridge: Most 3, Mosty 3, Mostki 3, Zamoście 3, Podmoście, +most
@@ -869,11 +887,11 @@ shore: Brzeg 3, Brzegi 2, Pobrzeże 2, Pomorze, +brzeg 3
 island: Ostrów 4, Ostrówek 3, Kępa 4, Wyspa 3, Kępy 2
 lake: Jezioro 3, /n 4, Zajezierze 3, Pojezierze 2, Jeziora/pl 2, Jeziorko
 haven: Przystań/f 2, Zatoka 2
-marsh: Błota/pl 2, Zabłocie 4, Bagno 2, Bagienice 2, Błotnica 2, błot^ 2
+marsh: Błota/pl 2, Zabłocie 4, Bagno 2, Bagienice 2, Błotnica 2, błot^ 2, +błocie 2
 spring: Źródło 2, Zdrój 3, Krynica 4, Krynki 2, Źródła/pl
-meadow: Łąka 2, Łąki 3, Łęka 2, Łęki 4, Błonie 2, Podłęże 2, +łęka 3
-grove: Gaj 4, Gaje/pl 2, Zagaje 3, Podgaje 2, Dąbrowa 3, Buczyna 2, Olszyna 2
-bank: Brzeg 2, Zarzecze 5, Porzecze 3
+meadow: Łąka 2, Łąki 3, Łęka 2, Łęki 4, Błonie 2, Podłęże 2, +łęka
+grove: Gaj 4, Gaje/pl 2, Zagaje 3, Podgaje 2, Dąbrowa 3
+bank: Brzeg 2, Zarzecze 5, Porzecze 3, +brzeże 2
 mill: Młyn 3, Młyny 2, Młynek 2, Młynki, Zamłynie 3, Młynisko
 bay: Zatoka 3, Zalew
 cape: Cypel 2, Przylądek
@@ -891,7 +909,7 @@ temple: Świątynia, Kościół, Kościelec 3, Kościelisko 2
 abbey: Klasztor 3, Opactwo 2, Klasztorek
 river: ^nica 4, ^ica 3, ^ka 2, ^na 2, /f 4, Rzeka 2
 brook: ^nica 4, ^ica 3, ^ówka 2, Potok 3, Struga 3, Strumień 2, Ruczaj
-water: Woda 2, Wody 2, +woda 3, ^nica 2, /f 2
+water: Woda 2, Wody 2, +woda, ^nica 2, /f 2
 keep: Warownia 2, Twierdza, Zameczek
 hold: Twierdza 2, Warownia, Strażnica
 watch: Stróża 4, Strażnica 3
@@ -962,61 +980,61 @@ guard: Straż/f 2, Strażnica 2, Stróża 3
 stair: Schody, Stopnie/pl
 
 # modifiers
-new: now*
-old: star*
-great: wielk*
-little: mał*
-long: dług*
-broad: szerok*
-deep: głębok*
-high: wysok*
-low: nisk*
+new: now*, nowo'+
+old: star*, staro'+
+great: wielk*, wielko'+
+little: mał*, mało'+
+long: dług*, długo'+
+broad: szerok*, szeroko'+
+deep: głębok*, głęboko'+
+high: wysok*, wysoko'+
+low: nisk*, nisko'+
 upper: górn*
 lower: doln*
-middle: średn*soft
+middle: średn*soft, średnio'+
 north: północn*
 south: południow*
 east: wschodn*soft
 west: zachodn*soft
-black: czarn* 3, czarn^ 2
-white: biał* 3, biel^ 2
-red: czerwon* 2, krasn* 2, krasn^ 2
-green: zielon* 3, zielon^
-golden: złot* 3, złot^ 2
-grey: szar* 2, siw*, siw^ 2, szar^
-blue: modr* 2, sin* 2, modr^
+black: czarn* 3, czarn^ 2, czarno'+
+white: biał* 3, biel^ 2, biało'+
+red: czerwon* 2, krasn* 2, krasn^ 2, krasno'+ 2, czerwono'+
+green: zielon* 3, zielon^, zielono'+
+golden: złot* 3, złot^ 2, złoto'+
+grey: szar* 2, siw*, siw^ 2, szar^, siwo'+
+blue: modr* 2, modr^
 dark: ciemn*
 bright: jasn*
-oak: dęb^ 6, dąbrow^ 2, dębow* 2
+oak: dęb^ 6, dąbrow^ 2, dębow* 2, dębo+
 pine: sosn^ 3, chojn^ 4, sosnow*
 birch: brzez^ 4, brzoz^ 4, brzozow*
 ash: jesion^ 4, jesionow*
 elm: wiąz^ 4, brzost^ 2, wiązow*
 willow: wierzb^ 4, wierzbow*
-thorn: tarn^ 4, głog^ 3, ciern^
+thorn: tarn^ 4, głog^ 3, ciern^, cierniow*, głogow*
 reed: trzcin^ 4, trzcinow*
 rose: róż^ 3, różan*
 apple: jabłon^ 4, jabłonn*
-wolf: wilk^ 5, wilcz* 2
+wolf: wilk^ 5, wilcz* 2, wilko+
 bear: niedźwiedz^ 2, niedźwiedz*soft
 eagle: orł^ 4, orl* 2
 deer: jeleni^ 4, łosi^ 2, sarn^, jelen*soft 3
-horse: koni^ 2, kobyła^ 4, końsk* 2
+horse: koni^ 2, kobyła^ 4, końsk* 2, końsko+
 ox: woł^ 4, tur^ 5, byk^ 2, wołow*
 sheep: owczar^ 3, baran^ 3, owcz* 2
-goat: kozł^ 4, koza^ 3, koz*soft 2
+goat: kozł^ 4, koza^ 3, koz*soft 2, kozio+
 fox: lis^ 5, lis*soft 2
-boar: dzik^ 4, wieprz^ 3
+boar: dzik^ 4, wieprz^ 3, dzicz* 2
 raven: kruk^ 4, krucz* 2
 hawk: sokoł^ 5, sokolnik^ 2, jastrzęb^ 3, sokol*
 swan: łabęd^ 4, łabędz*soft
 crane: żuraw^ 4, żuraw*soft 2
-gull: mewa^
-seal: foka^
+gull: mewa^, mew*soft
+seal: foka^, focz*
 fish: ryb^ 4, rybn* 2
 otter: wydr^ 4, wydrz*
-stone: kamien^ 5, kamienn* 2
-iron: żelaz^ 4, żelazn* 2
+stone: kamien^ 5, kamienn* 2, kamieno+
+iron: żelaz^ 4, żelazn* 2, żelazo+
 copper: miedz^ 3, miedzian* 2
 silver: srebr^ 2, srebrn* 2
 gold: złot^ 4, złot* 2
@@ -1024,20 +1042,20 @@ salt: sol^ 4, słon* 2
 sand: piask^ 4, piaskow*
 clay: glin^ 4, glinian* 2
 chalk: kred^ 3, kredow* 2
-cold: zimn* 3, chłodn* 2
-warm: ciepł*
-dry: such* 4, such^
-wet: mokr* 3, mokr^
+cold: zimn* 3, chłodn* 2, zimno'+
+warm: ciepł*, ciepło'+
+dry: such* 4, such^, sucho'+
+wet: mokr* 3, mokr^, mokro'+
 wind: wiatr^ 2, wietrzn* 2
 mist: mglist*
 snow: śnieżn*
 storm: burz^ 2, burzliw*
-quiet: cich* 3, cich^
+quiet: cich* 3, cich^, cicho'+
 wild: dzik*
-fair: dobr* 2, piękn*, dobr^ 4
-holy: święt*
+fair: dobr* 2, piękn*, dobr^ 4, dobro'+
+holy: święt*, święto'+
 free: woln*
-king: król^ 4, królewsk* 3, książ^ 2, książęc*
+king: król^ 4, królewsk* 3, książ^ 2, książęc*, królo+
 queen: królow*
 lord: pan^ 2, wojewoda^ 2, pańsk* 3
 priest: pop^ 4, biskup^ 4, pleban^, księż* 2, biskup*soft
@@ -1054,16 +1072,16 @@ dawn: świt^ 2, porann*
 night: nocn*
 sun: słoneczn*
 moon: księżycow*
-star: gwiazd^
+star: gwiazd^, gwiezdn*
 sky: podniebn*
 cloud: chmur^ 2, pochmurn*
 rain: deszcz^ 2, deszczow*
 frost: mroz^ 4, mroźn* 2
 ice: lodow*
-thunder: grom^ 3, piorun^ 3
+thunder: grom^ 3, piorun^ 3, piorunow*
 shadow: cienist*
 fire: żar^ 4, ognist*
-ember: żar^
+ember: żar^, żarow*
 smoke: dym^ 3, dymn* 2
 blood: krwaw*
 bone: kost^ 3, kościan* 2
@@ -1084,7 +1102,7 @@ honey: miod^ 3, miodow* 2
 milk: mleczn*
 wine: win^ 2, winn* 2
 wheat: pszen^ 3, pszeniczn*
-barley: jęczmien^
+barley: jęczmien^, jęczmienn*
 rye: żyt^ 4, żytn*soft
 hay: sian^ 3, sienn* 2
 flax: lnian*
@@ -1094,7 +1112,7 @@ pea: groch^ 4, grochow*
 dun: bur^ 3, bur*
 pale: blad*
 crimson: purpurow*
-yellow: żółt* 2, żółt^
+yellow: żółt* 2, żółt^, żółto'+
 last: ostatn*soft
 far: dalek*
 lone: samotn*
@@ -1110,14 +1128,14 @@ strong: mocn* 2, siln*
 sharp: ostr*
 dread: strasz^ 2, straszn*
 grim: ponur*
-merry: wesoł* 3, wesoł^
+merry: wesoł* 3, wesoł^, wesoło'+
 weeping: płacząc*
 whispering: szumiąc*
 haunted: nawiedzon*
 sleeping: śpiąc*
 wandering: błędn*
 singing: śpiewn*
-crooked: krzyw* 4, krzyw^
+crooked: krzyw* 4, krzyw^, krzywo'+
 barren: jałow* 2, goł*
 bleak: pust*
 proud: dumn*
@@ -1127,15 +1145,15 @@ cursed: przeklęt*
 blessed: błogosławion*
 narrow: wąsk*
 steep: strom*
-flat: równ* 3, płask* 2
+flat: równ* 3, płask* 2, równo'+
 round: okrągł*
-swift: bystr* 3, bystr^ 2
+swift: bystr* 3, bystr^ 2, bystro'+
 clear: czyst*
 true: wiern*
 dead: martw*
 lucky: szczęsn* 2, szczęśliw*
 dragon: smok^ 2, żmij^ 2, smocz* 3
-griffin: gryf^
+griffin: gryf^, gryf*soft
 serpent: węż^ 3, wężow*
 lion: lw^ 4, lw*soft
 ram: baran^ 4, baran*soft
@@ -1144,41 +1162,41 @@ cat: kot^ 4, koc*soft
 hare: zając^ 3, zajęcz* 2
 badger: borsuk^ 4, borsucz*
 beaver: bobr^ 4, bobrownik^ 3, bobrow*
-rat: szczur^
-bat: gack^
+rat: szczur^, szczurz*
+bat: gack^, gackow*
 owl: sowa^ 4, sow*soft 2
 crow: wrona^ 4, gawron^ 3, wron*soft 2
 heron: czapla^ 4, czapl* 2
 goose: gąsior^ 3, gęs*soft 2
 duck: kaczor^ 3, kacz* 2
 dove: gołęb^ 3, gołęb*soft 2
-lark: skowron^
-nightingale: słowik^
+lark: skowron^, skowroncz*
+nightingale: słowik^, słowicz*
 stork: bocian^ 4, bocian*soft
-pike: szczuka^ 3, szczupak^
-salmon: łosos^
-eel: węgorz^
-crab: rak^ 4, racz*
+pike: szczuka^ 3, szczupak^, szczupacz*
+salmon: łosos^, łososiow*
+eel: węgorz^, węgorzow*
+crab: rak^ 4, racz*, rakow*
 toad: żaba^ 4, żab*soft 2
-lizard: jaszczur^
+lizard: jaszczur^, jaszczurcz*
 spider: pająk^ 3, pajęcz*
 bee: bartnik^ 3, pszczoł^ 2, bartodziej^, pszczel*
 bison: żubr^ 4, żubrz*
 lynx: rys^ 3, rys*soft 2
-sable: sobol^
-rooster: kur^ 4, kogut^
+sable: sobol^, sobolow*
+rooster: kur^ 4, kogut^, koguc*soft
 yew: cis^ 4, cisow*
 alder: olsz^ 5, olszyn^ 2, olszow*
 hazel: leszczyn^ 4, orzech^ 3, orzechow*
-rowan: jarzęb^ 3, jarzębin^ 2
-linden: lip^ 6, lipow*
+rowan: jarzęb^ 3, jarzębin^ 2, jarzębinow*
+linden: lip^ 6, lipow*, lipo+
 beech: buk^ 5, buczyn^ 2, bukow* 2
 maple: jawor^ 5, klon^ 4, klonow*
 aspen: osin^ 4, osinow*
 poplar: topol^ 4, topolow*
 spruce: świerk^ 4, jodł^ 3, świerkow*
 heather: wrzos^ 4, wrzosow*
-nettle: pokrzyw^
+nettle: pokrzyw^, pokrzywow*
 poppy: mak^ 4, makow*
 cherry: wiśni^ 4, wiśniow*
 pear: grusz^ 4, gruszow*
@@ -1186,61 +1204,61 @@ berry: jagod^ 2, malin^ 4, jagodn* 2
 mushroom: grzyb^ 4, grzybow*
 flower: kwiatk^ 3, kwiecist*
 leaf: listn*
-acorn: żołęd^
+acorn: żołęd^, żołędn*
 grass: traw^ 4, trawiast*
 maiden: pann^ 2, panieńsk* 2
 widow: wdowa^ 2, wdow*soft
 knight: rycerz^ 2, rycersk* 3
 monk: mnich^ 4, mnisz* 2
 hermit: pustelnik^ 2, pustelnicz*
-witch: wiedźm^ 2, czarownic^
-giant: olbrzym^ 3, stolem^
-ghost: duch^ 4, upior^
+witch: wiedźm^ 2, czarownic^, wiedźm*soft
+giant: olbrzym^ 3, stolem^, olbrzym*soft
+ghost: duch^ 4, upior^, upiorn*
 god: boż* 4, bog^
 devil: czart^ 4, bies^ 3, diabl*
-thief: złodziej^
+thief: złodziej^, złodziejsk*
 robber: zbójeck*
 beggar: żebracz*
-pilgrim: pielgrzym^ 4, pątnik^
+pilgrim: pielgrzym^ 4, pątnik^, pielgrzym*soft
 sailor: żeglarsk*
 miller: młynarz^ 3, młynarsk* 2
-weaver: tkacz^
+weaver: tkacz^, tkack*
 potter: zdun^ 4, garncar^ 3, garncarsk*
 tanner: garbar^ 4, garbarsk*
-carpenter: cieśla^
+carpenter: cieśla^, ciesielsk*
 cooper: bednar^ 4, bednarsk*
-archer: strzelc^ 4, łucznik^ 2
-warden: stróż^
-warrior: woj^ 3, wojskow*
-elder: starosta^ 3, dziad^ 2
-orphan: sierota^
-fool: głup^ 2, błazn^
+archer: strzelc^ 4, łucznik^ 2, strzeleck*
+warden: stróż^, stróżow*
+warrior: woj^ 3, hetmańsk*
+elder: starosta^ 3, dziad^ 2, dziadow*
+orphan: sierota^, sieroc*
+fool: głup^ 2, błazn^, błazeńsk*
 crone: bab^ 3, bab*soft 4
 brother: brat^ 3, brack*
 sister: siostrzan*
-friend: druh^
-sword: miecz^ 2, miecznik^ 2
-axe: topor^ 4, siekier^ 3
-hammer: młot^
-arrow: grotnik^ 3, strzał^ 2
-bell: dzwon^ 4, dzwonnik^
-cup: kielich^
-wheel: kołodziej^ 3, koł^ 2
-anchor: kotwic^
-sail: żagl^
-boat: łodzi^
-ship: korab^
-candle: świec^
-ring: pierścien^
+friend: druh^, druhow*
+sword: miecz^ 2, miecznik^ 2, mieczow*
+axe: topor^ 4, siekier^ 3, toporow*
+hammer: młot^, młotow*
+arrow: grotnik^ 3, strzał^ 2, strzałow*
+bell: dzwon^ 4, dzwonnik^, dzwonow*
+cup: kielich^, kielichow*
+wheel: kołodziej^ 3, koł^ 2, kołodziejsk*
+anchor: kotwic^, kotwiczn*
+sail: żagl^, żaglow*
+boat: łodzi^, łodziow*
+ship: korab^, korabow*
+candle: świecow*
+ring: pierścien^, pierścieniow*
 cross: krzyż^ 3, krzyżow*
-treasure: skarb^
-skull: czerep^
-feather: pior^
-wing: skrzydł^
+treasure: skarb^, skarbow*
+skull: czerep^, czerepow*
+feather: pior^, pierzast*
+wing: skrzydł^, skrzydlat*
 gallows: szubieniczn*
 peace: spokojn*
 glory: sław^ 4, sławn* 2
-love: lub^
+love: lub^, miłosn* 2
 victory: zwycięsk*
 wonder: dziwn^ 3, cudn* 2
 
@@ -1255,11 +1273,11 @@ hundred: Sto/many
 thousand: Tysiąc/many
 
 # lands
-land: ^ia 8, ^ania 3, ^szczyzna 2, +ziemia 2, Ziemia
-march: ^owia 2, Marchia
-country: ^ania 2, Kraina 2
-domain: ^szczyzna
-coast: Pomorze 2, ^ia
+land: ^szczyzna 4, Ziemia 4, +ziemia 2
+march: Marchia 5, Rubież/f 2, ^owszczyzna
+country: Kraina 5, ^szczyzna 2
+domain: Włość/f 4, ^szczyzna 2
+coast: Pomorze 4, Wybrzeże 2
 isles: Wyspy
 `,
   settled: 0.92,
@@ -1268,7 +1286,7 @@ isles: Wyspy
     "modifier-generic": {
       weight: 24,
       templates:
-        "{modifier}{generic} 24, {modifier} {generic} 5, {generic} {modifier}, {modifier}no 3, {modifier}nica 2, {modifier}nik, {modifier}'y 5"
+        "{modifier}{generic} 24, {modifier} {generic} 6, {generic} {modifier} 2, {modifier}no 3, {modifier}nica 2, {modifier}nik, {modifier}'y 5"
     },
     "owner-generic": {
       weight: 42,
@@ -1278,10 +1296,10 @@ isles: Wyspy
     "generic-of": { weight: 18, templates: "{root}sk 6, {root} 5, {root}sk* {generic}" },
     compound: {
       weight: 3,
-      templates: "{modifier} {generic} 4, {modifier}{generic}'e 2, {modifier}{generic}{settlement}"
+      templates: "{modifier} {generic} 3, {modifier}{generic} 2, {generic} {modifier}"
     },
     relative: { weight: 4, templates: "{modifier} {root} 4, {root} {modifier} 5" },
-    "root-land": { templates: "{root}{generic} 6, {generic} {root}sk*" },
-    "modifier-land": { templates: "{modifier}{generic} 4, {modifier} {generic}" }
+    "root-land": { templates: "{root}{generic} 4, {root}ia 5, {generic} {root}sk* 4" },
+    "modifier-land": { templates: "{modifier}{generic} 2, {modifier} {generic} 4" }
   }
 };

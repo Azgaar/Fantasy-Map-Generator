@@ -58,6 +58,7 @@ describe("shipped name bases", () => {
       expect(base.id).toBe(Names.uniqueId(base.name, []));
       expect(Names.schema.safeParse(base).success).toBe(true);
       expect(base.places.names.length).toBeGreaterThan(100);
+      expect(base.description, base.id).toBeTruthy();
       for (const { match } of base.rules ?? []) expect(() => new RegExp(match, "gu")).not.toThrow();
     }
   });
@@ -141,7 +142,7 @@ describe("a base's vocabulary", () => {
     const spoken = (id: string) => Lexicon.spoken(Names.find(id)!, modifiers);
     for (const concept of spoken("french")) expect(Lexicon.authoredForms(Names.find("french")!, concept)).toBeDefined();
     expect(spoken("french").length).toBeLessThan(modifiers.length);
-    expect(spoken("orc")).toEqual(modifiers);
+    expect(spoken("arachnid")).toEqual(modifiers);
   });
 });
 
@@ -305,13 +306,15 @@ describe("loading", () => {
   it("loads the bases the cultures use, those they extend and what stands in for a dropped one", async () => {
     const names = await unloaded();
     vi.stubGlobal("pack", { cultures: [{ base: "goblin" }, { base: "goblin" }, { base: "heir" }, { base: "greek" }] });
-    const heir = { ...names.composeBase("heir", "Heir", [4, 8], ["Aaa", "Bbb", "Ccc"]), extends: "elven" };
-    const kept = names.getNameBases().filter(base => ["german", "nordic", "goblin", "elven"].includes(base.id));
+    const heir = { ...names.composeBase("heir", "Heir", [4, 8], ["Aaa", "Bbb", "Ccc"]), extends: "sindarin" };
+    const kept = names.getNameBases().filter(base => ["german", "nordic", "goblin", "sindarin"].includes(base.id));
     names.nameBases = [...kept, heir]; // Greek, the eighth of the shipped bases, stands for the third of these five
     expect(names.entry("greek")?.id).toBe(kept[2].id);
 
     await names.loadUsed();
-    expect(names.loaded().map(base => base.id)).toEqual(expect.arrayContaining(["goblin", "heir", "elven", "goblin"]));
+    expect(names.loaded().map(base => base.id)).toEqual(
+      expect.arrayContaining(["goblin", "heir", "sindarin", "goblin"])
+    );
     expect(names.find("german")).toBeUndefined();
     vi.stubGlobal("pack", { cultures: [] });
   });

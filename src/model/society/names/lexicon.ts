@@ -172,12 +172,14 @@ class LexiconModule {
     const settlements = conceptsOf("settlement");
     const spare = settlements.length * SETTLEMENT_ENDINGS;
     const generics = conceptsOf("generic");
-    const taken = new Set(endings);
+    const written = Names.lineage(base).flatMap(({ lexicon = {} }) => Object.values(lexicon).flat());
+    const taken = new Set([...endings, ...written.map(({ form }) => form)]); // a root says one thing
     const coin = (key: string, min?: number, max?: number): string => {
       for (let attempt = 0; ; attempt++) {
-        const word = seeded(`${base.id}|${key}|${attempt}`, () => Names.getBase(base.id, min, max, "")).toLowerCase();
-        const clean = !/[^\p{L}]/u.test(word) && !taken.has(word) && word.length <= (max ?? Infinity) + 2; // one short word of its own
-        if (clean || attempt > 8) {
+        const room = max && max + Math.floor(attempt / 10); // a small corpus runs out of short words
+        const word = seeded(`${base.id}|${key}|${attempt}`, () => Names.getBase(base.id, min, room, "")).toLowerCase();
+        const clean = !/[^\p{L}]/u.test(word) && !taken.has(word) && word.length <= (room ?? Infinity) + 2; // one short word of its own
+        if (clean || attempt > 30) {
           taken.add(word);
           return word.replace(/[^\p{L}]/gu, "");
         }

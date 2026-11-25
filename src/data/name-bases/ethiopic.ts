@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const ethiopic: WrittenNameBase = {
   id: "ethiopic",
+  description: "Places of Ethiopia and Eritrea, in Amharic, Ge'ez and Tigrinya words",
   length: [4, 11],
 
   places: {

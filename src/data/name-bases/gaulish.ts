@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const gaulish: WrittenNameBase = {
   id: "gaulish",
+  description: "Towns of ancient Gaul, as Romans wrote them",
   length: [4, 14],
 
   places: {

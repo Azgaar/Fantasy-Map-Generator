@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const georgian: WrittenNameBase = {
   id: "georgian",
+  description: "Places of Georgia",
   length: [4, 14],
 
   places: {

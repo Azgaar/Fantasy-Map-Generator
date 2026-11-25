@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const quechua: WrittenNameBase = {
   id: "quechua",
+  description: "Places of the Andes",
   length: [6, 12],
 
   places: {

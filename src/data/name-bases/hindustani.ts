@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const hindustani: WrittenNameBase = {
   id: "hindustani",
+  description: "Places of northern India, in Hindi and Urdu words",
   length: [4, 13],
   places: {
     length: [5, 10],

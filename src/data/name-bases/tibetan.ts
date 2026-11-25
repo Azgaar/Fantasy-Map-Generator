@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const tibetan: WrittenNameBase = {
   id: "tibetan",
+  description: "Places of Tibet, Ladakh and the high Himalaya",
   length: [4, 12],
 
   places: {

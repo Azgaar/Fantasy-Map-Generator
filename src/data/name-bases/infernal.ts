@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const infernal: WrittenNameBase = {
   id: "infernal",
+  description: "Invented tongue of the pit: Latin roots, distorted",
   length: [4, 11],
 
   places: {

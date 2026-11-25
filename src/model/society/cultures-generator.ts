@@ -581,7 +581,7 @@ class CulturesGenerator {
           name: "Quenian",
           development: 44,
           ancestry: "Elfish",
-          base: "elven",
+          base: "quenya",
           odd: 1,
           sort: (i: number) => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
           shield: "gondor"
@@ -590,7 +590,7 @@ class CulturesGenerator {
           name: "Eldar",
           development: 46,
           ancestry: "Elfish",
-          base: "elven",
+          base: "sindarin",
           odd: 1,
           sort: (i: number) => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
           shield: "noldor"
@@ -671,7 +671,7 @@ class CulturesGenerator {
           name: "Rake",
           development: 28,
           ancestry: "Drakonic",
-          base: "draconic",
+          base: "dovahzul",
           odd: 0.7,
           sort: (i: number) => -s[i],
           shield: "fantasy2"
@@ -694,6 +694,15 @@ class CulturesGenerator {
           sort: (i: number) => n(i) / bd(i, [12], 10),
           shield: "fantasy1"
         }, // Serpents
+        {
+          name: "Madrian",
+          development: 48,
+          ancestry: "Angelic",
+          base: "celestial",
+          odd: 0.2,
+          sort: (i: number) => (n(i) * h[i]) / td(i, 8),
+          shield: "renaissance"
+        }, // Angels
         {
           name: "Cottan",
           development: 34,
@@ -735,10 +744,19 @@ class CulturesGenerator {
           name: "Dulandir",
           development: 34,
           ancestry: "Human",
-          base: "mongolian",
+          base: "dothraki",
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i],
           shield: "easterling"
+        },
+        {
+          name: "Valyr",
+          development: 46,
+          ancestry: "Human",
+          base: "valyrian",
+          odd: 1,
+          sort: (i: number) => (n(i) / td(i, 18)) * t[i],
+          shield: "fantasy3"
         }
       ];
     }
@@ -885,10 +903,11 @@ class CulturesGenerator {
           shield: "banner"
         },
         {
-          name: "Ulus",
+          name: "Khalasar",
           development: 26,
-          base: "mongolian",
-          odd: 0.05,
+          ancestry: "Human",
+          base: "dothraki",
+          odd: 0.3,
           sort: (i: number) => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i],
           shield: "banner"
         },
@@ -948,12 +967,21 @@ class CulturesGenerator {
           sort: (i: number) => n(i) / td(i, 14) / t[i],
           shield: "roman"
         },
+        {
+          name: "Valyr",
+          development: 46,
+          ancestry: "Human",
+          base: "valyrian",
+          odd: 0.3,
+          sort: (i: number) => (n(i) / td(i, 18)) * t[i],
+          shield: "fantasy3"
+        },
         // fantasy races
         {
           name: "Eldar",
           development: 46,
           ancestry: "Elfish",
-          base: "elven",
+          base: "sindarin",
           odd: 0.5,
           sort: (i: number) => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
           shield: "fantasy5"
@@ -1007,7 +1035,7 @@ class CulturesGenerator {
           name: "Drake",
           development: 28,
           ancestry: "Drakonic",
-          base: "draconic",
+          base: "dovahzul",
           odd: 0.9,
           sort: (i: number) => -s[i],
           shield: "fantasy2"
@@ -1030,6 +1058,15 @@ class CulturesGenerator {
           sort: (i: number) => n(i) / bd(i, [12], 10),
           shield: "fantasy1"
         }, // Serpents
+        {
+          name: "Madrian",
+          development: 48,
+          ancestry: "Angelic",
+          base: "celestial",
+          odd: 0.2,
+          sort: (i: number) => (n(i) * h[i]) / td(i, 8),
+          shield: "renaissance"
+        }, // Angels
         {
           name: "Gehennan",
           development: 30,

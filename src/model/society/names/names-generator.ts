@@ -48,6 +48,7 @@ const corpusSchema = z.object({
 const NAME_BASE_SCHEMA = z.object({
   id: z.string().regex(/^[\p{L}\p{N}-]+$/u),
   name: z.string().min(1),
+  description: z.string().optional(),
   length: z.tuple([z.number(), z.number()]),
   extends: z.string().optional(),
   places: corpusSchema,

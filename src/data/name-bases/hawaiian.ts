@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const hawaiian: WrittenNameBase = {
   id: "hawaiian",
+  description: "Places of Hawaii",
   length: [5, 10],
 
   places: {

@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const nahuatl: WrittenNameBase = {
   id: "nahuatl",
+  description: "Nahua places of central Mexico",
   length: [6, 13],
 
   places: {

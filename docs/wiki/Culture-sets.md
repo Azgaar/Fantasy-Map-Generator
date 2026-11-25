@@ -9,8 +9,8 @@ A culture set is the pool of cultures a map can draw from. It is picked in the _
 | Oriental     | 17                   | 17           |
 | English      | 10                   | 10           |
 | Antique      | 18                   | 10           |
-| High Fantasy | 18                   | 18           |
-| Dark Fantasy | 35                   | 18           |
+| High Fantasy | 20                   | 20           |
+| Dark Fantasy | 37                   | 18           |
 | Random       | generated on the fly | 100          |
 
 Every culture in a set has an _odd_ — a chance to be included at all — and a _sort_ function that scores cells to pick the culture center. That is why two maps with the same set rarely get the same cultures, and why e.g. Inuk tends to appear in cold regions and Maui on tropical islands.
@@ -137,12 +137,12 @@ Eighteen cultures are defined, but at most 10 are placed on a map, so the select
 
 ### High Fantasy
 
-Fourteen fictional races plus four human cultures.
+Fifteen fictional races plus five human cultures.
 
 **Fantasy races**
 
-- Quenian (Elfish): Elves of fantasy.
-- Eldar (Elfish): Another elven culture.
+- Quenian (Elfish): Elves of fantasy. Namesbase: Quenya.
+- Eldar (Elfish): Another elven culture. Namesbase: Sindarin.
 - Trow (Dark Elfish): Dark elfs of the underdark.
 - Lothian (Dark Elfish): Another dark elf culture.
 - Dunirr (Dwarven): Dwarves of the hills.
@@ -151,9 +151,10 @@ Fourteen fictional races plus four human cultures.
 - Uruk (Orkish): Orcish culture.
 - Ugluk (Orkish): Another orcish culture.
 - Yotunn (Giants): Live in places with -10C annual temperature.
-- Rake (Drakonic): Draconic creatures.
+- Rake (Drakonic): Draconic creatures. Namesbase: Dovahzul.
 - Arago (Arachnid): Big spiders.
 - Aj'Snaga (Serpents): Loves rainforest and tropical seasonal forests.
+- Madrian (Angelic): Rare angels of cool heights. Namesbase: Celestial.
 - Cottan (Halfling): Small folk of mild farmland.
 
 **Fantasy humans**
@@ -161,11 +162,12 @@ Fourteen fictional races plus four human cultures.
 - Anor (Human): Generic human culture.
 - Dail (Human): Another generic human culture.
 - Rohand (Human): Gothic human culture.
-- Dulandir (Human): Mongolian human culture.
+- Dulandir (Human): Human nomads of the steppe. Namesbase: Dothraki.
+- Valyr (Human): Human culture of warm lands. Namesbase: Valyrian.
 
 ### Dark Fantasy
 
-Thirty-five cultures are defined, but at most 18 are placed on a map. Real-world cultures dominate and fantasy races are rarer.
+Thirty-seven cultures are defined, but at most 18 are placed on a map. Real-world cultures dominate and fantasy races are rarer.
 
 **Common real-world English**
 
@@ -192,7 +194,6 @@ Thirty-five cultures are defined, but at most 18 are placed on a map. Real-world
 - Hantzu
 - Yamoto
 - Guantzu
-- Ulus
 - Turan: Turkish.
 - Amazi
 - Eurabic
@@ -200,6 +201,11 @@ Thirty-five cultures are defined, but at most 18 are placed on a map. Real-world
 - Keltan
 - Elladan
 - Romian
+
+**Fantasy humans**
+
+- Khalasar (Human): Nomads of the steppe. Namesbase: Dothraki.
+- Valyr (Human): Namesbase: Valyrian.
 
 **Fantasy races**
 
@@ -212,6 +218,7 @@ Thirty-five cultures are defined, but at most 18 are placed on a map. Real-world
 - Drake (Drakonic)
 - Rakhnid (Arachnid)
 - Aj'Snaga (Serpents)
+- Madrian (Angelic): Rare angels of cool heights.
 - Gehennan (Infernal): Likes hot highlands.
 
 ### Random

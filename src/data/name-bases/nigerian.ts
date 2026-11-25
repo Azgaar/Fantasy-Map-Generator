@@ -2,6 +2,7 @@ import type { WrittenNameBase } from "@/types/names";
 
 export const nigerian: WrittenNameBase = {
   id: "nigerian",
+  description: "Places of Nigeria, in Hausa, Yoruba and Igbo words",
   length: [4, 10],
 
   places: {

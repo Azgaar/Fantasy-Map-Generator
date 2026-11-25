@@ -600,6 +600,7 @@ Name generator consumes training sets of real-world town names (with the excepti
 
 - `id`: `string` - stable slug of the base, such as `german` or `dark-elven`. A culture stores it as its `base`
 - `name`: `string` - what the base is called, the user may change it. A shipped file holds none: the name is its id in title case, `dark-elven` is Dark Elven
+- `description`: `string` - optional, shown in the Namesbase Editor: where the base's data comes from and the idea behind it. Every shipped base has one, in English like the rest of its data
 - `length`: `[number, number]` - recommended minimal and maximal length of generated names. Generator adds syllables until the minimum is reached and stops at the maximum
 - `places`: `object` - the corpus of place names: `places.names` is the `string[]` a Markov chain is built from, and an optional `places.length` sets the length of generated names where it differs from the base's `length`
 - `waters`: `object` - optional corpus of river and lake names, `{ names, mode?, length? }`: their proper names come off its chain, or are picked as they are with `mode: "pick"`. Place names stand in when absent

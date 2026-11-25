@@ -5,6 +5,7 @@ const SOFT = String.raw`^(?:llan|tre|hendre|caer|ynys|bod|eglwys|hen|gwyn|du|hir
 
 export const welsh: WrittenNameBase = {
   id: "welsh",
+  description: "Places of Wales",
   length: [4, 13],
 
   places: {

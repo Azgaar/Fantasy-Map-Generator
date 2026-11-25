@@ -38,13 +38,13 @@ const IDS = [
   "mongolian",
   // fantasy bases by Dopu
   "human-generic",
-  "elven",
+  "sindarin",
   "dark-elven",
   "dwarven",
   "goblin",
   "orc",
   "giant",
-  "draconic",
+  "dovahzul",
   "arachnid",
   "serpents",
   // additional by Avengium
@@ -70,7 +70,11 @@ const IDS = [
   "serbian",
   // fantasy bases, added later
   "halfling",
-  "infernal"
+  "infernal",
+  "quenya",
+  "valyrian",
+  "dothraki",
+  "celestial"
 ];
 
 /** A shipped base is called by its id: `dark-elven` is Dark Elven */
