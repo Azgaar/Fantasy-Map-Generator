@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { csvParseRows } from "d3";
 import { waitForMap } from "./wait-for-map";
 
 // Regression test: temperature must be shown in the scale selected in the Units Editor
@@ -52,14 +53,14 @@ test.describe("Temperature units", () => {
     for await (const chunk of stream) chunks.push(chunk as Buffer);
     const csv = Buffer.concat(chunks).toString("utf8");
 
-    const [header, ...rows] = csv.trim().split("\n");
-    const temperatureIndex = header.split(",").indexOf("Temperature");
+    // meanings hold commas, so cells can be quoted
+    const [header, ...rows] = csvParseRows(csv.trim());
+    const temperatureIndex = header.indexOf("Temperature");
     expect(temperatureIndex).toBeGreaterThan(-1);
 
-    const dataRows = rows.filter(row => row.trim());
-    expect(dataRows.length).toBeGreaterThan(0);
-    for (const row of dataRows) {
-      const temperature = row.split(",")[temperatureIndex];
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      const temperature = row[temperatureIndex];
       expect(temperature).toMatch(/^-?[\d.]+K$/);
     }
   });
