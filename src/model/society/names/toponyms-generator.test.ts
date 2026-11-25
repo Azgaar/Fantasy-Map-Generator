@@ -3,11 +3,12 @@ import { type Concept, conceptsOf, kindOf } from "@/data/name-concepts";
 import { DEFAULT_TEMPLATES } from "@/data/name-rules";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Pattern } from "@/types/names";
+import { seeded } from "@/utils/probability-utils";
 import { Names } from "./names-generator";
-import { Toponyms } from "./toponyms-generator";
+import { type LandSize, Toponyms } from "./toponyms-generator";
 
 beforeAll(() => vi.stubGlobal("pack", { cultures: [] }));
-beforeAll(() => Names.load(["english"]));
+beforeAll(() => Names.load(["english", "german"]));
 
 describe("Toponyms.sample", () => {
   it("makes a name of any pattern asked for", () => {
@@ -30,6 +31,26 @@ describe("Toponyms.sample", () => {
       const [, generic] = Toponyms.sample(Names.find("english")!, { concept: "three" }).meaning.tokens;
       expect(kindOf(generic as Concept)).toBe("generic");
     }
+  });
+});
+
+describe("Toponyms.landOf", () => {
+  it("calls a big land a realm and a small one a march more often, and describes a big one less", () => {
+    vi.stubGlobal("pack", { cultures: [], burgs: [], states: [], provinces: [] });
+    const count = (size: LandSize) => {
+      const lands = seeded("lands", () =>
+        Array.from({ length: 300 }, () => Toponyms.landOf("german", new Set(), size).meaning)
+      );
+      return {
+        realms: lands.filter(({ tokens }) => tokens[1] === "realm").length,
+        marches: lands.filter(({ tokens }) => tokens[1] === "march").length,
+        described: lands.filter(({ pattern }) => pattern === "modifier-land").length
+      };
+    };
+    const [big, small] = [count("big"), count("small")];
+    expect(big.realms).toBeGreaterThan(small.realms);
+    expect(big.marches).toBeLessThan(small.marches);
+    expect(big.described).toBeLessThan(small.described);
   });
 });
 

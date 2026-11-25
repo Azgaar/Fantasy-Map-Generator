@@ -931,7 +931,7 @@ hundred: hunda+
 thousand: thusundi+
 
 # lands
-land: +land 8, +gawi 3, +thiuda 2
+land: +land
 realm: +reiki 4, +thiudangardi
 march: +marka 4
 domain: +waldi 3

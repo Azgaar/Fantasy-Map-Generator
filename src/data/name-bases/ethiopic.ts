@@ -826,7 +826,7 @@ thousand: shih+
 land: medre+ 4, +meder 5, +iya 7
 country: hagere+ 4
 folk: hizbe+, bete+ 2
-realm: mengiste+ 2
+realm: Mengist
 domain: +gizat
 march: +dinber
 coast: +bahri 2

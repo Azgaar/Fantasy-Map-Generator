@@ -620,8 +620,8 @@ seven: syv
 nine: nyn
 
 # lands
-land: +jord 4, +grund 3, +rike 2
-realm: +ric 2
+land: +jord 4, +grund 3
+realm: +ric, +rike
 folk: +theod
 `,
   patterns: {

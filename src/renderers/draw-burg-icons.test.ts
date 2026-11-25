@@ -9,7 +9,7 @@ vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }))
 vi.mock("@/model/icon-sets", () => ({ IconSets: { setForId: () => undefined } }));
 vi.mock("@/model/icons", () => ({
   Icons: {
-    loadAll: vi.fn().mockResolvedValue(undefined),
+    areSettled: () => true,
     href: (id: string) => `#${id}`,
     anchoredBox: (id: string) => (/^(burgs|ports)-/.test(id) ? [0, 0, 1, 1] : null)
   }

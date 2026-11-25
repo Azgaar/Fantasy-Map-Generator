@@ -18,7 +18,7 @@ The place keeps the meaning apart from its name. So the same place can be shown 
 
 Seas, routes, markers and religions have no meanings. They get plain names that only sound like their language.
 
-States, continents and the provinces not named after a burg are named as lands, with suffixes of their own that end no town: Frankland, Frankia. An island is named as an island.
+States, continents and the provinces not named after a burg are named as lands, with suffixes of their own that end no town: Frankland, Frankia. A big state is more often a realm named after a people, a small one or a province a march or a district named for what it is like. An island is named as an island.
 
 ### Where a meaning comes from
 

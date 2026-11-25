@@ -855,7 +855,7 @@ hundred: hundre+
 thousand: tusen+
 
 # lands
-land: +land 6, +rike 2
+land: +land
 realm: +rike
 march: +mark
 country: +bygd 2, +fylke

@@ -278,6 +278,11 @@ class IconLibrary {
     return this.loading.get(set) ?? this.attempt(set);
   }
 
+  /** nothing left to wait for: each set is loaded or has failed */
+  areSettled(sets: readonly IconSetId[]): boolean {
+    return sets.every(set => this.settled.has(set));
+  }
+
   loadAll(sets: readonly IconSetId[]): Promise<void> {
     return Promise.all(sets.map(set => this.load(set))).then(() => undefined);
   }

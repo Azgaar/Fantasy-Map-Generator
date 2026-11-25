@@ -852,10 +852,10 @@ peace: peace 2, quiet 2
 skull: noggin 2
 
 # lands
-land: +downs 4, Downs 4, +meads 3, Meads 3, +vales 2, Vales 2, +lands, Lands, +acres 2, Acres
+land: +downs 4, Downs 4, +meads 3, Meads 3, +vales 2, Vales 2, +lands, Lands
 realm: +weald 2, Weald 2
 march: +bounds 2, Bounds 2, +hedges, Hedges
-country: +shire 3, +wold 3, Wold 2
+country: +shire 3, +wold 3, Wold 2, +acres 2, Acres
 coast: strand 2, Shore
 isles: Isles 2, +isles, Eyots
 `,

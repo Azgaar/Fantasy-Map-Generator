@@ -977,10 +977,10 @@ hundred: sau+
 thousand: hazar+ 2, sahasra+
 
 # lands
-land: +desh 5, +stan 4, +khand 3, +rashtra 2, +wana 3, +wati 2, +varta, +anchal 2
+land: +desh 5, +stan 4, +khand 3, +rashtra 2, +wana 3, +wati 2, +varta
 realm: +rajya 2
 march: +war 3
-country: +desh 3, +khand 2, +bhum 2
+country: +khand 2, +bhum 2, +anchal 2
 domain: +mandal 3
 coast: +kantha
 isles: +dwip 3

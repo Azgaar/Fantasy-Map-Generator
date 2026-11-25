@@ -6,7 +6,7 @@ import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 const mocks = vi.hoisted(() => ({ layerOn: true }));
 vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 vi.mock("@/model/icons", () => ({
-  Icons: { load: vi.fn().mockResolvedValue(undefined), href: (id: string) => `#${id}` }
+  Icons: { areSettled: () => true, href: (id: string) => `#${id}` }
 }));
 
 import "@/model/styles/styles";

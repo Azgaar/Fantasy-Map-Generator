@@ -631,8 +631,8 @@ hundred: bach+ 2, +tram 2
 thousand: thien+ 2, +ngan 2
 
 # lands
-land: +quoc 3, xu+ 2, +viet 2
-country: +quoc
+land: xu+ 3, +viet 2
+realm: +quoc
 march: tran+
 coast: +hai
 isles: +dao

@@ -589,7 +589,7 @@ dead: Dead 3, dead+
 
 # lands
 land: +land 4, +lands 3
-realm: +realm
+realm: Realm
 march: +march 3, +marches
 country: +shire 3, +dom
 isles: Isles

@@ -1,4 +1,4 @@
-import { IconSets } from "@/model/icon-sets";
+import { type IconSetId, IconSets } from "@/model/icon-sets";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
@@ -12,14 +12,21 @@ import { escapeHtml } from "@/utils/string-utils";
 
 const layer = ViewportLayers.register({ id: "burgIcons", render: reconcileBurgIcons });
 
-export async function drawBurgIcons(): Promise<void> {
-  log.time("drawBurgIcons");
+/** the icon sets the layer draws with */
+export function getBurgIconSets(): IconSetId[] {
   const icons = Object.values(styles.burgIcons.groups).flatMap(({ groups }) => [
     groups.icons.options.icon,
     groups.anchors.options.icon
   ]);
   const referenced = icons.map(icon => icon && IconSets.setForId(icon)).filter(set => !!set);
-  await Icons.loadAll([...new Set([...Burgs.iconSets.map(set => set.id), ...referenced])]);
+  return [...new Set([...Burgs.iconSets.map(set => set.id), ...referenced])];
+}
+
+export async function drawBurgIcons(): Promise<void> {
+  const sets = getBurgIconSets();
+  if (!Icons.areSettled(sets)) await Icons.loadAll(sets); // settled icons draw at once, within the caller's log group
+
+  log.time("drawBurgIcons");
   layer.render();
   log.timeEnd("drawBurgIcons");
 }

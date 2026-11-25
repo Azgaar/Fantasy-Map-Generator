@@ -109,11 +109,23 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
   });
 
   it("names states as lands and islands as islands, not as towns", () => {
-    for (const { name, meaning } of living(pack.states)) expect(meaning!.pattern, name).toMatch(/-land$/);
+    for (const { name, meaning } of living(pack.states)) expect(meaning!.pattern, name).toMatch(/-land$|simplex/);
     for (const { name, meaning, subtype, type } of pack.features.filter(Boolean)) {
       if (type !== "island" || subtype === "continent") continue;
       if (meaning!.tokens[1] !== "island") expect(meaning!.pattern, name).toBe("root-land");
     }
+  });
+
+  it("names a state after the river of its capital with no land word where the name is long already", async () => {
+    await Names.load(["dutch"]);
+    const meaning: Meaning = { pattern: "generic-of", tokens: ["city", "~Platvliet"], origin: "dutch" };
+    const capital = { ...living(pack.burgs).find(burg => burg.capital)!, meaning };
+    const names = Array.from(
+      { length: 100 },
+      (_, i) => Toponyms.state(capital, capital.culture!, { baseId: "dutch", seed: `river-${i}` }).name
+    );
+    expect(names.filter(name => name.startsWith("Platvliet"))).toContain("Platvliet");
+    expect(names.filter(name => /^Platvliet./.test(name))).toEqual([]);
   });
 
   it("gives rivers, lakes, islands and provinces meanings their names are rendered from", () => {
@@ -232,7 +244,9 @@ describe("burg names of an authored base", () => {
     const pairs = inRuthenian().filter(({ meaning, name }) => meaning.pattern === "modifier-generic" && / /.test(name));
     for (const { name } of pairs) {
       const [describing, noun] = name.toLowerCase().split(" ");
-      if (/a$/.test(noun)) expect(describing, name).toMatch(/ya$/);
+      if (noun === "vorota")
+        expect(describing, name).toMatch(/ye$/); // gates, a plural
+      else if (/a$/.test(noun)) expect(describing, name).toMatch(/ya$/);
       if (/[oe]$/.test(noun)) expect(describing, name).toMatch(/(oye|eye|ye)$/);
     }
   });

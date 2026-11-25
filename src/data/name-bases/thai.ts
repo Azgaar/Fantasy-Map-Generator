@@ -852,10 +852,10 @@ hundred: roi+
 thousand: phan+
 
 # lands
-land: lan+ 5, +phum 6, +rat 6, +rattha 2
+land: lan+ 5, +phum 6, +rat 6
 country: khwaen+ 3, +prathet 2
-realm: monthon+ 2
-domain: khwaen+ 2
+realm: +rattha
+domain: khwaen+ 2, monthon+
 march: +sima 3
 coast: fang+ 2
 isles: +thawip

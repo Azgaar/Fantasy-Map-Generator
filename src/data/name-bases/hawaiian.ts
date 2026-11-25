@@ -672,7 +672,7 @@ thousand: mano
 
 # lands
 land: +nui 4, aina 3
-realm: aupuni
+realm: Aupuni
 coast: kahakai
 isles: moku
 `,

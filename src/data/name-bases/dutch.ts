@@ -996,11 +996,11 @@ hundred: honderd+
 thousand: duizend+
 
 # lands
-land: +land 7, +waard 2, +gouw 2
+land: +land
 realm: +rijk
 march: +mark
 domain: +ambacht, +kwartier
-country: +gouw 3, +streek
+country: +gouw 3, +waard 2, +streek
 coast: +kust
 isles: +eilanden
 `,

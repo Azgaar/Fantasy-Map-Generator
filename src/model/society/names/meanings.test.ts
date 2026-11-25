@@ -99,9 +99,9 @@ describe("render", () => {
     const frank = meaning("root-land", "~Frank", "land");
     const names = (baseId: string) =>
       new Set(Array.from({ length: 40 }, (_, salt) => Meanings.render(withSalt(frank, salt), baseId)));
-    expect(names("german")).toEqual(new Set(["Frankland", "Frankien", "Frankmark", "Frankreich"]));
-    expect(names("korean")).toContain("Pranguk"); // Korean writes no f and no nk
-    expect(names("chinese")).toEqual(new Set(["Fran Guo"]));
+    expect(names("german")).toEqual(new Set(["Frankland", "Frankien"]));
+    expect(names("korean")).toContain("Pralla"); // Korean writes no f and no nk
+    expect(names("chinese")).toEqual(new Set(["Fran Yu", "Fran Bang"]));
     expect(names("arabic")).toEqual(new Set(["Frankiyya", "Al Frankiyya", "Bilad Frank"]));
     Names.nameBases.push(custom());
     expect(names("custom")).toEqual(new Set(["Frankia"])); // the shared form: a base with no land of its own
@@ -174,7 +174,7 @@ describe("a base with no lexicon", () => {
 
   it("takes the lexicon and templates of the base it extends", () => {
     Names.nameBases.push(custom({ extends: "chinese" }));
-    expect(Meanings.render({ ...meaning("root-land", "~Mel", "land"), origin: "custom" }, "custom")).toBe("Mel Guo");
+    expect(Meanings.render({ ...meaning("root-land", "~Mel", "realm"), origin: "custom" }, "custom")).toBe("Mel Guo");
   });
 });
 

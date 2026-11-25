@@ -827,7 +827,7 @@ function editStateName(state: number): void {
 
   /** Coin a new meaning for the state, named in its culture's base or the base given */
   function regenerateShortName(baseId?: string) {
-    const named = Toponyms.state(pack.burgs[s.capital], s.culture, { baseId });
+    const named = Toponyms.state(pack.burgs[s.capital], s.culture, { baseId, size: States.getLandSize(s.area) });
     meaning = named.meaning;
     ensureEl<HTMLInputElement>("stateNameEditorShort").value = named.name;
     showMeaning();

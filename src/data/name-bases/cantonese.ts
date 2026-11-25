@@ -667,7 +667,8 @@ hundred: pak
 thousand: tsin
 
 # lands
-land: +kwok 6, +pong 2, +yik
+land: +pong 2, +yik
+realm: +kwok
 isles: +chau
 coast: +hoi
 `,

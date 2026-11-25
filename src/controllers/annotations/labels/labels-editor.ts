@@ -8,6 +8,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { MapEntities } from "@/model/map-entities";
 import { Rivers } from "@/model/physical/river-generator";
+import { States } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names/names-generator";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { createLabelArc } from "@/renderers/labels/label-arc";
@@ -414,7 +415,10 @@ function changeText(): void {
 
 const nameGenerators: Record<LabelType, (label: LabelData) => string> = {
   burg: label => Names.getCulture(pack.burgs[label.entityId].culture ?? 0),
-  state: label => Toponyms.land(pack.states[label.entityId].culture),
+  state: ({ entityId }) => {
+    const { culture, area } = pack.states[entityId];
+    return Toponyms.land(culture, States.getLandSize(area));
+  },
   province: label => Toponyms.land(pack.cells.culture[pack.provinces[label.entityId].center]),
   added: label => {
     const cellId = Pack.findCell(...label.anchor);

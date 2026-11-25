@@ -89,7 +89,7 @@ A numeral stands in the modifier slot: `modifier-generic: three, tower` gives Th
 | Lake     | `Features.defineNames`, before burgs     | the culture's on its shore                   | as a river, or after a person                                                                   |
 | Island   | `Features.defineNames`, before burgs     | the culture's on its first cell              | an island like something, or someone's; a continent is named as a state is                      |
 
-Rivers and lakes are named before burgs so a burg can be named after them. States are named after capitals, so capitals are named first. A religion that needs a burg's name before the burg has one names it on the spot (`Toponyms.nameOf`); that name says nothing of the burg's size.
+Rivers and lakes are named before burgs so a burg can be named after them. States are named after capitals, so capitals are named first; the states take their names once they have expanded. A religion that needs a burg's name before the burg has one names it on the spot (`Toponyms.nameOf`); that name says nothing of the burg's size.
 
 Seas, routes, markers and religions have no meanings.
 
@@ -98,7 +98,9 @@ Seas, routes, markers and religions have no meanings.
 A state, a province not named after its burg and a continent are lands, and an island is an island: none of them is named like a town. `Toponyms.coinLand` draws `root-land` or `modifier-land` by the base's weights and ends the name in a land word of the base, the state suffixes:
 
 - **The root** is a person (`FOUNDED`, 40%) or a people. A people's name is a stem, the start of a place name cut before the ending that makes it a town (`Names.getStem`): Heibach gives Heib. A stem closes in consonants the base's names close in, so Waldbach gives Wald, not Waldb. One state in five takes the person or the river its capital is named after.
-- **The suffix** is a form of a land concept. `land` leads, and holds most of a base's suffixes: German -land, -mark, -reich; French -ogne, -agne, -aine; Finnish -maa; Korean -guk, -ryeo. `realm`, `march`, `domain` and `country` add some; `coast` and `isles` ask for the place. A suffix that stands after a name only is a template of `root-land`, which may leave the land word out: `{root}ien` gives Frankien, and there is no Altien. A land word with only standalone forms (Regnum, Marca) is skipped, so no state is the Kingdom of Regnum. Such words stay for names translated from other bases.
+- **The suffix** is a form of a land concept. `land` leads, and holds most of a base's suffixes: German -land; French -ogne, -agne, -aine; Finnish -maa; Korean -ryeo, -ra. `realm` (-reich, -guk), `march` (-mark), `domain` and `country` (-gau) add some by the land's size; `coast` and `isles` ask for the place. A suffix that stands after a name only is a template of `root-land`, which may leave the land word out: `{root}ien` gives Frankien, and there is no Altien. A land word with only standalone forms (Regnum, Marca) is skipped, so no state is the Kingdom of Regnum. Such words stay for names translated from other bases.
+- **Size leans on the name** (`LAND_SITES`, `BIG_DESCRIBED`). A big land, one of a kingdom's or an empire's area, is more often a `realm` and seldom a `march`, `domain` or `country`, and is named after a person or a people: a describing word tells what the capital stands by, which suits a duchy. A small land leans the other way, and a province is small. States are therefore named once they have expanded (`States.getLandSize`). A name is never changed when a state grows or shrinks. A word of one size goes on the line of that size, not on `land`, or it ends any land's name.
+- **A long name is drawn again** (`LAND_LENGTH`, 10 letters in a word), a few times, and the shortest is kept. A state named after a long river needs no land word: Platvliet, not Platvlietsland. A person's or a people's name never stands alone.
 - **No two lands share a name.** A new state or province repeats no state, province or burg; a province may take its own burg's name (`BURG_NAMED`, 35%), if no land has it.
 - **No suffix ends a town.** A base's land suffixes are kept apart from its settlement endings, and a test checks it.
 
@@ -335,7 +337,7 @@ Test what a rule makes of a join, agreement, and forms that are drawn often. Do 
 - **Names do not repeat** among burgs, among states and among rivers.
 - **A state takes only a land word its base has written.** A coined one would name a state like a town.
 - **Loading a map never coins meanings.** An old map keeps its names as they are; its name bases and culture bases are converted once in `migrateLegacyNameBases`.
-- **A base is loaded before anything is named in it.** Naming is synchronous and loads nothing: the bases the cultures use are loaded by the pipelines, on map load and where a culture takes another base. What offers every base calls `Names.loadAll` as it opens.
+- **A base is loaded before anything is named in it.** Naming is synchronous and loads nothing: the bases the cultures use are loaded by the pipelines, on map load and where a culture takes another base. What offers every base calls `Names.loadAll` as it opens, and so does `regenerateMap` before it erases the old map: a wait amid the generation would paint the map empty.
 - **A shipped base the user left as it is saves by its id alone**, so it follows later data updates. Stored names do not change; new renderings do.
 
 ## Tests

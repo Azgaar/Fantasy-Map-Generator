@@ -739,7 +739,7 @@ thousand: -Elp
 
 # lands
 land: Ars/f 5, +an 3, +on 3, +it 2, +im 2
-realm: Mamlakat 2, +ot
+realm: Mamlakat
 march: Gebul 3, gebul+
 country: Ars/f 3, +an 2
 domain: Nahalat 2, +ot

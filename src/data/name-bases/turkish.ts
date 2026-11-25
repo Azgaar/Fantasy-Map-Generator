@@ -795,7 +795,7 @@ thousand: bin'+
 
 # lands
 land: +eli 5, +istan 3, +iye 2, +yurdu 2
-realm: +beylik
+domain: +beylik
 country: +diyar 2, +ülke
 coast: +kıyı 2, +yalı
 isles: +adalar

@@ -9,7 +9,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import type { Feature } from "@/model/physical/features-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { Names } from "@/model/society/names/names-generator";
-import { Toponyms } from "@/model/society/names/toponyms-generator";
+import { type LandSize, Toponyms } from "@/model/society/names/toponyms-generator";
 import { Population } from "@/model/society/population-generator";
 import { Tags } from "@/model/tags";
 import type { Emblem } from "@/types/emblems";
@@ -248,6 +248,7 @@ class StatesModule {
     pack.states = states;
     this.expandStates();
     this.normalize();
+    this.nameStates();
     this.getPoles();
     this.findNeighbors();
     this.collectStatistics();
@@ -345,8 +346,6 @@ class StatesModule {
       if (!capital) break;
 
       const culture = capital.culture ?? 0;
-      const taken = new Set(newStates.map(state => state.name));
-      const { name, meaning } = Toponyms.state(capital, culture, { taken });
       const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[capital.cell]);
       const type = nomadic
         ? "Nomadic"
@@ -358,8 +357,7 @@ class StatesModule {
       coa.shield = capital.coa?.shield;
       newStates.push({
         i: stateId,
-        name,
-        meaning,
+        name: "", // named once expanded
         type,
         capital: capital.i,
         center: capital.cell,
@@ -382,16 +380,12 @@ class StatesModule {
       if (!burg.i || !burg.capital) return;
 
       const expansionism = rn(Math.random() * sizeVariety + 1, 1);
-      const taken = new Set(states.map(state => state.name));
-      const seed = `${options.map.seed}|state|${burg.i}`;
-      const { name, meaning } = Toponyms.state(burg, burg.culture!, { taken, seed });
       const type = pack.cultures[burg.culture!].type;
       const coa = Emblems.generate(null, null, null, type);
       coa.shield = Emblems.getShield(burg.culture!);
       states.push({
         i: burg.i,
-        name,
-        meaning,
+        name: "", // named once expanded
         expansionism,
         capital: burg.i,
         type: type!,
@@ -404,6 +398,34 @@ class StatesModule {
     });
 
     return states;
+  }
+
+  // a state is named by the size it has grown to; with a seed each name is drawn on a sequence of its own
+  private nameStates(seed?: string): void {
+    const { cells, states, burgs } = pack;
+    const areas = states.map(() => 0);
+    for (const i of cells.i) if (cells.h[i] >= 20) areas[cells.state[i]] += cells.area[i];
+    for (const state of states) {
+      if (!state.i || state.removed || state.name) continue;
+      const size = this.getLandSize(areas[state.i], areas);
+      const named = Toponyms.state(burgs[state.capital], state.culture, {
+        size,
+        taken: new Set(states.map(({ name }) => name)),
+        seed: seed && `${seed}|state|${state.i}`
+      });
+      Object.assign(state, named);
+    }
+  }
+
+  /** How big a land an area makes against the map's states, as names tell it */
+  getLandSize(area: number | undefined, areas = pack.states.map(s => s.area)): LandSize {
+    const tier = this.getTier(area, median(areas));
+    return tier > 2 ? "big" : tier < 2 ? "small" : "middle";
+  }
+
+  // 0 to 4: a duchy to an empire
+  private getTier(area = 0, medianArea = 0): number {
+    return Math.min(Math.floor((area / medianArea) * 2.6), 4);
   }
 
   private getBiomeCost(b: number, biome: number, type: string) {
@@ -442,6 +464,7 @@ class StatesModule {
     pack.states = this.createStates();
     this.expandStates();
     this.normalize();
+    this.nameStates(options.map.seed);
     this.getPoles();
     this.findNeighbors();
     this.assignColors();
@@ -892,12 +915,12 @@ class StatesModule {
     const generic = { Monarchy: 25, Republic: 2, Union: 1 };
     const naval = { Monarchy: 25, Republic: 8, Union: 3 };
 
-    const medianState = median(pack.states.map(s => s.area))!;
+    const medianState = median(pack.states.map(s => s.area));
     const empireMin = states.map(s => s.area).sort((a = 0, b = 0) => b - a)[
       Math.max(Math.ceil(states.length ** 0.4) - 2, 0)
     ]!;
     const expTiers = pack.states.map(s => {
-      let tier = Math.min(Math.floor((s.area! / medianState) * 2.6), 4);
+      let tier = this.getTier(s.area, medianState);
       if (tier === 4 && s.area! < empireMin) tier = 3;
       return tier;
     });

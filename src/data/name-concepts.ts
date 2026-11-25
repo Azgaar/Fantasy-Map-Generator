@@ -465,11 +465,11 @@ const NUMERALS = {
 /** What a state is */
 const LANDS = {
   land: { weight: 10 },
-  realm: { weight: 2 },
-  march: { weight: 4 },
-  domain: { weight: 2 },
+  realm: { fits: ["big"], weight: 7 },
+  march: { fits: ["small"], weight: 4 },
+  domain: { fits: ["small"], weight: 3 },
   reach: { weight: 2 },
-  country: { weight: 4 },
+  country: { fits: ["small"], weight: 4 },
   crown: { weight: 1 },
   folk: { weight: 1 },
   coast: { fits: ["coast"], weight: 3 },

@@ -718,7 +718,7 @@ hundred: -Shenet
 thousand: -Kha
 
 # lands
-land: Ta 6, +et 4, +enu 3, +wat 2, +tawy 2, Sepat 2
+land: Ta 6, +et 4, +enu 3, +wat 2
 country: Khaset 2, Ta 2, +wat
 realm: Ta 2, +tawy 2
 march: Tash 2, +djeru

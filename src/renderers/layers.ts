@@ -1,7 +1,9 @@
 // Global layers registry: owns layers list, order, and svg skeleton
+import type { IconSetId } from "@/model/icon-sets";
+import { Icons } from "@/model/icons";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
-import { drawBurgIcons } from "@/renderers/draw-burg-icons";
+import { drawBurgIcons, getBurgIconSets } from "@/renderers/draw-burg-icons";
 import { drawCells } from "@/renderers/draw-cells";
 import { drawCoastline } from "@/renderers/draw-coastline";
 import { drawCoordinates } from "@/renderers/draw-coordinates";
@@ -22,7 +24,7 @@ import { drawOcean, removeOcean } from "@/renderers/draw-ocean";
 import { drawPopulation } from "@/renderers/draw-population";
 import { drawPrecipitation } from "@/renderers/draw-precipitation";
 import { drawProvinces } from "@/renderers/draw-provinces";
-import { drawRelief, removeRelief } from "@/renderers/draw-relief-icons";
+import { drawRelief, getReliefIconSets, removeRelief } from "@/renderers/draw-relief-icons";
 import { drawReligions } from "@/renderers/draw-religions";
 import { drawRivers, removeRivers } from "@/renderers/draw-rivers";
 import { drawRoutes, removeRoutes } from "@/renderers/draw-routes";
@@ -48,6 +50,7 @@ interface LayerParams<Id extends string = string> {
   attrs?: Record<string, string>; // static attributes applied to the layer group
   permanent?: boolean; // structural layer: on from the start, never turned off and never saved as state
   keepContent?: boolean; // keep the content in the DOM when the layer is turned off
+  icons?: () => IconSetId[]; // icon sets the renderer draws with
   draw?: (layer: Layer) => void; // renderer function
   erase?: (layer: Layer) => void; // custom teardown, defaults to erasing the content down to the declared children
 }
@@ -175,6 +178,12 @@ export class LayersRegistry<Id extends string = string> {
       layer.params.draw(layer);
       performance.measure(layer.id, { start, detail: "Layers" });
     }
+  }
+
+  /** load the icons of the layers that are ON, for a full draw not to outrun them */
+  async loadIcons(): Promise<void> {
+    const layers = this.layers.filter(layer => this.active.has(layer.id));
+    await Icons.loadAll(layers.flatMap(layer => layer.params.icons?.() ?? []));
   }
 
   drawAll(): void {
@@ -340,7 +349,14 @@ const mapLayers = [
     children: [{ id: "compassRose", tag: "use", attrs: { href: "#defs-compass-rose" } }]
   }),
   new Layer({ id: "rivers", parent: "viewbox", draw: drawRivers, erase: removeRivers }),
-  new Layer({ id: "relief", element: "terrain", parent: "viewbox", draw: drawRelief, erase: removeRelief }),
+  new Layer({
+    id: "relief",
+    element: "terrain",
+    parent: "viewbox",
+    icons: getReliefIconSets,
+    draw: drawRelief,
+    erase: removeRelief
+  }),
   new Layer({ id: "religions", element: "relig", parent: "viewbox", draw: drawReligions }),
   new Layer({ id: "cultures", element: "cults", parent: "viewbox", draw: drawCultures }),
   new Layer({
@@ -378,6 +394,7 @@ const mapLayers = [
     id: "goods",
     parent: "viewbox",
     children: ["goodsCells", "goodsTraffic", "goodsBurgs", "goodsIcons"].map(id => ({ id, tag: "g" })),
+    icons: () => ["goods"],
     draw: drawGoods,
     erase: removeGoods
   }),
@@ -409,7 +426,7 @@ const mapLayers = [
     draw: drawEmblems,
     erase: removeEmblems
   }),
-  new Layer({ id: "burgIcons", parent: "viewbox", draw: drawBurgIcons }),
+  new Layer({ id: "burgIcons", parent: "viewbox", icons: getBurgIconSets, draw: drawBurgIcons }),
   new Layer({
     id: "labels",
     parent: "viewbox",

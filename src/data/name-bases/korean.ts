@@ -680,7 +680,8 @@ hundred: baek
 thousand: cheon
 
 # lands
-land: +guk 5, +ryeo 2, +ra 2
+land: +ryeo, +ra
+realm: +guk
 isles: +do
 `,
   patterns: {

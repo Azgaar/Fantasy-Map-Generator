@@ -1008,11 +1008,11 @@ nine: Devet/many
 ten: Deset/many
 
 # lands
-land: ^ovina 6, ^ija 5, ^ska 4, Zemlja 2, Krajina 2, Župa
-realm: ^ovina 2, ^ija, Kneževina
+land: ^ovina 6, ^ija 5, ^ska 4, Zemlja 2
+realm: ^ovina 2, ^ija
 march: ^ovina, ^ska, Krajina 2
-domain: ^ovina 2, Banovina
-country: ^ska 2, ^ija 2, Zemlja
+domain: ^ovina 2, Banovina, Kneževina, Župa
+country: ^ska 2, ^ija 2, Zemlja, Župa
 coast: ^ska, Primorje 2
 isles: ^ska, Ostrva/npl 2
 `,
