@@ -19,6 +19,7 @@ const ANY_ORDER: Formant["position"][] = ["word", undefined, "last", "stem", "fi
 const MIN_NAME = 3;
 const STUTTER = /(\p{L}{3,})\+\1|(\p{L}{2})\+\2(?=[ -]|$)/u; // a part that repeats the one before: Harlan-land, Amnon-on
 const LEFT_OVER = /(?<=^|[ -])[ '+-]+|[ +-]+$/g; // the marks between a name and a modifier given up
+const PLACE_ROOTS: Meaning["pattern"][] = ["generic-of", "relative"]; // the root is another place's name, never a person's
 
 /** A template with a form drawn for each of its concepts */
 interface Layout {
@@ -261,7 +262,8 @@ class Composition {
     const generic = forms[sites.findIndex(site => site.slot === "generic")];
     if (generic) return generic.class ?? this.classOf(bareOf(generic.form));
     const { root } = this.values;
-    return root && isRoot(root) ? this.personClass(rootOf(root)) : this.classOf("");
+    if (!root || !isRoot(root)) return this.classOf("");
+    return PLACE_ROOTS.includes(this.meaning.pattern) ? this.classOf(rootOf(root)) : this.personClass(rootOf(root));
   }
 
   // a root that is a man's or a woman's name takes the gender of the list it is from, where the grammar has both

@@ -69,8 +69,8 @@ export type GenerationConfig = {
   jitter?: number;
 };
 
-/** Generate a whole new world */
-export async function generate(config?: GenerationConfig): Promise<void> {
+/** Generate a whole new world; false where it failed. The caller draws and registers it */
+export async function generate(config?: GenerationConfig): Promise<boolean> {
   try {
     const { seed: precreatedSeed, graph: precreatedGraph, width, height, points, jitter } = config || {};
     Options.setGraphSize(width, height);
@@ -90,8 +90,8 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     Options.persist();
 
     syncOptionInputs();
-    registerMap();
     invokeActiveZooming();
+    return true;
   } catch (error) {
     log.error(error);
     clearMainTip();
@@ -118,6 +118,7 @@ export async function generate(config?: GenerationConfig): Promise<void> {
         { label: t("Ignore") }
       ]
     });
+    return false;
   }
 }
 
@@ -136,9 +137,10 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   await NameBases.loadAll(); // loading amid the generation would paint an empty map
   resetZoom(1000);
   undraw();
-  await generate(typeof config === "string" ? undefined : config);
+  const generated = await generate(typeof config === "string" ? undefined : config);
   await Layers.loadIcons();
   Layers.drawAll();
+  if (generated) registerMap();
 
   if (is3dView()) Controllers.View3d.redraw();
   if (findEl("worldConfigurator")?.offsetParent) Controllers.WorldConfigurator.open();

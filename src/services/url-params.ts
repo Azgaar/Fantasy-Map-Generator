@@ -3,6 +3,7 @@
 import { leastIndex, select } from "d3";
 import type { GenerationConfig } from "@/app/lifecycle";
 import { Controllers } from "@/controllers";
+import { registerMap } from "@/model/map-history";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
@@ -65,10 +66,11 @@ export async function checkLoadParameters(): Promise<void> {
 /** The start-up path: style, world, layers, then wherever the URL says to look */
 export async function generateMapOnLoad(config?: GenerationConfig): Promise<void> {
   await Controllers.StylePresetsEditor.applyOnLoad(); // the previously selected default or custom style
-  await App.generate(config);
+  const generated = await App.generate(config);
   App.applyLayersPreset();
   await Layers.loadIcons();
   Layers.drawAll();
+  if (generated) registerMap();
   fitMapToScreen();
   focusOn();
   toggleAssistant();
