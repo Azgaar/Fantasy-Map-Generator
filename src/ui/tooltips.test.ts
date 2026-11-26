@@ -118,6 +118,13 @@ describe("tip", () => {
     expect(tooltip.innerHTML).toBe('<b class="x">Battle</b> of Ark &amp; Co<br>');
     expect(tooltip.querySelector("img, script, a, [onclick]")).toBeNull();
 
+    tip(
+      '<svg width="1.2em" onload="window.hacked=1"><circle r="42%" fill="#fff"/><use href="#salt" x="10%"/><use href="javascript:1"/><a href="javascript:1"><text>x</text></a></svg>5'
+    );
+    expect(tooltip.innerHTML).toBe(
+      '<svg width="1.2em"><circle r="42%" fill="#fff"></circle><use href="#salt" x="10%"></use><use></use>x</svg>5'
+    );
+
     tip("Plain <text> & more");
     expect(tooltip.textContent).toBe("Plain  & more");
     tip("Plain text");

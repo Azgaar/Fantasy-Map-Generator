@@ -31,10 +31,23 @@ const TIP_TAGS = new Set([
   "kbd",
   "code",
   "div",
-  "p"
+  "p",
+  "svg",
+  "circle",
+  "use"
 ]);
-const TIP_ATTRIBUTES = new Set(["class", "style"]);
-const UNSAFE_CONTENT = "script, style, template, iframe, object, embed, svg, math, noscript, textarea, select";
+// svg badges, e.g. a good's icon: paint and geometry only, `<use>` points into the page's own defs
+const TIP_ATTRIBUTES = new Set(["class", "style", "width", "height", "viewBox", "x", "y", "cx", "cy", "r"]);
+const SVG_PAINT = new Set(["fill", "stroke", "stroke-width"]);
+const UNSAFE_CONTENT =
+  "script, style, template, iframe, object, embed, foreignObject, math, noscript, textarea, select";
+
+function isTipAttribute(element: Element, name: string, value: string): boolean {
+  if (/url\(|expression\(/i.test(value)) return false;
+  if (TIP_ATTRIBUTES.has(name)) return true;
+  if (!(element instanceof SVGElement)) return false;
+  return SVG_PAINT.has(name) || (name === "href" && /^#[\w-]+$/.test(value));
+}
 
 /** Show a tip's html with its formatting only */
 function render(tooltip: HTMLElement, message: string): void {
@@ -50,8 +63,7 @@ function render(tooltip: HTMLElement, message: string): void {
       continue;
     }
     for (const name of element.getAttributeNames()) {
-      if (!TIP_ATTRIBUTES.has(name) || /url\(|expression\(/i.test(element.getAttribute(name)!))
-        element.removeAttribute(name);
+      if (!isTipAttribute(element, name, element.getAttribute(name)!)) element.removeAttribute(name);
     }
   }
   tooltip.replaceChildren(...body.childNodes);
