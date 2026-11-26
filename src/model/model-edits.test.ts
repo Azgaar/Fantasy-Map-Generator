@@ -728,7 +728,7 @@ describe("States: chronicle, painting and merging as provinces", () => {
     vi.spyOn(Burgs, "getType").mockReturnValue("Generic");
     vi.spyOn(Emblems, "generate").mockReturnValue({ t1: "or" });
     vi.spyOn(Emblems, "getShield").mockReturnValue("heater");
-    vi.spyOn(Toponyms, "landOf").mockReturnValue({ name: "Marca", meaning: Meanings.simplex("Marca", "english") });
+    vi.spyOn(Toponyms, "land").mockReturnValue({ name: "Marca", meaning: Meanings.simplex("Marca", "english") });
     States.setCells(2, [2]);
     expect([...pack.cells.state]).toEqual([0, 1, 2, 2, 2]);
     expect(pack.provinces[2]).toMatchObject({ i: 2, state: 2, center: 2, name: "Marca" }); // the split-off part of Vel takes a name of its own

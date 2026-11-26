@@ -19,9 +19,12 @@ export function nameEditButton(id: string): string {
   return `<span id="${id}" data-tip="${t("Rename")}" class="icon-pencil pointer"></span>`;
 }
 
-/** Offer the name a place would take now */
+export const RENAME_OFFER = "renameOffer";
+
+/** Offer the name a place would take now, in one window that a newer offer replaces */
 export function offerRename(from: string, to: string, onConfirm: () => void): void {
   Dialog.confirm({
+    id: RENAME_OFFER,
     title: t("Rename"),
     message: t("Rename {{from}} to {{to}}?", { from, to }),
     confirm: t("Rename"),

@@ -1,6 +1,6 @@
 import { type D3DragEvent, drag, easeSinIn, select, transition } from "d3";
 import { Controllers } from "@/controllers";
-import { NAMED_MODELS } from "@/controllers/society/named-places";
+import { offerNamesIn } from "@/controllers/society/named-places";
 import { CULTURE_TYPES } from "@/data/culture-types";
 import { DEFAULT_DEVELOPMENT } from "@/data/development";
 import { CULTURE_TYPE_LABELS, SHIELD_LABELS } from "@/data/id-labels";
@@ -730,20 +730,7 @@ async function cultureChangeBase(this: HTMLSelectElement): Promise<void> {
   row.dataset.base = this.value;
 
   // the new base may say the names another way
-  const renamings = Toponyms.renamings(culture, saidIn);
-  if (!renamings.length) return;
-
-  Dialog.confirm({
-    title: t("Rename"),
-    message: t("The new name base would name {{count}} places of the culture another way. Rename them?", {
-      count: renamings.length
-    }),
-    confirm: t("Rename"),
-    onConfirm: () => {
-      for (const { type, id, named } of renamings) NAMED_MODELS[type].setName(id, named);
-      Layers.draw("labels");
-    }
-  });
+  offerNamesIn(Toponyms.placesOf(culture), saidIn, () => Layers.draw("labels"));
 }
 
 function cultureChangeEmblemsShape(this: HTMLSelectElement): void {

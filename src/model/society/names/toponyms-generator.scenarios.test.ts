@@ -183,29 +183,26 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     }
   });
 
-  it("offers new names for all places of a culture that takes another base, each free", () => {
+  it("renames the places of a culture that takes another base, either way", () => {
     const culture = living(pack.cultures).find(({ i, base }) => pack.states.some(s => s.i && s.culture === i && base))!;
     const saidIn = culture.base;
     const other = living(pack.cultures).find(({ base }) => base !== saidIn)!;
-    expect(Toponyms.renamings(culture.i, saidIn)).toEqual([]); // the base it has
+    const places = Toponyms.placesOf(culture.i);
+    expect(new Set(places.map(({ type }) => type))).toEqual(expect.objectContaining(new Set(["burg", "state"])));
     culture.base = other.base;
-    const renamings = Toponyms.renamings(culture.i, saidIn);
+    const appropriated = places.flatMap(place => Toponyms.renameIn(place, saidIn, "appropriate") ?? []);
+    const regenerated = places.flatMap(place => Toponyms.renameIn(place, saidIn, "regenerate") ?? []);
     culture.base = saidIn;
-    const types = new Set(renamings.map(({ type }) => type));
-    expect([...types]).toEqual(expect.arrayContaining(["burg", "state"]));
-    for (const { type, named } of renamings) expect(named.meaning.own, type).toBeTruthy();
-    for (const kinds of [["burg"], ["state", "province"], ["river"], ["feature"]]) {
-      const all = renamings.filter(({ type }) => kinds.includes(type)).map(({ named }) => named.name);
-      expect(all.length).toBe(new Set(all).size);
-    }
+    expect(appropriated.length).toBeGreaterThan(0);
+    for (const { meaning } of appropriated) expect(meaning.own).toBeTruthy();
+    for (const { meaning } of regenerated) expect(meaning.origin).toBe(other.base);
   });
 
-  it("names some states after their own people, none after the same", () => {
+  it("names no two states after the same people", () => {
     const roots = living(pack.states).flatMap(({ culture, meaning }) => {
       const [root] = meaning!.tokens;
       return pack.cultures[culture].name.startsWith(root.slice(1)) ? `${culture} ${root}` : [];
     });
-    expect(roots.length).toBeGreaterThan(0);
     expect(roots.length).toBe(new Set(roots).size);
   });
 

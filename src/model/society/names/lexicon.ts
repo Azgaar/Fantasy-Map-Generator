@@ -37,7 +37,11 @@ class LexiconModule {
     readonly string[],
     { rules: NameBase["rules"]; forms: Map<Concept, Formant[]> }
   >(); // by corpus
-  private readonly derivations = new WeakMap<readonly Formant[], { derive: Grammar["derive"]; forms: Formant[] }>(); // by written forms
+  // by written forms, which several concepts may share: what is derived depends on the concept's kind
+  private readonly derivations = new WeakMap<
+    readonly Formant[],
+    { derive: Grammar["derive"]; kind: Kind; forms: Formant[] }
+  >();
   private readonly vocabularies = new WeakMap<NameBase, Vocabulary>();
 
   /** The forms of a concept in a base: written for it, for a base it extends or for all bases, else coined */
@@ -148,10 +152,11 @@ class LexiconModule {
   private withDerived(base: NameBase, concept: Concept, written: readonly Formant[]): readonly Formant[] {
     const derive = this.grammarOf(base)?.derive;
     if (!derive) return written;
+    const kind = kindOf(concept);
     const cached = this.derivations.get(written);
-    if (cached?.derive === derive) return cached.forms;
+    if (cached?.derive === derive && cached.kind === kind) return cached.forms;
     const forms = [...written, ...this.derivedForms(base, concept, written)];
-    this.derivations.set(written, { derive, forms });
+    this.derivations.set(written, { derive, kind, forms });
     return forms;
   }
 

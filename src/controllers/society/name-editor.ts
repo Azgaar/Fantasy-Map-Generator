@@ -5,7 +5,7 @@ import { conceptsOf } from "@/data/name-concepts";
 import { kindsOf, PATTERNS, type Slot } from "@/data/name-patterns";
 import { MapEntities } from "@/model/map-entities";
 import { Appropriation } from "@/model/society/names/appropriation";
-import { Meanings } from "@/model/society/names/meanings";
+import { isRoot, Meanings } from "@/model/society/names/meanings";
 import { NameBases } from "@/model/society/names/name-bases";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Layers } from "@/renderers/layers";
@@ -360,7 +360,7 @@ function editFull(): void {
 }
 
 const isWhole = ({ tokens }: Draft) => tokens.every(token => token.length > 1); // "~" alone is a name not typed yet
-const wordOf = (token: string) => (token.startsWith("~") ? token.slice(1) : token);
+const wordOf = (token: string) => (isRoot(token) ? token.slice(1) : token);
 
 function placeholderOf(pattern: Pattern, slot: Slot): string {
   if (slot === "modifier") return t("Description");

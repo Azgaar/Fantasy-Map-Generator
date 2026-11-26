@@ -161,6 +161,7 @@ class NameNotationModule {
         else if (flag.startsWith("as ")) rule.as = flag.slice(3).trim();
         else if (/^\d*\.?\d+%$/.test(flag)) rule.chance = Math.min(Number.parseFloat(flag) / 100, 1);
       }
+      if (rule.when) delete rule.chance; // a chance is rolled where parts meet, not for long or foreign names
       return rule;
     });
   }

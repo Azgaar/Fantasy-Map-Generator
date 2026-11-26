@@ -34,12 +34,12 @@ describe("Toponyms.sample", () => {
   });
 });
 
-describe("Toponyms.landOf", () => {
+describe("Toponyms.land", () => {
   it("calls a big land a realm and a small one a march more often, and describes a big one less", () => {
     vi.stubGlobal("pack", { cultures: [], burgs: [], states: [], provinces: [] });
     const count = (size: LandSize) => {
       const lands = seeded("lands", () =>
-        Array.from({ length: 300 }, () => Toponyms.landOf("german", new Set(), size).meaning)
+        Array.from({ length: 300 }, () => Toponyms.land("german", new Set(), size).meaning)
       );
       return {
         realms: lands.filter(({ tokens }) => tokens[1] === "realm").length,

@@ -64,7 +64,7 @@ afterEach(() => {
 
 describe("ProvincesEditor name regeneration", () => {
   beforeEach(() => {
-    vi.spyOn(Toponyms, "landOf").mockImplementation(culture => {
+    vi.spyOn(Toponyms, "land").mockImplementation(culture => {
       const name = `Culture${culture}`;
       return { name, meaning: Meanings.simplex(name, "english") };
     });
@@ -106,7 +106,7 @@ describe("ProvincesEditor name regeneration", () => {
       "Removed",
       "Search excluded"
     ]);
-    expect(Toponyms.landOf).toHaveBeenCalledExactlyOnceWith(0);
+    expect(Toponyms.land).toHaveBeenCalledExactlyOnceWith(0);
   });
 
   it("renames matching provinces beyond the first table page", () => {
@@ -116,7 +116,7 @@ describe("ProvincesEditor name regeneration", () => {
     document.querySelector<HTMLButtonElement>("#regenerateProvinceNames")!.click();
 
     expect(pack.provinces[105].name).toBe("Culture2");
-    expect(Toponyms.landOf).toHaveBeenCalledTimes(105);
+    expect(Toponyms.land).toHaveBeenCalledTimes(105);
   });
 });
 

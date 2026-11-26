@@ -1,5 +1,6 @@
 import { type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
+import { offerNamesIn } from "@/controllers/society/named-places";
 import { Markets } from "@/model/economy/markets-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
@@ -12,10 +13,9 @@ import { removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import type { Market } from "@/types/economy";
-import type { Named } from "@/types/names";
 import { renderDevelopment } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { closeEntityDialogs, nameEditButton, noteButton, offerRename } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, nameEditButton, noteButton, offerRename, RENAME_OFFER } from "@/ui/dialog/dialog-helpers";
 import { EconomyTerms, prosperityTip, renderProsperity } from "@/ui/economy-view";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
@@ -372,14 +372,11 @@ function changeGroup(this: HTMLSelectElement): void {
   Layers.draw("burgIcons", "labels");
 
   // a name ends in what the burg is: in another group it may end another way
-  offerName(burg, Toponyms.regrouped(burg, was));
-}
-
-function offerName(burg: Burg, named?: Named): void {
-  if (!named) return;
+  const named = Toponyms.regrouped(burg, was);
+  if (!named) return void Dialog.close(RENAME_OFFER); // an offer for the group it had is stale
   offerRename(burg.name!, named.name, () => {
     Burgs.setName(burg.i, named);
-    showName(burg);
+    if (Dialog.isOpen("burgEditor") && getSelectedId() === burg.i) showName(burg);
     Layers.draw("labels");
   });
 }
@@ -393,7 +390,10 @@ function changeCulture(this: HTMLSelectElement): void {
   const burg = pack.burgs[getSelectedId()];
   const { base } = pack.cultures[burg.culture!];
   Burgs.setCulture(burg.i, +this.value);
-  offerName(burg, Toponyms.nameIn(burg, +this.value, base)); // the new culture may say the name another way
+  offerNamesIn([{ type: "burg", id: burg.i }], base, () => {
+    if (Dialog.isOpen("burgEditor") && getSelectedId() === burg.i) showName(burg);
+    Layers.draw("labels");
+  });
 }
 
 function changePopulation(): void {

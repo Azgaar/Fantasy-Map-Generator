@@ -125,7 +125,7 @@ class ProvinceModule {
       Toponyms.drawFor(
         "province",
         provinces.length,
-        () => Toponyms.landOf(culture, taken),
+        () => Toponyms.land(culture, taken),
         regenerate ? localSeed : undefined
       );
 
@@ -369,7 +369,7 @@ class ProvinceModule {
 
   /** Give provinces new names, each a land's in the culture's base at its center */
   regenerateNames(provinces: Province[]): void {
-    for (const { i, center } of provinces) this.setName(i, Toponyms.landOf(pack.cells.culture[center]));
+    for (const { i, center } of provinces) this.setName(i, Toponyms.land(pack.cells.culture[center]));
   }
 
   /** Rename a province and set what the name says: with no meaning it is a proper name, whatever the old one said */
@@ -452,7 +452,7 @@ class ProvinceModule {
     const burg = cells.burg[center];
     const culture = cells.culture[center];
     const taken = Toponyms.landNames();
-    const { name = "", meaning } = burg && !taken.has(burgs[burg].name) ? burgs[burg] : Toponyms.landOf(culture, taken);
+    const { name = "", meaning } = burg && !taken.has(burgs[burg].name) ? burgs[burg] : Toponyms.land(culture, taken);
     const formName = old?.formName || "Province";
     const coa = Emblems.generate(
       burg ? burgs[burg].coa : states[state].coa,

@@ -57,7 +57,7 @@ A number may stand where a describing word does: Three Towers, Tri Vezhi.
   - Rename a river, lake, burg, state or province, and the places named after it are offered the new name too: the towns on the river, a New Barton beside Barton, the colonies named after a land. A place whose name you typed yourself keeps it.
   - A route, an ocean and a label's text have no meaning: their dialog has no Meaning row.
 - **Form and full name** of a state or province are changed by a click on its form. The pencil beside the short name there opens the Name Editor.
-- **A name you type is kept.** The name and the meaning are stored apart and neither overwrites the other, so a name may say something other than its meaning. Nothing renames a place behind your back: changing a burg's or state's culture, a culture's name base or a burg's group offers the new name and waits for a yes. A name changed that way is remembered: when the place comes back to its own name base, the name it had is offered, unless you renamed it meanwhile. A name set by the Assistant or uploaded from a CSV file is a proper name and the old meaning is cleared, unless a new one comes with it: ask the Assistant for one or fill in the [Meaning column](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import#meanings).
+- **A name you type is kept.** The name and the meaning are stored apart and neither overwrites the other, so a name may say something other than its meaning. Nothing renames a place behind your back: changing a burg's or state's culture or a culture's name base asks whether to **Appropriate** the names (say them as the new culture would), **Regenerate** them (new names in the new base) or pick either at **Random** for each, and changing a burg's group offers the new name and waits for a yes. A name changed that way is remembered: when the place comes back to its own name base, the name it had is offered, unless you renamed it meanwhile. A name set by the Assistant or uploaded from a CSV file is a proper name and the old meaning is cleared, unless a new one comes with it: ask the Assistant for one or fill in the [Meaning column](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import#meanings).
 - **Cultures editor**: the _Namesbase_ column sets the base of each culture. The arrows beside it re-generate the names of the culture's burgs, as the button of the Burgs overview does for the listed ones. Both skip locked burgs, and give each a new meaning with its name. _Edit a database used for names generation_, at the bottom, opens the Namesbases Overview.
 - **Options** → **Advanced** → **Personal names**: founders that places are named after are _Generated_ anew, _Picked_ from the base's lists as they are, or _As the name base sets_.
 
@@ -218,6 +218,8 @@ hand:  Desnitsa, Ruka, Dlan/f
 
 All three are feminine. Desnitsa and Ruka end in -a, so `f: a$` finds them; Dlan ends in a consonant and would fall to `m`, so it is marked. A class written on every noun hides the few that need it.
 
+A person's name a place is named after takes `f` or `m`, where the grammar has both, by the list of women's or men's names it is from, or by the list more of whose names end as it does: Guillaume is a man's name, so Saint-Guillaume, not Sainte-Guillaume. The patterns class only the names the lists do not tell.
+
 #### Describing words
 
 Then the endings a describing word takes beside a noun of each class, `*: class ending, …`. Where the language has several kinds of describing word, each kind gets a set of its own, `*name: …`, under a name of your choosing. Ruthenian has five, after the kinds of the Russian adjective:
@@ -319,7 +321,7 @@ e\+(?=[aeiou]) => + | 50%
 - `join`: applies where parts meet; `+` marks each join
 - `long`: applies only while the name is longer than the base allows
 - `foreign`: applies to names borrowed from another base, before they are bent to the sounds of the place names
-- `50%`: applies to that share of names, always the same ones
+- `50%`: applies where parts meet, to that share of names, always the same ones; not with `long` or `foreign`
 
 The **Try a name** box on the tab shows what the rules make of a name.
 

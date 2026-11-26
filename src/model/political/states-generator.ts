@@ -1721,7 +1721,7 @@ class StatesModule {
       const taken = Toponyms.landNames(); // the old name too, while its province stands
       const isFree = (name?: string) => Boolean(name) && !taken.has(name);
       const nameByBurg = P(0.5) && isFree(burg?.name);
-      const named = nameByBurg ? burg! : isFree(old.name) ? old : Toponyms.landOf(culture, taken);
+      const named = nameByBurg ? burg! : isFree(old.name) ? old : Toponyms.land(culture, taken);
       const name = named.name!;
       const formName = burgCell && old.formName ? old.formName : ra(["Zone", "Area", "Territory", "Province"]);
       const type = Burgs.getType(center, burg?.port);

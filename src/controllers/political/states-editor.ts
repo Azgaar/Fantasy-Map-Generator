@@ -1,5 +1,6 @@
 import { type HierarchyCircularNode, max, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
+import { offerNamesIn } from "@/controllers/society/named-places";
 import { EXPENSES } from "@/data/expenses";
 import { CULTURE_TYPE_LABELS, EXPENSE_LABELS } from "@/data/id-labels";
 import { Accounts } from "@/model/economy/accounts";
@@ -10,7 +11,6 @@ import { Stability } from "@/model/political/stability";
 import { STATE_FORMS, type State, States } from "@/model/political/states-generator";
 import { Development } from "@/model/society/development-generator";
 import { Meanings } from "@/model/society/names/meanings";
-import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
@@ -23,7 +23,7 @@ import { speak } from "@/services/speech";
 import type { LegendItem } from "@/types/legend";
 import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { closeEntityDialogs, nameEditButton, noteIcon, offerRename } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, nameEditButton, noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -979,10 +979,7 @@ function stateChangeCulture(state: number, line: HTMLElement, value: string): vo
   const { base } = pack.cultures[s.culture];
   States.setCulture(state, +value);
   line.dataset.base = String(+value);
-  const named = Toponyms.nameIn(s, +value, base); // the new culture may say the name another way
-  if (!named) return;
-  offerRename(s.name, named.name, () => {
-    States.setName(state, named);
+  offerNamesIn([{ type: "state", id: state }], base, () => {
     refreshStatesEditor();
     Layers.draw("labels");
   });

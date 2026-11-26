@@ -32,7 +32,7 @@ class NamesGenerator {
   }
 
   /** The share of women among the persons a base names: its founders', where it sets one, or by the sizes of its lists */
-  womenShare(base: NameBase): number {
+  private womenShare(base: NameBase): number {
     const [men = 0, women = 0] = (NameBases.peopleOf(base) ?? []).map(({ names }) => names.length);
     return NameBases.femaleFounders(base) ?? (women ? women / (men + women) : 0);
   }
@@ -115,25 +115,17 @@ class NamesGenerator {
     return name;
   }
 
-  // generate name for culture
+  /** A place name of a culture's base */
   getCulture(culture: number, min?: number, max?: number, single = false): string {
-    if (culture === undefined) {
-      log.error("Please define a culture");
-      return "ERROR";
-    }
     return this.getBase(pack.cultures[culture].base, min, max, single);
   }
 
-  // generate short name for culture
+  /** A short place name of a culture's base */
   getCultureShort(culture: number): string {
-    if (culture === undefined) {
-      log.error("Please define a culture");
-      return "ERROR";
-    }
     return this.getBaseShort(pack.cultures[culture].base);
   }
 
-  // generate short name for base
+  /** A short place name of a base */
   getBaseShort(id: string): string {
     const [shortest, longest] = NameBases.placeLength(NameBases.resolve(id));
     const min = shortest ? shortest - 1 : undefined;

@@ -11,6 +11,8 @@ import { purposeOf, RULE_PURPOSES, SoundRules } from "./sound-rules";
 const NO_RULES: readonly SoundRule[] = [];
 const NO_WORDS: readonly string[] = [];
 
+type Gender = "male" | "female";
+
 class NameBasesCatalog {
   private readonly shipped = new Map(NAME_BASES.map(base => [base.id, { ...base }])); // filled as they load, never edited
   private readonly ruleSets = new WeakMap<
@@ -169,6 +171,22 @@ class NameBasesCatalog {
     });
   }
 
+  /** Whether a personal name of a base is a man's or a woman's: by the list that holds it, else by the list more of
+   * whose names end as it does. Nothing where the lists do not tell */
+  genderOf(base: NameBase, name: string): Gender | undefined {
+    const people = this.inherited(base, ({ people }) => (people?.male || people?.female ? people : undefined));
+    if (!people?.male?.names.length || !people.female?.names.length) return undefined;
+    const [male, female] = [endingsOf(people.male.names), endingsOf(people.female.names)];
+    const word = name.toLowerCase();
+    if (male.names.has(word) !== female.names.has(word)) return male.names.has(word) ? "male" : "female";
+    for (const size of [3, 2]) {
+      const ending = word.slice(-size);
+      const [men, women] = [male, female].map(list => (list.endings.get(ending) ?? 0) / list.names.size);
+      if (men !== women) return men > women ? "male" : "female";
+    }
+    return undefined;
+  }
+
   /** The names of rivers and lakes of a base, its own or inherited */
   watersOf(base: NameBase): Corpus | undefined {
     return this.inherited(base, ({ waters }) => (waters?.names.length ? waters : undefined));
@@ -236,6 +254,21 @@ class NameBasesCatalog {
     options.map.nameBases = bases;
     for (const culture of pack.cultures ?? []) culture.base = this.entry(culture.base).id;
   }
+}
+
+// a list of personal names, lowercase, and how many of them end in each two and three letters
+const endings = new WeakMap<readonly string[], { names: Set<string>; endings: Map<string, number> }>();
+function endingsOf(list: readonly string[]): { names: Set<string>; endings: Map<string, number> } {
+  let known = endings.get(list);
+  if (!known) {
+    const names = new Set(list.map(name => name.toLowerCase()));
+    const counts = new Map<string, number>();
+    for (const name of names)
+      for (const size of [2, 3]) counts.set(name.slice(-size), (counts.get(name.slice(-size)) ?? 0) + 1);
+    known = { names, endings: counts };
+    endings.set(list, known);
+  }
+  return known;
 }
 
 export const NameBases = new NameBasesCatalog();

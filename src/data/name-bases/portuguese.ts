@@ -401,6 +401,11 @@ export const portuguese: WrittenNameBase = {
 (?<!\p{L})mecia(?!\p{L}) => mécia | join
 (?<!\p{L})barbara(?!\p{L}) => bárbara | join
 (?<!\p{L})graca(?!\p{L}) => graça | join
+[áâ](?=\p{L}*\+\p{L}*[áâãéêíóôú]) => a | join
+[éê](?=\p{L}*\+\p{L}*[áâãéêíóôú]) => e | join
+í(?=\p{L}*\+\p{L}*[áâãéêíóôú]) => i | join
+[óô](?=\p{L}*\+\p{L}*[áâãéêíóôú]) => o | join
+ú(?=\p{L}*\+\p{L}*[áâãéêíóôú]) => u | join
 (?<=q)ue\+(?=[aâ]) =>  | join
 q(?=[aâ](?:nha|nia)$) => c | join
 ^(\S+) (dois|duas|três|cinco|sete|nove|dez|cem|mil)$ => $2 $1 | join

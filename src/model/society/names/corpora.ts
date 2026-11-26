@@ -17,6 +17,7 @@ const SYLLABIC = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script
 
 export const MIN_CUT = 3; // a name cut short keeps this many letters
 const REDRAWS = 12; // how many times a word that does not sound like its corpus is walked anew
+const WALK_STEPS = 20; // parts a walk takes at most
 
 /** All by list, so a list is replaced, never edited in place */
 class CorporaModule {
@@ -105,29 +106,23 @@ class CorporaModule {
 
   // from a word's start until the word ends between the lengths given, or grows too long
   private walkChain(chain: MarkovChain, min: number, max: number): string {
-    let v = chain[""],
-      cur = ra(v),
-      w = "";
-    for (let i = 0; i < 20; i++) {
-      if (cur === "") {
-        // end of word
-        if (w.length < min) {
-          w = "";
-          v = chain[""];
-        } else break;
-      } else {
-        if (w.length + cur.length > max) {
-          // word too long
-          if (w.length < min) w += cur;
-          break;
-        } else v = chain[cur[cur.length - 1]] || chain[""];
-      }
+    let choices = chain[""]; // what may come next
+    let part = ra(choices);
+    let word = "";
+    for (let step = 0; step < WALK_STEPS; step++) {
+      if (part === "") {
+        if (word.length >= min) break;
+        [word, choices] = ["", chain[""]]; // ended too short: start again
+      } else if (word.length + part.length > max) {
+        if (word.length < min) word += part;
+        break;
+      } else choices = chain[part[part.length - 1]] || chain[""];
 
-      w += cur;
-      cur = ra(v);
+      word += part;
+      part = ra(choices);
     }
 
-    return /['\- ]$/.test(w) ? w.slice(0, -1) : w; // a name ends in a letter
+    return /['\- ]$/.test(word) ? word.slice(0, -1) : word; // a name ends in a letter
   }
 
   /** The endings many names of a corpus share, the commonest first: -bach, -ingen, -ton */

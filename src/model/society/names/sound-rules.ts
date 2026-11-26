@@ -28,7 +28,6 @@ interface Sorted {
   join: Rewrite[];
   long: Rewrite[];
   chances: { chance: number; rewrites: Rewrite[] }[];
-  rolls: number; // of the rules with a chance
   counting: SoundRule[]; // what puts a noun in a class: "tower" in the plural
 }
 
@@ -135,11 +134,10 @@ class SoundRulesModule {
         word: compile(rules.filter(isWordRule)),
         foreign: compile(rules.filter(rule => rule.when === "foreign")),
         join: compile(rules.filter(rule => rule.at === "join" && !rule.when && rule.chance === undefined)),
-        long: compile(rules.filter(rule => rule.when === "long" && rule.chance === undefined)),
+        long: compile(rules.filter(rule => rule.when === "long")),
         chances: rules
-          .filter(rule => rule.chance !== undefined && rule.when !== "foreign")
+          .filter(rule => rule.chance !== undefined)
           .map(rule => ({ chance: rule.chance!, rewrites: compile([rule]) })),
-        rolls: rules.filter(rule => rule.chance !== undefined).length,
         counting: rules.filter(rule => rule.as)
       };
       this.sorted.set(rules, sorted);
