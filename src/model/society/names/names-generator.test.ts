@@ -173,13 +173,6 @@ describe("Names.getPerson", () => {
     expect(listed).toContain(Names.getPerson("test"));
   });
 
-  it("follows the options over the corpus", () => {
-    const listed = withPeople("chain");
-    options.generation.names.proper = "pick";
-    expect(listed).toContain(Names.getPerson("test"));
-    options.generation.names.proper = "base";
-  });
-
   it("names a woman as often as it is told", () => {
     withPeople("pick");
     expect(["Alfred", "Edmund", "Oswald"]).toContain(Names.getPerson("test", 0));

@@ -334,10 +334,7 @@ export const optionsSchema = z.strictObject({
     states: z.strictObject({ limit: count, sizeVariety: nonNegative, growthRate: nonNegative }),
     provinces: z.strictObject({ ratio: percent }),
     religions: z.strictObject({ limit: count }),
-    burgs: z.strictObject({ limit: count }), // AUTO_BURG_LIMIT means "as many as the land supports"
-    names: z.strictObject({
-      proper: z.enum(["base", "chain", "pick"]) // personal names: as each name base sets, always generated, always picked
-    })
+    burgs: z.strictObject({ limit: count }) // AUTO_BURG_LIMIT means "as many as the land supports"
   }),
 
   /** how the app itself behaves: applied at once, generating nothing, describing no map */

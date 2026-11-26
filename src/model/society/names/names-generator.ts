@@ -18,7 +18,7 @@ export const PEOPLE_LENGTH: [number, number] = [4, 8]; // of a personal name, wh
 // Proper names off a base's lists: places, waters, persons, peoples
 class NamesGenerator {
   /** A personal name of a base: a new one off the chain of its people corpus, or one of the corpus as it is.
-   * The base sets which, unless the options do. A base with no people names a person like a place, only shorter.
+   * The base sets which. A base with no people names a person like a place, only shorter.
    * Women are named as often as `female` says, 0 to 1, or as the base does */
   getPerson(id: string, female?: number): string {
     const base = NameBases.resolve(id);
@@ -26,8 +26,7 @@ class NamesGenerator {
     if (!corpora) return this.getBase(id, 3, 6, true);
     const corpus = corpora[1] && Math.random() >= 1 - (female ?? this.womenShare(base)) ? corpora[1] : corpora[0];
 
-    const { proper } = options.generation.names;
-    if ((proper === "base" ? (corpus.mode ?? "chain") : proper) === "pick") return ra(corpus.names);
+    if (corpus.mode === "pick") return ra(corpus.names);
     return this.coin(corpus, base, corpus.length ?? PEOPLE_LENGTH);
   }
 

@@ -14,20 +14,14 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 **[1.160.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.160.0) - 2026-11-29**:
 
-- Names: built of meaningful words, such as Blackwater, Raven's Rest or Krasnoye Selo
-- Names: burgs, states, provinces, rivers, lakes and islands are named for their place and kind
-- Names: burg endings depend on the burg's group, such as -sk for a Ruthenian city and -ovo for a village
-- Names: places named after founders
+- Names: built of meaning, such as Blackwater, Raven's Rest or Krasnoye Selo
+- Names: places can be named after founders
 - Names: 20 new namesbases with cultures of their own, from Egyptian and Polish to Halfling and Infernal
 - Names: Celtic namesbase is now Welsh; Slovan culture is now Rucian
-- Options: generate or pick personal names
-- Names: a namesbase may name burgs with its listed places as they are
 - Editors: see what a name means and how other namesbases render it
-- Editors: a change of culture, namesbase or burg group offers new names
-- Namesbases Overview: all namesbases and cultures that use them; remove a custom namesbase
+- Namesbases Overview: all namesbases and cultures that use them
 - Namesbases: custom and edited ones are kept for new maps; built-in ones are locked, edit a copy
 - Namesbase Editor: edit personal names, lexicon, name patterns and sound rules, with live examples
-- Namesbase Editor: copy, download or restore a single namesbase
 - Namesbase Editor: JSON download and upload; older TXT still loads
 
 **[1.159.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.159.0) - 2026-11-23**:

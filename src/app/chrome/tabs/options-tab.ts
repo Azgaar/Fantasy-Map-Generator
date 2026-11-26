@@ -155,11 +155,6 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     parse: Number,
     pin: "growthRate"
   }),
-  properNames: option({
-    read: o => o.generation.names.proper,
-    write: (o, value) => (o.generation.names.proper = value),
-    parse: value => value as OptionsData["generation"]["names"]["proper"]
-  }),
   uiSize: option({
     read: o => o.app.ui.size,
     write: (o, value) => (o.app.ui.size = value),

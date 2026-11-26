@@ -105,8 +105,7 @@ class OptionsModel {
         states: { limit: 18, sizeVariety: 4, growthRate: 1 },
         provinces: { ratio: 20 },
         religions: { limit: 6 },
-        burgs: { limit: 1000 },
-        names: { proper: "base" }
+        burgs: { limit: 1000 }
       },
       app: {
         mode: null,
