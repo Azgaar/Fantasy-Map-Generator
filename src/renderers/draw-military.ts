@@ -2,6 +2,7 @@ import { color, easeSinInOut, select, transition } from "d3";
 import { Icons } from "@/model/icons";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
+import { regimentScale, viewport } from "@/renderers/viewport/viewport";
 import { log } from "@/utils/logger";
 import { rn } from "@/utils/number-utils";
 
@@ -10,6 +11,12 @@ export const regimentIconBox = (x1: number, y1: number, h: number, icon: string)
   const inset = Icons.kind(icon) === "glyph" ? h * 0.1 : 0;
   return { x: rn(x1 - h + inset, 2), y: rn(y1 + inset, 2), size: rn(h - 2 * inset, 2) };
 };
+
+/** Map units from a regiment's center to the next one stacked below it, as drawn at the current zoom */
+export function getRegimentStep(): number {
+  const { boxSize, showNames } = styles.military.options;
+  return rn(boxSize * (showNames ? 4 : 2.6) * regimentScale(viewport.scale), 2);
+}
 
 export function getRegimentWidth(regiment: Regiment): number {
   const size = styles.military.options.boxSize;
@@ -188,6 +195,7 @@ export const moveRegiment = (reg: Regiment, x: number, y: number): void => {
   const y1 = (y: number) => rn(y - size, 2);
 
   const move = transition().duration(duration).ease(easeSinInOut);
+  el.transition(move).attr("transform-origin", `${x}px ${y}px`);
   el.select("rect").transition(move).attr("x", x1(x)).attr("y", y1(y));
   el.select("text.regimentTotal").transition(move).attr("x", x).attr("y", y);
   el.selectAll("rect:nth-of-type(2)")

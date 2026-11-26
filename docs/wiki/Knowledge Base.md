@@ -300,9 +300,25 @@ You can ask questions here or go to our Discord server. If you want a basic guid
 
 We have a Reddit community on https://www.reddit.com/r/FantasyMapGenerator
 
+### Where is the history of my map: its wars, battles and treaties?
+
+Open Tools -> Chronicle. It lists every war, battle, alliance and vassalage and the events you write yourself in order of time, searchable by name or #tag and filterable by type and state. Wars begin and end with the Enemy relation of their states, battles you apply in the Battle Simulator are kept there with their day and time (states not at war get a war of that year for them), and independence, mergers, ceded provinces and moved capitals write themselves down. Click the pencil of an event to edit its name, dates (down to the day and time), sides and tags in the Chronicle Record Editor, or its book to write its note. Add your own with the plus button and set its Type (event, war, battle, alliance or vassalage) in its record. Years before the era read like 45 BWE (45 before Winter Era). It replaced the Relations history: an older map keeps that text as one event named Relations history
+
+### Can I watch a battle again after applying it?
+
+Yes. Open Tools -> Chronicle (a war's battles are under its arrow), or click the battle in the battles list of a regiment in its editor, which opens the Chronicle on it. The play button of its row, or of its record, opens it in the Battle Simulator to replay it from its start and export it as an animation or a report. Only battles have the button, and it is active only for those you played: battles you wrote by hand have no replay. The pencil opens its record, where the Summary button shows its result again. Watching changes nothing on the map. If the ground, the units or the rules changed since, the battle may play out otherwise; the screen says so and the recorded result stands
+
 ### Can I create a battle between armies?
 
-Yes, with the Battle Simulator. Click a regiment, press Attack foreign regiment and click a regiment of another state: the attacker moves to it and the battle opens. Unit power, set in the Military units editor, decides the strength
+Yes, with the Battle Simulator. Click a regiment, press Attack foreign regiment and click a regiment of another state: the attacker moves to it and the battle opens. The attack, defense, speed, range and morale of the units, set in the Military units editor, decide how they fight. The battle is played on a battle plan drawn from the map around it: troops move, shoot and fight by themselves, and the ground, flanks, morale and energy matter: slopes slow troops and weaken their footing, cliffs on rugged ground bar the way but for gaps and gullies, shooters reach further from above, and troops tire by marching and fighting and recover at rest. The weather button sets clear sky, rain, heavy rain, snow or fog, and mud, ice and heat: rain, snow and fog shorten how far troops see and so how far they shoot, rain and snow weaken shots, mud slows troops off the roads, ice slows them and lets them cross frozen rivers anywhere, and heat tires them twice as fast. Each side has a die, rolled once as the battle opens: fortune makes its blows weaker or stronger, from ×0.5 to ×1.5 by default, so the stronger army does not always win; Configure Battle sets how much it weighs, 0 for no dice. A battle starts at an hour of the day, mostly by day; click the clock before the start to change it: at night troops see a foe only some 120 m off, carry torches, and ambushers and stormers get closer unseen. Space starts and pauses it; paused, regiments can be added, a side given another order or battalions commanded. Zoom with the wheel and drag with the right mouse button to look round. The cog opens Configure Battle: what is drawn, side colors, the events it pauses at, the simulation numbers, and the export as a GIF, an animated SVG or a battle report page with keyframes
+
+### Can troops dig in or build field works in a battle?
+
+Yes. A side that holds its ground builds works before its first line: wagons (against a foe strong in riders and shooters; each stretch built in 80 seconds by a battalion that comes up to it; a line turned back at its ends to a half circle, closed behind the army against a foe strong in riders, or a full ring in a Wagenburg), a ditch (8 minutes, against foot) or stakes (2 minutes, when there is no time for more). Its general orders it himself when there is time, and the order shows as Fortify; you can also give the Fortify order by hand from the side's actions. A stretch counts only once it is finished. Riders cannot cross stakes or wagons nor fight over them, nobody of the foe crosses wagons, a ditch slows everybody astride it to a ford's pace, and only wagons shelter: blows and shots over them are half as hard; a charge over any work has no impetus. Works shelter only from the front, a side's own works never hinder it but for a ditch, and every engine in range knocks down a stretch of wagons a round: a general with engines stands off till they have knocked two gaps, then goes in by them. In a field battle either side may build, in a siege the besiegers, in a landing the defenders. Before the start the Dug in checkbox in a side's actions starts it behind finished works; besiegers ringing a burg in and defenders ready at the shore of a landing are dug in by default
+
+### How big is a battle and how long does it last?
+
+The battle plan is in real lengths: a battalion stands a metre a man across five ranks, 60 m wide for 300 men, and the plan is about 23 battalion fronts wide, 1.4 × 0.8 km for battalions of 300 and up to 4.5 km wide for the biggest battles; burgs are at true size, about 100 m² a dweller (1.6 km across for 20,000 people), and a siege plan takes in the whole burg and the land round it as far as the besiegers stand off the walls, out of the garrison's bowshot. The screen shows the field's size and a scale bar in the map's units. A step of the battle is 8 seconds and a round 48 seconds: the clock under the plan and the battle log show the time of day. Units march at their real speed, 4.3 km/h on foot and 12.6 km/h mounted by default, and charge at three times it for the last 30 to 85 m; bows shoot about 160 m, artillery 380 m. A battle of the default size takes some 20 minutes, a big one about an hour. The speed buttons play it 25 to 200 times as fast as real time. Speeds are set in km/h and ranges in metres in the Military units editor
 
 ### How can I upload a new icon for cities?
 
@@ -326,7 +342,7 @@ To create a new country open the States editor: Go to "Tools" -> "States". Look 
 
 ### How can I invade one country to another?
 
-Open Tools -> States, click the brush button and paint the invader's state over the conquered land. To mark the war, set the states as Enemy in the Diplomacy editor or add markers
+Open Tools -> States, click the brush button and paint the invader's state over the conquered land. To mark the war, set the states as Enemy in the Diplomacy editor: the war is then kept in the Chronicle (Tools -> Chronicle), where you can date it, write its note and add its battles
 
 ### I would like to use my own list of names for States, Provinces, and Burgs. How can I do it?
 
@@ -598,7 +614,7 @@ Let's find out. Open Tools -> edit States. Make sure the list of states is sorte
 
 ### How can I start a battle?
 
-To start a battle ensure the Military layer is on. Then click on any Regiment and press the button to attack. Then select a regiment you want to attack. It will open the Battle Simulation dialog, where you can add more regiments, change battle settings and simulate the battle
+To start a battle ensure the Military layer is on. Then click on any Regiment and press the button to attack. Then select a regiment you want to attack. It will open the Battle Simulator with both armies drawn up on a battle plan. Optionally drag troops to change the deployment, add more regiments, change the battle type, give a side an order or change its morale, then press play to watch the battle. Apply the result to take the casualties from the regiments and put a battlefield marker on the map.
 
 ### How do I color multiple nations?
 

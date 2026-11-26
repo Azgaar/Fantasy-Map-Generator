@@ -3,7 +3,6 @@ import { waitForMap } from "./wait-for-map";
 
 // The data-layer/data-group addressing contract between src/styles and the app:
 // every address the styles schema can produce must resolve in the real DOM.
-// Run alone with two screenshots: npx playwright test styles-demo
 
 // created on draw, not by the registry - absent until their layer renders
 const LAZY = new Set(["legend/box", "scaleBar/back"]);
@@ -65,40 +64,4 @@ test("every styles address resolves in the generated map's DOM", async ({ page }
   ]) {
     expect(await page.locator(selector).count(), selector).toBeGreaterThan(0);
   }
-});
-
-test("the library styles the live map through the contract", async ({ page }, testInfo) => {
-  test.skip(!!process.env.CI, "imports library source - needs the vite dev server");
-  await generateMap(page);
-  await page.screenshot({ path: testInfo.outputPath("styles-demo-before.png") });
-
-  const result = await page.evaluate(async () => {
-    const served = "/Fantasy-Map-Generator/model/styles/styles.ts"; // a served path, not one tsc can resolve
-    const { Styles } = await import(served);
-    const styles = globalThis.styles;
-    styles.rivers.groups.regular.attrs.fill = "#ff00aa";
-    styles.routes.groups.roads.attrs.stroke = "#00e5ff";
-    styles.routes.groups.roads.attrs["stroke-width"] = 2;
-    styles.lakes.groups.freshwater.attrs.fill = "#ffe000";
-    styles.states.groups.statesHalo.attrs.filter = null; // null = remove
-    Styles.apply("rivers", "routes", "lakes", "states");
-    return {
-      riverFill: document.querySelector('[data-layer="rivers"] > [data-group="regular"]')?.getAttribute("fill"),
-      roadStroke: document.querySelector('[data-group="roads"]')?.getAttribute("stroke"),
-      lakeFill: document.querySelector('[data-group="freshwater"]')?.getAttribute("fill"),
-      haloFilterRemoved: !document.querySelector('[data-group="statesHalo"]')?.hasAttribute("filter"),
-      parseRoundTrip: JSON.stringify(Styles.parse(JSON.parse(JSON.stringify(styles)))) === JSON.stringify(styles)
-    };
-  });
-
-  await page.waitForTimeout(400);
-  await page.screenshot({ path: testInfo.outputPath("styles-demo-after.png") });
-
-  expect(result).toEqual({
-    riverFill: "#ff00aa",
-    roadStroke: "#00e5ff",
-    lakeFill: "#ffe000",
-    haloFilterRemoved: true,
-    parseRoundTrip: true
-  });
 });

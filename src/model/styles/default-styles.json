@@ -1197,7 +1197,8 @@
     },
     "options": {
       "boxSize": 3,
-      "showNames": false
+      "showNames": false,
+      "zoomSize": "geometric"
     }
   },
   "ocean": {

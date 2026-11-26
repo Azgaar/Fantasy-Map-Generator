@@ -1,6 +1,7 @@
 // The map's lore in `options.map.lore`: its name, calendar and the author's description. See docs/architecture/configuration.md
 import { Names } from "@/model/society/names-generator";
 import { requireName } from "@/utils/validation-utils";
+import { Events } from "./events";
 
 class LoreModel {
   /** Rename the map; files it is downloaded as take the name */
@@ -14,13 +15,7 @@ class LoreModel {
     const { calendar } = options.map.lore;
     const shift = Math.round(year) - calendar.year;
     calendar.year += shift;
-
-    // move campaigns
-    const campaigns = new Set(pack.states.flatMap(s => s.campaigns ?? []));
-    for (const campaign of campaigns) {
-      campaign.start += shift;
-      if (campaign.end !== undefined) campaign.end += shift;
-    }
+    Events.shiftYears(shift);
   }
 
   /** Set the era the current year belongs to and its short form, such as "Winter Era" and "WE"; without one the short form is abbreviated from the era */

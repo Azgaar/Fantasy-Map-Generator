@@ -12,7 +12,7 @@ const army = (troops: number) => [{ a: points(troops), u: { infantry: points(tro
 beforeEach(() => {
   options.map.units.population.scale = 1000;
   options.map.units.population.urbanization.rate = 1;
-  options.map.military.units = [{ name: "infantry", power: 1 }] as any;
+  options.map.military.units = [{ name: "infantry", attack: 1, defense: 1, speed: 4.3, range: 0, morale: 1 }] as any;
   globalThis.pack = {
     deals: [[1]],
     burgs: [{ i: 0 }],
@@ -41,17 +41,19 @@ describe("Military.getUpkeep", () => {
     expect(Military.getUpkeep(1)).toBe(0.5);
   });
 
-  it("scales the forces' power in battle, never below 0.05", () => {
+  it("scales the forces' power in battle by the root of upkeep, never below 0.05", () => {
     pack.states[1].military = army(2000) as any;
-    expect(Military.getPower(1)).toBe(1); // 2 points of troops of power 1, half kept
+    expect(Military.getPower(1)).toBeCloseTo(2 * Math.SQRT1_2); // 2 points of troops of power 1, half kept
     pack.states[1].military = army(100000) as any;
-    expect(Military.getBattleUpkeep(1)).toBe(0.05); // 1% kept
-    expect(Military.getPower(1)).toBe(5);
+    expect(Military.getBattleUpkeep(1)).toBeCloseTo(0.1); // 1% kept
+    pack.states[1].military = army(1000000) as any;
+    expect(Military.getBattleUpkeep(1)).toBe(0.05); // 0.1% kept
+    expect(Military.getPower(1)).toBeCloseTo(50);
   });
 
   it("gives a regiment's power with its state's battle upkeep", () => {
     pack.states[1].military = [...army(1500), ...army(500)].map(regiment => ({ ...regiment, state: 1 })) as any;
-    expect(Military.getRegimentPower(pack.states[1].military![1])).toBe(0.25); // half a point of troops, the state's forces half kept
+    expect(Military.getRegimentPower(pack.states[1].military![1])).toBeCloseTo(0.5 * Math.SQRT1_2); // half a point of troops, the state's forces half kept
   });
 
   it("is 1 before the economy has run, for the neutral lands and for anarchies", () => {

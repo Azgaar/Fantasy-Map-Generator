@@ -3,6 +3,7 @@ import { convertTemperature } from "@/model/units";
 import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { round } from "@/utils/string-utils";
 
@@ -116,7 +117,7 @@ function open(id: number): void {
   const minT = burgTemp - Math.max(yearSig + delT, 15);
   const maxT = burgTemp + (burgTemp - minT);
 
-  const chartWidth = Math.max(window.innerWidth / 2, 520);
+  const chartWidth = Math.min(640, window.innerWidth - 120);
   const chartHeight = 300;
 
   // drawing starting point from top-left (y = 0) of SVG
@@ -148,9 +149,17 @@ function open(id: number): void {
     tempMax.push([x, yscale(tempAverage + tempDelta) + yOffset]);
   });
 
+  Dialog.destroy("temperatureGraph");
   const graph = document.createElement("div");
+  graph.id = "temperatureGraph";
+  graph.className = "dialog";
+  ensureEl("dialogs").append(graph);
   drawGraph();
-  Dialog.message({ message: graph, title: t("Average temperature in {{- burg}}", { burg: b.name }) });
+  Dialog.open("temperatureGraph", {
+    title: t("Average temperature in {{- burg}}", { burg: b.name }),
+    resizable: false,
+    position: { my: "center", at: "center", of: "svg" }
+  });
 
   function drawGraph(): void {
     const getCurve = (data: [number, number][]): string => round(line().curve(curveBasis)(data) ?? "", 2);
@@ -158,12 +167,13 @@ function open(id: number): void {
     const legendSize = 60;
     const chart = select(graph)
       .append("svg")
-      .attr("width", chartWidth + 120)
-      .attr("height", chartHeight + yOffset + legendSize);
+      .attr("width", chartWidth + xOffset + 30)
+      .attr("height", chartHeight + yOffset + legendSize)
+      .style("display", "block");
 
     const legend = chart.append("g");
     const legendY = chartHeight + yOffset + legendSize * 0.8;
-    const legendX = (n: number): number => (chartWidth * n) / 4;
+    const legendX = (n: number): number => xOffset + (chartWidth * (n - 1)) / 3;
     const legendTextX = (n: number): number => legendX(n) + 10;
     legend.append("circle").attr("cx", legendX(1)).attr("cy", legendY).attr("r", 4).style("fill", "red");
     legend

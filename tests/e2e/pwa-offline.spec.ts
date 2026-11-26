@@ -56,6 +56,7 @@ test.describe("PWA offline", () => {
   });
 
   test("opens an editor that was never opened online", async ({ page, context }) => {
+    test.setTimeout(90000); // downloads every build file one by one: ~25 s beside other workers
     await prepareOffline(page);
     await context.setOffline(true);
     await page.reload();

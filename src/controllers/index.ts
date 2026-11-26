@@ -4,13 +4,16 @@ import { createRegistry } from "@/utils/registry";
 export const Controllers = createRegistry(
   {
     AiGenerator: () => import("@/controllers/ai-generator").then(m => m.AiGenerator),
-    BattleScreen: () => import("@/controllers/political/military/battle-screen").then(m => m.BattleScreen),
+    BattleScreen: () => import("@/controllers/political/battle/battle-screen").then(m => m.BattleScreen),
     BiomesEditor: () => import("@/controllers/physical/biomes-editor").then(m => m.BiomesEditor),
     BurgCreator: () => import("@/controllers/political/burgs/burg-creator").then(m => m.BurgCreator),
     BurgEditor: () => import("@/controllers/political/burgs/burg-editor").then(m => m.BurgEditor),
     BurgGroupEditor: () => import("@/controllers/political/burgs/burg-group-editor").then(m => m.BurgGroupEditor),
     BurgsOverview: () => import("@/controllers/political/burgs/burgs-overview").then(m => m.BurgsOverview),
     CellInfo: () => import("@/controllers/cell-info").then(m => m.CellInfo),
+    Chronicle: () => import("@/controllers/story/chronicle").then(m => m.Chronicle),
+    ChronicleRecordEditor: () =>
+      import("@/controllers/story/chronicle-record-editor").then(m => m.ChronicleRecordEditor),
     ChartsOverview: () => import("@/controllers/charts-overview").then(m => m.ChartsOverview),
     CoastlineEditor: () => import("@/controllers/physical/coastline-editor").then(m => m.CoastlineEditor),
     ColorPicker: () => import("@/controllers/color-picker").then(m => m.ColorPicker),

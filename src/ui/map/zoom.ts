@@ -1,6 +1,12 @@
 import { type D3ZoomEvent, interpolateZoom, select, type ZoomView, zoom, zoomIdentity, zoomTransform } from "d3";
 import { Layers } from "@/renderers/layers";
-import { setViewportTransform, viewport, ZOOMED_LAYERS, zoomFontSize } from "@/renderers/viewport/viewport";
+import {
+  regimentScale,
+  setViewportTransform,
+  viewport,
+  ZOOMED_LAYERS,
+  zoomFontSize
+} from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
@@ -63,7 +69,7 @@ function handleZoomPerFrame(): void {
   if (didScaleChange) {
     Layers.draw("scaleBar");
     applyControlsScale();
-    if (options.app.performance.viewportRedraw === "continuous") applyZoomFontSize();
+    if (options.app.performance.viewportRedraw === "continuous") applyZoomSizes();
   }
 
   if (didPositionChange) Layers.draw("coordinates");
@@ -101,11 +107,12 @@ export function redrawTracedImage(): void {
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
 }
 
-/** The zoomed layers' font sizes follow the zoom; per frame or once it settles, as the viewport redraw does */
-function applyZoomFontSize(): void {
+/** The zoomed layers' sizes follow the zoom; per frame or once it settles, as the viewport redraw does */
+function applyZoomSizes(): void {
   for (const layer of ZOOMED_LAYERS) {
     findEl(layer)?.setAttribute("font-size", `${zoomFontSize(layer, viewport.scale)}px`);
   }
+  findEl("viewbox")?.style.setProperty("--regiment-scale", String(regimentScale(viewport.scale))); // regiments and their rotation control
 }
 
 const FEATURE_MASKS = "mask#land, mask#water";
@@ -148,7 +155,7 @@ function applyControlsScale(): void {
 
 export function invokeActiveZooming(): void {
   updateFeatureMaskBounds();
-  applyZoomFontSize();
+  applyZoomSizes();
   ViewportLayers.renderNow();
 
   if (!options.app.mode && options.app.performance.stateHalos) {

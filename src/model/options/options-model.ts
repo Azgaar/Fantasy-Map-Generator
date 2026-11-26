@@ -1,5 +1,6 @@
 // All app configuration options, options.map saved to `.map` file as settings; docs/architecture/configuration.md
 
+import { DEFAULT_BATTLE_OPTIONS } from "@/data/battle-options";
 import { CULTURE_SETS } from "@/data/culture-sets";
 import { clearEntityMultipliers } from "@/data/goods";
 import { DEFAULT_DENSITY, getPointsNumber } from "@/data/graph-density";
@@ -129,7 +130,8 @@ class OptionsModel {
         },
         export: { pngResolution: 1, tiles: { cols: 8, rows: 8, scale: 1 } },
         trade: { animation: structuredClone(DEFAULT_TRADE_ANIMATION) },
-        threeD: structuredClone(DEFAULT_THREE_D)
+        threeD: structuredClone(DEFAULT_THREE_D),
+        battle: structuredClone(DEFAULT_BATTLE_OPTIONS)
       }
     };
   }

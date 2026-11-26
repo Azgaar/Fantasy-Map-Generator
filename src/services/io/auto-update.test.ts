@@ -11,6 +11,7 @@ import { DEAL_KINDS } from "@/model/economy/deals";
 import { Pack } from "@/model/graph/pack-generator";
 import { Options } from "@/model/options/options-model";
 import { Military } from "@/model/political/military-generator";
+import { getDefaultMilitaryUnits } from "@/model/political/military-units";
 import { Names } from "@/model/society/names-generator";
 import { Styles } from "@/model/styles/styles";
 import * as versioning from "@/services/versioning";
@@ -1304,6 +1305,7 @@ describe("v1.157.0 armies", () => {
       deals: [{ seller: 1, sellerType: "burg", buyer: 1, buyerType: "market", good: 1, units: 1, price: 1 }]
     } as unknown as typeof pack;
     options.map.goods = [{ i: 1, name: "Wood", value: 1, carriage: 0.5 }] as never;
+    options.map.military.units = getDefaultMilitaryUnits(); // an earlier test leaves only levies
 
     await resolveVersionConflicts("1.156.0", []);
 
@@ -1396,5 +1398,90 @@ describe("v1.157.0 deposit counts", () => {
     expect(options.map.goods[3].deposits).toBeUndefined();
     expect(options.map.goods[4].deposits).toEqual([1, 2]);
     expect(options.map.goods.some(good => "chance" in good)).toBe(false);
+  });
+});
+
+describe("v1.159.0 history as events", () => {
+  const campaignsPack = () => {
+    const ongoing = { name: "Angria-Tirian War", start: 995, attacker: 1, defender: 2 };
+    const diplomacy = (relations: string[]) => ["x", ...relations];
+    globalThis.pack = {
+      features: [],
+      states: [
+        { i: 0, name: "Neutrals", diplomacy: [["War declaration", "Angria declared a war on Tiria", "<b>loud</b>"]] },
+        {
+          i: 1,
+          name: "Angria",
+          diplomacy: diplomacy(["x", "Enemy", "Neutral", "Suzerain"]),
+          campaigns: [{ name: "Old Conquest", start: 900, end: 905, attacker: 1, defender: 0 }, ongoing]
+        },
+        { i: 2, name: "Tiria", diplomacy: diplomacy(["Enemy", "x", "Ally", "Neutral"]), campaigns: [ongoing] },
+        {
+          i: 3,
+          name: "Vel",
+          diplomacy: diplomacy(["Neutral", "Ally", "x", "Enemy"]),
+          campaigns: [{ name: "Vel-Tirian War", start: 990, attacker: 3, defender: 2 }] // peace was made long ago
+        },
+        { i: 4, name: "Mor", diplomacy: diplomacy(["Vassal", "Neutral", "Enemy", "x"]), campaigns: [] }
+      ],
+      events: []
+    } as unknown as typeof pack;
+    options.map.lore.calendar.year = 1000;
+  };
+
+  it("turns campaigns into wars, merging the ongoing copies, and the chronicle into one note", async () => {
+    campaignsPack();
+    await resolveVersionConflicts("1.158.0", []);
+
+    expect(pack.states.some(state => "campaigns" in state)).toBe(false);
+    expect(pack.states[0].diplomacy).toBeUndefined();
+    const wars = pack.events.filter(event => event.type === "war");
+    expect(wars).toContainEqual(
+      expect.objectContaining({
+        name: "Old Conquest",
+        start: "900",
+        end: "905",
+        attackers: [1],
+        defenders: [],
+        tags: ["war"]
+      })
+    );
+    // a state at war with one leader joins the other's side; one at war with both stays out
+    expect(wars).toContainEqual(
+      expect.objectContaining({ name: "Angria-Tirian War", start: "995", attackers: [1], defenders: [2], auto: true })
+    );
+    expect(wars.filter(war => war.name === "Angria-Tirian War")).toHaveLength(1);
+    expect(wars).toContainEqual(expect.objectContaining({ name: "Vel-Tirian War", start: "990", end: "1000" }));
+    expect(wars).toContainEqual(expect.objectContaining({ attackers: [3], defenders: [4] })); // Enemy with no war
+    expect(pack.events.filter(event => event.type === "vassalage")).toMatchObject([{ suzerain: 1, vassal: 4 }]);
+    expect(pack.events.some(event => event.type === "alliance")).toBe(false);
+    const history = pack.events.find(event => event.name === "Relations history")!;
+    expect(history).toMatchObject({ type: "custom", tags: ["relations"], start: "1000", end: "1000" });
+    expect(history.note).toBe(
+      "<p><b>War declaration</b><br>Angria declared a war on Tiria<br>&lt;b&gt;loud&lt;/b&gt;</p>"
+    );
+    expect(history.auto).toBeUndefined();
+  });
+
+  it("gives the same years when run twice on the same data", async () => {
+    campaignsPack();
+    await resolveVersionConflicts("1.158.0", []);
+    const first = JSON.stringify(pack.events);
+    campaignsPack();
+    await resolveVersionConflicts("1.158.0", []);
+    expect(JSON.stringify(pack.events)).toBe(first);
+  });
+
+  it("cuts past wars to the sample and keeps every ongoing one", async () => {
+    campaignsPack();
+    (pack.states[1] as unknown as { campaigns: unknown[] }).campaigns = Array.from({ length: 40 }, (_, k) => ({
+      name: `War ${k}`,
+      start: 500 + k,
+      end: 501 + k,
+      attacker: 1,
+      defender: 2
+    }));
+    await resolveVersionConflicts("1.158.0", []);
+    expect(pack.events.filter(event => event.type === "war" && event.end !== undefined)).toHaveLength(3); // a sample of 2 for 4 states, and the old war ended by peace
   });
 });

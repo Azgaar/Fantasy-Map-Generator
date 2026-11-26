@@ -202,8 +202,7 @@ States (countries) data is stored as an array of objects with strict element ord
 - `urban`: `number` - urban (burg) population of state cells. In population points
 - `neighbors`: `number[]` - ids of neighboring (bordering by land) states
 - `provinces`: `number[]` - ids of state provinces
-- `diplomacy`: `string[]` - relation to each state by its id: `Ally`, `Friendly`, `Neutral`, `Suspicion`, `Enemy` (at war), `Unknown`, `Rival`, `Vassal` (of that state) or `Suzerain` (to that state); both sides hold the same relation except a vassal pair. 'x' for self and neutrals. Element 0 (neutrals) `diplomacy` is used differently and contains wars story as `string[][]`
-- `campaigns`: `object[]` - wars the state participated in. The was is defined as `start`: `number` (year), `end`: `number` (year), `name`: `string`
+- `diplomacy`: `string[]` - relation to each state by its id: `Ally`, `Friendly`, `Neutral`, `Suspicion`, `Enemy` (at war), `Unknown`, `Rival`, `Vassal` (of that state) or `Suzerain` (to that state); both sides hold the same relation except a vassal pair. 'x' for self and neutrals. Wars, alliances and vassalages are kept as [events](#events)
 - `alert`: `number` - state war alert, 0.1–5, set with the forms (`States.defineAlert`) from realized expansionism and relations; its forces and default military spending scale with it. See [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
 - `military`: `Regiment[]` - list of state regiments, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
 - `label`: `Label` - optional state-label data. If absent, the renderer derives the text, path, and relative size from the State data and label mode
@@ -330,6 +329,29 @@ Markers data is stored as an unordered array of objects (so element id is _not_ 
 - `px`: `number` - icon box size in pixels. Optional, default is `12` (12px)
 - `lock`: `boolean` - `true` if marker is locked (not affected by regeneration). Optional
 - `note`: `string` - optional. The user's note (legend) about the marker, as html. Removed with it
+
+## Events
+
+`pack.events`: the map's dated history, kept in order of time (`start`, then the order they were added in). Element id is _not_ the array index. Only the `Events` model (`src/model/story/events.ts`) adds, changes and removes them; it also ends, reopens and drops wars, alliances and vassalages as the states' relations change. See [the PRD](../prd/events.md). Every event has:
+
+- `i`: `number` - event id, the highest id plus one
+- `type`: `string` - what it is, chosen once: `war`, `alliance`, `vassalage`, `battle` or `custom` (any other event). The user sorts by `tags`
+- `name`: `string` - its name. Generated names are English and are not rebuilt when a state is renamed
+- `start`: `string` - when it happened or began, as exact as known: `120`, `120-03`, `120-03-14` or `120-03-14T10:00`. The year is a plain whole number, negative before the era. Read and written by `Dates` (`src/model/story/dates.ts`) only
+- `end`: `string` - when it ended, in the same form; none while it goes on. Equal to `start` for something that happened at one time
+- `parent`: `number` - the event it is part of, such as a battle's war. Optional
+- `note`: `string` - the user's note, as html. Optional
+- `tags`: `string[]` - the user's labels; what the app makes comes tagged with its kind (`war`, `battle`…), a battle also with its type (`siege`…). Optional
+- `auto`: `true` - made by the app and not touched by the user since; the app removes only such events on its own. Optional
+
+A `war` has `attackers` and `defenders`: `number[]`, state ids, the first of each leading it; `defenders` is empty for a foe now gone. An `alliance` has `states`: `[number, number]`. A `vassalage` has `suzerain` and `vassal`: `number`. A `custom` event may have `states`: `number[]`, the states it concerns, and `act`: `string`, the political act and its subject that wrote it (`cession:12`), dropped once the user edits it or ids are renumbered. A `battle` has:
+
+- `cell`, `x`, `y`: `number` - its place
+- `attackers`, `defenders`: `number[]` - the states of each side, the first leading it
+- `winner`: `"attackers" | "defenders" | null`
+- `status`: `[string, string]` - the outcome as the attackers and the defenders see it, such as `attackers victory`
+- `regiments`: `{ state, i }[]` - the regiments that fought, the only record of a regiment's battles. Kept by `Events`: they follow a regiment to its new id when states merge or it is attached to another, and are dropped when it is disbanded or raised anew. Optional
+- `replay`: `BattleReplay` - for a battle that was played: the recipe it is played again from (`src/model/political/battle/replay.ts`): its type, seed, hour, approach, ground, settings and units, the regiments of both sides as they joined, every change made on the way with its tick, what the generals settled on and the tick it was applied at. The field is built anew from the map. Its state ids stay as fought: once states are renumbered (regenerated), `fought` maps them to the present ones, `0` for a state gone. Optional
 
 ## Labels
 

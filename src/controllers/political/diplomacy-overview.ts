@@ -8,8 +8,8 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { removeRelationsMark, showRelations } from "@/renderers/overlays/diplomacy";
 import { Csv } from "@/services/io/csv";
-import { getFileName } from "@/services/io/file-name";
 import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
@@ -22,7 +22,6 @@ import {
 } from "@/ui/dialog/table";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { downloadFile } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
 import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 
@@ -102,7 +101,7 @@ function renderDialog(): void {
           class="icon-brush"
         ></button>
         <button id="diplomacyRegenerate" data-tip="${t("Regenerate diplomatical relations")}" class="icon-retweet"></button>
-        <button id="diplomacyHistory" data-tip="${t("Relations history")}" class="icon-hourglass-1"></button>
+        <button id="diplomacyHistory" data-tip="${t("Chronicle")}" class="icon-hourglass-1"></button>
         <button id="diplomacyShowMatrix" data-tip="${t("Show relations matrix")}" class="icon-list-bullet"></button>
         <button
           id="diplomacyExport"
@@ -123,7 +122,7 @@ function renderDialog(): void {
   ensureEl("diplomacyOverviewRefresh").addEventListener("click", refreshDiplomacyOverview);
   ensureEl("diplomacyRegenerate").addEventListener("click", regenerateRelations);
   ensureEl("diplomacyShowMatrix").addEventListener("click", showMatrix);
-  ensureEl("diplomacyHistory").addEventListener("click", showHistory);
+  ensureEl("diplomacyHistory").addEventListener("click", () => void Controllers.Chronicle.open());
   ensureEl("diplomacyEditRelations").addEventListener("click", editRelations);
   ensureEl("diplomacyExport").addEventListener("click", exportCsv);
 
@@ -265,63 +264,9 @@ function regenerateRelations(): void {
       if (isEditing()) await Controllers.DiplomacyEditor.close();
       States.generateDiplomacy();
       refreshDiplomacyOverview();
+      refreshEditors(); // the Chronicle, whose wars and alliances changed
     }
   });
-}
-
-function showHistory(): void {
-  const chronicle = States.getChronicle();
-
-  let message = /* html */ `<div autocorrect="off" spellcheck="false">`;
-  chronicle.forEach((entry, index) => {
-    message += `<div>`;
-    entry.forEach((line, entryIndex) => {
-      message += /* html */ `<div contenteditable="true" data-id="${index}-${entryIndex}"
-        ${entryIndex ? "" : "style='font-weight:bold'"}>${line}</div>`;
-    });
-    message += `&#8205;</div>`;
-  });
-
-  if (!chronicle.length) {
-    pack.states[0].diplomacy = [[]] as unknown as string[];
-    message += /* html */ `<div><div contenteditable="true" data-id="0-0">${t("No historical records")}</div>&#8205;</div>`;
-  }
-
-  const content = Dialog.message({
-    title: t("Relations history"),
-    message: `${message}</div><div class="info-line">${t("Type to edit. Press Enter to add a new line, empty the element to remove it")}</div>`,
-    buttons: [
-      {
-        label: t("Save"),
-        onClick: () => {
-          // biome-ignore lint/performance/useDomNodeTextContent: innerText yields a line per nested div
-          const data = content.querySelector("div")!.innerText.split("\n").join("\r\n");
-          const name = `${getFileName("Relations history")}.txt`;
-          downloadFile(data, name);
-          return false;
-        }
-      },
-      {
-        label: t("Clear"),
-        onClick: () => {
-          pack.states[0].diplomacy = [] as unknown as string[];
-        }
-      },
-      { label: t("Close") }
-    ]
-  });
-  for (const line of content.querySelectorAll("div[contenteditable='true']")) {
-    line.addEventListener("input", changeReliationsHistory);
-  }
-}
-
-function changeReliationsHistory(this: HTMLElement): void {
-  const i = this.dataset.id!.split("-");
-  const group = States.getChronicle()[+i[0]];
-  if (this.innerHTML === "") {
-    group.splice(+i[1], 1);
-    this.remove();
-  } else group[+i[1]] = this.innerHTML;
 }
 
 function showMatrix(): void {
@@ -390,4 +335,4 @@ function closeDiplomacyOverview(): void {
   Dialog.destroy(dialogId);
 }
 
-export const DiplomacyOverview = { open, showHistory, exportCsv };
+export const DiplomacyOverview = { open, exportCsv };

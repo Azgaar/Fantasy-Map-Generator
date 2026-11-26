@@ -106,3 +106,21 @@ describe("pinned tips", () => {
     expect(tooltip().textContent).toBe("Edit mode is active");
   });
 });
+
+describe("tip", () => {
+  test("shows formatting, but never runs what a name from a loaded map carries", async () => {
+    document.body.innerHTML = '<div id="tooltip"></div>';
+    const { tip } = await import("./tooltips");
+    const tooltip = document.getElementById("tooltip")!;
+    const name = '<img src=x onerror="window.hacked=1"><script>window.hacked=1</script><a href="javascript:1">Ark</a>';
+
+    tip(`<b class="x" onclick="window.hacked=1">Battle</b> of ${name} &amp; Co<br>`);
+    expect(tooltip.innerHTML).toBe('<b class="x">Battle</b> of Ark &amp; Co<br>');
+    expect(tooltip.querySelector("img, script, a, [onclick]")).toBeNull();
+
+    tip("Plain <text> & more");
+    expect(tooltip.textContent).toBe("Plain  & more");
+    tip("Plain text");
+    expect(tooltip.textContent).toBe("Plain text");
+  });
+});

@@ -2,7 +2,7 @@
 import { type D3DragEvent, drag, pointer, select } from "d3";
 import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
 import { Pack } from "@/model/graph/pack-generator";
-import { States } from "@/model/political/states-generator";
+import { Events } from "@/model/story/events";
 import { Layers } from "@/renderers/layers";
 import { removeRelationsMark, showRelations } from "@/renderers/overlays/diplomacy";
 import type { Point } from "@/types/global";
@@ -187,7 +187,7 @@ function revert(stroke: Stroke): void {
   for (const [id, diplomacy] of stroke.diplomacy) pack.states[id].diplomacy = diplomacy;
 }
 
-// the chronicle gets one record per painted pair whose relation differs from before the first stroke
+// the wars, alliances and vassalages follow the painted pairs whose relation differs from before the first stroke
 function apply(): void {
   const original = new Map<number, string[] | undefined>();
   const pairs = new Map<string, [number, number]>();
@@ -196,16 +196,14 @@ function apply(): void {
     for (const [a, b] of stroke.pairs) pairs.set(a < b ? `${a}-${b}` : `${b}-${a}`, [a, b]);
   }
 
-  const chronicle = States.getChronicle();
-  for (const [subjectId, objectId] of pairs.values()) {
-    const oldRelation = original.get(subjectId)?.[objectId];
-    const newRelation = pack.states[subjectId].diplomacy![objectId];
-    if (newRelation !== oldRelation)
-      chronicle.push(States.getRelationRecord(subjectId, objectId, oldRelation, newRelation));
-  }
+  const changed = [...pairs.values()].filter(
+    ([subjectId, objectId]) => original.get(subjectId)?.[objectId] !== pack.states[subjectId].diplomacy![objectId]
+  );
+  Events.followRelations(changed);
 
   strokes = [];
   close();
+  refreshEditors(); // the Chronicle, whose wars and alliances changed
 }
 
 function undo(): void {

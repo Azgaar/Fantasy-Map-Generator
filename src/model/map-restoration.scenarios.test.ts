@@ -1,8 +1,10 @@
 // Map restoration on real generated maps: Risk heightmap edits, Submap and Transform. See docs/prd/map-restoration-tests.md
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Production } from "@/model/economy/production-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { Features } from "@/model/physical/features-generator";
 import { Rivers } from "@/model/physical/river-generator";
+import { Events } from "@/model/story/events";
 import type { IntegrityRule } from "./map-integrity";
 import { circle, generateMap, living, newViolations, riskEdit, violations } from "./real-map.testing";
 
@@ -152,6 +154,36 @@ describe("Risk heightmap edit", () => {
     expect(edited.length).toBeGreaterThan(0);
     for (const cell of edited) expect(h[cell]).toBe(grid.cells.h[g[cell]]);
     for (const cell of untouched) if (eroded.has(at(cell))) expect(h[cell]).toBe(eroded.get(at(cell)));
+  });
+
+  it("carries the history over: a battle to its place, its regiment links, and no act of the app's own", async () => {
+    await generateMap({ seed: "restore-events" });
+    const regiment = living(pack.states).flatMap(state => state.military ?? [])[0];
+    const burg = living(pack.burgs).find(burg => !burg.capital)!;
+    const id = Events.add({
+      type: "battle",
+      name: "Battle of the Test",
+      start: "1",
+      end: "1",
+      cell: burg.cell,
+      x: burg.x,
+      y: burg.y,
+      attackers: [regiment.state],
+      defenders: [],
+      winner: null,
+      status: ["standoff", "standoff"],
+      regiments: [{ state: regiment.state, i: regiment.i }]
+    });
+    const before = pack.events.length;
+    riskEdit(circle(0.5, 0.5, 80, 8, "land"), false);
+    const battle = Events.get(id)!;
+    expect(battle.type).toBe("battle");
+    expect(pack.events).toHaveLength(before); // no capital moved by the app is logged
+    if (battle.type === "battle") {
+      expect(Pack.findCell(battle.x, battle.y)).toBe(battle.cell);
+      for (const ref of battle.regiments ?? [])
+        expect(pack.states[ref.state].military?.some(({ i }) => i === ref.i)).toBe(true);
+    }
   });
 
   it("keeps the map sound through chained edits", async () => {

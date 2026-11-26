@@ -256,7 +256,7 @@ Inside the two large role folders, `model/` and `controllers/`, files are groupe
 | `society/`     | population, cultures, religions, names                                      |
 | `political/`   | states, provinces, burgs, diplomacy, military, zones, emblems               |
 | `economy/`     | goods, production, markets and trade, state economies, routes               |
-| `story/`       | markers, notes, lore, journeys and their transports                         |
+| `story/`       | markers, notes, lore, journeys and their transports, events and dates       |
 | `annotations/` | labels, rulers, the legend: what the map adds on top of the world           |
 | `styles/`      | the style record, its schema and formats (`model/` only)                    |
 | `style/`       | the Style editor and presets (`controllers/` only)                          |

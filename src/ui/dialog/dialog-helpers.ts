@@ -36,7 +36,8 @@ const REFRESHABLE_EDITORS = [
   "developmentRefresh",
   "regimentsOverviewRefresh",
   "markersOverviewRefresh",
-  "journeysOverviewRefresh"
+  "journeysOverviewRefresh",
+  "chronicleRefresh"
 ];
 
 /** Close dialogs about one entity: after a regeneration their ids may name another */

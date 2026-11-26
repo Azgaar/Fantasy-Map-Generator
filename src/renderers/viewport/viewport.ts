@@ -19,6 +19,10 @@ export type ZoomedLayer = (typeof ZOOMED_LAYERS)[number];
 export const zoomFontSize = (layer: ZoomedLayer, scale: number): number =>
   Math.max(Math.round(ZOOM_CURVES[styles[layer].options.zoomSize as ZoomSize](scale) * 100) / 100, 1);
 
+/** Regiments are drawn in map units, so they follow the same curve as a scale factor */
+export const regimentScale = (scale: number): number =>
+  Math.round(ZOOM_CURVES[styles.military.options.zoomSize as ZoomSize](scale) * 10) / 1000;
+
 /** Set the svg resolution */
 export function setViewportSize(width: number, height: number): void {
   viewport.width = width;

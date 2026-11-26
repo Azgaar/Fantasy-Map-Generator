@@ -132,7 +132,7 @@ Starting budgets depend on the state. The military is the largest expense, from 
 
 What each expense achieves depends on how much it actually spent against what a state of that size needs, so a large state must spend more for the same effect:
 
-- **Military → upkeep**: how well its spending keeps its forces, from 0% to 100%, shown in the _Military overview_. In battles, each regiment's strength is multiplied by its state's upkeep, at least 5%, so ill-kept troops fight weaker. A state at high war alert raises a large army that its budget may not keep.
+- **Military → upkeep**: how well its spending keeps its forces, from 0% to 100%, shown in the _Military overview_. In battles, each regiment's strength is multiplied by the square root of its state's upkeep, at least 5%, so ill-kept troops fight weaker: a state at 50% upkeep fights at about 71%. A state at high war alert raises a large army that its budget may not keep.
 - **Infrastructure → prosperity**: 15% of every burg's and rural cell's prosperity is how fully infrastructure serves its province. Each province gets the state's spending by its people, less what its officials pocket, so far and foreign provinces are served worse.
 - **Administration → corruption**: a paid administration curbs up to half of the corruption, in proportion to how fully it is paid for the state's people. Underfunding it is a false saving: officials then take more of every other expense. Corruption differs by province: it is higher in provinces far from the capital or overseas and in those of other cultures and faiths, lower near the capital, and averages to the state's.
 - **Court and clergy → stability**.
