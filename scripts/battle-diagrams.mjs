@@ -39,27 +39,29 @@ const ARMIES = {
   wagenburg: { line: 8, shooter: 3, engine: 1 },
   waves: { line: 6, shooter: 2, rider: 2 }
 };
+const KIND = { line: "melee", shooter: "ranged", rider: "mounted", engine: "machinery" }; // drawing kind to battalion kind
+const DRAWN = Object.fromEntries(Object.entries(KIND).map(([drawn, kind]) => [kind, drawn]));
 const P = Object.fromEntries(
   Object.entries(ARMIES).map(([tactic, counts]) => {
     let id = 0;
-    const blocks = Object.entries(counts).flatMap(([kind, n]) =>
+    const battalions = Object.entries(counts).flatMap(([kind, n]) =>
       Array.from({ length: n }, (_, i) => ({
         id: id++,
-        kind,
+        kind: KIND[kind],
         troops: 300 - i,
-        unitPower: POWER[kind],
+        stats: { power: POWER[kind] },
         width: FRONT,
         depth: FRONT / 2
       }))
     );
-    const places = Formations.form(blocks, TACTICS[tactic], 1, ROOM, FRONT).map(p => ({
-      kind: p.block.kind,
+    const places = Formations.form(battalions, TACTICS[tactic], 1, ROOM, FRONT).map(p => ({
+      kind: DRAWN[p.battalion.kind],
       role: p.role,
       across: Math.round(p.across),
       along: Math.round(p.along),
       facing: p.facing ?? 0,
-      w: p.block.width,
-      d: p.block.depth
+      w: p.battalion.width,
+      d: p.battalion.depth
     }));
     return [tactic, places];
   })
@@ -336,7 +338,7 @@ S.wedge = () => {
       units(red) +
       label("the centre leads to break through", 760, 330) +
       label("a long, thin line", 1030, 130, { anchor: "start" }) +
-      label("wings trail", 380, 172)
+      label("riders trail", 250, 388, { anchor: "end" })
   );
 };
 
@@ -449,9 +451,9 @@ S.wagenburg = () => {
       units(riders) +
       arrow(`M650 680 C 1000 800, 1250 600, 1220 380`, "red", { dashed: true }) +
       arrow(`M760 80 C 980 -10, 1200 120, 1230 280`, "red", { dashed: true }) +
-      label("wagons all round", 900, 620) +
-      label("riders cannot cross them or fight over them", 640, 740) +
-      label("shooters and engines inside", 900, 140)
+      label("wagons all round,", 900, 610) +
+      label("shooters and engines inside", 900, 640) +
+      label("riders cannot cross them or fight over them", 640, 740)
   );
 };
 
