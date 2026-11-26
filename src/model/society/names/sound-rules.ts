@@ -1,16 +1,15 @@
-import { CHAIN_RULES, JOIN_RULES, SHARED_RULES } from "@/data/name-rules";
+import { JOIN_RULES, SHARED_RULES } from "@/data/name-rules";
 import type { NameBase, SoundRule } from "@/types/names";
 import { compileRegex } from "@/utils/string-utils";
 
-// words that join the others and stay lowercase between them: Saint-Germain-en-Laye, Puebla de Sanabria
-const PARTICLES = new Set(
-  "of the upon de del della delle dei degli di da dal do dos das du des la las le les en am im der zum zur ad sub e ye wa cha ya ka ki".split(
-    " "
-  )
-);
-const DASHED = new Set(["sur", "sous", "lès"]); // between dashes only: Pont-sur-Moselle, but Al Sur Al Kabir
-const ELIDED = /^(?:d|l|n|dell|nell|sull|dall|all)'(?=\p{L})/u; // Pont-d'Ain, Castel dell'Ovo, Tizi n'Test
 const DOUBLES = /^\((?:\.|\[\^(.+)\])\)\\1\+$/;
+
+/** A base's joining words by how they stand */
+interface Joining {
+  words: Set<string>; // between any two words
+  dashed: Set<string>; // between dashes only: written -sur-
+  elided?: RegExp; // cut short before the next word: written d'
+}
 
 interface JoinOptions {
   rolls?: number[]; // one roll, 0 to 1, per rule with a chance, in the rules' order
@@ -35,11 +34,12 @@ interface Sorted {
 
 class SoundRulesModule {
   private readonly sorted = new WeakMap<readonly SoundRule[], Sorted>();
+  private readonly joinings = new WeakMap<readonly string[], Joining>();
 
   /** Rewrite a lowercase word by a base's rules, then by the shared ones; a rule that is no valid regex is skipped.
    * A `single` word has no letter twice in a row */
   apply(word: string, rules?: readonly SoundRule[], single = false): string {
-    return rewrite(rewrite(single ? rewrite(word, SINGLE) : word, this.sort(rules).word), WORD);
+    return rewrite(rewrite(single ? rewrite(word, SINGLE) : word, this.sort(rules).word), SHARED);
   }
 
   /** Adapt a lowercase name coined in another base by the rules a base keeps for foreign names */
@@ -64,8 +64,11 @@ class SoundRulesModule {
     return joined;
   }
 
-  /** A lowercase name with each word capitalized, but for the joining words between them */
-  capitalize(name: string): string {
+  /** A lowercase name with each word capitalized, but for a base's joining words between them: Puebla de Sanabria,
+   * Pont-sur-Moselle, Pont-d'Ain */
+  capitalize(name: string, joining: readonly string[] = NO_WORDS): string {
+    const { words, dashed, elided } = this.joiningOf(joining);
+    const isJoining = (word: string, before: string) => words.has(word) || (before === "-" && dashed.has(word));
     const parts = name.split(/([ -])/); // words, and the space or dash after each
     const upper = (text: string) => {
       const [letter = ""] = text;
@@ -75,10 +78,29 @@ class SoundRulesModule {
       .map((part, index) => {
         if (index % 2) return part;
         if (index && index < parts.length - 1 && isJoining(part, parts[index - 1])) return part;
-        if (index && ELIDED.test(part)) return part.replace(/'(.)/u, (_, letter) => `'${letter.toUpperCase()}`);
+        if (index && elided?.test(part)) return part.replace(/'(.)/u, (_, letter) => `'${letter.toUpperCase()}`);
         return upper(part);
       })
       .join("");
+  }
+
+  private joiningOf(joining: readonly string[]): Joining {
+    let known = this.joinings.get(joining);
+    if (!known) {
+      const [dashed, elided, words] = [new Set<string>(), [] as string[], new Set<string>()];
+      for (const word of joining.map(word => word.trim().toLowerCase()).filter(Boolean)) {
+        if (/^-.+-$/.test(word)) dashed.add(word.slice(1, -1));
+        else if (word.endsWith("'")) elided.push(word.slice(0, -1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+        else words.add(word);
+      }
+      known = {
+        words,
+        dashed,
+        elided: elided.length ? new RegExp(`^(?:${elided.join("|")})'(?=\\p{L})`, "u") : undefined
+      };
+      this.joinings.set(joining, known);
+    }
+    return known;
   }
 
   /** The rule that keeps a letter from standing twice in a row, but for the letters given */
@@ -127,6 +149,17 @@ class SoundRulesModule {
 }
 
 const NONE: SoundRule[] = [];
+const NO_WORDS: readonly string[] = [];
+
+/** What a rule is for: a base inherits each purpose's rules whole, where it writes none of its own */
+export type RulePurpose = "word" | "join" | "counting" | "foreign";
+export const RULE_PURPOSES: RulePurpose[] = ["word", "join", "counting", "foreign"];
+
+export function purposeOf(rule: SoundRule): RulePurpose {
+  if (rule.when === "foreign") return "foreign";
+  if (rule.as) return "counting";
+  return isWordRule(rule) ? "word" : "join";
+}
 
 const compile = (rules: readonly SoundRule[]): Rewrite[] =>
   rules.flatMap(({ match, replace }) => {
@@ -139,11 +172,9 @@ function rewrite(name: string, rewrites: Rewrite[]): string {
   return name;
 }
 
-const isJoining = (word: string, before: string) => PARTICLES.has(word) || (before === "-" && DASHED.has(word));
 const isWordRule = (rule: SoundRule) => !rule.at && !rule.when && !rule.as && rule.chance === undefined;
 
 export const SoundRules = new SoundRulesModule();
 
 const [SHARED, JOIN] = [compile(SHARED_RULES), compile(JOIN_RULES)];
-const WORD = compile([...SHARED_RULES, ...CHAIN_RULES]); // of a word off a chain
 const SINGLE = compile([SoundRules.doublesRule()]);

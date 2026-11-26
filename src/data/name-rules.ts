@@ -6,7 +6,7 @@ const [VOWEL, CONSONANT] = [`[${VOWELS}]`, `[^${VOWELS} +-]`];
 
 /** How the parts of a name meet, after its base's rules and before the `+` marks go */
 export const JOIN_RULES: SoundRule[] = [
-  { match: `(?<=(?!q)${CONSONANT}|qu)${VOWEL}+\\+(?=${VOWEL}[^ +-]{0,3}$)`, replace: "" }, // a short vowel ending takes the place of a part's last vowels, but for the u of qu
+  { match: `(?<=(?!q)${CONSONANT}|qu)${VOWEL}+\\+(?=(?!y${VOWEL})${VOWEL}[^ +-]{0,3}$)`, replace: "" }, // a short vowel ending takes the place of a part's last vowels, but for the u of qu; a y before a vowel is a consonant
   { match: "(.)\\+\\1", replace: "$1" } // one letter where two of a kind meet
 ];
 
@@ -14,11 +14,6 @@ export const JOIN_RULES: SoundRule[] = [
 export const SHARED_RULES: SoundRule[] = [
   { match: "(?<=[^ -])(.)\\1{2,}", replace: "$1$1" }, // no letter three times in a row inside a word
   { match: "- +", replace: "-" } // no space after a hyphen
-];
-
-/** What a word off a Markov chain goes through besides: the words of a base's lexicon are spelled as written */
-export const CHAIN_RULES: SoundRule[] = [
-  { match: "(?<=[^ -])ae", replace: "e" } // "ae" reads as "e" inside a word
 ];
 
 /** What stands in for a letter a base never writes: the first stand-in the base does write */

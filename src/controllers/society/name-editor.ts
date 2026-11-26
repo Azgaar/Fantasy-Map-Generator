@@ -3,18 +3,20 @@
 import { PATTERN_LABELS } from "@/data/id-labels";
 import { conceptsOf } from "@/data/name-concepts";
 import { kindsOf, PATTERNS, type Slot } from "@/data/name-patterns";
+import { MapEntities } from "@/model/map-entities";
 import { Appropriation } from "@/model/society/names/appropriation";
 import { Meanings } from "@/model/society/names/meanings";
-import { Names } from "@/model/society/names/names-generator";
-import { type PlaceType, Toponyms } from "@/model/society/names/toponyms-generator";
+import { NameBases } from "@/model/society/names/name-bases";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
+import { Layers } from "@/renderers/layers";
 import { speak } from "@/services/speech";
-import type { Meaning, NameBase, Named, Pattern, Token } from "@/types/names";
+import type { Meaning, NameBase, Named, Pattern, PlaceRef, PlaceType, Token } from "@/types/names";
 import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { escapeHtml } from "@/utils/string-utils";
-import { NAMINGS } from "./named-places";
+import { NAMED_MODELS } from "./named-places";
 
 interface Owner {
   owner: string; // the dialog it is opened from: the editor closes with it
@@ -61,27 +63,48 @@ let editing: { options: NameEditorOptions; draft: Draft } | undefined;
 
 /** Rename a place that keeps a meaning */
 function openPlace(type: PlaceType, id: number, { onApply, ...owner }: PlaceOptions): Promise<void> {
-  const { model, find, generate, proper } = NAMINGS[type];
-  const { name = "", meaning } = find(id);
+  const { name: was = "", meaning } = Toponyms.placeOf(type, id) ?? {};
   const culture = Toponyms.cultureOf({ type, id });
   return open({
     ...owner,
     entity: `${type}:${id}`,
-    name,
+    name: was,
     meaning,
     culture: culture ?? 0,
-    generate: culture === undefined ? undefined : baseId => generate(id, baseId), // neutral lands, an ocean
-    proper: baseId => proper(id, baseId),
+    generate: culture === undefined ? undefined : baseId => Toponyms.coinFor(type, id, baseId), // neutral lands, an ocean
+    proper: baseId => Toponyms.properFor(type, id, baseId),
     onApply: ({ name, meaning }) => {
-      model.setName(id, { name, meaning: culture === undefined ? undefined : meaning });
+      NAMED_MODELS[type].setName(id, { name, meaning: culture === undefined ? undefined : meaning });
       onApply(name);
+      offerRenamesAfter({ type, id }, was);
+    }
+  });
+}
+
+/** Offer the places named after a renamed one its new name */
+function offerRenamesAfter(after: PlaceRef, was: string): void {
+  const renamings = Toponyms.renamedAfter(after, was);
+  if (!renamings.length) return;
+  const now = Toponyms.placeOf(after.type, after.id)?.name ?? "";
+  const list = renamings.map(({ type, id, named }) => {
+    const old = Toponyms.placeOf(type, id)?.name ?? "";
+    const { kind } = MapEntities.getDisplay({ type, id });
+    return `${escapeHtml(kind)}: ${escapeHtml(old)} → ${escapeHtml(named.name)}`;
+  });
+  Dialog.confirm({
+    title: t("Rename"),
+    message: `${t("{{count}} places are named after {{name}}. Rename them too?", { count: renamings.length, name: now })}<br>${list.join("<br>")}`,
+    confirm: t("Rename"),
+    onConfirm: () => {
+      for (const { type, id, named } of renamings) NAMED_MODELS[type].setName(id, named);
+      Layers.draw("labels");
     }
   });
 }
 
 async function open(options: NameEditorOptions): Promise<void> {
-  const baseId = Names.entry(pack.cultures[options.culture]?.base).id;
-  await Names.load([baseId]);
+  const baseId = NameBases.entry(pack.cultures[options.culture]?.base).id;
+  await NameBases.load([baseId]);
 
   close();
   Dialog.destroy(dialogId);
@@ -92,7 +115,7 @@ async function open(options: NameEditorOptions): Promise<void> {
     ([group, list]) =>
       `<optgroup label="${group}">${list.map(([pattern, label]) => `<option value="${pattern}">${label}</option>`).join("")}</optgroup>`
   );
-  const bases = Names.sorted(Names.nameBases).map(
+  const bases = NameBases.sorted(NameBases.all).map(
     ({ id, name }) => `<option value="${id}" ${id === baseId ? "selected" : ""}>${escapeHtml(name)}</option>`
   );
 
@@ -194,7 +217,7 @@ function fieldOf(order: number): string {
  * the whole name as its people say it in any other */
 function showVariant(): void {
   const { draft } = editing!;
-  const base = Names.find(getBase().value);
+  const base = NameBases.find(getBase().value);
   const isOwn = base?.id === draft.origin;
   const say = (base: NameBase) =>
     isOwn ? Meanings.render(draft as Meaning, base.id) : Appropriation.adopt(getName().value.trim(), base);
@@ -206,14 +229,17 @@ function showVariant(): void {
 // a proper name says itself: its meaning follows what is typed
 function changeName(): void {
   const { draft } = editing!;
-  if (draft.pattern === "simplex") Object.assign(draft, Meanings.simplex(getName().value.trim(), getBase().value));
+  if (draft.pattern === "simplex") {
+    Object.assign(draft, Meanings.simplex(getName().value.trim(), getBase().value));
+    delete draft.after; // the name typed is no other place's
+  }
   showVariant();
 }
 
 // a meaning edited is said anew in the selected base
 function recoin(): void {
   const { draft } = editing!;
-  const base = Names.find(getBase().value);
+  const base = NameBases.find(getBase().value);
   if (base && base.id !== draft.origin) Object.assign(draft, Meanings.coinedIn(draft as Meaning, base));
   delete draft.salt;
   delete draft.own;
@@ -226,7 +252,10 @@ function changePattern(): void {
   const pattern = getPattern().value as Pattern;
   const name = getName().value.trim();
   const words = new Map(PATTERNS[draft.pattern].slots.map((slot, order) => [slot, draft.tokens[order]]));
-  if (draft.pattern === "simplex" || pattern === "simplex") words.set("root", name ? `~${name}` : "");
+  if (draft.pattern === "simplex" || pattern === "simplex") {
+    words.set("root", name ? `~${name}` : "");
+    delete draft.after;
+  }
   Object.assign(draft, { pattern, tokens: PATTERNS[pattern].slots.map(slot => words.get(slot) ?? "") });
   if (pattern === "simplex") draft.origin = getBase().value;
   renderSlots();
@@ -240,6 +269,7 @@ function changeWord(event: Event): void {
   const word = field.value.trim();
   recoin();
   draft.tokens[order] = field instanceof HTMLSelectElement ? (word as Token) : word ? `~${word}` : "";
+  if (!(field instanceof HTMLSelectElement)) delete draft.after; // a root typed names no place of the map
   // the other words may have been said anew; the field in use stays as it is
   for (const other of ensureEl("nameEditorSlots").querySelectorAll<HTMLElement>("[data-order]"))
     if (other !== field) other.outerHTML = fieldOf(Number(other.dataset.order));
@@ -249,9 +279,9 @@ function changeWord(event: Event): void {
 async function changeBase(): Promise<void> {
   const select = getBase();
   ensureEl("nameEditorVariant").textContent = "…";
-  await Names.load([select.value]);
+  await NameBases.load([select.value]);
   if (!editing || !select.isConnected) return; // closed meanwhile
-  if (!Names.find(select.value))
+  if (!NameBases.find(select.value))
     tip(t("Namesbase {{base}} is not defined", { base: select.selectedOptions[0].text }), false, "error");
   showVariant();
 }
@@ -263,7 +293,7 @@ function takeVariant(): void {
 /** Say the same meaning another way; a proper name gives way to a new one */
 function rerollName(): void {
   const { options, draft } = editing!;
-  const base = Names.find(getBase().value);
+  const base = NameBases.find(getBase().value);
   if (!base) return;
 
   if (draft.pattern === "simplex") {
@@ -297,7 +327,7 @@ function rerollName(): void {
 
 function generate(): void {
   const { options } = editing!;
-  if (!Names.find(getBase().value)) return;
+  if (!NameBases.find(getBase().value)) return;
   const { name, meaning } = options.generate!(getBase().value);
   editing!.draft = structuredClone(meaning ?? Meanings.simplex(name, getBase().value));
   getName().value = name;

@@ -19,4 +19,20 @@ describe("getAdjective", () => {
     ["Aldshire", "Aldshire"],
     ["Wulfstania", "Wulfstanian"]
   ])("tells %s as %s", (noun, adjective) => expect(getAdjective(noun)).toBe(adjective));
+
+  it("gives a noun the same adjective every time, and leaves the ambient sequence where it was", () => {
+    const before = Math.random;
+    let draws = 0;
+    Math.random = () => {
+      draws++;
+      return 0.5;
+    };
+    try {
+      const nouns = ["Beydistan", "Lantonkham", "Siyamrat", "Kanto", "Valoria"];
+      expect(nouns.map(getAdjective)).toEqual(nouns.map(getAdjective));
+      expect(draws).toBe(0);
+    } finally {
+      Math.random = before;
+    }
+  });
 });

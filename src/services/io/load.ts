@@ -10,7 +10,7 @@ import { mapHistory, registerMap } from "@/model/map-history";
 import { Options } from "@/model/options/options-model";
 import { Features } from "@/model/physical/features-generator";
 import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
-import { Names } from "@/model/society/names/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Styles } from "@/model/styles/styles";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
@@ -373,7 +373,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.journeys = data[52] ? JSON.parse(data[52]) : [];
     pack.legends = data[53] ? JSON.parse(data[53]) : [];
 
-    await Names.loadUsed();
+    await NameBases.loadUsed();
 
     await autoUpdate?.resolveVersionConflicts(mapVersion!, data);
 

@@ -6,7 +6,7 @@ vi.mock("@/controllers", () => ({
 }));
 
 import { Controllers } from "@/controllers";
-import { Names } from "@/model/society/names/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { DIALOGS_MARKUP, dialogButton } from "@/ui/dialog/dialog-testing";
 import { NamesbaseEditor } from "./namesbase-editor";
 import { NamesbasesOverview } from "./namesbases-overview";
@@ -20,7 +20,7 @@ function change(selector: string, value: string): void {
 }
 
 const openTab = (tab: string) => find(`[data-tab="${tab}"]`).click();
-const english = () => Names.find("english")!;
+const english = () => NameBases.find("english")!;
 
 beforeEach(async () => {
   document.body.innerHTML = DIALOGS_MARKUP;
@@ -31,7 +31,7 @@ beforeEach(async () => {
 
 describe("NamesbaseEditor", () => {
   beforeEach(async () => {
-    await NamesbaseEditor.open(Names.nameBases.findIndex(({ id }) => id === "english"));
+    await NamesbaseEditor.open(NameBases.all.findIndex(({ id }) => id === "english"));
     openTab("names");
     find("#namesbaseEditAnyway").click();
     dialogButton("Edit anyway").click();
@@ -42,7 +42,7 @@ describe("NamesbaseEditor", () => {
     expect([isOpen(), find("#namesbaseLock").hidden]).toEqual([true, true]);
     expect(options.map.nameBases).toEqual([]); // nothing is stored before a change
 
-    await NamesbaseEditor.open(Names.ids().indexOf("english"));
+    await NamesbaseEditor.open(NameBases.ids().indexOf("english"));
     expect([isOpen(), find("#namesbaseLock").hidden]).toEqual([false, false]);
     expect(find<HTMLSelectElement>("#namesbaseExtends").disabled).toBe(true);
     for (const tab of ["names", "lexicon", "patterns", "rules"]) {
@@ -68,7 +68,7 @@ describe("NamesbaseEditor", () => {
 
   it("edits a list and drops an emptied one, but never the places", () => {
     change('[data-list="places"] textarea', "");
-    expect(Names.isShipped(english())).toBe(true); // nothing is changed in the end
+    expect(NameBases.isShipped(english())).toBe(true); // nothing is changed in the end
     change('[data-list="male"] textarea', "Adam, Bertram\nCuthbert, ");
     expect(english().people!.male!.names).toEqual(["Adam", "Bertram", "Cuthbert"]);
     change('[data-list="male"] textarea', "");
@@ -101,7 +101,7 @@ describe("NamesbaseEditor", () => {
 
     find("#namesbaseReset").click();
     dialogButton("Restore").click();
-    await vi.waitFor(() => expect(Names.isChanged(english())).toBe(false));
+    await vi.waitFor(() => expect(NameBases.isChanged(english())).toBe(false));
   });
 
   it("filters concepts by text", () => {
@@ -132,21 +132,21 @@ describe("NamesbaseEditor", () => {
 });
 
 describe("NamesbasesOverview", () => {
-  const row = (id: string) => find(`#namesbasesBody [data-id="${Names.nameBases.findIndex(base => base.id === id)}"]`);
+  const row = (id: string) => find(`#namesbasesBody [data-id="${NameBases.all.findIndex(base => base.id === id)}"]`);
 
   beforeEach(() => NamesbasesOverview.open());
 
   it("lists the bases with the cultures that use them and opens one", () => {
-    expect(document.querySelectorAll("#namesbasesBody .states")).toHaveLength(Names.nameBases.length);
+    expect(document.querySelectorAll("#namesbasesBody .states")).toHaveLength(NameBases.all.length);
     expect(row("english").querySelector('[data-col="cultures"]')?.textContent).toBe("Wildlands");
     row("orc").querySelector<HTMLElement>(".icon-pencil")!.click();
-    expect(Controllers.NamesbaseEditor.open).toHaveBeenCalledWith(Names.nameBases.findIndex(({ id }) => id === "orc"));
+    expect(Controllers.NamesbaseEditor.open).toHaveBeenCalledWith(NameBases.all.findIndex(({ id }) => id === "orc"));
   });
 
   it("tells an edited and a custom base", async () => {
-    await Names.load(["orc"]);
-    Names.edit("orc");
-    Names.copy(Names.find("orc")!, "Uruk");
+    await NameBases.load(["orc"]);
+    NameBases.edit("orc");
+    NameBases.copy(NameBases.find("orc")!, "Uruk");
     NamesbasesOverview.refresh();
     const status = (id: string) => row(id).querySelector('[data-col="status"]')?.textContent;
     expect(["english", "orc", "uruk"].map(status)).toEqual(["Built-in", "Edited", "Custom"]);
@@ -155,9 +155,9 @@ describe("NamesbasesOverview", () => {
   it("removes a custom base no culture uses and no base extends", async () => {
     const bin = (id: string) => row(id).querySelector<HTMLElement>(".icon-trash-empty");
     expect(bin("orc")).toBeNull(); // built in
-    await Names.load(["orc"]);
-    const uruk = Names.copy(Names.find("orc")!, "Uruk");
-    const heir = Names.copy(uruk, "Heir");
+    await NameBases.load(["orc"]);
+    const uruk = NameBases.copy(NameBases.find("orc")!, "Uruk");
+    const heir = NameBases.copy(uruk, "Heir");
     heir.extends = uruk.id;
     pack.cultures[0].base = uruk.id;
     NamesbasesOverview.refresh();
@@ -165,13 +165,13 @@ describe("NamesbasesOverview", () => {
     pack.cultures[0].base = "english";
     NamesbasesOverview.refresh();
     bin("uruk")!.click(); // extended by another
-    await Names.loadAll();
+    await NameBases.loadAll();
     expect(document.querySelector(".dialog-buttonset")).toBeNull();
 
     heir.extends = "orc";
     bin("uruk")!.click();
     await vi.waitFor(() => dialogButton("Remove").click());
-    expect(Names.has("uruk")).toBe(false);
+    expect(NameBases.has("uruk")).toBe(false);
     expect(row("uruk")).toBeNull();
   });
 });

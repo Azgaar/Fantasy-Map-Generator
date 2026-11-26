@@ -4,7 +4,7 @@
 import { NEAREST_LETTERS } from "@/data/name-rules";
 import type { NameBase } from "@/types/names";
 import { isVowel } from "@/utils/language-utils";
-import { Names } from "./names-generator";
+import { NameBases } from "./name-bases";
 import { SoundRules } from "./sound-rules";
 
 // what it costs to change a name
@@ -52,29 +52,36 @@ class AppropriationModule {
    * respelled to the closest one that sounds native, then the word rules run */
   adapt(name: string, base: NameBase): string {
     const profile = this.profileOf(base);
+    const rules = NameBases.rulesOf(base);
     const words = name.split(/([^\p{L}\p{M}]+)/u); // words, and what stands between them
     return words
       .map((word, index) => {
         if (index % 2 || word.length < 2) return word; // the s of Eadric's is no word
-        const foreign = SoundRules.applyForeign(word, base.rules);
+        const foreign = SoundRules.applyForeign(word, rules);
         let native = profile.adapted.get(foreign);
         if (native === undefined) {
           native = respell(foreign, profile);
           profile.adapted.set(foreign, native);
         }
-        return SoundRules.apply(native, base.rules);
+        return SoundRules.apply(native, rules);
       })
       .join("");
   }
 
-  /** A name as it stands on the map, as a base's people say it */
+  /** A name as it stands on the map, as a base's people say it. Its joining words stay lowercase, as do the base's own */
   adopt(name: string, base: NameBase): string {
-    return SoundRules.capitalize(this.adapt(name.toLowerCase(), base));
+    const kept = name
+      .split(/[ -]/)
+      .slice(1, -1)
+      .filter(word => /^\p{Ll}/u.test(word))
+      .map(word => (/^\p{L}+'/u.test(word) ? word.slice(0, word.indexOf("'") + 1) : this.adapt(word, base)));
+    const joining = kept.length ? [...NameBases.joiningOf(base), ...kept] : NameBases.joiningOf(base);
+    return SoundRules.capitalize(this.adapt(name.toLowerCase(), base), joining);
   }
 
   private profileOf(base: NameBase): Profile {
     const { names } = base.places;
-    const others = [Names.watersOf(base) ?? [], Names.peopleOf(base) ?? []].flat().map(corpus => corpus.names);
+    const others = [NameBases.watersOf(base) ?? [], NameBases.peopleOf(base) ?? []].flat().map(corpus => corpus.names);
     const known = this.profiles.get(names);
     if (known?.others.length === others.length && known.others.every((list, i) => list === others[i])) return known;
     const profile = measure(names, others);

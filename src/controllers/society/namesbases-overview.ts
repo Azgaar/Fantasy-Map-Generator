@@ -1,6 +1,6 @@
 import { Controllers } from "@/controllers";
 import { Options } from "@/model/options/options-model";
-import { Names } from "@/model/society/names/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { getFileName } from "@/services/io/file-name";
 import type { NameBase, NameBaseEntry } from "@/types/names";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -115,9 +115,9 @@ function renderDialog(): void {
 function getRows(): Row[] {
   const cultures = pack.cultures.filter(({ removed }) => !removed);
   const search = filterState.search.trim().toLowerCase();
-  const rows = Names.nameBases.flatMap((base, i): Row[] => {
+  const rows = NameBases.all.flatMap((base, i): Row[] => {
     const users = cultures.filter(culture => culture.base === base.id).map(({ name }) => name);
-    const status = Names.isShipped(base) ? t("Built-in") : Names.isChanged(base) ? t("Edited") : t("Custom");
+    const status = NameBases.isShipped(base) ? t("Built-in") : NameBases.isChanged(base) ? t("Edited") : t("Custom");
     const text = [base.name, ...users].join("\n").toLowerCase();
     return text.includes(search) ? [{ i, base, status, cultures: users }] : [];
   });
@@ -127,7 +127,7 @@ function getRows(): Row[] {
 function renderRows(view: TableView<Row>): void {
   const lines = view.rows.map(({ i, base, status, cultures }) => {
     const users = escapeHtml(cultures.join(", "));
-    const isCustom = !Names.isShipped(base) && !Names.isChanged(base);
+    const isCustom = !NameBases.isShipped(base) && !NameBases.isChanged(base);
     const removeTip = cultures.length ? t("Used by a culture") : t("Remove");
     const remove = `<span data-action="remove" data-tip="${removeTip}" class="icon-trash-empty${cultures.length ? " disabled" : ""}"></span>`;
     return /* html */ `<div class="states" data-id="${i}">
@@ -152,9 +152,9 @@ function onRowClick(event: MouseEvent): void {
 }
 
 async function triggerRemove(i: number): Promise<void> {
-  const { id, name } = Names.nameBases[i];
-  await Names.loadAll(); // only a loaded base tells what it extends
-  const heirs = Names.loaded().filter(base => base.extends === id);
+  const { id, name } = NameBases.all[i];
+  await NameBases.loadAll(); // only a loaded base tells what it extends
+  const heirs = NameBases.loaded().filter(base => base.extends === id);
   if (heirs.length) {
     const bases = heirs.map(heir => heir.name).join(", ");
     tip(t("Cannot remove the base, others extend it: {{bases}}", { bases }), false, "error", 4000);
@@ -166,7 +166,7 @@ async function triggerRemove(i: number): Promise<void> {
     confirm: t("Remove"),
     onConfirm: () => {
       Dialog.close("namesbaseEditor");
-      Names.remove(id);
+      NameBases.remove(id);
       Options.save();
       table.refresh();
     }
@@ -180,16 +180,16 @@ function search(this: HTMLInputElement): void {
 }
 
 function addBase(): void {
-  const name = `Base${Names.nameBases.length}`;
-  Names.add(Names.composeBase(Names.uniqueId(name, Names.ids()), name, [5, 12], EXAMPLE.split(",")));
+  const name = `Base${NameBases.all.length}`;
+  NameBases.add(NameBases.compose(NameBases.uniqueId(name, NameBases.ids()), name, [5, 12], EXAMPLE.split(",")));
   Options.save();
   table.refresh();
-  void Controllers.NamesbaseEditor.open(Names.nameBases.length - 1);
+  void Controllers.NamesbaseEditor.open(NameBases.all.length - 1);
 }
 
 async function downloadAll(): Promise<void> {
-  await Names.loadAll();
-  downloadFile(NamesbaseFile.format(Names.loaded()), `${getFileName("Namesbase")}.json`, "application/json");
+  await NameBases.loadAll();
+  downloadFile(NamesbaseFile.format(NameBases.loaded()), `${getFileName("Namesbase")}.json`, "application/json");
 }
 
 /** Own the file input here so repeat opens cannot stack listeners on a shared element */
@@ -202,7 +202,7 @@ function pickFile(): void {
 async function offerUpload(data: string): Promise<void> {
   const parsed = NamesbaseFile.parse(data);
   if (!parsed.length) return;
-  await Names.loadAll(); // the file may hold built-in bases as they are
+  await NameBases.loadAll(); // the file may hold built-in bases as they are
   const bases = NamesbaseFile.withoutShipped(parsed);
   if (!bases.length) {
     tip(t("The file holds only built-in namesbases"), false, "warn");
@@ -215,7 +215,7 @@ async function offerUpload(data: string): Promise<void> {
       t("Add them or replace all custom and edited namesbases with them?")
     ),
     buttons: [
-      { label: t("Add"), onClick: () => void take(NamesbaseFile.withOwnIds(bases, Names.ids()), false) },
+      { label: t("Add"), onClick: () => void take(NamesbaseFile.withOwnIds(bases, NameBases.ids()), false) },
       { label: t("Replace"), onClick: () => void take(bases, true) },
       { label: t("Cancel") }
     ]
@@ -224,9 +224,9 @@ async function offerUpload(data: string): Promise<void> {
 
 async function take(bases: NameBase[], replace: boolean): Promise<void> {
   Dialog.close("namesbaseEditor");
-  Names.replace(replace ? bases : [...options.map.nameBases, ...bases]);
+  NameBases.replace(replace ? bases : [...options.map.nameBases, ...bases]);
   Options.save();
-  await Names.loadUsed();
+  await NameBases.loadUsed();
   refresh();
 }
 
@@ -237,9 +237,9 @@ function restoreDefault(): void {
     confirm: t("Restore"),
     onConfirm: async () => {
       Dialog.close("namesbaseEditor");
-      Names.replace([]);
+      NameBases.replace([]);
       Options.save();
-      await Names.loadUsed();
+      await NameBases.loadUsed();
       refresh();
     }
   });

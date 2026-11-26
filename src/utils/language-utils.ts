@@ -1,5 +1,5 @@
 import { last } from "./array-utils";
-import { P } from "./probability-utils";
+import { P, seeded } from "./probability-utils";
 
 /**
  * Check if character is a vowel
@@ -172,12 +172,12 @@ export const getAdjective = (nounToBeAdjective: string) => {
       action: (noun: string) => `${trimVowels(noun)}an`
     }
   ];
-  for (const rule of adjectivizationRules) {
-    if (P(rule.probability) && rule.condition.test(nounToBeAdjective)) {
-      return rule.action(nounToBeAdjective);
-    }
-  }
-  return nounToBeAdjective; // no rule applied, return noun as is
+  // the same noun always takes the same adjective, off a sequence of its own: a name moves no other draw
+  return seeded(`adjective|${nounToBeAdjective}`, () => {
+    for (const rule of adjectivizationRules)
+      if (rule.condition.test(nounToBeAdjective) && P(rule.probability)) return rule.action(nounToBeAdjective);
+    return nounToBeAdjective; // no rule applied, return noun as is
+  });
 };
 
 /**

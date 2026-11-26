@@ -954,7 +954,7 @@ async function uploadBurgsCsv(text: string): Promise<void> {
         name => Burgs.setCulture(id, Csv.byName(pack.cultures, name).i),
         pack.cultures[burg.culture!]?.name
       );
-      row.named("Burg", burg, burg.culture!, Burgs); // in the culture set above
+      row.named("Burg", "burg", burg); // in the culture set above
       row.apply("Group", group => Burgs.setGroup(id, group), burg.group);
       row.apply("Type", type => Burgs.setType(id, type), burg.type);
       row.apply(

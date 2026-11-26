@@ -8,6 +8,7 @@ import type { Derivation, Formant, Grammar, NameBase, Pattern, Template } from "
 import { seeded } from "@/utils/probability-utils";
 import { compileRegex } from "@/utils/string-utils";
 import { Corpora } from "./corpora";
+import { NameBases } from "./name-bases";
 import { Names } from "./names-generator";
 import { NameNotation, STAR } from "./notation";
 
@@ -78,7 +79,7 @@ class LexiconModule {
 
   /** The forms a base, the bases it extends or the shared lexicon hold for a concept */
   authoredForms(base: NameBase, concept: Concept): readonly Formant[] | undefined {
-    const own = Names.inherited(base, ({ lexicon }) => (lexicon?.[concept]?.length ? lexicon[concept] : undefined));
+    const own = NameBases.inherited(base, ({ lexicon }) => (lexicon?.[concept]?.length ? lexicon[concept] : undefined));
     return own ?? DEFAULT_LEXICON[concept];
   }
 
@@ -94,7 +95,7 @@ class LexiconModule {
 
   /** A base's grammar, its own or inherited */
   grammarOf(base: NameBase): Grammar | undefined {
-    return Names.inherited(base, ({ grammar }) => grammar);
+    return NameBases.inherited(base, ({ grammar }) => grammar);
   }
 
   /** The concepts a base names with, of those given: a base that writes most places keeps to the words it writes, so
@@ -107,7 +108,7 @@ class LexiconModule {
 
   /** The layouts of a pattern in a base, its own, inherited or shared */
   templatesOf(base: NameBase, pattern: Pattern): readonly Template[] {
-    const own = Names.inherited(base, ({ patterns }) => {
+    const own = NameBases.inherited(base, ({ patterns }) => {
       const templates = patterns?.[pattern]?.templates;
       return templates?.length ? templates : undefined;
     });
@@ -116,7 +117,7 @@ class LexiconModule {
 
   /** How often a base coins a name of a pattern */
   patternWeight(base: NameBase, pattern: Pattern): number {
-    return Names.inherited(base, ({ patterns }) => patterns?.[pattern]?.weight) ?? PATTERNS[pattern].weight;
+    return NameBases.inherited(base, ({ patterns }) => patterns?.[pattern]?.weight) ?? PATTERNS[pattern].weight;
   }
 
   // a land unwritten is plain "land"
@@ -125,7 +126,7 @@ class LexiconModule {
   }
 
   private vocabularyOf(base: NameBase): Vocabulary {
-    const lexicons = Names.lineage(base).map(({ lexicon }) => lexicon);
+    const lexicons = NameBases.lineage(base).map(({ lexicon }) => lexicon);
     const cached = this.vocabularies.get(base);
     if (cached?.lexicons.length === lexicons.length && cached.lexicons.every((lexicon, i) => lexicon === lexicons[i]))
       return cached;
@@ -159,8 +160,9 @@ class LexiconModule {
   private coinedForms(base: NameBase, concept: Concept): Formant[] {
     const { names } = base.places;
     let coined = this.coined.get(names);
-    if (!coined || coined.rules !== base.rules) {
-      coined = { rules: base.rules, forms: this.coin(base) };
+    const rules = NameBases.rulesOf(base);
+    if (!coined || coined.rules !== rules) {
+      coined = { rules, forms: this.coin(base) };
       this.coined.set(names, coined);
     }
     return coined.forms.get(concept)!;

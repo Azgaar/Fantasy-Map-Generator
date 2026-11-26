@@ -8,7 +8,7 @@ import { capitalize, compileRegex } from "@/utils/string-utils";
 import { Appropriation } from "./appropriation";
 import { Corpora } from "./corpora";
 import { Lexicon } from "./lexicon";
-import { Names } from "./names-generator";
+import { NameBases } from "./name-bases";
 import { SILENT, STAR } from "./notation";
 import { SoundRules } from "./sound-rules";
 
@@ -92,12 +92,12 @@ class MeaningsModule {
 
   /** What a name says; one with no meaning stands as a proper name of a culture's base */
   of({ name = "", meaning }: { name?: string; meaning?: Meaning }, culture = 0): Meaning {
-    return meaning ?? this.simplex(name, pack.cultures[culture]?.base ?? Names.nameBases[0].id);
+    return meaning ?? this.simplex(name, pack.cultures[culture]?.base ?? NameBases.all[0].id);
   }
 
   /** The same thing said anew in a base: the concepts in its words, the roots as its people say them */
   coinedIn<T extends Pick<Meaning, "tokens" | "origin">>(meaning: T, base: NameBase): T {
-    if (Names.lineage(base).some(({ id }) => id === meaning.origin)) return { ...meaning, origin: base.id };
+    if (NameBases.lineage(base).some(({ id }) => id === meaning.origin)) return { ...meaning, origin: base.id };
     const say = (token: Token): Token => (isRoot(token) ? `~${Appropriation.adopt(token.slice(1), base)}` : token);
     return { ...meaning, tokens: meaning.tokens.map(say), origin: base.id };
   }
@@ -109,12 +109,14 @@ class MeaningsModule {
 
   /** A meaning's name in a base, and whether it says all of it: a name too long for the base loses its modifier */
   compose(meaning: Meaning, of: NameBase | string): { name: string; whole: boolean } {
-    const base = typeof of === "string" ? Names.resolve(of) : of;
+    const base = typeof of === "string" ? NameBases.resolve(of) : of;
     const random = seededRandom(`${base.id}|${meaning.pattern}|${meaning.tokens}|${meaning.salt ?? 0}`);
     const { slots: asked } = PATTERNS[meaning.pattern];
     const values = Object.fromEntries(asked.map((slot, index) => [slot, meaning.tokens[index]]));
     const grammar = Lexicon.grammarOf(base);
-    const counting = Names.lineage(base).flatMap(({ rules }) => SoundRules.sort(rules).counting);
+    const rules = NameBases.rulesOf(base);
+    const joining = NameBases.joiningOf(base);
+    const { counting } = SoundRules.sort(rules);
     const formsOf = once((concept: Concept) => Lexicon.formsOf(base, concept));
     const matches = (pattern: string, text: string) => compileRegex(pattern)?.test(text) ?? false;
     const clips = meaning.pattern !== "relative"; // another place's name stands whole
@@ -128,7 +130,7 @@ class MeaningsModule {
     // a template by its own weight, then its forms by theirs: how many forms fit a template does not favour it
     const { layouts } = pick(fitting, random);
     const drawn = pick(layouts, random);
-    const rolls = Array.from({ length: SoundRules.sort(base.rules).rolls }, () => random());
+    const rolls = Array.from({ length: SoundRules.sort(rules).rolls }, () => random());
     const fitsBase = (name: string) => this.fits(name, base);
 
     // a name too long is made again with more effort: its shortest forms, then clipped roots, then no modifier
@@ -140,7 +142,7 @@ class MeaningsModule {
     for (const effort of [0, 1, 2, 3]) {
       for (const kept of effort < 2 ? [Infinity] : effort === 2 ? [3, 2, 1] : [Infinity, 3, 2, 1]) {
         const parts = join(layoutFor(Math.min(effort, 1)), effort, kept);
-        name = SoundRules.capitalize(SoundRules.join(parts, base.rules, { rolls, fits: fitsBase }));
+        name = SoundRules.capitalize(SoundRules.join(parts, rules, { rolls, fits: fitsBase }), joining);
         if (isTold(name)) spare = name;
         else spare ||= name;
         if (isTold(name) && this.fits(name, base)) {

@@ -975,11 +975,6 @@ class BurgModule {
     if (burg.label?.text !== undefined) burg.label.text = burg.name;
   }
 
-  /** Set what a burg's name says, or clear it; the name itself stays as it is */
-  setMeaning(burgId: number, meaning?: Meaning): void {
-    this.living(burgId).meaning = meaning;
-  }
-
   /** Give a burg a new meaning that fits its place and the name its culture's base, or the base given, renders it to */
   regenerateName(burgId: number, baseId?: string): void {
     this.setName(burgId, Toponyms.burg(this.living(burgId), { baseId }));

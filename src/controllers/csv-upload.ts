@@ -1,7 +1,9 @@
 import { World } from "@/controllers/assistant/world";
+import { NAMED_MODELS } from "@/controllers/society/named-places";
 import { Meanings } from "@/model/society/names/meanings";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Csv } from "@/services/io/csv";
-import type { Meaning, Named } from "@/types/names";
+import type { Named, PlaceType } from "@/types/names";
 import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
@@ -13,19 +15,15 @@ interface UpdateOptions {
   text?: readonly string[]; // columns whose text the editors show; a changed value cannot hold markup characters
 }
 
-interface NameModel {
-  rename(id: number, name: string): void;
-  setMeaning(id: number, meaning?: Meaning): void;
-}
-
 /** One uploaded row; a setter that throws is reported and the next value is applied */
 interface CsvRow {
   /** Set a non-blank cell that differs from `current` */
   apply(column: string, set: (value: string) => void, current?: unknown): void;
   /** Set a present cell even when blank, for flags and lists */
   assign(column: string, set: (value: string) => void, current?: unknown): void;
-  /** Set a changed name and a changed meaning, coined in a culture's base; a new name with no new meaning is a proper name */
-  named(column: string, current: Partial<Named>, culture: number, model: NameModel): void;
+  /** Set a changed name and a changed meaning, coined in the base of the place's culture as it stands then; a new name
+   * with no new meaning is a proper name */
+  named(column: string, type: PlaceType, current: Partial<Named>): void;
   /** Set rural and urban people: changed rural and urban cells win, else a changed total keeps the current split */
   population(current: [number, number], set: (rural: number, urban: number) => void, columns?: string[]): void;
 }
@@ -112,11 +110,17 @@ async function update(
       };
       update(+id, {
         apply,
-        named: (column, { name, meaning }, culture, model) => {
+        named: (column, type, { name, meaning }) => {
           const said = meaning ? Meanings.write(meaning) : "";
-          apply(column, value => model.rename(+id, value), name);
-          const { origin } = Meanings.of({}, culture);
-          apply("Meaning", value => model.setMeaning(+id, Meanings.read(value, origin)), said);
+          apply(column, value => NAMED_MODELS[type].rename(+id, value), name);
+          apply(
+            "Meaning",
+            value => {
+              const { origin } = Meanings.of({}, Toponyms.cultureOf({ type, id: +id }));
+              Toponyms.setMeaningOf(type, +id, Meanings.read(value, origin));
+            },
+            said
+          );
         },
         assign: (column, setter, current) => {
           if (column in cells) set(column, setter, current);

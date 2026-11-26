@@ -57,6 +57,7 @@ export const NAME_BASE_SCHEMA = z.object({
   waters: corpus.optional(),
   people: z.object({ male: corpus.optional(), female: corpus.optional() }).optional(),
   rules: z.array(rule).optional(),
+  joining: z.array(z.string()).optional(),
   grammar: grammar.optional(),
   settled: share,
   lexicon: z.record(z.string(), z.array(formant)).optional(),

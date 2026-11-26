@@ -3,7 +3,7 @@ import { DEAL_KINDS } from "@/model/economy/deals";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Regiment } from "@/model/political/military-generator";
-import { Names } from "@/model/society/names/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import type { LayerId } from "@/renderers/layers";
 import type { Point } from "@/types/global";
 import { t } from "@/utils/i18n";
@@ -572,9 +572,9 @@ class EntityLookup {
       icon: "icon-book",
       scale: 1,
       layers: [],
-      entity: id => Names.nameBases[id] && { i: id, name: Names.nameBases[id].name }, // a record id is the base's place in the list
-      name: id => Names.nameBases[id]?.name || "",
-      refs: () => Names.nameBases.map((_, id) => ({ type: "nameBase", id })),
+      entity: id => NameBases.all[id] && { i: id, name: NameBases.all[id].name }, // a record id is the base's place in the list
+      name: id => NameBases.all[id]?.name || "",
+      refs: () => NameBases.all.map((_, id) => ({ type: "nameBase", id })),
       editor: "NamesbaseEditor"
     }
   };

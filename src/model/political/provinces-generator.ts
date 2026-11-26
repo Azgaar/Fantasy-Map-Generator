@@ -6,12 +6,12 @@ import { Emblems } from "@/model/political/emblems-generator";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Population } from "@/model/society/population-generator";
 import type { Emblem } from "@/types/emblems";
-import type { Meaning, Named } from "@/types/names";
+import type { Meaning, Named, PlaceRef } from "@/types/names";
 import { getMixedColor, requireColor } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { replaceWholeWord } from "@/utils/language-utils";
 import { getPolesOfInaccessibility } from "@/utils/path-utils";
-import { gauss, generateSeed, P, rand, rw, seeded } from "@/utils/probability-utils";
+import { gauss, generateSeed, P, rand, rw } from "@/utils/probability-utils";
 import { requireName } from "@/utils/validation-utils";
 import { Burgs } from "./burgs-generator";
 import { States } from "./states-generator";
@@ -122,7 +122,12 @@ class ProvinceModule {
     const taken = Toponyms.landNames(provinces); // no two lands share a name
     // off a sequence of its own: how a name is coined moves no border
     const nameLand = (culture: number) =>
-      seeded(`${localSeed}|province|${provinces.length}`, () => Toponyms.landOf(culture, taken));
+      Toponyms.drawFor(
+        "province",
+        provinces.length,
+        () => Toponyms.landOf(culture, taken),
+        regenerate ? localSeed : undefined
+      );
 
     // generate provinces for selected burgs
     states.forEach(s => {
@@ -235,14 +240,17 @@ class ProvinceModule {
       if (!s.i || s.removed || isStateKept(s.i)) return;
       if (!s.provinces?.length) return;
 
-      const coreProvinceNames = s.provinces.map(p => provinces[p]?.name);
-      const colonyNamePool = [s.name, ...coreProvinceNames].filter(name => name && !/new/i.test(name));
+      const lands: { name?: string; after: PlaceRef }[] = [
+        { name: s.name, after: { type: "state", id: s.i } },
+        ...s.provinces.map(p => ({ name: provinces[p]?.name, after: { type: "province", id: p } as PlaceRef }))
+      ];
+      const colonyNamePool = lands.filter(({ name }) => name && !/new/i.test(name));
       const getColonyName = () => {
         if (colonyNamePool.length < 1) return undefined;
 
         const index = rand(colonyNamePool.length - 1);
-        const spliced = colonyNamePool.splice(index, 1);
-        const named = spliced[0] ? Toponyms.colonyOf(spliced[0], s.culture) : undefined;
+        const [land] = colonyNamePool.splice(index, 1);
+        const named = land ? Toponyms.colonyOf(land.name!, s.culture, land.after) : undefined;
         return taken.has(named?.name) ? undefined : named;
       };
 
@@ -352,11 +360,6 @@ class ProvinceModule {
 
     cells.province = provinceIds;
     pack.provinces = provinces;
-  }
-
-  /** Set what a province's name says, or clear it; the name itself stays as it is */
-  setMeaning(provinceId: number, meaning?: Meaning): void {
-    this.living(provinceId).meaning = meaning;
   }
 
   /** Rename a province; a custom full name or label keeps its pattern when the old name stands in it as a whole word */

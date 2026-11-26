@@ -54,6 +54,7 @@ A number may stand where a describing word does: Three Towers, Tri Vezhi.
   - **Name base**: select a base to see how its people would say the name: Lipsko is Lipzku in German. Press the check mark to take it. New names are generated in the selected base too, so the crossed arrows say the meaning in its own words: a name of "new" and "town" may become Novgorod in Ruthenian.
   - **Full name**, for a state or province, is shown as it is; its pencil stores the name and opens the form dialog.
   - Nothing changes on the map until you press _Apply_.
+  - Rename a river, lake, burg, state or province, and the places named after it are offered the new name too: the towns on the river, a New Barton beside Barton, the colonies named after a land. A place whose name you typed yourself keeps it.
   - A route, an ocean and a label's text have no meaning: their dialog has no Meaning row.
 - **Form and full name** of a state or province are changed by a click on its form. The pencil beside the short name there opens the Name Editor.
 - **A name you type is kept.** The name and the meaning are stored apart and neither overwrites the other, so a name may say something other than its meaning. Nothing renames a place behind your back: changing a burg's or state's culture, a culture's name base or a burg's group offers the new name and waits for a yes. A name changed that way is remembered: when the place comes back to its own name base, the name it had is offered, unless you renamed it meanwhile. A name set by the Assistant or uploaded from a CSV file is a proper name and the old meaning is cleared, unless a new one comes with it: ask the Assistant for one or fill in the [Meaning column](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import#meanings).
@@ -76,7 +77,7 @@ Click a base's name or its pencil to edit it. The bin removes a base of yours th
 
 ### The Namesbase Editor
 
-The editor shows one base. A built-in base opens locked: _Edit a copy_ makes a base of your own from it, _Edit anyway_ unlocks it. At the top, rename it and choose a base it **extends**: that base's lexicon, patterns and people stand in where this one has none. The **description** says where the base's data comes from and the idea behind it.
+The editor shows one base. A built-in base opens locked: _Edit a copy_ makes a base of your own from it, _Edit anyway_ unlocks it. At the top, rename it and choose a base it **extends**: that base's lexicon, patterns, people and rules stand in where this one has none. Rules are taken by kind: a base that writes no join rules of its own joins parts as the base it extends does, though it keeps its own doubled letters. The **description** says where the base's data comes from and the idea behind it.
 
 On the right are **Examples**, names the base makes: burgs and lands with their meanings, waters, people and names without meaning. They stay the same while you edit, so you see at once what a change does to them. The arrows beside the heading show others.
 
@@ -89,7 +90,7 @@ Each tab is one part of the base:
   - Each list is either _Generated_, new names like the listed ones, or _Picked_, the listed names as they are.
 - **Lexicon**: how the base says each concept: `town`, `ford`, `new`, `black` and so on, with an example name of each. A concept left empty takes an inherited or a generated form, shown in grey. Search by a concept or a form, or show only the concepts of a kind, written or not written.
 - **Patterns**: how often the base coins each kind of name, and how the parts are laid out, with an example of each. Below are the length of names to aim for and the shares of names that end in the burg's group and of founders who are women.
-- **Rules**: sound changes that make joined parts read naturally and bring foreign names into the language, and the grammar: noun classes, the endings that agree with them, and the rules that make a word's other forms. **Doubled letters** lists the letters that may stand twice in a row, as in Kalla.
+- **Rules**: sound changes that make joined parts read naturally and bring foreign names into the language, and the grammar: noun classes, the endings that agree with them, and the rules that make a word's other forms. **Doubled letters** lists the letters that may stand twice in a row, as in Kalla. **Joining words** stay lowercase between others, see [Patterns and templates](#patterns-and-templates).
 
 The buttons at the bottom analyze the place names (how many there are, how varied, how long, which endings they share), duplicate the base, download it, and restore a built-in base you have changed.
 
@@ -290,7 +291,7 @@ owner-generic:     {root}{generic} 20, {root}ov* {generic} 2, {root}-{generic}
 
 A dash or a space in a template starts a new word. Only a word written with a dash may follow one, so `{root}-{generic}` gives David-Gorodok but never David-Stan.
 
-Every word of a name starts with a capital but the joining words between two others: of, the, de, del, della, di, da, do, du, des, la, le, les, sur, sous, en, am, der, ad, the Persian ezafe e and ye, the Swahili wa, ya and cha, the Hindustani ka and ki, and a few more. So `{generic}-sur-{root}` gives Pont-sur-Moselle and `{generic} de {root}` gives Puebla de Sanabria. After d', l', n' or dell' the next letter is a capital, as in Tizi n'Test: a rule that writes `di` as `d'` before a vowel gives Castel d'Ofanto.
+Every word of a name starts with a capital but the base's **joining words** between two others, set on the Rules tab, commas between: French `de, en, la, d', -sur-`, Persian `e, ye`, Swahili `wa, ya, cha`. A word written between dashes, `-sur-`, joins only between dashes, so Pont-sur-Moselle but Al Sur Al Kabir. One written with an apostrophe, `d'`, is cut short before the next word, which takes the capital: Pont-d'Ain, Tizi n'Test; a rule that writes `di` as `d'` before a vowel gives Castel d'Ofanto. So `{generic}-sur-{root}` gives Pont-sur-Moselle and `{generic} de {root}` gives Puebla de Sanabria. A base with no joining words of its own takes those of the base it extends. A name taken over from another base keeps its joining words lowercase too.
 
 The `compound` pattern has a third slot, `{settlement}`, after a describing word and a landform: `{modifier}{generic}{settlement}` gives Krasnogorsk, and `{modifier}{generic} {settlement}` gives Deepwood Keep. A template may leave a slot out: `{modifier}{generic}` alone gives Redhill.
 
@@ -321,6 +322,8 @@ e\+(?=[aeiou]) => + | 50%
 - `50%`: applies to that share of names, always the same ones
 
 The **Try a name** box on the tab shows what the rules make of a name.
+
+Two join rules are shared by all bases and run after a base's own: where a part ending in a vowel meets a short ending that starts with one, the ending takes the place of the vowels (Giuseppe and -ano give Giuseppano), and two letters of a kind that meet become one (Ethel and -ley give Etheley). A base that wants neither writes a join rule that takes the `+` away first: `([aeiou])\+(?=[aeiou]) => $1 | join` lets vowels meet as they are, `([dn])\+\1 => $1$1 | join` keeps the d of Reddean.
 
 ### Checking the result
 

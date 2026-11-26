@@ -3,6 +3,9 @@ export type SiteTag =
   | "big"
   | "small"
   | "capital"
+  | "citadel"
+  | "walls"
+  | "temple"
   | "port"
   | "coast"
   | "island"
@@ -28,6 +31,10 @@ export type SiteTag =
 interface ConceptData {
   fits?: SiteTag[];
   weight?: number;
+  terrain?: true; // the lie of the land: what a name of three parts is built around, as in Red-hill-town
+  countable?: true; // there may be several of it in one place: Three Towers
+  water?: true; // what a water is, not what a burg stands by
+  implies?: string; // the describing word it says already: no Stone Rock
 }
 
 /** What a burg is by its size: never drawn, the burg's group says which */
@@ -43,58 +50,58 @@ const PLACES = {
   home: { weight: 6 },
   farm: { fits: ["small", "plain"], weight: 7 },
   hall: { weight: 4 },
-  field: { fits: ["plain"], weight: 8 },
-  wood: { fits: ["forest"], weight: 8 },
-  hill: { fits: ["hill"], weight: 9 },
-  ford: { fits: ["stream", "river"], weight: 9 },
-  fort: { fits: ["hill", "capital"], weight: 6 },
-  bridge: { fits: ["stream", "river"], weight: 8 },
+  field: { fits: ["plain"], weight: 8, terrain: true },
+  wood: { fits: ["forest"], weight: 8, terrain: true },
+  hill: { fits: ["hill"], weight: 9, terrain: true, countable: true },
+  ford: { fits: ["stream", "river"], weight: 9, terrain: true, countable: true },
+  fort: { fits: ["citadel", "hill"], weight: 6 },
+  bridge: { fits: ["stream", "river"], weight: 8, countable: true },
   harbour: { fits: ["port"], weight: 5 },
-  valley: { fits: ["stream", "hill"], weight: 6 },
+  valley: { fits: ["stream", "hill"], weight: 6, terrain: true },
   market: { fits: ["big"], weight: 5 },
-  castle: { fits: ["capital", "hill"], weight: 5 },
+  castle: { fits: ["citadel", "hill"], weight: 5 },
   mouth: { fits: ["mouth"], weight: 6 },
-  mount: { fits: ["mountain"], weight: 6 },
-  shore: { fits: ["coast"], weight: 4 },
-  island: { fits: ["island"], weight: 6 },
-  lake: { fits: ["lake"], weight: 6 },
+  mount: { fits: ["mountain"], weight: 6, terrain: true, countable: true },
+  shore: { fits: ["coast"], weight: 4, terrain: true },
+  island: { fits: ["island"], weight: 6, terrain: true, countable: true },
+  lake: { fits: ["lake"], weight: 6, terrain: true, countable: true },
   haven: { fits: ["port"], weight: 4 },
-  marsh: { fits: ["marsh"], weight: 5 },
-  spring: { fits: ["stream", "hill"], weight: 6 },
-  meadow: { fits: ["plain"], weight: 7 },
-  grove: { fits: ["forest"], weight: 5 },
-  bank: { fits: ["stream", "river"], weight: 4 },
-  mill: { fits: ["stream"], weight: 6 },
-  bay: { fits: ["coast"], weight: 5 },
-  cape: { fits: ["coast"], weight: 4 },
-  cliff: { fits: ["coast", "mountain"], weight: 4 },
-  tower: { fits: ["hill", "coast"], weight: 4 },
-  ridge: { fits: ["mountain", "hill"], weight: 5 },
-  pass: { fits: ["mountain"], weight: 4 },
-  heath: { fits: ["plain", "cold"], weight: 5 },
-  pool: { fits: ["lake", "marsh"], weight: 5 },
-  well: { fits: ["desert", "nomadic"], weight: 5 },
+  marsh: { fits: ["marsh"], weight: 5, terrain: true, implies: "wet" },
+  spring: { fits: ["stream", "hill"], weight: 6, terrain: true, countable: true },
+  meadow: { fits: ["plain"], weight: 7, terrain: true },
+  grove: { fits: ["forest"], weight: 5, terrain: true, countable: true },
+  bank: { fits: ["stream", "river"], weight: 4, terrain: true },
+  mill: { fits: ["stream"], weight: 6, countable: true },
+  bay: { fits: ["coast"], weight: 5, terrain: true },
+  cape: { fits: ["coast"], weight: 4, terrain: true },
+  cliff: { fits: ["coast", "mountain"], weight: 4, terrain: true, countable: true },
+  tower: { fits: ["hill", "coast"], weight: 4, countable: true },
+  ridge: { fits: ["mountain", "hill"], weight: 5, terrain: true },
+  pass: { fits: ["mountain"], weight: 4, terrain: true },
+  heath: { fits: ["plain", "cold"], weight: 5, terrain: true },
+  pool: { fits: ["lake", "marsh"], weight: 5, terrain: true, countable: true },
+  well: { fits: ["desert", "nomadic"], weight: 5, countable: true },
   camp: { fits: ["nomadic", "desert"], weight: 4 },
   mine: { fits: ["ore"], weight: 4 },
-  quarry: { fits: ["ore", "mountain"], weight: 3 },
-  temple: { fits: ["capital", "big"], weight: 3 },
+  quarry: { fits: ["ore", "mountain"], weight: 3, implies: "stone" },
+  temple: { fits: ["temple"], weight: 3 },
   abbey: { weight: 4 },
-  river: { fits: ["river"], weight: 5 },
-  brook: { fits: ["stream"], weight: 6 },
-  water: { fits: ["river", "stream", "lake"], weight: 5 },
-  keep: { fits: ["capital", "hill"], weight: 3 },
+  river: { fits: ["river"], weight: 5, water: true },
+  brook: { fits: ["stream"], weight: 6, water: true },
+  water: { fits: ["river", "stream", "lake"], weight: 5, water: true },
+  keep: { fits: ["citadel", "hill"], weight: 3 },
   hold: { fits: ["hill", "mountain"], weight: 3 },
   watch: { fits: ["hill", "coast", "mountain"], weight: 3 },
   rest: { weight: 2 },
   end: { fits: ["coast", "mountain"], weight: 3 },
   landing: { fits: ["port", "river"], weight: 3 },
   gate: { fits: ["mountain", "hill"], weight: 4 },
-  wall: { fits: ["capital", "big"], weight: 3 },
-  rock: { fits: ["coast", "hill", "mountain"], weight: 5 },
-  crag: { fits: ["mountain", "coast"], weight: 4 },
-  fell: { fits: ["mountain", "hill", "cold"], weight: 4 },
-  run: { fits: ["stream", "river"], weight: 3 },
-  falls: { fits: ["stream", "river"], weight: 4 },
+  wall: { fits: ["walls"], weight: 3 },
+  rock: { fits: ["coast", "hill", "mountain"], weight: 5, terrain: true, countable: true, implies: "stone" },
+  crag: { fits: ["mountain", "coast"], weight: 4, terrain: true, countable: true, implies: "stone" },
+  fell: { fits: ["mountain", "hill", "cold"], weight: 4, terrain: true },
+  run: { fits: ["stream", "river"], weight: 3, water: true },
+  falls: { fits: ["stream", "river"], weight: 4, terrain: true, countable: true },
   garden: { fits: ["plain"], weight: 3 },
   hedge: { fits: ["plain"], weight: 2 },
   den: { fits: ["forest", "hill"], weight: 3 },
@@ -103,38 +110,38 @@ const PLACES = {
   hearth: { fits: ["cold"], weight: 2 },
   court: { fits: ["capital", "big"], weight: 3 },
   seat: { fits: ["capital", "hill"], weight: 2 },
-  tooth: { fits: ["mountain"], weight: 1 },
-  horn: { fits: ["mountain", "coast"], weight: 3 },
+  tooth: { fits: ["mountain"], weight: 1, countable: true },
+  horn: { fits: ["mountain", "coast"], weight: 3, countable: true },
   spear: { fits: ["coast", "mountain"], weight: 1 },
   shield: { weight: 1 },
   heart: { weight: 1 },
-  eye: { fits: ["lake"], weight: 1 },
+  eye: { fits: ["lake"], weight: 1, water: true },
   hand: { weight: 1 },
-  finger: { fits: ["coast"], weight: 1 },
+  finger: { fits: ["coast"], weight: 1, countable: true },
   claw: { fits: ["coast"], weight: 1 },
   head: { fits: ["coast", "hill"], weight: 4 },
   point: { fits: ["coast"], weight: 4 },
   reef: { fits: ["coast"], weight: 3 },
-  sands: { fits: ["desert", "coast"], weight: 4 },
-  dune: { fits: ["desert", "coast"], weight: 3 },
-  waste: { fits: ["desert", "cold"], weight: 3 },
-  fen: { fits: ["marsh"], weight: 4 },
-  glade: { fits: ["forest"], weight: 4 },
-  glen: { fits: ["hill", "stream"], weight: 4 },
-  hollow: { fits: ["forest", "hill"], weight: 4 },
-  gorge: { fits: ["mountain", "stream"], weight: 3 },
-  peak: { fits: ["mountain"], weight: 4 },
-  spire: { fits: ["mountain"], weight: 2 },
-  cave: { fits: ["mountain", "hill"], weight: 3 },
+  sands: { fits: ["desert", "coast"], weight: 4, terrain: true, implies: "sand" },
+  dune: { fits: ["desert", "coast"], weight: 3, terrain: true, implies: "sand" },
+  waste: { fits: ["desert", "cold"], weight: 3, terrain: true },
+  fen: { fits: ["marsh"], weight: 4, terrain: true, implies: "wet" },
+  glade: { fits: ["forest"], weight: 4, terrain: true },
+  glen: { fits: ["hill", "stream"], weight: 4, terrain: true },
+  hollow: { fits: ["forest", "hill"], weight: 4, terrain: true },
+  gorge: { fits: ["mountain", "stream"], weight: 3, terrain: true },
+  peak: { fits: ["mountain"], weight: 4, terrain: true, countable: true },
+  spire: { fits: ["mountain"], weight: 2, countable: true },
+  cave: { fits: ["mountain", "hill"], weight: 3, terrain: true, countable: true },
   forge: { fits: ["ore"], weight: 3 },
-  barrow: { fits: ["plain", "hill"], weight: 3 },
+  barrow: { fits: ["plain", "hill"], weight: 3, terrain: true, countable: true },
   grave: { weight: 1 },
   shrine: { weight: 3 },
   hermitage: { fits: ["forest", "mountain"], weight: 2 },
   crossing: { fits: ["river", "stream"], weight: 4 },
   ferry: { fits: ["river"], weight: 4 },
-  fork: { fits: ["mouth"], weight: 3 },
-  bend: { fits: ["river"], weight: 4 },
+  fork: { fits: ["mouth"], weight: 3, countable: true },
+  bend: { fits: ["river"], weight: 4, terrain: true },
   beacon: { fits: ["coast", "hill"], weight: 3 },
   square: { fits: ["big"], weight: 2 },
   inn: { weight: 2 },
@@ -143,8 +150,8 @@ const PLACES = {
   pasture: { fits: ["plain", "hill"], weight: 4 },
   lodge: { fits: ["forest"], weight: 3 },
   table: { fits: ["plain", "hill"], weight: 1 },
-  tarn: { fits: ["mountain", "lake"], weight: 3 },
-  tree: { fits: ["forest"], weight: 3 },
+  tarn: { fits: ["mountain", "lake"], weight: 3, water: true },
+  tree: { fits: ["forest"], weight: 3, countable: true },
   way: { weight: 3 },
   dike: { fits: ["coast", "marsh", "plain"], weight: 3 },
   song: { weight: 1 },
@@ -520,7 +527,24 @@ export function settlementOf(group?: { name: string; min?: number; max?: number;
   return group.min !== undefined && group.min >= 10 ? "city" : "town";
 }
 
-export const weightOf = (concept: Concept): number => (CONCEPTS[concept] as ConceptData).weight ?? 0;
+const dataOf = (concept: Concept): ConceptData => CONCEPTS[concept];
+
+export const weightOf = (concept: Concept): number => dataOf(concept).weight ?? 0;
 
 /** The site tags a concept asks for; none when it fits anywhere */
-export const fitsOf = (concept: Concept): SiteTag[] | undefined => (CONCEPTS[concept] as ConceptData).fits;
+export const fitsOf = (concept: Concept): SiteTag[] | undefined => dataOf(concept).fits;
+
+export const isTerrain = (concept: Concept): boolean => Boolean(dataOf(concept).terrain);
+export const isCountable = (concept: Concept): boolean => Boolean(dataOf(concept).countable);
+export const isWater = (concept: Concept): boolean => Boolean(dataOf(concept).water);
+
+/** The describing word a concept says already */
+export const impliedBy = (concept: Concept): Concept | undefined => dataOf(concept).implies as Concept | undefined;
+
+/** What tells one of two neighbours from the other: a neighbour told apart by one of a group is told by no other of it */
+export const OPPOSITES: Concept[][] = [
+  ["north", "south", "east", "west"],
+  ["upper", "lower", "middle", "high", "low"],
+  ["new", "old"],
+  ["little", "great"]
+];

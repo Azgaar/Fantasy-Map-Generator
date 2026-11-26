@@ -3,6 +3,7 @@ import type { WrittenNameBase } from "@/types/names";
 export const dovahzul: WrittenNameBase = {
   description: "The dragon language of The Elder Scrolls, extended in its style",
   length: [5, 14],
+  joining: ["do"], // stay lowercase between other words
 
   places: {
     names: [

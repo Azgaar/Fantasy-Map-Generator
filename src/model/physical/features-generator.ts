@@ -7,7 +7,7 @@ import { clipPoly } from "@/utils/common-utils";
 import { isLand, isWater } from "@/utils/height-utils";
 import { distanceSquared, rn } from "@/utils/number-utils";
 import { connectVertices } from "@/utils/path-utils";
-import { P, ra, seeded } from "@/utils/probability-utils";
+import { P, ra } from "@/utils/probability-utils";
 import { requireName, requireOneOf } from "@/utils/validation-utils";
 import { Coastline, type CoastlineSettings } from "./coastline-generator";
 import { Lakes } from "./lakes";
@@ -340,11 +340,6 @@ class FeatureModule {
     feature.meaning = meaning;
   }
 
-  /** Set what an island's or a lake's name says, or clear it; the name itself stays as it is */
-  setMeaning(featureId: number, meaning?: Meaning): void {
-    this.living(featureId).meaning = meaning;
-  }
-
   /** Set a feature's subtype within its type: a lake's freshwater, salt, dry…, an island's continent, island or isle, an ocean's ocean, sea or gulf. Generators read it on their next run */
   setSubtype(featureId: number, subtype: string): void {
     const feature = this.living(featureId);
@@ -455,7 +450,7 @@ class FeatureModule {
       else
         Object.assign(
           feature,
-          seeded(`${options.map.seed}|${type}|${i}`, () => Toponyms[type](feature))
+          Toponyms.drawFor(type, i, () => Toponyms[type](feature))
         );
     }
   }

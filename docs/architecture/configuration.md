@@ -155,7 +155,7 @@ defaults.
 
 `nameBases` holds only the bases the user added or edited, each in full. The built-in ones come with the app and are
 never stored: they are large, and a stored copy would miss what later releases add to them. A base under the id of a
-built-in one stands in its place; `Names.nameBases` gives the whole list. Files before v1.160.0 keep bases in record 31,
+built-in one stands in its place; `NameBases.all` gives the whole list. Files before v1.160.0 keep bases in record 31,
 which the migration moves here.
 
 ### Locks

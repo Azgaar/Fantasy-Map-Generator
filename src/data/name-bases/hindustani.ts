@@ -3,6 +3,7 @@ import type { WrittenNameBase } from "@/types/names";
 export const hindustani: WrittenNameBase = {
   description: "Places of northern India, in Hindi and Urdu words",
   length: [4, 13],
+  joining: ["ka", "ki", "ke"], // stay lowercase between other words
   places: {
     length: [5, 10],
     names: [

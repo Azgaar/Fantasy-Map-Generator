@@ -10,7 +10,7 @@ import { GenerationPipeline } from "@/model/generation-pipeline";
 import { Icons } from "@/model/icons";
 import { mapHistory, registerMap } from "@/model/map-history";
 import { Options } from "@/model/options/options-model";
-import { Names } from "@/model/society/names/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Hatches } from "@/renderers/hatches";
 import { Layers } from "@/renderers/layers";
 import { undraw } from "@/renderers/undraw";
@@ -133,7 +133,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
 
   Dialog.closeAll("#worldConfigurator, #options3d", { minimized: true });
   options.app.mode = null;
-  await Names.loadAll(); // loading amid the generation would paint an empty map
+  await NameBases.loadAll(); // loading amid the generation would paint an empty map
   resetZoom(1000);
   undraw();
   await generate(typeof config === "string" ? undefined : config);

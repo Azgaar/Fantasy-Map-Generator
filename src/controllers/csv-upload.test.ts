@@ -9,7 +9,7 @@ vi.mock("@/ui/dialog/dialog", async importOriginal => {
   return { Dialog: Object.assign(Dialog, { confirm: vi.fn(), message: vi.fn() }) };
 });
 
-type Meant = { i: number; name: string; meaning?: Meaning };
+type Meant = { i: number; name: string; meaning?: Meaning; culture?: number };
 type Entity = { i: number; name: string; tags: string; people: [number, number] };
 const COLUMNS = ["Id", "Name", "Tags", "Total Population", "Rural Population", "Urban Population"];
 const items = () => (globalThis.pack as unknown as { items: Entity[] }).items;
@@ -103,16 +103,12 @@ describe("CsvUpload.update", () => {
 
   it("takes a new meaning with a name, and clears the old one of a name that comes with none", async () => {
     const meaning: Meaning = { pattern: "feature", tokens: ["ford"], origin: "english" };
-    const named = ["A", "B", "C", "D", "E"].map((name, i): Meant => ({ i, name, meaning }));
-    globalThis.pack = { items: named, cultures: [{ base: "german" }] } as unknown as typeof pack;
-    const list = () => (globalThis.pack as unknown as { items: Meant[] }).items;
-    const model = {
-      rename: (id: number, name: string) => void Object.assign(list()[id], { name, meaning: undefined }),
-      setMeaning: (id: number, meaning?: Meaning) => void Object.assign(list()[id], { meaning })
-    };
-    const text = "Id,Name,Meaning\n0,Z,feature: hill\n1,Y,feature: ford\n2,C,feature: hill\n3,D,\n4,X,nonsense";
-    const done = CsvUpload.update(text, ["Id", "Name", "Meaning"], { find: id => list()[id] }, (id, row) =>
-      row.named("Name", list()[id], 0, model)
+    const named = ["A", "B", "C", "D", "E"].map((name, i): Meant => ({ i: i + 1, name, meaning, culture: 0 }));
+    globalThis.pack = { burgs: [{ i: 0 }, ...named], cultures: [{ base: "german" }] } as unknown as typeof pack;
+    const list = () => (globalThis.pack as unknown as { burgs: Meant[] }).burgs.slice(1);
+    const text = "Id,Name,Meaning\n1,Z,feature: hill\n2,Y,feature: ford\n3,C,feature: hill\n4,D,\n5,X,nonsense";
+    const done = CsvUpload.update(text, ["Id", "Name", "Meaning"], { find: id => list()[id - 1] }, (id, row) =>
+      row.named("Name", "burg", list()[id - 1])
     );
     expect(dialog().message).toContain("Values that will not be applied: 1");
     dialog().onConfirm!();

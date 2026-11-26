@@ -3,6 +3,7 @@ import type { WrittenNameBase } from "@/types/names";
 export const french: WrittenNameBase = {
   description: "Places of France, mostly the Loire valley",
   length: [5, 13],
+  joining: ["de", "du", "des", "la", "le", "les", "en", "d'", "l'", "-sur-", "-sous-", "-lès-"], // stay lowercase between other words
 
   places: {
     names: [

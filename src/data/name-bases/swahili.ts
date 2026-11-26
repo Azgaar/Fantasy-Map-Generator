@@ -3,6 +3,7 @@ import type { WrittenNameBase } from "@/types/names";
 export const swahili: WrittenNameBase = {
   description: "Places of the East African coast",
   length: [4, 11],
+  joining: ["wa", "ya", "la", "cha", "vya", "za", "kwa"], // stay lowercase between other words
 
   places: {
     length: [4, 9],

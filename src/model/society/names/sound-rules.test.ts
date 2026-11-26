@@ -12,21 +12,22 @@ const base = (rules?: NameBase["rules"]): NameBase => ({
 
 describe("SoundRules.apply", () => {
   it("applies the shared rules inside a word only", () => {
-    expect(SoundRules.apply("baeae")).toBe("bee");
-    expect(SoundRules.apply("aelia-aeg aeb")).toBe("aelia-aeg aeb");
+    expect(SoundRules.apply("caemorum")).toBe("caemorum"); // a base whose names write ae keeps it
     expect(SoundRules.apply("alllo")).toBe("allo");
     expect(SoundRules.apply("llllo")).toBe("lllo"); // a word-initial letter is kept, as the generator always did
     expect(SoundRules.apply("saint- -omer")).toBe("saint--omer");
   });
 
-  it("capitalizes every word but the joining words between them", () => {
-    expect(SoundRules.capitalize("saint-germain-en-laye")).toBe("Saint-Germain-en-Laye");
-    expect(SoundRules.capitalize("puebla de sanabria")).toBe("Puebla de Sanabria");
-    expect(SoundRules.capitalize("la roche-sur-yon")).toBe("La Roche-sur-Yon");
-    expect(SoundRules.capitalize("pont-d'ain")).toBe("Pont-d'Ain");
-    expect(SoundRules.capitalize("castel de")).toBe("Castel De"); // the last word is a name's own
-    expect(SoundRules.capitalize("pont-sur-moselle")).toBe("Pont-sur-Moselle");
-    expect(SoundRules.capitalize("al sur al kabir")).toBe("Al Sur Al Kabir"); // a wall, not the French word
+  it("capitalizes every word but a base's joining words between them", () => {
+    const french = ["de", "en", "la", "d'", "-sur-"];
+    expect(SoundRules.capitalize("saint-germain-en-laye", french)).toBe("Saint-Germain-en-Laye");
+    expect(SoundRules.capitalize("puebla de sanabria", french)).toBe("Puebla de Sanabria");
+    expect(SoundRules.capitalize("la roche-sur-yon", french)).toBe("La Roche-sur-Yon");
+    expect(SoundRules.capitalize("pont-d'ain", french)).toBe("Pont-d'Ain");
+    expect(SoundRules.capitalize("castel de", french)).toBe("Castel De"); // the last word is a name's own
+    expect(SoundRules.capitalize("al sur al kabir", french)).toBe("Al Sur Al Kabir"); // a wall, not the French word
+    expect(SoundRules.capitalize("puebla de sanabria")).toBe("Puebla De Sanabria"); // a base with none
+    expect(SoundRules.capitalize("bac la lac", ["de"])).toBe("Bac La Lac");
   });
 
   it("keeps the written words of a name made of parts as they are spelled", () => {
@@ -34,7 +35,7 @@ describe("SoundRules.apply", () => {
   });
 
   it("runs a base's rules before the shared ones", () => {
-    expect(SoundRules.apply("baae", [SoundRules.doublesRule()])).toBe("be");
+    expect(SoundRules.apply("axa", [{ match: "x", replace: "lll" }])).toBe("alla"); // the shared rule sees the base's triple
   });
 
   it("skips a rule that is no valid regex", () => {
@@ -49,6 +50,18 @@ describe("a name made of parts", () => {
     expect(SoundRules.join("io+ia")).toBe("ioia"); // but never the whole part
     expect(SoundRules.join("free+island")).toBe("freeisland");
     expect(SoundRules.join("hal+land")).toBe("haland");
+    expect(SoundRules.join("naga+ya")).toBe("nagaya"); // a y before a vowel is a consonant
+  });
+
+  it("leaves a join alone where a base's own join rule has taken it", () => {
+    const rules: SoundRule[] = [
+      { match: "([aeiou])\\+(?=[aeiou])", replace: "$1", at: "join" }, // vowels meet as they are
+      { match: "([dn])\\+\\1", replace: "$1$1", at: "join" } // and doubled letters stay
+    ];
+    expect(SoundRules.join("kona+ola", rules)).toBe("konaola");
+    expect(SoundRules.join("kona+ola")).toBe("konola");
+    expect(SoundRules.join("red+dean", rules)).toBe("reddean");
+    expect(SoundRules.join("red+dean")).toBe("redean");
   });
 
   it("runs the rules a base set at the join, and leaves its word rules to words", () => {

@@ -3,6 +3,7 @@ import type { WrittenNameBase } from "@/types/names";
 export const castillian: WrittenNameBase = {
   description: "Places of Castile, around Toledo and Guadalajara",
   length: [5, 11],
+  joining: ["de", "del", "la", "las", "los", "en"], // stay lowercase between other words
 
   places: {
     names: [

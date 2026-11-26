@@ -68,12 +68,13 @@ export interface NameBase {
   id: string; // stable slug, what a culture stores as its base
   name: string;
   description?: string; // where its data comes from and the idea behind it
-  extends?: string; // the base whose lexicon and patterns stand in where this one has none
+  extends?: string; // the base whose lexicon, patterns, grammar, people, waters and rules stand in where this one has none
   length: [min: number, max: number]; // of a name, generated or made of parts
   places: Corpus; // the place names a Markov chain is built from; burgs take them as they are in pick mode; its own length, if any, is for generated names
   waters?: Corpus; // river and lake names, a chain of their own; place names stand in when absent
   people?: { male?: Corpus; female?: Corpus }; // personal names: the founders places are named after
   rules?: readonly SoundRule[]; // applied in order, before the shared ones
+  joining?: readonly string[]; // lowercase between other words: de, -sur- (dashes only), d' (cut short)
   grammar?: Grammar;
   lexicon?: Readonly<Partial<Record<Concept, readonly Formant[]>>>;
   patterns?: Readonly<Partial<Record<Pattern, PatternLayout>>>;
@@ -107,6 +108,15 @@ export type ShippedNameBase = WrittenNameBase & Pick<NameBase, "id" | "name">;
 /** A concept, or a proper root with no concept behind it, marked with `~` */
 export type Token = Concept | `~${string}`;
 
+/** The places of the map that keep what their names say */
+export type PlaceType = "burg" | "state" | "province" | "river" | "feature";
+
+/** A place of the map by its kind and id */
+export interface PlaceRef {
+  type: PlaceType;
+  id: number;
+}
+
 /** What a name says, apart from any language */
 export interface Meaning {
   pattern: Pattern;
@@ -114,6 +124,7 @@ export interface Meaning {
   origin: string; // id of the name base it was coined in
   salt?: number; // re-rolls the choice between a concept's forms
   own?: string; // the name before another people respelled it
+  after?: PlaceRef; // the place whose name its root is: the river, lake or burg a burg is named by, a colony's land
 }
 
 /** A name and what it says */

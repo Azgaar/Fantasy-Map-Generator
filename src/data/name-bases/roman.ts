@@ -3,6 +3,7 @@ import type { WrittenNameBase } from "@/types/names";
 export const roman: WrittenNameBase = {
   description: "Towns and forts of the Roman Empire, in Latin",
   length: [6, 11],
+  joining: ["ad", "sub"], // stay lowercase between other words
 
   places: {
     names: [

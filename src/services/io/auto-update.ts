@@ -34,6 +34,7 @@ import { noFinance, type State, type StateFinance, States } from "@/model/politi
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Names } from "@/model/society/names/names-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { getDefaultMarkerName, type Marker, Markers } from "@/model/story/markers-generator";
@@ -2353,18 +2354,18 @@ export async function migrateLegacyNameBases(data: string[]): Promise<void> {
   const stored = data[31] ? data[31].split("/").map(base => base.split("|")) : [];
   const ids = stored.map(([name, min, max, doubled, , names = ""], index) => {
     if (names.split(",").length <= 2 && legacy[index]) return legacy[index];
-    const id = Names.uniqueId(
+    const id = NameBases.uniqueId(
       name,
       taken.filter(id => id !== legacy[index]) // a shipped base edited in its place
     );
     taken.push(id);
-    Names.add(Names.composeBase(id, name, [+min, +max], names ? names.split(",") : [], doubled));
+    NameBases.add(NameBases.compose(id, name, [+min, +max], names ? names.split(",") : [], doubled));
     return id;
   });
 
   for (const culture of (pack.cultures ?? []) as { base: string | number }[])
     if (typeof culture?.base === "number") culture.base = (data[31] ? ids : legacy)[culture.base] ?? legacy[0];
-  await Names.loadUsed();
+  await NameBases.loadUsed();
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {

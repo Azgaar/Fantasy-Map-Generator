@@ -3,6 +3,7 @@ import type { WrittenNameBase } from "@/types/names";
 export const english: WrittenNameBase = {
   description: "Places of England after medieval counts, with a touch of fantasy endings",
   length: [5, 12],
+  joining: ["of", "the", "upon"], // stay lowercase between other words
   settled: 0.65,
 
   places: {

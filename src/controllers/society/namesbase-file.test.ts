@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, it } from "vitest";
-import { Names } from "@/model/society/names/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Dialog } from "@/ui/dialog/dialog";
 import { DIALOGS_MARKUP } from "@/ui/dialog/dialog-testing";
 import { NamesbaseFile } from "./namesbase-file";
@@ -12,14 +12,14 @@ beforeEach(() => {
 });
 
 it("reads back what it writes, a list or a single base", () => {
-  const bases = [Names.composeBase("one", "One", [4, 8], names), Names.composeBase("two", "Two", [4, 8], names, "l")];
+  const bases = [NameBases.compose("one", "One", [4, 8], names), NameBases.compose("two", "Two", [4, 8], names, "l")];
   expect(NamesbaseFile.parse(NamesbaseFile.format(bases))).toEqual(bases);
   expect(NamesbaseFile.parse(JSON.stringify(bases[0]))).toEqual([bases[0]]);
 });
 
 it("reads every shipped base back as it is", async () => {
-  await Names.loadAll();
-  expect(NamesbaseFile.parse(NamesbaseFile.format(Names.loaded()))).toEqual(Names.loaded());
+  await NameBases.loadAll();
+  expect(NamesbaseFile.parse(NamesbaseFile.format(NameBases.loaded()))).toEqual(NameBases.loaded());
 });
 
 it("reads an older file a line a base and tells which lines are broken", () => {
@@ -33,6 +33,6 @@ it("reads an older file a line a base and tells which lines are broken", () => {
 });
 
 it("gives a base whose id is taken an id of its own", () => {
-  const base = Names.composeBase("one", "One", [4, 8], names);
+  const base = NameBases.compose("one", "One", [4, 8], names);
   expect(NamesbaseFile.withOwnIds([base, base], ["one"]).map(({ id }) => id)).toEqual(["one-2", "one-3"]);
 });

@@ -26,7 +26,7 @@ import { States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
-import { Names } from "@/model/society/names/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Population } from "@/model/society/population-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
@@ -57,7 +57,7 @@ const generationPipelineSteps = [
   { id: "rankCells", run: () => Population.rankCells() },
   { id: "cultures", run: () => Cultures.generate() },
   { id: "culturesExpand", run: () => Cultures.expand() },
-  { id: "nameBases", run: () => Names.loadUsed() },
+  { id: "nameBases", run: () => NameBases.loadUsed() },
   { id: "cultureNames", run: () => Cultures.defineNames() },
   { id: "lore", run: () => Lore.generate() },
   { id: "riversSpecify", run: () => Rivers.specify() },
@@ -110,7 +110,7 @@ const erasePipelineSteps = [
   { id: "rankCells", run: () => Population.rankCells() },
   { id: "cultures", run: () => Cultures.generate() },
   { id: "culturesExpand", run: () => Cultures.expand() },
-  { id: "nameBases", run: () => Names.loadUsed() }, // before anything is named
+  { id: "nameBases", run: () => NameBases.loadUsed() }, // before anything is named
   { id: "cultureNames", run: () => Cultures.defineNames() },
   { id: "riversSpecify", run: () => Rivers.specify() }, // rivers and lakes are named first: burgs are named after them
   { id: "featureNames", run: () => Features.defineNames() },

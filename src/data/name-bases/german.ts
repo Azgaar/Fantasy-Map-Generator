@@ -3,6 +3,7 @@ import type { WrittenNameBase } from "@/types/names";
 export const german: WrittenNameBase = {
   description: "Places of Germany, mostly the Black Forest",
   length: [5, 12],
+  joining: ["am", "im", "an", "der", "zum", "zur"], // stay lowercase between other words
 
   places: {
     names: [

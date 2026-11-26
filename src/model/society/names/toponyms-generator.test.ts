@@ -4,16 +4,16 @@ import { PATTERNS } from "@/data/name-patterns";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Pattern } from "@/types/names";
 import { seeded } from "@/utils/probability-utils";
-import { Names } from "./names-generator";
+import { NameBases } from "./name-bases";
 import { type LandSize, Toponyms } from "./toponyms-generator";
 
 beforeAll(() => vi.stubGlobal("pack", { cultures: [] }));
-beforeAll(() => Names.load(["english", "german"]));
+beforeAll(() => NameBases.load(["english", "german"]));
 
 describe("Toponyms.sample", () => {
   it("makes a name of any pattern asked for", () => {
     for (const pattern of Object.keys(PATTERNS) as Pattern[]) {
-      const { name, meaning } = Toponyms.sample(Names.find("english")!, { pattern });
+      const { name, meaning } = Toponyms.sample(NameBases.find("english")!, { pattern });
       expect(meaning.pattern).toBe(pattern);
       expect(name.length, pattern).toBeGreaterThan(1);
     }
@@ -22,13 +22,13 @@ describe("Toponyms.sample", () => {
   it("says the concept asked for, whatever its kind", () => {
     for (const kind of ["settlement", "generic", "modifier", "numeral", "land"] as const) {
       const [concept] = conceptsOf(kind);
-      expect(Toponyms.sample(Names.find("english")!, { concept }).meaning.tokens).toContain(concept);
+      expect(Toponyms.sample(NameBases.find("english")!, { concept }).meaning.tokens).toContain(concept);
     }
   });
 
   it("counts what there may be several of, never a kind of settlement", () => {
     for (let i = 0; i < 20; i++) {
-      const [, generic] = Toponyms.sample(Names.find("english")!, { concept: "three" }).meaning.tokens;
+      const [, generic] = Toponyms.sample(NameBases.find("english")!, { concept: "three" }).meaning.tokens;
       expect(kindOf(generic as Concept)).toBe("generic");
     }
   });
@@ -56,7 +56,7 @@ describe("Toponyms.landOf", () => {
 
 describe("a base that picks its places", () => {
   const burg = { i: 1, cell: 0, culture: 1 } as Burg;
-  const base = () => Names.edit("english");
+  const base = () => NameBases.edit("english");
   const named = () => Toponyms.burg(burg, { burgs: [], baseId: "english", taken: new Set(["Alpha", "Beta"]) });
 
   afterEach(() => {
@@ -74,5 +74,16 @@ describe("a base that picks its places", () => {
   it("coins a name like the listed ones when all are taken", () => {
     base().places = { names: ["Alpha", "Beta"], mode: "pick" };
     expect(named().meaning.pattern).toBe("simplex");
+  });
+
+  it("coins one that is not taken either", () => {
+    const names = base().places.names.slice(0, 40);
+    base().places = { names, mode: "pick" };
+    const taken = new Set(names);
+    for (let i = 0; i < 20; i++) {
+      const { name } = seeded(`${i}`, () => Toponyms.burg(burg, { burgs: [], baseId: "english", taken }));
+      expect(taken.has(name)).toBe(false);
+      taken.add(name);
+    }
   });
 });

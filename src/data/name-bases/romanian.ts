@@ -3,6 +3,7 @@ import type { WrittenNameBase } from "@/types/names";
 export const romanian: WrittenNameBase = {
   description: "Places of Romania and Moldova",
   length: [4, 13],
+  joining: ["de"], // stay lowercase between other words
 
   places: {
     length: [5, 10],

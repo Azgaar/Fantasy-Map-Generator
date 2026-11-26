@@ -28,7 +28,7 @@ import { Military } from "@/model/political/military-generator";
 import { States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
-import { Names } from "@/model/society/names/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Population } from "@/model/society/population-generator";
 import { Religions } from "@/model/society/religions-generator";
 import type { LayerId } from "@/renderers/layers";
@@ -1028,7 +1028,7 @@ function regenerateReligions(): void {
 
 async function regenerateCultures(): Promise<void> {
   Cultures.regenerate();
-  await Names.loadUsed();
+  await NameBases.loadUsed();
   Cultures.defineNames();
   Layers.draw("cultures", "goods");
 }

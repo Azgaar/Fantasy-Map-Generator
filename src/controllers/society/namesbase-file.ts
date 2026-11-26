@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { NAME_BASE_SCHEMA } from "@/model/society/names/name-base-schema";
-import { Names } from "@/model/society/names/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import type { NameBase } from "@/types/names";
 import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
@@ -33,7 +33,7 @@ function parse(data: string): NameBase[] {
 function withOwnIds(bases: NameBase[], taken: string[]): NameBase[] {
   const ids = [...taken];
   return bases.map(base => {
-    const id = ids.includes(base.id) ? Names.uniqueId(base.name, ids) : base.id;
+    const id = ids.includes(base.id) ? NameBases.uniqueId(base.name, ids) : base.id;
     ids.push(id);
     return { ...base, id };
   });
@@ -43,8 +43,8 @@ function withOwnIds(bases: NameBase[], taken: string[]): NameBase[] {
 function withoutShipped(bases: NameBase[]): NameBase[] {
   const asFiled = (base: NameBase) => JSON.stringify(NAME_BASE_SCHEMA.parse(base)); // its fields in one order
   return bases.filter(base => {
-    const listed = Names.find(base.id);
-    return !listed || !Names.isShipped(listed) || asFiled(listed) !== asFiled(base);
+    const listed = NameBases.find(base.id);
+    return !listed || !NameBases.isShipped(listed) || asFiled(listed) !== asFiled(base);
   });
 }
 
@@ -68,9 +68,9 @@ function parseLegacy(data: string, errors: ParseError[]): NameBase[] {
       const [name, min, max, doubled, , names] = line.split("|");
       if (!name) throw new Error(t("Name is missing"));
       if (!names) throw new Error(t("Names are missing"));
-      const id = Names.uniqueId(name, ids);
+      const id = NameBases.uniqueId(name, ids);
       ids.push(id);
-      return Names.composeBase(id, name, [+min, +max], names.split(","), doubled);
+      return NameBases.compose(id, name, [+min, +max], names.split(","), doubled);
     } catch (e) {
       errors.push({ id: index + 1, line, error: (e as Error).message });
       log.error(e);

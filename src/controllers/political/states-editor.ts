@@ -1552,7 +1552,7 @@ async function uploadStatesCsv(text: string): Promise<void> {
           name => States.setCulture(id, Csv.byName(pack.cultures, name).i),
           pack.cultures[state.culture]?.name
         );
-        row.named("State", state, state.culture, States); // in the culture set above
+        row.named("State", "state", state); // in the culture set above
         row.apply("Form", form => States.setForm(id, form), state.formName);
         row.apply("Full Name", name => States.setFullName(id, name), fullName);
         row.apply("Color", color => States.recolor(id, color), state.color); // recolor rejects hatched fills, so keep them when unchanged

@@ -5,6 +5,7 @@ import { DEFAULT_DEVELOPMENT } from "@/data/development";
 import { Goods } from "@/model/economy/goods-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Emblems } from "@/model/political/emblems-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import type { Emblem } from "@/types/emblems";
 import type { PackedGraph } from "@/types/packed-graph";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -1081,7 +1082,7 @@ class CulturesGenerator {
 
     if (set === "random") {
       return range(count).map(() => {
-        const base = ra(Names.nameBases).id;
+        const base = ra(NameBases.all).id;
         return { name: "", base, odd: 1, shield: this.getRandomShield() }; // `defineNames` gives the name and development
       });
     }
@@ -1841,7 +1842,7 @@ class CulturesGenerator {
 
   /** Set the name base a culture takes its names from, by the base's id */
   setBase(cultureId: number, baseId: string): void {
-    if (!Names.has(baseId)) throw new Error(`Name base ${baseId} does not exist`);
+    if (!NameBases.has(baseId)) throw new Error(`Name base ${baseId} does not exist`);
     this.living(cultureId).base = baseId;
   }
 

@@ -803,11 +803,6 @@ class RiverModule {
     if (river.label?.text) river.label.text = replaceWholeWord(river.label.text, old, river.name) ?? river.label.text;
   }
 
-  /** Set what a river's name says, or clear it; the name itself stays as it is */
-  setMeaning(riverId: number, meaning?: Meaning): void {
-    this.living(riverId).meaning = meaning;
-  }
-
   /** Lock a river so regeneration keeps its course and data, or unlock it */
   setLocked(riverId: number, locked: boolean): void {
     const river = this.living(riverId);

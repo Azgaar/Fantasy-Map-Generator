@@ -3,7 +3,7 @@ import { effectAt } from "@/controllers/style/effects";
 import { Pack } from "@/model/graph/pack-generator";
 import { MapEntities } from "@/model/map-entities";
 import { Options } from "@/model/options/options-model";
-import { Names } from "@/model/society/names/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Styles } from "@/model/styles/styles";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { type LayerId, Layers } from "@/renderers/layers";
@@ -35,8 +35,8 @@ const ACTIONS: Record<Action, { from: Proposal["state"]; expects: Side; writes: 
 class ProposalLifecycle {
   /** Load what operations read from files, such as a style preset or a name base; call before `propose` */
   async prepare(operations: unknown): Promise<void> {
-    const named = Names.nameBases.map(({ id }) => id).filter(id => JSON.stringify(operations)?.includes(`"${id}"`));
-    await Promise.all([StylePresets.preload(operations), Names.load(named)]);
+    const named = NameBases.all.map(({ id }) => id).filter(id => JSON.stringify(operations)?.includes(`"${id}"`));
+    await Promise.all([StylePresets.preload(operations), NameBases.load(named)]);
   }
 
   /** Try the operations on a draft of the map and record what they change. The live map is never touched, and one
@@ -140,7 +140,7 @@ class ProposalLifecycle {
   }
 
   private refresh(change: Change): void {
-    void Names.loadUsed(); // a culture may have taken another base
+    void NameBases.loadUsed(); // a culture may have taken another base
     Layers.draw(...change.layers);
     this.refreshStyle(change.stylePaths);
     Pack.markChanged(); // the draft's edits forgot only the draft's numbers

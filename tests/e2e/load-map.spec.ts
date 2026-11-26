@@ -631,8 +631,8 @@ test.describe("Map loading", () => {
   test("loading a map should restore default namebases over the session's ones", async ({ page }) => {
     await waitForMap(page);
     await page.evaluate(() => {
-      const Names = (window as any).FMG.Names;
-      Names.replace([{ id: "german", name: "Custom", length: [4, 8], places: { names: ["Aaa", "Bbb", "Ccc"] } }]);
+      const { Names, NameBases } = (window as any).FMG;
+      NameBases.replace([{ id: "german", name: "Custom", length: [4, 8], places: { names: ["Aaa", "Bbb", "Ccc"] } }]);
       Names.getBase("german"); // caches the custom chain
     });
 
@@ -641,12 +641,12 @@ test.describe("Map loading", () => {
     await waitForNextMap(page, maps);
 
     const result = await page.evaluate(async () => {
-      const Names = (window as any).FMG.Names;
-      await Names.loadAll(); // a base the map's cultures do not use is listed by its id and name alone
+      const { Names, NameBases } = (window as any).FMG;
+      await NameBases.loadAll(); // a base the map's cultures do not use is listed by its id and name alone
       return {
         own: (window as any).FMG.options.map.nameBases,
-        unloaded: Names.nameBases.filter((base: any) => !base.places),
-        german: Names.find("german").places.names.length,
+        unloaded: NameBases.all.filter((base: any) => !base.places),
+        german: NameBases.find("german").places.names.length,
         name: Names.getBase("german")
       };
     });

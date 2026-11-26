@@ -3,6 +3,23 @@ import type { WrittenNameBase } from "@/types/names";
 export const italian: WrittenNameBase = {
   description: "Places of Italy, mostly Lazio",
   length: [5, 12],
+  joining: [
+    "di",
+    "del",
+    "della",
+    "delle",
+    "dei",
+    "degli",
+    "da",
+    "dal",
+    "d'",
+    "l'",
+    "dell'",
+    "nell'",
+    "sull'",
+    "dall'",
+    "all'"
+  ], // stay lowercase between other words
 
   places: {
     names: [

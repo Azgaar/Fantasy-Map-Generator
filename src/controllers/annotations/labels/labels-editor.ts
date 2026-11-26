@@ -1,6 +1,5 @@
 import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
 import { Controllers } from "@/controllers";
-import { NAMINGS } from "@/controllers/society/named-places";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import type { Label, LabelType } from "@/model/annotations/labels-generator";
 import { Labels } from "@/model/annotations/labels-generator";
@@ -9,6 +8,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { MapEntities } from "@/model/map-entities";
 import { Names } from "@/model/society/names/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { createLabelArc } from "@/renderers/labels/label-arc";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
@@ -410,10 +410,10 @@ function changeText(): void {
 
 // a new text for a label, in a name base
 const nameGenerators: Record<LabelType, (label: LabelData, baseId: string) => string> = {
-  burg: ({ entityId }, baseId) => NAMINGS.burg.proper(entityId, baseId),
-  state: ({ entityId }, baseId) => NAMINGS.state.proper(entityId, baseId),
-  province: ({ entityId }, baseId) => NAMINGS.province.proper(entityId, baseId),
-  river: ({ entityId }, baseId) => NAMINGS.river.proper(entityId, baseId),
+  burg: ({ entityId }, baseId) => Toponyms.properFor("burg", entityId, baseId),
+  state: ({ entityId }, baseId) => Toponyms.properFor("state", entityId, baseId),
+  province: ({ entityId }, baseId) => Toponyms.properFor("province", entityId, baseId),
+  river: ({ entityId }, baseId) => Toponyms.properFor("river", entityId, baseId),
   added: (_, baseId) => Names.getBase(baseId),
   route: label => {
     const points = pack.routes.find(route => route.i === label.entityId)?.points ?? [];

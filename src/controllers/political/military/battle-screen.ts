@@ -4,6 +4,7 @@ import { Icons } from "@/model/icons";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
 import { Stability } from "@/model/political/stability";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Names } from "@/model/society/names/names-generator";
 import type { Marker } from "@/model/story/markers-generator";
 import { moveRegiment } from "@/renderers/draw-military";
@@ -705,7 +706,7 @@ function generateBattleName(type: "culture" | "random"): void {
   const place =
     type === "culture"
       ? Names.getCulture(pack.cells.culture[b.cell], undefined, undefined, true)
-      : Names.getBase(Names.randomBase().id);
+      : Names.getBase(NameBases.random().id);
   b.place = place;
   ensureEl<HTMLInputElement>("battleNamePlace").value = place;
   b.name = defineBattleName();

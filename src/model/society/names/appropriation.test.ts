@@ -1,10 +1,10 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { Appropriation } from "./appropriation";
-import { Names } from "./names-generator";
+import { NameBases } from "./name-bases";
 
-beforeAll(() => Names.loadAll());
+beforeAll(() => NameBases.loadAll());
 
-const into = (id: string) => (name: string) => Appropriation.adapt(name, Names.find(id)!);
+const into = (id: string) => (name: string) => Appropriation.adapt(name, NameBases.find(id)!);
 
 describe("Appropriation.adapt", () => {
   it("bends a whole name, its ending with it, to the sounds of the base", () => {
@@ -24,7 +24,7 @@ describe("Appropriation.adapt", () => {
   });
 
   it("uses no letter the base never writes", () => {
-    for (const base of Names.loaded()) {
+    for (const base of NameBases.loaded()) {
       const { places, waters, people } = base;
       const corpora = [places, waters, people?.male, people?.female];
       const letters = new Set(
@@ -67,8 +67,8 @@ describe("Appropriation.adapt", () => {
 
   it("hears the people and waters of a base, its own or inherited, and measures an edited list anew", () => {
     options.map.nameBases = [];
-    const parent = Names.add(Names.composeBase("parent", "Parent", [3, 9], []));
-    const base = Names.add({ ...Names.composeBase("child", "Child", [3, 9], ["tana", "nata"]), extends: "parent" });
+    const parent = NameBases.add(NameBases.compose("parent", "Parent", [3, 9], []));
+    const base = NameBases.add({ ...NameBases.compose("child", "Child", [3, 9], ["tana", "nata"]), extends: "parent" });
     expect(Appropriation.adapt("tona", base)).toBe("tana"); // it writes no o
     const names = Array(200).fill("tona");
     parent.waters = { names };
@@ -81,7 +81,7 @@ describe("Appropriation.adapt", () => {
   });
 
   it("leaves a name alone in a base with no names to measure it by, or of another script", () => {
-    expect(Appropriation.adapt("frank", Names.composeBase("empty", "Empty", [3, 9], []))).toBe("frank");
-    expect(Appropriation.adapt("frank", Names.composeBase("other", "Other", [3, 9], ["Москва", "Киев"]))).toBe("frank");
+    expect(Appropriation.adapt("frank", NameBases.compose("empty", "Empty", [3, 9], []))).toBe("frank");
+    expect(Appropriation.adapt("frank", NameBases.compose("other", "Other", [3, 9], ["Москва", "Киев"]))).toBe("frank");
   });
 });

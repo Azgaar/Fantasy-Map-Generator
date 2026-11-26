@@ -1,4 +1,5 @@
 // Semantic names on real generated maps
+import { group } from "d3";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { conceptsOf, fitsOf, settlementOf } from "@/data/name-concepts";
 import { Goods } from "@/model/economy/goods-generator";
@@ -10,7 +11,7 @@ import { capitalize } from "@/utils/string-utils";
 import { generateMap, living } from "../../real-map.testing";
 import { Appropriation } from "./appropriation";
 import { Meanings } from "./meanings";
-import { Names } from "./names-generator";
+import { NameBases } from "./name-bases";
 import { Toponyms } from "./toponyms-generator";
 
 beforeAll(() => vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {}, removeItem: () => {} }));
@@ -29,7 +30,7 @@ it.each(["english", "random"])("names the cultures of a %s set once their bases 
   const cultures = living(pack.cultures);
   expect(cultures.every(({ name, development }) => name && name !== "ERROR" && development)).toBe(true);
   expect(new Set(cultures.map(({ code }) => code)).size).toBe(cultures.length);
-  expect(pack.cultures.every(({ base }) => Names.find(base))).toBe(true);
+  expect(pack.cultures.every(({ base }) => NameBases.find(base))).toBe(true);
 });
 
 describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => {
@@ -54,7 +55,8 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
 
   it("keeps names within what their base allows", () => {
     for (const { name, meaning } of living(pack.burgs)) {
-      if (meaning!.pattern !== "simplex") expect(Meanings.fits(name!, Names.find(meaning!.origin)!), name).toBe(true);
+      if (meaning!.pattern !== "simplex")
+        expect(Meanings.fits(name!, NameBases.find(meaning!.origin)!), name).toBe(true);
     }
   });
 
@@ -85,9 +87,21 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     const byWater = living(pack.burgs).filter(burg => burg.meaning!.pattern === "generic-of");
     expect(byWater.length).toBeGreaterThan(0);
     for (const { meaning, name } of byWater) {
-      const base = Names.find(meaning!.origin)!;
+      const base = NameBases.find(meaning!.origin)!;
       const spellings = waters.flatMap(water => [water, capitalize(Appropriation.adapt(water.toLowerCase(), base))]);
       expect(spellings, name).toContain(meaning!.tokens[1].slice(1));
+    }
+  });
+
+  it("keeps the place a burg is named after: the river, lake or burg its root names", () => {
+    const named = living(pack.burgs).filter(({ meaning }) => ["generic-of", "relative"].includes(meaning!.pattern));
+    expect(named.length).toBeGreaterThan(0);
+    for (const { meaning, name } of named) {
+      const { type, id } = meaning!.after!;
+      expect(type, name).toMatch(meaning!.pattern === "relative" ? /^burg$/ : /^(river|feature)$/);
+      const place = Toponyms.placeOf(type, id)!.name!;
+      const root = meaning!.tokens.find(token => token.startsWith("~"))!.slice(1);
+      expect([place, Appropriation.adopt(place, NameBases.find(meaning!.origin)!)], name).toContain(root);
     }
   });
 
@@ -95,7 +109,7 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     const founded = living(pack.burgs).filter(burg => burg.meaning!.pattern === "owner-generic");
     expect(founded.length).toBeGreaterThan(0);
     for (const { meaning, name } of founded) {
-      const { male, female } = Names.find(meaning!.origin)!.people!;
+      const { male, female } = NameBases.find(meaning!.origin)!.people!;
       if (male!.mode === "pick")
         expect([...male!.names, ...female!.names], name).toContain(meaning!.tokens[0].slice(1));
     }
@@ -117,12 +131,12 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
   });
 
   it("names a state after the river of its capital with no land word where the name is long already", async () => {
-    await Names.load(["dutch"]);
+    await NameBases.load(["dutch"]);
     const meaning: Meaning = { pattern: "generic-of", tokens: ["city", "~Platvliet"], origin: "dutch" };
     const capital = { ...living(pack.burgs).find(burg => burg.capital)!, meaning };
     const names = Array.from(
       { length: 100 },
-      (_, i) => Toponyms.state(capital, capital.culture!, { baseId: "dutch", seed: `river-${i}` }).name
+      (_, i) => seeded(`river-${i}`, () => Toponyms.state(capital, capital.culture!, { baseId: "dutch" })).name
     );
     expect(names.filter(name => name.startsWith("Platvliet"))).toContain("Platvliet");
     expect(names.filter(name => /^Platvliet./.test(name))).toEqual([]);
@@ -152,7 +166,7 @@ describe.each(["world", "highFantasy", "oriental"])("names of a %s map", set => 
     const burg = living(pack.burgs).find(({ meaning }) => meaning!.pattern === "modifier-generic")!;
     const other = living(pack.cultures).find(culture => culture.base !== burg.meaning!.origin)!;
     const adopted = Toponyms.nameIn(burg, other.i, burg.meaning!.origin)?.name ?? burg.name!;
-    expect(adopted.toLowerCase()).toBe(Appropriation.adapt(burg.name!.toLowerCase(), Names.find(other.base)!));
+    expect(adopted.toLowerCase()).toBe(Appropriation.adapt(burg.name!.toLowerCase(), NameBases.find(other.base)!));
     expect(Toponyms.nameIn(burg, burg.culture!, burg.meaning!.origin)).toBeUndefined();
   });
 
@@ -320,7 +334,7 @@ describe("burg names of an authored base", () => {
       const { own = named.name } = named.meaning;
       expect(named.meaning.tokens).toContain(group);
       expect(Meanings.render(named.meaning, home), named.name).toBe(own);
-      expect(Appropriation.adopt(own, Names.find(host.base)!)).toBe(named.name);
+      expect(Appropriation.adopt(own, NameBases.find(host.base)!)).toBe(named.name);
     }
     expect(offered).toBeGreaterThan(20);
   });
@@ -332,8 +346,8 @@ describe("burg names of an authored base", () => {
   });
 
   it("build on rivers, neighbours and capitals as another base says them", async () => {
-    await Names.load(["japanese"]);
-    const base = Names.find("japanese")!;
+    await NameBases.load(["japanese"]);
+    const base = NameBases.find("japanese")!;
     const native = (root: string) => Appropriation.adopt(root, base);
     const waters = [...pack.rivers, ...pack.features].flatMap(water => water?.name ?? []);
     const theirs = new Set([...waters, ...living(pack.burgs).map(({ name }) => name!)].map(native));
@@ -374,5 +388,36 @@ describe("names that wait for the burgs", () => {
     expect(named.has(undefined)).toBe(false);
     expect(pack.routes.filter(route => route.points.length >= 4 && !route.name)).toEqual([]);
     expect(pack.religions.filter(religion => religion.i && !religion.name)).toEqual([]);
+  });
+});
+
+describe("a place renamed", () => {
+  beforeAll(async () => {
+    options.generation.cultures.set = "world";
+    await generateMap({ seed: "renamed", points: 5000 });
+  });
+
+  it("offers its new name to the places named after it, but not to one renamed by hand", () => {
+    const byRiver = group(
+      living(pack.burgs).filter(({ meaning }) => meaning!.after?.type === "river"),
+      ({ meaning }) => meaning!.after!.id
+    );
+    const [id, [kept, ...others]] = [...byRiver].sort(([, a], [, b]) => b.length - a.length)[0];
+    const river = pack.rivers.find(({ i }) => i === id)!;
+    const [handmade] = others;
+    if (handmade) Burgs.setName(handmade.i, { name: "Handmade", meaning: handmade.meaning });
+
+    const was = river.name!;
+    Rivers.setName(river.i, { name: "Zorvath", meaning: { ...river.meaning!, tokens: ["~Zorvath"] } });
+    const renamings = Toponyms.renamedAfter({ type: "river", id }, was);
+    const ids = renamings.map(({ id }) => id);
+    expect(ids).toContain(kept.i);
+    if (handmade) expect(ids).not.toContain(handmade.i);
+    for (const { named } of renamings) {
+      expect(named.meaning.after).toEqual({ type: "river", id });
+      expect(named.meaning.tokens.join()).not.toContain(was);
+      expect(Meanings.render(named.meaning, named.meaning.origin)).toBe(named.meaning.own ?? named.name);
+    }
+    expect(Toponyms.renamedAfter({ type: "river", id }, "Zorvath")).toEqual([]); // nothing changed
   });
 });

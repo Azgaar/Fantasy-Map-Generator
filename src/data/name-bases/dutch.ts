@@ -3,6 +3,7 @@ import type { WrittenNameBase } from "@/types/names";
 export const dutch: WrittenNameBase = {
   description: "Towns of the Netherlands and Flanders, with some Frisian",
   length: [4, 14],
+  joining: ["aan", "den", "de", "op"], // stay lowercase between other words
 
   places: {
     names: [

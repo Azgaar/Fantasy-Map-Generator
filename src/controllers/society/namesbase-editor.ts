@@ -4,6 +4,7 @@ import { type Concept, conceptsOf, type Kind } from "@/data/name-concepts";
 import { Options } from "@/model/options/options-model";
 import { Lexicon } from "@/model/society/names/lexicon";
 import { Meanings } from "@/model/society/names/meanings";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Names, PEOPLE_LENGTH } from "@/model/society/names/names-generator";
 import { NameNotation } from "@/model/society/names/notation";
 import { SoundRules } from "@/model/society/names/sound-rules";
@@ -69,10 +70,10 @@ let shown: Shown = "all";
 /** Open a base by its place in the list */
 async function open(i: number): Promise<void> {
   if (options.app.mode) return;
-  const entry = Names.nameBases[i];
+  const entry = NameBases.all[i];
   if (!entry) return;
-  await Names.load([entry.id]);
-  const base = Names.find(entry.id);
+  await NameBases.load([entry.id]);
+  const base = NameBases.find(entry.id);
   if (!base) {
     tip(t("Namesbase {{base}} is not defined", { base: entry.name }), false, "error");
     return;
@@ -99,8 +100,8 @@ function close(): void {
 }
 
 // the base shown: the model may have put another object under its id
-const getBase = (): NameBase => Names.find(baseId)!;
-const isLocked = () => !isUnlocked && Names.isShipped(getBase());
+const getBase = (): NameBase => NameBases.find(baseId)!;
+const isLocked = () => !isUnlocked && NameBases.isShipped(getBase());
 
 const STYLES = /* html */ `<style>
   #namesbaseLayout { display: flex; flex-direction: column; gap: 0.4em; height: 100%; width: auto; }
@@ -236,7 +237,7 @@ function renderBase(base: NameBase): void {
   ensureEl<HTMLInputElement>("namesbaseName").value = base.name;
   ensureEl<HTMLInputElement>("namesbaseDescription").value = base.description ?? "";
 
-  const parents = Names.sorted(Names.nameBases.filter(({ id }) => id !== base.id));
+  const parents = NameBases.sorted(NameBases.all.filter(({ id }) => id !== base.id));
   const select = ensureEl<HTMLSelectElement>("namesbaseExtends");
   select.replaceChildren(new Option(t("none"), ""), ...parents.map(({ id, name }) => new Option(name, id)));
   select.value = base.extends ?? "";
@@ -285,7 +286,7 @@ function renderPane(): void {
 function onPaneChange({ target }: Event): void {
   const input = target as Field;
   if (!input.dataset.field) return; // a filter, not data
-  Names.edit(baseId);
+  NameBases.edit(baseId);
   TABS[activeTab].onChange(input);
   showChange();
 }
@@ -298,7 +299,7 @@ function onPaneInput({ target }: Event): void {
 
 /** Store an edit and show what it does: on the samples, on the examples of the tab, in the overview */
 function showChange(): void {
-  Names.dropUnchanged(baseId);
+  NameBases.dropUnchanged(baseId);
   Options.save();
   renderSamples();
   renderExamples();
@@ -347,7 +348,7 @@ function renderSamples(): void {
     ]
   ];
   ensureEl("namesbaseSamples").innerHTML = groups.map(([label, names]) => `<h4>${label}</h4>${names}`).join("");
-  ensureEl<HTMLButtonElement>("namesbaseReset").disabled = !Names.isChanged(base);
+  ensureEl<HTMLButtonElement>("namesbaseReset").disabled = !NameBases.isChanged(base);
 }
 
 function rollSamples(): void {
@@ -371,23 +372,23 @@ function renderExamples(): void {
 // HEAD
 
 function changeName(this: HTMLInputElement): void {
-  const base = Names.edit(baseId);
+  const base = NameBases.edit(baseId);
   base.name = this.value = this.value.trim() || base.name;
   showChange();
 }
 
 function changeDescription(this: HTMLInputElement): void {
-  const base = Names.edit(baseId);
+  const base = NameBases.edit(baseId);
   base.description = this.value.trim();
   if (!base.description) delete base.description;
   showChange();
 }
 
 async function changeExtends(this: HTMLSelectElement): Promise<void> {
-  const base = Names.edit(baseId);
+  const base = NameBases.edit(baseId);
   if (this.value) base.extends = this.value;
   else delete base.extends;
-  await Names.load([base.id]);
+  await NameBases.load([base.id]);
   if (!findEl(dialogId)) return;
   renderPane();
   showChange();
@@ -413,7 +414,7 @@ function setList(base: NameBase, key: ListKey, list: Corpus | undefined): void {
 /** The lengths of a list's generated names where the list sets none */
 function getDefaultLength(base: NameBase, key: ListKey): [number, number] {
   if (key === "male" || key === "female") return PEOPLE_LENGTH;
-  return key === "waters" ? Names.placeLength(base) : base.length;
+  return key === "waters" ? NameBases.placeLength(base) : base.length;
 }
 
 /** What stands in for an empty list */
@@ -422,7 +423,7 @@ function getStandIn(base: NameBase, key: ListKey): string {
   const isPeople = key !== "waters";
   if (isPeople && base.people) return "";
   const bare: NameBase = { ...base, waters: undefined, people: undefined };
-  const parent = Names.lineage(bare).find(other => (isPeople ? other.people : other.waters));
+  const parent = NameBases.lineage(bare).find(other => (isPeople ? other.people : other.waters));
   return parent ? t("Taken from {{- base}}", { base: parent.name }) : t("Place names stand in");
 }
 
@@ -618,7 +619,7 @@ function renderPatterns(base: NameBase): string {
       <span>${t("Names ending in the burg's group")}:</span>
       <span><input data-field="settled" type="number" min="0" max="100" value="${percent(base.settled)}" placeholder="${percent(Toponyms.settledShare(bare))}" /> %</span>
       <span data-tip="${t("Empty: by the sizes of the two lists")}">${t("Founders who are women")}:</span>
-      <span><input data-field="female" type="number" min="0" max="100" value="${percent(base.patterns?.["owner-generic"]?.female)}" placeholder="${percent(Names.femaleFounders(bare))}" /> %</span>
+      <span><input data-field="female" type="number" min="0" max="100" value="${percent(base.patterns?.["owner-generic"]?.female)}" placeholder="${percent(NameBases.femaleFounders(bare))}" /> %</span>
     </div>`;
 }
 
@@ -665,6 +666,7 @@ function setPattern(base: NameBase, pattern: Pattern, change: PatternLayout): vo
 
 function renderRules(base: NameBase): string {
   const grammar = Lexicon.grammarOf({ ...base, grammar: undefined });
+  const joining = NameBases.joiningOf({ ...base, joining: undefined }).join(", ");
   return /* html */ `<div id="namesbaseRulesPane">
       <h4 data-tip="${t("Regex rewrites, applied in order")}">${t("Sound rules")}</h4>
       <h4 data-tip="${t("Noun classes, endings and form rules")}">${t("Grammar")}</h4>
@@ -673,6 +675,8 @@ function renderRules(base: NameBase): string {
       <div>
         <label data-tip="${t("Populate with letters that can be used twice in a row (geminates)")}">${t("Doubled letters")}:
           <input data-field="doubled" class="notation" style="width: 10em" value="${escapeHtml(SoundRules.getDoubles(base))}" autocorrect="off" spellcheck="false" /></label>
+        <label data-tip="${t("Words that stay lowercase between others, commas between: -sur- only between dashes, d' cut short before the next word")}">${t("Joining words")}:
+          <input data-field="joining" class="notation" style="width: 14em" value="${escapeHtml(base.joining?.join(", ") ?? "")}" placeholder="${escapeHtml(joining)}" autocorrect="off" spellcheck="false" /></label>
         <label data-tip="${t("Put + where parts join")}">${t("Try a name")}:
           <input id="namesbaseTry" class="notation" style="width: 12em" placeholder="novo+gorod" autocorrect="off" spellcheck="false" />
           <b id="namesbaseTried"></b></label>
@@ -693,6 +697,10 @@ function changeRules(input: Field): void {
   } else if (field === "grammar") {
     base.grammar = NameNotation.parseGrammar(input.value);
     if (!base.grammar) delete base.grammar;
+  } else if (field === "joining") {
+    const words = input.value.split(",").flatMap(word => word.trim().toLowerCase() || []);
+    if (words.length) base.joining = words;
+    else delete base.joining;
   } else {
     SoundRules.setDoubles(base, input.value);
     setField("rules", NameNotation.formatRules(base.rules));
@@ -709,18 +717,17 @@ function tryRules(): void {
   const base = getBase();
   const name = ensureEl<HTMLInputElement>("namesbaseTry").value.trim().toLowerCase();
   const fits = (joined: string) => joined.length <= base.length[1];
-  const rolls = (base.rules ?? []).map(() => 0); // every rule with a chance fires, to show what it does
-  const result = name.includes("+")
-    ? SoundRules.join(name, base.rules, { rolls, fits })
-    : SoundRules.apply(name, base.rules);
-  ensureEl("namesbaseTried").textContent = SoundRules.capitalize(result);
+  const rules = NameBases.rulesOf(base); // inherited ones too
+  const rolls = rules.map(() => 0); // every rule with a chance fires, to show what it does
+  const result = name.includes("+") ? SoundRules.join(name, rules, { rolls, fits }) : SoundRules.apply(name, rules);
+  ensureEl("namesbaseTried").textContent = SoundRules.capitalize(result, NameBases.joiningOf(base));
 }
 
 // ACTIONS
 
 function copyBase(): void {
   const base = getBase();
-  const copy = Names.copy(base, `${base.name} copy`);
+  const copy = NameBases.copy(base, `${base.name} copy`);
   baseId = copy.id;
   renderBase(copy);
   showChange();
@@ -752,10 +759,10 @@ function triggerReset(): void {
     confirm: t("Restore"),
     onConfirm: async () => {
       const id = baseId;
-      await Names.reset(id);
+      await NameBases.reset(id);
       Options.save();
       if (baseId !== id) return;
-      if (Names.isChanged(getBase())) {
+      if (NameBases.isChanged(getBase())) {
         tip(t("Cannot load a namesbase"), false, "error");
         return;
       }

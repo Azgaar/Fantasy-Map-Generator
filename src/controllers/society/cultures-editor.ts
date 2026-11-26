@@ -1,6 +1,6 @@
 import { type D3DragEvent, drag, easeSinIn, select, transition } from "d3";
 import { Controllers } from "@/controllers";
-import { NAMINGS } from "@/controllers/society/named-places";
+import { NAMED_MODELS } from "@/controllers/society/named-places";
 import { CULTURE_TYPES } from "@/data/culture-types";
 import { DEFAULT_DEVELOPMENT } from "@/data/development";
 import { CULTURE_TYPE_LABELS, SHIELD_LABELS } from "@/data/id-labels";
@@ -9,6 +9,7 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { type Culture, Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Names } from "@/model/society/names/names-generator";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
@@ -123,7 +124,7 @@ const columns: EditorColumn<Culture>[] = [
     label: t("Namesbase"),
     width: "9em",
     mobileHidden: true,
-    sortBy: culture => Names.nameBases.find(({ id }) => id === culture.base)?.name ?? "",
+    sortBy: culture => NameBases.all.find(({ id }) => id === culture.base)?.name ?? "",
     sortType: "alpha"
   },
   {
@@ -565,10 +566,10 @@ function getTypeOptions(type: string): string {
 
 function getBaseOptions(base: string): string {
   let options = "";
-  for (const { id, name } of Names.sorted(Names.nameBases)) {
+  for (const { id, name } of NameBases.sorted(NameBases.all)) {
     options += `<option ${base === id ? "selected" : ""} value="${id}">${name}</option>`;
   }
-  if (!Names.has(base)) options += `<option selected value="${base}">${t("removed")}</option>`; // in case namesbase was removed
+  if (!NameBases.has(base)) options += `<option selected value="${base}">${t("removed")}</option>`; // in case namesbase was removed
   return options;
 }
 
@@ -686,7 +687,7 @@ function cultureChangeTags(this: HTMLInputElement): void {
 
 function cultureRegenerateName(this: HTMLElement): void {
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  if (!Names.has(pack.cultures[cultureId].base)) {
+  if (!NameBases.has(pack.cultures[cultureId].base)) {
     tip(t("Namesbase is not defined, please select a valid namesbase"), false, "error", 5000);
     return;
   }
@@ -725,7 +726,7 @@ async function cultureChangeBase(this: HTMLSelectElement): Promise<void> {
   const culture = +row.dataset.id!;
   const saidIn = row.dataset.base!;
   Cultures.setBase(culture, this.value);
-  await Names.loadUsed();
+  await NameBases.loadUsed();
   row.dataset.base = this.value;
 
   // the new base may say the names another way
@@ -739,7 +740,7 @@ async function cultureChangeBase(this: HTMLSelectElement): Promise<void> {
     }),
     confirm: t("Rename"),
     onConfirm: () => {
-      for (const { type, id, named } of renamings) NAMINGS[type].model.setName(id, named);
+      for (const { type, id, named } of renamings) NAMED_MODELS[type].setName(id, named);
       Layers.draw("labels");
     }
   });
@@ -831,7 +832,7 @@ function changePopulation(this: HTMLElement): void {
 
 function cultureRegenerateBurgs(this: HTMLElement): void {
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  if (!Names.has(pack.cultures[cultureId].base)) {
+  if (!NameBases.has(pack.cultures[cultureId].base)) {
     tip(t("Namesbase is not defined, please select a valid namesbase"), false, "error", 5000);
     return;
   }
@@ -1077,7 +1078,7 @@ async function addCulture(this: SVGElement, event: MouseEvent): Promise<void> {
   }
   if (event.shiftKey === false) exitAddCultureMode();
 
-  await Names.loadUsed();
+  await NameBases.loadUsed();
   drawCultureCenters();
   culturesTable.refresh();
 }
@@ -1092,7 +1093,7 @@ function downloadCulturesCsv(): void {
       (c.rural ?? 0) * options.map.units.population.scale +
         (c.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
-    const namesbase = Names.nameBases.find(({ id }) => id === c.base)?.name ?? "";
+    const namesbase = NameBases.all.find(({ id }) => id === c.base)?.name ?? "";
     const originList = (c.origins ?? [])
       .filter((origin): origin is number => Boolean(origin))
       .map(origin => pack.cultures[origin].name);
@@ -1153,8 +1154,8 @@ async function uploadCulturesCsv(text: string): Promise<void> {
       row.apply("Type", type => Cultures.setType(id, type), culture.type);
       row.apply(
         "Namesbase",
-        name => Cultures.setBase(id, Csv.byName(Names.nameBases, name).id),
-        Names.nameBases.find(({ id }) => id === culture.base)?.name
+        name => Cultures.setBase(id, Csv.byName(NameBases.all, name).id),
+        NameBases.all.find(({ id }) => id === culture.base)?.name
       );
       row.apply("Emblems Shape", shape => Cultures.setEmblemShape(id, shape), culture.shield);
       row.assign(
@@ -1172,7 +1173,7 @@ async function uploadCulturesCsv(text: string): Promise<void> {
   );
   if (!updated) return;
 
-  await Names.loadUsed();
+  await NameBases.loadUsed();
   Layers.draw("cultures", "emblems");
   refreshCulturesEditor();
 }

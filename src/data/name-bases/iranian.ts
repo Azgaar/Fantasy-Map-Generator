@@ -3,6 +3,7 @@ import type { WrittenNameBase } from "@/types/names";
 export const iranian: WrittenNameBase = {
   description: "Places of Iran, in Persian words",
   length: [5, 11],
+  joining: ["e", "ye"], // stay lowercase between other words
 
   places: {
     names: [

@@ -10,7 +10,6 @@ import {
   OCEAN_SUBTYPES
 } from "@/model/physical/features-generator";
 import { Meanings } from "@/model/society/names/meanings";
-import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
@@ -476,7 +475,7 @@ async function uploadFeaturesCsv(text: string): Promise<void> {
         row.apply("Meaning", () => {
           throw new Error(t("The name of an ocean has no meaning"));
         });
-      } else row.named("Name", { name, meaning: feature.meaning }, Toponyms.cultureOfFeature(feature), Features);
+      } else row.named("Name", "feature", { name, meaning: feature.meaning });
       row.apply("Subtype", subtype => Features.setSubtype(feature.i, subtype), feature.subtype);
       row.apply("Group", group => Features.setGroup(feature.i, group), feature.group);
       row.assign("Tags", tags => Tags.set(feature, tags), Tags.format(feature.tags));

@@ -3,6 +3,7 @@ import type { WrittenNameBase } from "@/types/names";
 export const amazigh: WrittenNameBase = {
   description: "Places of the Maghreb, in Berber words",
   length: [4, 10],
+  joining: ["n'"], // stay lowercase between other words
 
   places: {
     names: [

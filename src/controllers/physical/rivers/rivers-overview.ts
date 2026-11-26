@@ -410,7 +410,7 @@ async function uploadRiversCsv(text: string): Promise<void> {
     { find, text: ["River", "Meaning", "Type", "Tags"] },
     (id, row) => {
       const river = find(id)!;
-      row.named("River", river, pack.cells.culture[river.mouth], Rivers);
+      row.named("River", "river", river);
       row.apply("Type", type => Rivers.setType(river.i, type), river.type);
       row.apply("Group", group => Rivers.setGroup(river.i, group), river.group);
       row.assign("Tags", tags => Tags.set(river, tags), Tags.format(river.tags));

@@ -248,7 +248,7 @@ class StatesModule {
     pack.states = states;
     this.expandStates();
     this.normalize();
-    this.nameStates();
+    this.nameStates(String(Math.random())); // another roll than the map's own, or the names come back
     this.getPoles();
     this.findNeighbors();
     this.collectStatistics();
@@ -400,19 +400,21 @@ class StatesModule {
     return states;
   }
 
-  // a state is named by the size it has grown to; with a seed each name is drawn on a sequence of its own
-  private nameStates(seed?: string): void {
+  // a state is named by the size it has grown to, each on a sequence of its own
+  private nameStates(roll?: string): void {
     const { cells, states, burgs } = pack;
     const areas = states.map(() => 0);
     for (const i of cells.i) if (cells.h[i] >= 20) areas[cells.state[i]] += cells.area[i];
     for (const state of states) {
       if (!state.i || state.removed || state.name) continue;
       const size = this.getLandSize(areas[state.i], areas);
-      const named = Toponyms.state(burgs[state.capital], state.culture, {
-        size,
-        taken: new Set(states.map(({ name }) => name)),
-        seed: seed && `${seed}|state|${state.i}`
-      });
+      const taken = new Set(states.map(({ name }) => name));
+      const named = Toponyms.drawFor(
+        "state",
+        state.i,
+        () => Toponyms.state(burgs[state.capital], state.culture, { size, taken }),
+        roll
+      );
       Object.assign(state, named);
     }
   }
@@ -464,7 +466,7 @@ class StatesModule {
     pack.states = this.createStates();
     this.expandStates();
     this.normalize();
-    this.nameStates(options.map.seed);
+    this.nameStates();
     this.getPoles();
     this.findNeighbors();
     this.assignColors();
@@ -1207,11 +1209,6 @@ class StatesModule {
     state.meaning = meaning;
     state.fullName = replaceWholeWord(state.fullName, old, state.name) ?? this.getFullName(state);
     if (state.label?.text) state.label.text = replaceWholeWord(state.label.text, old, state.name) ?? state.label.text;
-  }
-
-  /** Set what a state's name says, or clear it; the name itself stays as it is */
-  setMeaning(stateId: number, meaning?: Meaning): void {
-    this.living(stateId).meaning = meaning;
   }
 
   /** Set a state's color */

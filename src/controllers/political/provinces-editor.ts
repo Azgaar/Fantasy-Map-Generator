@@ -1478,7 +1478,7 @@ async function uploadProvincesCsv(text: string): Promise<void> {
     (id, row) => {
       const province = find(id)!;
       const fullName = province.fullName; // a new name or form rebuilds it, so an unchanged cell must not restore the old one
-      row.named("Province", province, pack.cells.culture[province.center], Provinces);
+      row.named("Province", "province", province);
       row.apply("Form", form => Provinces.setForm(id, form), province.formName);
       row.apply("Full Name", name => Provinces.setFullName(id, name), fullName);
       row.apply("Color", color => Provinces.recolor(id, color), province.color);

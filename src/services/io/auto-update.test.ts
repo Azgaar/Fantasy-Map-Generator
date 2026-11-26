@@ -12,6 +12,7 @@ import { DEAL_KINDS } from "@/model/economy/deals";
 import { Pack } from "@/model/graph/pack-generator";
 import { Options } from "@/model/options/options-model";
 import { Military } from "@/model/political/military-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Names } from "@/model/society/names/names-generator";
 import { SoundRules } from "@/model/society/names/sound-rules";
 import { Styles } from "@/model/styles/styles";
@@ -1423,8 +1424,8 @@ describe("v1.159 name bases migration", () => {
   it("turns bases with the shipped names into the shipped ones and culture bases into ids", async () => {
     setCultures(1, 5, 42, 99);
     await migrate(legacyRecord());
-    for (const base of cultureBases()) expect(Names.find(base)).toBeDefined();
-    expect(Names.find("english")!.length).toEqual((await readNameBase("english")).length); // not the map's own
+    for (const base of cultureBases()) expect(NameBases.find(base)).toBeDefined();
+    expect(NameBases.find("english")!.length).toEqual((await readNameBase("english")).length); // not the map's own
     expect(options.map.nameBases).toEqual([]);
     expect(cultureBases()).toEqual(["english", "ruthenian", "levantine", "german"]); // a base out of range was the first one
   });
@@ -1438,7 +1439,7 @@ describe("v1.159 name bases migration", () => {
     });
     await migrate(record);
 
-    const [custom, own] = ["german-2", "my-base"].map(id => Names.find(id)!);
+    const [custom, own] = ["german-2", "my-base"].map(id => NameBases.find(id)!);
     expect(custom).toMatchObject({ id: "german-2", name: "German", places: { names: ["Aaa", "Bbb", "Ccc"] } });
     expect(own).toMatchObject({ id: "my-base", length: [5, 9] });
     expect(SoundRules.getDoubles(own)).toBe("ab");
@@ -1450,7 +1451,7 @@ describe("v1.159 name bases migration", () => {
     setCultures(2);
     await migrate();
     expect(cultureBases()).toEqual(["french"]);
-    expect(Names.find("french")).toBeDefined();
+    expect(NameBases.find("french")).toBeDefined();
   });
 
   it("keeps a shipped base edited in its place, and one called as a base shipped since apart from it", async () => {
@@ -1459,9 +1460,9 @@ describe("v1.159 name bases migration", () => {
     old[0] = "German|5|9||0|Aaa,Bbb,Ccc";
     await migrate([...old, "Polish|5|9||0|Aaa,Bbb,Ccc"].join("/"));
     expect(options.map.nameBases.map(({ id }) => id)).toEqual(["german", "polish-2"]);
-    expect(Names.isChanged(Names.find("german")!)).toBe(true);
+    expect(NameBases.isChanged(NameBases.find("german")!)).toBe(true);
     expect(cultureBases()).toEqual(["german", "polish-2"]);
-    expect(Names.ids()).toHaveLength(NAME_BASES.length + 1);
+    expect(NameBases.ids()).toHaveLength(NAME_BASES.length + 1);
   });
 
   it("runs on older maps only", async () => {
@@ -1482,6 +1483,6 @@ describe("v1.159 name bases migration", () => {
 
     expect(options.map.nameBases).toEqual([]);
     expect(cultureBases()).toEqual(indexes.map(index => shipped[index].id));
-    expect(cultureBases().every(id => Names.find(id))).toBe(true);
+    expect(cultureBases().every(id => NameBases.find(id))).toBe(true);
   });
 });
