@@ -16,7 +16,7 @@ The footer sums up states number, total and average forces, average rate and ave
 
 ![](https://cdn.discordapp.com/attachments/587406457725779968/720368676360028252/military_options.png)
 
-Military units used for generation are customizable. To open the units editor click the _cog_ icon in the Military overview screen. Here you can add new units and specify their features. The number of units is not limited, but having many of them makes the overview screens hard to read. The behaviour of a unit is defined by its _type_. Type variants are hard-coded and define the rules applied on generation, described in the next section.
+Military units used for generation are customizable. To open the units editor click the _cog_ icon in the Military overview screen. Here you can add new units and specify their features. The number of units is not limited, but having many of them makes the overview screens hard to read. Units are listed in a table: click a column header to sort by it, and use the sliders button in the header to show or hide columns. Sorting changes the view only, the units keep their order. What a unit is in a battle is set by its own parameters; its _type_ defines the rules applied on generation, described in the next section, and the phases of a battle it is good in. Type variants are hard-coded.
 
 Applying the changes keeps the regiments. A renamed unit keeps its troops, a removed unit's troops are disbanded, and a new icon, crew or power applies at once. For a new unit, or one whose goods, limitations, rural or urban share, type or separate flag changed, the recalculation dialog opens. _Update_ raises the changed units again, with the levies their equipment leaves: the troops join the nearest regiment, so regiments keep their names, places, notes and other troops, and new regiments form only where a state has none nearby. _Regenerate_ rebuilds all regiments from scratch. _Keep_ changes nothing until the next recalculation.
 
@@ -26,12 +26,17 @@ Customizable parameters are:
 
 - **Icon** - unit symbol, chosen in the icon picker: an emoji or short text (the defaults), a built-in icon or a custom icon linked or uploaded to the map. Emoji look different in different systems and browsers. See [Icons](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons)
 - **Name** - a unique unit name. Regiments follow a renamed unit
-- **Goods** - goods that equip the unit, such as arms for infantry or horses for cavalry. Click the button to pick them; `none` means the unit needs no goods. A state fields only as many troops of the unit as its goods can equip, the rest serve as levies. See [Goods and levies](#goods-and-levies) below
-- **Biomes**, **States**, **Cultures**, **Religions** - optional limitations. By default a unit is generated everywhere (`all`); click a button to restrict the unit to selected biomes, states, cultures or religions (`some`). A cell or burg that fails any active limitation produces no troops of that unit
+- **Goods** - goods that equip the unit, such as arms for infantry or horses for cavalry. Click the cell to pick them; `none` means the unit needs no goods. A state fields only as many troops of the unit as its goods can equip, the rest serve as levies. See [Goods and levies](#goods-and-levies) below
+- **Biomes**, **States**, **Cultures**, **Religions** - optional limitations. By default a unit is generated everywhere (`all`); click the cell to restrict the unit to selected biomes, states, cultures or religions. The cell then shows how many are allowed, or the emblems of the allowed states. A cell or burg that fails any active limitation produces no troops of that unit
 - **Rural** - the most of the rural population, in percent, that can be raised to the unit. It defines how many troops of this unit are generated per cell population point at most: the number is then adjusted by the rules described in the next section, and a state lacking the unit's goods raises fewer. Set to 0 if you want the unit to be generated in burgs only
 - **Urban** - the most of the urban population, in percent, that can be raised to the unit. Works the same as _rural_, but for burg population
 - **Crew** - average number of people in one unit. Like tank crew is usually 4. This number is used for total people calculation and does not affect unit _power_ at all
-- **Power** - damage dealt by unit. Used in battle simulation only
+- **Attack** - what one unit strikes and shoots with in a battle. It is per unit, not per man: a ship with a crew of a hundred has one attack
+- **Defense** - what one unit stands blows and shots with. Artillery hits hard and stands little, so in a battle it is struck first by those who can reach it
+- **Speed** - how fast the unit marches in battle, in km/h: 4.3 on foot, 12.6 mounted, 1.8 for engines. It charges at three times its speed, and the faster a unit charges, the more men its blows cut down
+- **Range** - how far the unit shoots in battle, in metres: 160 for archers, 380 for artillery, 270 for fleets. Further from higher ground. Set 0 for a unit that fights hand to hand
+- **Morale** - how steady the unit is: 1 is ordinary. Its losses of morale in a battle are divided by it, its gains are not, and it does not change the morale a battle starts with: levies at 0.5 lose heart twice as fast and crumble under pressure, an elite unit at 2 holds twice as long
+- **Power** - not set but worked out from the five above: `(attack + defense) / 2 × √((speed + 4.3) / 8.6) × (1 + range / 680) × morale`, speed in km/h and range in metres. It is the weight of the unit outside battles: the upkeep it costs and its share in the power of forces
 - **Type** - a set of rules to be applied for the unit, see the details in the next section
 - **Sep.** - check if the unit is _separate_ and can only be stacked with the same unit. This is why e.g. the naval _fleet_ is not merged into a mixed land regiment by default
 
@@ -39,16 +44,20 @@ Any change has to be confirmed with _Apply_, which triggers a full military rege
 
 The default unit set is:
 
-| Icon | Name      | Goods                | Rural % | Urban % | Crew | Power | Type      | Separate |
-| ---- | --------- | -------------------- | ------- | ------- | ---- | ----- | --------- | -------- |
-| 🪓   | levies    | none                 | 0       | 0       | 1    | 0.5   | levies    | no       |
-| ⚔️   | infantry  | Arms                 | 0.25    | 0.2     | 1    | 1     | melee     | no       |
-| 🏹   | archers   | Arms                 | 0.12    | 0.2     | 1    | 1     | ranged    | no       |
-| 🐴   | cavalry   | Horses, Camels, Tack | 0.12    | 0.03    | 1    | 2     | mounted   | no       |
-| 💣   | artillery | Artillery, Gunpowder | 0       | 0.03    | 8    | 12    | machinery | no       |
-| 🌊   | fleet     | Boats                | 0       | 0.015   | 100  | 50    | naval     | yes      |
+| Icon | Name      | Goods                | Rural % | Urban % | Crew | Attack | Defense | Speed | Range | Morale | Power | Type      | Separate |
+| ---- | --------- | -------------------- | ------- | ------- | ---- | ------ | ------- | ----- | ----- | ------ | ----- | --------- | -------- |
+| 🪓   | levies    | none                 | 0       | 0       | 1    | 0.5    | 0.5     | 4.3   | 0     | 0.5    | 0.25  | levies    | no       |
+| ⚔️   | infantry  | Arms                 | 0.25    | 0.2     | 1    | 1      | 1       | 4.3   | 0     | 1      | 1     | melee     | no       |
+| 🏹   | archers   | Arms                 | 0.12    | 0.2     | 1    | 1.1    | 0.42    | 4.3   | 160   | 0.8    | 0.75  | ranged    | no       |
+| 🐴   | cavalry   | Horses, Camels, Tack | 0.12    | 0.03    | 1    | 1.5    | 1.4     | 12.6  | 0     | 1.2    | 2.4   | mounted   | no       |
+| 💣   | artillery | Artillery, Gunpowder | 0       | 0.03    | 8    | 16     | 3.1     | 1.8   | 380   | 0.8    | 10    | machinery | no       |
+| 🌊   | fleet     | Boats                | 0       | 0.015   | 100  | 46     | 31.2    | 3.1   | 270   | 1      | 50    | naval     | yes      |
 
-The available types are melee, ranged, mounted, machinery, naval, armored, aviation, magical and levies. Levies are a normal unit, just weak: poorly armed conscripts with half an infantryman's power. By default their rural and urban percentages are 0, so they only take in troops other units could not equip, but they can be raised directly like any other unit.
+Speeds are in km/h and ranges in metres, whatever the map's units; the tooltip of a value shows it in the map's units when they differ.
+
+A unit of a map saved before these parameters existed had a single power. On load it gets the speed, range and morale of the default unit of its type (of infantry for armored, aviation and magical units), and its attack and defense are split in that unit's proportion so that the power stays what it was.
+
+The available types are melee, ranged, mounted, machinery, naval, armored, aviation, magical and levies. In battle the type sets how a unit fights, whatever its speed: mounted and aviation units fight as riders, ranged units as shooters, machinery units and naval units with a range as engines, and all the other types, naval units with no range among them, as line troops. Range only lets a unit shoot: mounted units with a range, such as horse archers, keep to the wings like other riders, shoot and ride off from foot that comes at them, and line troops with a short range, such as javelin men, throw and still close. Levies are a normal unit, just weak: poorly armed conscripts with a third of an infantryman's power, who lose heart twice as fast. By default their rural and urban percentages are 0, so they only take in troops other units could not equip, but they can be raised directly like any other unit.
 
 ## Generation logic
 
@@ -154,7 +163,7 @@ Units that need no goods, such as the default levies, are always fully equipped,
 
 Troops for each cell and burg form a _platoon_. As the number of platoons is far too high, they are sorted starting from the smallest and merged into _regiments_ based on the distance between platoons and an expected regiment size of `3 × Population rate`. Platoons of a _separate_ unit can only merge with platoons of the same unit. Once a regiment reaches the expected size it stops absorbing others. The system then generates names, emblems and legends for the regiments and places them on the map at their bases.
 
-A state at war marches its land regiments from their bases to the front: its own land cells bordering an enemy, then up to two lines of cells behind them. Its fleets sail to the water cells next to that border, on either side, or up to two cells offshore. Fleets deploy first, as land regiments on the coast would crowd them out. The largest regiments go first, each to the free cell nearest its base on its landmass or water body, foremost line first, so regiment boxes never overlap, an enemy's included. Regiments that find no free cell stay at their bases. The base stays where the regiment was raised.
+A state at war marches its land regiments from their bases to the front: its own land cells bordering an enemy, then up to two lines of cells behind them. Its fleets sail to the water cells next to that border, on either side, or up to two cells offshore. Fleets deploy first, as land regiments on the coast would crowd them out. About 30% of the regiments, and of the fleets, that can reach the front stay at their bases as a reserve: those farthest from it. The largest regiments go first, each to the free cell nearest its base on its landmass or water body, foremost line first, so regiment boxes never overlap, an enemy's included. Regiments that find no free cell stay at their bases. The base stays where the regiment was raised.
 
 ## Regiment Editor
 
@@ -162,7 +171,9 @@ A state at war marches its land regiments from their bases to the front: its own
 
 If you click on a regiment box, a Regiment Editor will pop up at the top left corner. Once editor is displayed, you can drag regiment boxes to move them around. A circle shows regiment's base and can be dragged as well.
 
-From the Regiment Editor screen you can rename the regiment or restore its original name, hear the name spoken, toggle its visibility on the map (eye icon), change the regiment emblem and edit the number of troops of each unit. Below the units it shows the regiment's _Power_, which is not editable: the number of each unit multiplied by its power and by the state's upkeep, as in the Military overview. The regiments overview has the same _Power_ column, and its _Recalculate_ button recalculates the forces of the state selected in the filter, or of all states. You can also switch the regiment type between _land_ and _naval_. Naval regiments look almost the same as land ones, the only visual difference is the box size. Hidden regiments can also be toggled from the regiments overview table.
+From the Regiment Editor screen you can rename the regiment or restore its original name, hear the name spoken, toggle its visibility on the map (eye icon), change the regiment emblem and edit the number of troops of each unit. Below the units it shows the regiment's _Power_, which is not editable: the number of each unit multiplied by its power and by the square root of the state's upkeep, as in the Military overview; the upkeep shown beside it is the state's own. The regiments overview has the same _Power_ column, and its _Recalculate_ button recalculates the forces of the state selected in the filter, or of all states. You can also switch the regiment type between _land_ and _naval_. Naval regiments look almost the same as land ones, the only visual difference is the box size. Hidden regiments can also be toggled from the regiments overview table.
+
+Under them are the battles the regiment fought, with the year and the outcome for its side; click one to open it in the [Chronicle](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Chronicle), where its play button [replays it](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Battle-Simulator#watching-a-battle-again). A regiment keeps its battles when its state is merged into another.
 
 The buttons at the bottom let you attack a foreign regiment (see [Battle Simulator](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Battle-Simulator) for the details), create a new regiment or fleet, split the regiment into two, attach it to another regiment, regenerate or edit the regiment legend, and remove the regiment.
 

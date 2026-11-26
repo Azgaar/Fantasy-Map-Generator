@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Burgs } from "./burgs-generator";
 import { noFinance, States } from "./states-generator";
 
 /** States as the model keeps them: each with its finances, zero but for the given ones */
@@ -9,7 +10,7 @@ describe("StatesModule.generateDiplomacy", () => {
   let StatesModule: any;
 
   beforeEach(async () => {
-    globalThis.options = { year: 100 } as any;
+    globalThis.options = { map: { seed: "1", lore: { calendar: { year: 100 } } } } as any;
     // 0.5 makes P(0.8) true and rw() pick no Rival, so the vassal branch runs and no war is declared
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     await import("./states-generator");
@@ -23,6 +24,7 @@ describe("StatesModule.generateDiplomacy", () => {
   it("keeps a locked state's tariffs and rebuilds the others'", () => {
     const rules = [{ states: "all", goods: [1], rate: 0.5 }];
     globalThis.pack = {
+      events: [],
       cells: { i: [0, 1], h: [30, 30], state: [1, 2], pop: [10, 10], f: [1, 1] },
       states: withFinance([
         { i: 0, name: "Neutrals" },
@@ -50,6 +52,7 @@ describe("StatesModule.generateDiplomacy", () => {
     // state 2 is a populous state bordering the small state 3, which becomes its vassal; state 4 is far away
     const cellState = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 4];
     globalThis.pack = {
+      events: [],
       cells: {
         i: cellState.map((_, i) => i),
         h: cellState.map(() => 30),
@@ -85,6 +88,7 @@ describe("StatesModule.rename", () => {
 
   it("keeps a custom full name and label containing the whole old name", () => {
     globalThis.pack = {
+      events: [],
       states: [{ i: 0 }, state({ fullName: "United Realms of Old", label: { text: "Old|Realms" } })]
     } as any;
     States.rename(1, "New");
@@ -96,14 +100,14 @@ describe("StatesModule.rename", () => {
   });
 
   it("rebuilds a generated full name that holds the old name only inside another word", () => {
-    globalThis.pack = { states: [{ i: 0 }, state({ fullName: "Oldish Empire" })] } as any;
+    globalThis.pack = { events: [], states: [{ i: 0 }, state({ fullName: "Oldish Empire" })] } as any;
     States.rename(1, "Nova");
     expect(pack.states[1].fullName).toBe(States.getFullName(pack.states[1]));
     expect(pack.states[1].fullName).not.toContain("Oldish");
   });
 
   it("rejects removed states", () => {
-    globalThis.pack = { states: [{ i: 0 }, state({ removed: true })] } as any;
+    globalThis.pack = { events: [], states: [{ i: 0 }, state({ removed: true })] } as any;
     expect(() => States.rename(1, "New")).toThrow("State 1 does not exist");
   });
 });
@@ -118,6 +122,7 @@ describe("StatesModule.setCells", () => {
 
   it("drops a split province from its owner's list when its center becomes neutral", () => {
     globalThis.pack = {
+      events: [],
       cells: {
         i: [0, 1, 2],
         h: [30, 30, 30],
@@ -144,6 +149,7 @@ describe("StatesModule.setCells", () => {
   it.each([0, 1])("joins an annexed fragment at cell %s to a province of its new state", cell => {
     const center = cell === 0 ? 1 : 0;
     globalThis.pack = {
+      events: [],
       cells: {
         i: [0, 1, 2, 3],
         h: [30, 30, 30, 30],
@@ -179,6 +185,7 @@ describe("StatesModule.setCells", () => {
 
   it("refreshes the statistics of both states", () => {
     globalThis.pack = {
+      events: [],
       cells: {
         i: [0, 1, 2],
         h: [30, 30, 30],
@@ -204,6 +211,7 @@ describe("StatesModule.setCells", () => {
 describe("StatesModule.tariffs", () => {
   beforeEach(async () => {
     vi.restoreAllMocks();
+    globalThis.options = { map: { lore: { calendar: { year: 100 } } } } as any;
     await import("./states-generator");
   });
 
@@ -211,6 +219,7 @@ describe("StatesModule.tariffs", () => {
 
   it("defineTariffs() seeds the 5% baseline and relation-based overrides", () => {
     globalThis.pack = {
+      events: [],
       states: [
         { i: 0, name: "Neutrals" },
         {
@@ -239,12 +248,13 @@ describe("StatesModule.tariffs", () => {
   });
 
   it("defineTariffs() returns empty array for neutral state", () => {
-    globalThis.pack = { states: [{ i: 0, name: "Neutrals" }] } as any;
+    globalThis.pack = { events: [], states: [{ i: 0, name: "Neutrals" }] } as any;
     expect(States.defineTariffs(pack.states[0])).toEqual([]);
   });
 
   it("defineTariffs() returns empty array for an anarchy, whatever its relations", () => {
     globalThis.pack = {
+      events: [],
       states: [
         { i: 0, name: "Neutrals" },
         { i: 1, name: "A", form: "Anarchy", diplomacy: ["x", "x", "Enemy"] },
@@ -256,6 +266,7 @@ describe("StatesModule.tariffs", () => {
 
   it("setTariffs() validates and normalizes rules", () => {
     globalThis.pack = {
+      events: [],
       states: [
         { i: 0, name: "Neutrals" },
         { i: 1, name: "A", economy: { ...noFinance(), tariffs: [] } },
@@ -286,6 +297,7 @@ describe("StatesModule.tariffs", () => {
 
   it("remove() prunes state ID from all other states' tariffs", () => {
     globalThis.pack = {
+      events: [],
       cells: { state: new Uint16Array(10), province: new Uint16Array(10) },
       burgs: [],
       provinces: [],
@@ -319,6 +331,7 @@ describe("StatesModule.tariffs", () => {
 
   it("merge() prunes merged state IDs from all living states' tariffs", () => {
     globalThis.pack = {
+      events: [],
       cells: { state: new Uint16Array(10), province: new Uint16Array(10) },
       burgs: [],
       provinces: [],
@@ -347,8 +360,35 @@ describe("StatesModule.tariffs", () => {
     expect(pack.states[1].economy.tariffs).toEqual([{ states: "all", goods: "all", rate: 0.1 }]);
   });
 
+  it("merge() writes one annexation, however many capitals it unseats, and corrects it when done again", () => {
+    globalThis.pack = {
+      events: [],
+      cells: { state: new Uint16Array(10), province: new Uint16Array(10) },
+      burgs: [0, { i: 1, state: 2, capital: 1 }, { i: 2, state: 3, capital: 1 }, { i: 3, state: 4, capital: 1 }],
+      provinces: [],
+      states: withFinance([
+        { i: 0, name: "Neutrals" },
+        { i: 1, name: "A" },
+        { i: 2, name: "B", capital: 1 },
+        { i: 3, name: "C", capital: 2 },
+        { i: 4, name: "D", capital: 3 }
+      ])
+    } as any;
+    for (const method of ["collectStatistics", "findNeighbors", "getPoles"] as const)
+      vi.spyOn(States, method).mockImplementation(() => {});
+    vi.spyOn(Burgs, "changeGroup").mockImplementation(() => {});
+
+    States.merge(1, [2, 3]);
+    States.merge(1, [4]);
+
+    const acts = pack.events.filter(event => event.tags?.includes("annexation"));
+    expect(acts).toMatchObject([{ name: "Annexation of B, C and D by A", states: [1, 2, 3, 4], auto: true }]);
+    expect(pack.events.some(event => event.tags?.includes("capital"))).toBe(false);
+  });
+
   it("merge() moves the merged states' rural poll tax to the ruling state", () => {
     globalThis.pack = {
+      events: [],
       cells: { state: new Uint16Array(10), province: new Uint16Array(10) },
       burgs: [],
       provinces: [],
@@ -400,6 +440,7 @@ describe("StatesModule.tariffs", () => {
 
   it("setTags() sets normalized tags on a state", () => {
     globalThis.pack = {
+      events: [],
       states: [
         { i: 0, name: "Neutrals" },
         { i: 1, name: "A", tags: [] }
@@ -415,6 +456,7 @@ describe("StatesModule.tariffs", () => {
 
   it("merge() merges tags of merged states into ruling state", () => {
     globalThis.pack = {
+      events: [],
       cells: { state: new Uint16Array(10), province: new Uint16Array(10) },
       burgs: [],
       provinces: [],
@@ -438,6 +480,7 @@ describe("StatesModule.tariffs", () => {
 describe("StatesModule.defineCorruption", () => {
   it("adds size and diversity to the form's share, doubled for despots", () => {
     globalThis.pack = {
+      events: [],
       states: [
         { i: 0, name: "Neutrals" },
         { i: 1, form: "Monarchy", formName: "Despotate", cells: 100, burgs: 5, culture: 1, capital: 1 },
@@ -469,6 +512,7 @@ describe("StatesModule.defineCorruption", () => {
 describe("StatesModule tribal forms", () => {
   const tribal = (development: number, state: object, tier = 1, formName = "Kingdom") => {
     globalThis.pack = {
+      events: [],
       burgs: [{ i: 0 }, { i: 1, cell: 0 }],
       cells: { development: Uint8Array.from([development]) }
     } as any;
@@ -503,6 +547,7 @@ describe("StatesModule regeneration of locked states", () => {
       { states: [2], goods: [7], rate: "embargo" } // only the dropped state
     ];
     globalThis.pack = {
+      events: [],
       cells: { i: [0, 1, 2], state: [3, 5, 2] },
       burgs: [
         {},

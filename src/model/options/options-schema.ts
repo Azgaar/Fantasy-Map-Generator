@@ -1,11 +1,13 @@
 // All app configuration options, options.map saved to `.map` file as settings; docs/architecture/configuration.md
 
 import { z } from "zod";
+import { BATTLE_SPEEDS, MAX_FORTUNE, PAUSE_EVENTS, type PauseEvent } from "@/data/battle-options";
 import { CULTURE_SETS } from "@/data/culture-sets";
 import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
 import { LANGUAGE_CODES } from "@/data/languages";
 import { MAX_JITTER, SAMPLINGS } from "@/model/graph/lattice";
 import { Icons } from "@/model/icons";
+import { upgradeLegacyMilitaryUnit } from "@/model/political/military-units";
 import type { LayerId } from "@/renderers/layers";
 import type { Good } from "@/types/economy";
 import type { HeraldicEmblem } from "@/types/emblems";
@@ -68,21 +70,29 @@ const burgGroup = z.strictObject({
   preview: z.string().optional()
 });
 
-const militaryUnit = z.strictObject({
-  icon: z.string(),
-  name: z.string(),
-  rural: nonNegative,
-  urban: nonNegative,
-  crew: positive,
-  power: nonNegative,
-  type: z.string(),
-  separate: z.number().int(),
-  biomes: ids,
-  states: ids,
-  cultures: ids,
-  religions: ids,
-  goods: ids
-});
+/** a unit saved before v1.159.0 has a single power */
+const militaryUnit = z.preprocess(
+  upgradeLegacyMilitaryUnit,
+  z.strictObject({
+    icon: z.string(),
+    name: z.string(),
+    rural: nonNegative,
+    urban: nonNegative,
+    crew: positive,
+    attack: nonNegative,
+    defense: nonNegative,
+    speed: nonNegative,
+    range: nonNegative,
+    morale: nonNegative,
+    type: z.string(),
+    separate: z.number().int(),
+    biomes: ids,
+    states: ids,
+    cultures: ids,
+    religions: ids,
+    goods: ids
+  })
+);
 
 const transport = z.strictObject({
   i: z.number().int(),
@@ -213,6 +223,64 @@ const units = z.strictObject({
  * The map's own configuration, and the whole of what a `.map` file stores in its settings block.
  * Saving writes this object and loading replaces it, so the two are the same shape by construction
  */
+type PauseFlags = Record<PauseEvent, z.ZodBoolean>;
+const between = (min: number, max: number) => z.number().int().min(min).max(max);
+const battleSpeed = z.number().refine(speed => BATTLE_SPEEDS.includes(speed));
+const battleCamera = z.enum(["follow", "field"]);
+
+/** the numbers a battle is fought with, stored in its log too */
+export const battleSettings = z
+  .strictObject({
+    maxBattalions: between(10, 200),
+    minBattalions: between(2, 40),
+    maxRounds: between(25, 1800),
+    lullRounds: between(3, 60),
+    orderRounds: between(1, 60),
+    planTicks: between(30, 1200),
+    fortune: z.number().min(0).max(MAX_FORTUNE)
+  })
+  .refine(({ maxBattalions, minBattalions }) => minBattalions <= maxBattalions, {
+    message: "simulation.minBattalions must not exceed maxBattalions"
+  });
+
+/** the battle screen's choices; the simulation numbers are copied into each battle when it is set up */
+const battle = z.strictObject({
+  view: z.strictObject({ camera: battleCamera, speed: battleSpeed, log: z.boolean() }),
+  rendering: z.strictObject({
+    relief: z.enum(["hachures", "contours", "none"]),
+    shade: z.boolean(),
+    light: z.boolean(),
+    heights: z.boolean(),
+    woods: z.boolean(),
+    props: z.boolean(),
+    labels: z.boolean(),
+    colors: z.enum(["sides", "states"]),
+    icons: z.boolean(),
+    flags: z.boolean(),
+    health: z.boolean(),
+    fallen: z.enum(["fade", "outline"]),
+    arrows: z.boolean(),
+    fire: z.boolean(),
+    missiles: z.boolean(),
+    clashes: z.boolean(),
+    weather: z.boolean(),
+    title: z.boolean(),
+    scale: z.boolean(),
+    north: z.boolean()
+  }),
+  playback: z.strictObject({
+    step: z.enum(["tick", "round"]),
+    pause: z.strictObject(Object.fromEntries(PAUSE_EVENTS.map(event => [event, z.boolean()])) as PauseFlags)
+  }),
+  simulation: battleSettings,
+  export: z.strictObject({
+    format: z.enum(["gif", "svg", "report"]),
+    quality: z.enum(["low", "medium", "high"]),
+    speed: battleSpeed,
+    camera: battleCamera
+  })
+});
+
 export const mapSchema = z.strictObject({
   seed: z.string(),
   graph: z.strictObject({ width: positive, height: positive, points: positive, sampling, jitter }),
@@ -336,7 +404,8 @@ export const optionsSchema = z.strictObject({
       erosionStrength: nonNegative,
       erosionRiverDepth: nonNegative,
       erosionOctaves: count
-    })
+    }),
+    battle
   })
 });
 

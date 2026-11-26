@@ -18,6 +18,7 @@ import { Temperature } from "@/model/physical/temperature-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Provinces } from "@/model/political/provinces-generator";
 import { States } from "@/model/political/states-generator";
+import { Events } from "@/model/story/events";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
 import type { Point } from "@/types/global";
@@ -165,6 +166,7 @@ class MapRestorationModule {
     States.collectStatistics();
     this.restoreReligions(parent, projection);
     this.restoreMarkers(parent, projection);
+    this.restoreEvents(parent, projection);
     this.restoreZones(parent, links);
     this.restoreJourneys(parent, projection);
     this.restoreAddedLabels(parent, projection);
@@ -788,7 +790,7 @@ class MapRestorationModule {
         state.capital = 0;
         const successor = this.findMostPopulous(burg => burg.state === state.i)?.i;
         const center = () => this.keepCenter(parent, projection, state.center, cells.state, state.i, state.pole);
-        Burgs.setCapital(successor ?? Burgs.add(...cells.p[center()]));
+        Burgs.placeCapital(successor ?? Burgs.add(...cells.p[center()]));
       }
       state.center = burgs[state.capital].cell;
 
@@ -914,6 +916,22 @@ class MapRestorationModule {
       if (!this.isInMap(...home)) return [];
       return [{ ...marker, x, y, cell: this.findCell(x, y) }];
     });
+  }
+
+  /** a battle keeps its place or goes with it; a state that did not survive ends its relations, as one removed */
+  private restoreEvents(parent: PackedGraph, projection: Projection) {
+    pack.events = structuredClone(parent.events); // carried over as loaded; the model brings it in line
+    Events.relocateBattles((px, py) => {
+      const [x, y] = projection(px, py).map(value => rn(value, 2));
+      return this.isInMap(x, y) ? { x, y, cell: this.findCell(x, y) } : null;
+    });
+    Events.dropRegiments(ref => !pack.states[ref.state]?.military?.some(({ i }) => i === ref.i)); // left off the map
+    const lost = (id: number) => pack.states[id]?.removed && !parent.states[id]?.removed;
+    for (const { i } of pack.states) {
+      if (!lost(i)) continue;
+      Events.followState(i);
+      Events.forgetActs(i);
+    }
   }
 
   /** a cell is in a zone if the snapshot cell under it was */

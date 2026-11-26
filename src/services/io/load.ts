@@ -372,6 +372,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.relief = data[49] ? JSON.parse(data[49]) : [];
     pack.journeys = data[52] ? JSON.parse(data[52]) : [];
     pack.legends = data[53] ? JSON.parse(data[53]) : [];
+    pack.events = data[56] ? JSON.parse(data[56]) : [];
 
     await NameBases.loadUsed();
 

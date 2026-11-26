@@ -16,11 +16,52 @@ const TIP_BACKGROUND: Record<TipType, string> = {
 
 const getTooltip = () => findEl("tooltip"); // absent before the shell renders and in unit tests
 
+// tips carry names from loaded maps, and a data-tip attribute is decoded once: only formatting gets through
+const TIP_TAGS = new Set([
+  "b",
+  "strong",
+  "i",
+  "em",
+  "u",
+  "small",
+  "span",
+  "br",
+  "sup",
+  "sub",
+  "kbd",
+  "code",
+  "div",
+  "p"
+]);
+const TIP_ATTRIBUTES = new Set(["class", "style"]);
+const UNSAFE_CONTENT = "script, style, template, iframe, object, embed, svg, math, noscript, textarea, select";
+
+/** Show a tip's html with its formatting only */
+function render(tooltip: HTMLElement, message: string): void {
+  if (!/[<&]/.test(message)) {
+    tooltip.textContent = message;
+    return;
+  }
+  const { body } = new DOMParser().parseFromString(message, "text/html"); // inert: nothing loads or runs
+  for (const element of body.querySelectorAll(UNSAFE_CONTENT)) element.remove();
+  for (const element of [...body.querySelectorAll("*")].reverse()) {
+    if (!TIP_TAGS.has(element.localName)) {
+      element.replaceWith(...element.childNodes);
+      continue;
+    }
+    for (const name of element.getAttributeNames()) {
+      if (!TIP_ATTRIBUTES.has(name) || /url\(|expression\(/i.test(element.getAttribute(name)!))
+        element.removeAttribute(name);
+    }
+  }
+  tooltip.replaceChildren(...body.childNodes);
+}
+
 let autoClearTimeout: number | undefined;
 
 /**
  * Show a message in the tooltip line
- * @param message - text to show, may contain html
+ * @param message - text to show, may contain formatting html
  * @param main - pin the message so it is restored after transient tips
  * @param type - defines the tooltip background color
  * @param time - if set, clear the main tip after that many ms
@@ -28,7 +69,7 @@ let autoClearTimeout: number | undefined;
 export function tip(message: string, main = false, type: TipType = "info", time = 0): void {
   const tooltip = getTooltip();
   if (!tooltip) return;
-  tooltip.innerHTML = message;
+  render(tooltip, message);
   tooltip.style.background = TIP_BACKGROUND[type];
 
   if (main) {
@@ -78,7 +119,7 @@ export function showMainTip(): void {
   const tooltip = getTooltip();
   if (!tooltip) return;
   tooltip.style.background = tooltip.dataset.color || "";
-  tooltip.innerHTML = tooltip.dataset.main || "";
+  render(tooltip, tooltip.dataset.main || "");
 }
 
 export function clearMainTip(): void {
@@ -122,6 +163,14 @@ export function showDataTip(event: Event): void {
   if (isRemove && !isMobile() && !dataTip.includes(removeHint)) dataTip = sentences(dataTip, removeHint);
 
   tip(dataTip);
+}
+
+/** The tip of an element or of the nearest one holding it, else the main tip: for a pointer that stays while what is
+ * under it moves or changes, so the tip shown never outlives what it is about */
+export function showElementTip(element: Element | null): void {
+  const holder = element?.closest<HTMLElement | SVGElement>("[data-tip]");
+  if (holder?.dataset.tip) tip(holder.dataset.tip);
+  else showMainTip();
 }
 
 /** Full text of an element that cuts it to fit, or "" if it fits or stands inside `data-no-clipped-tip` */

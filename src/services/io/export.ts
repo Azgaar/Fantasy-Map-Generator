@@ -10,7 +10,7 @@ import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { Layers } from "@/renderers/layers";
 import { restoreOceanVectors } from "@/renderers/ocean-cache";
-import { viewport, ZOOMED_LAYERS, zoomFontSize } from "@/renderers/viewport/viewport";
+import { regimentScale, viewport, ZOOMED_LAYERS, zoomFontSize } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import { getFileName } from "@/services/io/file-name";
@@ -431,6 +431,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     }
 
     ViewportLayers.renderTo(cloneEl, bounds);
+    clone.selectAll("#armies > g > g").style("scale", regimentScale(bounds?.scale ?? 1)); // the exported view, not the screen
 
     const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
     if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();

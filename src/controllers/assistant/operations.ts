@@ -16,6 +16,7 @@ import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Religions } from "@/model/society/religions-generator";
+import { Events } from "@/model/story/events";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Lore } from "@/model/story/lore";
 import { Markers } from "@/model/story/markers-generator";
@@ -30,6 +31,7 @@ export const MODELS = {
   Cultures,
   Development,
   Emblems,
+  Events,
   Features,
   Goods,
   Journeys,
@@ -89,7 +91,6 @@ export const METHODS = {
     "setBudget",
     "setAdjustments",
     "setLocked",
-    "setChronicleEntry",
     "setCells",
     "setPopulation"
   ],
@@ -179,6 +180,7 @@ export const METHODS = {
     "attach"
   ],
   Emblems: ["set", "regenerateOne", "place"],
+  Events: ["add", "update", "remove"],
   Journeys: [
     "add",
     "remove",
@@ -219,5 +221,9 @@ export const OPERATIONS = new Set(
 export function runOperation(op: string, args: unknown[]): unknown {
   const [name, method] = op.split(".");
   const model = MODELS[name as keyof Models] as unknown as Record<string, (...args: unknown[]) => unknown>;
+  if (op === "Events.add" && args[0] && typeof args[0] === "object") {
+    const { auto, act, ...event } = args[0] as Record<string, unknown>; // the app's marks: an event it adds is the user's
+    return model[method](event, ...args.slice(1));
+  }
   return model[method](...args);
 }

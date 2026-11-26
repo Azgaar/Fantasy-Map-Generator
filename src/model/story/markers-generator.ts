@@ -46,8 +46,9 @@ import { Routes } from "@/model/economy/routes-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
-import { States } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names/names-generator";
+import { Dates } from "@/model/story/dates";
+import { Events, type WarEvent } from "@/model/story/events";
 import { Notes } from "@/model/story/notes";
 import { convertTemperature, getFriendlyHeight } from "@/model/units";
 import type { Good } from "@/types/economy";
@@ -59,20 +60,6 @@ import { rn } from "@/utils/number-utils";
 import { gauss, P, ra, rand, rw } from "@/utils/probability-utils";
 import { capitalize } from "@/utils/string-utils";
 import { requireName, requireOneOf } from "@/utils/validation-utils";
-
-/**
- * Generate a random date within a specified range
- * @param from - Start year (default is 100)
- * @param to - End year (default is 1000)
- * @returns Formatted date string
- */
-const generateDate = (from: number = 100, to: number = 1000): string => {
-  return new Date(rand(from, to), rand(11), rand(1, 28)).toLocaleDateString("en", {
-    year: "numeric",
-    month: "long",
-    day: "numeric"
-  });
-};
 
 /** Fallback for a marker with no generated name: "hot-springs" -> "Hot springs" */
 export function getDefaultMarkerName(type: string | undefined): string {
@@ -1099,12 +1086,13 @@ class MarkersModule {
   private addBattlefield(marker: Marker, cell: number) {
     const { cells, states } = pack;
 
-    const state = states[cells.state[cell]];
-    if (!state.campaigns) state.campaigns = States.generateCampaign(state);
-    const campaign = ra(state.campaigns);
-    const date = generateDate(campaign.start, campaign.end);
+    const present = options.map.lore.calendar.year;
+    const war: WarEvent | undefined = ra(Events.list({ type: "war", state: states[cells.state[cell]].i })); // the same rolls with a war or without
+    const [from, to] = war ? Events.yearsOf(war) : [present - 100, present - 1];
+    const month = rand(1, 12);
+    const date = Dates.format(Dates.write({ year: rand(from, to), month, day: rand(1, 28) }), "long", "en");
     const name = `${Names.getCulture(cells.culture[cell])} Battlefield`;
-    const legend = `A historical battle of the ${campaign.name}. \r\nDate: ${date} ${options.map.lore.calendar.era}.`;
+    const legend = `A historical battle${war ? ` of the ${war.name}` : ""}. \r\nDate: ${date}.`;
     marker.name = name;
     marker.note = legend;
   }

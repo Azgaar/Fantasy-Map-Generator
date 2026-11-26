@@ -189,6 +189,7 @@ declare const pack: {
   states: import("@/model/political/states-generator").State[];
   provinces: import("@/model/political/provinces-generator").Province[];
   cells: { state: Uint16Array; province: Uint16Array; p: [number, number][] };
+  events: unknown[];
 };
 
 test.describe("Diplomacy", () => {
@@ -197,7 +198,7 @@ test.describe("Diplomacy", () => {
   const diplomacy = (page: Page) => page.evaluate(() => JSON.stringify(pack.states.map(state => state.diplomacy)));
   const relation = (page: Page, subject: number, object: number) =>
     page.evaluate(([a, b]) => pack.states[a].diplomacy![b], [subject, object]);
-  const chronicleLength = (page: Page) => page.evaluate(() => pack.states[0].diplomacy!.length);
+  const chronicleLength = (page: Page) => page.evaluate(() => pack.events.length);
   const selfId = (page: Page) => page.locator("#diplomacyBodySection .Self");
 
   async function openEditor(page: Page, relationName: string): Promise<void> {
@@ -235,7 +236,7 @@ test.describe("Diplomacy", () => {
       const [a, b, c] = [...states].sort((x, y) => y.cells! - x.cells!);
       a.diplomacy![b.i] = b.diplomacy![a.i] = "Rival";
       b.diplomacy![c.i] = c.diplomacy![b.i] = "Ally";
-      pack.states[0].diplomacy = [];
+      pack.events = []; // the relations above are set by hand: none of the generated ones holds
       return [a.i, b.i, c.i];
     });
     await page.evaluate(() => FMG.Controllers.DiplomacyOverview.open());

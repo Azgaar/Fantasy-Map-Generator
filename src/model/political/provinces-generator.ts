@@ -5,6 +5,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Population } from "@/model/society/population-generator";
+import { Events } from "@/model/story/events";
 import type { Emblem } from "@/types/emblems";
 import type { Meaning, Named, PlaceRef } from "@/types/names";
 import { getMixedColor, requireColor } from "@/utils/color-utils";
@@ -102,6 +103,7 @@ class ProvinceModule {
     const isProvinceCellLocked = (cell: number) => provinceIds[cell] && isProvinceLocked(provinces[provinceIds[cell]]);
 
     if (regenerate) {
+      Events.forgetActs(); // provinces are renumbered
       pack.provinces.forEach(province => {
         if (!province.i || province.removed || !isProvinceLocked(province)) return;
 
@@ -432,6 +434,14 @@ class ProvinceModule {
     if (from?.provinces) from.provinces = from.provinces.filter(id => id !== provinceId);
     to.provinces = [...(to.provinces ?? []), provinceId];
     province.state = stateId;
+    const key = `cession:${provinceId}`;
+    const first = pack.states[Events.currentAct(key)?.states?.[0] ?? from.i];
+    const origin = first.i === stateId ? from : first; // given back: it reads as the latest act
+    Events.logAct(key, {
+      name: `Cession of ${province.name} from ${origin.name} to ${to.name}`,
+      states: [origin.i, stateId],
+      tag: "cession"
+    });
     States.findNeighbors();
     States.collectStatistics();
     States.getPoles();
@@ -488,7 +498,13 @@ class ProvinceModule {
     const owner = states[province.state];
     if (owner?.provinces) owner.provinces = owner.provinces.filter(id => id !== provinceId);
     pack.provinces[provinceId] = { i: provinceId, removed: true } as Province;
-    return States.found(province.name, province.burg, province.coa, provinceCells);
+    const stateId = States.found(province.name, province.burg, province.coa, provinceCells);
+    Events.logAct(`independence:${provinceId}`, {
+      name: `Independence of ${states[stateId].name} from ${owner.name}`,
+      states: [stateId, owner.i],
+      tag: "independence"
+    });
+    return stateId;
   }
 
   /** Remove a province; its lands stay with the state */

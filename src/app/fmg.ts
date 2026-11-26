@@ -65,6 +65,8 @@ import { NameBases } from "@/model/society/names/name-bases";
 import { Names } from "@/model/society/names/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { Religions } from "@/model/society/religions-generator";
+import { Dates } from "@/model/story/dates";
+import { Events } from "@/model/story/events";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
 import { Lore } from "@/model/story/lore";
@@ -170,6 +172,8 @@ const FMG = {
   Labels,
   Lakes,
   Legends,
+  Dates,
+  Events,
   Lore,
   MapEntities,
   MapIntegrity,

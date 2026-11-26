@@ -19,9 +19,10 @@ import {
   canEditAsRichText,
   createRichTextEditor,
   getEditorHtml,
+  getToolbarHtml,
+  RICH_TEXT_STYLE,
   runTableAction,
-  setEditorHtml,
-  TOOLBAR_HTML
+  setEditorHtml
 } from "./notes-rich-text";
 
 let quill: Quill | null = null;
@@ -98,66 +99,14 @@ function fillSelect(select: HTMLSelectElement, entries: NoteEntry[], ref?: Entit
 
 const STYLES = /* html */ `
     <style>
+      ${RICH_TEXT_STYLE}
       /* the dialog sets its content height inline; the layout column fills it, the editor takes the rest */
       #notesLayout { display: flex; flex-direction: column; height: 100%; width: auto; }
       #notesHead { display: flex; align-items: center; gap: 0.4em; flex-shrink: 0; margin-bottom: 5px; }
       #notesHead select { flex: 0 1 12em; min-width: 5em; }
       #notesHead input { flex: 0 1 18em; min-width: 5em; }
       #notesFooter { display: flex; gap: 3px; flex-shrink: 0; margin-top: 5px; }
-      #notesToolbar { display: flex; flex-wrap: wrap; align-items: center; flex-shrink: 0; gap: 2px 9px; padding: 4px 6px; background: #f6f5f8; border-radius: 3px 3px 0 0; }
-      #notesToolbar[hidden] { display: none; }
-      /* nothing to format while no note is selected */
-      #notesToolbar:has(+ #notesLegend.ql-disabled) { opacity: 0.45; pointer-events: none; }
-      #notesToolbar .ql-formats { display: flex; align-items: center; flex-shrink: 0; margin: 0; }
-      #notesToolbar button, #notesToolbar .ql-color-picker, #notesToolbar .ql-icon-picker { width: 26px; height: 26px; }
-      #notesToolbar button { padding: 4px; border-radius: 4px; transition: background-color 0.1s; }
-      #notesToolbar .ql-picker { height: 26px; color: #333; }
-      #notesToolbar .ql-picker-label { border-radius: 4px; }
-      #notesToolbar button:hover, #notesToolbar .ql-picker-label:hover, #notesToolbar .ql-expanded .ql-picker-label { background: #ece9f3; }
-      #notesToolbar button.ql-active, #notesToolbar .ql-picker-label.ql-active { background: #e0d9f0; box-shadow: inset 0 0 0 1px #c4b8e0; }
-      /* Quill tints hover and active blue, which fights the app's violet accent */
-      #notesToolbar :is(button:hover, button.ql-active, .ql-picker-label:hover, .ql-active) .ql-stroke { stroke: #5e4fa2; }
-      #notesToolbar :is(button:hover, button.ql-active, .ql-picker-label:hover, .ql-active) .ql-fill { fill: #5e4fa2; }
-      #notesToolbar button:focus-visible, #notesToolbar .ql-picker-label:focus-visible { outline: 2px solid #5e4fa2; outline-offset: -2px; }
-      #notesToolbar .ql-symbol, #notesToolbar .ql-divider { font-size: 17px; line-height: 17px; color: #444; }
-      #notesToolbar :is(.ql-symbol, .ql-divider):hover { color: #5e4fa2; }
-      #notesToolbar .ql-font { width: 112px; margin-right: 3px; }
-      #notesToolbar .ql-size { width: 76px; }
-      /* Quill previews each size by its own name, which the inline-style values are not */
-      #notesToolbar .ql-size .ql-picker-item[data-value="10px"]::before { font-size: 10px; }
-      #notesToolbar .ql-size .ql-picker-item[data-value="18px"]::before { font-size: 18px; }
-      #notesToolbar .ql-size .ql-picker-item[data-value="32px"]::before { font-size: 32px; }
-      #notesToolbar .notes-table { width: 68px; }
-      #notesToolbar :is(.ql-font, .ql-size, .notes-table) .ql-picker-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 18px; font-weight: 400; background: white; border: 1px solid #dedbe2; }
-      #notesToolbar .ql-font .ql-picker-label::before, #notesToolbar .ql-font .ql-picker-item::before, #notesToolbar .notes-table .ql-picker-label::before, #notesToolbar .notes-table .ql-picker-item::before { content: attr(data-label); }
-      /* Fixed menus escape the dialog's own scroll box */
-      #notesToolbar .ql-picker-options { position: fixed; /* Quill sizes the menu with min-width: 100%, which once fixed is 100% of the viewport */
-        min-width: 0; z-index: 2000; max-height: 45vh; overflow-y: auto; margin-top: 3px; padding: 4px; border-radius: 4px; box-shadow: 0 4px 14px #00000026; }
-      #notesToolbar .ql-picker-item { border-radius: 3px; }
-      #notesToolbar .ql-picker-item:hover { background: #ece9f3; }
-      #notesToolbar .ql-font .ql-picker-options, #notesToolbar .notes-table .ql-picker-options { min-width: 180px; }
-      .notes-symbols { margin: 0; padding: 6px; width: 340px; max-width: calc(100vw - 24px); max-height: 40vh; overflow: auto; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 14px #00000026; }
-      .notes-symbols:popover-open { display: grid; grid-template-columns: repeat(auto-fill, minmax(28px, 1fr)); gap: 2px; }
-      #notesLayout .notes-symbols button { margin: 0; min-height: 28px; padding: 2px; font-size: 18px; background: white; border: 0; border-radius: 3px; }
-      .notes-symbols button:hover, .notes-symbols button:focus-visible { background: #ece9f3; }
       #notesLegend, #notesSource { flex: 1; min-height: 0; background-color: #fff; }
-      #notesLegend { border-radius: 0 0 3px 3px; }
-      /* the editing surface should read like the note itself, not like a form field */
-      #notesLegend .ql-editor { padding: 12px 16px; font-family: var(--sans-serif); font-size: 14px; line-height: 1.55; color: #1c1c1c; }
-      #notesLegend .ql-editor p { margin-bottom: 0.35em; }
-      #notesLegend .ql-editor hr { margin: 0.8em 0; border: 0; border-top: 1px solid #c9c5d0; }
-      #notesLegend .ql-editor blockquote { color: #444; }
-      #notesLegend .ql-editor.ql-blank::before { left: 16px; right: 16px; color: #9a96a3; font-style: italic; }
-      /* the link box: Quill's is a bare white strip with blue text links for Edit and Remove */
-      #notesLegend .ql-tooltip { z-index: 3; padding: 6px 10px; color: #333; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 14px #00000026; }
-      #notesLegend .ql-tooltip::before { content: "Link:"; margin-right: 8px; color: #77737f; }
-      #notesLegend .ql-tooltip[data-mode="link"]::before { content: "Enter link:"; }
-      #notesLegend .ql-tooltip input[type="text"] { width: 17em; max-width: 50vw; height: 26px; padding: 3px 6px; border: 1px solid #dedbe2; border-radius: 3px; }
-      #notesLegend .ql-tooltip input[type="text"]:focus { outline: 2px solid #5e4fa2; outline-offset: -2px; }
-      #notesLegend .ql-tooltip a { color: #5e4fa2; }
-      #notesLegend .ql-tooltip a.ql-preview { max-width: 22em; }
-      #notesLegend .ql-tooltip a.ql-action::after, #notesLegend .ql-tooltip a.ql-remove::before { margin-left: 8px; padding: 2px 6px; border: 0; border-radius: 3px; }
-      #notesLegend .ql-tooltip a:hover::after, #notesLegend .ql-tooltip a:hover::before { background: #ece9f3; }
       #notesSource { padding: 10px 12px; font-family: var(--monospace); font-size: 13px; line-height: 1.5; border: 1px solid #ccc; border-radius: 3px; resize: none; }
     </style>`;
 
@@ -175,8 +124,8 @@ function renderDialog(): void {
         <strong id="notesName" data-tip="${t("The element name, edited in the element's own editor")}"></strong>
         <span id="notesNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
       </div>
-      ${TOOLBAR_HTML}
-      <div id="notesLegend"></div>
+      ${getToolbarHtml("notesToolbar")}
+      <div id="notesLegend" class="notes-legend"></div>
       <textarea id="notesSource" hidden spellcheck="false"></textarea>
       <div id="notesFooter">
         <button id="notesFocus" data-tip="${t("Focus on selected object")}" class="icon-target"></button>
@@ -196,7 +145,7 @@ function renderDialog(): void {
   ensureEl<HTMLSelectElement>("notesSelect").addEventListener("change", changeElement);
   ensureEl("notesNameSpeak").addEventListener("click", () => speak(ensureEl("notesName").textContent || ""));
   ensureEl<HTMLTextAreaElement>("notesSource").addEventListener("input", updateLegend);
-  ensureEl<HTMLSelectElement>("notesTable").addEventListener("change", applyTableAction);
+  ensureEl("notesToolbar").querySelector(".notes-table")!.addEventListener("change", applyTableAction);
   ensureEl("notesSourceToggle").addEventListener("click", toggleSourceMode);
   ensureEl("notesFullscreen").addEventListener("click", toggleFullscreen);
   ensureEl("notesPin").addEventListener("click", toggleNotesPin);

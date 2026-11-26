@@ -4,6 +4,8 @@ import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Regiment } from "@/model/political/military-generator";
 import { NameBases } from "@/model/society/names/name-bases";
+import { Dates } from "@/model/story/dates";
+import { Events } from "@/model/story/events";
 import type { LayerId } from "@/renderers/layers";
 import type { Point } from "@/types/global";
 import { t } from "@/utils/i18n";
@@ -19,6 +21,7 @@ export const ENTITY_TYPES = [
   "feature",
   "zone",
   "journey",
+  "event",
   "market",
   "regiment",
   "addedLabel",
@@ -35,7 +38,7 @@ export type EntityType = (typeof ENTITY_TYPES)[number] | (typeof RECORD_TYPES)[n
 export const isEntityType = (value: string): value is EntityType =>
   (ENTITY_TYPES as readonly string[]).includes(value) || (RECORD_TYPES as readonly string[]).includes(value);
 
-type EntityEditor = "GoodsEditor" | "MeasurersEditor" | "TransportEditor" | "NamesbaseEditor";
+type EntityEditor = "GoodsEditor" | "MeasurersEditor" | "TransportEditor" | "NamesbaseEditor" | "Chronicle";
 
 export interface EntityRef {
   type: EntityType;
@@ -342,6 +345,27 @@ class EntityLookup {
         return count ? `${count} ${count === 1 ? "segment" : "segments"}` : "";
       }
     },
+    event: {
+      label: t("Events"),
+      kind: t("Event"),
+      icon: "icon-hourglass-1",
+      scale: 6,
+      layers: [],
+      previewNote: true,
+      collection: { field: "events", indexed: false, references: { parent: "event" } },
+      entity: id => Events.get(id), // by the index: a long history is not searched through
+      name: id => Events.get(id)?.name || "",
+      refs: () => this.refsOf("event", pack.events),
+      position: id => {
+        const event = Events.get(id);
+        return event?.type === "battle" ? [event.x, event.y] : undefined;
+      },
+      context: ref => {
+        const event = Events.get(ref.id);
+        return event ? [Dates.formatRange(event.start, event.end), ...(event.tags ?? [])].join(" · ") : "";
+      },
+      editor: "Chronicle"
+    },
     market: {
       label: t("Markets"),
       kind: t("Market"),
@@ -581,12 +605,11 @@ class EntityLookup {
 
   get(ref: EntityRef): MapEntity | undefined {
     const { collection, entity: find } = this.types[ref.type];
-    const entity =
-      ref.sub !== undefined && find
-        ? find(ref.id, ref.sub)
-        : collection
-          ? this.byId(this.list(collection.field), ref.id)
-          : find?.(ref.id, ref.sub);
+    const entity = find // a type that finds its own: by its sub-entity, by an index, or with no list in the pack
+      ? find(ref.id, ref.sub)
+      : collection
+        ? this.byId(this.list(collection.field), ref.id)
+        : undefined;
     return entity && !entity.removed ? entity : undefined;
   }
 

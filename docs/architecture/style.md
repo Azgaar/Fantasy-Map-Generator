@@ -372,8 +372,6 @@ there.
 - **Every preset parses** — the fifteen JSONs and the fixtures are validated in `styles.test.ts`.
 - **Build on open, destroy on close.** `open` renders into `#styleForm`; `close` (leaving the tab)
   empties it and destroys the controls' dialogs, the elements dialog and the gallery.
-- **The attribute snapshot stays identical.** The `style-parity` e2e baselines pin what a preset
-  writes to the SVG, so a store or editor change that renders differently fails.
 
 ## Adding a style field
 

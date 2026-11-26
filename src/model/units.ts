@@ -195,6 +195,36 @@ export function getDistanceUnitRatio(): number {
   return km ? 1 / km : 1;
 }
 
+export interface LengthUnit {
+  name: string;
+  metres: number;
+}
+
+/** The units short and long lengths are shown in: the height unit (m or ft) and the distance unit; metric for a custom unit */
+export function getLengthUnits(): { short: LengthUnit; long: LengthUnit } {
+  const km = getKmInDistanceUnit();
+  const feet = km && options.map.units.height.unit !== "m";
+  return {
+    short: feet ? { name: "ft", metres: 0.3048 } : { name: "m", metres: 1 },
+    long: km ? { name: getDistanceUnit(), metres: km * 1000 } : { name: "km", metres: 1000 }
+  };
+}
+
+/** The unit a length is shown in: the short one under one long unit */
+export function getLengthUnit(metres: number): LengthUnit {
+  const { short, long } = getLengthUnits();
+  return metres < long.metres ? short : long;
+}
+
+/** A length in metres in the user's units, e.g. "650 ft" or "1.4 mi"; in the unit given to show lengths alike */
+export function formatLength(metres: number, unit = getLengthUnit(metres)): string {
+  const value = metres / unit.metres;
+  return `${rn(value, unit.metres > 1 && value < 10 ? 1 : 0)} ${unit.name}`;
+}
+
+/** The unit speeds are shown in: the distance unit per hour, km/h for a custom unit */
+export const getSpeedUnit = (): string => `${getKmInDistanceUnit() ? getDistanceUnit() : "km"}/h`;
+
 /** Convert a stored speed (always km/h) into the user distance unit per hour */
 export function convertSpeed(speedInKmH: number): number {
   return rn(speedInKmH * getDistanceUnitRatio(), 1);

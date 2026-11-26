@@ -97,7 +97,11 @@ beforeEach(() => {
     { i: 3, name: "Three", fullName: "State Three", diplomacy: ["x", "Neutral", "Ally", "x", "x"] },
     { i: 4, name: "Removed", removed: true, diplomacy: ["x", "x", "x", "x", "x"] }
   ] as State[];
-  vi.stubGlobal("pack", { states, cells: { i: [0, 1, 2, 3, 4, 5], state: Uint16Array.from([0, 1, 2, 3, 4, 99]) } });
+  vi.stubGlobal("pack", {
+    states,
+    events: [],
+    cells: { i: [0, 1, 2, 3, 4, 5], state: Uint16Array.from([0, 1, 2, 3, 4, 99]) }
+  });
   Object.assign(Pack, { findCell: (x: number) => (x < 6 ? x : undefined) });
   options.app.mode = null;
   DiplomacyOverview.open();

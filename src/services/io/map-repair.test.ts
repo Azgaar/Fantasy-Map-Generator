@@ -26,6 +26,7 @@ it("unassigns each invalid cell owner from its own array only", () => {
     rivers: [],
     routes: [],
     markers: [],
+    events: [],
     journeys: []
   } as unknown as typeof pack;
 
@@ -68,6 +69,7 @@ it("removes rivers with less than 2 cells and frees their cells and lakes", () =
     ],
     routes: [],
     markers: [],
+    events: [],
     journeys: []
   } as unknown as typeof pack;
 
@@ -119,6 +121,7 @@ it("drops river points that no longer match the river cells", () => {
     ],
     routes: [],
     markers: [],
+    events: [],
     journeys: []
   } as unknown as typeof pack;
 
@@ -172,6 +175,7 @@ it("relinks routes, markers and regiments whose cells are left from another grap
       }
     ],
     markers: [{ i: 0, x: 25, y: 5, cell: 0 }],
+    events: [],
     journeys: []
   } as unknown as typeof pack;
 
@@ -221,6 +225,7 @@ it("removes route links to missing cells when the route points are sound", () =>
       }
     ],
     markers: [],
+    events: [],
     journeys: []
   } as unknown as typeof pack;
 

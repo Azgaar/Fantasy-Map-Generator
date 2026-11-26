@@ -18,6 +18,7 @@ import { Cultures } from "@/model/society/cultures-generator";
 import { Meanings } from "@/model/society/names/meanings";
 import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Religions } from "@/model/society/religions-generator";
+import { Events } from "@/model/story/events";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
 import { Markers } from "@/model/story/markers-generator";
@@ -72,6 +73,7 @@ beforeEach(() => {
   vi.stubGlobal("options", {
     map: {
       units: { population: { scale: 1000, urbanization: { rate: 2 } } },
+      lore: { calendar: { year: 1200, era: "Era", eraShort: "E" } },
       burgs: { groups: [{ name: "town" }, { name: "city" }, { name: "gone", removed: true }] }
     }
   });
@@ -86,7 +88,7 @@ describe("recolor", () => {
     ["Biomes", "biomes"],
     ["Zones", "zones"]
   ])("%s.recolor sets a HEX color and rejects anything else", (model, key) => {
-    vi.stubGlobal("pack", { [key]: [{ i: 0 }, { i: 1, color: "#000000" }, { i: 2, removed: true }] });
+    vi.stubGlobal("pack", { events: [], [key]: [{ i: 0 }, { i: 1, color: "#000000" }, { i: 2, removed: true }] });
     const owner = MODELS[model];
     owner.recolor(1, "#A1B2C3");
     expect(pack[key as "states"][1].color).toBe("#A1B2C3");
@@ -101,7 +103,10 @@ describe("recolor", () => {
 
 describe("Burgs", () => {
   beforeEach(() => {
-    vi.stubGlobal("pack", { burgs: [0, { i: 1, name: "Vel", group: "town", walls: 0 }, { i: 2, removed: true }] });
+    vi.stubGlobal("pack", {
+      events: [],
+      burgs: [0, { i: 1, name: "Vel", group: "town", walls: 0 }, { i: 2, removed: true }]
+    });
   });
 
   it("setPopulation takes people and stores population points", () => {
@@ -143,6 +148,7 @@ describe("Burgs", () => {
 describe("full names", () => {
   it("sets a state's and a province's full name", () => {
     vi.stubGlobal("pack", {
+      events: [],
       states: [{ i: 0 }, { i: 1, name: "Orwin" }],
       provinces: [{ i: 0 }, { i: 1, name: "Vel" }]
     });
@@ -157,6 +163,7 @@ describe("full names", () => {
 describe("state forms", () => {
   it("sets the government with a listed form name and keeps it for a custom one", () => {
     vi.stubGlobal("pack", {
+      events: [],
       states: [{ i: 0 }, { i: 1, name: "Orwin", form: "Monarchy", formName: "Kingdom", fullName: "Kingdom of Orwin" }]
     });
     States.setForm(1, "Free City");
@@ -175,6 +182,7 @@ describe("state forms", () => {
 describe("population", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       states: [{ i: 0 }, { i: 1 }],
       burgs: [0, { i: 1, cell: 1, state: 1, population: 1 }, { i: 2, cell: 2, state: 1, population: 3 }],
       cells: {
@@ -207,14 +215,14 @@ describe("population", () => {
 
 describe("Cultures and Religions", () => {
   it("setType accepts culture types only", () => {
-    vi.stubGlobal("pack", { cultures: [{ i: 0 }, { i: 1, type: "Generic" }] });
+    vi.stubGlobal("pack", { events: [], cultures: [{ i: 0 }, { i: 1, type: "Generic" }] });
     Cultures.setType(1, "Highland");
     expect(pack.cultures[1].type).toBe("Highland");
     expect(() => Cultures.setType(1, "Elvish")).toThrow("The type must be one of");
   });
 
   it("setDeity sets and clears the deity", () => {
-    vi.stubGlobal("pack", { religions: [{ i: 0 }, { i: 1, deity: "Old One" }] });
+    vi.stubGlobal("pack", { events: [], religions: [{ i: 0 }, { i: 1, deity: "Old One" }] });
     Religions.setDeity(1, " Sun Father ");
     expect(pack.religions[1].deity).toBe("Sun Father");
     Religions.setDeity(1, "");
@@ -224,7 +232,7 @@ describe("Cultures and Religions", () => {
 
 describe("Biomes", () => {
   it("renames and sets habitability", () => {
-    vi.stubGlobal("pack", { biomes: [{ i: 0, name: "Marine", habitability: 0 }] });
+    vi.stubGlobal("pack", { events: [], biomes: [{ i: 0, name: "Marine", habitability: 0 }] });
     Biomes.rename(0, "Deep sea");
     Biomes.setHabitability(0, 40);
     expect(pack.biomes[0]).toMatchObject({ name: "Deep sea", habitability: 40 });
@@ -238,7 +246,7 @@ describe("Biomes", () => {
 
 describe("Zones", () => {
   it("renames, retypes and hides by zone id", () => {
-    vi.stubGlobal("pack", { zones: [{ i: 4, name: "Old", type: "Invasion", color: "#000" }] });
+    vi.stubGlobal("pack", { events: [], zones: [{ i: 4, name: "Old", type: "Invasion", color: "#000" }] });
     Zones.rename(4, "The Long War");
     Zones.setType(4, "War");
     Zones.setHidden(4, true);
@@ -251,7 +259,7 @@ describe("Zones", () => {
 
 describe("Routes and Features", () => {
   it("rename by id and reject missing ones", () => {
-    vi.stubGlobal("pack", { routes: [{ i: 3, group: "roads" }], features: [{}, { i: 1, name: "Old" }] });
+    vi.stubGlobal("pack", { events: [], routes: [{ i: 3, group: "roads" }], features: [{}, { i: 1, name: "Old" }] });
     Routes.rename(3, "King's Road");
     const meaning: Meaning = { pattern: "feature", tokens: ["island"], origin: "english" };
     Features.setName(1, { name: "Eyot", meaning });
@@ -267,7 +275,7 @@ describe("Routes and Features", () => {
 
 describe("Markers", () => {
   it("sets icon, type and visibility", () => {
-    vi.stubGlobal("pack", { markers: [{ i: 2, icon: "glyph-2753", type: "unknown" }] });
+    vi.stubGlobal("pack", { events: [], markers: [{ i: 2, icon: "glyph-2753", type: "unknown" }] });
     Markers.setIcon(2, "🌋");
     Markers.setType(2, "volcano");
     Markers.setHidden(2, true);
@@ -284,6 +292,7 @@ describe("Markers", () => {
 describe("Burgs: capital, move, remove", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       burgs: [
         0,
         { i: 1, name: "Vel", cell: 1, state: 1, capital: 1 },
@@ -350,6 +359,7 @@ describe("Burgs: capital, move, remove", () => {
 describe("States", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       states: withFinance([
         { i: 0, diplomacy: [] },
         { i: 1, name: "Orwin", diplomacy: ["x", "x", "Neutral"], provinces: [1], military: [{ i: 0, name: "1st" }] },
@@ -364,17 +374,35 @@ describe("States", () => {
       vi.spyOn(States, method).mockImplementation(() => {});
   });
 
-  it("setRelation sets both sides and records the change", () => {
+  it("setRelation sets both sides and begins the vassalage", () => {
     States.setRelation(2, 1, "Vassal");
     expect(pack.states[2].diplomacy![1]).toBe("Vassal");
     expect(pack.states[1].diplomacy![2]).toBe("Suzerain");
-    expect(States.getChronicle().at(-1)).toEqual(["Vassalization", "Kahor became a vassal of Orwin"]);
+    expect(pack.events).toMatchObject([{ type: "vassalage", suzerain: 1, vassal: 2, start: "1200", auto: true }]);
     expect(() => States.setRelation(1, 2, "Besties")).toThrow("The relation must be one of");
     expect(() => States.setRelation(1, 1, "Ally")).toThrow("two different states");
   });
 
   it("remove leaves neutral lands and burgs and removes provinces", () => {
+    pack.events = [
+      {
+        i: 0,
+        type: "battle",
+        name: "B",
+        start: "1",
+        end: "1",
+        attackers: [1],
+        defenders: [2],
+        winner: null,
+        status: ["", ""],
+        cell: 0,
+        x: 0,
+        y: 0,
+        regiments: [{ state: 1, i: 0 }]
+      }
+    ];
     States.remove(1);
+    expect(pack.events[0]).not.toHaveProperty("regiments");
     expect(pack.states[1]).toEqual({ i: 1, removed: true });
     expect(pack.provinces[1].removed).toBe(true);
     expect([...pack.cells.state]).toEqual([0, 0, 0, 2]);
@@ -383,7 +411,29 @@ describe("States", () => {
   });
 
   it("merge hands lands, burgs, provinces and regiments to the ruling state", () => {
+    pack.events = [
+      {
+        i: 0,
+        type: "battle",
+        name: "B",
+        start: "1",
+        end: "1",
+        attackers: [1],
+        defenders: [2],
+        winner: null,
+        status: ["", ""],
+        cell: 0,
+        x: 0,
+        y: 0,
+        regiments: [
+          { state: 1, i: 0 },
+          { state: 2, i: 0 }
+        ]
+      }
+    ];
     States.merge(2, [1]);
+    expect(Events.list({ type: "battle", regiment: { state: 2, i: 1 } }).map(({ i }) => i)).toEqual([0]); // the merged regiment's new id
+    expect(Events.list({ type: "battle", regiment: { state: 1, i: 0 } })).toEqual([]);
     expect(pack.states[1].removed).toBe(true);
     expect([...pack.cells.state]).toEqual([0, 2, 2, 2]);
     expect(pack.burgs[1]).toMatchObject({ state: 2, capital: 0 });
@@ -399,6 +449,7 @@ describe("States", () => {
 describe("Provinces", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       states: [{ i: 0 }, { i: 1, capital: 1, provinces: [1] }, { i: 2, capital: 2, provinces: [] }],
       provinces: [{ i: 0 }, { i: 1, state: 1, name: "Vel", formName: "County", burg: 0, center: 1 }],
       burgs: [0, { i: 1, cell: 2, state: 1 }, { i: 2, cell: 3, state: 2 }, { i: 3, cell: 1, state: 1 }],
@@ -434,6 +485,7 @@ describe("Provinces", () => {
 describe("Cultures and Religions removal", () => {
   it("frees cells, burgs, states, religions and origins", () => {
     vi.stubGlobal("pack", {
+      events: [],
       cultures: [{ i: 0 }, { i: 1 }, { i: 2, origins: [1] }],
       religions: [{ i: 0 }, { i: 1, culture: 1 }, { i: 2, culture: 1, origins: [1, 0] }],
       burgs: [0, { i: 1, culture: 1 }],
@@ -461,6 +513,7 @@ describe("Cultures and Religions removal", () => {
 describe("Zones, Markers, Routes, labels and regiments", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       cells: { i: [0, 1, 2], routes: { 0: { 1: 5 }, 1: { 0: 5 } } },
       zones: [{ i: 0, name: "War", type: "Invasion", cells: [0] }],
       markers: [{ i: 0, name: "Pit", type: "caves", icon: "🦇", cell: 0 }],
@@ -566,6 +619,7 @@ describe("Zones, Markers, Routes, labels and regiments", () => {
 describe("founding at a map point", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       cells: {
         h: [10, 30, 30],
         state: [0, 1, 1],
@@ -625,6 +679,7 @@ describe("founding at a map point", () => {
 describe("locks, treasuries and links", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       burgs: [0, { i: 1, name: "Vel" }],
       states: withFinance([{ i: 0 }, { i: 1 }]),
       provinces: [{ i: 0 }, { i: 1 }],
@@ -690,6 +745,7 @@ describe("locks, treasuries and links", () => {
 describe("States: chronicle, painting and merging as provinces", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       states: withFinance([
         { i: 0, diplomacy: [["Old war", "It ended"]] },
         { i: 1, name: "Orwin", center: 1, capital: 1, color: "#aa0000", provinces: [1], military: [] },
@@ -711,17 +767,6 @@ describe("States: chronicle, painting and merging as provinces", () => {
     for (const method of ["findNeighbors", "collectStatistics", "getPoles"] as const)
       vi.spyOn(States, method).mockImplementation(() => {});
     vi.spyOn(Provinces, "getPoles").mockImplementation(() => {});
-  });
-
-  it("edits chronicle entries as escaped text", () => {
-    States.setChronicleEntry(1, ["Peace", "<b>Orwin</b> & Kahor"]);
-    expect(States.getChronicle()[1]).toEqual(["Peace", "&lt;b&gt;Orwin&lt;/b&gt; &amp; Kahor"]);
-    States.setChronicleEntry(0, []);
-    expect(States.getChronicle()).toHaveLength(1);
-    expect(() => States.setChronicleEntry(5, ["x"])).toThrow("does not exist");
-    States.setChronicleEntry(-1, ["Treaty"]);
-    expect(States.getChronicle().at(-1)).toEqual(["Treaty"]);
-    expect(States.getChronicle()).toHaveLength(2);
   });
 
   it("gives cells to a state with their burgs and province, never another state's center", () => {
@@ -752,6 +797,7 @@ describe("States: chronicle, painting and merging as provinces", () => {
 describe("Provinces: merge and painting", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       states: [{ i: 0 }, { i: 1, provinces: [1, 2] }, { i: 2, provinces: [3] }],
       provinces: [
         { i: 0 },
@@ -785,6 +831,7 @@ describe("Provinces: merge and painting", () => {
 describe("Cultures and Religions: origins, codes, centers, cells and shields", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       cultures: [{ i: 0 }, { i: 1, origins: [0] }, { i: 2, origins: [1] }, { i: 3, origins: [2], center: 3 }],
       religions: [{ i: 0 }, { i: 1, origins: [0] }, { i: 2, origins: [1] }],
       states: [{ i: 0 }, { i: 1, culture: 1, coa: { t1: "or", shield: "heater" } }],
@@ -833,7 +880,7 @@ describe("Lore", () => {
   it("renames the map and sets its calendar and description", () => {
     const lore = { name: "Old", description: "", calendar: { year: 1, era: "Old Era", eraShort: "OE" } };
     vi.stubGlobal("options", { map: { lore } });
-    vi.stubGlobal("pack", { states: [{ i: 0 }] });
+    vi.stubGlobal("pack", { events: [], states: [{ i: 0 }] });
     Lore.rename(" Saltmarsh ");
     Lore.setYear(1204.4);
     Lore.setEra("Age of Ash", "AA");
@@ -849,20 +896,21 @@ describe("Lore", () => {
     expect(() => Lore.setYear(Number.NaN)).toThrow("The year must be a number");
   });
 
-  it("moves state campaigns with the year", () => {
-    const war = { name: "War", start: 1195, attacker: 1, defender: 2 };
-    const old = { name: "Old", start: 1000, end: 1010, attacker: 1, defender: 0 };
+  it("moves the history with the year, keeping months and days", () => {
+    const war = { i: 0, type: "war", name: "War", start: "1195-03-14", attackers: [1], defenders: [2] };
+    const old = { i: 1, type: "war", name: "Old", start: "-5", end: "10", attackers: [1], defenders: [] };
     vi.stubGlobal("options", { map: { lore: { calendar: { year: 1200 } } } });
-    vi.stubGlobal("pack", { states: [{ i: 0 }, { i: 1, campaigns: [old, war] }, { i: 2, campaigns: [war] }] });
+    vi.stubGlobal("pack", { states: [{ i: 0 }], events: [old, war] });
     Lore.setYear(1500);
-    expect(war).toEqual({ name: "War", start: 1495, attacker: 1, defender: 2 });
-    expect(old).toMatchObject({ start: 1300, end: 1310 });
+    expect(war.start).toBe("1495-03-14");
+    expect(old).toMatchObject({ start: "295", end: "310" });
   });
 });
 
 describe("Biomes and Features", () => {
   it("paints land cells with a living biome", () => {
     vi.stubGlobal("pack", {
+      events: [],
       biomes: [{ i: 0 }, { i: 1 }, { i: 2, removed: true }],
       cells: { i: [0, 1, 2], h: Uint8Array.from([10, 30, 30]), biome: Uint8Array.from([0, 1, 0]) }
     });
@@ -875,6 +923,7 @@ describe("Biomes and Features", () => {
 
   it("adds custom biomes and removes only unused custom ones", () => {
     vi.stubGlobal("pack", {
+      events: [],
       biomes: Array.from({ length: 13 }, (_, i) => ({ i, name: `B${i}` })),
       cells: { biome: Uint8Array.from([1, 12]) }
     });
@@ -890,6 +939,7 @@ describe("Biomes and Features", () => {
 
   it("sets subtypes within the type, lake groups and own coastlines", () => {
     vi.stubGlobal("pack", {
+      events: [],
       features: [0, { i: 1, type: "lake", subtype: "freshwater" }, { i: 2, type: "island", subtype: "lake_island" }]
     });
     vi.stubGlobal("styles", { lakes: { groups: { freshwater: {}, salt: {} } } });
@@ -912,6 +962,7 @@ describe("Biomes and Features", () => {
 describe("Rivers and Routes", () => {
   it("sets a mainstem without loops and a width", () => {
     vi.stubGlobal("pack", {
+      events: [],
       rivers: [
         { i: 1, parent: 0, basin: 1, cells: [] },
         { i: 2, parent: 1, basin: 1, cells: [] },
@@ -928,7 +979,7 @@ describe("Rivers and Routes", () => {
   });
 
   it("creates, splits and joins routes with their cell links", () => {
-    vi.stubGlobal("pack", { routes: [], cells: { f: [1, 1, 1, 1], routes: {} } });
+    vi.stubGlobal("pack", { events: [], routes: [], cells: { f: [1, 1, 1, 1], routes: {} } });
     vi.stubGlobal("styles", { routes: { groups: { roads: {} } } });
     vi.spyOn(Pack, "requireCell").mockImplementation((x: unknown) => x as number);
     const id = Routes.create(
@@ -957,6 +1008,7 @@ describe("Rivers and Routes", () => {
 describe("Markers and Labels", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       markers: [{ i: 0, x: 1, y: 1, cell: 0 }],
       states: [{ i: 0 }, { i: 1, label: { dx: 5 } }],
       provinces: [],
@@ -1006,6 +1058,7 @@ describe("Markers and Labels", () => {
 describe("Military", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       states: [
         { i: 0 },
         { i: 1, military: [{ i: 0, u: { infantry: 5, archers: 3 }, a: 8, x: 10, y: 10, n: 0 }] },
@@ -1060,6 +1113,38 @@ describe("Military", () => {
     expect(() => Military.rotate(1, id, 270)).toThrow("from -180 to 180");
   });
 
+  it("keeps a regiment's battles on the battle: attached they follow it, disbanded they are dropped", () => {
+    vi.spyOn(Pack, "requireCell").mockReturnValue(0);
+    const battle = (i: number, regiments: { state: number; i: number }[]) =>
+      ({
+        i,
+        type: "battle",
+        name: "B",
+        start: "1",
+        end: "1",
+        attackers: [1],
+        defenders: [2],
+        regiments
+      }) as never;
+    pack.events = [
+      battle(0, [
+        { state: 1, i: 0 },
+        { state: 2, i: 0 }
+      ]),
+      battle(1, [{ state: 1, i: 0 }])
+    ];
+    Military.attach(1, 0, 2, 0);
+    expect(pack.events.map(event => (event as { regiments?: unknown }).regiments)).toEqual([
+      [{ state: 2, i: 0 }],
+      [{ state: 2, i: 0 }]
+    ]);
+    expect(Events.list({ type: "battle", regiment: { state: 2, i: 0 } })).toHaveLength(2);
+    Military.remove(2, 0);
+    expect(pack.events.every(event => !("regiments" in event))).toBe(true);
+    const reused = Military.add(2, 5, 6); // the id given again
+    expect(Events.list({ type: "battle", regiment: { state: 2, i: reused } })).toEqual([]);
+  });
+
   it("keeps the attached regiment's note in the target's", () => {
     pack.states[1].military![0].name = "First";
     pack.states[1].military![0].note = "Formed in 1100 AE.";
@@ -1074,6 +1159,7 @@ describe("Military", () => {
 describe("Emblems", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       states: [{ i: 0 }, { i: 1, coa: { t1: "or", shield: "heater", size: 2, x: 5, y: 6 } }],
       provinces: [{ i: 0 }],
       burgs: [0]
@@ -1106,6 +1192,7 @@ describe("Emblems", () => {
 describe("Journeys", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
+      events: [],
       journeys: [
         {
           i: 0,
@@ -1151,9 +1238,7 @@ describe("Goods and Markets", () => {
       { i: 1, name: "Salt", tags: [], value: 2, unit: "", icon: "🧂", color: "#ffffff" },
       { i: 2, name: "Fish", tags: [], value: 1, unit: "", icon: "🐟", color: "#0000ff" }
     ] as never;
-    vi.stubGlobal("pack", {
-      markets: [{ i: 1, centerBurgId: 1, color: "#000000", goods: {} }]
-    });
+    vi.stubGlobal("pack", { events: [], markets: [{ i: 1, centerBurgId: 1, color: "#000000", goods: {} }] });
   });
 
   it("edits goods and their production rules, never their distribution code", () => {

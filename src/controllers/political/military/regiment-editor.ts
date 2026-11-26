@@ -2,11 +2,13 @@ import { type D3DragEvent, drag, easeSinInOut, select, transition } from "d3";
 import { Controllers } from "@/controllers";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import { BattleSite } from "@/model/political/battle/battle-site";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
 import { Tags } from "@/model/tags";
 import {
   drawRegiment,
+  getRegimentStep,
   getRegimentWidth,
   moveRegiment,
   regimentIconBox,
@@ -169,7 +171,7 @@ function updateRegimentData(regiment: Regiment): void {
 }
 
 function updateRegimentPower(regiment: Regiment): void {
-  const upkeep = rn(Military.getBattleUpkeep(regiment.state) * 100);
+  const upkeep = rn(Military.getUpkeep(regiment.state) * 100);
   ensureEl("regimentPower").textContent =
     `${si(Military.getTroops(Military.getRegimentPower(regiment)))} (${upkeep}% ${t("upkeep")})`;
 }
@@ -367,7 +369,7 @@ function splitRegiment(): void {
   const state = +selectedRegiment.dataset.state!;
   let newId: number;
   try {
-    newId = Military.split(state, reg.i);
+    newId = Military.split(state, reg.i, getRegimentStep());
   } catch {
     tip(t("Not enough forces to split"), false, "error");
     return;
@@ -450,6 +452,16 @@ async function attackRegimentOnClick(this: SVGGElement, event: MouseEvent): Prom
     tip(t("Regiment has no troops to battle"), false, "error");
     return;
   }
+  const atSea = (pack.cells.h[Pack.findCell(defender.x, defender.y) ?? -1] ?? 20) < 20; // by the coast too: no ground to fight on
+  const reachesSea = Military.getUnitTypes(attacker).some(type => type === "naval" || type === "aviation");
+  if (atSea && !attacker.n && !reachesSea) {
+    tip(t("Land troops cannot reach a fleet on the open sea"), false, "error");
+    return;
+  }
+  if (attacker.n && !defender.n && !BattleSite.getShore([defender.x, defender.y])) {
+    tip(t("A fleet cannot reach troops away from the shore"), false, "error");
+    return;
+  }
 
   // save initial position to temp attribute
   attacker.px = attacker.x;
@@ -458,7 +470,7 @@ async function attackRegimentOnClick(this: SVGGElement, event: MouseEvent): Prom
   defender.py = defender.y;
 
   // move attacker to defender
-  moveRegiment(attacker, defender.x, defender.y - 8);
+  moveRegiment(attacker, defender.x, rn(defender.y - getRegimentStep(), 2));
 
   // draw battle icon
   const attackTransition = transition().delay(300).duration(700).ease(easeSinInOut);

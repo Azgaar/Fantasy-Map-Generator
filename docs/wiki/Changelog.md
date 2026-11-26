@@ -30,6 +30,20 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Namesbase Editor: copy, download or restore a single namesbase
 - Namesbase Editor: JSON download and upload; older TXT still loads
 
+**[1.159.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.159.0) - 2026-11-23**:
+
+- Battle Simulator: animated battles on the map's ground, fought by battalions led by generals
+- Battle Simulator: tactics, field works, sieges, landings, weather, day and night
+- Battle Simulator: orders to battalions or a whole side, before and during the battle
+- Battle Simulator: export a battle as GIF, animated SVG or battle report
+- Chronicle: the map's history of wars, battles, alliances and vassalages, replaces Relations history
+- Chronicle: rewatch battles
+- Military units: attack, defense, speed, range and morale parameters
+- Military units editor: sortable table with optional columns
+- Goods Editor: deposit distribution function UX improvement
+- Goods Editor: control deposit by min/max population
+- Goods Editor: control deposit clustering
+
 **[1.158.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.158.0) - 2026-11-12**:
 
 - Autosafe slots

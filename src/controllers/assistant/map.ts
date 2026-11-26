@@ -2,6 +2,7 @@ import { Controllers } from "@/controllers";
 import type { Note } from "@/controllers/story/notes-editor";
 import { type EntityType, MapEntities } from "@/model/map-entities";
 import { mapHistory } from "@/model/map-history";
+import { Events } from "@/model/story/events";
 import {
   convertTemperature,
   formatPrice,
@@ -61,7 +62,7 @@ async function context(chat: Chat): Promise<string> {
     `religions: ${live(pack.religions)}`,
     `rivers: ${pack.rivers?.length ?? 0}`,
     `markers: ${pack.markers?.length ?? 0}`,
-    `chronicle entries: ${pack.states[0]?.diplomacy?.length ?? 0} (\`States.getChronicle()\`: entries as text lines, the first the title; HTML-escaped)`
+    `events: ${pack.events.length} (wars, alliances, vassalages, battles and the user's own; \`Events.list({ type, state, against, parent, regiment, ongoing })\`)`
   ];
   // The only one-sided relation; models read a bare "Vassal" the wrong way round
   const vassals = pack.states.flatMap(state =>
@@ -72,6 +73,13 @@ async function context(chat: Chat): Promise<string> {
       : []
   );
   if (vassals.length) facts.push(`vassals: ${vassals.join("; ")}`);
+  const sides = (ids: number[]) => ids.map(id => `${pack.states[id]?.name ?? "former state"} (state:${id})`).join(", "); // English, as the model reads it
+  const wars = Events.list({ type: "war", ongoing: true }).map(
+    war => `${war.name} (event:${war.i}): ${sides(war.attackers)} against ${sides(war.defenders) || "a vanished foe"}`
+  );
+  if (wars.length) facts.push(`wars going on: ${wars.join("; ")}`);
+  const battles = Events.list({ type: "battle" }).length;
+  if (battles) facts.push(`battles in the history: ${battles}`);
   const sections = [
     `# Current map\n\n${facts.map(fact => `- ${fact}`).join("\n")}`,
     await noteContext(),

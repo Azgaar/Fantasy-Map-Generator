@@ -48,6 +48,7 @@ beforeEach(() => {
   vi.mocked(Layers.draw).mockClear();
   document.body.innerHTML = "";
   globalThis.pack = {
+    events: [],
     burgs: [0, { i: 1, name: "Vel", label: { text: "Vel" }, note: "<p>Old</p>" }, { i: 2, name: "Orn" }],
     states: [
       { i: 0, name: "Neutrals" },
@@ -184,20 +185,16 @@ it("applies and undoes property edits, including a field that was absent", () =>
   expect("hidden" in pack.zones[0]).toBe(false);
 });
 
-it("adds chronicle entries from proposals made side by side, and undoes each alone", () => {
-  const chronicle = [["Old War"]];
-  pack.states[0].diplomacy = chronicle as unknown as string[];
-  const entry = (title: string) => propose(title, [{ op: "States.setChronicleEntry", args: [-1, [title]] }], 1, MAP);
-  const [peace, treaty] = [entry("Peace"), entry("Treaty")] as Proposal[];
-  expect(peace.change).toEqual([
-    { key: "state:0", entity: "State: Neutrals", field: "diplomacy", after: [["Peace"]], append: true }
-  ]);
-  expect(apply(peace, MAP)).toBe(true);
-  expect(apply(treaty, MAP)).toBe(true);
-  expect(chronicle).toEqual([["Old War"], ["Peace"], ["Treaty"]]);
-  expect(undo(peace, MAP)).toBe(true);
-  expect(chronicle).toEqual([["Old War"], ["Treaty"]]);
-  expect(undo(peace, MAP)).toBe(false);
+it("adds an event of the history from a proposal, and undo takes it back", () => {
+  vi.stubGlobal("options", { ...options, map: { ...options.map, lore: { calendar: { year: 120 } } } });
+  pack.events = [];
+  const event = { type: "custom", name: "The long winter", start: "119", end: "120", tags: ["famine"] };
+  const proposal = propose("Winter", [{ op: "Events.add", args: [event] }], 1, MAP) as Proposal;
+  expect(proposal.change).toEqual([expect.objectContaining({ key: "event:0", after: expect.objectContaining(event) })]);
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(pack.events).toMatchObject([event]);
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(pack.events).toEqual([]);
 });
 
 it("refreshes the Population layer when a burg's population changes", () => {

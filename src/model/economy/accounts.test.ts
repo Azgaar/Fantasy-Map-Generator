@@ -18,6 +18,7 @@ it("counts a state's markets when its fee is zero", () => {
 
 beforeEach(() => {
   globalThis.pack = {
+    events: [],
     burgs: [{ i: 0 }, { i: 1, state: 1 }, { i: 2, state: 2 }],
     cells: { i: [0, 1], state: [1, 2] },
     deals: [

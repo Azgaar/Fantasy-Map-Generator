@@ -67,7 +67,12 @@ beforeEach(() => {
   propose.mockReset();
   Object.assign(mapHistory, [{ created: 42 }]);
   vi.stubGlobal("options", mapOptions);
-  vi.stubGlobal("pack", { cells: { i: [0] }, states: [], burgs: [0, { i: 1, name: "Vel" }, { i: 2, removed: true }] });
+  vi.stubGlobal("pack", {
+    events: [],
+    cells: { i: [0] },
+    states: [],
+    burgs: [0, { i: 1, name: "Vel" }, { i: 2, removed: true }]
+  });
 });
 
 it("offers read_map, propose_change, one tool per widget, view_emblem and view_map", () => {
@@ -113,6 +118,7 @@ it("names the first key that is not a live entity, and shows nothing", async () 
 
 it("names vassals with their suzerains in per-question context", async () => {
   vi.stubGlobal("pack", {
+    events: [],
     cells: { i: [0] },
     burgs: [0],
     states: [
@@ -217,6 +223,7 @@ it("gives read_map scripts the app's unit helpers", async () => {
 
 it("ends a read_map result with the keys of the entities it names, in order of mention", async () => {
   vi.stubGlobal("pack", {
+    events: [],
     cells: { i: [0] },
     states: [
       { i: 0, name: "Neutrals" },

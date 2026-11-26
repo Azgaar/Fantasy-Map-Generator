@@ -4,6 +4,9 @@ import type { Expense } from "@/data/expenses";
 import type { LabelType } from "@/model/annotations/labels-generator";
 import type { ProsperityLevel } from "@/model/economy/prosperity";
 import type { Sampling } from "@/model/graph/lattice";
+import type { BattleType, Command } from "@/model/political/battle/battle-rules";
+import type { Period } from "@/model/political/battle/time";
+import type { Condition, Weather } from "@/model/political/battle/weather";
 import type { TransportDomain } from "@/model/story/journeys/transports-generator";
 import type { DemandCategory } from "@/types/economy";
 import type { Pattern } from "@/types/names";
@@ -279,3 +282,105 @@ export const PATTERN_LABELS: [group: string, patterns: [Pattern, string][]][] = 
     ]
   ]
 ];
+
+export const BATTLE_TYPE_LABELS: Record<BattleType, string> = {
+  field: t("Field battle"),
+  naval: t("Naval battle"),
+  siege: t("Siege"),
+  ambush: t("Ambush"),
+  landing: t("Landing"),
+  bombardment: t("Bombardment"),
+  air: t("Air battle")
+};
+
+export const WEATHER_LABELS: Record<Weather, string> = {
+  clear: t("Clear"),
+  rain: t("Rain"),
+  downpour: t("Heavy rain"),
+  snow: t("Snow"),
+  fog: t("Fog")
+};
+
+export const PERIOD_LABELS: Record<Period, string> = {
+  night: t("Night"),
+  dawn: t("Dawn"),
+  morning: t("Morning"),
+  midday: t("Midday"),
+  afternoon: t("Afternoon"),
+  evening: t("Evening"),
+  dusk: t("Dusk")
+};
+
+export const CONDITION_LABELS: Record<Condition, string> = {
+  mud: t("Mud"),
+  ice: t("Ice"),
+  heat: t("Heat")
+};
+
+export const BATTLE_ORDER_LABELS: Record<Command, string> = {
+  hold: t("Hold"),
+  fortify: t("Fortify"),
+  skirmish: t("Skirmish"),
+  attack: t("Attack"),
+  defend: t("Defend"),
+  pursue: t("Pursue"),
+  retreat: t("Retreat"),
+  surrender: t("Surrender")
+};
+
+export const BATTLE_TACTIC_LABELS: Record<string, string> = {
+  assault: t("Frontal assault"),
+  oblique: t("Oblique attack"),
+  envelopment: t("Envelopment"),
+  wedge: t("Wedge"),
+  harass: t("Harassing fire"),
+  flyingWedge: t("Flying wedge"),
+  feignedRetreat: t("Feigned retreat"),
+  defensiveLine: t("Defensive line"),
+  refusedFlanks: t("Refused flanks"),
+  crossing: t("Defence of a crossing"),
+  wagenburg: t("Wagenburg"),
+  strategicRetreat: t("Strategic retreat"),
+  column: t("Column of march"),
+  ambuscadeBothSides: t("Ambuscade on both sides"),
+  ambuscadeOneSide: t("Ambuscade on one side"),
+  lines: t("Siege lines"),
+  ring: t("Ring round the walls"),
+  garrison: t("Garrison on the walls"),
+  waves: t("Landing in waves")
+};
+
+/** An outcome as a side sees it, such as "attackers decisive victory", in the interface's language */
+export function getOutcomeLabel(status: string): string {
+  const outcome = status.replace(/^(attackers|defenders) | of (attackers|defenders)$/, "");
+  return BATTLE_OUTCOME_LABELS[outcome] ?? outcome.charAt(0).toUpperCase() + outcome.slice(1);
+}
+
+/** Outcomes as a side sees them, the side's name left out (see `BattleRules.getStatus`) */
+export const BATTLE_OUTCOME_LABELS: Record<string, string> = {
+  standoff: t("Standoff"),
+  "minor skirmishes": t("Minor skirmishes"),
+  "flawless victory": t("Flawless victory"),
+  "decisive victory": t("Decisive victory"),
+  victory: t("Victory"),
+  stalemate: t("Stalemate"),
+  defeat: t("Defeat"),
+  "disastrous defeat": t("Disastrous defeat"),
+  "disorderly retreat": t("Disorderly retreat"),
+  "raised the siege": t("Raised the siege")
+};
+
+export const BATTLE_STATUS_LABELS: Record<string, string> = {
+  surrendered: t("Surrendered"),
+  fled: t("Fled"),
+  destroyed: t("Destroyed")
+};
+
+export const BATTLE_ACTION_LABELS: Record<string, string> = {
+  hold: t("Holding"),
+  move: t("Moving"),
+  shoot: t("Shooting"),
+  fight: t("Fighting"),
+  flee: t("Fleeing"),
+  build: t("Building")
+};

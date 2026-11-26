@@ -1,14 +1,16 @@
-import { least, quadtree, sum } from "d3";
+import { greatest, least, quadtree, sum } from "d3";
 import { Accounts } from "@/model/economy/accounts";
 import { Goods } from "@/model/economy/goods-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import { Events, type WarEvent } from "@/model/story/events";
 import type { MilitaryUnit } from "@/types/military";
 import { nth } from "@/utils/language-utils";
 import { rn, si } from "@/utils/number-utils";
-import { gauss, ra, rand } from "@/utils/probability-utils";
+import { ra, rand } from "@/utils/probability-utils";
 import { findAllInQuadtree } from "@/utils/quadtree";
 import { requireName, requireOneOf } from "@/utils/validation-utils";
+import { getUnitPower } from "./military-units";
 import { levies, type State, States } from "./states-generator";
 
 export interface Regiment {
@@ -29,8 +31,6 @@ export interface Regiment {
   children?: Regiment[]; // merged regiments
   state: number;
   angle?: number;
-  casualties?: Record<string, number>; // battle-screen: per-unit casualties while a battle is in progress
-  survivors?: Record<string, number>; // battle-screen: per-unit survivors while a battle is in progress
   px?: number; // battle-screen: position before being moved into a battle, restored afterward
   py?: number;
   note?: string;
@@ -55,6 +55,7 @@ export const UPKEEP_COST = 20; // military spending a day that keeps troops of p
 const MIN_UPKEEP = 0.05; // unpaid troops still fight, if barely
 const EQUIPMENT = 0.365; // population points of troops equipped by a unit a day a state consumes of their goods
 const FRONT_DEPTH = 2; // lines of cells behind the border a state at war deploys its regiments to
+const RESERVE = 0.3; // share of a state's regiments, and of its fleets, farthest from the front that stay at their bases
 const REACH = 150; // how far a platoon joins a regiment of another landmass, map units
 const REGIMENT_SIZE = 3; // regiment box height at the default style, map units; layout ignores the style
 // what the unit's forces are raised by: a change of any calls for raising them anew
@@ -289,6 +290,8 @@ class MilitaryModule {
   }
 
   private raise(states: State[]) {
+    const raised = new Set(states.map(state => state.i));
+    Events.dropRegiments(ref => raised.has(ref.state)); // the old regiments are disbanded
     const drafts = this.draft(states);
     for (const state of states) state.military = this.form(drafts.get(state.i)!, state);
     this.deployToFronts(states);
@@ -567,10 +570,12 @@ class MilitaryModule {
     change(military);
     for (const regiment of military) regiment.a = sum(Object.values(regiment.u));
     state.military = military.filter(regiment => regiment.a || !manned.includes(regiment));
+    const emptied = new Set(military.filter(regiment => !state.military!.includes(regiment)).map(({ i }) => i));
+    if (emptied.size) Events.dropRegiments(ref => ref.state === state.i && emptied.has(ref.i));
     for (const regiment of emblemed) regiment.icon = this.getEmblem(regiment);
   }
 
-  /** Moves regiments of states at war, largest first, to the foremost line's nearest free cell */
+  /** Moves regiments of states at war but the reserve, largest first, to the foremost line's nearest free cell */
   private deployToFronts(states: State[]) {
     const { cells } = pack;
     const { p } = cells;
@@ -632,17 +637,31 @@ class MilitaryModule {
     };
 
     // fleets first: few water cells reach the border, and land regiments on the coast would block them
+    const marching = new Map<Regiment, { lines: number[][]; feature: number }>();
     for (const naval of [true, false]) {
       for (const state of states) {
         const front = fronts.get(state.i);
         if (!front) continue;
+        const lines = naval ? front.sea : front.land;
+        const gaps = new Map<Regiment, { gap: number; feature: number }>(); // squared distance to the border it can reach
         for (const regiment of state.military ?? []) {
           if (Boolean(regiment.n) !== naval) continue;
-          if (naval) deploy(regiment, front.sea, cells.f[cells.haven[regiment.cell]]);
-          else deploy(regiment, front.land, cells.f[regiment.cell]);
+          const feature = cells.f[naval ? cells.haven[regiment.cell] : regiment.cell];
+          const ahead = lines[0].filter(i => cells.f[i] === feature);
+          if (!ahead.length) continue;
+          const gap = Math.min(...ahead.map(i => (p[i][0] - regiment.x) ** 2 + (p[i][1] - regiment.y) ** 2));
+          gaps.set(regiment, { gap, feature });
         }
+        const reserve = [...gaps.keys()]
+          .sort((a, b) => gaps.get(b)!.gap - gaps.get(a)!.gap)
+          .slice(0, Math.round(gaps.size * RESERVE));
+        for (const [regiment, { feature }] of gaps)
+          if (!reserve.includes(regiment)) marching.set(regiment, { lines, feature });
       }
     }
+
+    for (const state of states) placed.addAll((state.military ?? []).filter(regiment => !marching.has(regiment)));
+    for (const [regiment, { lines, feature }] of marching) deploy(regiment, lines, feature);
   }
 
   getName(r: Regiment, regiments: Regiment[]) {
@@ -696,9 +715,9 @@ class MilitaryModule {
     return this.getNominalPower(stateId) * UPKEEP_COST;
   }
 
-  /** How strongly a state's forces fight for their upkeep: it multiplies their power in battle */
+  /** How strongly a state's forces fight for their upkeep, its square root: small arrears tell little, deep ones much */
   getBattleUpkeep(stateId: number): number {
-    return Math.max(MIN_UPKEEP, this.getUpkeep(stateId));
+    return Math.max(MIN_UPKEEP, Math.sqrt(this.getUpkeep(stateId)));
   }
 
   /** The state's forces' battle power: troops × unit power × battle upkeep */
@@ -711,12 +730,19 @@ class MilitaryModule {
     return this.getTroopsPower(regiment) * this.getBattleUpkeep(regiment.state);
   }
 
+  /** The types of the units a regiment has troops of; undefined for a unit type since removed */
+  getUnitTypes(regiment: Regiment): (string | undefined)[] {
+    return Object.keys(regiment.u)
+      .filter(name => regiment.u[name] > 0)
+      .map(name => options.map.military.units.find(unit => unit.name === name)?.type);
+  }
+
   private getNominalPower(stateId: number): number {
     return sum(pack.states[stateId]?.military ?? [], regiment => this.getTroopsPower(regiment));
   }
 
   private getTroopsPower(regiment: Regiment): number {
-    return sum(options.map.military.units, unit => (regiment.u[unit.name] || 0) * (+unit.power || 0));
+    return sum(options.map.military.units, unit => (regiment.u[unit.name] || 0) * getUnitPower(unit));
   }
 
   /** The troops a number of population points stands for, rounded up: there is no half of an archer */
@@ -749,11 +775,10 @@ class MilitaryModule {
       ? `\r\n\r\nRegiment composition in ${options.map.lore.calendar.year} ${options.map.lore.calendar.eraShort}:\r\n${composition}.`
       : "";
 
-    const campaign = s.campaigns ? ra(s.campaigns) : null;
-    const year = campaign
-      ? rand(campaign.start, campaign.end || options.map.lore.calendar.year)
-      : gauss(options.map.lore.calendar.year - 100, 150, 1, options.map.lore.calendar.year - 6);
-    const conflict = campaign ? ` during the ${campaign.name}` : "";
+    const { year: present } = options.map.lore.calendar;
+    const war: WarEvent | undefined = ra(Events.list({ type: "war", state: s.i })); // the same rolls with a war or without
+    const year = rand(...(war ? Events.yearsOf(war) : [present - 100, present - 1]));
+    const conflict = war ? ` during the ${war.name}` : "";
     r.note = `Regiment was formed in ${year} ${options.map.lore.calendar.era}${conflict}. ${station}${troops}`;
   }
 
@@ -767,6 +792,7 @@ class MilitaryModule {
     const regiment = this.living(stateId, regimentId);
     const military = pack.states[stateId].military!;
     military.splice(military.indexOf(regiment), 1);
+    Events.dropRegiments(ref => ref.state === stateId && ref.i === regimentId);
   }
 
   /** Raise an empty regiment of a state at a map point, a fleet on water; returns its id */
@@ -875,7 +901,7 @@ class MilitaryModule {
   }
 
   /** Split a regiment in two halves; the new one stands just below. Returns its id */
-  split(stateId: number, regimentId: number): number {
+  split(stateId: number, regimentId: number, shift = REGIMENT_SIZE * 2): number {
     const regiment = this.living(stateId, regimentId);
     const state = pack.states[stateId];
     const military = state.military!;
@@ -888,9 +914,8 @@ class MilitaryModule {
     regiment.u = Object.fromEntries(Object.entries(regiment.u).map(([unit, count]) => [unit, count - half[unit]]));
     regiment.a = sum(Object.values(regiment.u));
 
-    const shift = REGIMENT_SIZE * 2;
-    let y = regiment.y + shift;
-    while (military.some(other => other.x === regiment.x && other.y === y)) y += shift;
+    let y = rn(regiment.y + shift, 2);
+    while (military.some(other => other.x === regiment.x && other.y === y)) y = rn(y + shift, 2);
     const i = Math.max(...military.map(other => other.i)) + 1;
     const added: Regiment = {
       a,
@@ -928,6 +953,12 @@ class MilitaryModule {
     const record = regiment.note ? ` Its record: ${regiment.note}` : "";
     const merger = `${regiment.name} merged into the regiment (${year} ${eraShort}).${record}`;
     target.note = target.note ? `${target.note}<br><br>${merger}` : merger;
+    Events.moveRegiments([
+      [
+        { state: stateId, i: regimentId },
+        { state: targetStateId, i: targetId }
+      ]
+    ]); // its battles too
     this.remove(stateId, regimentId);
   }
 
@@ -952,8 +983,8 @@ class MilitaryModule {
       pack.burgs[pack.cells.burg[r.cell]].capital
     )
       return Icons.glyph("👑"); // "Royal" regiment based in capital
-    const mainUnit = Object.entries(r.u).sort((a, b) => b[1] - a[1])[0]?.[0]; // unit with more troops in regiment
-    const unit = roster.find(u => u.name === mainUnit);
+    const units = roster.filter(u => r.u[u.name]);
+    const unit = greatest(units, u => r.u[u.name] * getUnitPower(u)); // unit with the most power in the regiment
     return unit ? unit.icon : Icons.glyph("⚔️");
   }
 }

@@ -12,8 +12,6 @@ export default defineConfig({
   workers: isCI ? 2 : undefined,
   // CI shards write blob reports, merged into one HTML report by the workflow
   reporter: process.env.GITHUB_ACTIONS ? [['blob'], ['dot']] : 'html',
-  // Use OS-independent snapshot names (HTML content is the same across platforms)
-  snapshotPathTemplate: '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}{ext}',
   use: {
     baseURL,
     // a first visit opens the update notice in #alert 6s after load, over whatever dialog a test is using

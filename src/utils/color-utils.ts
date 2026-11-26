@@ -2,6 +2,7 @@ import {
   color,
   interpolate,
   interpolateRainbow,
+  lab,
   type RGBColor,
   range,
   scaleSequential,
@@ -93,4 +94,10 @@ export const getMixedColor = (colorToMix: string, mix = 0.2, bright = 0.3): stri
   const c = colorToMix && colorToMix[0] === "#" ? colorToMix : getRandomColor(); // if provided color is not hex (e.g. harching), generate random one
   const mixedColor: RGBColor = color(interpolate(c, getRandomColor())(mix)) as RGBColor;
   return mixedColor.brighter(bright).formatHex();
+};
+
+/** How far apart two colours look: the CIE76 distance in Lab, about 2.3 a just noticeable difference */
+export const getColorDistance = (a: string, b: string): number => {
+  const [x, y] = [lab(a), lab(b)];
+  return Math.hypot(x.l - y.l, x.a - y.a, x.b - y.b);
 };
