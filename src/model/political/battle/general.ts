@@ -2413,9 +2413,14 @@ class GeneralModule {
       }
       order.mission = this.getMission(battle, side, battalion, own, frameFoes);
       if (order.role === "wedge") order.target = plan.wedge?.target ?? null; // the foe it falls on
-      if (siege && side === "attackers" && phase === "storming" && order.mission === "hunt") {
-        const entry = this.getEntry(battle, battalion);
-        if (entry) [order.mission, order.x, order.y] = ["flank", ...entry];
+      if (siege && side === "attackers" && (phase === "storming" || phase === "looting") && order.mission === "hunt") {
+        // who got in stays in: with no foe in sight it makes for the middle, not back over the walls to its place outside.
+        // Riders with no breach to ride in by keep their places outside
+        const within = this.isInside(battle, battalion);
+        const barred =
+          !Movement.canClimb(battalion) && !battle.field.breaches.some(breach => breach.burg === field.held);
+        if (within || (phase === "storming" && !barred)) [order.x, order.y] = this.getMiddle(field);
+        if (!within && phase === "storming") order.mission = barred ? "guard" : "flank";
       } else if (order.mission === "flank" && order.role !== "wedge") {
         // round the end of the foe's line on its own wing, and a little beyond
         const sign = Math.sign(order.across) || plan.strike;
@@ -2577,15 +2582,31 @@ class GeneralModule {
     }
   }
 
+  /** A besieger in the streets of the burg, off its walls */
+  private isInside(battle: Battle, battalion: Battalion): boolean {
+    const { walled, rampart } = Battlefields.terrainAt(battle.field, battalion.x, battalion.y);
+    return walled === battle.field.held! + 1 && !rampart;
+  }
+
   /**
-   * Where a stormer goes: the middle of the burg, by the cheapest way from where it stands: over the wall before it, or by
-   * a breach when one is about as near: riders only so. So the walls are stormed on a broad front. None once it is within.
+   * Where stormers go: the middle of the burg, by the cheapest way from where each stands: over the wall before it, or by
+   * a breach when one is about as near: riders only so. So the walls are stormed on a broad front. The street node nearest
+   * the burg's centre when the centre is no street: on a wall, or out of a burg that curves round it
    */
-  private getEntry(battle: Battle, battalion: Battalion): Point | null {
-    const { field } = battle;
-    const burg = field.burgs[field.held!];
-    const terrain = Battlefields.terrainAt(field, battalion.x, battalion.y);
-    return terrain.walled === field.held! + 1 && !terrain.rampart ? null : [burg.x, burg.y];
+  private getMiddle(field: Battlefield): Point {
+    const held = field.held!;
+    const { x, y } = field.burgs[held];
+    const node = Battlefields.nodeAt(field, x, y);
+    if (field.walled[node] === held + 1 && !field.rampart[node]) return [x, y];
+    let best: Point = [x, y];
+    let least = Infinity;
+    for (let street = 0; street < field.walled.length; street++) {
+      if (field.walled[street] !== held + 1 || field.rampart[street]) continue;
+      const centre = Battlefields.nodeCentre(field, street);
+      const distance = Math.hypot(centre[0] - x, centre[1] - y);
+      if (distance < least) [best, least] = [centre, distance];
+    }
+    return best;
   }
 
   /** What a battalion is to do, by what it is in the formation and how the day goes */

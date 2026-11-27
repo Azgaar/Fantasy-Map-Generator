@@ -2934,6 +2934,27 @@ describe("battle ways", () => {
     expect(breached.rodeIn).toBe(true);
   });
 
+  it("keeps stormers in the burg once over the walls, and riders off them with no breach", () => {
+    const b = onField(burg, "siege", [regiment(1, { infantry: 2400, cavalry: 600 })]);
+    Battles.intervene(b, { tick: b.tick, kind: "order", side: "attackers", order: "attack" });
+    for (let i = 0; i < 120 && b.attackers.phase !== "storming"; i++) Battles.tick(b);
+    expect(b.attackers.phase).toBe("storming");
+    const stormer = b.battalions.find(
+      battalion =>
+        battalion.side === "attackers" &&
+        battalion.kind === "melee" &&
+        battalion.status === "ready" &&
+        !battalion.order.sent
+    )!;
+    [stormer.x, stormer.y] = [456, 273]; // got in: with no foe to go for it goes on into the streets, not back to its place
+    Generals.command(b);
+    expect(stormer.order.mission).toBe("hunt");
+    expect(within(b, { ...stormer, ...stormer.order })).toBe(true);
+    const riders = b.battalions.filter(battalion => battalion.side === "attackers" && battalion.kind === "mounted");
+    expect(riders.length).toBeGreaterThan(0);
+    for (const rider of riders) expect(rider.order.mission).not.toBe("flank"); // no breach to ride in by
+  });
+
   it("lets the garrison out by the gates and nobody through the walls", () => {
     const b = onField(burg, "siege");
     const was = new Map<number, [number, number]>();
