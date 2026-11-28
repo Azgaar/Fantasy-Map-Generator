@@ -1,5 +1,9 @@
 import { World } from "@/controllers/assistant/world";
+import { NAMED_MODELS } from "@/controllers/society/named-places";
+import { Meanings } from "@/model/society/names/meanings";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Csv } from "@/services/io/csv";
+import type { Named, PlaceType } from "@/types/names";
 import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
@@ -17,6 +21,9 @@ interface CsvRow {
   apply(column: string, set: (value: string) => void, current?: unknown): void;
   /** Set a present cell even when blank, for flags and lists */
   assign(column: string, set: (value: string) => void, current?: unknown): void;
+  /** Set a changed name and a changed meaning, coined in the base of the place's culture as it stands then; a new name
+   * with no new meaning is a proper name */
+  named(column: string, type: PlaceType, current: Partial<Named>): void;
   /** Set rural and urban people: changed rural and urban cells win, else a changed total keeps the current split */
   population(current: [number, number], set: (rural: number, urban: number) => void, columns?: string[]): void;
 }
@@ -98,9 +105,22 @@ async function update(
           record(column, current, get(column), escapeHtml(errorText(error)));
         }
       };
+      const apply: CsvRow["apply"] = (column, setter, current) => {
+        if (get(column)) set(column, setter, current);
+      };
       update(+id, {
-        apply: (column, setter, current) => {
-          if (get(column)) set(column, setter, current);
+        apply,
+        named: (column, type, { name, meaning }) => {
+          const said = meaning ? Meanings.write(meaning) : "";
+          apply(column, value => NAMED_MODELS[type].rename(+id, value), name);
+          apply(
+            "Meaning",
+            value => {
+              const origin = Toponyms.baseOf({ type, id: +id }) ?? Meanings.of({}).origin;
+              Toponyms.setMeaningOf(type, +id, Meanings.read(value, origin));
+            },
+            said
+          );
         },
         assign: (column, setter, current) => {
           if (column in cells) set(column, setter, current);

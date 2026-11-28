@@ -1,6 +1,7 @@
 // Building blocks shared by editor dialogs
 
 import { Dialog } from "@/ui/dialog/dialog";
+import { t } from "@/utils/i18n";
 import { findEl } from "@/utils/node-utils";
 
 /** The note button every entity dialog puts in its toolbar, with its translated tooltip */
@@ -11,6 +12,24 @@ export function noteButton(id: string, tip: string): string {
 /** The same button as a table row action, in the `note` column every editor table gives it */
 export function noteIcon(tip: string): string {
   return `<span data-col="note" data-tip="${tip}" class="icon-book pointer"></span>`;
+}
+
+/** The button beside a name that opens the Name Editor */
+export function nameEditButton(id: string): string {
+  return `<span id="${id}" data-tip="${t("Rename")}" class="icon-pencil pointer"></span>`;
+}
+
+export const RENAME_OFFER = "renameOffer";
+
+/** Offer the name a place would take now, in one window that a newer offer replaces */
+export function offerRename(from: string, to: string, onConfirm: () => void): void {
+  Dialog.confirm({
+    id: RENAME_OFFER,
+    title: t("Rename"),
+    message: t("Rename {{from}} to {{to}}?", { from, to }),
+    confirm: t("Rename"),
+    onConfirm
+  });
 }
 
 // TODO: editors should register a refresh callback when they open,

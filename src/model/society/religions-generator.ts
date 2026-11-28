@@ -9,7 +9,8 @@ import { abbreviate, getAdjective, trimVowels } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { each, gauss, ra, rand, rw } from "@/utils/probability-utils";
 import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validation-utils";
-import { Names } from "./names-generator";
+import { Names } from "./names/names-generator";
+import { Toponyms } from "./names/toponyms-generator";
 import { Population } from "./population-generator";
 
 export interface Religion extends NamedReligion {
@@ -1472,14 +1473,13 @@ class ReligionsModule {
       return;
     }
     const meaning = this.generateMeaning();
-    const cultureName = Names.getCulture(culture);
-    return `${cultureName}, The ${meaning}`;
+    return `${Names.getCultureDeity(culture)}, The ${meaning}`;
   }
 
   private generateReligionName(variety: string, form: string, deity: string, center: number): [string, string] {
     const { cells, cultures, burgs, states } = pack;
 
-    const random = () => Names.getCulture(cells.culture[center]);
+    const random = () => Names.getCulturePerson(cells.culture[center]);
     const type = rw(types[form]);
     const supreme = deity.split(/[ ,]+/)[0];
     const cultureObj = cultures[cells.culture[center]];
@@ -1490,8 +1490,8 @@ class ReligionsModule {
       const burgId = cells.burg[center];
       const stateId = cells.state[center];
 
-      const base = burgId ? burgs[burgId].name! : states[stateId].name;
-      const name = trimVowels(base.split(/[ ,]+/)[0]);
+      const base = burgId ? Toponyms.nameOf(burgs[burgId]) : states[stateId].name; // most burgs have no name yet
+      const name = trimVowels(base.split(/[ ,]+/)[0]).replace(/-$/, ""); // Cheshmeh-ye leaves Cheshmeh
       return adj ? getAdjective(name) : name;
     };
 

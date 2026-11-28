@@ -6,7 +6,7 @@ import { drawRelief } from "./draw-relief-icons";
 
 vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => true, draw: vi.fn() } }));
 vi.mock("@/model/icons", () => ({
-  Icons: { loadAll: vi.fn().mockResolvedValue(undefined), href: (id: string) => `#${id}` }
+  Icons: { areSettled: () => true, href: (id: string) => `#${id}` }
 }));
 
 beforeEach(() => {

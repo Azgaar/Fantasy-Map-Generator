@@ -1,24 +1,27 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@/model/annotations/added-labels";
 import "@/model/physical/biomes-generator"; // the 1.139 step reads the default biomes
 import "@/model/physical/features-generator"; // migrations call the Features module through its global
 import "@/model/political/burgs-generator"; // the burg sets that tell style icon references from text
 import { Goods } from "@/model/economy/goods-generator"; // also the goods icon namespace the 1.154 step migrates into
 import "@/model/physical/relief-generator"; // the relief set namespace the 1.154 step migrates into
+import { NAME_BASES, readNameBase } from "@/data/name-bases";
 import { DEAL_KINDS } from "@/model/economy/deals";
 import { Pack } from "@/model/graph/pack-generator";
 import { Options } from "@/model/options/options-model";
 import { Military } from "@/model/political/military-generator";
 import { getDefaultMilitaryUnits } from "@/model/political/military-units";
-import { Names } from "@/model/society/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
+import { Names } from "@/model/society/names/names-generator";
+import { SoundRules } from "@/model/society/names/sound-rules";
 import { Styles } from "@/model/styles/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
 import { Dialog } from "@/ui/dialog/dialog";
 import { safeParseJSON } from "@/utils/string-utils";
-import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
+import { migrateLegacyNameBases, migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 import { Csv } from "./csv";
 
 /** the record an old map keeps its svg in: the migrations read it, never the live map */
@@ -76,7 +79,7 @@ it.each([18, 180])("keeps legacy custom labels after saving and reloading a font
 });
 
 describe("v1.144 layer id migration", () => {
-  it("maps exceptional legacy toggle ids and preserves unknown dependencies", () => {
+  it("maps exceptional legacy toggle ids and preserves unknown dependencies", async () => {
     const groups = ["toggleHeight", "toggleMarketsLayer", "toggleBurgIcons", "toggleScaleBar", "customLayer"].map(
       (layerDependency, index) => ({
         name: `group-${index}`,
@@ -90,7 +93,7 @@ describe("v1.144 layer id migration", () => {
     const data = ["1.143.0||||1280|800", settings.join("|")];
 
     migrateLegacySettings("1.143.0", data);
-    resolveVersionConflicts("1.143.0", data);
+    await resolveVersionConflicts("1.143.0", data);
 
     const migratedGroups: { layerDependency: string }[] = JSON.parse(data[1]).labels.groups;
     expect(migratedGroups.map(group => group.layerDependency)).toEqual([
@@ -103,12 +106,12 @@ describe("v1.144 layer id migration", () => {
     expect(data[50]).toBeUndefined(); // no saved svg, so no layer state to recover: the current one stays
   });
 
-  it("recovers the layer state from the saved svg", () => {
+  it("recovers the layer state from the saved svg", async () => {
     const data = savedSvg(/* html */ `<svg id="map"><g id="viewbox">
       <g id="rivers"><path></path></g><g id="biomes"></g><g id="ruler" style="display: none;"></g>
     </g></svg>`);
 
-    resolveVersionConflicts("1.143.0", data);
+    await resolveVersionConflicts("1.143.0", data);
 
     const { order, active } = JSON.parse(data[50]);
     expect(order).toEqual(["rivers", "biomes", "rulers"]);
@@ -116,7 +119,7 @@ describe("v1.144 layer id migration", () => {
   });
 
   // the presets outlive the map file in localStorage, so they carry the old ids until this pass rewrites them
-  it("remaps the stored layers presets, passing ids it does not know through", () => {
+  it("remaps the stored layers presets, passing ids it does not know through", async () => {
     localStorage.setItem(
       "presets",
       JSON.stringify({
@@ -125,7 +128,7 @@ describe("v1.144 layer id migration", () => {
       })
     );
 
-    resolveVersionConflicts("1.143.0", []);
+    await resolveVersionConflicts("1.143.0", []);
 
     expect(JSON.parse(localStorage.getItem("presets")!)).toEqual({
       political: ["states", "borders", "scaleBar"],
@@ -133,25 +136,25 @@ describe("v1.144 layer id migration", () => {
     });
   });
 
-  it("rewrites already-current presets to themselves, so a repeated pass is harmless", () => {
+  it("rewrites already-current presets to themselves, so a repeated pass is harmless", async () => {
     localStorage.setItem("presets", JSON.stringify({ mine: ["biomes", "states"] }));
 
-    resolveVersionConflicts("1.143.0", []);
-    resolveVersionConflicts("1.143.0", []);
+    await resolveVersionConflicts("1.143.0", []);
+    await resolveVersionConflicts("1.143.0", []);
 
     expect(JSON.parse(localStorage.getItem("presets")!)).toEqual({ mine: ["biomes", "states"] });
   });
 
-  it("leaves unparsable stored presets alone instead of failing the load", () => {
+  it("leaves unparsable stored presets alone instead of failing the load", async () => {
     localStorage.setItem("presets", "{not json");
 
-    expect(() => resolveVersionConflicts("1.143.0", [])).not.toThrow();
+    await expect(resolveVersionConflicts("1.143.0", [])).resolves.not.toThrow();
     expect(localStorage.getItem("presets")).toBe("{not json");
   });
 });
 
 describe("v1.145 svg layer cleanup", () => {
-  it("harvests the styles of the one non-empty group of duplicated ids", () => {
+  it("harvests the styles of the one non-empty group of duplicated ids", async () => {
     const data = savedSvg(/* html */ `<svg id="map"><g id="viewbox">
       <g id="routes">
         <g id="roads" stroke="#999999"> </g>
@@ -159,12 +162,12 @@ describe("v1.145 svg layer cleanup", () => {
       </g>
     </g></svg>`);
 
-    resolveVersionConflicts("1.144.0", data);
+    await resolveVersionConflicts("1.144.0", data);
 
     expect(styles.routes.groups.roads.attrs.stroke).toBe("#123456");
   });
 
-  it("keeps an empty group that is the only one with its id", () => {
+  it("keeps an empty group that is the only one with its id", async () => {
     const data = savedSvg(/* html */ `<svg id="map"><g id="viewbox">
       <g id="routes">
         <g id="roads" stroke="#d06324" stroke-width="0.35"><path id="road1"></path></g>
@@ -173,7 +176,7 @@ describe("v1.145 svg layer cleanup", () => {
       <g id="texture" data-href="./images/textures/marble-big.jpg" mask="url(#land)" style="display: none;"></g>
     </g></svg>`);
 
-    resolveVersionConflicts("1.144.0", data);
+    await resolveVersionConflicts("1.144.0", data);
 
     expect(styles.routes.groups.searoutes.attrs.stroke).toBe("#ffffff");
     expect(styles.routes.groups.searoutes.attrs["stroke-width"]).toBe(0.35);
@@ -210,10 +213,10 @@ describe("v1.145.2 moved vertices recovery", () => {
     globalThis.pack = createGraph() as unknown as typeof globalThis.pack;
   });
 
-  it("recovers a vertex dragged out of its generated position", () => {
+  it("recovers a vertex dragged out of its generated position", async () => {
     const data = savedSvg(withStates("M0,0 L20,0 24.5,21 0,20 Z")); // vertex 3 was dragged
 
-    resolveVersionConflicts("1.145.1", data);
+    await resolveVersionConflicts("1.145.1", data);
 
     expect(JSON.parse(data[51])).toEqual({
       pack: {
@@ -229,28 +232,28 @@ describe("v1.145.2 moved vertices recovery", () => {
     });
   });
 
-  it("keeps out of the way when nothing was dragged", () => {
+  it("keeps out of the way when nothing was dragged", async () => {
     const data = savedSvg(withStates("M0,0 L20,0 20,20 0,20 Z"));
 
-    resolveVersionConflicts("1.145.1", data);
+    await resolveVersionConflicts("1.145.1", data);
 
     expect(data[51]).toBeUndefined();
   });
 
-  it("ignores an svg that does not match the graph", () => {
+  it("ignores an svg that does not match the graph", async () => {
     const data = savedSvg(withStates("M1,1 L2,2 3,3 4,4 5,5 6,6 7,7 8,8 Z"));
 
-    resolveVersionConflicts("1.145.1", data);
+    await resolveVersionConflicts("1.145.1", data);
 
     expect(data[51]).toBeUndefined();
   });
 
-  it("does not touch maps that carry the data", () => {
+  it("does not touch maps that carry the data", async () => {
     const data = savedSvg(withStates("M0,0 L20,0 24.5,21 0,20 Z"));
     data[51] = "{}";
 
-    resolveVersionConflicts("1.145.1", data);
-    resolveVersionConflicts("1.146.0", data);
+    await resolveVersionConflicts("1.145.1", data);
+    await resolveVersionConflicts("1.146.0", data);
 
     expect(data[51]).toBe("{}");
   });
@@ -271,7 +274,7 @@ describe("v1.146 rendering groups", () => {
         { i: 4, type: "lake", group: "freshwater", firstCell: 0 } // the old group is the classification
       ]
     } as unknown as typeof globalThis.pack;
-    Object.assign(Names, { getCulture: () => "Named" });
+    Object.assign(Names, { getStem: () => "Named" });
 
     placement = /* html */ `<svg id="map"><g id="viewbox">
       <g id="coastline">
@@ -285,8 +288,8 @@ describe("v1.146 rendering groups", () => {
     </g></svg>`;
   });
 
-  it("adopts the svg placement of every feature", () => {
-    resolveVersionConflicts("1.145.1", savedSvg(placement));
+  it("adopts the svg placement of every feature", async () => {
+    await resolveVersionConflicts("1.145.1", savedSvg(placement));
 
     expect(pack.features.slice(1).map(feature => feature.group)).toEqual([
       "sea_island",
@@ -302,8 +305,8 @@ describe("v1.146 rendering groups", () => {
     ]);
   });
 
-  it("derives a group for features the svg does not place", () => {
-    resolveVersionConflicts("1.145.1", savedSvg('<svg id="map"><g id="viewbox"></g></svg>')); // nothing was drawn
+  it("derives a group for features the svg does not place", async () => {
+    await resolveVersionConflicts("1.145.1", savedSvg('<svg id="map"><g id="viewbox"></g></svg>')); // nothing was drawn
 
     expect(pack.features.slice(1).map(feature => feature.group)).toEqual([
       "sea_island",
@@ -313,8 +316,8 @@ describe("v1.146 rendering groups", () => {
     ]);
   });
 
-  it("leaves current maps alone", () => {
-    resolveVersionConflicts("1.146.0", []);
+  it("leaves current maps alone", async () => {
+    await resolveVersionConflicts(VERSION, []);
 
     expect(pack.features.slice(1).every(feature => !feature.subtype)).toBe(true);
   });
@@ -335,32 +338,32 @@ describe("v1.151.2 label group display cleanup", () => {
     return record;
   }
 
-  it("strips display from stored label group styles, keeping the rest of the record", () => {
+  it("strips display from stored label group styles, keeping the rest of the record", async () => {
     const data: string[] = [];
     data[48] = JSON.stringify(
       stylesRecord("text-shadow: white 0px 0px 4px; display: none; transform: translate(0em, -0.4em)")
     );
 
-    resolveVersionConflicts("1.151.1", data);
+    await resolveVersionConflicts("1.151.1", data);
 
     const expected = stylesRecord("text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)");
     expect(JSON.parse(data[48])).toEqual(expected);
   });
 
-  it("stores null when display was the only declaration", () => {
+  it("stores null when display was the only declaration", async () => {
     const data: string[] = [];
     data[48] = JSON.stringify(stylesRecord("display: none"));
 
-    resolveVersionConflicts("1.151.1", data);
+    await resolveVersionConflicts("1.151.1", data);
 
     expect(JSON.parse(data[48]).labels.groups.hamlet.attrs.style).toBeNull();
   });
 
-  it("leaves current maps alone", () => {
+  it("leaves current maps alone", async () => {
     const data: string[] = [];
     data[48] = JSON.stringify(stylesRecord("display: none"));
 
-    resolveVersionConflicts(VERSION, data);
+    await resolveVersionConflicts(VERSION, data);
 
     expect(JSON.parse(data[48]).labels.groups.hamlet.attrs.style).toBe("display: none");
   });
@@ -484,7 +487,7 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
       ]
     } as unknown as typeof globalThis.pack;
     globalThis.grid = { cells: { i: new Array(1000) } } as unknown as typeof grid;
-    Object.assign(Names, { getCulture: () => "Named" });
+    Object.assign(Names, { getStem: () => "Named" });
 
     lakesSvg = /* html */ `<svg id="map"><g id="viewbox">
       <g id="lakes">
@@ -494,8 +497,8 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
     </g></svg>`;
   });
 
-  it("keeps stock subtypes, resets invented ones and clears the ocean group", () => {
-    resolveVersionConflicts("1.152.0", []);
+  it("keeps stock subtypes, resets invented ones and clears the ocean group", async () => {
+    await resolveVersionConflicts("1.152.0", []);
 
     expect(pack.features.slice(1).map(feature => feature.subtype)).toEqual(["ocean", "isle", "freshwater", "salt"]);
     expect(pack.features.slice(1).map(feature => feature.group)).toEqual([
@@ -507,9 +510,9 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
     expect(pack.features[1].area).toBe(30); // summed from its cells: the ocean ring is open at the border
   });
 
-  it("names the features that had no name and keeps the existing ones", () => {
+  it("names the features that had no name and keeps the existing ones", async () => {
     const random = vi.spyOn(Math, "random").mockReturnValue(0.5); // no adjective roll
-    resolveVersionConflicts("1.152.0", []);
+    await resolveVersionConflicts("1.152.0", []);
     random.mockRestore();
 
     expect(pack.features[1].name).toBeTruthy();
@@ -518,21 +521,21 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
     expect(pack.features[4].name).toBe("Named");
   });
 
-  it("names a feature by an adjective when its cell points at a dropped culture", () => {
+  it("names a feature by an adjective when its cell points at a dropped culture", async () => {
     pack.cells.culture = [0, 7] as unknown as typeof pack.cells.culture; // no such culture in the map
     const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
-    resolveVersionConflicts("1.152.0", []);
+    await resolveVersionConflicts("1.152.0", []);
     random.mockRestore();
 
     expect(pack.features[2].name).toBeTruthy();
     expect(pack.features[2].name).not.toBe("Named");
   });
 
-  it("nests the stock lake styles under groups and harvests custom groups from the svg", () => {
+  it("nests the stock lake styles under groups and harvests custom groups from the svg", async () => {
     const data = savedSvg(lakesSvg);
     data[48] = JSON.stringify(stylesRecord());
 
-    resolveVersionConflicts("1.152.0", data);
+    await resolveVersionConflicts("1.152.0", data);
 
     const { groups } = JSON.parse(data[48]).lakes;
     expect(Object.keys(groups)).toEqual([...Object.keys(Styles.defaults.lakes.groups), "my_lakes"]);
@@ -542,22 +545,22 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
     expect(groups.my_lakes.attrs.stroke).toBe(groups.freshwater.attrs.stroke); // the rest follows freshwater
   });
 
-  it("is harmless on a record already in the new shape", () => {
+  it("is harmless on a record already in the new shape", async () => {
     const data: string[] = [];
     data[48] = JSON.stringify(Styles.defaults);
 
-    resolveVersionConflicts("1.152.0", data);
+    await resolveVersionConflicts("1.152.0", data);
 
     const { lakes } = JSON.parse(data[48]);
     expect(Object.keys(lakes)).toEqual(["groups"]);
     expect(lakes.groups.freshwater).toEqual(Styles.defaults.lakes.groups.freshwater);
   });
 
-  it("leaves current maps alone", () => {
+  it("leaves current maps alone", async () => {
     const data: string[] = [];
     data[48] = JSON.stringify(stylesRecord());
 
-    resolveVersionConflicts(VERSION, data);
+    await resolveVersionConflicts(VERSION, data);
 
     expect(pack.features[3].subtype).toBe("my_lakes");
     expect(JSON.parse(data[48]).lakes.groups).toBeUndefined();
@@ -1483,5 +1486,99 @@ describe("v1.159.0 history as events", () => {
     }));
     await resolveVersionConflicts("1.158.0", []);
     expect(pack.events.filter(event => event.type === "war" && event.end !== undefined)).toHaveLength(3); // a sample of 2 for 4 states, and the old war ended by peace
+  });
+});
+
+describe("v1.160 name bases migration", () => {
+  const shipped = NAME_BASES.slice(0, 43); // of the time
+  /** the record older maps keep: a base a slash, names left out where they are the default ones */
+  const legacyRecord = (edit: (fields: (string | number)[], index: number) => (string | number)[] = fields => fields) =>
+    shipped.map((base, index) => edit([base.name, 4, 12, "lt", 0, ""], index).join("|")).join("/");
+  const setCultures = (...bases: (number | string)[]) => {
+    globalThis.pack = { cultures: bases.map((base, i) => ({ i, base })) } as unknown as typeof pack;
+  };
+  const cultureBases = () => pack.cultures.map(culture => culture.base);
+  const migrate = (record?: string) => {
+    const data: string[] = [];
+    if (record) data[31] = record;
+    return migrateLegacyNameBases(data);
+  };
+
+  afterEach(() => {
+    options.map.nameBases = [];
+  });
+
+  it("turns bases with the shipped names into the shipped ones and culture bases into ids", async () => {
+    setCultures(1, 5, 42, 99);
+    await migrate(legacyRecord());
+    for (const base of cultureBases()) expect(NameBases.find(base)).toBeDefined();
+    expect(NameBases.find("english")!.length).toEqual((await readNameBase("english")).length); // not the map's own
+    expect(options.map.nameBases).toEqual([]);
+    expect(cultureBases()).toEqual(["english", "ruthenian", "levantine", "german"]); // a base out of range was the first one
+  });
+
+  it("gives a base with names of its own an id of its own", async () => {
+    setCultures(1, 2);
+    const record = legacyRecord((fields, index) => {
+      if (index === 1) return ["German", 5, 9, "", 0, "Aaa,Bbb,Ccc"]; // a custom base named as a shipped one
+      if (index === 2) return ["My Base", 5, 9, "ab", 0, "Xaa,Xbb,Xcc"];
+      return fields;
+    });
+    await migrate(record);
+
+    const [custom, own] = ["german-2", "my-base"].map(id => NameBases.find(id)!);
+    expect(custom).toMatchObject({ id: "german-2", name: "German", places: { names: ["Aaa", "Bbb", "Ccc"] } });
+    expect(own).toMatchObject({ id: "my-base", length: [5, 9] });
+    expect(SoundRules.getDoubles(own)).toBe("ab");
+    expect(cultureBases()).toEqual(["german-2", "my-base"]);
+    expect(options.map.nameBases).toEqual([custom, own]);
+  });
+
+  it("keeps a base whole when its doubled letters hold the record's slash", async () => {
+    setCultures(43, 44);
+    const record = [legacyRecord(), "Hausa|3|22|-/m|0|Aaa,Bbb,Ccc", "Igbo|5|9||0|Xaa,Xbb,Xcc"].join("/");
+    await migrate(record);
+    expect(options.map.nameBases.map(({ id }) => id)).toEqual(["hausa", "igbo"]);
+    expect(SoundRules.getDoubles(NameBases.find("hausa")!)).toBe("-/m");
+    expect(cultureBases()).toEqual(["hausa", "igbo"]);
+  });
+
+  it("gives cultures the shipped ids when a map holds no bases", async () => {
+    setCultures(2);
+    await migrate();
+    expect(cultureBases()).toEqual(["french"]);
+    expect(NameBases.find("french")).toBeDefined();
+  });
+
+  it("keeps a shipped base edited in its place, and one called as a base shipped since apart from it", async () => {
+    setCultures(0, 43);
+    const old = legacyRecord().split("/");
+    old[0] = "German|5|9||0|Aaa,Bbb,Ccc";
+    await migrate([...old, "Polish|5|9||0|Aaa,Bbb,Ccc"].join("/"));
+    expect(options.map.nameBases.map(({ id }) => id)).toEqual(["german", "polish-2"]);
+    expect(NameBases.isChanged(NameBases.find("german")!)).toBe(true);
+    expect(cultureBases()).toEqual(["german", "polish-2"]);
+    expect(NameBases.ids()).toHaveLength(NAME_BASES.length + 1);
+  });
+
+  it("runs on older maps only", async () => {
+    setCultures(1);
+    await resolveVersionConflicts(VERSION, []);
+    expect(cultureBases()).toEqual([1]);
+    pack.features = [];
+    await resolveVersionConflicts("1.158.0", []);
+    expect(cultureBases()).toEqual(["english"]);
+  });
+
+  it.each(["1.112.1", "1.139.4", "1.143.1", "1.154.0"])("migrates the %s fixture", async version => {
+    const data = readFileSync(`tests/fixtures/${version}.map`, "utf8").split("\r\n");
+    const indexes: number[] = JSON.parse(data[13]).map((culture: { base: number }) => culture.base);
+
+    setCultures(...indexes);
+    await migrate(data[31]);
+
+    expect(options.map.nameBases).toEqual([]);
+    expect(cultureBases()).toEqual(indexes.map(index => shipped[index].id));
+    expect(cultureBases().every(id => NameBases.find(id))).toBe(true);
   });
 });

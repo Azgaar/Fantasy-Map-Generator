@@ -48,7 +48,8 @@ import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
 import { Stability } from "@/model/political/stability";
 import type { State } from "@/model/political/states-generator";
-import { Names } from "@/model/society/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
+import { Names } from "@/model/society/names/names-generator";
 import { Dates } from "@/model/story/dates";
 import type { BattleEvent } from "@/model/story/events";
 import { Events } from "@/model/story/events";
@@ -2004,8 +2005,8 @@ class BattleScreenController {
     const b = this.battle!;
     b.place =
       type === "culture"
-        ? Names.getCulture(pack.cells.culture[b.cell], undefined, undefined, "")
-        : Names.getBase(Math.floor(Math.random() * Names.nameBases.length));
+        ? Names.getCulture(pack.cells.culture[b.cell], undefined, undefined, true)
+        : Names.getBase(NameBases.random().id);
     this.setName(BattleRules.getName(b.type, b.place));
   }
 

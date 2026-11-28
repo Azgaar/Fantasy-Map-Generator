@@ -627,34 +627,33 @@ test.describe("Map loading", () => {
     expect(criticalErrors).toEqual([]);
   });
 
-  // a .map stores no names for a base equal to the default at its index, so a session's own bases must not fill them
+  // a .map stores no shipped base, so a session's own version of one must not stand in for it
   test("loading a map should restore default namebases over the session's ones", async ({ page }) => {
     await waitForMap(page);
     await page.evaluate(() => {
-      const Names = (window as any).FMG.Names;
-      Names.nameBases = [{ name: "Custom", i: 0, min: 4, max: 8, d: "", m: 0, b: "Aaa,Bbb,Ccc" }];
-      Names.getBase(0); // caches the custom chain
+      const { Names, NameBases } = (window as any).FMG;
+      NameBases.replace([{ id: "german", name: "Custom", length: [4, 8], places: { names: ["Aaa", "Bbb", "Ccc"] } }]);
+      Names.getBase("german"); // caches the custom chain
     });
 
     const maps = await countMaps(page);
     await page.locator("#mapToLoad").setInputFiles(path.join(__dirname, "../fixtures/1.154.0.map"));
     await waitForNextMap(page, maps);
 
-    const result = await page.evaluate(() => {
-      const Names = (window as any).FMG.Names;
-      const defaults = Names.getNameBases();
+    const result = await page.evaluate(async () => {
+      const { Names, NameBases } = (window as any).FMG;
+      await NameBases.loadAll(); // a base the map's cultures do not use is listed by its id and name alone
       return {
-        count: Names.nameBases.length,
-        matchDefaults: Names.nameBases.every((base: any, i: number) => base.b === defaults[i].b),
-        chainFromDefault:
-          !Names.chains[0] ||
-          JSON.stringify(Object.entries(Names.chains[0])) ===
-            JSON.stringify(Object.entries(Names.calculateChain(defaults[0].b)))
+        own: (window as any).FMG.options.map.nameBases,
+        unloaded: NameBases.all.filter((base: any) => !base.places),
+        german: NameBases.find("german").places.names.length,
+        name: Names.getBase("german")
       };
     });
 
-    expect(result.count).toBe(43);
-    expect(result.matchDefaults).toBe(true);
-    expect(result.chainFromDefault).toBe(true);
+    expect(result.own).toEqual([]);
+    expect(result.unloaded).toEqual([]);
+    expect(result.german).toBeGreaterThan(100);
+    expect(result.name).not.toMatch(/^[abc]+$/i);
   });
 });

@@ -7,9 +7,10 @@ vi.mock("@/ui/map/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }
 vi.mock("@/controllers", () => ({ Controllers: {} }));
 vi.mock("@/renderers/draw-emblems", () => ({ removeEmblem: vi.fn() }));
 vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: { trigger: vi.fn() } }));
-vi.mock("@/ui/dialog/dialog-helpers", async importActual => ({
-  noteButton: (await importActual<typeof import("@/ui/dialog/dialog-helpers")>()).noteButton
-}));
+vi.mock("@/ui/dialog/dialog-helpers", async importActual => {
+  const { noteButton, nameEditButton } = await importActual<typeof import("@/ui/dialog/dialog-helpers")>();
+  return { noteButton, nameEditButton };
+});
 
 import { Production } from "@/model/economy/production-generator";
 import { Burgs } from "@/model/political/burgs-generator";
@@ -52,7 +53,7 @@ it("does not reparent a loaded preview when opening or closing the dialog", () =
 
   expect(reparentedPreviews).toEqual([]);
   expect(Dialog.isOpen("burgEditor")).toBe(true);
-  expect(document.querySelector<HTMLInputElement>("#burgName")!.value).toBe("Polmabas");
+  expect(document.querySelector("#burgName")!.textContent).toBe("Polmabas");
   const frames = document.querySelectorAll<HTMLIFrameElement>(".dialog-window #burgPreviewObject iframe");
   expect(frames).toHaveLength(1);
   expect(frames[0].src).toBe(preview);

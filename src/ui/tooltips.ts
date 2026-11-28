@@ -185,8 +185,9 @@ export function showElementTip(element: Element | null): void {
   else showMainTip();
 }
 
-/** Full text of an element that cuts it to fit, or "" if it fits */
+/** Full text of an element that cuts it to fit, or "" if it fits or stands inside `data-no-clipped-tip` */
 function getClippedText(element: HTMLElement): string {
+  if (element.closest("[data-no-clipped-tip]")) return "";
   if (element.scrollWidth <= element.clientWidth || getComputedStyle(element).overflowX === "visible") return "";
   const text = element instanceof HTMLInputElement ? element.value : element.textContent;
   return text?.trim() ?? "";

@@ -10,6 +10,7 @@ import { GenerationPipeline } from "@/model/generation-pipeline";
 import { Icons } from "@/model/icons";
 import { mapHistory, registerMap } from "@/model/map-history";
 import { Options } from "@/model/options/options-model";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Hatches } from "@/renderers/hatches";
 import { Layers } from "@/renderers/layers";
 import { undraw } from "@/renderers/undraw";
@@ -49,8 +50,11 @@ export async function boot(): Promise<void> {
   applyDefaultViewboxEvents();
 
   if (!warnIfServerless()) {
-    hideLoading();
-    await checkLoadParameters();
+    try {
+      await checkLoadParameters();
+    } finally {
+      hideLoading(); // the splash covers the app until the map is drawn
+    }
   }
 
   initiateAutosave();
@@ -65,8 +69,8 @@ export type GenerationConfig = {
   jitter?: number;
 };
 
-/** Generate a whole new world */
-export async function generate(config?: GenerationConfig): Promise<void> {
+/** Generate a whole new world; false where it failed. The caller draws and registers it */
+export async function generate(config?: GenerationConfig): Promise<boolean> {
   try {
     const { seed: precreatedSeed, graph: precreatedGraph, width, height, points, jitter } = config || {};
     Options.setGraphSize(width, height);
@@ -86,8 +90,8 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     Options.persist();
 
     syncOptionInputs();
-    registerMap();
     invokeActiveZooming();
+    return true;
   } catch (error) {
     log.error(error);
     clearMainTip();
@@ -114,6 +118,7 @@ export async function generate(config?: GenerationConfig): Promise<void> {
         { label: t("Ignore") }
       ]
     });
+    return false;
   }
 }
 
@@ -129,10 +134,13 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
 
   Dialog.closeAll("#worldConfigurator, #options3d", { minimized: true });
   options.app.mode = null;
+  await NameBases.loadAll(); // loading amid the generation would paint an empty map
   resetZoom(1000);
   undraw();
-  await generate(typeof config === "string" ? undefined : config);
+  const generated = await generate(typeof config === "string" ? undefined : config);
+  await Layers.loadIcons();
   Layers.drawAll();
+  if (generated) registerMap();
 
   if (is3dView()) Controllers.View3d.redraw();
   if (findEl("worldConfigurator")?.offsetParent) Controllers.WorldConfigurator.open();

@@ -375,13 +375,6 @@ i.icon-lock {
   text-anchor: middle;
 }
 
-#routeLength {
-  background-color: #eeeeee;
-  border: 1px solid #a5a5a5;
-  line-height: 1.3em;
-  cursor: default;
-}
-
 #brushCircle {
   stroke: #373737;
   stroke-width: 1.5px;
@@ -1561,6 +1554,18 @@ div.states span.inactive:hover {
   width: 6.5em;
 }
 
+#burgNameBlock {
+  display: inline-block;
+  vertical-align: top;
+  max-width: 10.5em;
+}
+
+#burgMeaning {
+  font-size: 0.9em;
+  font-style: italic;
+  color: #666;
+}
+
 #burgBody > div > div,
 #riverBody > div,
 #routeBody > div,
@@ -1578,6 +1583,13 @@ div.states span.inactive:hover {
   width: 7em;
 }
 
+/* a row of plain text is as tall as a row with an input */
+#riverBody div.label,
+#routeBody div.label,
+#lakeBody div.label {
+  line-height: 1.65em;
+}
+
 #lakeBody select {
   min-width: 7em;
 }
@@ -1588,8 +1600,8 @@ div.states span.inactive:hover {
   width: 10em;
 }
 
-#stateNameEditor div.label,
-#provinceNameEditor div.label,
+#stateFormEditor div.label,
+#provinceFormEditor div.label,
 #regimentBody div.label,
 #markerEditor div.label {
   display: inline-block;
@@ -1860,11 +1872,6 @@ div.textual span,
 .textual legend {
   font-size: 0.9em;
   font-weight: bold;
-}
-
-#namesbaseExamples {
-  font-family: var(--monospace);
-  cursor: pointer;
 }
 
 #markers {

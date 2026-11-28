@@ -1,5 +1,5 @@
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { Names } from "@/model/society/names-generator";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import type { Feature } from "./features-generator";
 import { Features } from "./features-generator";
 
@@ -32,13 +32,6 @@ describe("feature naming", () => {
     } as unknown as typeof pack;
     globalThis.grid = { cells: { i: new Array(1000) } } as unknown as typeof grid;
     globalThis.options = { map: { seed: "1", graph: { width: 100, height: 100 } } } as unknown as typeof options;
-    Object.assign(Names, { getCulture: (culture: number) => `name-of-${culture}` });
-  });
-
-  it("takes the culture of the first cell for islands and of a shore cell for lakes", () => {
-    Math.random = () => 0.5; // no adjective roll
-    expect(Features.getName(pack.features[1])).toBe("name-of-1");
-    expect(Features.getName(pack.features[2])).toBe("name-of-2");
   });
 
   it("sizes the ocean subtype by cell count", () => {
@@ -47,18 +40,30 @@ describe("feature naming", () => {
     expect(Features.getOceanSubtype(pack.features[4])).toBe("gulf");
   });
 
-  it("names oceans with an adjective or a map side instead of a culture name", () => {
-    for (let i = 0; i < 20; i++) {
-      expect(Features.getName(pack.features[3])).toMatch(/^(\w+|Western|Eastern|Northern|Southern)$/);
-      expect(Features.getName(pack.features[3])).not.toMatch(/^name-of-/);
-    }
-  });
-
-  it("names only the features without a name", () => {
+  it("names only the features without a name, an island and a lake by what they are", () => {
+    const lake = {
+      name: "Mere",
+      meaning: { pattern: "feature" as const, tokens: ["lake" as const], origin: "english" }
+    };
+    const island = {
+      name: "Sheepey",
+      meaning: {
+        pattern: "modifier-generic" as const,
+        tokens: ["sheep" as const, "island" as const],
+        origin: "english"
+      }
+    };
+    const sea = {
+      name: "Misty",
+      meaning: { pattern: "description" as const, tokens: ["mist" as const], origin: "human-generic" }
+    };
+    vi.spyOn(Toponyms, "sea").mockReturnValue(sea);
+    vi.spyOn(Toponyms, "lake").mockReturnValue(lake);
+    vi.spyOn(Toponyms, "island").mockReturnValue(island);
     Features.defineNames();
-    expect(pack.features[1].name).toBe("name-of-1");
-    expect(pack.features[3].name).toBeTruthy();
-    expect(pack.features[3].name).not.toMatch(/^name-of-/);
+    expect(pack.features[1]).toMatchObject(island);
+    expect(pack.features[2]).toMatchObject(lake);
+    expect(pack.features[3]).toMatchObject(sea);
     expect(pack.features[4].name).toBe("Kept Sea");
   });
 });

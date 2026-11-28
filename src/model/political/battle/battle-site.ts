@@ -2,7 +2,7 @@
 
 import { Pack } from "@/model/graph/pack-generator";
 import { Coastline } from "@/model/physical/coastline-generator";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import type { Point } from "@/types/global";
 
 class BattleSiteModule {

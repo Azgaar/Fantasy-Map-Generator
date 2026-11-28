@@ -15,12 +15,14 @@ import { Provinces } from "@/model/political/provinces-generator";
 import { noFinance, States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
-import { Names } from "@/model/society/names-generator";
+import { Meanings } from "@/model/society/names/meanings";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Events } from "@/model/story/events";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
 import { Markers } from "@/model/story/markers-generator";
+import type { Meaning } from "@/types/names";
 import { Emblems } from "./political/emblems-generator";
 import { Lore } from "./story/lore";
 
@@ -259,7 +261,11 @@ describe("Routes and Features", () => {
   it("rename by id and reject missing ones", () => {
     vi.stubGlobal("pack", { events: [], routes: [{ i: 3, group: "roads" }], features: [{}, { i: 1, name: "Old" }] });
     Routes.rename(3, "King's Road");
+    const meaning: Meaning = { pattern: "feature", tokens: ["island"], origin: "english" };
+    Features.setName(1, { name: "Eyot", meaning });
+    expect(pack.features[1]).toMatchObject({ name: "Eyot", meaning });
     Features.rename(1, "Isle of Varn");
+    expect(pack.features[1].meaning).toBeUndefined(); // a new name is a proper name
     expect(pack.routes[0].name).toBe("King's Road");
     expect(pack.features[1].name).toBe("Isle of Varn");
     expect(() => Routes.rename(0, "X")).toThrow("Route 0 does not exist");
@@ -767,10 +773,10 @@ describe("States: chronicle, painting and merging as provinces", () => {
     vi.spyOn(Burgs, "getType").mockReturnValue("Generic");
     vi.spyOn(Emblems, "generate").mockReturnValue({ t1: "or" });
     vi.spyOn(Emblems, "getShield").mockReturnValue("heater");
-    Object.assign(Names, { getState: () => "Marca", getCultureShort: () => "M" });
+    vi.spyOn(Toponyms, "land").mockReturnValue({ name: "Marca", meaning: Meanings.simplex("Marca", "english") });
     States.setCells(2, [2]);
     expect([...pack.cells.state]).toEqual([0, 1, 2, 2, 2]);
-    expect(pack.provinces[2]).toMatchObject({ i: 2, state: 2, center: 2, name: "Vel" }); // the split-off part of Vel
+    expect(pack.provinces[2]).toMatchObject({ i: 2, state: 2, center: 2, name: "Marca" }); // the split-off part of Vel takes a name of its own
     expect([...pack.cells.province]).toEqual([0, 1, 2, 0, 0]);
     expect(pack.states[2].provinces).toEqual([2]);
     expect(() => States.setCells(2, [1])).toThrow("center of state 1");

@@ -14,6 +14,7 @@ import { States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Events } from "@/model/story/events";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
@@ -47,6 +48,7 @@ export const MODELS = {
   States,
   Styles,
   StylePresets,
+  Toponyms,
   Zones
 };
 
@@ -207,6 +209,7 @@ export const METHODS = {
   Markets: ["rename", "recolor"],
   Lore: ["rename", "setYear", "setEra", "setDescription"],
   Notes: ["write"],
+  Toponyms: ["setMeaning"],
   Styles: ["setValue"],
   StylePresets: ["apply"]
 } satisfies { [K in keyof Models]?: (keyof Models[K])[] };

@@ -18,7 +18,9 @@ vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: { trigger: vi.f
 vi.mock("@/renderers/overlays/fogging", () => ({ fog: vi.fn(), unfog: vi.fn() }));
 vi.mock("@/ui/map/highlight", () => ({ highlightElement: vi.fn(), highlightOutline: vi.fn() }));
 
-import { Names } from "@/model/society/names-generator";
+import { Meanings } from "@/model/society/names/meanings";
+
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Layers } from "@/renderers/layers";
 import { Dialog } from "@/ui/dialog/dialog";
 import { DIALOGS_MARKUP } from "@/ui/dialog/dialog-testing";
@@ -62,8 +64,10 @@ afterEach(() => {
 
 describe("ProvincesEditor name regeneration", () => {
   beforeEach(() => {
-    vi.spyOn(Names, "getCultureShort").mockImplementation(culture => `Culture${culture}`);
-    vi.spyOn(Names, "getState").mockImplementation(name => name);
+    vi.spyOn(Toponyms, "land").mockImplementation(culture => {
+      const name = `Culture${culture}`;
+      return { name, meaning: Meanings.simplex(name, "english") };
+    });
   });
 
   it("uses each province's local culture, including Wildlands, and updates names and labels", () => {
@@ -77,6 +81,7 @@ describe("ProvincesEditor name regeneration", () => {
       label: { text: "Culture2|County", dx: 5 }
     });
     expect(pack.provinces[2].name).toBe("Culture0");
+    expect(pack.provinces[2].meaning).toEqual(Meanings.simplex("Culture0", "english"));
     expect(document.querySelector<HTMLInputElement>('[data-id="1"] .name')!.value).toBe("Culture2");
     expect(Layers.draw).toHaveBeenCalledExactlyOnceWith("labels");
   });
@@ -101,7 +106,7 @@ describe("ProvincesEditor name regeneration", () => {
       "Removed",
       "Search excluded"
     ]);
-    expect(Names.getCultureShort).toHaveBeenCalledExactlyOnceWith(0);
+    expect(Toponyms.land).toHaveBeenCalledExactlyOnceWith(0);
   });
 
   it("renames matching provinces beyond the first table page", () => {
@@ -111,7 +116,7 @@ describe("ProvincesEditor name regeneration", () => {
     document.querySelector<HTMLButtonElement>("#regenerateProvinceNames")!.click();
 
     expect(pack.provinces[105].name).toBe("Culture2");
-    expect(Names.getCultureShort).toHaveBeenCalledTimes(105);
+    expect(Toponyms.land).toHaveBeenCalledTimes(105);
   });
 });
 

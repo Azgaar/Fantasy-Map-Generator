@@ -1,3 +1,4 @@
+import type { IconSetId } from "@/model/icon-sets";
 import { Icons } from "@/model/icons";
 import type { ReliefIcon } from "@/model/physical/relief-generator";
 import { Relief } from "@/model/physical/relief-generator";
@@ -10,11 +11,17 @@ const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief })
 let isDrawn = false; // an erased layer draws nothing, an empty one still draws
 let frameId: number | null = null;
 
+/** the icon sets the layer draws with */
+export const getReliefIconSets = (): IconSetId[] =>
+  Relief.requiredIconSets(pack.relief ?? [], styles.relief.options.set);
+
 export async function drawRelief(): Promise<void> {
-  log.time("drawRelief");
   if (!pack.relief?.length) Relief.generate();
   isDrawn = true;
-  await Icons.loadAll(Relief.requiredIconSets(pack.relief, styles.relief.options.set));
+  const sets = getReliefIconSets();
+  if (!Icons.areSettled(sets)) await Icons.loadAll(sets); // settled icons draw at once, within the caller's log group
+
+  log.time("drawRelief");
   layer.render();
   log.timeEnd("drawRelief");
 }

@@ -47,6 +47,7 @@ To report a problem or propose a feature, see [Reporting bugs and suggesting ide
 [Culture sets](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-sets) ·
 [Culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types) ·
 [Development](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Development) ·
+[Names and name bases](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names) ·
 [Markers](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Markers) ·
 [Journeys](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Journeys) ·
 [Chronicle](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Chronicle) ·

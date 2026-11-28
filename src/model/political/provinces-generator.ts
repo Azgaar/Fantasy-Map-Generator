@@ -3,10 +3,11 @@ import { max } from "d3";
 import type { Label } from "@/model/annotations/labels-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Emblems } from "@/model/political/emblems-generator";
-import { Names } from "@/model/society/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Population } from "@/model/society/population-generator";
 import { Events } from "@/model/story/events";
 import type { Emblem } from "@/types/emblems";
+import type { Meaning, Named, PlaceRef } from "@/types/names";
 import { getMixedColor, requireColor } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { replaceWholeWord } from "@/utils/language-utils";
@@ -16,6 +17,8 @@ import { requireName } from "@/utils/validation-utils";
 import { Burgs } from "./burgs-generator";
 import { States } from "./states-generator";
 
+const BURG_NAMED = 0.35; // the share of provinces named after their burg
+
 export interface Province {
   i: number;
   removed?: boolean;
@@ -24,6 +27,7 @@ export interface Province {
   center: number;
   burg: number;
   name: string;
+  meaning?: Meaning; // what the name says, kept apart from the name itself
   formName: string;
   fullName: string;
   color: string;
@@ -117,6 +121,16 @@ class ProvinceModule {
     const provincesRatio = options.generation.provinces.ratio;
     const maxGrowth = provincesRatio === 100 ? 1000 : gauss(20, 5, 5, 100) * Math.max(provincesRatio, 1) ** 0.5; // max growth
 
+    const taken = Toponyms.landNames(provinces); // no two lands share a name
+    // off a sequence of its own: how a name is coined moves no border
+    const nameLand = (culture: number) =>
+      Toponyms.drawFor(
+        "province",
+        provinces.length,
+        () => Toponyms.land(culture, taken),
+        regenerate ? localSeed : undefined
+      );
+
     // generate provinces for selected burgs
     states.forEach(s => {
       s.provinces = [];
@@ -139,8 +153,10 @@ class ProvinceModule {
         const center = stateBurgs[i].cell;
         const burg = stateBurgs[i];
         const c = stateBurgs[i].culture!;
-        const nameByBurg = P(0.5);
-        const name = nameByBurg ? stateBurgs[i].name! : Names.getState(Names.getCultureShort(c), c);
+        const nameByBurg = P(BURG_NAMED) && !taken.has(burg.name);
+        const named = nameByBurg ? burg : nameLand(c); // after its burg, or a land's name
+        const name = named.name!;
+        taken.add(name);
         const formName = rw(form);
         form[formName] += 10;
         const fullName = `${name} ${formName}`;
@@ -157,6 +173,7 @@ class ProvinceModule {
           center,
           burg: burg.i!,
           name,
+          meaning: named.meaning,
           formName,
           fullName,
           color,
@@ -225,14 +242,18 @@ class ProvinceModule {
       if (!s.i || s.removed || isStateKept(s.i)) return;
       if (!s.provinces?.length) return;
 
-      const coreProvinceNames = s.provinces.map(p => provinces[p]?.name);
-      const colonyNamePool = [s.name, ...coreProvinceNames].filter(name => name && !/new/i.test(name));
+      const lands: { name?: string; after: PlaceRef }[] = [
+        { name: s.name, after: { type: "state", id: s.i } },
+        ...s.provinces.map(p => ({ name: provinces[p]?.name, after: { type: "province", id: p } as PlaceRef }))
+      ];
+      const colonyNamePool = lands.filter(({ name }) => name && !/new/i.test(name));
       const getColonyName = () => {
-        if (colonyNamePool.length < 1) return null;
+        if (colonyNamePool.length < 1) return undefined;
 
         const index = rand(colonyNamePool.length - 1);
-        const spliced = colonyNamePool.splice(index, 1);
-        return spliced[0] ? `New ${spliced[0]}` : null;
+        const [land] = colonyNamePool.splice(index, 1);
+        const named = land ? Toponyms.colonyOf(land.name!, s.culture, land.after) : undefined;
+        return taken.has(named?.name) ? undefined : named;
       };
 
       let stateNoProvince = noProvince.filter(i => cells.state[i] === s.i && !provinceIds[i]);
@@ -278,12 +299,13 @@ class ProvinceModule {
         const isleSubtype = !singleIsle && !provCells.find(i => pack.features[cells.f[i]].subtype !== "isle");
         const colony = !singleIsle && !isleSubtype && P(0.5) && !isPassable(s.center, center);
 
-        const name = (() => {
-          const colonyName = colony && P(0.8) && getColonyName();
-          if (colonyName) return colonyName;
-          if (burgCell && P(0.5)) return burgs[burg].name;
-          return Names.getState(Names.getCultureShort(c), c);
+        const { name, meaning } = ((): { name?: string; meaning?: Meaning } => {
+          const colonyNamed = colony && P(0.8) && getColonyName();
+          if (colonyNamed) return colonyNamed;
+          if (burgCell && P(BURG_NAMED) && !taken.has(burgs[burg].name)) return burgs[burg];
+          return nameLand(c);
         })();
+        taken.add(name);
 
         const formName = (() => {
           if (singleIsle) return "Island";
@@ -306,6 +328,7 @@ class ProvinceModule {
           center,
           burg,
           name: name!,
+          meaning,
           formName,
           fullName,
           color,
@@ -343,10 +366,20 @@ class ProvinceModule {
 
   /** Rename a province; a custom full name or label keeps its pattern when the old name stands in it as a whole word */
   rename(provinceId: number, name: string): void {
-    const province = pack.provinces[provinceId];
-    if (!province || province.removed) throw new Error(`Province ${provinceId} does not exist`);
+    this.setName(provinceId, { name });
+  }
+
+  /** Give provinces new names, each a land's in the culture's base at its center */
+  regenerateNames(provinces: Province[]): void {
+    for (const { i, center } of provinces) this.setName(i, Toponyms.land(pack.cells.culture[center]));
+  }
+
+  /** Rename a province and set what the name says: with no meaning it is a proper name, whatever the old one said */
+  setName(provinceId: number, { name, meaning }: Named): void {
+    const province = this.living(provinceId);
     const old = province.name;
     province.name = requireName(name);
+    province.meaning = meaning;
     province.fullName =
       replaceWholeWord(province.fullName, old, province.name) ??
       (province.formName ? `${province.name} ${province.formName}` : province.name);
@@ -428,7 +461,8 @@ class ProvinceModule {
     const old = provinces[cells.province[center]];
     const burg = cells.burg[center];
     const culture = cells.culture[center];
-    const name = burg ? burgs[burg].name! : Names.getState(Names.getCultureShort(culture), culture);
+    const taken = Toponyms.landNames();
+    const { name = "", meaning } = burg && !taken.has(burgs[burg].name) ? burgs[burg] : Toponyms.land(culture, taken);
     const formName = old?.formName || "Province";
     const coa = Emblems.generate(
       burg ? burgs[burg].coa : states[state].coa,
@@ -438,7 +472,8 @@ class ProvinceModule {
     );
     coa.shield = Emblems.getShield(culture, state);
     const color = getMixedColor(states[state].color!, 0.2, 0);
-    provinces.push({ i, state, center, burg, name, formName, fullName: `${name} ${formName}`, color, coa, tags: [] });
+    const fullName = `${name} ${formName}`;
+    provinces.push({ i, state, center, burg, name, meaning, formName, fullName, color, coa, tags: [] });
     states[state].provinces = [...(states[state].provinces ?? []), i];
 
     cells.province[center] = i;

@@ -12,6 +12,18 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+**[1.160.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.160.0) - 2026-11-29**:
+
+- Names: built of meaning, such as Blackwater, Raven's Rest or Krasnoye Selo
+- Names: places can be named after founders
+- Names: 20 new namesbases with cultures of their own, from Egyptian and Polish to Halfling and Infernal
+- Names: Celtic namesbase is now Welsh; Slovan culture is now Rucian
+- Editors: see what a name means and how other namesbases render it
+- Namesbases Overview: all namesbases and cultures that use them
+- Namesbases: custom and edited ones are kept for new maps; built-in ones are locked, edit a copy
+- Namesbase Editor: edit personal names, lexicon, name patterns and sound rules, with live examples
+- Namesbase Editor: JSON download and upload; older TXT still loads
+
 **[1.159.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.159.0) - 2026-11-23**:
 
 - Battle Simulator: animated battles on the map's ground, fought by battalions led by generals

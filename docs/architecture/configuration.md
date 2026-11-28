@@ -135,7 +135,7 @@ value into the control still applies it, and it stands until the next fit re-der
 
 ### The definition sets
 
-Military unit types, transport types, development eras, burg groups, label groups, goods, the custom icons
+Military unit types, transport types, development eras, burg groups, label groups, goods, name bases, the custom icons
 and the coastline settings sit in `options.map` however much they look like user settings, because **entities
 point at them by name or id**: a set that travels separately from its entities opens a map with unresolved
 references. Eras are read by level rather than pointed at, and travel with the map so it shows the names it was
@@ -145,13 +145,18 @@ They are also the set the **next** map starts from: they survive a refresh becau
 `options`, and `Options.randomize()` carries them across explicitly while resetting everything else
 in `options.map`. A set is never empty — the boundary repairs one that arrives empty from the
 module that owns it, because a label type with no group draws no labels. The custom icons are the
-exception: a map may carry none.
+exception: a map may carry none. So are the name bases.
 
 The next map keeps the goods whole, with one exception: `Goods.clearEntityMultipliers` drops multipliers keyed by
 one map's culture, state, religion or zone ids. Goods feed population, so a changed catalogue changes what a seed generates.
 They also keep old tuning across releases until the user restores the defaults. Files before v1.157.0 keep goods
 in record 41, which `load.ts` moves to `options.map.goods`. Goods may be empty until `Goods.generate` restores the
 defaults.
+
+`nameBases` holds only the bases the user added or edited, each in full. The built-in ones come with the app and are
+never stored: they are large, and a stored copy would miss what later releases add to them. A base under the id of a
+built-in one stands in its place; `NameBases.all` gives the whole list. Files before v1.160.0 keep bases in record 31,
+which the migration moves here.
 
 ### Locks
 

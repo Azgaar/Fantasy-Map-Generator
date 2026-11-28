@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import { Pack } from "@/model/graph/pack-generator";
-import { Names } from "@/model/society/names-generator";
 import { MapEntities } from "./map-entities";
 
 beforeEach(() => {
@@ -395,9 +394,12 @@ describe("records", () => {
     });
     globalThis.pack.burgs[1] = { ...globalThis.pack.burgs[1], x: 7, y: 8 } as (typeof pack.burgs)[number];
     globalThis.options = {
-      map: { transports: [{ i: 2, name: "Galley", speed: 8, domain: "water" }], goods: [{ i: 0, name: "Salt" }] }
-    } as typeof options;
-    Object.assign(Names, { nameBases: [{ i: 0, name: "German" }] });
+      map: {
+        transports: [{ i: 2, name: "Galley", speed: 8, domain: "water" }],
+        goods: [{ i: 0, name: "Salt" }],
+        nameBases: []
+      }
+    } as unknown as typeof options;
   });
 
   it("resolves every record type by key", () => {

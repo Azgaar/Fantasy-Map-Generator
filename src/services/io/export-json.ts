@@ -1,5 +1,5 @@
 import { mapHistory } from "@/model/map-history";
-import { Names } from "@/model/society/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { getFileName } from "@/services/io/file-name";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
@@ -49,7 +49,7 @@ function getFullDataJson(): string {
     mapCoordinates: options.map.geography.coordinates,
     pack: packData,
     grid: gridData,
-    nameBases: Names.nameBases
+    nameBases: NameBases.loaded()
   });
 }
 
@@ -80,7 +80,7 @@ function getMinimalDataJson(): string {
     settings,
     mapCoordinates: options.map.geography.coordinates,
     pack: packData,
-    nameBases: Names.nameBases
+    nameBases: NameBases.loaded()
   });
 }
 

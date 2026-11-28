@@ -5,9 +5,8 @@ import { Pack } from "@/model/graph/pack-generator";
 import { Tags } from "@/model/tags";
 import { redrawRoute as redrawRouteShape, setEditedRoute } from "@/renderers/draw-routes";
 import { Layers } from "@/renderers/layers";
-import { speak } from "@/services/speech";
 import { Dialog } from "@/ui/dialog/dialog";
-import { noteButton } from "@/ui/dialog/dialog-helpers";
+import { nameEditButton, noteButton } from "@/ui/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { getSegmentId } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
@@ -66,9 +65,8 @@ function renderDialog(): void {
     <div id="routeBody" style="padding-bottom: 0.3em">
       <div>
         <div class="label">${t("Name")}:</div>
-        <input id="routeName" data-tip="${t("Type to rename")}" autocorrect="off" spellcheck="false" />
-        <span id="routeNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
-        <span id="routeGenerateName" data-tip="${t("Generate route name")}" class="icon-globe pointer"></span>
+        <span id="routeName"></span>
+        ${nameEditButton("routeNameEdit")}
       </div>
       <div data-tip="${t("Select route group")}">
         <div class="label">${t("Group")}:</div>
@@ -87,7 +85,7 @@ function renderDialog(): void {
       </div>
       <div data-tip="${t("Route length in selected units")}">
         <div class="label">${t("Length")}:</div>
-        <input id="routeLength" disabled />
+        <span id="routeLength"></span>
       </div>
     </div>
     <div id="routeBottom">
@@ -110,13 +108,11 @@ function renderDialog(): void {
   ensureEl("routeLegend").addEventListener("click", editRouteLegend);
   ensureEl("routeLock").addEventListener("click", toggleLockButton);
   ensureEl("routeRemove").addEventListener("click", removeRoute);
-  ensureEl("routeName").addEventListener("input", changeName);
-  ensureEl("routeNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("routeName").value));
+  ensureEl("routeNameEdit").addEventListener("click", editName);
   ensureEl("routeGroup").addEventListener("input", changeGroup);
   ensureEl("routeTags").addEventListener("change", changeTags);
   ensureEl("routeGroupEdit").addEventListener("click", openRouteGroupsEditor);
   ensureEl("routeEditStyle").addEventListener("click", editRouteGroupStyle);
-  ensureEl("routeGenerateName").addEventListener("click", generateName);
 }
 
 function openRouteGroupsEditor(): void {
@@ -130,7 +126,7 @@ function getRoute(): Route {
 
 function updateRouteData(route: Route): void {
   route.name = route.name || Routes.generateName(route) || UNNAMED_ROUTE;
-  ensureEl<HTMLInputElement>("routeName").value = route.name;
+  ensureEl("routeName").textContent = route.name;
   ensureEl<HTMLInputElement>("routeTags").value = Tags.format(route.tags);
 
   const routeGroup = ensureEl<HTMLSelectElement>("routeGroup");
@@ -147,7 +143,7 @@ function updateRouteData(route: Route): void {
 
 function updateRouteLength(route: Route): void {
   route.length = Routes.getLength(route.i);
-  ensureEl<HTMLInputElement>("routeLength").value =
+  ensureEl("routeLength").textContent =
     `${rn(route.length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
 }
 
@@ -325,19 +321,20 @@ function updateLinks(): void {
   Layers.draw("goods", "trade");
 }
 
-function changeName(this: HTMLInputElement): void {
-  if (this.value.trim()) {
-    Routes.rename(getRoute().i, this.value);
-    Layers.draw("labels");
-  }
-}
-
-function generateName(): void {
+function editName(): void {
   const route = getRoute();
-  const name = Routes.generateName(route) || UNNAMED_ROUTE;
-  ensureEl<HTMLInputElement>("routeName").value = name;
-  Routes.rename(route.i, name);
-  Layers.draw("labels");
+  void Controllers.NameEditor.open({
+    entity: `route:${route.i}`,
+    owner: "routeEditor",
+    name: route.name ?? "",
+    baseId: pack.cultures[pack.cells.culture[route.points[0][2]]]?.base,
+    proper: () => Routes.generateName(route) || UNNAMED_ROUTE,
+    onApply: ({ name }) => {
+      Routes.rename(route.i, name);
+      ensureEl("routeName").textContent = name;
+      Layers.draw("labels");
+    }
+  });
 }
 
 function changeGroup(this: HTMLInputElement): void {

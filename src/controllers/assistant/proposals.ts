@@ -3,11 +3,13 @@ import { effectAt } from "@/controllers/style/effects";
 import { Pack } from "@/model/graph/pack-generator";
 import { MapEntities } from "@/model/map-entities";
 import { Options } from "@/model/options/options-model";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Events } from "@/model/story/events";
 import { Styles } from "@/model/styles/styles";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { type LayerId, Layers } from "@/renderers/layers";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
+import { Dialog } from "@/ui/dialog/dialog";
 import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { invokeActiveZooming } from "@/ui/map/zoom";
 import { findEl } from "@/utils/node-utils";
@@ -32,9 +34,10 @@ const ACTIONS: Record<Action, { from: Proposal["state"]; expects: Side; writes: 
 /** A proposal is a batch of operations the Assistant wants to run, shown to the user as a card before anything
  * changes: Preview → Apply → Undo → Redo, or Discard. See docs/prd/assistant.md */
 class ProposalLifecycle {
-  /** Load what operations read from files, such as a style preset; call before `propose` */
-  prepare(operations: unknown): Promise<void> {
-    return StylePresets.preload(operations);
+  /** Load what operations read from files, such as a style preset or a name base; call before `propose` */
+  async prepare(operations: unknown): Promise<void> {
+    const named = NameBases.all.map(({ id }) => id).filter(id => JSON.stringify(operations)?.includes(`"${id}"`));
+    await Promise.all([StylePresets.preload(operations), NameBases.load(named)]);
   }
 
   /** Try the operations on a draft of the map and record what they change. The live map is never touched, and one
@@ -138,6 +141,7 @@ class ProposalLifecycle {
   }
 
   private refresh(change: Change): void {
+    void NameBases.loadUsed(); // a culture may have taken another base
     Events.reload(); // events are written as rows, past its index
     Layers.draw(...change.layers);
     this.refreshStyle(change.stylePaths);
@@ -145,6 +149,7 @@ class ProposalLifecycle {
     Options.save();
     refreshEditors();
     for (const key of change.keys) this.refreshNameInputs(key);
+    if (change.renamed.has(findEl("nameEditor")?.dataset.entity ?? "")) Dialog.close("nameEditor"); // it holds the old name
     if (findEl("notesEditor")) void Controllers.NotesEditor.refresh();
     if (change.keys.has(Change.LORE) && findEl("loreEditor")) void Controllers.LoreEditor.refresh();
   }
@@ -173,16 +178,16 @@ class ProposalLifecycle {
     if (!ref || !entity) return;
     const value = entity.name ?? "";
     if (ref.type === "state" || ref.type === "province") {
-      const dialog = findEl(`${ref.type}NameEditor`);
-      if (dialog?.dataset[ref.type] !== String(ref.id)) return;
-      const short = findEl<HTMLInputElement>(`${ref.type}NameEditorShort`);
-      const full = findEl<HTMLInputElement>(`${ref.type}NameEditorFull`);
-      if (short) short.value = value;
-      if (full) full.value = entity.fullName ?? value;
+      const full = findEl<HTMLInputElement>(`${ref.type}FormEditorFull`);
+      if (full && findEl(`${ref.type}FormEditor`)?.dataset[ref.type] === String(ref.id))
+        full.value = entity.fullName ?? value;
     } else {
       const dialog = findEl(`${ref.type}Editor`);
-      const input = findEl<HTMLInputElement>(`${ref.type}Name`);
-      if (dialog?.dataset.entity === key && input) input.value = value;
+      const shown = findEl(`${ref.type}Name`); // an input where the name is typed in place, text elsewhere
+      if (dialog?.dataset.entity !== key || !shown) return;
+      if (shown instanceof HTMLInputElement) shown.value = value;
+      else shown.textContent = value;
+      if (ref.type === "burg") void Controllers.BurgEditor.refreshName();
     }
   }
 }

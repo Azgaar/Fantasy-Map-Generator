@@ -9,6 +9,7 @@ import type { Period } from "@/model/political/battle/time";
 import type { Condition, Weather } from "@/model/political/battle/weather";
 import type { TransportDomain } from "@/model/story/journeys/transports-generator";
 import type { DemandCategory } from "@/types/economy";
+import type { Pattern } from "@/types/names";
 import { t } from "@/utils/i18n";
 
 export const FEATURE_SUBTYPE_LABELS: Record<string, string> = {
@@ -258,6 +259,30 @@ export const SAMPLING_LABELS: Record<Sampling, string> = {
   diamond: t("Square 45 degrees grid"),
   triangle: t("Triangle grid (horizontal)")
 };
+
+/** What a name of a pattern is made of. The words themselves stay in English, as a Meanings.gloss is */
+export const PATTERN_LABELS: [group: string, patterns: [Pattern, string][]][] = [
+  [
+    t("Burgs, rivers, lakes, islands and seas"),
+    [
+      ["simplex", t("Proper name")],
+      ["feature", t("Place")],
+      ["modifier-generic", t("Description + place")],
+      ["owner-generic", t("Owner + place")],
+      ["generic-of", t("Place + name")],
+      ["compound", t("Description + place + settlement")],
+      ["relative", t("Description + name")],
+      ["description", t("Description")]
+    ]
+  ],
+  [
+    t("States, provinces and continents"),
+    [
+      ["root-land", t("Name + land")],
+      ["modifier-land", t("Description + land")]
+    ]
+  ]
+];
 
 export const BATTLE_TYPE_LABELS: Record<BattleType, string> = {
   field: t("Field battle"),

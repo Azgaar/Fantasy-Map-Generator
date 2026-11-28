@@ -10,7 +10,7 @@ import { mapHistory, registerMap } from "@/model/map-history";
 import { Options } from "@/model/options/options-model";
 import { Features } from "@/model/physical/features-generator";
 import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
-import { Names } from "@/model/society/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Styles } from "@/model/styles/styles";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
@@ -117,14 +117,14 @@ async function loadMapFromURL(maplink: string, random?: boolean): Promise<void> 
     if (!response.ok) throw new Error("Cannot load map from URL");
 
     const blob = await response.blob();
-    uploadMap(blob);
+    await uploadMap(blob);
   } catch (error) {
     const message =
       (error as Error)?.name === "AbortError"
         ? t("Cannot load map from URL: request timed out")
         : (error as Error).message;
     showUploadErrorMessage(message, maplink, random);
-    if (random) generateMapOnLoad();
+    if (random) await generateMapOnLoad();
   } finally {
     clearTimeout(timeoutId);
   }
@@ -161,7 +161,7 @@ function showUploadErrorMessage(error: string, maplink: string, random?: boolean
 
 let uploadTimeStart = 0;
 
-function uploadMap(file: Blob, callback?: () => void): void {
+async function uploadMap(file: Blob, callback?: () => void): Promise<void> {
   if (options.app.mode) {
     callback?.();
     tip(t("Map cannot be loaded in EDIT mode, please complete the edit and retry"), false, "error");
@@ -169,31 +169,26 @@ function uploadMap(file: Blob, callback?: () => void): void {
   }
   uploadTimeStart = performance.now();
 
-  const fileReader = new FileReader();
-  fileReader.onloadend = async fileLoadedEvent => {
-    if (callback) callback();
-    ensureEl("coas").innerHTML = ""; // remove auto-generated emblems
+  const result = await file.arrayBuffer().catch(() => new ArrayBuffer(0)); // an unreadable file is an invalid one
+  callback?.();
+  ensureEl("coas").innerHTML = ""; // remove auto-generated emblems
 
-    const result = fileLoadedEvent.target!.result as ArrayBuffer;
-    const { mapData, mapVersion } = await parseLoadedResult(result);
+  const { mapData, mapVersion } = await parseLoadedResult(result);
 
-    const isInvalid = !mapData || !isValidVersion(mapVersion!) || mapData.length < 10;
-    if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
+  const isInvalid = !mapData || !isValidVersion(mapVersion!) || mapData.length < 10;
+  if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
 
-    const isUpdated = compareVersions(mapVersion!, VERSION).isEqual;
-    if (isUpdated) return showUploadMessage("updated", mapData, mapVersion);
+  const isUpdated = compareVersions(mapVersion!, VERSION).isEqual;
+  if (isUpdated) return showUploadMessage("updated", mapData, mapVersion);
 
-    const isAncient = compareVersions(mapVersion!, "0.70.0").isOlder;
-    if (isAncient) return showUploadMessage("ancient", mapData, mapVersion);
+  const isAncient = compareVersions(mapVersion!, "0.70.0").isOlder;
+  if (isAncient) return showUploadMessage("ancient", mapData, mapVersion);
 
-    const isNewer = compareVersions(mapVersion!, VERSION).isNewer;
-    if (isNewer) return showUploadMessage("newer", mapData, mapVersion);
+  const isNewer = compareVersions(mapVersion!, VERSION).isNewer;
+  if (isNewer) return showUploadMessage("newer", mapData, mapVersion);
 
-    const isOutdated = compareVersions(mapVersion!, VERSION).isOlder;
-    if (isOutdated) return showUploadMessage("outdated", mapData, mapVersion);
-  };
-
-  fileReader.readAsArrayBuffer(file);
+  const isOutdated = compareVersions(mapVersion!, VERSION).isOlder;
+  if (isOutdated) return showUploadMessage("outdated", mapData, mapVersion);
 }
 
 async function uncompress(compressedData: ArrayBuffer): Promise<Uint8Array | null> {
@@ -233,7 +228,7 @@ async function parseLoadedResult(
   }
 }
 
-function showUploadMessage(type: string, mapData: string[] | null, mapVersion: string | null): void {
+async function showUploadMessage(type: string, mapData: string[] | null, mapVersion: string | null): Promise<void> {
   let message = "";
   let title = "";
 
@@ -241,8 +236,7 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
     message = `${t("The file does not look like a valid save file.")}<br>${t("Please check the data format")}`;
     title = t("Invalid file format");
   } else if (type === "updated") {
-    parseLoadedData(mapData!, mapVersion);
-    return;
+    return parseLoadedData(mapData!, mapVersion);
   } else if (type === "ancient") {
     const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", t("archived version"));
     message = `${t("The map version you are trying to load ({{version}}) is too old and cannot be updated to the current version.", { version: mapVersion })}<br>${t("Please keep using an {{- archive}}", { archive })}`;
@@ -252,8 +246,7 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
     title = t("Newer file");
   } else if (type === "outdated") {
     log.info(`Loading map. Auto-updating from ${mapVersion} to ${VERSION}`);
-    parseLoadedData(mapData!, mapVersion);
-    return;
+    return parseLoadedData(mapData!, mapVersion);
   }
 
   Dialog.message({
@@ -381,16 +374,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.legends = data[53] ? JSON.parse(data[53]) : [];
     pack.events = data[56] ? JSON.parse(data[56]) : [];
 
-    // save omits names that equal the default base at the same index
-    const defaultNameBases = Names.getNameBases();
-    Names.nameBases = data[31]
-      ? data[31].split("/").map((d, i) => {
-          const e = d.split("|");
-          const b = e[5].split(",").length > 2 || !defaultNameBases[i] ? e[5] : defaultNameBases[i].b;
-          return { name: e[0], i, min: +e[1], max: +e[2], d: e[3], m: +e[4], b };
-        })
-      : defaultNameBases;
-    Names.clearChains();
+    await NameBases.loadUsed();
 
     await autoUpdate?.resolveVersionConflicts(mapVersion!, data);
 
@@ -421,6 +405,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       HeightmapColorSchemes.ensure(scheme);
     }
 
+    await Layers.loadIcons();
     Layers.drawAll();
     Styles.writeAll();
     applyVignetteOptions(); // the vignette mask is renderer-owned; its applier shapes it from the store
@@ -477,7 +462,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       ]
     });
   } finally {
-    if (isLogGroupOpen) console.groupEnd();
+    if (isLogGroupOpen) log.groupEnd();
   }
 }
 

@@ -346,7 +346,7 @@ Open Tools -> States, click the brush button and paint the invader's state over 
 
 ### I would like to use my own list of names for States, Provinces, and Burgs. How can I do it?
 
-Create a namesbase in Tools -> Namesbase (or upload a .txt list) and assign it to a culture in the Cultures Editor; new names for that culture come from it. To rename existing entries in bulk, download the overview table as .csv, edit the names and upload it back
+Create a namesbase in Tools -> Namesbase (or upload a .txt list) and assign it to a culture in the Cultures Editor; new names for that culture come from it. To rename existing entries in bulk, download the overview table as .csv, edit the names and upload it back. A renamed place loses its old meaning; to give it a new one, edit its Meaning cell too, such as "owner-generic: ~Eadric, town"
 
 ### Is it possible to use the map generator to create a fantasy map based on an actual city map?
 
@@ -406,7 +406,27 @@ The Ice layer is generated from temperature with a fixed threshold, so the start
 
 ### How can I regenerate name of a particular state?
 
-Go to Tools -> edit States. Click the State name, you'll see 2 buttons, a refresh icon and a book icon, click the book icon to re-roll the name using the namesbase of its culture: click the refresh icon if you just want a random name
+Go to Tools -> edit States and click the state's name. In the name editor, the book button (Generate culture-specific name) coins a new name in the namesbase of the state's culture, and the globe button (Generate random name) does the same in any namesbase in use on the map
+
+### What does the Meaning line under a name mean?
+
+Burgs, states, provinces, rivers, lakes, islands and seas are named in two steps. The generator first decides what the name means from what is at the place, such as Birch Town for a town by a birch forest or Eadric's Farm for a farm founded by Eadric. Then the namesbase of the culture says it in its language: Birkton in English, Berezin in Ruthenian. The Name Editor, opened by the pencil beside a name, shows that meaning and lets you change it. The name and the meaning are stored apart, so a name you type is never overwritten and may say something other than its meaning. Seas belong to no culture: their meaning is a describing word such as Misty, said in English. Routes, markers and religions have no meanings. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
+
+### Can I see a name in another language?
+
+Yes. Open the Name Editor: the pencil beside the name in a burg, river, lake or route editor, or a click on the name of a state, province or feature in its table. It is also where a name is typed. Select a namesbase in Name base: it shows how the people of that base would say the name, and the check mark takes it. The crossed arrows then say its meaning in the words of that base instead
+
+### I renamed a river. Why does the Generator offer to rename burgs?
+
+Burgs named after the river, such as Exmouth on the Exe, say its name. When you rename a river, lake, burg, state or province in the Name Editor, the places named after it are offered the new name: the burgs on the river or lake, a New Barton beside Barton, the colonies named after a land. Press Rename to take the new names, or Cancel to keep the old ones. A place whose name you typed yourself is not offered one.
+
+### Why don't the names of my own namesbase mean what the Meaning says?
+
+Every built-in namesbase has its words written: the real-world ones their real place-name words, so New Town is Neuenheim in German, Neuville in French and Mji Mpya in Swahili; Human Generic builds on English with high-fantasy words, such as Black Keep, Aldric's Watch and Greyhaven. The fantasy bases (Sindarin, Quenya, Dark Elven, Dwarven, Giant, Orc, Goblin, Dovahzul, Valyrian, Dothraki, Arachnid, Serpents, Infernal, Celestial) have words of their own invented tongues for the common concepts, so a Sindarin Calenost means green city and a Dwarven Azgalgathol iron fort. Sindarin was called Elven before and Dovahzul Draconic: both now hold the words of the tongue they are named after. The description in Tools -> Namesbase says what each base is made of. A namesbase you add has no words yet: it says a meaning with endings and words found in its own list of place names, so the names sound right but mean nothing to a speaker. A concept a built-in base has no word for is said the same way. The meaning is still kept, and a base gets real words once someone writes its Lexicon tab in Tools -> Namesbase. How to write one: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
+
+### How do I create my own namesbase?
+
+Open Tools -> Namesbase and press Add. Name the base and replace the example list of places on the Names tab with a few hundred real place names, commas between; set the lengths beside the list to the range of those names and add male and female names below. Press Analyze to check the list. Then in Tools -> Cultures pick the base for a culture and click the arrows next to it to rename its burgs. The names will sound like the language; writing the Lexicon tab makes them mean something too. Your namesbases are saved with the map and new maps start with them; to use one in another saved map, download it and upload it there. To change a built-in namesbase, edit a copy: a changed built-in one gets no updates. Guide: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Names
 
 ### How to create landmass on an already generated map?
 
@@ -1154,7 +1174,7 @@ Yes, Tools -> Features (Shift + F) lists every island, lake and ocean with its t
 
 ### How do I rename an island or a landmass?
 
-Open Tools -> Features (Shift + F) and type the new name in its row. To show the name on the map, add a label with Tools -> Add -> Label (Shift + 2)
+Open Tools -> Features (Shift + F) and click the name in its row: the Name Editor opens, where you type or generate the new name. To show the name on the map, add a label with Tools -> Add -> Label (Shift + 2)
 
 ### Why can't I add or delete a feature in the Features Overview?
 

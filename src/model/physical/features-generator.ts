@@ -1,12 +1,12 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
-import { Names } from "@/model/society/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
+import type { Meaning, Named } from "@/types/names";
 import { TYPED_ARRAY_MAX } from "@/utils/array-utils";
 import { clipPoly } from "@/utils/common-utils";
 import { isLand, isWater } from "@/utils/height-utils";
 import { distanceSquared, rn } from "@/utils/number-utils";
 import { connectVertices } from "@/utils/path-utils";
-import { P, ra } from "@/utils/probability-utils";
 import { requireName, requireOneOf } from "@/utils/validation-utils";
 import { Coastline, type CoastlineSettings } from "./coastline-generator";
 import { Lakes } from "./lakes";
@@ -32,6 +32,7 @@ export interface Feature {
   flux: number;
   evaporation: number;
   name: string;
+  meaning?: Meaning; // what a feature's name says, kept apart from the name itself
 
   // River related
   inlets?: number[];
@@ -328,7 +329,14 @@ class FeatureModule {
 
   /** Rename a geographical feature: an island, lake or ocean */
   rename(featureId: number, name: string): void {
-    this.living(featureId).name = requireName(name);
+    this.setName(featureId, { name });
+  }
+
+  /** Rename a feature and set what the name says: with no meaning it is a proper name, whatever the old one said */
+  setName(featureId: number, { name, meaning }: Named): void {
+    const feature = this.living(featureId);
+    feature.name = requireName(name);
+    feature.meaning = meaning;
   }
 
   /** Set a feature's subtype within its type: a lake's freshwater, salt, dry…, an island's continent, island or isle, an ocean's ocean, sea or gulf. Generators read it on their next run */
@@ -434,99 +442,17 @@ class FeatureModule {
   defineNames() {
     Math.random = Alea(options.map.seed); // the names roll the PRNG, the steps after stay put
     for (const feature of pack.features) {
-      if (feature && !feature.name) feature.name = this.getName(feature);
+      if (!feature || feature.name) continue;
+      const { type, i } = feature;
+      if (type === "ocean") Object.assign(feature, Toponyms.sea(feature));
+      // off a sequence of its own: how a land's or a lake's name is coined moves nothing else
+      else
+        Object.assign(
+          feature,
+          Toponyms.drawFor(type, i, () => Toponyms[type](feature))
+        );
     }
   }
-
-  getName(feature: Feature): string {
-    if (feature.type === "ocean") return this.getOceanName(feature);
-    if (P(0.1)) return ra(ADJECTIVES);
-    const cell = feature.type === "lake" ? feature.shoreline?.[0] || feature.firstCell : feature.firstCell;
-    const culture = pack.cells.culture[cell];
-    return pack.cultures[culture] ? Names.getCulture(culture) : ra(ADJECTIVES); // a loaded map may hold a dropped culture
-  }
-
-  // oceans belong to no culture: an adjective or the map side, the subtype noun is shown separately
-  private getOceanName(feature: Feature) {
-    if (P(0.8)) return ra(ADJECTIVES);
-    const [x, y] = pack.cells.p[feature.firstCell];
-    const { width, height } = options.map.graph;
-    const [dx, dy] = [x / width - 0.5, y / height - 0.5];
-    return Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "Western" : "Eastern") : dy < 0 ? "Northern" : "Southern";
-  }
 }
-
-const ADJECTIVES = [
-  "Autumn",
-  "Azure",
-  "Black",
-  "Blue",
-  "Bony",
-  "Boundless",
-  "Broken",
-  "Calm",
-  "Cold",
-  "Crimson",
-  "Deep",
-  "Draconic",
-  "Dreamy",
-  "Echoing",
-  "Emerald",
-  "Endless",
-  "Far",
-  "Forbidden",
-  "Forgotten",
-  "Fortunate",
-  "Frozen",
-  "Glassy",
-  "Glittering",
-  "Golden",
-  "Great",
-  "Green",
-  "Grey",
-  "Icy",
-  "Inner",
-  "Kingly",
-  "Lost",
-  "Misty",
-  "Outer",
-  "Pale",
-  "Pearly",
-  "Reedy",
-  "Red",
-  "Restless",
-  "Roaring",
-  "Ruinous",
-  "Sailing",
-  "Salty",
-  "Sapphire",
-  "Serene",
-  "Serpentine",
-  "Shattered",
-  "Shining",
-  "Shadowy",
-  "Silent",
-  "Sirenic",
-  "Sleeping",
-  "Sorrowful",
-  "Starry",
-  "Still",
-  "Stormy",
-  "Sunlit",
-  "Summer",
-  "Tearful",
-  "Thunderous",
-  "Tidal",
-  "Yellow",
-  "Wandering",
-  "Whispering",
-  "White",
-  "Wide",
-  "Wild",
-  "Windy",
-  "Winter",
-  "Wondrous",
-  "World"
-];
 
 export const Features = new FeatureModule();

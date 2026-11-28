@@ -4,28 +4,14 @@ import { DEAL_KINDS } from "@/model/economy/deals";
 import { Goods } from "@/model/economy/goods-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { Stability, type StabilityPart } from "@/model/political/stability";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { Events } from "@/model/story/events";
 import { requireColor } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { getAdjective } from "@/utils/language-utils";
-import { gauss, P, ra, rand, rw } from "@/utils/probability-utils";
+import { gauss, P, pickWeighted, ra, rand, rw } from "@/utils/probability-utils";
 import { requireName } from "@/utils/validation-utils";
-
-/** One of the items, each as likely as its weight; with equal weights the same pick as `ra` */
-function pickWeighted<T>(items: T[], weights: number[]): T | undefined {
-  const total = weights.reduce((sum, weight) => sum + weight, 0);
-  if (!total) return ra(items);
-  const roll = Math.random() * total;
-  let passed = 0;
-  return (
-    items.find((_, k) => {
-      passed += weights[k];
-      return roll < passed;
-    }) ?? items.at(-1)
-  );
-}
 
 export interface Zone {
   i: number;

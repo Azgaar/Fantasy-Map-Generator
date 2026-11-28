@@ -78,8 +78,9 @@ interface PieSector {
 }
 
 export async function drawGoods(): Promise<void> {
+  if (!Icons.areSettled(["goods"])) await Icons.load("goods"); // settled icons draw at once, within the caller's log group
+
   log.time("drawGoods");
-  await Icons.load("goods");
   buildScene();
   layer.render();
   log.timeEnd("drawGoods");

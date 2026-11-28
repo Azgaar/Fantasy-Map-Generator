@@ -1,8 +1,10 @@
 import { layerLabel } from "@/data/layer-labels";
 import { Icons } from "@/model/icons";
 import { MapEntities } from "@/model/map-entities";
+import { Meanings } from "@/model/society/names/meanings";
 import { formatPrice, getArea, getAreaUnit, getPeople } from "@/model/units";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
+import type { Meaning } from "@/types/names";
 import { t } from "@/utils/i18n";
 import { rn, si } from "@/utils/number-utils";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
@@ -217,6 +219,7 @@ class ProposalCardView {
       if (idType) return this.entityName(`${idType}:${value}`) || String(value);
     }
     if (Array.isArray(value)) return plural(value.length, "item");
+    if (field === "meaning") return Meanings.gloss(value as Meaning);
     const shown = typeof value === "string" ? value : JSON.stringify(value);
     return shown.length > 80 ? `${shown.slice(0, 80)}…` : shown;
   }

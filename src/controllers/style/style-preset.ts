@@ -120,12 +120,13 @@ async function change(desired: string): Promise<void> {
   const { name, styles: preset } = await loadPreset(desired);
   options.map.style.preset = name;
   Options.save();
-  applyWithUiRefresh(preset);
+  await applyWithUiRefresh(preset);
 }
 
-function applyWithUiRefresh(preset: unknown): void {
+async function applyWithUiRefresh(preset: unknown): Promise<void> {
   applyPreset(preset);
   syncLabel();
+  await Layers.loadIcons();
   Layers.drawAll(); // a style change can affect any layer, so redraw the active ones
   invokeActiveZooming();
   void Controllers.StyleEditor.refresh(true);
@@ -195,7 +196,7 @@ function openSaver(): void {
     Options.save();
     StylePresetsService.saveCustom(name, json);
     StylePresetsService.removeCustom(LEGACY_PREFIX + desiredName); // the saved preset replaces a legacy one
-    applyWithUiRefresh(JSON.parse(json));
+    void applyWithUiRefresh(JSON.parse(json));
     tip(t("Style preset is saved and applied"), false, "success", 4000);
     Dialog.close("styleSaver");
   };

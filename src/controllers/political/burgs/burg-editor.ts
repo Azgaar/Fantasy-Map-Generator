@@ -1,20 +1,21 @@
 import { type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
+import { offerNamesIn } from "@/controllers/society/named-places";
 import { Markets } from "@/model/economy/markets-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
-import { Names } from "@/model/society/names-generator";
+import { Meanings } from "@/model/society/names/meanings";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
 import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/units";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
-import { speak } from "@/services/speech";
 import type { Market } from "@/types/economy";
 import { renderDevelopment } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { closeEntityDialogs, noteButton } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, nameEditButton, noteButton, offerRename, RENAME_OFFER } from "@/ui/dialog/dialog-helpers";
 import { EconomyTerms, prosperityTip, renderProsperity } from "@/ui/economy-view";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
@@ -24,7 +25,6 @@ import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/pan-zoom-utils";
-import { rand } from "@/utils/probability-utils";
 import { errorText } from "@/utils/string-utils";
 
 let selected: Selection<SVGElement, unknown, HTMLElement, unknown> | null = null;
@@ -68,19 +68,11 @@ function renderDialog(): void {
             <div id="burgProvinceAndState" style="font-weight: bold; max-width: 16em"></div>
             <div>
               <div class="label">${t("Name")}:</div>
-              <input
-                id="burgName"
-                data-tip="${t("Type to rename")}"
-                autocorrect="off"
-                spellcheck="false"
-                style="width: 9em"
-              />
-              <span id="burgNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
-              <span
-                id="burgNameReRandom"
-                data-tip="${t("Generate random name")}"
-                class="icon-globe pointer"
-              ></span>
+              <div id="burgNameBlock">
+                <span id="burgName"></span>
+                ${nameEditButton("burgNameEdit")}
+                <div id="burgMeaning" data-tip="${t("Meaning")}"></div>
+              </div>
             </div>
             <div data-tip="${t("Select burg group. Groups defines burg icon, label size and style")}">
               <div class="label">${t("Group")}:</div>
@@ -102,11 +94,6 @@ function renderDialog(): void {
             <div data-tip="${t("Select dominant culture")}">
               <div class="label">${t("Culture")}:</div>
               <select id="burgCulture" style="width: 9em"></select>
-              <span
-                id="burgNameReCulture"
-                data-tip="${t("Generate culture-specific name")}"
-                class="icon-book pointer"
-              ></span>
             </div>
             <div data-tip="${t("Set burg population")}">
               <div class="label">${t("Population")}:</div>
@@ -259,14 +246,11 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
-  ensureEl("burgName").addEventListener("input", changeName);
-  ensureEl("burgNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("burgName").value));
-  ensureEl("burgNameReRandom").addEventListener("click", generateNameRandom);
+  ensureEl("burgNameEdit").addEventListener("click", editName);
   ensureEl("burgGroup").addEventListener("change", changeGroup);
   ensureEl("burgGroupConfigure").addEventListener("click", editBurgGroups);
   ensureEl("burgType").addEventListener("change", changeType);
   ensureEl("burgCulture").addEventListener("change", changeCulture);
-  ensureEl("burgNameReCulture").addEventListener("click", generateNameCulture);
   ensureEl("burgPopulation").addEventListener("change", changePopulation);
   ensureEl("burgWealthEconomy").addEventListener("click", showBurgEconomy);
   ensureEl("burgTags").addEventListener("change", changeTags);
@@ -317,7 +301,7 @@ function updateBurgValues(): void {
   const stateName = pack.states[b.state!].fullName || pack.states[b.state!].name;
   ensureEl("burgProvinceAndState").textContent = provinceName + stateName;
 
-  ensureEl<HTMLInputElement>("burgName").value = b.name!;
+  showName(b);
   ensureEl<HTMLSelectElement>("burgGroup").value = b.group!;
   ensureEl<HTMLSelectElement>("burgType").value = b.type || "Generic";
   ensureEl<HTMLInputElement>("burgPopulation").value = String(
@@ -362,24 +346,39 @@ function updateBurgValues(): void {
   updateBurgPreview(b);
 }
 
-function changeName(): void {
-  const value = ensureEl<HTMLInputElement>("burgName").value;
-  if (!value.trim()) return;
-  Burgs.rename(getSelectedId(), value);
-  Layers.draw("labels");
+/** Show the burg's name and under it what the name says; a proper name says nothing */
+function showName(burg: Burg): void {
+  ensureEl("burgName").textContent = burg.name!;
+  const says = burg.meaning && burg.meaning.pattern !== "simplex";
+  ensureEl("burgMeaning").textContent = says ? Meanings.gloss(burg.meaning!) : "";
 }
 
-function generateNameRandom(): void {
-  const base = rand(Names.nameBases.length - 1);
-  ensureEl<HTMLInputElement>("burgName").value = Names.getBase(base);
-  changeName();
+function editName(): void {
+  const burg = pack.burgs[getSelectedId()];
+  void Controllers.NameEditor.openPlace("burg", burg.i, {
+    owner: "burgEditor",
+    onApply: () => {
+      showName(burg);
+      Layers.draw("labels");
+    }
+  });
 }
 
 function changeGroup(this: HTMLSelectElement): void {
   const id = getSelectedId();
   const burg = pack.burgs[id];
+  const was = burg.group;
   Burgs.changeGroup(burg, this.value);
   Layers.draw("burgIcons", "labels");
+
+  // a name ends in what the burg is: in another group it may end another way
+  const named = Toponyms.regrouped(burg, was);
+  if (!named) return void Dialog.close(RENAME_OFFER); // an offer for the group it had is stale
+  offerRename(burg.name!, named.name, () => {
+    Burgs.setName(burg.i, named);
+    if (Dialog.isOpen("burgEditor") && getSelectedId() === burg.i) showName(burg);
+    Layers.draw("labels");
+  });
 }
 
 function changeType(this: HTMLSelectElement): void {
@@ -388,14 +387,13 @@ function changeType(this: HTMLSelectElement): void {
 }
 
 function changeCulture(this: HTMLSelectElement): void {
-  Burgs.setCulture(getSelectedId(), +this.value);
-}
-
-function generateNameCulture(): void {
-  const id = getSelectedId();
-  const culture = pack.burgs[id].culture!;
-  ensureEl<HTMLInputElement>("burgName").value = Names.getCulture(culture);
-  changeName();
+  const burg = pack.burgs[getSelectedId()];
+  const { base } = pack.cultures[burg.culture!];
+  Burgs.setCulture(burg.i, +this.value);
+  offerNamesIn([{ type: "burg", id: burg.i }], base, () => {
+    if (Dialog.isOpen("burgEditor") && getSelectedId() === burg.i) showName(burg);
+    Layers.draw("labels");
+  });
 }
 
 function changePopulation(): void {
@@ -797,4 +795,4 @@ function closeBurgEditor(): void {
   Dialog.destroy("burgEditor");
 }
 
-export const BurgEditor = { open };
+export const BurgEditor = { open, refreshName: () => showName(pack.burgs[getSelectedId()]) };

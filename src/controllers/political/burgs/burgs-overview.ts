@@ -4,7 +4,7 @@ import { Markets } from "@/model/economy/markets-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
-import { Names } from "@/model/society/names-generator";
+import { Meanings } from "@/model/society/names/meanings";
 import { Tags } from "@/model/tags";
 import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/units";
 import { removeEmblem } from "@/renderers/draw-emblems";
@@ -48,6 +48,7 @@ const dialogId = "burgsOverview" as const;
 const CSV_COLUMNS = [
   "Id",
   "Burg",
+  "Meaning",
   "Province",
   "Province Full Name",
   "State",
@@ -624,10 +625,7 @@ function triggerBurgRemove(this: HTMLElement): void {
 
 function regenerateNames(): void {
   // regenerate across the full filtered set (all pages), not just the visible page
-  for (const b of getFilteredBurgs()) {
-    if (b.lock) continue;
-    b.name = Names.getCulture(b.culture!);
-  }
+  Burgs.regenerateNames(getFilteredBurgs().filter(({ lock }) => !lock));
 
   burgsTable.refresh();
   Layers.draw("labels");
@@ -854,6 +852,7 @@ function downloadBurgsData(): void {
       return [
         b.i,
         b.name,
+        b.meaning ? Meanings.write(b.meaning) : "",
         province?.i ? province.name : "",
         province?.i ? province.fullName : "",
         pack.states[b.state!].name,
@@ -947,15 +946,15 @@ async function uploadBurgsCsv(text: string): Promise<void> {
   const updated = await Controllers.CsvUpload.update(
     text,
     [...CSV_COLUMNS, ...BURG_FIGURES],
-    { find, units: ["Elevation"], text: ["Burg", "Tags"] },
+    { find, units: ["Elevation"], text: ["Burg", "Meaning", "Tags"] },
     (id, row) => {
       const burg = find(id)!;
-      row.apply("Burg", name => Burgs.rename(id, name), burg.name);
       row.apply(
         "Culture",
         name => Burgs.setCulture(id, Csv.byName(pack.cultures, name).i),
         pack.cultures[burg.culture!]?.name
       );
+      row.named("Burg", "burg", burg); // in the culture set above
       row.apply("Group", group => Burgs.setGroup(id, group), burg.group);
       row.apply("Type", type => Burgs.setType(id, type), burg.type);
       row.apply(

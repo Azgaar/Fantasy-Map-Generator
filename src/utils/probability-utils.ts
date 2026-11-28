@@ -128,3 +128,38 @@ export const getNumberInRange = (r: string): number => {
 export const generateSeed = (): string => {
   return String(Math.floor(Math.random() * 1e9));
 };
+
+/** A random sequence of a seed, for many short ones: far cheaper to start than Alea. FNV-1a hash, then mulberry32 */
+export function seededRandom(seed: string): () => number {
+  let state = 0x811c9dc5;
+  for (let i = 0; i < seed.length; i++) state = Math.imul(state ^ seed.charCodeAt(i), 0x01000193);
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let roll = Math.imul(state ^ (state >>> 15), state | 1);
+    roll ^= roll + Math.imul(roll ^ (roll >>> 7), roll | 61);
+    return ((roll ^ (roll >>> 14)) >>> 0) / 0x100000000;
+  };
+}
+
+/** Run a function on a random sequence of its own, leaving the ambient sequence where it was */
+export function seeded<T>(seed: string, run: () => T): T {
+  const ambient = Math.random;
+  Math.random = seededRandom(seed);
+  try {
+    return run();
+  } finally {
+    Math.random = ambient;
+  }
+}
+
+/** One of the items, each as likely as its weight; with no weight at all each is as likely */
+export function pickWeighted<T>(items: readonly T[], weights: number[], random: () => number = Math.random): T {
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  if (!total) return items[Math.floor(random() * items.length)];
+  let roll = random() * total;
+  for (const [index, item] of items.entries()) {
+    roll -= weights[index];
+    if (roll < 0) return item;
+  }
+  return items[items.length - 1];
+}

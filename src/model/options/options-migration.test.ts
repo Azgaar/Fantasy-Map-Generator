@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { beforeEach, expect, it, vi } from "vitest";
 import { GenerationPipeline } from "@/model/generation-pipeline";
 import { Coordinates } from "@/model/physical/coordinates";
+import { NameBases } from "@/model/society/names/name-bases";
+import { Lore } from "@/model/story/lore";
 import { Layers } from "@/renderers/layers";
 import "@/model/graph/grid-generator";
 import { Grid } from "@/model/graph/grid-generator";
@@ -200,12 +202,16 @@ it("resolves pins into requests before the geography generator runs", () => {
   expect(options.map.geography).toMatchObject({ mapSize: 7, latitude: 20, longitude: 51.3 });
 });
 
-it("generates a map name in randomize, including when pins are ignored", () => {
+it("names the map after its cultures, unless the name is pinned and pins are not ignored", async () => {
+  globalThis.pack = { cultures: [{ i: 0, base: "english" }] } as unknown as typeof pack;
+  await NameBases.loadUsed();
   Pins.set("mapName", "Pinned World");
   Options.randomize();
+  Lore.generate();
   expect(options.map.lore.name).toBe("Pinned World");
   window.history.replaceState({}, "", "?options=default");
   Options.randomize();
+  Lore.generate();
   expect(options.map.lore.name).not.toBe("");
   expect(options.map.lore.name).not.toBe("Pinned World");
   expect(Pins.has("mapName")).toBe(true);

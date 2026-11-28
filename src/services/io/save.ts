@@ -2,7 +2,6 @@
 
 import { GraphOverride } from "@/model/graph/graph-override";
 import { mapHistory } from "@/model/map-history";
-import { Names } from "@/model/society/names-generator";
 import { Notes } from "@/model/story/notes";
 import { Layers } from "@/renderers/layers";
 import { restoreOceanVectors } from "@/renderers/ocean-cache";
@@ -145,15 +144,6 @@ function prepareMapData(viewOnly = false): string {
   const labels = JSON.stringify(pack.addedLabels || []);
   const styleData = JSON.stringify(styles);
 
-  // store name array only if not the same as default
-  const defaultNameBases = Names.getNameBases();
-  const namesData = Names.nameBases
-    .map((b, i) => {
-      const names = defaultNameBases[i] && defaultNameBases[i].b === b.b ? "" : b.b;
-      return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
-    })
-    .join("/");
-
   // round population to save space
   const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));
 
@@ -190,7 +180,7 @@ function prepareMapData(viewOnly = false): string {
     [], // deprecated pack.cells.crossroad
     religions,
     provinces,
-    namesData,
+    "", // deprecated name bases, now options.map.nameBases
     rivers,
     "", // rulers are deprecated, use pack.measurers instead
     fonts,

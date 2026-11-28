@@ -19,7 +19,7 @@ import {
   UPLAND_TERMS
 } from "@/data/journey-lore";
 import type { Burg } from "@/model/political/burgs-generator";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import type { Transport, TransportDomain } from "@/model/story/journeys/transports-generator";
 import { Transports } from "@/model/story/journeys/transports-generator";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/journey";
@@ -479,9 +479,8 @@ function nameHalt(archetype: JourneyArchetype, leg: PlannedLeg, cellId: number, 
 }
 
 function personName(burg: Burg): string {
-  const culture = burg.culture;
-  if (culture === undefined || !pack.cultures?.[culture]) return ra(NAMELESS);
-  return Names.getCultureShort(culture) || ra(NAMELESS);
+  const { culture } = burg;
+  return culture !== undefined && pack.cultures?.[culture] ? Names.getCulturePerson(culture) : ra(NAMELESS);
 }
 
 const burgName = (burg: Burg): string => burg.name || `Burg ${burg.i}`;

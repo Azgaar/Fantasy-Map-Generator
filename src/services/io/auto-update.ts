@@ -5,6 +5,7 @@ import { extent, min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
 import { isDrawable } from "@/controllers/political/emblems/drawability";
 import { DEFAULT_DEVELOPMENT } from "@/data/development";
+import { NAME_BASES } from "@/data/name-bases";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
@@ -34,6 +35,9 @@ import { noFinance, type State, type StateFinance, States } from "@/model/politi
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
+import { NameBases } from "@/model/society/names/name-bases";
+import { Names } from "@/model/society/names/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Dates } from "@/model/story/dates";
 import { Events } from "@/model/story/events";
@@ -130,6 +134,9 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
   const noteRenames = new Map<string, string>(); // legacy element id -> the id the element has now
   type LegacyReliefIcon = { icon: string; x: number; y: number; s: number };
   let extractedRelief: LegacyReliefIcon[] | null = null; // read by the 1.154 relief step
+
+  // v1.160.0 reworked name bases. This must run before older migrations that name things
+  if (isOlderThan("1.160.0")) await migrateLegacyNameBases(data);
 
   if (isOlderThan("1.139.0")) {
     // v1.139.0 moved biomes data from the legacy pipe-delimited format to pack.biomes.
@@ -390,7 +397,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
         const e = this.getPointAtLength(0);
         const source = Pack.findCell(s.x, s.y)!;
         const mouth = Pack.findCell(e.x, e.y)!;
-        const name = Rivers.getName(mouth);
+        const name = Names.getCulture(pack.cells.culture[mouth]);
         const type = length < 25 ? rw({ Creek: 9, River: 3, Brook: 3, Stream: 1 }) : "River";
         pack.rivers.push({
           i,
@@ -1839,7 +1846,9 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       } else if (feature.type === "lake" && !lakeSubtypes.has(feature.subtype)) {
         feature.subtype = "freshwater"; // the old lake editor wrote custom group names into the subtype
       }
-      if (!feature.name) feature.name = Features.getName(feature); // islands and oceans were nameless before
+      if (feature.name) continue; // islands and oceans were nameless before
+      const culture = pack.cultures[pack.cells.culture[feature.shoreline?.[0] || feature.firstCell]];
+      feature.name = feature.type === "ocean" || !culture ? Toponyms.sea(feature).name : Names.getStem(culture.base);
     }
 
     // custom lake groups lived only in the svg; the styles record now keeps them under lakes.groups
@@ -2443,6 +2452,43 @@ function parseLegacySvg(markup: string): ShadowRoot {
   const root = host.attachShadow({ mode: "open" });
   root.innerHTML = markup;
   return root;
+}
+
+const LEGACY_BASES = 43; // how many bases shipped before v1.160.0
+/** v1.160.0 keeps the edited and custom name bases in `options.map.nameBases` under stable ids */
+export async function migrateLegacyNameBases(data: string[]): Promise<void> {
+  const legacy = NAME_BASES.slice(0, LEGACY_BASES).map(({ id }) => id);
+  const taken = NAME_BASES.map(({ id }) => id);
+
+  const stored = data[31] ? splitLegacyBases(data[31]) : [];
+  const ids = stored.map(([name, min, max, doubled, , names = ""], index) => {
+    if (names.split(",").length <= 2 && legacy[index]) return legacy[index];
+    const id = NameBases.uniqueId(
+      name,
+      taken.filter(id => id !== legacy[index]) // a shipped base edited in its place
+    );
+    taken.push(id);
+    NameBases.add(NameBases.compose(id, name, [+min, +max], names ? names.split(",") : [], doubled));
+    return id;
+  });
+
+  for (const culture of (pack.cultures ?? []) as { base: string | number }[])
+    if (typeof culture?.base === "number") culture.base = (data[31] ? ids : legacy)[culture.base] ?? legacy[0];
+  await NameBases.loadUsed();
+}
+
+// the record never escaped its "/" separator: a slash typed into a field splits a base, so pieces are joined back to six fields
+function splitLegacyBases(record: string): string[][] {
+  const bases: string[][] = [];
+  let piece: string | null = null;
+  for (const part of record.split("/")) {
+    piece = piece === null ? part : `${piece}/${part}`;
+    if (piece.split("|").length < 6) continue;
+    bases.push(piece.split("|"));
+    piece = null;
+  }
+  if (piece !== null) bases.push(piece.split("|"));
+  return bases;
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {

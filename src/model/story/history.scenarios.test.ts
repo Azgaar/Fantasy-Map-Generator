@@ -72,7 +72,7 @@ describe("Generated history", () => {
   });
 
   it("keeps founding notes and battlefields for states with no past war", async () => {
-    await generateMap({ seed: "history-notes" });
+    await generateMap({ seed: "history-peace" });
     const quiet = living(pack.states).filter(state => !Events.list({ type: "war", state: state.i }).length);
     expect(quiet.length).toBeGreaterThan(0);
     for (const state of quiet)

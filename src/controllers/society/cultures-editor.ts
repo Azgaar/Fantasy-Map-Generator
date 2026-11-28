@@ -1,5 +1,6 @@
 import { type D3DragEvent, drag, easeSinIn, select, transition } from "d3";
 import { Controllers } from "@/controllers";
+import { offerNamesIn } from "@/controllers/society/named-places";
 import { CULTURE_TYPES } from "@/data/culture-types";
 import { DEFAULT_DEVELOPMENT } from "@/data/development";
 import { CULTURE_TYPE_LABELS, SHIELD_LABELS } from "@/data/id-labels";
@@ -8,7 +9,9 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { type Culture, Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
-import { Names } from "@/model/society/names-generator";
+import { NameBases } from "@/model/society/names/name-bases";
+import { Names } from "@/model/society/names/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
@@ -121,7 +124,8 @@ const columns: EditorColumn<Culture>[] = [
     label: t("Namesbase"),
     width: "9em",
     mobileHidden: true,
-    sortBy: culture => culture.base
+    sortBy: culture => NameBases.all.find(({ id }) => id === culture.base)?.name ?? "",
+    sortType: "alpha"
   },
   {
     key: "cells",
@@ -291,7 +295,7 @@ function renderDialog(): void {
   ensureEl("culturesHeirarchy").addEventListener("click", showHierarchy);
   ensureEl("culturesRecalculate").addEventListener("click", () => recalculateCultures(true));
   ensureEl("culturesManually").addEventListener("click", openPaintEditor);
-  ensureEl("culturesEditNamesBase").addEventListener("click", () => Controllers.NamesbaseEditor.open());
+  ensureEl("culturesEditNamesBase").addEventListener("click", () => Controllers.NamesbasesOverview.open());
   ensureEl("culturesAdd").addEventListener("click", enterAddCulturesMode);
   ensureEl("culturesExport").addEventListener("click", downloadCulturesCsv);
   ensureEl("culturesImport").addEventListener("click", () => Csv.pick(uploadCulturesCsv));
@@ -560,12 +564,12 @@ function getTypeOptions(type: string): string {
   return options;
 }
 
-function getBaseOptions(base: number): string {
+function getBaseOptions(base: string): string {
   let options = "";
-  Names.nameBases.forEach((n, i) => {
-    options += `<option ${base === i ? "selected" : ""} value="${i}">${n.name}</option>`;
-  });
-  if (!Names.nameBases[base]) options += `<option selected value="${base}">${t("removed")}</option>`; // in case namesbase was removed
+  for (const { id, name } of NameBases.sorted(NameBases.all)) {
+    options += `<option ${base === id ? "selected" : ""} value="${id}">${name}</option>`;
+  }
+  if (!NameBases.has(base)) options += `<option selected value="${base}">${t("removed")}</option>`; // in case namesbase was removed
   return options;
 }
 
@@ -683,13 +687,12 @@ function cultureChangeTags(this: HTMLInputElement): void {
 
 function cultureRegenerateName(this: HTMLElement): void {
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  const base = pack.cultures[cultureId].base;
-  if (!Names.nameBases[base]) {
+  if (!NameBases.has(pack.cultures[cultureId].base)) {
     tip(t("Namesbase is not defined, please select a valid namesbase"), false, "error", 5000);
     return;
   }
 
-  const name = Names.getCultureShort(cultureId);
+  const name = Names.getPeople(pack.cultures[cultureId].base);
   (this.parentNode as HTMLElement).querySelector<HTMLInputElement>("input.cultureName")!.value = name;
   Cultures.rename(cultureId, name);
 }
@@ -718,12 +721,16 @@ function cultureChangeType(this: HTMLSelectElement): void {
   recalculateCultures();
 }
 
-function cultureChangeBase(this: HTMLSelectElement): void {
+async function cultureChangeBase(this: HTMLSelectElement): Promise<void> {
   const row = this.closest(".states") as HTMLElement;
   const culture = +row.dataset.id!;
-  const v = +this.value;
-  Cultures.setBase(culture, v);
-  row.dataset.base = String(v);
+  const saidIn = row.dataset.base!;
+  Cultures.setBase(culture, this.value);
+  await NameBases.loadUsed();
+  row.dataset.base = this.value;
+
+  // the new base may say the names another way
+  offerNamesIn(Toponyms.placesOf(culture), saidIn, () => Layers.draw("labels"));
 }
 
 function cultureChangeEmblemsShape(this: HTMLSelectElement): void {
@@ -812,14 +819,13 @@ function changePopulation(this: HTMLElement): void {
 
 function cultureRegenerateBurgs(this: HTMLElement): void {
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  const base = pack.cultures[cultureId].base;
-  if (!Names.nameBases[base]) {
+  if (!NameBases.has(pack.cultures[cultureId].base)) {
     tip(t("Namesbase is not defined, please select a valid namesbase"), false, "error", 5000);
     return;
   }
 
-  const cultureBurgs = pack.burgs.filter(b => b.culture === cultureId && !b.removed && !b.lock);
-  for (const burg of cultureBurgs) Burgs.rename(burg.i, Names.getCulture(cultureId));
+  const cultureBurgs = pack.burgs.filter(b => b.i && b.culture === cultureId && !b.removed && !b.lock);
+  Burgs.regenerateNames(cultureBurgs);
   Layers.draw("labels");
   tip(t("Burg names regenerated: {{burgs}}", { burgs: cultureBurgs.length }), false, "success");
 }
@@ -1049,7 +1055,7 @@ function exitAddCultureMode(): void {
   if (culturesAdd.classList.contains("pressed")) culturesAdd.classList.remove("pressed");
 }
 
-function addCulture(this: SVGElement, event: MouseEvent): void {
+async function addCulture(this: SVGElement, event: MouseEvent): Promise<void> {
   const [x, y] = getPointer(event, this);
   try {
     Cultures.add(x, y);
@@ -1059,6 +1065,7 @@ function addCulture(this: SVGElement, event: MouseEvent): void {
   }
   if (event.shiftKey === false) exitAddCultureMode();
 
+  await NameBases.loadUsed();
   drawCultureCenters();
   culturesTable.refresh();
 }
@@ -1073,7 +1080,7 @@ function downloadCulturesCsv(): void {
       (c.rural ?? 0) * options.map.units.population.scale +
         (c.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
-    const namesbase = Names.nameBases[c.base].name;
+    const namesbase = NameBases.all.find(({ id }) => id === c.base)?.name ?? "";
     const originList = (c.origins ?? [])
       .filter((origin): origin is number => Boolean(origin))
       .map(origin => pack.cultures[origin].name);
@@ -1134,8 +1141,8 @@ async function uploadCulturesCsv(text: string): Promise<void> {
       row.apply("Type", type => Cultures.setType(id, type), culture.type);
       row.apply(
         "Namesbase",
-        name => Cultures.setBase(id, Names.nameBases.indexOf(Csv.byName(Names.nameBases, name))),
-        Names.nameBases[culture.base]?.name
+        name => Cultures.setBase(id, Csv.byName(NameBases.all, name).id),
+        NameBases.all.find(({ id }) => id === culture.base)?.name
       );
       row.apply("Emblems Shape", shape => Cultures.setEmblemShape(id, shape), culture.shield);
       row.assign(
@@ -1153,6 +1160,7 @@ async function uploadCulturesCsv(text: string): Promise<void> {
   );
   if (!updated) return;
 
+  await NameBases.loadUsed();
   Layers.draw("cultures", "emblems");
   refreshCulturesEditor();
 }

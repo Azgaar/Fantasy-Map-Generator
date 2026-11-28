@@ -3,6 +3,7 @@
 import { leastIndex, select } from "d3";
 import type { GenerationConfig } from "@/app/lifecycle";
 import { Controllers } from "@/controllers";
+import { registerMap } from "@/model/map-history";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
@@ -31,7 +32,7 @@ export async function checkLoadParameters(): Promise<void> {
   if (maplink) {
     log.warn("Load map from URL");
     if (MAP_LINK_PATTERN.test(maplink)) {
-      setTimeout(() => Services.Load.loadMapFromURL(maplink, true), 1000);
+      await Services.Load.loadMapFromURL(maplink, true);
       return;
     }
     Services.Load.showUploadErrorMessage(t("Map link is not a valid URL"), maplink);
@@ -50,7 +51,7 @@ export async function checkLoadParameters(): Promise<void> {
       const blob = latest && (await Services.BrowserSaves.read(latest.id));
       if (blob) {
         log.warn("Loading last stored map");
-        Services.Load.uploadMap(blob);
+        await Services.Load.uploadMap(blob);
         return;
       }
     } catch (error) {
@@ -59,15 +60,17 @@ export async function checkLoadParameters(): Promise<void> {
   }
 
   log.warn("Generate random map");
-  generateMapOnLoad(size);
+  await generateMapOnLoad(size);
 }
 
 /** The start-up path: style, world, layers, then wherever the URL says to look */
 export async function generateMapOnLoad(config?: GenerationConfig): Promise<void> {
   await Controllers.StylePresetsEditor.applyOnLoad(); // the previously selected default or custom style
-  await App.generate(config);
+  const generated = await App.generate(config);
   App.applyLayersPreset();
+  await Layers.loadIcons();
   Layers.drawAll();
+  if (generated) registerMap();
   fitMapToScreen();
   focusOn();
   toggleAssistant();

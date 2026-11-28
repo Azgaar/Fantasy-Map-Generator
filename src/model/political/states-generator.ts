@@ -8,19 +8,21 @@ import { Goods } from "@/model/economy/goods-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Feature } from "@/model/physical/features-generator";
 import { Emblems } from "@/model/political/emblems-generator";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
+import { type LandSize, Toponyms } from "@/model/society/names/toponyms-generator";
 import { Population } from "@/model/society/population-generator";
 import { Events, type RegimentRef } from "@/model/story/events";
 import { History, type RolledWar } from "@/model/story/history-generator";
 import { Tags } from "@/model/tags";
 import type { Emblem } from "@/types/emblems";
+import type { Meaning, Named } from "@/types/names";
 import { getMixedColor, getRandomColor, requireColor } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { getAdjective, replaceWholeWord, trimVowels } from "@/utils/language-utils";
 import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
 import { getPolesOfInaccessibility } from "@/utils/path-utils";
-import { each, gauss, generateSeed, P, ra, rand, rw } from "@/utils/probability-utils";
+import { gauss, generateSeed, P, ra, rand, rw } from "@/utils/probability-utils";
 import { requireAdjustments, requireName, requireOneOf } from "@/utils/validation-utils";
 import { Burgs } from "./burgs-generator";
 import type { Regiment } from "./military-generator";
@@ -36,6 +38,7 @@ export type TariffRule = {
 export interface State {
   i: number;
   name: string;
+  meaning?: Meaning; // what the name says, kept apart from the name itself
   expansionism: number;
   capital: number;
   type: string;
@@ -236,6 +239,7 @@ class StatesModule {
     pack.states = states;
     this.expandStates();
     this.normalize();
+    this.nameStates(String(Math.random())); // another roll than the map's own, or the names come back
     this.getPoles();
     this.findNeighbors();
     this.collectStatistics();
@@ -333,10 +337,6 @@ class StatesModule {
       if (!capital) break;
 
       const culture = capital.culture ?? 0;
-      const capitalName = capital.name ?? "";
-      const basename =
-        capitalName.length < 9 && capital.cell % 5 === 0 ? capitalName : Names.getCulture(culture, 3, 6, "");
-      const name = Names.getState(basename, culture);
       const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[capital.cell]);
       const type = nomadic
         ? "Nomadic"
@@ -348,7 +348,7 @@ class StatesModule {
       coa.shield = capital.coa?.shield;
       newStates.push({
         i: stateId,
-        name,
+        name: "", // named once expanded
         type,
         capital: capital.i,
         center: capital.cell,
@@ -365,21 +365,18 @@ class StatesModule {
 
   private createStates() {
     const states: State[] = [{ i: 0, name: "Neutrals", economy: noFinance(), tags: [] } as unknown as State];
-    const each5th = each(5);
     const sizeVariety = options.generation.states.sizeVariety;
 
     pack.burgs.forEach(burg => {
       if (!burg.i || !burg.capital) return;
 
       const expansionism = rn(Math.random() * sizeVariety + 1, 1);
-      const basename = burg.name!.length < 9 && each5th(burg.cell) ? burg.name! : Names.getCultureShort(burg.culture!);
-      const name = Names.getState(basename, burg.culture!);
       const type = pack.cultures[burg.culture!].type;
       const coa = Emblems.generate(null, null, null, type);
       coa.shield = Emblems.getShield(burg.culture!);
       states.push({
         i: burg.i,
-        name,
+        name: "", // named once expanded
         expansionism,
         capital: burg.i,
         type: type!,
@@ -392,6 +389,36 @@ class StatesModule {
     });
 
     return states;
+  }
+
+  // a state is named by the size it has grown to, each on a sequence of its own
+  private nameStates(roll?: string): void {
+    const { cells, states, burgs } = pack;
+    const areas = states.map(() => 0);
+    for (const i of cells.i) if (cells.h[i] >= 20) areas[cells.state[i]] += cells.area[i];
+    for (const state of states) {
+      if (!state.i || state.removed || state.name) continue;
+      const size = this.getLandSize(areas[state.i], areas);
+      const taken = new Set(states.map(({ name }) => name));
+      const named = Toponyms.drawFor(
+        "state",
+        state.i,
+        () => Toponyms.state(burgs[state.capital], state.culture, { size, taken }),
+        roll
+      );
+      Object.assign(state, named);
+    }
+  }
+
+  /** How big a land an area makes against the map's states, as names tell it */
+  getLandSize(area: number | undefined, areas = pack.states.map(s => s.area)): LandSize {
+    const tier = this.getTier(area, median(areas));
+    return tier > 2 ? "big" : tier < 2 ? "small" : "middle";
+  }
+
+  // 0 to 4: a duchy to an empire
+  private getTier(area = 0, medianArea = 0): number {
+    return Math.min(Math.floor((area / medianArea) * 2.6), 4);
   }
 
   private getBiomeCost(b: number, biome: number, type: string) {
@@ -431,6 +458,7 @@ class StatesModule {
     pack.states = this.createStates();
     this.expandStates();
     this.normalize();
+    this.nameStates();
     this.getPoles();
     this.findNeighbors();
     this.assignColors();
@@ -864,12 +892,12 @@ class StatesModule {
     const generic = { Monarchy: 25, Republic: 2, Union: 1 };
     const naval = { Monarchy: 25, Republic: 8, Union: 3 };
 
-    const medianState = median(pack.states.map(s => s.area))!;
+    const medianState = median(pack.states.map(s => s.area));
     const empireMin = states.map(s => s.area).sort((a = 0, b = 0) => b - a)[
       Math.max(Math.ceil(states.length ** 0.4) - 2, 0)
     ]!;
     const expTiers = pack.states.map(s => {
-      let tier = Math.min(Math.floor((s.area! / medianState) * 2.6), 4);
+      let tier = this.getTier(s.area, medianState);
       if (tier === 4 && s.area! < empireMin) tier = 3;
       return tier;
     });
@@ -924,6 +952,9 @@ class StatesModule {
       else if (isAnarchy) s.form = "Anarchy";
       else s.form = s.type === "Naval" ? rw(naval) : rw(generic);
 
+      // biome-ignore format: a list reads as one line
+      const european = ["german", "english", "french", "italian", "castillian", "nordic", "roman", "finnic", "portuguese", "hungarian", "basque"];
+
       const selectForm = (s: State, tier: number) => {
         const base = pack.cultures[s.culture].base;
 
@@ -938,21 +969,21 @@ class StatesModule {
               s.diplomacy.includes("Vassal")
             )
               return "Marches"; // some vassal duchies on borderland
-            if (base === 1 && P(0.3) && s.diplomacy.includes("Vassal")) return "Dominion"; // English vassals
+            if (base === "english" && P(0.3) && s.diplomacy.includes("Vassal")) return "Dominion";
             if (P(0.3) && s.diplomacy.includes("Vassal")) return "Protectorate"; // some vassals
           }
 
-          if (base === 31 && (form === "Empire" || form === "Kingdom")) return "Khanate"; // Mongolian
-          if (base === 16 && form === "Principality") return "Beylik"; // Turkic
-          if (base === 5 && (form === "Empire" || form === "Kingdom")) return "Tsardom"; // Ruthenian
-          if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Turkic
-          if (base === 12 && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate"; // Japanese
-          if ([18, 17].includes(base) && form === "Empire") return "Caliphate"; // Arabic, Amazigh
-          if (base === 18 && (form === "Grand Duchy" || form === "Duchy")) return "Emirate"; // Arabic
-          if (base === 7 && (form === "Grand Duchy" || form === "Duchy")) return "Despotate"; // Greek
-          if (base === 31 && (form === "Grand Duchy" || form === "Duchy")) return "Ulus"; // Mongolian
-          if (base === 16 && (form === "Grand Duchy" || form === "Duchy")) return "Horde"; // Turkic
-          if (base === 24 && (form === "Grand Duchy" || form === "Duchy")) return "Satrapy"; // Iranian
+          if (base === "mongolian" && (form === "Empire" || form === "Kingdom")) return "Khanate";
+          if (base === "turkish" && form === "Principality") return "Beylik";
+          if (base === "ruthenian" && (form === "Empire" || form === "Kingdom")) return "Tsardom";
+          if (base === "turkish" && (form === "Empire" || form === "Kingdom")) return "Khaganate";
+          if (base === "japanese" && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate";
+          if (["arabic", "amazigh"].includes(base) && form === "Empire") return "Caliphate";
+          if (base === "arabic" && (form === "Grand Duchy" || form === "Duchy")) return "Emirate";
+          if (base === "greek" && (form === "Grand Duchy" || form === "Duchy")) return "Despotate";
+          if (base === "mongolian" && (form === "Grand Duchy" || form === "Duchy")) return "Ulus";
+          if (base === "turkish" && (form === "Grand Duchy" || form === "Duchy")) return "Horde";
+          if (base === "iranian" && (form === "Grand Duchy" || form === "Duchy")) return "Satrapy";
           return form;
         }
 
@@ -972,20 +1003,18 @@ class StatesModule {
         if (s.form === "Anarchy") return rw(anarchy);
 
         if (s.form === "Theocracy") {
-          // European
-          if ([0, 1, 2, 3, 4, 6, 8, 9, 13, 15, 20].includes(base)) {
+          if (european.includes(base)) {
             if (P(0.1)) return `Divine ${monarchy[tier]}`;
             if (tier < 2 && P(0.5)) return "Diocese";
             if (tier < 2 && P(0.5)) return "Bishopric";
           }
-          if (P(0.9) && [7, 5].includes(base)) {
-            // Greek, Ruthenian
+          if (P(0.9) && ["greek", "ruthenian"].includes(base)) {
             if (tier < 2) return "Eparchy";
             if (tier === 2) return "Exarchate";
             if (tier > 2) return "Patriarchate";
           }
-          if (P(0.9) && [21, 16].includes(base)) return "Imamah"; // Nigerian, Turkish
-          if (tier > 2 && P(0.8) && [18, 17, 28].includes(base)) return "Caliphate"; // Arabic, Amazigh, Swahili
+          if (P(0.9) && ["nigerian", "turkish"].includes(base)) return "Imamah";
+          if (tier > 2 && P(0.8) && ["arabic", "amazigh", "swahili"].includes(base)) return "Caliphate";
           return rw(theocracy);
         }
       };
@@ -1136,6 +1165,7 @@ class StatesModule {
       "Marches"
     ];
     if (!state.formName) return state.name;
+    if (state.name?.split(" ").includes(state.formName)) return state.name; // an ulus called Nugas Ulus
     if (!state.name && state.formName) return `The ${state.formName}`;
     const adjName = adjForms.includes(state.formName) && !/-| /.test(state.name);
     return adjName ? `${getAdjective(state.name)} ${state.formName}` : `${state.formName} of ${state.name}`;
@@ -1143,10 +1173,15 @@ class StatesModule {
 
   /** Rename a state; a custom full name or label keeps its pattern when the old name stands in it as a whole word */
   rename(stateId: number, name: string): void {
-    const state = pack.states[stateId];
-    if (!state || state.removed) throw new Error(`State ${stateId} does not exist`);
+    this.setName(stateId, { name });
+  }
+
+  /** Rename a state and set what the name says: with no meaning it is a proper name, whatever the old one said */
+  setName(stateId: number, { name, meaning }: Named): void {
+    const state = this.living(stateId);
     const old = state.name;
     state.name = requireName(name);
+    state.meaning = meaning;
     state.fullName = replaceWholeWord(state.fullName, old, state.name) ?? this.getFullName(state);
     if (state.label?.text) state.label.text = replaceWholeWord(state.label.text, old, state.name) ?? state.label.text;
   }
@@ -1224,10 +1259,12 @@ class StatesModule {
     if (existing && burgs[existing].capital) throw new Error(`Burg ${existing} is already a capital`);
     const capital = existing || Burgs.add(x, y);
     const culture = cells.culture[center];
-    const basename = center % 5 === 0 ? burgs[capital].name! : Names.getCulture(culture);
+    const { name, meaning } = Toponyms.state(burgs[capital], culture);
     const coa = Emblems.generate(burgs[capital].coa, 0.4, null, cultures[culture].type);
     coa.shield = Emblems.getShield(culture, undefined);
-    return this.found(Names.getState(basename, culture), capital, coa, [center]);
+    const stateId = this.found(name, capital, coa, [center]);
+    pack.states[stateId].meaning = meaning;
+    return stateId;
   }
 
   /** A new state around a capital burg, taking the given cells from their state and provinces. Returns its id */
@@ -1641,8 +1678,11 @@ class StatesModule {
       const burgId = burgCell ? cells.burg[burgCell] : 0;
       const burg = burgId ? burgs[burgId] : null;
       const culture = cells.culture[center];
-      const nameByBurg = burgCell && P(0.5);
-      const name = nameByBurg ? burg!.name! : old.name || Names.getState(Names.getCultureShort(culture), culture);
+      const taken = Toponyms.landNames(); // the old name too, while its province stands
+      const isFree = (name?: string) => Boolean(name) && !taken.has(name);
+      const nameByBurg = P(0.5) && isFree(burg?.name);
+      const named = nameByBurg ? burg! : isFree(old.name) ? old : Toponyms.land(culture, taken);
+      const name = named.name!;
       const formName = burgCell && old.formName ? old.formName : ra(["Zone", "Area", "Territory", "Province"]);
       const type = Burgs.getType(center, burg?.port);
       const coa = Emblems.generate(burg?.coa || states[stateId].coa, nameByBurg ? 0.8 : 0.4, burg ? null : 0.9, type);
@@ -1653,6 +1693,7 @@ class StatesModule {
         center,
         burg: burgId,
         name,
+        meaning: named.meaning,
         formName,
         fullName: `${name} ${formName}`,
         color: getMixedColor(states[stateId].color!),

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Meaning } from "@/types/names";
 import { Dialog } from "@/ui/dialog/dialog";
 import { CsvUpload } from "./csv-upload";
 
@@ -8,6 +9,7 @@ vi.mock("@/ui/dialog/dialog", async importOriginal => {
   return { Dialog: Object.assign(Dialog, { confirm: vi.fn(), message: vi.fn() }) };
 });
 
+type Meant = { i: number; name: string; meaning?: Meaning; culture?: number };
 type Entity = { i: number; name: string; tags: string; people: [number, number] };
 const COLUMNS = ["Id", "Name", "Tags", "Total Population", "Rural Population", "Urban Population"];
 const items = () => (globalThis.pack as unknown as { items: Entity[] }).items;
@@ -97,6 +99,23 @@ describe("CsvUpload.update", () => {
     await done;
     expect(lastAlert()).toContain("1 Tags: Changed meanwhile");
     expect(lastAlert()).not.toContain("Bad name");
+  });
+
+  it("takes a new meaning with a name, and clears the old one of a name that comes with none", async () => {
+    const meaning: Meaning = { pattern: "feature", tokens: ["ford"], origin: "english" };
+    const named = ["A", "B", "C", "D", "E"].map((name, i): Meant => ({ i: i + 1, name, meaning, culture: 0 }));
+    globalThis.pack = { burgs: [{ i: 0 }, ...named], cultures: [{ base: "german" }] } as unknown as typeof pack;
+    const list = () => (globalThis.pack as unknown as { burgs: Meant[] }).burgs.slice(1);
+    const text = "Id,Name,Meaning\n1,Z,feature: hill\n2,Y,feature: ford\n3,C,feature: hill\n4,D,\n5,X,nonsense";
+    const done = CsvUpload.update(text, ["Id", "Name", "Meaning"], { find: id => list()[id - 1] }, (id, row) =>
+      row.named("Name", "burg", list()[id - 1])
+    );
+    expect(dialog().message).toContain("Values that will not be applied: 1");
+    dialog().onConfirm!();
+    await done;
+    const hill = { pattern: "feature", tokens: ["hill"], origin: "german" };
+    expect(list().map(({ name }) => name)).toEqual(["Z", "Y", "C", "D", "X"]);
+    expect(list().map(item => item.meaning)).toEqual([hill, undefined, hill, meaning, undefined]);
   });
 
   it("splits a changed total by the current ratio and ignores rounding", async () => {

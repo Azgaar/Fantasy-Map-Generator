@@ -47,6 +47,7 @@ type MessageOptions = Omit<DialogOptions, "buttons" | "persistent" | "rememberPo
 };
 
 type ConfirmOptions = {
+  id?: string; // a confirmation with the same id replaces the previous one
   title?: string;
   message?: string;
   confirm?: string;
@@ -214,6 +215,7 @@ class DialogManager {
 
   /** Ask before an action that cannot be reverted. Every confirmation in the app goes through it: a Shift-click skips it */
   confirm({
+    id,
     title = t("Confirm action"),
     message = `${t("Are you sure you want to continue?")}<br>${t("This action cannot be reverted")}`,
     confirm = t("Continue"),
@@ -228,6 +230,7 @@ class DialogManager {
 
     const tip = t("Hold Shift when clicking the button to skip the confirmation");
     const content = this.message({
+      id,
       title,
       message,
       width,

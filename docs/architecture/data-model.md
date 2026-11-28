@@ -76,8 +76,9 @@ Features represent separate locked areas like islands, lakes and oceans.
 - - `area`: `number` - feature area in map units squared. Islands and lakes use their polygon area; oceans sum the areas of their cells. The Features Overview converts this to display units and estimates the globe-wide area for features touching the map border
 - - `firstCell`: `number` - index of the first (top left) cell in feature
 - - `vertices`: `number[]` - indexes of vertices around the feature (perimetric vertices)
-- - `name`: `string` - generated for every feature. Islands use the culture of their first land cell and lakes use a shore cell, with a one-in-ten chance of an English adjective instead. Oceans use an English adjective or the map side they lie on (_Azure_, _Northern_); the subtype noun is shown separately. Any feature can be renamed in the Features Overview. Empty shows as _Unnamed_
+- - `name`: `string` - generated for every feature. Islands are named in the base of the culture on their first land cell and lakes on a shore cell; see [semantic names](../domain/semantic-names.md). Oceans belong to no culture: their meaning is a describing word or the map side they lie on, said in Human Generic (_Misty_, _West_); the subtype noun is shown separately. Any feature can be renamed in the Features Overview. Empty shows as _Unnamed_
 - - `note`: `string` - optional. The user's note (legend) about the feature, as html. Removed with it
+- - `meaning`: `object` - what an island's or a lake's name says. Optional. See [Name meanings](#name-meanings)
 - - `coastline`: `object` - optional. The feature's own coastline settings (same shape as `options.map.coastline`), set in the Coastline Editor; the map-level settings no longer apply to it. Islands and lakes only
 
 ## Specific cells data
@@ -126,7 +127,7 @@ Secondary data available as a part of the `pack` object.
 Cultures (races, language zones) data is stored as an array of objects with strict element order. Element 0 is reserved by the _wildlands_ culture. If culture is removed, the element is not getting removed, but instead a `removed` attribute is added. Object structure:
 
 - `i`: `number` - culture id, always equal to the array index
-- `base`: `number` - _nameBase_ id, name base is used for names generation
+- `base`: `string` - _nameBase_ id, name base is used for names generation
 - `name`: `string` - culture name
 - `ancestry`: `string` - optional. Culture ancestry (race), e.g. "Elfish", "Dwarven", "Human"
 - `origins`: `number[]` - ids of origin cultures. Used to render cultures tree to show cultures evolution. The first array member is main link, other - supporting out-of-tree links
@@ -155,6 +156,7 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `x`: `number` - x axis coordinate, rounded to two decimals
 - `y`: `number` - y axis coordinate, rounded to two decimals
 - `culture`: `number` - burg culture id
+- `meaning`: `object` - what the name says, apart from any language. Optional: a name without one is a proper name. See [Name meanings](#name-meanings)
 - `state`: `number` - burg state id
 - `feature`: `number` - burg feature id (id of a landmass)
 - `population`: `number` - burg population in population points
@@ -186,6 +188,7 @@ States (countries) data is stored as an array of objects with strict element ord
 
 - `i`: `number` - state id, always equal to the array index
 - `name`: `string` - short (proper) form of the state name
+- `meaning`: `object` - what the name says. Optional. See [Name meanings](#name-meanings)
 - `form`: `string` - state form type. Available types are `Monarchy`, `Republic`, `Theocracy`, `Union`, and `Anarchy`
 - `formName`: `string` - string form name, used to get state `fullName`
 - `fullName`: `string` - full state name. Combination of the proper name and state `formName`
@@ -260,6 +263,7 @@ Provinces data is stored as an array of objects with strict element order. Eleme
 - `lock`: `boolean` - `true` if province is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if province is removed
 - `note`: `string` - optional. The user's note (legend) about the province, as html. Removed with it
+- `meaning`: `object` - what the name says. Optional. See [Name meanings](#name-meanings)
 
 ## Religions
 
@@ -304,6 +308,7 @@ Rivers data is stored as an unordered array of objects (so element id is _not_ t
 - `width`: `number` - river mouth width in km
 - `sourceWidth`: `number` - additional width added to river source on rendering. Used to make lake outlets start with some width depending on flux. Can be also used to manually create channels
 - `note`: `string` - optional. The user's note (legend) about the river, as html. Removed with it
+- `meaning`: `object` - what the name says. Optional. See [Name meanings](#name-meanings)
 - `lock`: `boolean` - `true` if river is locked: regeneration (Regenerate rivers, a World Configurator change, a
   Risk heightmap edit with erosion) keeps its course and data and generates the other rivers around it. Optional
 
@@ -613,12 +618,39 @@ Development eras are configuration, not map state: they live in `options.map.era
 
 ## Name bases
 
-Name generator consumes training sets of real-world town names (with the exception of fantasy name bases) stored in `nameBases` array, that is available globally. Each array element represent a separate base. Base structure is:
+Name generator consumes training sets of real-world town names (with the exception of fantasy name bases) listed by `NameBases.all` (`src/model/society/names/name-bases.ts`). The shipped bases live one per file in `src/data/name-bases/` and are loaded on demand; they are never edited or saved. The bases the user added or edited are kept in full in `options.map.nameBases`, a shipped one edited under its own id, so it stands in the shipped one's place. A shipped base not loaded yet is listed by its `id` and `name` alone. `NameBases.loadUsed()` loads the bases the cultures use and those the burgs' names were coined in, with those they extend: in the generation pipelines, on map load and wherever a culture takes another base. `NameBases.loadAll()` loads every base: before a new map is generated, and where the Namesbases Overview removes, exports or imports bases. The Overview lists bases by what is known before they load, the Name Editor loads a base as it is selected, and the Namesbase Editor loads the base it edits. Naming itself is synchronous: `NameBases.find`, `NameBases.resolve` and `NameBases.random` give loaded bases only. Base structure is:
 
-- `i`: `number` - base id, always equal to the array index
-- `name`: `string` - names base proper name
-- `b`: `string` - long string containing comma-separated list of names
-- `min`: `number` - recommended minimal length of generated names. Generator will adding new syllables until min length is reached
-- `max`: `number` - recommended maximal length of generated names. If max length is reached, generator will stop adding new syllables
-- `d`: `string` - letters that are allowed to be duplicated in generated names
-- `m`: `number` - if multi-word name is generated, how many of this cases should be transformed into a single word. `0` means multi-word names are not allowed, `1` - all generated multi-word names will stay as they are
+- `id`: `string` - stable slug of the base, such as `german` or `dark-elven`. A culture stores it as its `base`
+- `name`: `string` - what the base is called, the user may change it. A shipped file holds neither id nor name: the id is the file's name, the name is that id in title case, `dark-elven` is Dark Elven
+- `description`: `string` - optional, shown in the Namesbase Editor: where the base's data comes from and the idea behind it. Every shipped base has one, in English like the rest of its data
+- `length`: `[number, number]` - recommended minimal and maximal length of generated names. Generator adds syllables until the minimum is reached and stops at the maximum
+- `places`: `object` - the corpus of place names: `places.names` is the `string[]` a Markov chain is built from; with `mode: "pick"` a burg is named with one of them not taken yet, as it is and with no meaning, and other names still come off the chain; an optional `places.length` sets the length of generated names where it differs from the base's `length`
+- `waters`: `object` - optional corpus of river and lake names, `{ names, mode?, length? }`: their proper names come off its chain, or are picked as they are with `mode: "pick"`. Place names stand in when absent
+- `people`: `object` - optional corpora of personal names, `people.male` and `people.female`, each `{ names, mode?, length? }`. `mode` is `chain` (generate new names like the listed ones, the default) or `pick` (draw a listed name as it is). They name the founders places are named after
+- `rules`: `object[]` - optional sound rules, applied in order to each generated name before the shared ones in `src/data/name-rules.ts`. A rule is `{ match, replace, at?, when?, chance? }`: `match` is a regex source run with the `gu` flags on the lowercase name, `replace` may use `$1` groups. A plain rule shapes the words the base generates and the roots it borrows. One with `at: "join"` runs on a name made of parts instead, where `+` marks each join; one with a `chance` (0 to 1) does the same for a share of names, the same ones every time. One with `when: "long"` runs on a finished name while it is longer than the base allows, and one with `when: "foreign"` adapts a root coined in another base. One with `as` and a noun class makes a noun of that class of a plain one, the first that matches: `$` to `s` as `pl` gives "towers". A counting word written with that class, such as `Three/pl`, makes the noun beside it take the form: Three Towers in English; in Ruthenian Tri Ozera by the rules for a few and Sem Holmov by the rules for many. The letters allowed to stand twice in a row are one such rule: `([^lt])\1+` to `$1` keeps only `l` and `t` doubled
+
+- `joining`: `string[]` - optional words that stay lowercase between two others, such as `de`; one written `-sur-` only between dashes, one written `d'` cut short before the next word, which takes the capital. Inherited from the base it extends where absent
+- `extends`: `string` - optional id of the base whose lexicon, patterns, grammar, people, waters and rules stand in where this one has none. Rules are inherited by purpose: word rules, join rules (`at: "join"`, `chance` and `when: "long"`), counting rules (`as`) and `foreign` rules each come whole from the nearest base that writes some (`NameBases.rulesOf`)
+- `grammar`: `object` - optional `{ classes, endings, derive }`. `classes` maps a noun class, such as a gender or the plural, to a regex its nouns match; they are tried in order and an empty one takes the rest. `endings` maps a set of endings, `""` the default, to the ending of each class that stands in for `*` (or for `*set`, a named set) in a word beside a noun of that class; the default endings join as parts do, through the join rules, and a named set's are spelled as they stand. `derive` holds `{ match, replace }` rules for `stem` and `first`: the first that matches a form makes a stem of a place's or a modifier's words, or a combining form of a modifier's stems, or of its words where it has none. `Lexicon.formsOf` adds them to the forms written, as heavy as the form they are made of, except where a form of that kind is written for the concept
+- `lexicon`: `object` - optional forms of concepts: a concept id from `src/data/name-concepts.ts` to a list of formants `{ form, weight?, position?, short?, class?, hyphen? }`. `weight` is a whole number; `position` is `first`, `last`, `word` or `stem` and says where in a word the form may stand, a stem only before a suffix; `short` is taken when a name runs too long; `class` is the noun class of a noun, or on a describing word the class of nouns it stands beside; `hyphen` marks a word that may follow a dash in a template, written `-Gorodok`. A form stored as `-sk` is a suffix, written `^sk`: it ends a word after a stem or a proper root. One with `*`, such as `nov*`, takes the agreement ending of its noun. `_`, written as a bare class such as `/n`, is a noun left unsaid, whose class the word beside it still follows
+- `settled`: `number` - optional share, 0 to 1, of burg names that end in what the burg is by its group; 0.85 when absent. English sets 0.65: an English name is as often what stands at the place
+- `patterns`: `object` - optional settings per name pattern: `weight` says how often the base coins a name of that pattern, `templates` is a list of `{ parts, weight? }` layouts such as `{root}s{generic}` or `{generic} {root}`. `female` on `owner-generic`, 0 to 1, is the share of founders that are women; absent, they go by the sizes of the two lists of people
+
+A lexicon, a template list, a rule list and a grammar each have a short written form, read and written by `NameNotation` (`src/model/society/names/notation.ts`). The shipped bases in `src/data/name-bases/` may hold any of them as text (`WrittenNameBase` in `src/types/names.ts`), and the Namesbase Editor shows and takes them the same way: `+ton 6, Pristan/f, !qasr, -Gorodok, novo+, berez^, ^sk, /n` for forms, a concept a line in a whole lexicon, `{root}s{generic} 3` for templates, `gorod$ => grad | long` for a rule, and for a grammar `f: a$` for a noun class, `*soft: m iy, f yaya` for a set of endings and `stem: [ao]?$ =>` for a rule that makes forms.
+
+A name is laid out first and its forms are drawn after: of the pattern's templates that some combination of forms can fill, one is drawn by its own weight, then one combination of forms that may stand there, such as a suffix after a stem and a describing word of the noun's class, by the forms' weights. Where a concept has suffixes, a proper root takes only those: its full forms stand apart from the name, as in the template `{root}-{generic}` for David-Gorodok, which only a word marked `hyphen` fills. So a base steers how often a name is one word or two by its template weights alone.
+
+A base with no form for a concept falls back to the shared lexicon in `src/data/name-rules.ts`, then to forms made of its own corpus: its commonest endings for settlements, three each, and words of its Markov chain for the rest.
+
+A `.map` file keeps the bases as a JSON array. A shipped base the user left as it is goes by `{ id }` alone and takes the shipped data on load, so it follows later updates; an edited or custom base is stored in full.
+
+## Name meanings
+
+A burg, state, province, river, lake or island keeps what its name says in `meaning`, apart from the `name` itself. See [semantic names](../domain/semantic-names.md) for how a meaning is picked and rendered. Both are editable and neither overwrites the other, so a name may differ from what its meaning renders to; a rename by the Assistant or a CSV that brings no new meaning clears the meaning. `Meanings.render(meaning, baseId)` in `src/model/society/names/meanings.ts` gives the name a meaning takes in a name base: the same meaning and base always give the same name. It takes the forms and templates from `Lexicon` (`names/lexicon.ts`): the ones written for the base, for a base it extends or for all bases, or forms coined from its corpus. `Toponyms` in `names/toponyms-generator.ts` picks a meaning that fits the place. Every burg has one, and most end in a settlement concept, `city`, `town`, `village` or `hamlet`, or the like of `fort` and `abbey`, taken from the burg's group by `settlementOf` in `src/data/name-concepts.ts`: what a base makes of `birch` + `town` is its name for a town, such as Berezov, and of `birch` + `village` for a village, such as Berezovka. A `compound` builds on the lie of the land, as in Red-hill-city: Krasnogorsk in Ruthenian, Redhill or Deepwood Keep in English. The vocabulary in `src/data/name-concepts.ts` holds some 400 concepts, among them numerals, which stand where a describing word does when the place has something there may be several of. Each but the settlements has a whole-number `weight` from 1 to 10, how common it is in names against the others of its kind: 10 for `new` and `ford`, 1 for `kraken`. A concept is drawn by that weight times how well it fits the place: what the place offers of its site tags, 2 to 4, or 1 for one that fits anywhere. Whether a concept may stand for a landmark or the lie of the land goes by the fit alone. A burg is therefore named in `Burgs.specify`, once its group is known; only capitals, which states are named after, are named in `Burgs.generate`. A root said in a base other than its `origin` is respelled whole by `Appropriation` in `names/appropriation.ts`, to the closest spelling that sounds like the base's own names.
+
+- `pattern`: `string` - the shape of the meaning, which sets its slots: `simplex` (root), `feature` (generic), `modifier-generic`, `owner-generic` (root, generic), `generic-of` (generic, root), `compound` (modifier, generic, settlement), `relative` (modifier, root), `description` (modifier), `root-land` (root, generic), `modifier-land` (modifier, generic)
+- `tokens`: `string[]` - the slots' values in the pattern's order. A concept id such as `town` or `black`, or a proper root marked with `~`, such as `~Eadric`
+- `origin`: `string` - id of the name base the meaning was coined in
+- `salt`: `number` - optional, re-rolls the choice between a concept's forms
+- `own`: `string` - optional, the name as it was before another people respelled it: it comes back with the base it was coined in
+- `after`: `{ type, id }` - optional, the place whose name the root is: a `river` or a lake (`feature`) a burg is named by, the `burg` a `relative` one is told apart from, the `state` or `province` a colony is named after. When that place is renamed in the Name Editor, the places named after it are offered the new name

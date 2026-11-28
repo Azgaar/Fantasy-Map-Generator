@@ -46,7 +46,7 @@ import { Routes } from "@/model/economy/routes-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import { Dates } from "@/model/story/dates";
 import { Events, type WarEvent } from "@/model/story/events";
 import { Notes } from "@/model/story/notes";
@@ -1491,7 +1491,7 @@ class MarkersModule {
     const margin = this.trade.margin[marketId] || 0;
     const richer = (pack.markets ?? []).filter(({ i }) => (this.trade.margin[i] || 0) > margin).length;
     const rank = richer ? "one of the richest" : "the richest";
-    marker.name = `House of ${Names.getCulture(cells.culture[cell])}`;
+    marker.name = `House of ${Names.getCulturePerson(cells.culture[cell])}`;
     marker.note = `A merchant family of ${burg?.name || "the town"}, ${rank} in the land. Its factors buy and sell across the whole market, and a share of every deal ends in its coffers.`;
   }
 

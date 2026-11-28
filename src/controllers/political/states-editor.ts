@@ -1,5 +1,6 @@
 import { type HierarchyCircularNode, max, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
+import { offerNamesIn } from "@/controllers/society/named-places";
 import { EXPENSES } from "@/data/expenses";
 import { CULTURE_TYPE_LABELS, EXPENSE_LABELS } from "@/data/id-labels";
 import { Accounts } from "@/model/economy/accounts";
@@ -9,7 +10,7 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Stability } from "@/model/political/stability";
 import { STATE_FORMS, type State, States } from "@/model/political/states-generator";
 import { Development } from "@/model/society/development-generator";
-import { Names } from "@/model/society/names-generator";
+import { Meanings } from "@/model/society/names/meanings";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
@@ -22,7 +23,7 @@ import { speak } from "@/services/speech";
 import type { LegendItem } from "@/types/legend";
 import { developmentTip } from "@/ui/development-view";
 import { Dialog } from "@/ui/dialog/dialog";
-import { closeEntityDialogs, noteIcon, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { closeEntityDialogs, nameEditButton, noteIcon, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -55,7 +56,6 @@ import { sentences, t } from "@/utils/i18n";
 import { getAdjective } from "@/utils/language-utils";
 import { applyOption, ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
-import { rand } from "@/utils/probability-utils";
 import { errorText, escapeHtml } from "@/utils/string-utils";
 
 const dialogId = "statesEditor" as const;
@@ -257,6 +257,7 @@ const columns: EditorColumn<State>[] = [
 const CSV_COLUMNS = [
   "Id",
   "State",
+  "Meaning",
   "Full Name",
   "Form",
   "Color",
@@ -411,6 +412,7 @@ function renderDialog(): void {
     if (!row) return; // guards clicks originating in the generated header, which is now a sibling inside this container
     const stateId = Number(row.dataset.id);
     if ($element.tagName === "FILL-BOX") stateChangeFill($element as FillBoxElement);
+    else if (classList.contains("stateForm")) editStateForm(stateId);
     else if (classList.contains("name")) editStateName(stateId);
     else if (classList.contains("coaIcon"))
       void Controllers.EmblemsEditor.open("state", `stateCOA${stateId}`, pack.states[stateId]);
@@ -765,100 +767,79 @@ function stateChangeFill(fillBox: FillBoxElement): void {
 }
 
 function editStateName(state: number): void {
-  renderNameEditor();
-  const stateNameEditorCustomForm = ensureEl<HTMLInputElement>("stateNameEditorCustomForm");
-  const stateNameEditorSelectForm = ensureEl<HTMLSelectElement>("stateNameEditorSelectForm");
-
-  // reset input value and close add mode
-  stateNameEditorCustomForm.value = "";
-  const addModeActive = stateNameEditorCustomForm.style.display === "inline-block";
-  if (addModeActive) {
-    stateNameEditorCustomForm.style.display = "none";
-    stateNameEditorSelectForm.style.display = "inline-block";
-  }
-
   const s = pack.states[state];
-  ensureEl("stateNameEditor").dataset.state = String(state);
-  ensureEl<HTMLInputElement>("stateNameEditorShort").value = s.name || "";
-  applyOption(stateNameEditorSelectForm, s.formName || "");
-  ensureEl<HTMLInputElement>("stateNameEditorFull").value = s.fullName || "";
+  void Controllers.NameEditor.openPlace("state", state, {
+    owner: dialogId,
+    full: state ? { name: s.fullName ?? s.name, edit: () => editStateForm(state) } : undefined,
+    onApply: () => {
+      Layers.draw("labels");
+      refreshStatesEditor();
+    }
+  });
+}
 
-  Dialog.open("stateNameEditor", {
+function editStateForm(state: number): void {
+  renderFormEditor();
+  const s = pack.states[state];
+  const selectForm = ensureEl<HTMLSelectElement>("stateFormEditorSelect");
+  const customForm = ensureEl<HTMLInputElement>("stateFormEditorCustom");
+  const fullInput = ensureEl<HTMLInputElement>("stateFormEditorFull");
+  ensureEl("stateFormEditor").dataset.state = String(state);
+  ensureEl("stateFormEditorName").textContent = s.name;
+  applyOption(selectForm, s.formName || "");
+  fullInput.value = s.fullName || "";
+
+  Dialog.open("stateFormEditor", {
     resizable: false,
-    title: t("Change state name"),
+    title: t("Form and full name"),
     buttons: [
       {
         label: t("Apply"),
         onClick: () => {
-          applyNameChange(s);
-          Dialog.close("stateNameEditor");
+          applyFormChange();
+          Dialog.close("stateFormEditor");
         }
       },
-      { label: t("Cancel"), onClick: () => Dialog.close("stateNameEditor") }
+      { label: t("Cancel"), onClick: () => Dialog.close("stateFormEditor") }
     ],
     position: { my: "center", at: "center", of: "svg" }
   });
 
-  ensureEl("stateNameEditorShortCulture").addEventListener("click", regenerateShortNameCulture);
-  ensureEl("stateNameEditorShortRandom").addEventListener("click", regenerateShortNameRandom);
-  ensureEl("stateNameEditorShortSpeak").addEventListener("click", () =>
-    speak(ensureEl<HTMLInputElement>("stateNameEditorShort").value)
-  );
-  ensureEl("stateNameEditorAddForm").addEventListener("click", addCustomForm);
-  ensureEl("stateNameEditorCustomForm").addEventListener("change", addCustomForm);
-  ensureEl("stateNameEditorFullRegenerate").addEventListener("click", regenerateFullName);
-  ensureEl("stateNameEditorFullSpeak").addEventListener("click", () =>
-    speak(ensureEl<HTMLInputElement>("stateNameEditorFull").value)
-  );
-
-  function regenerateShortNameCulture() {
-    const state = +ensureEl("stateNameEditor").dataset.state!;
-    const culture = pack.states[state].culture;
-    const name = Names.getState(Names.getCultureShort(culture), culture);
-    ensureEl<HTMLInputElement>("stateNameEditorShort").value = name;
-  }
-
-  function regenerateShortNameRandom() {
-    const base = rand(Names.nameBases.length - 1);
-    const name = Names.getState(Names.getBase(base), undefined as unknown as number, base);
-    ensureEl<HTMLInputElement>("stateNameEditorShort").value = name;
-  }
+  ensureEl("stateFormEditorNameEdit").addEventListener("click", () => {
+    applyFormChange(); // the name's dialog shows the full name as it is stored
+    Dialog.close("stateFormEditor");
+    editStateName(state);
+  });
+  ensureEl("stateFormEditorAdd").addEventListener("click", addCustomForm);
+  customForm.addEventListener("change", addCustomForm);
+  ensureEl("stateFormEditorFullRegenerate").addEventListener("click", regenerateFullName);
+  ensureEl("stateFormEditorFullSpeak").addEventListener("click", () => speak(fullInput.value));
 
   function addCustomForm() {
-    const value = stateNameEditorCustomForm.value;
-    const addModeActive = stateNameEditorCustomForm.style.display === "inline-block";
-    stateNameEditorCustomForm.style.display = addModeActive ? "none" : "inline-block";
-    stateNameEditorSelectForm.style.display = addModeActive ? "inline-block" : "none";
-    if (value && addModeActive) applyOption(stateNameEditorSelectForm, value);
-    stateNameEditorCustomForm.value = "";
+    const value = customForm.value;
+    const addModeActive = customForm.style.display === "inline-block";
+    customForm.style.display = addModeActive ? "none" : "inline-block";
+    selectForm.style.display = addModeActive ? "inline-block" : "none";
+    if (value && addModeActive) applyOption(selectForm, value);
+    customForm.value = "";
   }
 
   function regenerateFullName() {
-    const short = ensureEl<HTMLInputElement>("stateNameEditorShort").value;
-    const form = ensureEl<HTMLSelectElement>("stateNameEditorSelectForm").value;
-    ensureEl<HTMLInputElement>("stateNameEditorFull").value = getFullName();
-
-    function getFullName() {
-      if (!form) return short;
-      if (!short && form) return `The ${form}`;
-      const $regen = ensureEl("stateNameEditorFullRegenerate");
-      const tick = +$regen.dataset.tick!;
-      $regen.dataset.tick = String(tick + 1);
-      return tick % 2 ? `${getAdjective(short)} ${form}` : `${form} of ${short}`;
-    }
+    const form = selectForm.value;
+    const $regen = ensureEl("stateFormEditorFullRegenerate");
+    const tick = +$regen.dataset.tick!;
+    $regen.dataset.tick = String(tick + 1);
+    fullInput.value = !form ? s.name : tick % 2 ? `${getAdjective(s.name)} ${form}` : `${form} of ${s.name}`;
   }
 
-  function applyNameChange(s: State) {
-    const name = ensureEl<HTMLInputElement>("stateNameEditorShort").value.trim();
-    const formName = ensureEl<HTMLSelectElement>("stateNameEditorSelectForm").value;
-    const fullName = ensureEl<HTMLInputElement>("stateNameEditorFull").value.trim();
-    const oldFullName = s.fullName;
-    const changed = name !== s.name || formName !== (s.formName ?? "") || fullName !== oldFullName;
+  function applyFormChange() {
+    const formName = selectForm.value;
+    const fullName = fullInput.value.trim();
+    const changed = formName !== (s.formName ?? "") || fullName !== s.fullName;
 
-    if (name && name !== s.name) States.rename(s.i, name);
     if (formName !== (s.formName ?? "")) States.setForm(s.i, formName);
-    if (fullName && fullName !== oldFullName) States.setFullName(s.i, fullName);
-    if (changed && ensureEl<HTMLInputElement>("stateNameEditorUpdateLabel").checked) {
+    if (fullName && fullName !== s.fullName) States.setFullName(s.i, fullName);
+    if (changed && ensureEl<HTMLInputElement>("stateFormEditorUpdateLabel").checked) {
       if (s.label?.text) delete s.label.text;
       Layers.draw("labels");
     }
@@ -866,29 +847,17 @@ function editStateName(state: number): void {
   }
 }
 
-function renderNameEditor(): void {
-  Dialog.destroy("stateNameEditor");
-  const nameEditorHtml = /* html */ `<div id="stateNameEditor" class="dialog" data-state="0">
+function renderFormEditor(): void {
+  Dialog.destroy("stateFormEditor");
+  const formEditorHtml = /* html */ `<div id="stateFormEditor" class="dialog" data-state="0">
       <div>
-        <div data-tip="${t("Short name")}" class="label">${t("Short name")}:</div>
-        <input
-          id="stateNameEditorShort"
-          data-tip="${t("Type to change the short name")}"
-          autocorrect="off"
-          spellcheck="false"
-          style="width: 11em"
-        />
-        <span id="stateNameEditorShortSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
-        <span
-          id="stateNameEditorShortCulture"
-          data-tip="${t("Generate culture-specific name")}"
-          class="icon-book pointer"
-        ></span>
-        <span id="stateNameEditorShortRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
+        <div class="label">${t("Short name")}:</div>
+        <span id="stateFormEditorName"></span>
+        ${nameEditButton("stateFormEditorNameEdit")}
       </div>
       <div data-tip="${t("Select form name")}">
         <div data-tip="${t("Form name")}" class="label">${t("Form name")}:</div>
-        <select id="stateNameEditorSelectForm" style="width: 11em">
+        <select id="stateFormEditorSelect" style="width: 11em">
           <option value="">${t("blank")}</option>
           ${Object.entries(STATE_FORMS)
             .map(
@@ -898,13 +867,13 @@ function renderNameEditor(): void {
             .join("")}
         </select>
         <input
-          id="stateNameEditorCustomForm"
+          id="stateFormEditorCustom"
           placeholder="${t("Enter custom form name")}"
           data-tip="${t("Enter custom form name")}"
           style="display: none; width: 11em"
         />
         <span
-          id="stateNameEditorAddForm"
+          id="stateFormEditorAdd"
           data-tip="${t("Click to add custom state form name to the list")}"
           class="icon-plus pointer"
         ></span>
@@ -912,26 +881,26 @@ function renderNameEditor(): void {
       <div>
         <div data-tip="${t("Full name")}" class="label">${t("Full name")}:</div>
         <input
-          id="stateNameEditorFull"
+          id="stateFormEditorFull"
           data-tip="${t("Type to change the full name")}"
           autocorrect="off"
           spellcheck="false"
           style="width: 11em"
         />
-        <span id="stateNameEditorFullSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
+        <span id="stateFormEditorFullSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
         <span
-          id="stateNameEditorFullRegenerate"
+          id="stateFormEditorFullRegenerate"
           data-tip="${t("Click to re-generate full name")}"
           data-tick="0"
           class="icon-arrows-cw pointer"
         ></span>
       </div>
       <div data-tip="${t("Uncheck to not update state label on name change")}" style="padding-block: 0.2em">
-        <input id="stateNameEditorUpdateLabel" class="checkbox" type="checkbox" checked />
-        <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>${t("Update label on Apply")}</i></label>
+        <input id="stateFormEditorUpdateLabel" class="checkbox" type="checkbox" checked />
+        <label for="stateFormEditorUpdateLabel" class="checkbox-label"><i>${t("Update label on Apply")}</i></label>
       </div>
     </div>`;
-  ensureEl("dialogs").insertAdjacentHTML("beforeend", nameEditorHtml);
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", formEditorHtml);
 }
 
 function changePopulation(stateId: number): void {
@@ -1006,8 +975,14 @@ function stateCapitalZoomIn(state: number): void {
 }
 
 function stateChangeCulture(state: number, line: HTMLElement, value: string): void {
+  const s = pack.states[state];
+  const { base } = pack.cultures[s.culture];
   States.setCulture(state, +value);
   line.dataset.base = String(+value);
+  offerNamesIn([{ type: "state", id: state }], base, () => {
+    refreshStatesEditor();
+    Layers.draw("labels");
+  });
 }
 
 function stateChangeType(state: number, line: HTMLElement, value: string): void {
@@ -1526,6 +1501,7 @@ function downloadStatesCsv(): void {
     return [
       s.i,
       s.name,
+      s.i && s.meaning ? Meanings.write(s.meaning) : "",
       s.i ? s.fullName || "" : "",
       s.i ? s.formName || "" : "",
       s.i ? s.color || "" : "",
@@ -1563,12 +1539,17 @@ async function uploadStatesCsv(text: string): Promise<void> {
   const updated = await Controllers.CsvUpload.update(
     text,
     [...CSV_COLUMNS, ...STATE_FIGURES],
-    { find, units: ["Area"], text: ["State", "Full Name", "Form", "Tags"] },
+    { find, units: ["Area"], text: ["State", "Meaning", "Full Name", "Form", "Tags"] },
     (id, row) => {
       const state = find(id)!;
       const fullName = state.fullName; // a new name or form rebuilds it, so an unchanged cell must not restore the old one
-      row.apply("State", name => States.rename(id, name), state.name);
       if (id) {
+        row.apply(
+          "Culture",
+          name => States.setCulture(id, Csv.byName(pack.cultures, name).i),
+          pack.cultures[state.culture]?.name
+        );
+        row.named("State", "state", state); // in the culture set above
         row.apply("Form", form => States.setForm(id, form), state.formName);
         row.apply("Full Name", name => States.setFullName(id, name), fullName);
         row.apply("Color", color => States.recolor(id, color), state.color); // recolor rejects hatched fills, so keep them when unchanged
@@ -1576,11 +1557,6 @@ async function uploadStatesCsv(text: string): Promise<void> {
           "Capital",
           name => Burgs.setCapital(Csv.byName(pack.burgs, name, burg => burg.state === id).i),
           pack.burgs[state.capital]?.name
-        );
-        row.apply(
-          "Culture",
-          name => States.setCulture(id, Csv.byName(pack.cultures, name).i),
-          pack.cultures[state.culture]?.name
         );
         row.apply("Type", type => States.setType(id, type), state.type);
         row.apply("Expansionism", value => States.setExpansionism(id, +value), state.expansionism);
@@ -1614,7 +1590,9 @@ async function uploadStatesCsv(text: string): Promise<void> {
         );
         row.assign("Tags", tags => States.setTags(id, tags), (state.tags ?? []).join(";"));
       } else {
+        row.apply("State", name => States.rename(id, name), state.name);
         for (const column of [
+          "Meaning",
           "Full Name",
           "Form",
           "Color",

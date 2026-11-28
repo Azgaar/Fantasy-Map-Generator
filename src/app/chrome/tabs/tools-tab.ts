@@ -68,7 +68,7 @@ const TEMPLATE = /* html */ `
     >
       ${t("Military")}
     </button>
-    <button id="editNamesBaseButton" data-tip="${t("Namesbase Editor")}" data-shortcut="Shift + N">
+    <button id="editNamesBaseButton" data-tip="${t("Namesbases Overview")}" data-shortcut="Shift + N">
       ${t("Namesbase")}
     </button>
     <button id="editNotesButton" data-tip="${t("Notes Editor")}" data-shortcut="Shift + O">${t("Notes")}</button>

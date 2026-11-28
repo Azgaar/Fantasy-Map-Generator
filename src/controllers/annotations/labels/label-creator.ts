@@ -3,7 +3,7 @@ import { Controllers } from "@/controllers";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import { Labels } from "@/model/annotations/labels-generator";
 import { Pack } from "@/model/graph/pack-generator";
-import { Names } from "@/model/society/names-generator";
+import { Names } from "@/model/society/names/names-generator";
 import { createLabelArc } from "@/renderers/labels/label-arc";
 import { Layers } from "@/renderers/layers";
 import { Dialog } from "@/ui/dialog/dialog";

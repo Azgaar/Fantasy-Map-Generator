@@ -28,6 +28,7 @@ import { Military } from "@/model/political/military-generator";
 import { States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
+import { NameBases } from "@/model/society/names/name-bases";
 import { Population } from "@/model/society/population-generator";
 import { Religions } from "@/model/society/religions-generator";
 import type { LayerId } from "@/renderers/layers";
@@ -274,10 +275,10 @@ export const MAP_COMMANDS: MapCommand[] = [
   },
   {
     id: "editNamesBaseButton",
-    name: t("Namesbase Editor"),
+    name: t("Namesbases Overview"),
     link: true,
     aliases: "names language",
-    run: () => Controllers.NamesbaseEditor.open()
+    run: () => Controllers.NamesbasesOverview.open()
   },
   {
     id: "editUnitsButton",
@@ -809,8 +810,8 @@ function isQuestion(text: string): boolean {
   return query.includes("?") || QUESTION_START.test(query);
 }
 
-function applyRegeneration(action: () => void): void {
-  action();
+async function applyRegeneration(action: () => unknown): Promise<void> {
+  await action();
   closeEntityDialogs();
   refreshEditors();
 }
@@ -826,7 +827,7 @@ const regenerationMessage = (
   </div>`;
 
 /** "Do not ask again" covers this regeneration alone, for the session */
-function confirmRegeneration(id: string, action: () => void): void {
+function confirmRegeneration(id: string, action: () => unknown): void {
   const key = `regenerateDontAsk-${id}`;
   if (sessionStorage.getItem(key)) return void applyRegeneration(action);
 
@@ -1032,8 +1033,10 @@ function regenerateReligions(): void {
   Layers.draw("religions", "goods");
 }
 
-function regenerateCultures(): void {
+async function regenerateCultures(): Promise<void> {
   Cultures.regenerate();
+  await NameBases.loadUsed();
+  Cultures.defineNames();
   Layers.draw("cultures", "goods");
 }
 

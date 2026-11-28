@@ -113,7 +113,7 @@ const CHANGES = `# Changing the map
 applies or discards it. \`args\` go in order, e.g. \`{ op: "Burgs.rename", args: [12, "Saltmere"] }\`. \`{ result: n }\`
 stands for what operation n (from 0) of the batch returned, such as a new id: \`[{ op: "States.add", args: [410, 220] },
 { op: "States.rename", args: [{ result: 0 }, "Varn"] }]\`; \`{ result: n, type: "burg" }\` stands for its key, "burg:12",
-for \`Notes\` and \`Emblems\`. Put everything asked into one proposal; \`summary\` is a short card title. On a validation
+for \`Notes\`, \`Emblems\` and \`Toponyms\`. Put everything asked into one proposal; \`summary\` is a short card title. On a validation
 error nothing is proposed: fix and retry.
 Success means the proposal is WAITING: say what you proposed, never that the map changed. Operations keep dependent
 data (labels, full names, codes, cell ownership) in sync. "Proposals in this chat" in the map context shows what the
@@ -127,6 +127,8 @@ The map's look is \`styles\`, a record by layer (\`attrs\` SVG attributes, \`opt
 nodes): \`Styles.setValue("ocean.groups.base.attrs.fill", "#0d2240")\`, one op per value; a whole new look starts with
 \`StylePresets.apply(name)\` of the closest preset. Read \`read_docs(["Styles"])\` for presets and choices, then
 \`["Styles: ocean, labels"]\` for paths and values; never fetch source files. Heightmap, relief icons and ice have no operations: link their editor and stop.
+
+A rename clears the name's \`meaning\`; when the user wants one, add \`Toponyms.setMeaning\` after it, as \`read_docs(["Meanings"])\` tells.
 
 A marker's story is its note: place every marker with a name, a fitting note and an emoji icon,
 \`Markers.place(x, y, type, { name, note, icon })\`; prefer a configured type, \`Markers.configuration.map(c => c.type)\`.

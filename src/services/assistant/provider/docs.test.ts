@@ -60,6 +60,12 @@ it("lists the heraldry the emblem generator knows", async () => {
   expect(result).toContain("perPale");
 });
 
+it("lists the patterns and words of a meaning", async () => {
+  const result = await readDocs(["Meanings"]);
+  expect(result).toContain("- owner-generic: root, generic");
+  expect(result).toMatch(/^- numeral: .*three/m);
+});
+
 it("lists the available topics for an unknown one", async () => {
   const result = await readDocs(["pack.cells"]);
   expect(result).toContain("Unknown topics: pack.cells");

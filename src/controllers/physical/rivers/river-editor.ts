@@ -4,19 +4,16 @@ import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import type { River } from "@/model/physical/river-generator";
 import { Rivers } from "@/model/physical/river-generator";
-import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { redrawRiver as redrawRiverShape, setEditedRiver } from "@/renderers/draw-rivers";
 import { Layers } from "@/renderers/layers";
-import { speak } from "@/services/speech";
 import { Dialog } from "@/ui/dialog/dialog";
-import { noteButton } from "@/ui/dialog/dialog-helpers";
+import { nameEditButton, noteButton } from "@/ui/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { getSegmentId } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { rand } from "@/utils/probability-utils";
 
 let selectedRiver: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
@@ -69,11 +66,9 @@ function renderDialog(): void {
   const html = /* html */ `<div id="riverEditor" class="dialog">
     <div id="riverBody" style="padding-bottom: 0.3em">
       <div>
-        <div class="label" style="width: 4.8em">${t("Name")}:</div>
-        <span id="riverNameCulture" data-tip="${t("Generate culture-specific name")}" class="icon-book pointer"></span>
-        <span id="riverNameRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
-        <input id="riverName" data-tip="${t("Type to rename")}" autocorrect="off" spellcheck="false" />
-        <span id="riverNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
+        <div class="label">${t("Name")}:</div>
+        <span id="riverName"></span>
+        ${nameEditButton("riverNameEdit")}
       </div>
       <div data-tip="${t("Type to change river type (e.g. fork, creek, river, brook, stream)")}">
         <div class="label">${t("Type")}:</div>
@@ -99,19 +94,19 @@ function renderDialog(): void {
       </div>
       <div data-tip="${t("River drainage basin (watershed)")}">
         <div class="label">${t("Basin")}:</div>
-        <input id="riverBasin" disabled />
+        <span id="riverBasin"></span>
       </div>
       <div data-tip="${t("River discharge (flux power)")}">
         <div class="label">${t("Discharge")}:</div>
-        <input id="riverDischarge" disabled />
+        <span id="riverDischarge"></span>
       </div>
       <div data-tip="${t("River length in selected units")}">
         <div class="label">${t("Length")}:</div>
-        <input id="riverLength" disabled />
+        <span id="riverLength"></span>
       </div>
       <div data-tip="${t("River mouth width in selected units")}">
         <div class="label">${t("Mouth width")}:</div>
-        <input id="riverWidth" disabled />
+        <span id="riverWidth"></span>
       </div>
       <div data-tip="${t("River source additional width. Default value is 0")}">
         <div class="label">${t("Source width")}:</div>
@@ -140,14 +135,11 @@ function renderDialog(): void {
   ensureEl("riverLegend").addEventListener("click", editRiverLegend);
   ensureEl("riverLock").addEventListener("click", toggleLock);
   ensureEl("riverRemove").addEventListener("click", removeRiver);
-  ensureEl("riverName").addEventListener("input", changeName);
-  ensureEl("riverNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("riverName").value));
+  ensureEl("riverNameEdit").addEventListener("click", editName);
   ensureEl("riverType").addEventListener("input", changeType);
   ensureEl("riverGroup").addEventListener("change", changeGroup);
   ensureEl("riverGroupEdit").addEventListener("click", () => void Controllers.RiverGroupsEditor.open());
   ensureEl("riverTags").addEventListener("change", changeTags);
-  ensureEl("riverNameCulture").addEventListener("click", generateNameCulture);
-  ensureEl("riverNameRandom").addEventListener("click", generateNameRandom);
   ensureEl("riverMainstem").addEventListener("change", changeParent);
   ensureEl("riverSourceWidth").addEventListener("input", changeSourceWidth);
   ensureEl("riverWidthFactor").addEventListener("input", changeWidthFactor);
@@ -169,7 +161,7 @@ function getRiver(): River {
 function updateRiverData(): void {
   const r = getRiver();
 
-  ensureEl<HTMLInputElement>("riverName").value = r.name;
+  ensureEl("riverName").textContent = r.name;
   ensureEl<HTMLInputElement>("riverType").value = r.type;
   const groupSelect = ensureEl<HTMLSelectElement>("riverGroup");
   groupSelect.options.length = 0;
@@ -187,9 +179,9 @@ function updateRiverData(): void {
     const opt = new Option(river.name, String(river.i), false, river.i === parent);
     parentSelect.options.add(opt);
   });
-  ensureEl<HTMLInputElement>("riverBasin").value = pack.rivers.find((river: River) => river.i === r.basin)!.name;
+  ensureEl("riverBasin").textContent = pack.rivers.find((river: River) => river.i === r.basin)!.name;
 
-  ensureEl<HTMLInputElement>("riverDischarge").value = `${r.discharge} m³/s`;
+  ensureEl("riverDischarge").textContent = `${r.discharge} m³/s`;
   ensureEl<HTMLInputElement>("riverSourceWidth").value = String(r.sourceWidth);
   ensureEl<HTMLInputElement>("riverWidthFactor").value = String(r.widthFactor);
 
@@ -211,12 +203,12 @@ function updateLockIcon(river: River): void {
 function updateRiverLength(river: River): void {
   river.length = rn((selectedRiver.node() as SVGGeometryElement).getTotalLength() / 2, 2);
   const lengthUI = `${rn(river.length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
-  ensureEl<HTMLInputElement>("riverLength").value = lengthUI;
+  ensureEl("riverLength").textContent = lengthUI;
 }
 
 function showRiverWidth(river: River): void {
   const width = `${rn(river.width * options.map.units.distance.scale, 3)} ${options.map.units.distance.unit}`;
-  ensureEl<HTMLInputElement>("riverWidth").value = width;
+  ensureEl("riverWidth").textContent = width;
 }
 
 function drawControlPoints(points: Point[]): void {
@@ -310,13 +302,6 @@ function removeControlPoint(this: SVGCircleElement): void {
   drawCells(cells);
 }
 
-function changeName(this: HTMLInputElement): void {
-  if (this.value.trim()) {
-    Rivers.rename(getRiver().i, this.value);
-    Layers.draw("labels");
-  }
-}
-
 function changeType(this: HTMLInputElement): void {
   if (!this.value.trim()) return;
   Rivers.setType(getRiver().i, this.value);
@@ -336,19 +321,15 @@ function changeTags(this: HTMLInputElement): void {
   this.value = Tags.format(river.tags);
 }
 
-function generateNameCulture(): void {
+function editName(): void {
   const river = getRiver();
-  const name = Rivers.getName(river.mouth);
-  ensureEl<HTMLInputElement>("riverName").value = name;
-  Rivers.rename(river.i, name);
-  Layers.draw("labels");
-}
-
-function generateNameRandom(): void {
-  const name = Names.getBase(rand(Names.nameBases.length - 1));
-  ensureEl<HTMLInputElement>("riverName").value = name;
-  Rivers.rename(getRiver().i, name);
-  Layers.draw("labels");
+  void Controllers.NameEditor.openPlace("river", river.i, {
+    owner: "riverEditor",
+    onApply: name => {
+      ensureEl("riverName").textContent = name;
+      Layers.draw("labels");
+    }
+  });
 }
 
 function changeParent(this: HTMLInputElement): void {
@@ -360,7 +341,7 @@ function changeParent(this: HTMLInputElement): void {
     this.value = String(r.parent || r.i);
     return;
   }
-  ensureEl<HTMLInputElement>("riverBasin").value = pack.rivers.find((river: River) => river.i === r.basin)!.name;
+  ensureEl("riverBasin").textContent = pack.rivers.find((river: River) => river.i === r.basin)!.name;
 }
 
 function changeSourceWidth(this: HTMLInputElement): void {

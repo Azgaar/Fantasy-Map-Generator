@@ -1,0 +1,441 @@
+// Turns a meaning into a name in a name base: the rendering half of semantic names
+
+import { type Concept, isConcept, type Kind, kindOf, settles } from "@/data/name-concepts";
+import { isPattern, kindsOf, PATTERNS, type Slot } from "@/data/name-patterns";
+import type { Formant, Grammar, Meaning, NameBase, SoundRule, Template, Token } from "@/types/names";
+import { pickWeighted, seededRandom } from "@/utils/probability-utils";
+import { capitalize, compileRegex } from "@/utils/string-utils";
+import { Appropriation } from "./appropriation";
+import { Corpora } from "./corpora";
+import { Lexicon } from "./lexicon";
+import { NameBases } from "./name-bases";
+import { SILENT, STAR } from "./notation";
+import { SoundRules } from "./sound-rules";
+
+const CLIPPED = 2 / 3; // the share of a root that must be left for it to be told
+const UNSAID: Kind[] = ["settlement", "land"];
+const [STRICT, LOOSE, ANY] = [2, 1, 0];
+const ANY_ORDER: Formant["position"][] = ["word", undefined, "last", "stem", "first"]; // what reads best when nothing fits
+const MIN_NAME = 3;
+const STUTTER = /(\p{L}{3,})\+\1|(\p{L}{2})\+\2(?=[ -]|$)/u; // a part that repeats the one before: Harlan-land, Amnon-on
+const LEFT_OVER = /(?<=^|[ -])[ '+-]+|[ +-]+$/g; // the marks between a name and a modifier given up
+const PLACE_ROOTS: Meaning["pattern"][] = ["generic-of", "relative"]; // the root is another place's name, never a person's
+
+/** A template with a form drawn for each of its concepts */
+interface Layout {
+  words: Item[][];
+  sites: Site[];
+  forms: Formant[]; // in the order of the sites
+  weight: number;
+  hasModifier: boolean;
+}
+
+type Item = { slot: Slot } | { text: string };
+
+/** Where a template puts a concept */
+interface Site {
+  item: Item;
+  items: Item[]; // of the word it is in
+  slot: Slot;
+  after?: Standing; // what it comes after in the word, and before
+  before?: Standing;
+  afterDash: boolean;
+}
+
+type Standing = "text" | "concept" | "name";
+
+class MeaningsModule {
+  /** The English reading of a meaning */
+  gloss({ pattern, tokens }: Meaning): string {
+    const words = tokens.map(token => (isRoot(token) ? token.slice(1) : capitalize(token)));
+    const counts = tokens.length > 1 && !isRoot(tokens[0]) && kindOf(tokens[0]) === "numeral";
+    if (counts) words[1] = plural(words[1]);
+    const { slots, gloss } = PATTERNS[pattern];
+    const said = new Map<string, string>(slots.map((slot, order) => [slot, words[order]]));
+    return gloss.replace(/\{(\w+)\}('s)?/g, (_, slot, owns = "") => {
+      const word = said.get(slot)!;
+      return word + (owns && word.endsWith("s") ? "'" : owns);
+    });
+  }
+
+  /** A meaning as a table keeps it, such as "owner-generic: ~Eadric, town" */
+  write({ pattern, tokens }: Meaning): string {
+    return `${pattern}: ${tokens.join(", ")}`;
+  }
+
+  /** The meaning a text written that way stands for, coined in a base */
+  read(text: string, origin: string): Meaning {
+    const base = NameBases.find(origin);
+    const [, name = "", words = ""] = /^([^:]*):(.*)$/s.exec(text) ?? [];
+    const pattern = name.trim().toLowerCase();
+    if (!isPattern(pattern))
+      throw new Error(`A meaning starts with a pattern and a colon. Patterns: ${Object.keys(PATTERNS).join(", ")}`);
+    const { slots } = PATTERNS[pattern];
+    const parts = words.split(",").map(word => word.trim());
+    if (parts.length !== slots.length || parts.some(word => !word.replace(/^~+/, "").trim()))
+      throw new Error(`A meaning of the pattern ${pattern} has these words: ${slots.join(", ")}`);
+    const tokens = parts.map((word, order): Token => {
+      const slot = slots[order];
+      if (isRoot(word) || slot === "root") {
+        const root = word.replace(/^~+/, "").trim();
+        return base ? this.rootIn(root, base) : `~${root}`;
+      }
+      const concept = word.toLowerCase();
+      if (!isConcept(concept)) throw new Error(`"${word}" is not a known word. A proper name starts with ~`);
+      const kinds = kindsOf(pattern, slot);
+      if (!kinds.includes(kindOf(concept)))
+        throw new Error(`"${word}" cannot stand as the ${slot} of ${pattern}, which is a word of: ${kinds.join(", ")}`);
+      return concept;
+    });
+    return { pattern, tokens, origin };
+  }
+
+  /** The meaning of a name that has none: the whole name as one root */
+  simplex(name: string, origin: string): Meaning {
+    return { pattern: "simplex", tokens: [`~${name}`], origin };
+  }
+
+  /** What a name says; one with no meaning stands as a proper name of a culture's base */
+  of({ name = "", meaning }: { name?: string; meaning?: Meaning }, culture = 0): Meaning {
+    return meaning ?? this.simplex(name, pack.cultures[culture]?.base ?? NameBases.all[0].id);
+  }
+
+  /** A proper name typed as a root of a meaning coined in a base: one in letters the base writes stands as typed,
+   * another is said as the base's people say it, taking endings there */
+  rootIn(name: string, base: NameBase): Token {
+    return `~${Appropriation.writes(name, base) ? name : Appropriation.adopt(name, base, true)}`;
+  }
+
+  /** The same thing said anew in a base: the concepts in its words, the roots as its people say them */
+  coinedIn<T extends Pick<Meaning, "tokens" | "origin">>(meaning: T, base: NameBase): T {
+    if (NameBases.lineage(base).some(({ id }) => id === meaning.origin)) return { ...meaning, origin: base.id };
+    const say = (token: Token): Token =>
+      isRoot(token) ? `~${Appropriation.adopt(token.slice(1), base, true)}` : token;
+    return { ...meaning, tokens: meaning.tokens.map(say), origin: base.id };
+  }
+
+  /** The name a meaning takes in a base. The same meaning and base always give the same name */
+  render(meaning: Meaning, baseId: string): string {
+    return this.compose(meaning, baseId).name;
+  }
+
+  /** A meaning's name in a base, and whether it says all of it: a name too long for the base loses its modifier.
+   * A meaning of another base is coined in it first */
+  compose(meaning: Meaning, of: NameBase | string): { name: string; whole: boolean } {
+    const base = typeof of === "string" ? NameBases.resolve(of) : of;
+    return new Composition(this.coinedIn(meaning, base), base).compose();
+  }
+
+  /** Whether a name is no longer than its base lets a name be; a name of several words may run to twice that */
+  fits(name: string, base: NameBase): boolean {
+    return fitsBase(name, base);
+  }
+}
+
+/** A meaning said in a base: the template and forms drawn for it, and the name they make */
+class Composition {
+  private readonly values: Partial<Record<Slot, Token>>;
+  private readonly asked: readonly Slot[];
+  private readonly grammar: Grammar | undefined;
+  private readonly rules: readonly SoundRule[];
+  private readonly counting: readonly SoundRule[];
+  private readonly formsOf: (concept: Concept) => readonly Formant[];
+  private readonly clips: boolean; // another place's name stands whole
+
+  constructor(
+    private readonly meaning: Meaning,
+    private readonly base: NameBase
+  ) {
+    this.asked = PATTERNS[meaning.pattern].slots;
+    this.values = Object.fromEntries(this.asked.map((slot, index) => [slot, meaning.tokens[index]]));
+    this.grammar = Lexicon.grammarOf(base);
+    this.rules = NameBases.rulesOf(base);
+    this.counting = SoundRules.sort(this.rules).counting;
+    this.formsOf = once((concept: Concept) => Lexicon.formsOf(base, concept));
+    this.clips = meaning.pattern !== "relative";
+  }
+
+  compose(): { name: string; whole: boolean } {
+    const { meaning, base, rules } = this;
+    const random = seededRandom(`${base.id}|${meaning.pattern}|${meaning.tokens}|${meaning.salt ?? 0}`);
+
+    // forms that may stand together; where a base has none, a noun stands in for a stem, then anything goes
+    const templates = Lexicon.templatesOf(base, meaning.pattern);
+    let strictness = STRICT;
+    let fitting = this.fittingAt(templates, strictness);
+    while (!fitting.length && strictness > ANY) fitting = this.fittingAt(templates, --strictness);
+    // a template by its own weight, then its forms by theirs: how many forms fit a template does not favour it
+    const { layouts } = pick(fitting, random);
+    const drawn = pick(layouts, random);
+    const rolls = Array.from(SoundRules.sort(rules).chances, () => random());
+    const joining = NameBases.joiningOf(base);
+    const fits = (name: string) => fitsBase(name, base);
+
+    // a name too long is made again with more effort: its shortest forms, then clipped roots, then no modifier
+    let shortest: Layout | undefined;
+    const shortestLayout = () => (shortest ??= layouts.reduce((a, b) => (lengthOf(b) < lengthOf(a) ? b : a), drawn));
+    const isTold = (name: string) => name.length >= MIN_NAME || meaning.pattern === "simplex"; // not an ending alone: Ni
+    let spare = "";
+    for (const effort of [0, 1, 2, 3]) {
+      for (const kept of effort < 2 ? [Infinity] : effort === 2 ? [3, 2, 1] : [Infinity, 3, 2, 1]) {
+        const parts = this.join(effort ? shortestLayout() : drawn, effort, kept);
+        const name = SoundRules.capitalize(SoundRules.join(parts, rules, { rolls, fits }), joining);
+        if (isTold(name)) spare = name;
+        else spare ||= name;
+        if (isTold(name) && fits(name)) {
+          const says = strictness === STRICT && (effort < 3 || !drawn.hasModifier);
+          return { name, whole: says && !STUTTER.test(parts) && !this.isStub(kept) };
+        }
+      }
+    }
+    return { name: spare, whole: false };
+  }
+
+  // a root clipped to a stub tells nobody's name: Ana of Anahita
+  private isStub(kept: number): boolean {
+    if (kept === Infinity) return false;
+    const roots = this.meaning.tokens.filter(isRoot).map(rootOf);
+    return roots.some(root => Corpora.cut(root, this.base.places.names, kept).length < root.length * CLIPPED);
+  }
+
+  private fittingAt(templates: readonly Template[], strictness: number): { weight?: number; layouts: Layout[] }[] {
+    return templates
+      .map(template => ({ weight: template.weight, layouts: this.layoutsOf(template, strictness) }))
+      .filter(({ layouts }) => layouts.length);
+  }
+
+  /** Every way to fill a template's concepts with forms that may stand where it puts them */
+  private layoutsOf(template: Template, strictness: number): Layout[] {
+    const { values, asked } = this;
+    const { words, slots, inflects } = wordsOf(template);
+    const isSaid = (slot: Slot) => !values[slot] || slots.has(slot) || goesUnsaid(values[slot]);
+    if (strictness !== ANY && !asked.every(isSaid)) return [];
+    const sites = sitesOf(
+      template,
+      asked.filter(slot => values[slot] && !isRoot(values[slot]))
+    );
+
+    let filled: Formant[][] = [[]];
+    for (const [order, site] of sites.entries()) {
+      const forms = this.standingAt(site, strictness);
+      const longer: Formant[][] = [];
+      for (const before of filled) {
+        const onStem = strictness !== ANY && site.after === "concept" ? takesSuffix(before[order - 1]) : undefined;
+        for (const form of forms) if (onStem === undefined || isSuffix(form) === onStem) longer.push([...before, form]);
+      }
+      filled = longer;
+    }
+
+    const agreeing = strictness === ANY ? filled : filled.filter(forms => this.agrees(sites, forms, inflects));
+    return agreeing.map(forms => {
+      let weight = 1;
+      for (const form of forms) weight *= form.weight ?? 1;
+      return { words, sites, forms, weight, hasModifier: slots.has("modifier") };
+    });
+  }
+
+  /** The forms that may stand at a site, whatever stands at the others */
+  private standingAt(site: Site, strictness: number): Formant[] {
+    const { items, slot, afterDash, after } = site;
+    const concept = this.values[slot] as Concept;
+    const forms = this.formsOf(concept);
+    if (strictness === ANY) {
+      const reads = (form: Formant) => (isSuffix(form) ? ANY_ORDER.length : ANY_ORDER.indexOf(form.position));
+      return [...forms].sort((a, b) => reads(a) - reads(b)).slice(0, 1);
+    }
+
+    // a proper name takes a suffix where the concept has one: its full forms stand apart from the name
+    const needsSuffix = after === "name" && forms.some(isSuffix);
+    // a word that describes the noun beside it is no noun itself, which joins it: Fordhall
+    const kind = kindOf(concept);
+    const describes = slot === "modifier" && items.length === 1 && (kind === "generic" || kind === "settlement");
+    return forms.filter(form => {
+      if (!(afterDash ? form.hyphen : standsAt(form, site, strictness))) return false;
+      if (isSuffix(form) ? after === "text" : needsSuffix) return false;
+      return !describes || form.form.includes("*");
+    });
+  }
+
+  // a describing word of one class needs its noun, a noun unsaid a word that shows it
+  private agrees(sites: Site[], forms: Formant[], inflects: boolean): boolean {
+    return sites.every(({ slot, items }, order) => {
+      const form = forms[order];
+      if (form.form === SILENT && !inflects && !forms.some(({ form }) => form.includes("*"))) return false;
+      if (slot !== "modifier" || items.length > 1 || !form.class) return true;
+      // a counting word makes its noun take its class: "three" stands beside "towers", made of "tower" if need be
+      const noun = forms[sites.findIndex(other => other.slot === "generic")];
+      return this.counts(form.class)
+        ? Boolean(noun && this.counted(noun, form.class))
+        : form.class === this.headClass(sites, forms);
+    });
+  }
+
+  // the class of the noun a name is built on: its generic, or the root where it has none
+  private headClass(sites: Site[], forms: Formant[]): string | undefined {
+    const generic = forms[sites.findIndex(site => site.slot === "generic")];
+    if (generic) return generic.class ?? this.classOf(bareOf(generic.form));
+    const { root } = this.values;
+    if (!root || !isRoot(root)) return this.classOf("");
+    return PLACE_ROOTS.includes(this.meaning.pattern) ? this.classOf(rootOf(root)) : this.personClass(rootOf(root));
+  }
+
+  // a root that is a man's or a woman's name takes the gender of the list it is from, where the grammar has both
+  private personClass(root: string): string | undefined {
+    const regular = this.classOf(root);
+    const classes = this.grammar?.classes;
+    if (!classes || !("f" in classes) || !("m" in classes)) return regular;
+    const gender = NameBases.genderOf(this.base, root);
+    if (gender === "female") return "f";
+    return gender === "male" && regular === "f" ? "m" : regular;
+  }
+
+  private counts(nounClass?: string): nounClass is string {
+    return this.counting.some(rule => rule.as === nounClass);
+  }
+
+  // a noun as it stands beside a counting word of a class: as it is where it is of the class, else as the rules make it
+  private counted(noun: Formant, nounClass: string): string | undefined {
+    const bare = bareOf(noun.form);
+    if ((noun.class ?? this.classOf(bare)) === nounClass) return bare;
+    const rule = this.counting.find(rule => rule.as === nounClass && matches(rule.match, bare));
+    return rule && bare.replace(compileRegex(rule.match)!, rule.replace);
+  }
+
+  private classOf(noun: string): string | undefined {
+    return Object.entries(this.grammar?.classes ?? {}).find(([, pattern]) => !pattern || matches(pattern, noun))?.[0];
+  }
+
+  // the parts of a name joined by "+", for the sound rules to join
+  private join({ words, sites, forms }: Layout, effort: number, kept: number): string {
+    const { values, grammar } = this;
+    const head = this.headClass(sites, forms) ?? "";
+    // the default endings join as parts do, a named set's are spelled as they stand
+    const agree = (text: string) =>
+      text.replace(STAR, set => `${set.length > 1 ? "" : "+"}${grammar?.endings?.[set.slice(1)]?.[head] ?? ""}`);
+    const drawn = new Map(sites.map(({ item }, order) => [item, forms[order]]));
+    const describing = forms[sites.findIndex(site => site.slot === "modifier")];
+    const count = this.counts(describing?.class) ? describing.class : undefined;
+
+    return words
+      .map(items =>
+        items
+          .flatMap(item => {
+            if ("text" in item) return agree(item.text);
+            const token = values[item.slot];
+            if (!token || (effort === 3 && item.slot === "modifier")) return [];
+            if (isRoot(token)) {
+              const root = rootOf(token);
+              return this.clips && items.length > 1 && kept !== Infinity
+                ? Corpora.cut(root, this.base.places.names, kept)
+                : root;
+            }
+            const form = drawn.get(item)!;
+            const plain = agree((effort ? (form.short ?? form.form) : form.form).replace(/^-|_/g, ""));
+            return (count && item.slot === "generic" && this.counted(form, count)) || plain || [];
+          })
+          .join("+")
+      )
+      .join("")
+      .replace(/ +/g, " ")
+      .replace(effort === 3 ? LEFT_OVER : /^ +| +$/g, "");
+  }
+}
+
+// where a form may stand by its own make; what stands beside it is checked as the others are drawn
+function standsAt(form: Formant, { items, before }: Site, strictness: number): boolean {
+  const position = form.position ?? (isSuffix(form) ? "last" : form.form.includes("*") ? "word" : undefined);
+  if (items.length === 1) return !position || position === "word";
+  if (position === "stem") return before === "concept" || before === "text"; // a suffix of the template's own
+  if (strictness === LOOSE && before === "concept" && position === "word") return !/[*_]/.test(form.form); // a noun for a stem
+  if (form.form.endsWith("-")) return before === "name"; // a prefix goes before a root
+  if (!position) return form.form !== SILENT;
+  return position === (before ? "first" : "last");
+}
+
+function fitsBase(name: string, base: NameBase): boolean {
+  const [, max] = base.length;
+  return name.length <= max * 2 && name.split(/[ -]/).every(word => word.length <= max);
+}
+
+const lengthOf = ({ forms }: Layout) => forms.reduce((sum, form) => sum + (form.short ?? form.form).length, 0);
+const matches = (pattern: string, text: string) => compileRegex(pattern)?.test(text) ?? false;
+const rootOf = (token: Token) => token.slice(1).toLowerCase(); // a root stands as coined
+
+interface ParsedTemplate {
+  words: Item[][];
+  slots: Set<Slot>;
+  inflects: boolean; // it has an ending that agrees with the noun
+  sites: Map<string, Site[]>; // by the slots that hold concepts
+}
+
+const parsed = new WeakMap<Template, ParsedTemplate>();
+
+function wordsOf(template: Template): ParsedTemplate {
+  let known = parsed.get(template);
+  if (!known) {
+    const toItem = (text: string): Item => {
+      const slot = /^\{(\w+)\}$/.exec(text)?.[1] as Slot | undefined;
+      return slot ? { slot } : { text };
+    };
+    const words = template.parts
+      .trim()
+      .split(/(?<=[ -])|(?=[ -])/)
+      .map(word => (word.match(/\{\w+\}|[^{}]+/g) ?? []).map(toItem));
+    const slots = new Set(words.flat().flatMap(item => ("slot" in item ? item.slot : [])));
+    known = { words, slots, inflects: template.parts.includes("*"), sites: new Map() };
+    parsed.set(template, known);
+  }
+  return known;
+}
+
+/** Where a template puts the concepts of a meaning */
+function sitesOf(template: Template, concepts: Slot[]): Site[] {
+  const { words, sites } = wordsOf(template);
+  const key = concepts.join();
+  let known = sites.get(key);
+  if (!known) {
+    const standing = (item?: Item): Standing | undefined =>
+      item && ("text" in item ? "text" : concepts.includes(item.slot) ? "concept" : "name");
+    known = words.flatMap((items, order) =>
+      items.flatMap((item, index) => {
+        if ("text" in item || !concepts.includes(item.slot)) return [];
+        const [after, before] = [standing(items[index - 1]), standing(items[index + 1])];
+        const afterDash = index === 0 && isDash(words[order - 1]);
+        return { item, items, slot: item.slot, after, before, afterDash };
+      })
+    );
+    sites.set(key, known);
+  }
+  return known;
+}
+
+/** A function that works out each answer once */
+function once<K, T>(run: (key: K) => T): (key: K) => T {
+  const known = new Map<K, T>();
+  return key => {
+    if (!known.has(key)) known.set(key, run(key));
+    return known.get(key)!;
+  };
+}
+
+/** Whether a token is a proper name, not a concept */
+export const isRoot = (token: string): token is `~${string}` => token.startsWith("~");
+const isSuffix = ({ form }: Formant) => form.startsWith("-");
+// a template may leave out what a burg is by its group or a land, whose name is a suffix of the template's own: Frankia;
+// never a name or what stands at the place
+const goesUnsaid = (token: Token) => !isRoot(token) && (UNSAID.includes(kindOf(token)) || settles(token));
+const takesSuffix = ({ position }: Formant) => position === "stem" || position === "word";
+const isDash = (items?: Item[]) => items?.length === 1 && "text" in items[0] && items[0].text === "-";
+const bareOf = (form: string) => form.replace(STAR, "").replace(/[-_]/g, "");
+
+const plural = (noun: string) =>
+  noun.endsWith("s") ? noun : /(x|z|ch|sh)$/.test(noun) ? `${noun}es` : `${noun.replace(/(?<=[^aeiou])y$/, "ie")}s`;
+
+const pick = <T extends { weight?: number }>(items: T[], random: () => number): T =>
+  pickWeighted(
+    items,
+    items.map(({ weight = 1 }) => weight),
+    random
+  );
+
+export const Meanings = new MeaningsModule();

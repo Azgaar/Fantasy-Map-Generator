@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probability-utils";
+import {
+  biased,
+  each,
+  gauss,
+  generateSeed,
+  getNumberInRange,
+  P,
+  Pint,
+  pickWeighted,
+  ra,
+  rand,
+  rw,
+  seeded,
+  seededRandom
+} from "./probability-utils";
 
 describe("rand", () => {
   describe("when called with no arguments", () => {
@@ -364,5 +378,44 @@ describe("generateSeed", () => {
     }
     // Should have many unique seeds (allow for some rare collisions)
     expect(seeds.size).toBeGreaterThan(90);
+  });
+});
+
+describe("pickWeighted", () => {
+  it("picks an item by its share of the weights", () => {
+    const pick = (roll: number) => pickWeighted(["a", "b", "c"], [1, 0, 3], () => roll);
+    expect([0, 0.24, 0.26, 0.99].map(pick)).toEqual(["a", "a", "c", "c"]);
+  });
+
+  it("picks any item when none has a weight", () => {
+    expect([0, 0.49, 0.51, 0.99].map(roll => pickWeighted(["a", "b"], [0, 0], () => roll))).toEqual([
+      "a",
+      "a",
+      "b",
+      "b"
+    ]);
+  });
+});
+
+describe("seededRandom", () => {
+  it("rolls the same for a seed, evenly, and apart for seeds alike", () => {
+    const rolls = (seed: string, count: number) => Array.from({ length: count }, seededRandom(seed));
+    expect(rolls("burg|1", 5)).toEqual(rolls("burg|1", 5));
+    expect(rolls("burg|1", 5)).not.toEqual(rolls("burg|2", 5));
+
+    const first = Array.from({ length: 5000 }, (_, i) => seededRandom(`burg|${i}`)());
+    for (const all of [first, rolls("burg", 5000)]) {
+      expect(all.every(roll => roll >= 0 && roll < 1)).toBe(true);
+      const shares = [0, 0.25, 0.5, 0.75].map(
+        from => all.filter(roll => roll >= from && roll < from + 0.25).length / 5000
+      );
+      for (const share of shares) expect(share).toBeCloseTo(0.25, 1);
+    }
+  });
+
+  it("leaves the ambient sequence where it was", () => {
+    const ambient = Math.random;
+    expect(seeded("a", () => Math.random())).toBe(seededRandom("a")());
+    expect(Math.random).toBe(ambient);
   });
 });
