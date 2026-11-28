@@ -617,7 +617,7 @@ k\+k(?=[ai]\b) => k | join
 (?<=zh|ch|sh)\+oye => +ye | join
 (?<=[gkh])\+yi => +iy | join
 (?<=[gk]|(?<![czs])h)\+ye => +iye | join
-(?<=[aeiouy][vlrnm])o\+(?=gorod|grad) => + | 30%
+(?<=^[^aeiouy+]*[aeiouy][vlrnm])o\+(?=gorod) => + | 30%
 (?<=[gkh]|zh|ch|sh)a$ => i | as fewf
 ya$ => i | as fewf
 a$ => y | as fewf
@@ -687,8 +687,8 @@ bridge: Most 2, Mosty 2, Zamostye 3, most^ 3
 harbour: Prichal 2, Pristan/f, Gavan/f
 valley: Dol 3, Log 2, Yar 3, Dolina, Podol 2, Podolye 2, Razdolye, dol^ 2, yar^ 2, dolin^, log^
 market: Torg 3, Torzhok 2, Torzhische, Posad 2, torg^ 2, posad^
-castle: Zamok 3, Kreml, Podzamchye 2, zamk^
-mouth: ust-+ 5, Ustye 3
+castle: Zamok 3, Kreml, Podzamchye 2, zamk^, kamen^
+mouth: ust-+
 mount: Gora 3, Kamen, Verh, Zagorye 2, Podgorye 2, Mezhgorye 2, gor^ 2
 shore: Yar 2, Bereg 2, Breg, Poberezhye, Pomorye 2, Primorye 2, bereg^ 2, yar^
 island: Ostrov 3, Ostrovok, Ostrovets, Zaostrovye, ostrov^ 2
@@ -702,8 +702,8 @@ bank: Bereg 2, Yar 2, Kosa, Krucha, Zarechye 4, Porechye 3, bereg^, yar^
 mill: Mlyn 3, Melnitsa, Zamlynye 3, Podmlynye, mlyn^ 3
 bay: Guba 2, Zaliv 2, Zatoka 2, Lukomorye, zaliv^ 2, gub^, guba^ 2
 cape: Mys, Nos, mys^
-cliff: Skala 3, Utes 2, Podskalye 3, Zaskalye, skal^ 2, skala^
-tower: Vezha 3, Bashnya, Stolp, vezh^, stolp^
+cliff: Skala 3, Utes 2, Podskalye 3, Zaskalye, skal^ 2, skala^, kamen^
+tower: Slup 5, Vezha 3, Bashnya, Stolp, vezh^, stolp^, slup^, kamen^
 ridge: Gryada 2, Kryazh 2, Hrebet, Mezhgorye 2, Zakryazhye 2, Zagryadye, gryad^, kryazh^
 pass: Volok 3, Pereval 2, Vorota/pl, Perevolok 2, Zavolochye 3, Perevolochye 2, volok^ 3
 heath: Step/f 2, Pustosh/f 2, Zastepye 3, step^ 2, pustosh^
@@ -1076,7 +1076,7 @@ skull: cherepo+, cherep^ 4, cherepov^ 2
 feather: per^ 4, perist* 2
 wing: kryl^ 4, krylat* 4, krylatsk* 2
 gallows: viselno+, glagol^ 3, viselitsa^ 2, viseln* 3
-peace: mir+ 2, mirno+, mir^ 3, mirn* 5
+peace: miro+ 2, mirno+, mir^ 3, mirn* 2
 glory: slav+ 2, slavo+, slav^ 3, slavyan^ 2, slavn* 4
 love: lyubo+ 2, lyubim^ 4, lyub^ 2, lyubim* 3
 victory: pobeda^ 4, pobedn* 4

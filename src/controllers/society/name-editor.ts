@@ -268,7 +268,9 @@ function changeWord(event: Event): void {
   const order = Number(field.dataset.order);
   const word = field.value.trim();
   recoin();
-  draft.tokens[order] = field instanceof HTMLSelectElement ? (word as Token) : word ? `~${word}` : "";
+  const base = NameBases.find(draft.origin);
+  const root = (name: string): Token => (base ? Meanings.rootIn(name, base) : `~${name}`); // as its people say it
+  draft.tokens[order] = field instanceof HTMLSelectElement ? (word as Token) : word ? root(word) : "";
   if (!(field instanceof HTMLSelectElement)) delete draft.after; // a root typed names no place of the map
   // the other words may have been said anew; the field in use stays as it is
   for (const other of ensureEl("nameEditorSlots").querySelectorAll<HTMLElement>("[data-order]"))

@@ -123,7 +123,9 @@ describe("render", () => {
   it("names a land with the forms the base has for it", () => {
     const frank = meaning("root-land", "~Frank", "land");
     const names = (baseId: string) =>
-      new Set(Array.from({ length: 40 }, (_, salt) => Meanings.render(withSalt(frank, salt), baseId)));
+      new Set(
+        Array.from({ length: 40 }, (_, salt) => Meanings.render({ ...withSalt(frank, salt), origin: baseId }, baseId))
+      );
     expect(names("german")).toEqual(new Set(["Frankland", "Frankien"]));
     expect(names("chinese")).toEqual(new Set(["Fran Yu", "Fran Bang"]));
     expect(names("arabic")).toEqual(new Set(["Frankiyya", "Al Frankiyya", "Bilad Frank"]));
@@ -151,6 +153,15 @@ describe("render", () => {
     expect(Meanings.render(korean, "korean")).not.toMatch(/f|nk/i); // Korean writes no f and no nk
     const kin = Meanings.coinedIn(frank, NameBases.find("human-generic")!); // extends English
     expect(kin).toEqual({ ...frank, origin: "human-generic" });
+  });
+
+  it("says a proper name as the base's people do before composing", () => {
+    const mouth = meaning("generic-of", "mouth", "~Exe");
+    expect(Meanings.render(mouth, "ruthenian")).toBe(
+      Meanings.render(Meanings.read("generic-of: mouth, ~Exe", "ruthenian"), "ruthenian")
+    );
+    expect(Meanings.render(mouth, "ruthenian")).not.toMatch(/Exe/); // not Exeskoye Ustye
+    expect(Meanings.read("generic-of: mouth, ~Exe", "english").tokens[1]).toBe("~Exe");
   });
 
   it("leaves a land unsaid where a template has a suffix for it", () => {

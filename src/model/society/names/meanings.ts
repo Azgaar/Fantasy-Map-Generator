@@ -65,6 +65,7 @@ class MeaningsModule {
 
   /** The meaning a text written that way stands for, coined in a base */
   read(text: string, origin: string): Meaning {
+    const base = NameBases.find(origin);
     const [, name = "", words = ""] = /^([^:]*):(.*)$/s.exec(text) ?? [];
     const pattern = name.trim().toLowerCase();
     if (!isPattern(pattern))
@@ -75,7 +76,10 @@ class MeaningsModule {
       throw new Error(`A meaning of the pattern ${pattern} has these words: ${slots.join(", ")}`);
     const tokens = parts.map((word, order): Token => {
       const slot = slots[order];
-      if (isRoot(word) || slot === "root") return `~${word.replace(/^~+/, "").trim()}`;
+      if (isRoot(word) || slot === "root") {
+        const root = word.replace(/^~+/, "").trim();
+        return base ? this.rootIn(root, base) : `~${root}`;
+      }
       const concept = word.toLowerCase();
       if (!isConcept(concept)) throw new Error(`"${word}" is not a known word. A proper name starts with ~`);
       const kinds = kindsOf(pattern, slot);
@@ -96,10 +100,15 @@ class MeaningsModule {
     return meaning ?? this.simplex(name, pack.cultures[culture]?.base ?? NameBases.all[0].id);
   }
 
+  /** A proper name as a base's people say it, a root of a meaning coined in the base */
+  rootIn(name: string, base: NameBase): Token {
+    return `~${Appropriation.adopt(name, base)}`;
+  }
+
   /** The same thing said anew in a base: the concepts in its words, the roots as its people say them */
   coinedIn<T extends Pick<Meaning, "tokens" | "origin">>(meaning: T, base: NameBase): T {
     if (NameBases.lineage(base).some(({ id }) => id === meaning.origin)) return { ...meaning, origin: base.id };
-    const say = (token: Token): Token => (isRoot(token) ? `~${Appropriation.adopt(token.slice(1), base)}` : token);
+    const say = (token: Token): Token => (isRoot(token) ? this.rootIn(token.slice(1), base) : token);
     return { ...meaning, tokens: meaning.tokens.map(say), origin: base.id };
   }
 
@@ -108,9 +117,11 @@ class MeaningsModule {
     return this.compose(meaning, baseId).name;
   }
 
-  /** A meaning's name in a base, and whether it says all of it: a name too long for the base loses its modifier */
+  /** A meaning's name in a base, and whether it says all of it: a name too long for the base loses its modifier.
+   * A meaning of another base is coined in it first */
   compose(meaning: Meaning, of: NameBase | string): { name: string; whole: boolean } {
-    return new Composition(meaning, typeof of === "string" ? NameBases.resolve(of) : of).compose();
+    const base = typeof of === "string" ? NameBases.resolve(of) : of;
+    return new Composition(this.coinedIn(meaning, base), base).compose();
   }
 
   /** Whether a name is no longer than its base lets a name be; a name of several words may run to twice that */
