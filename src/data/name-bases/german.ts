@@ -471,11 +471,11 @@ i[ae]\+s\+ => ien+ | join
 (?<=^(?:neu|frei|blau|grau|heu))\+(?=[aeiouäöü]) => en+ | join
 ia\+(?=[^aeiouäöü+]) => ien+ | join
 ^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)(brück|eich|buch|lind|tann|kirch|mühl|quell|wies|weid|hütt|klaus|eck)$ => $1$2en | join
-^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)(linde|eiche|buche|tanne|mühle|quelle|wiese|weide|hütte|klause)$ => $1$2n | join
+^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)(linde|eiche|buche|tanne|mühle|quelle|wiese|weide|hütte|klause|warte)$ => $1$2n | join
 (?<=^(?:zwei|drei))\+(?=[aeiouäöü]) =>  | join
 ^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)burg$ => $1bürgen | join
 ^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)(berg|brunn|bronn|born|stein)$ => $1$2en | join
-^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)turm$ => $1türme | join
+^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)turm$ => $1türmen | join
 ^((?:zwei|drei|fünf|sieben|neun|zehn|hundert|tausend)\+)hof$ => $1höfen | join
 (?<!\+)([b-df-hj-np-tv-zß])\+(?=\1) => $1 | join
 (?<=[a-zäöü]{2}(?:hard|bert|old|mund|fried|fred|rad|mut|gard|trud|ward))\+(?=dorf$) => s+ | join

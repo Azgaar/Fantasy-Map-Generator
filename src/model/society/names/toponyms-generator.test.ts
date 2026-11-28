@@ -1,6 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { type Concept, conceptsOf, kindOf } from "@/data/name-concepts";
 import { PATTERNS } from "@/data/name-patterns";
+import type { Feature } from "@/model/physical/features-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Pattern } from "@/types/names";
 import { seeded } from "@/utils/probability-utils";
@@ -8,7 +9,7 @@ import { NameBases } from "./name-bases";
 import { type LandSize, Toponyms } from "./toponyms-generator";
 
 beforeAll(() => vi.stubGlobal("pack", { cultures: [] }));
-beforeAll(() => NameBases.load(["english", "german"]));
+beforeAll(() => NameBases.load(["english", "german", "human-generic"]));
 
 describe("Toponyms.sample", () => {
   it("makes a name of any pattern asked for", () => {
@@ -31,6 +32,23 @@ describe("Toponyms.sample", () => {
       const [, generic] = Toponyms.sample(NameBases.find("english")!, { concept: "three" }).meaning.tokens;
       expect(kindOf(generic as Concept)).toBe("generic");
     }
+  });
+});
+
+describe("Toponyms.sea", () => {
+  it("describes a sea or names its side of the map, said in the seas' base or the one given", () => {
+    vi.stubGlobal("pack", { cells: { p: [[10, 50]] } });
+    const graph = options.map.graph;
+    options.map.graph = { ...graph, width: 100, height: 100 };
+    const sea = { firstCell: 0 } as Feature;
+    const seas = seeded("seas", () => Array.from({ length: 50 }, () => Toponyms.sea(sea)));
+    expect(seas.every(({ meaning }) => meaning.pattern === "description" && meaning.origin === "human-generic")).toBe(
+      true
+    );
+    expect(seas.some(({ name }) => name === "West")).toBe(true);
+    expect(new Set(seas.map(({ name }) => name)).size).toBeGreaterThan(10);
+    expect(Toponyms.sea(sea, "german").meaning.origin).toBe("german");
+    options.map.graph = graph;
   });
 });
 

@@ -40,12 +40,6 @@ describe("feature naming", () => {
     expect(Features.getOceanSubtype(pack.features[4])).toBe("gulf");
   });
 
-  it("names oceans with an adjective or a map side instead of a culture name", () => {
-    for (let i = 0; i < 20; i++) {
-      expect(Features.getOceanName(pack.features[3])).toMatch(/^\w+$/);
-    }
-  });
-
   it("names only the features without a name, an island and a lake by what they are", () => {
     const lake = {
       name: "Mere",
@@ -59,12 +53,17 @@ describe("feature naming", () => {
         origin: "english"
       }
     };
+    const sea = {
+      name: "Misty",
+      meaning: { pattern: "description" as const, tokens: ["mist" as const], origin: "human-generic" }
+    };
+    vi.spyOn(Toponyms, "sea").mockReturnValue(sea);
     vi.spyOn(Toponyms, "lake").mockReturnValue(lake);
     vi.spyOn(Toponyms, "island").mockReturnValue(island);
     Features.defineNames();
     expect(pack.features[1]).toMatchObject(island);
     expect(pack.features[2]).toMatchObject(lake);
-    expect(pack.features[3].name).toBeTruthy();
+    expect(pack.features[3]).toMatchObject(sea);
     expect(pack.features[4].name).toBe("Kept Sea");
   });
 });

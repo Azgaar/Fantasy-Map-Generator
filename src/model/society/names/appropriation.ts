@@ -49,8 +49,9 @@ class AppropriationModule {
   private readonly profiles = new WeakMap<readonly string[], Profile>(); // by place names: edited lists are measured anew
 
   /** A lowercase name coined in another base as a base's people say it: its rules for foreign names run, then each word is
-   * respelled to the closest one that sounds native, then the word rules run */
-  adapt(name: string, base: NameBase): string {
+   * respelled to the closest one that sounds native, then the word rules run. An `open` name takes endings: its own
+   * end is no word's end */
+  adapt(name: string, base: NameBase, open = false): string {
     const profile = this.profileOf(base);
     const rules = NameBases.rulesOf(base);
     const words = name.split(/([^\p{L}\p{M}]+)/u); // words, and what stands between them
@@ -58,10 +59,11 @@ class AppropriationModule {
       .map((word, index) => {
         if (index % 2 || word.length < 2) return word; // the s of Eadric's is no word
         const foreign = SoundRules.applyForeign(word, rules);
-        let native = profile.adapted.get(foreign);
+        const key = open ? `${foreign}+` : foreign;
+        let native = profile.adapted.get(key);
         if (native === undefined) {
-          native = respell(foreign, profile);
-          profile.adapted.set(foreign, native);
+          native = respell(foreign, profile, open);
+          profile.adapted.set(key, native);
         }
         return SoundRules.apply(native, rules);
       })
@@ -69,14 +71,14 @@ class AppropriationModule {
   }
 
   /** A name as it stands on the map, as a base's people say it. Its joining words stay lowercase, as do the base's own */
-  adopt(name: string, base: NameBase): string {
+  adopt(name: string, base: NameBase, open = false): string {
     const kept = name
       .split(/[ -]/)
       .slice(1, -1)
       .filter(word => /^\p{Ll}/u.test(word))
       .map(word => (/^\p{L}+'/u.test(word) ? word.slice(0, word.indexOf("'") + 1) : this.adapt(word, base)));
     const joining = kept.length ? [...NameBases.joiningOf(base), ...kept] : NameBases.joiningOf(base);
-    return SoundRules.capitalize(this.adapt(name.toLowerCase(), base), joining);
+    return SoundRules.capitalize(this.adapt(name.toLowerCase(), base, open), joining);
   }
 
   private profileOf(base: NameBase): Profile {
@@ -116,7 +118,7 @@ function measure(places: readonly string[], others: (readonly string[])[]): Prof
 }
 
 /** The spelling of a word that changes it least and sounds most like the names of a profile */
-function respell(word: string, profile: Profile): string {
+function respell(word: string, profile: Profile, open: boolean): string {
   const letters = [...word.normalize("NFC")];
   if (!letters.some(letter => profile.letters.includes(plainOf(letter)))) return word; // of another script
 
@@ -145,7 +147,7 @@ function respell(word: string, profile: Profile): string {
 
   let best: Spelling = { text: word, cost: Infinity };
   for (const [last, { text, cost }] of spellings) {
-    const ended = cost + strangeness(last, "$", profile);
+    const ended = open ? cost : cost + strangeness(last, "$", profile);
     if (text && ended < best.cost) best = { text, cost: ended };
   }
   return best.text;

@@ -599,7 +599,7 @@ function renderPatterns(base: NameBase): string {
       const weightInput = /* html */ `<input data-field="weight" data-pattern="${pattern}" type="number" min="0" value="${weight ?? ""}"
           placeholder="${Lexicon.patternWeight(bare, pattern)}" data-tip="${t("Weight")}" />`;
       return /* html */ `<span data-tip="${meaning}">${pattern}</span>
-        ${pattern === "simplex" ? "<span></span>" : weightInput}
+        ${pattern === "simplex" || pattern === "description" ? "<span></span>" : weightInput}
         <input class="notation" data-field="templates" data-pattern="${pattern}" value="${escapeHtml(NameNotation.formatTemplates(templates))}"
           placeholder="${escapeHtml(NameNotation.formatTemplates(Lexicon.templatesOf(bare, pattern)))}" autocorrect="off" spellcheck="false"
           data-tip="${t("Templates, commas between")}" />

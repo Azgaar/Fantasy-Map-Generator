@@ -116,7 +116,7 @@ async function update(
           apply(
             "Meaning",
             value => {
-              const { origin } = Meanings.of({}, Toponyms.cultureOf({ type, id: +id }));
+              const origin = Toponyms.baseOf({ type, id: +id }) ?? Meanings.of({}).origin;
               Toponyms.setMeaningOf(type, +id, Meanings.read(value, origin));
             },
             said

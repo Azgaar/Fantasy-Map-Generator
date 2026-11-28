@@ -37,6 +37,7 @@ import { Cultures } from "@/model/society/cultures-generator";
 import { Development } from "@/model/society/development-generator";
 import { NameBases } from "@/model/society/names/name-bases";
 import { Names } from "@/model/society/names/names-generator";
+import { Toponyms } from "@/model/society/names/toponyms-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Dates } from "@/model/story/dates";
 import { Events } from "@/model/story/events";
@@ -1847,8 +1848,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       }
       if (feature.name) continue; // islands and oceans were nameless before
       const culture = pack.cultures[pack.cells.culture[feature.shoreline?.[0] || feature.firstCell]];
-      feature.name =
-        feature.type === "ocean" || !culture ? Features.getOceanName(feature) : Names.getStem(culture.base);
+      feature.name = feature.type === "ocean" || !culture ? Toponyms.sea(feature).name : Names.getStem(culture.base);
     }
 
     // custom lake groups lived only in the svg; the styles record now keeps them under lakes.groups

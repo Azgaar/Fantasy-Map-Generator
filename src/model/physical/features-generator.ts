@@ -7,7 +7,6 @@ import { clipPoly } from "@/utils/common-utils";
 import { isLand, isWater } from "@/utils/height-utils";
 import { distanceSquared, rn } from "@/utils/number-utils";
 import { connectVertices } from "@/utils/path-utils";
-import { P, ra } from "@/utils/probability-utils";
 import { requireName, requireOneOf } from "@/utils/validation-utils";
 import { Coastline, type CoastlineSettings } from "./coastline-generator";
 import { Lakes } from "./lakes";
@@ -33,7 +32,7 @@ export interface Feature {
   flux: number;
   evaporation: number;
   name: string;
-  meaning?: Meaning; // what an island's or a lake's name says, kept apart from the name itself
+  meaning?: Meaning; // what a feature's name says, kept apart from the name itself
 
   // River related
   inlets?: number[];
@@ -445,7 +444,7 @@ class FeatureModule {
     for (const feature of pack.features) {
       if (!feature || feature.name) continue;
       const { type, i } = feature;
-      if (type === "ocean") feature.name = this.getOceanName(feature);
+      if (type === "ocean") Object.assign(feature, Toponyms.sea(feature));
       // off a sequence of its own: how a land's or a lake's name is coined moves nothing else
       else
         Object.assign(
@@ -454,88 +453,6 @@ class FeatureModule {
         );
     }
   }
-
-  // oceans belong to no culture: an adjective or the map side, the subtype noun is shown separately
-  getOceanName(feature: Feature) {
-    if (P(0.8)) return ra(ADJECTIVES);
-    const [x, y] = pack.cells.p[feature.firstCell];
-    const { width, height } = options.map.graph;
-    const [dx, dy] = [x / width - 0.5, y / height - 0.5];
-    return Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "Western" : "Eastern") : dy < 0 ? "Northern" : "Southern";
-  }
 }
-
-const ADJECTIVES = [
-  "Autumn",
-  "Azure",
-  "Black",
-  "Blue",
-  "Bony",
-  "Boundless",
-  "Broken",
-  "Calm",
-  "Cold",
-  "Crimson",
-  "Deep",
-  "Draconic",
-  "Dreamy",
-  "Echoing",
-  "Emerald",
-  "Endless",
-  "Far",
-  "Forbidden",
-  "Forgotten",
-  "Fortunate",
-  "Frozen",
-  "Glassy",
-  "Glittering",
-  "Golden",
-  "Great",
-  "Green",
-  "Grey",
-  "Icy",
-  "Inner",
-  "Kingly",
-  "Lost",
-  "Misty",
-  "Outer",
-  "Pale",
-  "Pearly",
-  "Reedy",
-  "Red",
-  "Restless",
-  "Roaring",
-  "Ruinous",
-  "Sailing",
-  "Salty",
-  "Sapphire",
-  "Serene",
-  "Serpentine",
-  "Shattered",
-  "Shining",
-  "Shadowy",
-  "Silent",
-  "Sirenic",
-  "Sleeping",
-  "Sorrowful",
-  "Starry",
-  "Still",
-  "Stormy",
-  "Sunlit",
-  "Summer",
-  "Tearful",
-  "Thunderous",
-  "Tidal",
-  "Yellow",
-  "Wandering",
-  "Whispering",
-  "White",
-  "Wide",
-  "Wild",
-  "Windy",
-  "Winter",
-  "Wondrous",
-  "World"
-];
 
 export const Features = new FeatureModule();

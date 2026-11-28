@@ -52,7 +52,7 @@ Tags are separated by `;`. Colors are HEX like `#a1b2c3`; a hatched fill is kept
 | Markers | `Name`, `Type`, `Tags`. Marker notes are uploaded in the Notes editor |
 | Zones | `Description`, `Color`, `Type`, `Population`, `Tags` |
 | Biomes | `Biome`, `Color`, `Habitability` (percent) |
-| Features | `Name`, `Meaning` (not of oceans), `Subtype`, `Group` (lakes only), `Tags` |
+| Features | `Name`, `Meaning`, `Subtype`, `Group` (lakes only), `Tags` |
 | Goods | `Good`, `Color`, `Tags`, `Value`, `Carriage`, `Unit`, `Demand Coverage` (`category:share` pairs separated by `;`, such as `food:1;luxury:0.5`), `Deposits` (deposits on the map as `min-max`, such as `2-4`). `Model` is code and is edited in the good's editor only. Prices and production follow on the next economy run |
 
 ## Meanings
@@ -68,6 +68,7 @@ The `Meaning` column says [what a name means](https://github.com/Azgaar/Fantasy-
 | `generic-of` | place, name | `generic-of: mouth, ~Exe` | Mouth of Exe |
 | `compound` | description, place, settlement | `compound: red, hill, city` | Red Hill City |
 | `relative` | description, name | `relative: new, ~Barton` | New Barton |
+| `description` | description | `description: mist` | Misty (Sea) |
 | `root-land` | name, land | `root-land: ~Frank, land` | Land of Frank |
 | `modifier-land` | description, land | `modifier-land: east, realm` | East Realm |
 

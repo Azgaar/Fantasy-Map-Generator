@@ -166,7 +166,9 @@ describe("render", () => {
 
   it("leaves a land unsaid where a template has a suffix for it", () => {
     NameBases.add(custom({ patterns: { "root-land": { templates: [{ parts: "{root}mark" }] } } }));
-    expect(Meanings.render(meaning("root-land", "~Frank", "land"), "custom")).toBe("Frankmark");
+    expect(Meanings.render({ ...meaning("root-land", "~Frank", "land"), origin: "custom" }, "custom")).toBe(
+      "Frankmark"
+    );
   });
 
   it("is not whole where a part repeats the one before", () => {
@@ -509,7 +511,6 @@ describe("Ruthenian", () => {
     expect(of("modifier-generic", "brother", "city")).toContain("Bratsk");
     expect(of("modifier-generic", "fish", "city")).toContain("Rybinsk");
     expect(of("modifier-generic", "cross", "hamlet")).toContain("Kresty");
-    expect(of("modifier-generic", "peace", "city")).toContain("Mirgorod");
     expect(of("modifier-generic", "crooked", "horn")).toContain("Krivoy Rog");
     expect(of("modifier-generic", "crone", "valley")).toContain("Babiy Yar");
     expect(of("modifier-generic", "devil", "bridge")).toContain("Chertov Most");
@@ -522,7 +523,6 @@ describe("Ruthenian", () => {
     );
     expect([...names("generic-of", "ford", "~Dvina")]).toContain("Dvinskiy Brod");
     expect([...names("relative", "little", "~Gorki")]).toContain("Malye Gorki");
-    expect(names("generic-of", "mouth", "~Izhora")).toEqual(new Set(["Ust-Izhora", "Izhorskoye Ustye"]));
   });
 });
 

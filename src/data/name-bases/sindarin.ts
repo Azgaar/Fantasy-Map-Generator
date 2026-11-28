@@ -498,6 +498,7 @@ export const sindarin: WrittenNameBase = {
   rules: [
     { match: "([^lnrsm])\\1+", replace: "$1" },
     { match: "(?<=[^ -])(?:lh|rh|hw)(?=[aeiou])", replace: "l", when: "foreign" },
+    { match: "nk$", replace: "n", when: "foreign" }, // no word ends in -nc: Frank is Fran
     { match: "^mor\\+dor$", replace: "morn+iand", at: "join" }, // the great lands of the tales stay in the tales
     { match: "^gond?\\+dor$", replace: "sarn+iand", at: "join" },
     { match: "^(ithil|anor)\\+ien$", replace: "$1+iand", at: "join" },
@@ -856,7 +857,7 @@ bone: asg
 
 # numerals
 two: tad+ 3
-three: neledh+ 3, nel+
+three: nel+ 3, neledh+
 five: leben+ 3
 seven: odog+ 3
 nine: neder+ 3

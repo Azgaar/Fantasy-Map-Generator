@@ -67,7 +67,7 @@ Concept words and glosses stay in English in every interface language, as in the
 
 ## Patterns
 
-Nine patterns, fixed, because every name base must be able to render every one. The names below are real output and change when a base's data changes.
+Ten patterns, fixed, because every name base must be able to render every one. The names below are real output and change when a base's data changes.
 
 | Pattern            | Slots                         | Gloss         | English     | Ruthenian       | Used for                     |
 | ------------------ | ----------------------------- | ------------- | ----------- | --------------- | ---------------------------- |
@@ -78,6 +78,7 @@ Nine patterns, fixed, because every name base must be able to render every one. 
 | `generic-of`       | generic, root                 | Mouth of Exe  | Exmouth     | Ekseskoye Ustye | burg                         |
 | `compound`         | modifier, generic, settlement | Red Hill City | Redhill     | Chervonoholmye  | burg                         |
 | `relative`         | modifier, root                | New Barton    | New Barton  | Novyi Barton    | burg, colony province        |
+| `description`      | modifier                      | Black         | Black       | Chernyi         | sea                          |
 | `root-land`        | root, generic                 | Land of Frank | Frankland   | Frankia         | state, province, continent   |
 | `modifier-land`    | modifier, generic             | East Realm    | East Realm  | Vostochnia      | state, province, continent   |
 
@@ -94,10 +95,11 @@ A numeral stands in the modifier slot: `modifier-generic: three, tower` gives Th
 | River    | `Rivers.specify`, before burgs           | the culture's at its mouth                   | half are proper names, off the base's list of waters; half say what the water looks like        |
 | Lake     | `Features.defineNames`, before burgs     | the culture's on its shore                   | as a river, or after a person                                                                   |
 | Island   | `Features.defineNames`, before burgs     | the culture's on its first cell              | an island like something, or someone's; a continent is named as a state is                      |
+| Sea      | `Features.defineNames`                   | Human Generic (`NameBases.sea`), no culture's | a describing word or the map side it lies on; the noun (sea, gulf, ocean) is its subtype        |
 
 Rivers and lakes are named before burgs so a burg can be named after them. States are named after capitals, so capitals are named first; the states take their names once they have expanded. A religion that needs a burg's name before the burg has one names it on the spot (`Toponyms.nameOf`); that name says nothing of the burg's size.
 
-Seas, routes, markers and religions have no meanings. Gods, founders of religions, merchant houses and travellers bear personal names of their culture's base (`Names.getCulturePerson`), a woman's as often as a place's founder does; among gods women are halfway from there to a half (`Names.getCultureDeity`), and a culture with no name of its own is called by a stem, as a people is (`Names.getPeople`).
+Routes, markers and religions have no meanings. A sea belongs to no culture, so its meaning is never appropriated or regenerated with one, but the Name Editor says it in any base. Gods, founders of religions, merchant houses and travellers bear personal names of their culture's base (`Names.getCulturePerson`), a woman's as often as a place's founder does; among gods women are halfway from there to a half (`Names.getCultureDeity`), and a culture with no name of its own is called by a stem, as a people is (`Names.getPeople`).
 
 ### Lands and islands
 
@@ -199,7 +201,7 @@ A name with no meaning, from an old map or such a rename, is treated as a proper
 ## Where the user sees it
 
 - **Name Editor**: the one place a name is typed. It renames a burg, state, province, river, lake or island, opened by the pencil beside the name or a click on the name in a table; the editors themselves show the name read-only, the Burg Editor with its gloss under it. The dialog edits the name, speaks it (the speaker shows inside the field on hover) and edits the meaning as a pattern and its words: a concept is selected from the words of its slot, a proper name is typed. A name base picked there shows the name there, loaded then and not before, with one click to take it: the meaning's own name in its `origin`, the whole name [appropriated](#appropriation) in any other. One button says the same meaning another way (another `salt`), another coins a new meaning that fits the place, both in the picked base; with the first, or with an edit of the meaning, the name is coined anew there. Nothing is stored until Apply.
-- **Names with no meaning** use the same dialog without the Meaning row: a route's, an ocean's or the neutral lands' name and a label's text.
+- **Names with no meaning** use the same dialog without the Meaning row: a route's or the neutral lands' name and a label's text.
 - **Form and full name** of a state or province have a dialog of their own, opened from the Form column. It shows the name and the Name Editor shows the full name, each read-only with a pencil that stores the open dialog and opens the other.
 - **Tools → Namesbase**: the Namesbases Overview lists the bases; the Namesbase Editor edits one on the tabs Names, Lexicon, Patterns and Rules, beside examples seeded so that an edit shows on them (`Toponyms.sample`).
 
@@ -249,7 +251,7 @@ Where no study counts the models, count them: a list of the places of the period
 
 ### 2. Say each model with a pattern
 
-The nine patterns are fixed, so a model becomes a pattern, a template and the forms of the base:
+The ten patterns are fixed, so a model becomes a pattern, a template and the forms of the base:
 
 | Model in the statistics            | Example            | Pattern            | Written as                                            |
 | ---------------------------------- | ------------------ | ------------------ | ----------------------------------------------------- |

@@ -16,7 +16,7 @@ A name is made in two steps. First the generator decides what the name **means**
 
 The place keeps the meaning apart from its name. So the same place can be shown in any other name base, and a label can show what its name means.
 
-Seas, routes, markers and religions have no meanings. They get plain names that only sound like their language.
+Routes, markers and religions have no meanings. They get plain names that only sound like their language. Seas belong to no culture: they are named for what they are like or the side of the map they lie on, Misty or West, in English, and the Name Editor can say that in any base.
 
 States, continents and the provinces not named after a burg are named as lands, with suffixes of their own that end no town: Frankland, Frankia. A big state is more often a realm named after a people, a small one or a province a march or a district named for what it is like. An island is named as an island.
 
@@ -30,7 +30,7 @@ Rivers and lakes are named first, so a burg can be named after them: Exmouth. Ca
 
 ### Kinds of names
 
-Every name has one of nine shapes, called patterns. The Patterns tab of the Namesbase Editor lists them by these ids:
+Every name has one of ten shapes, called patterns. The Patterns tab of the Namesbase Editor lists them by these ids:
 
 | Pattern            | A name made of                                  | Meaning       | English     | Ruthenian      | Used for                         |
 | ------------------ | ----------------------------------------------- | ------------- | ----------- | -------------- | -------------------------------- |
@@ -41,6 +41,7 @@ Every name has one of nine shapes, called patterns. The Patterns tab of the Name
 | `generic-of`       | what the place is, on a named river             | Mouth of Exe  | Exmouth     | Ust-Ekse       | burgs                            |
 | `compound`         | a description of the land, and what the burg is | Red Hill City | Redhill     | Krasnogorsk    | burgs                            |
 | `relative`         | another place's name told apart                 | New Barton    | New Barton  | Novyi Barton   | burgs, colony provinces          |
+| `description`      | what the place is like, its noun shown apart    | Black         | Black       | Chernyi        | seas                             |
 | `root-land`        | a name, and a word for a land                   | Land of Frank | Frankland   | Frankia        | states, provinces, continents    |
 | `modifier-land`    | a describing word and a land                    | East Realm    | East Realm  | Vostochnia     | states, provinces, continents    |
 
@@ -55,7 +56,7 @@ A number may stand where a describing word does: Three Towers, Tri Vezhi.
   - **Full name**, for a state or province, is shown as it is; its pencil stores the name and opens the form dialog.
   - Nothing changes on the map until you press _Apply_.
   - Rename a river, lake, burg, state or province, and the places named after it are offered the new name too: the towns on the river, a New Barton beside Barton, the colonies named after a land. A place whose name you typed yourself keeps it.
-  - A route, an ocean and a label's text have no meaning: their dialog has no Meaning row.
+  - A route and a label's text have no meaning: their dialog has no Meaning row.
 - **Form and full name** of a state or province are changed by a click on its form. The pencil beside the short name there opens the Name Editor.
 - **A name you type is kept.** The name and the meaning are stored apart and neither overwrites the other, so a name may say something other than its meaning. Nothing renames a place behind your back: changing a burg's or state's culture or a culture's name base asks whether to **Appropriate** the names (say them as the new culture would), **Regenerate** them (new names in the new base) or pick either at **Random** for each, and changing a burg's group offers the new name and waits for a yes. A name changed that way is remembered: when the place comes back to its own name base, the name it had is offered, unless you renamed it meanwhile. A name set by the Assistant or uploaded from a CSV file is a proper name and the old meaning is cleared, unless a new one comes with it: ask the Assistant for one or fill in the [Meaning column](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import#meanings).
 - **Cultures editor**: the _Namesbase_ column sets the base of each culture. The arrows beside it re-generate the names of the culture's burgs, as the button of the Burgs overview does for the listed ones. Both skip locked burgs, and give each a new meaning with its name. _Edit a database used for names generation_, at the bottom, opens the Namesbases Overview.

@@ -100,9 +100,9 @@ class MeaningsModule {
     return meaning ?? this.simplex(name, pack.cultures[culture]?.base ?? NameBases.all[0].id);
   }
 
-  /** A proper name as a base's people say it, a root of a meaning coined in the base */
+  /** A proper name as a base's people say it, a root of a meaning coined in the base: it takes endings there */
   rootIn(name: string, base: NameBase): Token {
-    return `~${Appropriation.adopt(name, base)}`;
+    return `~${Appropriation.adopt(name, base, true)}`;
   }
 
   /** The same thing said anew in a base: the concepts in its words, the roots as its people say them */

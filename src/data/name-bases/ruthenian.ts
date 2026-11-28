@@ -602,6 +602,7 @@ sk\+sk => sk | join
 k\+k(?=[ai]\b) => k | join
 (?<=[^aeiouy+][^aeiouy+])\+k(?=[ai]\b) => +ovk | join
 (?<=[^aeiou])[aoey]\+(?=k[ai]\b) => + | join
+(?<=[^aeiouy])ok\+(?=[aeiouy]) => k+ | join
 (?<=[^aeiouy])[aoe]\+(?=[aeiou]) => + | join
 (?<=\+(?:ov|ev|in)|yev|(?:ov|ev|yn)\+)\+yi =>  | join
 (?<=\+(?:ov|ev|in)|yev|(?:ov|ev|yn)\+)\+aya => +a | join
@@ -1093,7 +1094,7 @@ hundred: sto+ 2, Sto/many
 thousand: tysyache+, Tysyacha/many
 
 # lands
-land: +ia 5, +schina 1, +zemye 1
+land: +iya 5, +schina 1, +zemye 1, Zemlya
 `,
   settled: 0.98,
   patterns: {
@@ -1109,6 +1110,7 @@ land: +ia 5, +schina 1, +zemye 1
       templates: "{root}sk 8, {root} 7, {root}{generic} 2, {root}sk* {generic}, {generic}{root} 2"
     },
     compound: { weight: 3, templates: "{modifier}{generic}'ye 3, {modifier}{generic}{settlement} 2" },
-    relative: { weight: 3, templates: "{modifier} {root} 8, {root} {modifier} 2, {modifier}{root}" }
+    relative: { weight: 3, templates: "{modifier} {root} 8, {root} {modifier} 2, {modifier}{root}" },
+    "modifier-land": { templates: "{modifier} {generic} 3, {modifier}{generic}" }
   }
 };

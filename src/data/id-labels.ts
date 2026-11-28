@@ -263,7 +263,7 @@ export const SAMPLING_LABELS: Record<Sampling, string> = {
 /** What a name of a pattern is made of. The words themselves stay in English, as a Meanings.gloss is */
 export const PATTERN_LABELS: [group: string, patterns: [Pattern, string][]][] = [
   [
-    t("Burgs, rivers, lakes and islands"),
+    t("Burgs, rivers, lakes, islands and seas"),
     [
       ["simplex", t("Proper name")],
       ["feature", t("Place")],
@@ -271,7 +271,8 @@ export const PATTERN_LABELS: [group: string, patterns: [Pattern, string][]][] = 
       ["owner-generic", t("Owner + place")],
       ["generic-of", t("Place + name")],
       ["compound", t("Description + place + settlement")],
-      ["relative", t("Description + name")]
+      ["relative", t("Description + name")],
+      ["description", t("Description")]
     ]
   ],
   [

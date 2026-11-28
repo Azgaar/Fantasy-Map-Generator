@@ -40,6 +40,7 @@ export const PATTERNS: Record<Pattern, PatternData> = {
     weight: 8
   },
   relative: { slots: ["modifier", "root"], gloss: "{modifier} {root}", templates: "{modifier} {root}", weight: 5 },
+  description: { slots: ["modifier"], gloss: "{modifier}", templates: "{modifier}", weight: 0 }, // a sea's: its noun stands apart
   "root-land": {
     slots: ["root", "generic"],
     gloss: "{generic} of {root}",

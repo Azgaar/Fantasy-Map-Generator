@@ -427,7 +427,7 @@ function editText(): void {
   void Controllers.NameEditor.open({
     owner: "labelEditor",
     name: label.text || "",
-    culture: cell ? pack.cells.culture[cell] : 0,
+    baseId: pack.cultures[cell ? pack.cells.culture[cell] : 0]?.base,
     proper: baseId => nameGenerators[label.type](label, baseId),
     onApply: ({ name }) => {
       ensureEl<HTMLInputElement>("labelText").value = name;

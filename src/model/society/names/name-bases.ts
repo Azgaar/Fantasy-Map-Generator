@@ -14,6 +14,7 @@ const NO_WORDS: readonly string[] = [];
 type Gender = "male" | "female";
 
 class NameBasesCatalog {
+  readonly sea = "human-generic"; // seas belong to no people: their names are said in it
   private readonly shipped = new Map(NAME_BASES.map(base => [base.id, { ...base }])); // filled as they load, never edited
   private readonly ruleSets = new WeakMap<
     NameBase,
@@ -89,11 +90,12 @@ class NameBasesCatalog {
     await Promise.all([...new Set(ids)].map(id => this.loadLineage(this.entry(id))));
   }
 
-  /** Load the bases the map's cultures use and those its burgs' names were coined in */
+  /** Load the bases the map's cultures use, the seas' and those its burgs' names were coined in */
   async loadUsed(): Promise<void> {
     const bases = (pack.cultures ?? []).map(({ base }) => base);
+    const seas = pack.features?.some(feature => feature?.type === "ocean") ? [this.sea] : [];
     const origins = (pack.burgs ?? []).flatMap(burg => burg?.meaning?.origin ?? []);
-    await this.load([...bases, ...origins]);
+    await this.load([...bases, ...seas, ...origins]);
   }
 
   /** Load every base */

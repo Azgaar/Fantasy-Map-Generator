@@ -401,7 +401,24 @@ export const japanese: WrittenNameBase = {
     { match: "(?<!\\+\\+(?:no|ga))\\+\\+ts(?![^+]*[gzjdb])", replace: "++z", at: "join", chance: 0.5 },
     { match: "(?<!\\+\\+(?:no|ga))\\+\\+s(?=[aeiou])(?![^+]*[gzjdb])", replace: "++z", at: "join", chance: 0.5 },
     { match: "(?<!\\+\\+(?:no|ga))\\+\\+t(?=[aeiou])(?!aki)(?![^+]*[gzjdb])", replace: "++d", at: "join", chance: 0.5 },
-    { match: "(?<!\\+\\+(?:no|ga))\\+\\+[hf](?=[aeiou])(?![^+]*[gzjdb])", replace: "++b", at: "join", chance: 0.5 }
+    { match: "(?<!\\+\\+(?:no|ga))\\+\\+[hf](?=[aeiou])(?![^+]*[gzjdb])", replace: "++b", at: "join", chance: 0.5 },
+    // a foreign name is said in syllables: Bristol is Burisutoru, Frank Furanku
+    String.raw`
+l => r | foreign
+v => b | foreign
+x => kus | foreign
+th => s | foreign
+q => k | foreign
+c(?=[eiy]) => s | foreign
+c(?!h) => k | foreign
+(?<=[td])(?=[^aeiouy]|$) => o | foreign
+(?<=[bfgkprsz])(?=[^aeiouyh]|$) => u | foreign
+(?<=m)(?=[^aeiouybpm]|$) => u | foreign
+si => shi | foreign
+ti => chi | foreign
+tu => tsu | foreign
+hu => fu | foreign
+[zd]i => ji | foreign`
   ],
   lexicon: `
 # settlements
@@ -417,7 +434,7 @@ hall: +do 2, +ya
 field: ta 4, no 3, hara 3, shima
 wood: mori 2, hayashi 2
 hill: oka 4, yama 4, saka
-ford: se 3, kawa 2, watari 2
+ford: +se 3, +kawa 2, watari 2
 fort: jo 3, ki 2, seki
 bridge: hashi
 harbour: tsu 5, minato 2, tomari 2

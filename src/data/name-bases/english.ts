@@ -726,6 +726,7 @@ export const english: WrittenNameBase = {
     { match: "le\\+l(?=ey|eigh)", replace: "+l", at: "join" }, // Appley, not Appleley
     { match: "ing\\+ing", replace: "ing+", at: "join" }, // Eadrington, not Eadricingington
     { match: "s\\+s(?=t)", replace: "+s", at: "join" },
+    { match: "^([aeiou][^aeiouy+ ])e\\+(?=[b-df-hj-np-tv-z])", replace: "$1+", at: "join" }, // Exmouth, Axbridge
     // a place on a long river name takes two words: Fishwater Bridge
     {
       match: "(?<=[a-z]{3}(?:water|bourne|burn|brook|beck|rill|run|lode|wash))(?=[a-z]{4,}$)",

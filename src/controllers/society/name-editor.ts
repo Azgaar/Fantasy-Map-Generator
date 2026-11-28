@@ -31,7 +31,7 @@ interface NameEditorOptions extends Owner {
   entity?: string; // the key of what is named, such as "burg:12"
   name: string;
   meaning?: Meaning;
-  culture: number; // a name with no meaning is a proper name of its base
+  baseId?: string; // a name with no meaning is a proper name of its base
   generate?: (baseId: string) => Named; // a new meaning that fits what is named, and its name in a base; a name with none keeps no meaning
   proper: (baseId: string) => string; // a new proper name
   onApply: (named: Required<Named>) => void;
@@ -64,17 +64,17 @@ let editing: { options: NameEditorOptions; draft: Draft } | undefined;
 /** Rename a place that keeps a meaning */
 function openPlace(type: PlaceType, id: number, { onApply, ...owner }: PlaceOptions): Promise<void> {
   const { name: was = "", meaning } = Toponyms.placeOf(type, id) ?? {};
-  const culture = Toponyms.cultureOf({ type, id });
+  const said = Toponyms.baseOf({ type, id });
   return open({
     ...owner,
     entity: `${type}:${id}`,
     name: was,
     meaning,
-    culture: culture ?? 0,
-    generate: culture === undefined ? undefined : baseId => Toponyms.coinFor(type, id, baseId), // neutral lands, an ocean
+    baseId: said ?? pack.cultures[0]?.base,
+    generate: said === undefined ? undefined : baseId => Toponyms.coinFor(type, id, baseId), // neutral lands
     proper: baseId => Toponyms.properFor(type, id, baseId),
     onApply: ({ name, meaning }) => {
-      NAMED_MODELS[type].setName(id, { name, meaning: culture === undefined ? undefined : meaning });
+      NAMED_MODELS[type].setName(id, { name, meaning: said === undefined ? undefined : meaning });
       onApply(name);
       offerRenamesAfter({ type, id }, was);
     }
@@ -103,7 +103,7 @@ function offerRenamesAfter(after: PlaceRef, was: string): void {
 }
 
 async function open(options: NameEditorOptions): Promise<void> {
-  const baseId = NameBases.entry(pack.cultures[options.culture]?.base).id;
+  const baseId = NameBases.entry(options.baseId ?? "").id;
   await NameBases.load([baseId]);
 
   close();

@@ -30,6 +30,7 @@ export type Pattern =
   | "generic-of"
   | "compound"
   | "relative"
+  | "description"
   | "root-land"
   | "modifier-land";
 

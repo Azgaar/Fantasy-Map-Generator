@@ -327,7 +327,7 @@ function editName(): void {
     entity: `route:${route.i}`,
     owner: "routeEditor",
     name: route.name ?? "",
-    culture: pack.cells.culture[route.points[0][2]],
+    baseId: pack.cultures[pack.cells.culture[route.points[0][2]]]?.base,
     proper: () => Routes.generateName(route) || UNNAMED_ROUTE,
     onApply: ({ name }) => {
       Routes.rename(route.i, name);

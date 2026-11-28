@@ -463,6 +463,9 @@ export const french: WrittenNameBase = {
     String.raw`
 ^(nord|sud|est|ouest|(?:noir|vert|gris|bleu|doré|clair|froid|chaud)\+?e?s?|blanc(?:he)?s?|rouges?|franc(?:he)?|s(?:ec|èche)|creu(?:x|se)|large) (\S+)$ => $2 $1 | join
 ^(\S+) (deux|trois|cinq|sept|dix|cent|mille)$ => $2 $1 | join
+^terre (nord|sud)$ => terres du $1 | join
+^terre (est|ouest)$ => terres de l'$1 | join
+c\+ie$ => qu+ie | join
 ^ferté(?!\p{L}) => la ferté | join
 ^(mesnil|plessis)(?= \p{L}) => le $1 | join
 ^([\p{L}+]+(?:ière|erie))$ => la $1 | join

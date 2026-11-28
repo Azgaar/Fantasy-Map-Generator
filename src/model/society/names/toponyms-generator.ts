@@ -15,7 +15,7 @@ import {
 } from "@/data/name-concepts";
 import { PATTERNS } from "@/data/name-patterns";
 import { type EntityRef, MapEntities } from "@/model/map-entities";
-import { type Feature, Features } from "@/model/physical/features-generator";
+import type { Feature } from "@/model/physical/features-generator";
 import type { River } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Province } from "@/model/political/provinces-generator";
@@ -97,12 +97,83 @@ const CAPITAL_ROOT = 0.2; // how readily a state is named after the person or ri
 const ADJECTIVE = /(?:shire|(?<=.{3})ian|(?<=.{4})an)$/; // what a people's name is without
 const WATER_SHARE = 0.5; // waters keep old names: this many of them say something
 const POOL_CELLS = 4; // a lake of fewer cells is a pool
+const SEA_DESCRIBED = 0.8; // the share of seas named for what they are like, not for their side of the map
 const NEIGHBOR_SHARE = 40; // how far a burg names itself after another: the map's width and height together over this
 const LEVEL_CLIMB = 8; // the height a burg stands above or below its neighbor to be its Upper or Lower
 const TRIES = 12; // meanings drawn before a place takes a proper name
 const LAND_TRIES = TRIES * 4; // lands drawn before one cut short or taken will do
 const RENAMES = 16; // how many ways a burg's new name is drawn, to take the one nearest to the old
 const NUMBERED = 0.12; // of the names of what there may be several of, the share that count them
+
+// what a sea is like
+const SEA_WORDS: Concept[] = [
+  "amber",
+  "autumn",
+  "bitter",
+  "black",
+  "blue",
+  "bone",
+  "bright",
+  "broad",
+  "broken",
+  "clear",
+  "cold",
+  "crimson",
+  "cursed",
+  "dark",
+  "dawn",
+  "dead",
+  "deep",
+  "dragon",
+  "dread",
+  "drowned",
+  "dusk",
+  "far",
+  "frost",
+  "ghost",
+  "glass",
+  "golden",
+  "great",
+  "green",
+  "grey",
+  "haunted",
+  "ice",
+  "king",
+  "kraken",
+  "lost",
+  "lucky",
+  "mist",
+  "moon",
+  "night",
+  "pale",
+  "pearl",
+  "quiet",
+  "red",
+  "reed",
+  "sail",
+  "salt",
+  "serpent",
+  "shadow",
+  "silver",
+  "singing",
+  "sky",
+  "sleeping",
+  "star",
+  "storm",
+  "summer",
+  "sun",
+  "thunder",
+  "wandering",
+  "weeping",
+  "whale",
+  "whispering",
+  "white",
+  "wild",
+  "wind",
+  "winter",
+  "wonder",
+  "yellow"
+];
 
 const TERRAIN = conceptsOf("generic").filter(isTerrain);
 const COUNTABLE = conceptsOf("generic").filter(isCountable);
@@ -147,16 +218,16 @@ class ToponymsGenerator {
     feature: {
       list: () => pack.features,
       find: id => pack.features[id] || undefined,
-      culture: id => (pack.features[id].type === "ocean" ? undefined : this.cultureOfFeature(pack.features[id])),
+      culture: id => (pack.features[id].type === "ocean" ? undefined : this.cultureOfFeature(pack.features[id])), // seas belong to no people
       taken: () => this.featureNames(),
       coin: (id, baseId) => {
         const feature = pack.features[id];
+        if (feature.type === "ocean") return this.sea(feature, baseId);
         return feature.type === "lake" ? this.lake(feature, { baseId }) : this.island(feature, { baseId });
       },
       proper: (id, baseId) => {
         const feature = pack.features[id];
-        if (feature.type === "ocean") return Features.getOceanName(feature);
-        return feature.type === "lake" ? Names.getWater(baseId) : this.land(baseId).name;
+        return feature.type === "island" ? this.land(baseId).name : Names.getWater(baseId);
       }
     }
   };
@@ -464,15 +535,15 @@ class ToponymsGenerator {
     return whole ? { name, meaning } : undefined;
   }
 
-  /** Say what a name means in notation, such as "owner-generic: ~Eadric, town"; the name itself stays. Empty text clears it. The key is a burg's, state's, province's, river's, lake's or island's. A rename clears it, so set it after */
+  /** Say what a name means in notation, such as "owner-generic: ~Eadric, town"; the name itself stays. Empty text clears it. The key is a burg's, state's, province's, river's or feature's. A rename clears it, so set it after */
   setMeaning(key: string, text: string): void {
     const ref = MapEntities.resolveKey(key);
     if (!ref) throw new Error(`Entity ${key} does not exist`);
     const named = MapEntities.get(ref) as { meaning?: Meaning };
-    const culture = this.cultureOf(ref);
-    if (culture === undefined) throw new Error(`The name of ${key} has no meaning`);
+    const baseId = this.baseOf(ref);
+    if (baseId === undefined) throw new Error(`The name of ${key} has no meaning`);
     if (typeof text !== "string") throw new Error("The meaning must be text");
-    if (text.trim()) named.meaning = Meanings.read(text, Meanings.of({}, culture).origin);
+    if (text.trim()) named.meaning = Meanings.read(text, baseId);
     else delete named.meaning;
   }
 
@@ -486,6 +557,13 @@ class ToponymsGenerator {
   /** The culture in whose tongue a thing is named; nothing for what has no meaning */
   cultureOf({ type, id }: EntityRef): number | undefined {
     return Object.hasOwn(this.namings, type) ? this.namings[type as PlaceType].culture(id) : undefined;
+  }
+
+  /** The base a thing's name is said in; nothing for what has no meaning */
+  baseOf(ref: EntityRef): string | undefined {
+    if (ref.type === "feature" && pack.features[ref.id]?.type === "ocean") return NameBases.sea;
+    const culture = this.cultureOf(ref);
+    return culture === undefined ? undefined : pack.cultures[culture]?.base;
   }
 
   /** The culture in whose tongue a feature is named: on a lake's shore, on an island's first cell */
@@ -525,6 +603,14 @@ class ToponymsGenerator {
       return [pattern, [Sites.pickConcept("modifier", site, base)!, ra(waters)]];
     });
     return named ?? proper(() => Names.getWater(base.id), base, taken);
+  }
+
+  /** A meaning for a sea and its name: a describing word or the side of the map it lies on, in no people's tongue
+   * unless a base is given. Its noun, sea or gulf, stands apart */
+  sea(sea: Feature, baseId = NameBases.sea): Coined {
+    const word = P(SEA_DESCRIBED) ? ra(SEA_WORDS) : this.getSide(sea.firstCell);
+    const meaning: Meaning = { pattern: "description", tokens: [word], origin: baseId };
+    return { name: Meanings.render(meaning, baseId), meaning };
   }
 
   /** A meaning for a lake and its name in the base of the culture on its shore, or in the base given */
@@ -593,6 +679,14 @@ class ToponymsGenerator {
     if (!/^\p{L}{3,}$/u.test(name)) return undefined;
     const root: Token = `~${name.replace(ADJECTIVE, "")}`;
     return pack.states.some(({ meaning, removed }) => !removed && meaning?.tokens[0] === root) ? undefined : root;
+  }
+
+  // the side of the map a cell is on
+  private getSide(cell: number): Concept {
+    const [x, y] = pack.cells.p[cell];
+    const { width, height } = options.map.graph;
+    const [dx, dy] = [x / width - 0.5, y / height - 0.5];
+    return Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "west" : "east") : dy < 0 ? "north" : "south";
   }
 
   // who a land or an island is named after: a person, or a people
@@ -728,6 +822,7 @@ class ToponymsGenerator {
       "generic-of": () => [generic(), `~${Names.getWater(base.id)}`],
       compound: () => [modifier(), any("generic", TERRAIN), any("settlement")],
       relative: () => [modifier(), `~${Names.getBase(base.id)}`],
+      description: () => [modifier()],
       "root-land": () => [this.getLandRoot(base), land()],
       "modifier-land": () => [modifier(), land()]
     };
