@@ -81,6 +81,14 @@ class AppropriationModule {
     return SoundRules.capitalize(this.adapt(name.toLowerCase(), base, open), joining);
   }
 
+  /** Whether a base's names have every letter of a name, marks aside */
+  writes(name: string, base: NameBase): boolean {
+    const plain = new Set(this.profileOf(base).letters.map(plainOf));
+    return [...name.toLowerCase().normalize("NFC")].every(
+      letter => !/\p{L}/u.test(letter) || plain.has(plainOf(letter))
+    );
+  }
+
   private profileOf(base: NameBase): Profile {
     const { names } = base.places;
     const others = [NameBases.watersOf(base) ?? [], NameBases.peopleOf(base) ?? []].flat().map(corpus => corpus.names);

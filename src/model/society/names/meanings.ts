@@ -100,15 +100,17 @@ class MeaningsModule {
     return meaning ?? this.simplex(name, pack.cultures[culture]?.base ?? NameBases.all[0].id);
   }
 
-  /** A proper name as a base's people say it, a root of a meaning coined in the base: it takes endings there */
+  /** A proper name typed as a root of a meaning coined in a base: one in letters the base writes stands as typed,
+   * another is said as the base's people say it, taking endings there */
   rootIn(name: string, base: NameBase): Token {
-    return `~${Appropriation.adopt(name, base, true)}`;
+    return `~${Appropriation.writes(name, base) ? name : Appropriation.adopt(name, base, true)}`;
   }
 
   /** The same thing said anew in a base: the concepts in its words, the roots as its people say them */
   coinedIn<T extends Pick<Meaning, "tokens" | "origin">>(meaning: T, base: NameBase): T {
     if (NameBases.lineage(base).some(({ id }) => id === meaning.origin)) return { ...meaning, origin: base.id };
-    const say = (token: Token): Token => (isRoot(token) ? this.rootIn(token.slice(1), base) : token);
+    const say = (token: Token): Token =>
+      isRoot(token) ? `~${Appropriation.adopt(token.slice(1), base, true)}` : token;
     return { ...meaning, tokens: meaning.tokens.map(say), origin: base.id };
   }
 
