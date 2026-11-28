@@ -1534,6 +1534,15 @@ describe("v1.160 name bases migration", () => {
     expect(options.map.nameBases).toEqual([custom, own]);
   });
 
+  it("keeps a base whole when its doubled letters hold the record's slash", async () => {
+    setCultures(43, 44);
+    const record = [legacyRecord(), "Hausa|3|22|-/m|0|Aaa,Bbb,Ccc", "Igbo|5|9||0|Xaa,Xbb,Xcc"].join("/");
+    await migrate(record);
+    expect(options.map.nameBases.map(({ id }) => id)).toEqual(["hausa", "igbo"]);
+    expect(SoundRules.getDoubles(NameBases.find("hausa")!)).toBe("-/m");
+    expect(cultureBases()).toEqual(["hausa", "igbo"]);
+  });
+
   it("gives cultures the shipped ids when a map holds no bases", async () => {
     setCultures(2);
     await migrate();

@@ -2460,7 +2460,7 @@ export async function migrateLegacyNameBases(data: string[]): Promise<void> {
   const legacy = NAME_BASES.slice(0, LEGACY_BASES).map(({ id }) => id);
   const taken = NAME_BASES.map(({ id }) => id);
 
-  const stored = data[31] ? data[31].split("/").map(base => base.split("|")) : [];
+  const stored = data[31] ? splitLegacyBases(data[31]) : [];
   const ids = stored.map(([name, min, max, doubled, , names = ""], index) => {
     if (names.split(",").length <= 2 && legacy[index]) return legacy[index];
     const id = NameBases.uniqueId(
@@ -2475,6 +2475,20 @@ export async function migrateLegacyNameBases(data: string[]): Promise<void> {
   for (const culture of (pack.cultures ?? []) as { base: string | number }[])
     if (typeof culture?.base === "number") culture.base = (data[31] ? ids : legacy)[culture.base] ?? legacy[0];
   await NameBases.loadUsed();
+}
+
+// the record never escaped its "/" separator: a slash typed into a field splits a base, so pieces are joined back to six fields
+function splitLegacyBases(record: string): string[][] {
+  const bases: string[][] = [];
+  let piece: string | null = null;
+  for (const part of record.split("/")) {
+    piece = piece === null ? part : `${piece}/${part}`;
+    if (piece.split("|").length < 6) continue;
+    bases.push(piece.split("|"));
+    piece = null;
+  }
+  if (piece !== null) bases.push(piece.split("|"));
+  return bases;
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {
